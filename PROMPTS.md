@@ -125,3 +125,120 @@ METADATOS Y SINCRONIZACIÓN
 - Versión inicial 1.0.0. Usar la fecha actual como fecha de ratificación y de última enmienda.
 - Generar el Sync Impact Report al inicio del archivo, y revisar la consistencia con los templates dependientes (plan, spec y tasks), de modo que la verificación de la constitución en el plan evalúe estos principios.
 "-
+
+---
+
+## 2. Establish the Feature Specification
+**Command**: `/speckit-specify`
+**Sprint:** 1
+**Scheduled Activity:** Servicio Central de Autenticación JWT y Recuperación de Claves
+
+**Sample Prompt**:
+-"
+[speckit-specify](slashCommand;speckit-specify) 
+[/grill-me](slashCommand;grill-me) 
+Feature: Central Authentication Service and Password Recovery (Servicio Central de Autenticación JWT y Recuperación de Claves) del proyecto EasyEat [[Scope%20-%2014-10-2026](file;file:///f%3A/ALL/PROGRAMACION/Proyectos/SDD/sdd/EasyEat%20-%20Docs/Scope%20-%2014-10-2026) ]. Dentro del scope tenes los artefactos de documentacion de ingenieria de software [[Artefactos%20CSV](file;file:///f%3A/ALL/PROGRAMACION/Proyectos/SDD/sdd/EasyEat%20-%20Docs/Scope%20-%2014-10-2026/Artefactos%20CSV) ], dentro de el esta todo el proyecto segun indica "Lean Inception". Backlog, USM, Es-No es-Hace-No hace, Product Vision, Cronograma, Analisis de Riesgos, etc.
+
+Description:
+Define the functional specification for the core authentication and credential recovery capabilities of the EasyEat multi-tenant platform, corresponding to Sprint 1's initial delivery activity:
+- Actividad: "Servicio Central de Autenticación JWT y Recuperación de Claves"
+- Detalle: "Endpoints de registro (COM-1.1.1) y login unificado con hash bcrypt (COM-1.2.1), emisión de tokens JWT con claims de rol/tenant y servicio transaccional de reseteo de claves por correo electrónico (COM-1.3.1, ADM-1.2.1)."
+
+### Goal
+
+Provide a secure, centralized authentication and credential management service that allows users to register accounts with email and password, authenticate through a unified login mechanism that asserts identity and tenant/role context, and securely reset forgotten credentials via time-limited transactional email tokens.
+
+### User personas
+
+- **Comensal (Customer / Diner)**: End-user placing orders and accessing restaurant menus.
+- **Administrador (Tenant Owner / Manager)**: High-privilege administrative user managing restaurant settings and staff.
+
+### Capabilities and user stories
+
+#### User Story 1 (P1) - Registro de comensal con credenciales (COM-1.1.1)
+- **Descripción**:
+  Como comensal nuevo
+  Quiero crear una cuenta en la plataforma ingresando mi correo electrónico y una contraseña
+  Para poder registrarme en el sistema y comenzar a hacer pedidos.
+- **Criterios de Aceptación**:
+  - Dado que el comensal no posee una cuenta en EasyEat y se encuentra en la pantalla de registro, cuando ingresa un correo electrónico válido no registrado, una contraseña que cumple los requisitos de seguridad y presiona "Registrarse", entonces el sistema crea la cuenta exitosamente, muestra un mensaje de confirmación y redirige al comensal a la pantalla de Login.
+  - Dado que el comensal ingresa un correo electrónico que ya se encuentra registrado en la plataforma, cuando presiona "Registrarse", entonces el sistema no crea la cuenta y muestra un mensaje de error indicando que el correo electrónico ya está asociado a un usuario existente.
+  - Dado que el comensal ingresa un formato de correo electrónico sintácticamente inválido, cuando intenta enviar el formulario presionando "Registrarse", entonces el sistema bloquea el envío y muestra una notificación de error especificando que la dirección de correo es inválida.
+  - Dado que el comensal ingresa un correo electrónico válido pero una contraseña que incumple la longitud mínima o los criterios de complejidad definidos por el sistema, cuando presiona "Registrarse", entonces el sistema impide la creación de la cuenta y resalta visualmente los requisitos de seguridad de la contraseña que no se han cumplido.
+  - Dado que el comensal omite completar el campo de correo electrónico, el campo de contraseña o ambos, cuando presiona el botón "Registrarse", entonces el sistema no procesa la solicitud y marca los campos vacíos como obligatorios con sus correspondientes mensajes de validación.
+  - Dado que el comensal se encuentra en la pantalla de registro y decide no proseguir con la creación de la cuenta, cuando presiona el enlace "Ya tengo una cuenta" o "Iniciar sesión", entonces el sistema interrumpe el flujo de registro sin conservar datos y redirige al comensal a la pantalla de Login.
+
+#### User Story 2 (P1) - Inicio de sesión unificado con correo y contraseña (COM-1.2.1)
+- **Descripción**:
+  Como comensal registrado
+  Quiero iniciar sesión con mis credenciales
+  Para acceder a mis pedidos y preferencias.
+- **Criterios de Aceptación**:
+  - Dado que el comensal posee una cuenta activa en EasyEat, cuando ingresa su correo electrónico y contraseña correctos y presiona el botón "Iniciar sesión", entonces el sistema lo autentica exitosamente y lo redirige a la pantalla principal o catálogo de su establecimiento por defecto.
+  - Dado que el comensal se encuentra en la pantalla de inicio de sesión, cuando ingresa un correo electrónico registrado pero una contraseña incorrecta y presiona "Iniciar sesión", entonces el sistema deniega el acceso y muestra un mensaje de error genérico de seguridad sin limpiar el campo del correo.
+  - Dado que el comensal intenta ingresar a la plataforma, cuando ingresa un correo electrónico que no existe en la base de datos junto con cualquier contraseña y presiona "Iniciar sesión", entonces el sistema rechaza el intento y muestra el mismo mensaje de error genérico de seguridad para evitar exponer qué correos están registrados.
+  - Dado que el comensal se encuentra en la vista de login, cuando omite completar el campo de correo electrónico, el de contraseña o ambos y presiona "Iniciar sesión", entonces el sistema no ejecuta la petición al servidor y resalta los campos vacíos indicando que son obligatorios.
+  - Dado que el comensal se encuentra en la pantalla de login y no logra recordar su clave, cuando hace clic en el enlace de recuperación de contraseña, entonces el sistema interrumpe el flujo actual y lo redirige a la pantalla correspondiente para reestablecerla.
+  - Dado que el comensal ingresa un correo y contraseña correctos, cuando el estado de su cuenta figura como inhabilitada o suspendida por un administrador, entonces el sistema bloquea el ingreso y despliega un aviso indicando que el perfil no se encuentra autorizado para operar.
+  - Dado que el comensal posee una cuenta activa, cuando ingresa su correo electrónico con espacios en blanco al inicio o al final, o utilizando letras mayúsculas, pero escribe la contraseña con la distinción exacta de caracteres, entonces el sistema normaliza el correo internamente y procesa el inicio de sesión de manera exitosa.
+
+#### User Story 3 (P2) - Recuperación de contraseña por correo electrónico para comensales (COM-1.3.1)
+- **Descripción**:
+  Como comensal que olvidó su clave
+  Quiero solicitar un blanqueo de contraseña por correo electrónico
+  Para poder recuperar el acceso a mi cuenta.
+- **Criterios de Aceptación**:
+  - Dado que el comensal olvidó su clave y se encuentra en la pantalla de recuperación, cuando ingresa su correo electrónico registrado y solicita el restablecimiento, entonces el sistema envía un enlace seguro de un solo uso a su casilla y muestra un mensaje de confirmación.
+  - Dado que el comensal intenta recuperar su contraseña, cuando ingresa un correo electrónico que no se encuentra registrado en el sistema, entonces el sistema muestra un mensaje de confirmación genérico para evitar exponer qué correos existen en la base de datos.
+  - Dado que el comensal se encuentra en el formulario de recuperación, cuando ingresa un formato de correo electrónico inválido o deja el campo vacío, entonces el sistema bloquea el envío y resalta el error de validación correspondiente.
+  - Dado que el comensal solicitó la recuperación de contraseña, cuando intenta generar una nueva solicitud de forma consecutiva sin dejar pasar el tiempo de gracia, entonces el sistema bloquea la acción temporalmente para evitar el envío masivo de correos no deseados.
+  - Dado que el comensal recibe el correo de recuperación, cuando hace clic en el enlace seguro después de que el mismo haya excedido su tiempo máximo de validez, entonces el sistema rechaza el acceso y le indica que debe solicitar un nuevo enlace.
+  - Dado que el comensal inicia el flujo de recuperación, cuando decide no avanzar y presiona la opción de volver atrás o cancelar, entonces el sistema aborta la operación sin enviar correos y lo redirige a la pantalla de inicio de sesión.
+
+#### User Story 4 (P2) - Recuperación de contraseña para administradores (ADM-1.2.1)
+- **Descripción**:
+  Como administrador
+  Quiero poder restablecer mi contraseña vía correo electrónico
+  Para no perder el acceso a la gestión de mi negocio si me olvido la clave.
+- **Criterios de Aceptación**:
+  - Dado que toca "Olvidé mi contraseña", Cuando ingresa su correo, Entonces recibe un link seguro para generar una clave nueva (reutilizando el servicio centralizado de recuperación).
+
+### Validation and invariants
+
+- **Password security invariant**: Passwords must be hashed using a one-way cryptographic hash with individual salt (e.g., bcrypt) before persistence. Plaintext passwords must never be stored, logged, or transmitted back.
+- **Token context invariant**: Authenticated session tokens must deterministically include identity (`user_id`), assigned role (`role`), and tenant scope (`tenant_id` where applicable) to guarantee strict multi-tenant authorization boundaries.
+- **Password reset token integrity**: Reset tokens must be single-use, cryptographically secure, and expire after a strict, bounded time window (e.g., 15 minutes). Once used or expired, any further attempts using that token must fail.
+- **Email normalization**: Email addresses must be normalized (lowercased, trimmed of leading/trailing whitespace) prior to validation, uniqueness checking, or authentication lookup.
+- **Anti-enumeration guarantee**: Login and password recovery endpoints must provide generic, timing-resistant responses for non-existent vs incorrect credentials to prevent user account enumeration.
+- **Rate limiting / Anti-spam**: Repeated password reset requests for the same address or IP must enforce a cooling-off cooldown period.
+
+### Edge cases
+
+- Account status is suspended, unverified, or disabled.
+- Password reset link clicked multiple times after a successful reset.
+- Rapid successive submissions of the registration or recovery forms.
+- Case sensitivity in email vs case sensitivity in passwords.
+- Malformed, expired, or tampered tokens provided to the reset verification interface.
+
+### Out of scope
+
+- Social single sign-on / Google OAuth integration (COM-1.1.2, COM-1.2.2).
+- SMS password recovery (COM-1.3.2).
+- QR code establishment onboarding (COM-1.1.3).
+- User profile updates and dietary restriction management (COM-1.4.x).
+- Specific UI component styling or frontend framework routing guards (those belong to the presentation layer).
+
+Do not prescribe database schemas, ORM configurations, controller endpoints, or framework-specific libraries in the functional spec. Keep the focus entirely on business rules, security invariants, and user-verifiable acceptance criteria.
+"-
+
+---
+
+## 3. Clarifications
+**Command**: `/speckit-clarify`
+**Sprint:** 1
+**Scheduled Activity:** Servicio Central de Autenticación JWT y Recuperación de Claves
+
+**Sample Prompt**:
+-"
+[speckit-clarify](slashCommand;speckit-clarify) [/grill-me](slashCommand;grill-me) 
+"-
