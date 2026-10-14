@@ -1,0 +1,54 @@
+,Persona,,F01,F02,F03,F04,F05,F06,F07,F08,F09,F10,F11,F12,F13,F14,F15,F16,F17,F18,F19,F20,F21,F22,F23,F24,F25,F26
+,1,"Diego Fernández (34 años) 
+Cocinero",-,-,-,-,-,-,-,-,5,5,5,5,4,4,5,-,-,-,-,3,3,4,-,-,-,-
+,6,"Silvia (45 años)
+ Encargada de cocina",-,-,-,-,-,-,-,-,4,5,5,3,4,4,5,-,-,-,-,3,3,4,-,-,-,-
+,2,"Tomás (22 años)
+ Comensal universitario",1,4,3,5,4,5,4,2,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-
+,4,"Armando Paredes (41 años)
+Comensal corporativo ",1,5,2,5,2,5,3,5,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-
+,3,"Marcelo Rossi (62 años) 
+Mozo / Mostrador",-,-,-,-,-,-,-,-,-,-,-,-,-,-,5,4,4,5,-,-,-,-,-,-,-,-
+,5,"""Lucho"" Fernández (48 años)
+Concesionario buffet escolar ",-,-,-,-,-,-,-,-,2,3,2,2,4,5,5,-,-,-,4,4,3,5,2,4,4,4
+,7,"Mateo Benítez (32 años)
+ Admin de buffet deportivo ",-,-,-,-,-,-,-,-,-,-,-,-,-,-,5,4,3,-,4,3,4,3,4,2,2,2
+,8,"Martín (38 años)
+ Dueño del comedor",-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,3,3,3,3,5,5,5,5
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,Prioridad de las personas,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,"Silvia / Diego se agrupan como equipo de cocina, por lo que su prioridad debe ser ALTA por ser la base operativa. Si la cocina no fluye con el sistema, la promesa central del producto colapsa.",,,,,,,,,,,,,,,,,,,,,,,,,,
+,,"Tomás / Armando son los principales comensales como son usuarios finales, los que generan el movimiento dentro de la aplicación, deben tener prioridad ALTA que generan los pedidos, filtran el menú por restricciones y programan retiros por franjas horarias.",,,,,,,,,,,,,,,,,,,,,,,,,,
+,,"Marcelo debe considerarse entre las altas prioridades ya que es cuello de botella del despacho y la atención presencial durante las horas pico, si no se alivia ese dolor, el comedor puede desistir de usar el sistema por no ser una mejora comparativa al sistema anterior",,,,,,,,,,,,,,,,,,,,,,,,,,
+,,"Martín / Rodrigo / Mateo  representan la gestión del negocio, alertas de stock mínimo, estadísticas y promociones dinámicas, por lo que hay que tener cuidado que features vamos a darle ya que puede desvirtuar el objetivo principal del producto ",,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Comensal/Cliente, F01,Acceso rápido al catálogo/menú del negocio vía QR.,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F02,Catálogo dinámico en tiempo real (oculta o inhabilita platos sin stock).,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F03,"Filtros por restricciones alimentarias (sin TACC, vegetariano, alérgenos) y categorías.",,,,,,,,,,,,,,,,,,,,,,,,,,
+, F04,Guardado de preferencias/filtros en el perfil de usuario (aplicación por defecto).,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F05,Indicador de tiempo estimado de espera pre-pedido (fila virtual).,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F06,Reserva de pedidos por franja horaria (bloques de 30 minutos).,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F07,"Notificación en tiempo real del estado del pedido (*En preparación*, *Listo para retirar*).",,,,,,,,,,,,,,,,,,,,,,,,,,
+, F08,Comprobante de retiro Express (ID de pedido corto / Código Fast-Lane / QR).,,,,,,,,,,,,,,,,,,,,,,,,,,
+Cocina, F09,Tablero con columnas de estado de los pedidos,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F10,Vista consolidada de pedidos por franja horaria y prioridad.,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F11,Indicador de tiempo acumulado de espera con alertas por color (verde/amarillo/rojo).,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F12,Mapeo visual de observaciones breves en la comanda.,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F13,Contador de pedidos por estado de preparación.,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F14,Pausa / Inhabilitación manual de platos en 1 clic (ante contingencias).,,,,,,,,,,,,,,,,,,,,,,,,,,
+Atención al cliente, F15,Sincronización en tiempo real de pedidos presenciales con el tablero de cocina.,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F16,"Vista consolidada de mostrador por tipo de pedido (Salón, Reserva, Express).",,,,,,,,,,,,,,,,,,,,,,,,,,
+, F17,Validación de retiro de pedido reservado (por ID/QR/Nombre).,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F18,Carga de observaciones breves en comandas presenciales.,,,,,,,,,,,,,,,,,,,,,,,,,,
+Admin, F19,"Programación del menú semanal y ""Platos del Día"".",,,,,,,,,,,,,,,,,,,,,,,,,,
+, F20,Descuento automático de stock según receta por cada pedido completado,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F21,Inhabilitación automática de platos al llegar a stock cero.,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F22,Alertas y configuración de stock mínimo de ingredientes.,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F23,Gestión de promociones dinámicas y descuentos express.,,,,,,,,,,,,,,,,,,,,,,,,,,
+, F24,Reporte / Gráfico,Platos más vendidos por período de tiempo.,,,,,,,,,,,,,,,,,,,,,,,,,
+, F25,Reporte / Gráfico,Consumo y rotación de ingredientes por período.,,,,,,,,,,,,,,,,,,,,,,,,,
+, F26,Reporte / Gráfico,Horarios y franjas pico de mayor tráfico de pedidos.,,,,,,,,,,,,,,,,,,,,,,,,,
