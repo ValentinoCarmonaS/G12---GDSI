@@ -1,0 +1,63 @@
+Persona,Perfil,,Persona,Perfil
+"Diego Fernández, 34 años, empleado del comedor responsable de la preparación y gestión de pedidos.","Trabaja diariamente en la cocina de un comedor institucional. Su afinidad tecnológica es media. 
+
+Utiliza teléfonos inteligentes y aplicaciones comunes, pero no necesariamente posee experiencia con sistemas complejos de gestión.
+
+Diego no está interesado en “administrar un sistema”; su objetivo principal es preparar correctamente los pedidos y mantener el flujo de la cocina.",,"Tomás, 22 años, estudiante universitario.","Pasa gran parte de su día en la institución, con horarios estrictos. Tiene ventanas de tiempo muy cortas (15 a 30 minutos) entre clases o reuniones para almorzar o tomar un café. Es nativo digital y valora la inmediatez. Además, intenta cuidar su presupuesto o tiene alguna preferencia alimentaria (ej. busca opciones sin TACC o vegetarianas)."
+,,,,
+Comportamiento,Necesidades,,Comportamiento,Necesidades
+"Durante la elaboración de los platos, están constantemente interrumpiendolo con avisos de nuevos pedidos mediante la recepción de notas de quien fue el encargado de recolectar los pedidos. Además, el mismo organiza sus tareas según la información que está disponible a sus alrededores o se acuerda. El se coordina constantemente con otros empleados de manera verbal para notificar estado de los pedidos y/o organizar como puede delegarse las tareas entre sus ayudantes.
+
+Responde consultas de los clientes.","Necesita herramientas simples de manejar y entender para
+- Ver en todo momento qué pedidos hay
+- En qué orden llegaron los pedidos realizados
+- Hace cuánto tiempo que están los pedidos pendientes de entregar.
+- Recibir de manera rápida los nuevos pedidos, sin perder información sobre el mismo.
+- Avisar si el pedido de uno de los platos tiene alguna observación a destacar sobre el cliente
+- Cambiar el estado de un pedido con el mínimo de pasos posibles.
+- Tablero de pedidos donde se visualizan categorizadas según su estado de preparación.
+- Fáciles de utilizar bajo presión y de manera acelerada.
+",,"Vive pegado al celular. Odia perder tiempo haciendo fila física. Suele ir al comedor en el horario pico, y muchas veces le pasa que hace la cola, llega al mostrador y se entera de que su plato preferido ya se agotó. Esto le genera frustración y lo obliga a decidir otra cosa apurado.","- Filtrar rápidamente lo que puede comer según sus necesidades del momento.
+- Configurar restricciones y preferencias dietéticas en su perfil de usuario para que el catálogo de platos se filtre automáticamente por defecto al ingresar (logrando una mayor sensación de personalización).
+- Reservar su pedido para un horario específico deseado.
+- Recibir un aviso a partir del momento exacto cuando esté listo el pedido para retirar.
+- Ser notificado en caso de que haya mucha gente que retira un pedido al mismo horario para evitar filas durante el retiro del pedido reservado."
+,,,,
+,,,,
+,,,,
+,,,,
+Persona,Perfil,,Persona,Perfil
+Marcelo Rossi: 62 años. Cajero / Encargado de Mostrador,"Nexo directo entre la cocina y los comensales. Lidera el equipo de mostrador en la franja de mayor demanda. Busca agilidad sin complicaciones tecnológicas.
+Utiliza teléfonos inteligentes y aplicaciones comunes, pero no necesariamente posee experiencia con sistemas complejos de gestión.",,"Armando Paredes, 41 años. Jefe de Operaciones y Logística en una empresa mediana",Lidera un equipo de 20 personas en un entorno dinámico y propenso a urgencias operativas. Cuenta con un bloque estricto de 30 minutos para almorzar entre reuniones de seguimiento y recorridas de planta. Gestiona parte de su jornada desde el celular.
+,,,,
+Comportamiento,Necesidades,,Comportamiento,Necesidades
+"Coordina la atención de unas 150 personas durante la hora pico del mediodía. Valida los retiros y toma pedidos de mostrador anotando en papel, sufriendo cuellos de botella y cometiendo errores al pasar las comandas a la cocina.
+","Marcelo necesita una vista automatizada para mostrador (distinta a la de la cocina) para validar reservas rápidamente y cargar pedidos en tiempo real.
+- Desea eliminar la escritura a mano para acelerar el flujo de atención y evitar demoras.
+- Desea anotar observaciones breves sobre los pedidos tomados para que las lea la cocina.
+",,"Intenta planificar su receso mentalmente pero tiene que lidiar con la incertidumbre de no saber si el comedor tendrá disponibilidad. Llega al comedor apenas se libera y se encuentra con filas largas, tanto para pedir como para retirar. Si ve demoras excesivas, prefiere comprar un snack de una máquina expendedora. Si logra comprar en el comedor, debe comer de manera apresurada para volver a su trabajo.","Necesita con antelación saner que el plato elegido estará disponible y guardado al momento de su receso, evitando demoras y que no pueda consumir lo que quiere elegir. 
+Poder solicitar un trato especial para que la entrega programada le permita retirar su comida de inmediato sin tener que esperar en la cola general. Poder consultar el menú, seleccionar su comida y definir el momento exacto de retiro directamente desde el celular durante sus traslados o descansos breves."
+,,,,
+,,,,
+Persona,Perfil,,Persona,Perfil
+"Rodrigo ""Lucho"" Fernández (48 años), Concesionario del buffet del secundario",Gestiona la gastronomía del campus con un modelo tradicional. Sufre pérdidas económicas por desperdicio de alimentos y falta de previsión de ventas.,,"Silvia, 45 años, encargada de cocina.","Amplia experiencia en gastronomía institucional y trabaja hace varios años en el mismo establecimiento, lo que le permite conocer de memoria el ritmo del lugar, pero sufre considerablemente desgaste físico y mental cuando el volumen de trabajo aumenta de manera inesperadamente. "
+,,,,
+Comportamiento,Necesidades,,Comportamiento,Necesidades
+"Cuando un plato se agota a mitad de la hora del almuerzo, envía avisos verbalmente o con anotaciones en pizarras para que la caja deje de ofrecerlo,  causando confusión en los clientes y errores en los que toman el pedido.","Mediante su acceso exclusivo a la ""Vista de Back-Office para Administradores"", necesita que el sistema inhabilite la opción de pedir un menú en el instante preciso en que el stock de insumos llegue a cero, sin intervención manual. Poder prever la demanda basada en las reservas y pedidos anteriores mediante reportes, para reducir el desperdicio de comida preparada.",,"Trabaja de forma reactiva. Su día es un caos al mediodía: lee comandas de papel que a veces se pierden o se ensucian, o recibe los pedidos a los gritos desde la caja.
+ Cuando se da cuenta de que se quedó sin un ingrediente (ej. pan o milanesas), tiene que frenar lo que está haciendo, salir al mostrador y gritar: ""¡Cortame el combo 2 que no hay más!"", mientras la caja quizás ya cobró tres pedidos más de eso.","Necesita poder ordenar y organizar los pedidos de manera visual por orden de llegada y en franjas horarias. 
+Necesita la tranquilidad mental de que no va a quedarse sin ingredientes durante la preparacion de los pedidos, ya que el equipo tienen disponible la información sobre que ingredientes están por agotarse.
+Espera que el  sistema baje los platos automáticamente cuando se queda sin ingredientes, sin que ella tenga que intervenir ni lidiar con clientes enojados."
+,,,,
+,,,,
+Persona,Perfil,,Persona,Perfil
+"Mateo Benítez, 32 años, Administrador del restaurante y buffet del club.",Gestiona un buffet de club deportivo. Su operación oscila entre menús fijos semanales para los deportistas y picos masivos de familias los fines de semana.,,"Martín, 38 años, dueño del comedor.","Es el responsable del negocio. Maneja a los proveedores, los costos, el personal y la rentabilidad del local. Su mayor desafío es equilibrar el stock: tener suficiente mercadería para no perder ventas, pero no tanta como para que se eche a perder"
+,,,,
+Comportamiento,Necesidades,,Comportamiento,Necesidades
+"Pasa de momentos de calma absoluta a recibir 150 personas juntas en la caja en un lapso de 15 minutos, apenas termina un partido o entrenamiento. Coordina tanto pedidos en mesa dentro del salón como retiros rápidos en mostrador para llevar a las canchas. 
+
+Cambia la oferta del menú a diario de forma improvisada anotando en pizarras en la entrada del buffet.","Mediante su acceso a la ""Vista de Back-Office para Administradores"", requiere configurar el menú para que se actualice al instante ante los socios si un insumo clave se agota. Además, como él mismo ayuda en horas pico, necesita poder acceder rápidamente a la vista de mostrador para ver los pedidos pendientes por hora y despachar sin demoras.",,"Gestiona el negocio con mucha intuición, planillas de excel manuales y anotaciones en cuadernos. Suele enterarse de que falta un ingrediente crítico cuando ya es demasiado tarde. Cuando le sobra mercadería al final del día, intenta armar promociones improvisadas, pero le cuesta comunicarlas rápido a todos los clientes y ser eficiente con las promociones ofrecidas respecto a la mercadería sobrante. Prefiere que se improvise un plato antes que tirar mercadería a la basura.","Mediante su acceso exclusivo a la ""Vista de Back-Office para Administradores"", necesita control y datos reales sobre las ventas del negocio. Busca un sistema que le notifique cuando el stock es bajo para planificar compras. Desea ver reportes y analíticas sobre qué platos son más rentables y los horarios pico. Además, desea lanzar promociones dinámicas con un par de clics para rotar el inventario a tiempo."
+,,,,
+Persona,Perfil,,,
+,,,,
+,,,,
+Comportamiento,Necesidades,,,

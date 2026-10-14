@@ -1,0 +1,1181 @@
+ROL: COMENSAL,,,,,,ROL: ENCARGADO DE MOSTRADOR,,,,,,ROL: CHEF,,,,,,ROL: ADMINISTRADOR,,,
+Nro: 1.1.1,Título: Crear cuenta con mail y contraseña,Prioridad:,Estimación: 3,,,Nro: 1.1.1,Título: Ingreso con credenciales de empleado,Prioridad:,Estimación: 3,,,Nro: 1.1.1,Título: Ingreso con credenciales de empleado,Prioridad:,Estimación: 2,,,Nro: 1.1.1,Título: Ingresar al Back-Office web,Prioridad:,Estimación: 3
+"Descripción:
+
+Como comensal nuevo
+Quiero crear una cuenta en la plataforma ingresando mi correo electrónico y una contraseña
+Para poder registrarme en el sistema y comenzar a hacer pedidos.
+
+",,,,,,"Descripción:
+
+Como encargado de mostrador
+Quiero ingresar a la plataforma web utilizando mis credenciales provistas por la administración
+Para poder acceder a las herramientas de gestión de entregas del local.
+
+",,,,,,"Descripción:
+
+Como chef
+Quiero ingresar a la plataforma web utilizando mis credenciales provistas por la administración
+Para acceder de forma segura a mi entorno de cocina.",,,,,,"Descripción:
+
+Como administrador (Owner/Gerente)
+Quiero iniciar sesión en la plataforma web utilizando mis credenciales de máxima autoridad
+Para poder gestionar todos los aspectos de mi establecimiento.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal no posee una cuenta en EasyEat y se encuentra en la pantalla de registro, cuando ingresa un correo electrónico válido no registrado, una contraseña que cumple los requisitos de seguridad y presiona ""Registrarse"", entonces el sistema crea la cuenta exitosamente, muestra un mensaje de confirmación y redirige al comensal a la pantalla de Login.
+-Dado que el comensal ingresa un correo electrónico que ya se encuentra registrado en la plataforma, cuando presiona ""Registrarse"", entonces el sistema no crea la cuenta y muestra un mensaje de error indicando que el correo electrónico ya está asociado a un usuario existente.
+-Dado que el comensal ingresa un formato de correo electrónico sintácticamente inválido, cuando intenta enviar el formulario presionando ""Registrarse"", entonces el sistema bloquea el envío y muestra una notificación de error especificando que la dirección de correo es inválida.
+-Dado que el comensal ingresa un correo electrónico válido pero una contraseña que incumple la longitud mínima o los criterios de complejidad definidos por el sistema, cuando presiona ""Registrarse"", entonces el sistema impide la creación de la cuenta y resalta visualmente los requisitos de seguridad de la contraseña que no se han cumplido.
+-Dado que el comensal omite completar el campo de correo electrónico, el campo de contraseña o ambos, cuando presiona el botón ""Registrarse"", entonces el sistema no procesa la solicitud y marca los campos vacíos como obligatorios con sus correspondientes mensajes de validación.
+-Dado que el comensal se encuentra en la pantalla de registro y decide no proseguir con la creación de la cuenta, cuando presiona el enlace ""Ya tengo una cuenta"" o ""Iniciar sesión"", entonces el sistema interrumpe el flujo de registro sin conservar datos y redirige al comensal a la pantalla de Login.
+",,,,,,"Criterios de Aceptación:
+Dado que el usuario es un empleado registrado con el rol adecuado, Cuando ingresa su usuario y contraseña, Entonces el sistema lo autentica correctamente.",,,,,,"Criterios de Aceptación:
+Dado que el usuario es un empleado registrado, Cuando ingresa su usuario y contraseña, Entonces el sistema valida su rol y lo autentica correctamente.",,,,,,"Criterios de Aceptación:
+Dado que el usuario tiene cuenta de tipo Admin, Cuando ingresa sus datos, Entonces accede a su entorno (tenant) privado sin ver los datos de otros restaurantes de la plataforma.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.1.2,Título: Crear cuenta con Google,Prioridad:,Estimación: 5,,,Nro: 1.2.1,Título: Redirección automática a la vista de mostrador,Prioridad:,Estimación: 3,,,Nro: 1.2.1,Título: Redirección automática a la vista de cocina (KDS),Prioridad:,Estimación: 3,,,Nro: 1.2.1,Título: Recuperar contraseña,Prioridad:,Estimación: 3
+"Descripción:
+
+Como comensal nuevo
+Quiero registrarme utilizando mi cuenta de Google (SSO)
+Para ahorrar tiempo y no tener que memorizar una nueva contraseña.
+
+",,,,,,"Descripción:
+
+Como encargado de mostrador
+Quiero ser redirigido automáticamente a la ""Vista de Mostrador"" tras iniciar sesión
+Para no perder tiempo navegando por menús que no me corresponden (como el KDS del Chef o la vista del Comensal).
+
+",,,,,,"Descripción:
+
+Como chef
+Quiero ser redirigido automáticamente a la ""Vista de Cocina (KDS)"" tras iniciar sesión
+Para no perder tiempo navegando y poder empezar a cocinar los pedidos pendientes de inmediato.",,,,,,"Descripción:
+
+Como administrador
+Quiero poder restablecer mi contraseña vía correo electrónico
+Para no perder el acceso a la gestión de mi negocio si me olvido la clave.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal no posee una cuenta en EasyEat y se encuentra en la pantalla de registro, cuando presiona ""Continuar con Google"" y selecciona una cuenta activa de Google no registrada previamente, entonces el sistema autentica al usuario mediante OAuth, crea su perfil en la plataforma web y lo redirige a la pantalla principal.
+-Dado que el comensal ya posee una cuenta en EasyEat vinculada a su casilla de Google, cuando presiona ""Continuar con Google"" y autoriza el acceso con dicha cuenta, entonces el sistema valida la identidad, omite la creación de un nuevo perfil e inicia sesión redirigiéndolo a la plataforma web.
+-Dado que el comensal posee una cuenta en EasyEat creada originalmente con correo y contraseña, cuando intenta registrarse presionando ""Continuar con Google"" utilizando esa misma casilla de correo, entonces el sistema no crea un perfil duplicado y muestra un mensaje indicando que el correo ya está registrado, sugiriendo iniciar sesión tradicional.
+-Dado que el comensal presiona ""Continuar con Google"" desde la pantalla de registro, cuando cierra la ventana emergente de autenticación de Google o presiona ""Cancelar"", entonces el sistema interrumpe el flujo sin crear ningún perfil y permanece en la pantalla de registro.
+-Dado que el comensal inicia el proceso de registro mediante Google, cuando deniega el consentimiento para compartir sus datos básicos de perfil (correo y nombre), entonces el sistema notifica que no es posible crear la cuenta sin los permisos requeridos y cancela el proceso.
+-Dado que el comensal presiona ""Continuar con Google"" para crear su cuenta, cuando el proveedor de identidad Google OAuth o la red sufren un corte o timeout, entonces el sistema despliega un mensaje de error técnico y le permite reintentar o elegir el registro tradicional.
+-Dado que el comensal no tiene una sesión activa de Google en su navegador web y presiona ""Continuar con Google"", cuando el sistema redirige al portal de Google, el usuario ingresa sus credenciales y autoriza el acceso, entonces EasyEat recibe la confirmación de OAuth y completa la creación de la cuenta exitosamente.",,,,,,"Criterios de Aceptación:
+Dado que el sistema detecta el rol ""Encargado"", Cuando el login es exitoso, Entonces se carga inmediatamente la pantalla de gestión de entregas (Despacho).",,,,,,"Criterios de Aceptación:
+Dado que el sistema detecta el rol ""Chef"", Cuando el login es exitoso, Entonces se carga la pantalla principal del Kitchen Display System (KDS).",,,,,,"Criterios de Aceptación:
+Dado que toca ""Olvidé mi contraseña"", Cuando ingresa su correo, Entonces recibe un link seguro para generar una clave nueva.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.1.3,Título: Crear cuenta escaneando QR del establecimiento,Prioridad:,Estimación: 5,,,Nro: 2.1.1,Título: Visualizar pedidos listos para entregar,Prioridad:,Estimación: 8,,,Nro: 2.1.1,Título: Visualizar el catálogo de ingredientes disponibles,Prioridad:,Estimación: 5,,,Nro: 2.1.1,Título: Configurar branding del restaurante,Prioridad:,Estimación: 8
+"Descripción:
+
+Como comensal físico en el local
+Quiero escanear un código QR desde la mesa o entrada para ingresar a la plataforma web y registrarme
+Para quedar automáticamente asociado a ese restaurante específico sin tener que buscarlo.
+
+",,,,,,"Descripción:
+
+Como encargado de mostrador
+Quiero ver en tiempo real una lista de los pedidos que la cocina marcó como ""Listos""
+Para saber qué bandejas o bolsas ya están disponibles para despachar a los comensales.
+
+",,,,,,"Descripción:
+
+Como chef
+Quiero poder visualizar el catálogo de ingredientes registrados en el sistema
+Para poder seleccionarlos al momento de crear o editar las recetas de mis platos, sin tener acceso para modificar las cantidades del inventario general.",,,,,,"Descripción:
+
+Como administrador
+Quiero subir el logo, editar el nombre de fantasía, la descripción y elegir los colores primarios
+Para que la vista del comensal respete la identidad visual de mi marca.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal físico se encuentra en el local y no posee una cuenta en EasyEat, cuando escanea un código QR válido del establecimiento con su dispositivo y completa el registro exitosamente, entonces el sistema crea la cuenta y lo asocia automáticamente a ese restaurante, fijándolo como su establecimiento activo por defecto para realizar pedidos.
+-Dado que el comensal escanea un código QR válido del establecimiento pero ya posee una cuenta activa en EasyEat, cuando selecciona la opción de iniciar sesión en lugar de crear una cuenta nueva, entonces el sistema lo autentica y lo redirige directamente al catálogo vivo de ese restaurante específico, actualizándolo como su local actual.
+-Dado que el comensal intenta acceder a la plataforma web desde el local, cuando escanea un código QR adulterado o cuya URL no corresponde a un identificador válido dentro del modelo multi-tenant, entonces el sistema despliega una pantalla de error de ""Restaurante no encontrado"" y no permite iniciar un flujo de registro asociado a un local inexistente.
+-Dado que el comensal escanea el código QR de un establecimiento registrado, cuando dicho restaurante se encuentra temporalmente inhabilitado, pausado o dado de baja por el administrador, entonces el sistema bloquea el flujo de registro asociado y muestra un aviso indicando que el local no se encuentra disponible para operar actualmente.
+-Dado que el comensal escanea el código QR del establecimiento y comienza a completar el formulario web, cuando abandona la página o cierra el navegador antes de finalizar el proceso, entonces el sistema no genera ningún perfil de usuario ni guarda registros temporales de asociación en la base de datos.
+-Dado que el comensal escanea el QR y es redirigido a la pantalla de registro que contiene el identificador del local, cuando navega temporalmente hacia otra sección de la plataforma y regresa para finalizar el alta, entonces el sistema mantiene el parámetro del restaurante en memoria para garantizar la asociación automática al confirmar el formulario.
+-Dado que el comensal completó su registro vía QR y quedó asociado automáticamente a un restaurante por defecto, cuando ingresa a la plataforma web y decide buscar un comedor diferente, entonces el sistema le permite cambiar su establecimiento activo mediante el buscador sin quedar bloqueado en el local de origen.
+
+",,,,,,"Criterios de Aceptación:
+Dado que el Chef toca ""LISTO"" en su KDS, Cuando el estado del pedido cambia, Entonces la tarjeta de ese pedido aparece instantáneamente en la pantalla del mostrador (vía WebSockets).",,,,,,"Criterios de Aceptación:
+Dado que el chef ingresa a crear o editar una receta, Cuando abre el selector de ingredientes, Entonces visualiza el catálogo completo disponible sin botones ni campos habilitados para modificar las cantidades del inventario global. (Nota de Scope: El chef solo define qué cantidad del ingrediente lleva la porción del plato; la edición de la alacena física y sus métricas es exclusiva del administrador).",,,,,,"Criterios de Aceptación:
+Dado que el administrador guarda los cambios en ""Mi Local"", Cuando un comensal entra a pedir, Entonces la plataforma adopta la paleta de colores y el logo configurado.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.2.1,Título: Login con mail y contraseña,Prioridad:,Estimación: 2,,,Nro: 2.1.2,Título: Ver detalles rápidos del pedido,Prioridad:,Estimación: 2,,,Nro: 2.2.1,Título: Crear ficha base del plato,Prioridad:,Estimación: 5,,,Nro: 2.2.1,Título: Configurar horarios comerciales,Prioridad:,Estimación: 5
+"Descripción:
+
+Como comensal registrado
+Quiero iniciar sesión con mis credenciales
+Para acceder a mis pedidos y preferencias.
+
+",,,,,,"Descripción:
+
+Como encargado de mostrador
+Quiero ver de un vistazo el número de orden, el nombre del comensal y los ítems del pedido
+Para poder armar la bolsa o bandeja rápidamente y sin errores.
+
+",,,,,,"Descripción:
+
+Como chef creador
+Quiero armar la ficha de un nuevo plato subiendo su foto, nombre, categoría y descripción
+Para presentar la nueva oferta culinaria de manera atractiva al comensal.",,,,,,"Descripción:
+
+Como administrador
+Quiero definir los días y horarios exactos de apertura y cierre
+Para evitar que entren pedidos de retiro cuando la cocina está cerrada.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal posee una cuenta activa en EasyEat, cuando ingresa su correo electrónico y contraseña correctos y presiona el botón ""Iniciar sesión"", entonces el sistema lo autentica exitosamente y lo redirige a la pantalla principal o catálogo de su establecimiento por defecto.
+-Dado que el comensal se encuentra en la pantalla de inicio de sesión, cuando ingresa un correo electrónico registrado pero una contraseña incorrecta y presiona ""Iniciar sesión"", entonces el sistema deniega el acceso y muestra un mensaje de error genérico de seguridad sin limpiar el campo del correo.
+-Dado que el comensal intenta ingresar a la plataforma, cuando ingresa un correo electrónico que no existe en la base de datos junto con cualquier contraseña y presiona ""Iniciar sesión"", entonces el sistema rechaza el intento y muestra el mismo mensaje de error genérico de seguridad para evitar exponer qué correos están registrados.
+-Dado que el comensal se encuentra en la vista de login, cuando omite completar el campo de correo electrónico, el de contraseña o ambos y presiona ""Iniciar sesión"", entonces el sistema no ejecuta la petición al servidor y resalta los campos vacíos indicando que son obligatorios.
+-Dado que el comensal se encuentra en la pantalla de login y no logra recordar su clave, cuando hace clic en el enlace de recuperación de contraseña, entonces el sistema interrumpe el flujo actual y lo redirige a la pantalla correspondiente para reestablecerla.
+-Dado que el comensal ingresa un correo y contraseña correctos, cuando el estado de su cuenta figura como inhabilitada o suspendida por un administrador, entonces el sistema bloquea el ingreso y despliega un aviso indicando que el perfil no se encuentra autorizado para operar.
+-Dado que el comensal posee una cuenta activa, cuando ingresa su correo electrónico con espacios en blanco al inicio o al final, o utilizando letras mayúsculas, pero escribe la contraseña con la distinción exacta de caracteres, entonces el sistema normaliza el correo internamente y procesa el inicio de sesión de manera exitosa.",,,,,,"Criterios de Aceptación:
+Dado que un pedido está en la lista de ""Listos"", Cuando el encargado mira la tarjeta, Entonces visualiza claramente el nombre, el código y el resumen de los platos que lo componen.",,,,,,"Criterios de Aceptación:
+Dado que el chef completa el formulario de ""Nuevo Plato"", Cuando guarda los datos, Entonces se genera un borrador del plato con su multimedia asociada.",,,,,,"Criterios de Aceptación:
+Dado que el restaurante cierra a las 16:00, Cuando son las 16:01, Entonces el sistema bloquea automáticamente la entrada de nuevas reservas para ese día.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.2.2,Título: Login con Google,Prioridad:,Estimación: 3,,,Nro: 2.2.1,Título: Anticipar pedidos en preparación,Prioridad:,Estimación: 3,,,Nro: 2.2.2,Título: Asignar receta (Listado de ingredientes),Prioridad:,Estimación: 8,,,Nro: 2.2.2,Título: Configurar capacidad máxima por franja horaria,Prioridad:,Estimación: 3
+"Descripción:
+
+Como comensal registrado
+Quiero iniciar sesión con Google
+Para acceder rápidamente a mi cuenta con un solo toque.
+
+",,,,,,"Descripción:
+
+Como encargado de mostrador
+Quiero visualizar una lista secundaria con los pedidos que están ""En preparación""
+Para ir anticipando el armado de servilletas, cubiertos o bebidas frías antes de que salga la comida caliente de la cocina.
+
+",,,,,,"Descripción:
+
+Como chef
+Quiero seleccionar qué ingredientes y en qué cantidades exactas conforman una porción de este plato
+Para que el sistema sepa exactamente cuánto descontar del stock general cada vez que se venda uno.",,,,,,"Descripción:
+
+Como administrador
+Quiero definir cuántos pedidos máximo (slots) podemos preparar y entregar en cada bloque de 15 minutos
+Para evitar la saturación de la cocina y garantizar las entregas a tiempo.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal posee una cuenta activa en EasyEat vinculada a Google, cuando presiona el botón ""Ingresar con Google"" y selecciona su cuenta, entonces el sistema lo autentica automáticamente sin requerir contraseña y lo redirige a la pantalla principal o catálogo de su establecimiento por defecto.
+-Dado que el comensal intenta iniciar sesión con Google, cuando selecciona una cuenta de correo que no se encuentra registrada previamente en la plataforma, entonces el sistema deniega el acceso y despliega un mensaje sugiriendo que se dirija a la sección de registro para crear un perfil nuevo.
+-Dado que el comensal inicia el flujo de inicio de sesión mediante SSO, cuando cierra la ventana emergente de autenticación de Google o rechaza el proceso en la plataforma del proveedor, entonces el sistema interrumpe la acción sin iniciar sesión y lo mantiene en la vista de login original.
+-Dado que el comensal posee una cuenta de Google válida, cuando se autentica exitosamente pero su perfil en EasyEat se encuentra inhabilitado o suspendido por un administrador, entonces el sistema bloquea el ingreso y despliega una alerta indicando que la cuenta no se encuentra autorizada para operar.
+-Dado que el comensal presiona ""Ingresar con Google"" para acceder a su cuenta, cuando el proveedor de identidad de Google sufre una caída de servicio, no responde o se pierde la conectividad, entonces el sistema muestra una notificación de error técnico y permite reintentar o utilizar credenciales manuales.
+-Dado que el comensal registró originalmente su cuenta utilizando correo y contraseña estándar, cuando intenta iniciar sesión con Google seleccionando la misma dirección de correo electrónico, entonces el sistema valida la titularidad mediante el proveedor, asocia el método de ingreso de forma transparente y le otorga acceso exitosamente.
+-Dado que el comensal cuenta con múltiples sesiones de Google iniciadas simultáneamente en su navegador web, cuando presiona ""Ingresar con Google"", entonces el sistema despliega el selector de cuentas nativo del proveedor para que el usuario indique explícitamente con qué perfil desea autenticarse en la plataforma.",,,,,,"Criterios de Aceptación:
+Dado que el Chef empieza a cocinar un pedido, Cuando el encargado mira su pantalla, Entonces ve ese pedido en una columna de ""Próximos a salir"".",,,,,,"Criterios de Aceptación:
+Dado que el chef está editando la receta del plato, Cuando agrega los ingredientes y cantidades, Entonces el sistema vincula esos insumos a la ficha técnica.",,,,,,"Criterios de Aceptación:
+Dado que la capacidad es de 50 pedidos en la franja de 12:00, Cuando el pedido 50 se aprueba, Entonces esa franja se marca como ""Agotada"" en el selector del comensal.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.3.1,Título: Recuperar contraseña por mail,Prioridad:,Estimación: 3,,,Nro: 2.2.2,Título: Alertas de espera prolongada en mostrador,Prioridad:,Estimación: 3,,,Nro: 2.2.3,Título: Configurar alérgenos y etiquetas dietarias,Prioridad:,Estimación: 3,,,Nro: 2.2.3,Título: Habilitar métodos de pago,Prioridad:,Estimación: 2
+"Descripción:
+
+Como comensal que olvidó su clave
+Quiero solicitar un blanqueo de contraseña por correo electrónico
+Para poder recuperar el acceso a mi cuenta.
+
+",,,,,,"Descripción:
+
+Como encargado de mostrador
+Quiero recibir una alerta visual si un pedido ""Listo"" lleva mucho tiempo esperando ser retirado
+Para poder llamar por el nombre al comensal o apartar la comida para que no estorbe en la zona de entrega.
+
+",,,,,,"Descripción:
+
+Como chef responsable
+Quiero marcar explícitamente si el plato contiene alérgenos (TACC, lácteos, frutos secos) y detalles dietarios
+Para brindar seguridad alimentaria y permitir que los filtros automáticos del comensal funcionen correctamente.",,,,,,"Descripción:
+
+Como administrador
+Quiero poder prender o apagar métodos de pago online (ej: MercadoPago, Stripe)
+Para adaptarme a las comisiones y cuentas bancarias de mi empresa.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal olvidó su clave y se encuentra en la pantalla de recuperación, cuando ingresa su correo electrónico registrado y solicita el restablecimiento, entonces el sistema envía un enlace seguro de un solo uso a su casilla y muestra un mensaje de confirmación.
+-Dado que el comensal intenta recuperar su contraseña, cuando ingresa un correo electrónico que no se encuentra registrado en el sistema, entonces el sistema muestra un mensaje de confirmación genérico para evitar exponer qué correos existen en la base de datos.
+-Dado que el comensal se encuentra en el formulario de recuperación, cuando ingresa un formato de correo electrónico inválido o deja el campo vacío, entonces el sistema bloquea el envío y resalta el error de validación correspondiente.
+-Dado que el comensal solicitó la recuperación de contraseña, cuando intenta generar una nueva solicitud de forma consecutiva sin dejar pasar el tiempo de gracia, entonces el sistema bloquea la acción temporalmente para evitar el envío masivo de correos no deseados.
+-Dado que el comensal recibe el correo de recuperación, cuando hace clic en el enlace seguro después de que el mismo haya excedido su tiempo máximo de validez, entonces el sistema rechaza el acceso y le indica que debe solicitar un nuevo enlace.
+-Dado que el comensal inicia el flujo de recuperación, cuando decide no avanzar y presiona la opción de volver atrás o cancelar, entonces el sistema aborta la operación sin enviar correos y lo redirige a la pantalla de inicio de sesión.",,,,,,"Criterios de Aceptación:
+Dado que un pedido lleva más de un tiempo prudencial en estado ""Listo"", Cuando pasa ese límite, Entonces la tarjeta del pedido parpadea en rojo o destaca un contador de demora.",,,,,,"Criterios de Aceptación:
+Dado que la ficha del plato está en edición, Cuando el chef selecciona las etiquetas de advertencia, Entonces se guardan como metadatos que luego el comensal verá como íconos visuales. (Nota de Scope: No genera dietas médicas personalizadas).",,,,,,"Criterios de Aceptación:
+Dado que el admin apaga un método, Cuando el comensal llega al checkout, Entonces esa opción ya no está disponible. (Nota de Scope: Todo es mediante pasarelas online por software, sin integración de hardware fiscal).",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.3.2,Título: Recuperar contraseña por SMS,Prioridad:,Estimación: 5,,,Nro: 3.1.1,Título: Escanear código QR del comensal,Prioridad:,Estimación: 5,,,Nro: 2.2.4,Título: Enviar a revisión del Administrador,Prioridad:,Estimación: 3,,,Nro: 3.1.1,Título: Alta de staff,Prioridad:,Estimación: 5
+"Descripción:
+
+Como comensal que no tiene acceso a su mail
+Quiero recibir un código de validación por SMS
+Para restablecer mi clave rápidamente desde mi teléfono.
+
+",,,,,,"Descripción:
+
+Como encargado de mostrador
+Quiero poder usar la cámara de mi dispositivo (tablet/PC/móvil) para escanear el código QR del dispositivo del comensal
+Para validar su identidad de forma rápida, segura y sin fricciones.
+
+",,,,,,"Descripción:
+
+Como chef
+Quiero enviar el borrador completo del plato al Administrador
+Para que él lo evalúe, le asigne un precio final (costeo) y lo publique en el menú oficial.",,,,,,"Descripción:
+
+Como administrador
+Quiero dar de alta nuevas cuentas con correo y contraseña generada para mi equipo
+Para que cada uno tenga su propio acceso sin compartir claves.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal tiene su número de teléfono celular verificado en su perfil, cuando elige la opción de recuperar por SMS e ingresa su número, entonces el sistema envía un mensaje de texto con un token de seguridad temporal de 6 dígitos.
+-Dado que el comensal intenta utilizar la recuperación por SMS, cuando ingresa un número de teléfono que no está asociado a ninguna cuenta o no ha sido previamente verificado, entonces el sistema deniega el envío y muestra un mensaje de error genérico.
+-Dado que el comensal recibe el token de validación por SMS, cuando lo ingresa correctamente en la plataforma dentro del tiempo límite, entonces el sistema valida su identidad y lo habilita a establecer una nueva contraseña.
+-Dado que el comensal se encuentra en la pantalla de ingreso del token, cuando tipea un código de validación incorrecto y presiona confirmar, entonces el sistema rechaza el ingreso y alerta sobre el error descontando un intento disponible.
+-Dado que el comensal intenta adivinar el código de recuperación, cuando supera la cantidad máxima de intentos fallidos permitidos, entonces el sistema bloquea el flujo temporalmente y requiere reiniciar el proceso de recuperación desde cero.
+-Dado que el comensal recibe el token por SMS, cuando intenta utilizarlo luego de que haya transcurrido el tiempo máximo de validez estipulado, entonces el sistema invalida el código y le exige solicitar uno nuevo.
+-Dado que el comensal no recibe el mensaje de texto original, cuando presiona la opción de reenviar código habiendo superado el tiempo de espera mínimo, entonces el sistema emite un nuevo token invalidando automáticamente cualquier código anterior.",,,,,,"Criterios de Aceptación:
+Dado que la vista de escáner está abierta, Cuando el encargado apunta al QR de retiro del comensal, Entonces el sistema lo decodifica y localiza la orden asociada instantáneamente.",,,,,,"Criterios de Aceptación:
+Dado que el plato tiene foto, receta y alérgenos, Cuando el chef toca ""Enviar a Revisión"", Entonces el estado del plato cambia a ""Pendiente de Precio"" y le envía una alerta interna al Admin.",,,,,,"Criterios de Aceptación:
+Dado que se contrata personal, Cuando el admin crea la cuenta, Entonces el empleado ya puede loguearse.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.4.1,Título: Editar datos personales,Prioridad:,Estimación: 2,,,Nro: 3.2.1,Título: Ingresar código numérico manualmente,Prioridad:,Estimación: 2,,,Nro: 2.2.5,Título: Pausa manual de platos,Prioridad:,Estimación: 2,,,Nro: 3.1.2,Título: Asignación de Roles (RBAC),Prioridad:,Estimación: 5
+"Descripción:
+
+Como comensal
+Quiero modificar mi nombre, apellido y correo electrónico
+Para mantener mi información de contacto actualizada.
+
+",,,,,,"Descripción:
+
+Como encargado de mostrador
+Quiero poder ingresar el código de la orden manualmente en un buscador
+Para poder entregar el pedido en caso de que la cámara del mostrador falle o el dispositivo del comensal se haya quedado sin batería.
+
+",,,,,,"Descripción:
+
+Como chef
+Quiero poder pausar o inhabilitar manualmente un plato del catálogo con un botón tipo toggle
+Para ocultarlo del menú temporalmente de forma arbitraria (ej: se quemó la plancha o hay demora excesiva), sin depender del stock.",,,,,,"Descripción:
+
+Como administrador
+Quiero asignar a cada cuenta un rol específico (Chef o Encargado de Mostrador)
+Para restringir el acceso y que solo vean la pantalla que les corresponde usar (KDS o Despacho).
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal se encuentra en la sección de edición de perfil, cuando modifica su nombre o apellido con datos válidos y guarda los cambios, entonces el sistema actualiza la información instantáneamente sin afectar la consistencia de su historial de pedidos previos.
+-Dado que el comensal intenta modificar sus datos personales, cuando deja en blanco los campos obligatorios de nombre o apellido y presiona guardar, entonces el sistema impide la actualización y resalta los campos faltantes.
+-Dado que el comensal decide cambiar su dirección de correo electrónico, cuando ingresa una nueva casilla que ya pertenece a otro usuario registrado en el sistema multi-tenant, entonces el sistema bloquea la acción y advierte que el correo no se encuentra disponible.
+-Dado que el comensal actualiza su dirección de correo electrónico por una nueva y válida, cuando confirma la modificación, entonces el sistema envía un enlace de verificación a la nueva casilla manteniendo el correo anterior activo para el login hasta que se confirme el cambio.
+-Dado que el comensal se encuentra editando sus datos personales, cuando ingresa caracteres especiales no permitidos o números en los campos de nombre y apellido, entonces el sistema muestra un mensaje de error de formato y no guarda los cambios.
+-Dado que el comensal realiza modificaciones en el formulario de datos personales, cuando presiona el botón de cancelar o abandona la pantalla sin guardar, entonces el sistema descarta los datos ingresados y mantiene intacta la información original de la base de datos.",,,,,,"Criterios de Aceptación:
+Dado que el QR no puede ser leído, Cuando el encargado tipea el código alfanumérico en la barra de búsqueda, Entonces el sistema encuentra el pedido correspondiente para su validación.",,,,,,"Criterios de Aceptación:
+Dado que un plato está activo en el menú, Cuando el chef apaga el toggle de visibilidad, Entonces el plato desaparece instantáneamente de la vista del comensal.",,,,,,"Criterios de Aceptación:
+Dado que se asignó el rol ""Chef"", Cuando el usuario inicia sesión, Entonces solo tiene acceso a la vista de cocina y no a la de métricas financieras.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.4.2,Título: Editar datos demográficos,Prioridad:,Estimación: 5,,,Nro: 3.3.1,Título: Visualizar match exitoso,Prioridad:,Estimación: 2,,,Nro: 3.1.1,Título: Visualización en tiempo real,Prioridad:,Estimación: 8,,,Nro: 3.1.3,Título: Baja de exempleados,Prioridad:,Estimación: 3
+"Descripción:
+
+Como comensal
+Quiero agregar una foto de perfil, indicar mi edad, género y domicilio
+Para personalizar mi experiencia y agilizar futuros pedidos a domicilio.
+
+",,,,,,"Descripción:
+
+Como encargado de mostrador
+Quiero ver una confirmación verde y prominente en pantalla indicando que el código escaneado coincide con un pedido listo
+Para estar 100% seguro de que le estoy entregando la comida correcta a la persona correcta.
+
+",,,,,,"Descripción:
+
+Como chef trabajando en la línea
+Quiero ver aparecer los nuevos tickets en la pantalla del KDS sin necesidad de refrescar la página
+Para no retrasarme nunca con el flujo de trabajo.",,,,,,"Descripción:
+
+Como administrador
+Quiero suspender o eliminar cuentas del personal que ya no trabaja más en el local
+Para mantener la seguridad del sistema y que no puedan acceder desde afuera.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal se encuentra en la edición de datos demográficos, cuando sube una imagen de perfil en formato válido menor a 5MB y guarda los cambios, entonces el sistema actualiza su avatar y la nueva foto se visualiza en la barra de navegación superior de la plataforma web.
+-Dado que el comensal intenta personalizar su perfil, cuando intenta cargar una imagen que excede el límite de tamaño de 5MB, entonces el sistema rechaza el archivo y despliega un mensaje indicando el peso máximo permitido.
+-Dado que el comensal selecciona un archivo para su foto de perfil, cuando el formato del archivo no es una imagen válida admitida por la plataforma, entonces el sistema bloquea la subida y especifica los formatos soportados.
+-Dado que el comensal completa su edad en el formulario demográfico, cuando ingresa un valor numérico negativo, irreal o caracteres alfanuméricos, entonces el sistema invalida el campo solicitando una edad coherente.
+-Dado que el comensal posee una foto de perfil previamente configurada, cuando selecciona la opción de eliminar imagen y confirma la acción, entonces el sistema remueve la foto personalizada de los servidores y restablece el avatar por defecto del sistema.
+-Dado que el comensal carga su domicilio, cuando guarda los cambios exitosamente, entonces el sistema almacena la ubicación únicamente como dato de contacto de su perfil sin realizar cálculos de rutas de envío ni integraciones con servicios de delivery externo.",,,,,,"Criterios de Aceptación:
+Dado que el QR o código ingresado es válido y corresponde a un pedido ""Listo"", Cuando el backend procesa la solicitud, Entonces aparece un mensaje de éxito (Match) mostrando los detalles finales del pedido a entregar.",,,,,,"Criterios de Aceptación:
+Dado que el KDS está abierto, Cuando un comensal confirma el pago de una orden, Entonces la tarjeta de la orden (Comanda) entra instantáneamente a la pantalla de cocina (vía WebSockets).",,,,,,"Criterios de Aceptación:
+Dado que el admin inactiva una cuenta, Cuando ese usuario intenta entrar, Entonces el sistema rechaza el login. (Nota de Scope: No hace cálculo de sueldos o aguinaldos, solo control de acceso a la plataforma).",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.4.3,Título: Configurar restricciones alimentarias,Prioridad:,Estimación: 5,,,Nro: 3.3.2,Título: Marcar pedido como Entregado,Prioridad:,Estimación: 3,,,Nro: 3.1.2,Título: Priorización automática de la cola,Prioridad:,Estimación: 3,,,Nro: 4.1.1,"Título: Crear, editar y eliminar ingredientes del inventario",Prioridad:,Estimación: 3
+"Descripción:
+
+Como comensal con requerimientos especiales (ej. celíaco, vegano)
+Quiero marcar mis restricciones y preferencias de dieta en mi perfil
+Para que el catálogo filtre o me advierta automáticamente sobre los platos que no puedo consumir.
+
+",,,,,,"Descripción:
+
+Como encargado de mostrador
+Quiero que, tras la confirmación, el pedido se marque automáticamente como ""Entregado"" (o tener un botón explícito para hacerlo)
+Para sacarlo definitivamente de mi cola activa y que pase al historial de ventas.
+
+",,,,,,"Descripción:
+
+Como chef
+Quiero que el sistema organice automáticamente las comandas basándose primero en la franja horaria de retiro más próxima y luego en el orden de llegada
+Para cocinar primero lo más urgente sin tener que calcular tiempos mentalmente.",,,,,,"Descripción:
+
+Como administrador 
+Quiero crear, editar y eliminar ingredientes del inventario base p
+Para mantener el catálogo de insumos actualizado y disponible para que el chef arme sus recetas.
+",,,
+"Criterios de Aceptación:
+-Dado que el comensal ingresa a la configuración de su perfil, cuando selecciona una o múltiples restricciones alimentarias predefinidas y guarda los cambios, entonces el sistema actualiza sus preferencias de manera inmediata sin afectar su historial de pedidos.
+-Dado que el comensal configuró la restricción ""Sin TACC"" u otra equivalente en su cuenta, cuando ingresa al catálogo general de un establecimiento, entonces el sistema oculta por defecto los platos cuyos ingredientes infrinjan dicha restricción.
+-Dado que el comensal posee restricciones alimentarias activas en su perfil, cuando intenta agregar al carrito un plato que contiene alérgenos incompatibles, entonces el sistema despliega una alerta preventiva consultando si asume el riesgo y desea continuar con el agregado.
+-Dado que el sistema actualiza el stock por receta, cuando un cocinero sustituye un ingrediente agotado por una alternativa que contiene un alérgeno, entonces el sistema actualiza automáticamente el catálogo e impacta la advertencia en rojo para los comensales con dicha restricción.
+-Dado que el comensal desea eliminar una restricción previamente configurada, cuando desmarca la opción en su perfil y guarda los cambios, entonces el sistema impacta la actualización en tiempo real volviendo a mostrar los platos del catálogo sin filtros ni advertencias asociadas a esa dieta.
+-Dado que el comensal intenta guardar sus cambios en el formulario de restricciones, cuando ocurre una pérdida de conexión con el servidor, entonces el sistema no aplica las modificaciones localmente y muestra un aviso de error para evitar que el usuario asuma que su dieta fue registrada.",,,,,,"Criterios de Aceptación:
+Dado que se validó la entrega exitosamente, Cuando el encargado confirma el retiro de la bandeja, Entonces el pedido desaparece de la pantalla del mostrador y su estado en la base de datos pasa a ""Entregado"".",,,,,,"Criterios de Aceptación:
+Dado que hay múltiples pedidos pendientes, Cuando la vista se renderiza, Entonces se ordenan visualmente dando máxima prioridad a la franja horaria crítica reservada por el usuario.",,,,,,"Criterios de Aceptación:
+Dado que el admin elimina o inactiva un ingrediente, Cuando el chef intenta armar una nueva receta, Entonces ese insumo ya no aparece en el catálogo de selección. (Nota de Scope: No incluye trazabilidad de lotes, marcas ni fechas de vencimiento, solo el registro del nombre y unidad de medida para el catálogo base).",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.5.1,Título: Buscar establecimiento manualmente,Prioridad:,Estimación: 5,,,,,,,,,Nro: 3.2.1,Título: Leer la comanda,Prioridad:,Estimación: 2,,,Nro: 4.1.2,Título:  Ingresar y actualizar manualmente las cantidades de los ingredientes ,Prioridad:,Estimación: 3
+"Descripción:
+
+Como comensal
+Quiero usar un buscador para encontrar un restaurante por nombre o cercanía
+Para poder ver el menú específico de ese local.
+
+",,,,,,,,,,,,"Descripción:
+
+Como chef
+Quiero leer claramente los platos requeridos y, sobre todo, las modificaciones u observaciones breves ingresadas en el pedido (ej: ""Sin sal"")
+Para preparar la comida respetando los pedidos especiales.",,,,,,"Descripción:
+
+Como administrador 
+Quiero ingresar y actualizar manualmente el stock inicial (cantidades) de los ingredientes p
+Para reflejar la realidad de la alacena y permitir que el sistema descuente el stock automáticamente con cada venta.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal se encuentra en el buscador principal de la plataforma web, cuando tipea al menos tres caracteres correspondientes al nombre de un establecimiento, entonces el sistema despliega una lista de autocompletado con las sucursales que coinciden con la búsqueda.
+-Dado que el comensal visualiza los resultados en el buscador, cuando hace clic sobre uno de los establecimientos listados, entonces el sistema cambia el contexto multi-tenant y lo redirige al catálogo con el stock vivo de ese local específico.
+-Dado que el comensal realiza una búsqueda ingresando el nombre de un restaurante o parámetros de cercanía, cuando no existe ninguna coincidencia en la base de datos, entonces el sistema muestra un mensaje indicando que no se encontraron resultados y sugiere modificar los términos.
+-Dado que el comensal selecciona un comedor desde el autocompletado del buscador, cuando dicho establecimiento se encuentra pausado o inhabilitado manualmente por el administrador, entonces el sistema muestra un aviso de inactividad temporal y bloquea la creación de nuevos pedidos.
+-Dado que el comensal se encuentra navegando en el menú de un establecimiento con platos agregados a su carrito, cuando utiliza el buscador para ingresar a un comedor distinto, entonces el sistema emite una alerta indicando que el carrito en curso se vaciará al cambiar de local.
+-Dado que el comensal utiliza la barra de búsqueda, cuando omite ingresar caracteres o tipea únicamente espacios en blanco y presiona enter, entonces el sistema no ejecuta la consulta y mantiene la pantalla en su estado actual.",,,,,,,,,,,,"Criterios de Aceptación:
+Dado que la tarjeta del pedido está en pantalla, Cuando el chef la revisa, Entonces los platos y cualquier texto extra de ""observación"" figuran en un tamaño legible.",,,,,,"Criterios de Aceptación:
+Dado que el admin actualiza el stock de un ingrediente, Cuando ingresa un nuevo pedido, Entonces el sistema toma ese nuevo número como base para realizar el descuento automático. (Nota de Scope: No emite órdenes de compra a proveedores ni calcula mermas por caducidad, solo permite el ajuste manual del valor numérico disponible).",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.5.2,Título: Guardar en Favoritos,Prioridad:,Estimación: 2,,,,,,,,,Nro: 4.1.1,Título: Empezar a cocinar,Prioridad:,Estimación: 3,,,Nro: 4.1.3,Título:  Definir el umbral de stock Critico ,Prioridad:,Estimación: 2
+"Descripción:
+
+Como comensal frecuente
+Quiero marcar ciertos locales como favoritos
+Para no tener que buscarlos cada vez que ingreso a la plataforma web.
+
+",,,,,,,,,,,,"Descripción:
+
+Como chef
+Quiero tocar un botón para marcar que un pedido pasó a estado ""En preparación""
+Para que la orden quede fijada y el mostrador sepa que ya empecé a trabajar en ella.",,,,,,"Descripción:
+
+Como administrador
+Quiero definir un nivel de ""stock mínimo"" individual para cada ingrediente
+Para que el sistema tenga un parámetro de cuándo debe advertirme que es necesario reponer mercadería.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal se encuentra autenticado y visualizando el perfil o el catálogo de un local, cuando toca el ícono de favoritos, entonces el sistema marca visualmente el establecimiento y lo añade a su base de datos personal de accesos rápidos.
+-Dado que el comensal ya tiene un establecimiento determinado guardado en su lista de favoritos, cuando toca nuevamente el ícono correspondiente sobre dicho local, entonces el sistema lo desmarca y lo remueve inmediatamente de la lista.
+-Dado que un usuario no autenticado navega por la URL pública de un establecimiento, cuando intenta presionar el ícono de favoritos, entonces el sistema interrumpe la acción y despliega un modal invitándolo a iniciar sesión o registrarse para guardar preferencias.
+-Dado que el comensal intenta guardar un establecimiento en favoritos, cuando el sistema experimenta un fallo de conectividad o error en la base de datos, entonces el sistema revierte la animación del ícono y notifica que no fue posible guardar el local en ese momento.
+-Dado que el comensal tiene un local agendado en sus favoritos, cuando el responsable del comedor da de baja definitiva el establecimiento del sistema SaaS, entonces la plataforma lo elimina automáticamente y de forma silenciosa de la lista de favoritos del usuario.",,,,,,,,,,,,"Criterios de Aceptación:
+Dado que la orden está ""Nueva"", Cuando el chef toca el botón de iniciar, Entonces el estado en la base de datos cambia y el cronómetro de preparación (Count-Up visualizado en el UI mockup previo) se inicia.",,,,,,"Criterios de Aceptación:
+Dado que el admin crea o edita un ingrediente en el inventario, Cuando ingresa un valor numérico en el campo ""Stock mínimo/crítico"", Entonces el sistema guarda este límite como referencia para disparar futuras alertas. (Nota de Scope: El valor se configura de manera individual por insumo, ya que la tolerancia de urgencia varía entre un producto y otro).",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.5.3,Título: Selección rápida desde Favoritos,Prioridad:,Estimación: 3,,,,,,,,,Nro: 4.1.2,Título: Check incremental por ítem (Tap-to-Toggle),Prioridad:,Estimación: 5,,,Nro: 4.1.4,Título: Visualizar alertas de reabastecimiento en estado de umbral Critico ,Prioridad:,Estimación: 3
+"Descripción:
+
+Como comensal frecuente
+Quiero ver mi lista de restaurantes favoritos apenas ingreso a la plataforma web
+Para ingresar al menú de mi local preferido con un solo toque.
+
+",,,,,,,,,,,,"Descripción:
+
+Como chef en un pedido grande
+Quiero ir tachando o marcando individualmente cada plato dentro de una misma comanda a medida que los voy terminando
+Para llevar un control visual exacto de qué me falta y evitar olvidos (como pactamos en el análisis de UX/UI).",,,,,,"Descripción:
+
+Como administrador
+Quiero visualizar una alerta o indicador en el sistema cuando un ingrediente caiga por debajo de su umbral mínimo
+Para identificar rápidamente qué insumos debo comprar a los proveedores sin tener que revisar la lista completa manualmente.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal posee al menos un establecimiento configurado en su lista de favoritos, cuando inicia sesión exitosamente, entonces la pantalla principal de la plataforma le muestra un carrusel superior con las tarjetas de acceso rápido a sus locales preferidos.
+-Dado que el comensal visualiza su carrusel de favoritos, cuando hace clic sobre la tarjeta de uno de los establecimientos, entonces el sistema lo redirige instantáneamente al catálogo vivo de ese restaurante.
+-Dado que un comensal nuevo ingresa a la plataforma web por primera vez o no tiene locales marcados con el ícono de corazón, cuando carga la vista principal, entonces el sistema oculta la sección de favoritos y despliega el buscador general junto a sugerencias predeterminadas.
+-Dado que el comensal navega por su lista de favoritos en la página principal, cuando decide gestionar sus accesos y desmarca el ícono de corazón directamente desde la tarjeta del carrusel, entonces el sistema actualiza la vista en caliente eliminando ese establecimiento de la sección.",,,,,,,,,,,,"Criterios de Aceptación:
+Dado que la orden está ""En preparación"", Cuando el chef toca sobre un ítem específico de la lista, Entonces este se marca visualmente (tachado/grisado).",,,,,,"Criterios de Aceptación:
+Dado que la cantidad disponible de un insumo cruza la barrera de su stock crítico (ya sea por una venta o ajuste manual), Cuando el admin ingresa al módulo de inventario, Entonces el sistema resalta ese ingrediente (ej. con un ícono rojo o etiqueta de ""Falta de Stock""). (Nota de Scope: La alerta es únicamente visual dentro del panel Back-Office; no envía correos a proveedores ni automatiza órdenes de compra).",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 1.5.4,Título: Ingreso directo por QR,Prioridad:,Estimación: 3,,,,,,,,,Nro: 4.1.3,Título: Finalizar el pedido por completo,Prioridad:,Estimación: 3,,,Nro: 5.1.1,Título: Ver platos pendientes,Prioridad:,Estimación: 3
+"Descripción:
+
+Como comensal dentro del local
+Quiero escanear el QR físico del establecimiento
+Para saltearme la pantalla de búsqueda y entrar directo al catálogo correcto.
+
+",,,,,,,,,,,,"Descripción:
+
+Como chef
+Quiero marcar todo el ticket como ""Listo"" presionando un botón principal
+Para sacarlo de mi KDS y avisarle al mostrador que vengan a buscar las bandejas.",,,,,,"Descripción:
+
+Como administrador
+Quiero ver una bandeja de entrada con todos los platos nuevos que el Chef me mandó a revisar
+Para no perder el rastro de la nueva oferta que hay que lanzar al público.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal se encuentra físicamente en el local y tiene sesión iniciada en su dispositivo, cuando escanea el código QR del establecimiento con su cámara, entonces el sistema lo redirige automáticamente al catálogo de ese restaurante salteando la pantalla de búsqueda.
+-Dado que un usuario sin cuenta activa escanea el código QR físico del local, cuando es redirigido a la plataforma, entonces el sistema le solicita iniciar sesión o registrarse reteniendo el identificador del local para asociarlo al finalizar el flujo.
+-Dado que el comensal escanea un código QR adulterado o cuyo identificador no existe en la base de datos, cuando la plataforma intenta procesar la URL, entonces el sistema despliega una pantalla de error indicando que el restaurante no fue encontrado.
+-Dado que el comensal escanea el código QR de un establecimiento registrado, cuando el restaurante se encuentra temporalmente pausado o inhabilitado por el administrador, entonces el sistema muestra el catálogo en modo de solo lectura con un aviso de inactividad temporal.
+-Dado que el comensal ya posee un carrito de compras activo con productos de otro local, cuando escanea el QR de un nuevo establecimiento, entonces el sistema emite una advertencia indicando que el carrito anterior se vaciará al ingresar al nuevo catálogo.
+-Dado que el comensal escanea el código QR para ingresar directamente al menú, cuando el local se encuentra fuera de su horario operativo, entonces el sistema permite visualizar los platos pero deshabilita la opción de agregar al carrito para retiro inmediato.",,,,,,,,,,,,"Criterios de Aceptación:
+Dado que todos los ítems individuales están tachados, Cuando el chef toca ""LISTO"", Entonces la tarjeta desaparece del KDS del chef y pasa al flujo del Encargado. (Validación: El botón de Listo solo se habilita si todos los ítems fueron checkeados).",,,,,,"Criterios de Aceptación:
+Dado que el Chef toca ""Enviar a revisión"", Cuando el admin abre el panel, Entonces ve el borrador en la pestaña ""Pendientes"".",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 2.1.1,Título: Crear pedido grupal,Prioridad:,Estimación: 8,,,,,,,,,Nro: 4.1.4,Título: Cronómetro de preparación (Count-Up),Prioridad:,Estimación: 3,,,Nro: 5.1.2,Título: Auditoría de receta y food cost,Prioridad:,Estimación: 2
+"Descripción:
+
+Como organizador de una comida
+Quiero iniciar un pedido colaborativo y obtener un link/código
+Para compartirlo con mis colegas y que cada uno elija su comida desde su propio dispositivo.
+
+",,,,,,,,,,,,"Descripción:
+
+Como chef trabajando en la línea
+Quiero ver un contador de tiempo que avanza (Count-Up) en cada tarjeta de pedido ""En preparación""
+Para saber exactamente cuántos minutos y segundos lleva ese pedido ocupando lugar en la cocina.",,,,,,"Descripción:
+
+Como administrador financiero
+Quiero leer los ingredientes que el Chef cargó en el plato y analizar su impacto
+Para entender qué rentabilidad me va a dejar.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el organizador se encuentra en el catálogo del restaurante seleccionado, cuando elige la opción de crear un pedido grupal y confirma la acción, entonces el sistema genera una sala temporal asignándole un código alfanumérico único y habilita un botón para compartir la invitación.
+-Dado que el organizador genera un pedido colaborativo desde un dispositivo móvil, cuando presiona el botón de compartir invitación, entonces el sistema acciona la funcionalidad nativa de compartir abriendo WhatsApp u otras aplicaciones con un texto predefinido y el enlace directo.
+-Dado que el organizador decide no continuar con la compra colaborativa, cuando selecciona la opción de cancelar o eliminar sala antes de procesar el pago, entonces el sistema disuelve el pedido grupal y expulsa a los invitados devolviéndolos a la pantalla de inicio.
+-Dado que el organizador crea una sala temporal para el pedido grupal, cuando la misma permanece inactiva sin modificaciones ni pagos por un tiempo máximo predefinido, entonces el sistema la cierra automáticamente para evitar retener el stock de los ingredientes en la cocina.
+-Dado que el organizador ya cuenta con platos agregados en su carrito individual, cuando decide crear un pedido grupal, entonces el sistema le consulta si desea transferir sus productos a la nueva sala o comenzar un carrito colaborativo desde cero.",,,,,,,,,,,,"Criterios de Aceptación:
+Dado que un pedido cambia a ""En preparación"", Cuando el estado impacta, Entonces se inicia un reloj visible que cuenta el tiempo transcurrido desde ese momento exacto.",,,,,,"Criterios de Aceptación:
+Dado que el admin abre un plato pendiente, Cuando evalúa la receta, Entonces puede visualizar los insumos y etiquetas requeridas.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 2.2.1,Título: Unirse a un pedido grupal,Prioridad:,Estimación: 3,,,,,,,,,Nro: 4.1.5,Título: Alerta visual de demora en KDS,Prioridad:,Estimación: 3,,,Nro: 5.2.1,Título: Costeo (Fijar PVP),Prioridad:,Estimación: 3
+"Descripción:
+
+Como invitado
+Quiero ingresar el código que me pasaron o tocar el link de invitación
+Para sumarme a la orden sin tener que crear un pedido paralelo.
+
+",,,,,,,,,,,,"Descripción:
+
+Como chef
+Quiero que la tarjeta del pedido cambie visualmente (ej: fondo amarillo o borde naranja) si pasa demasiado tiempo
+Para darme cuenta de inmediato qué pedidos se me están atrasando.",,,,,,"Descripción:
+
+Como administrador
+Quiero ingresarle un precio de venta al público (PVP) al plato antes de publicarlo
+Para asegurar el margen de ganancia de la empresa.
+",,,
+"Criterios de Aceptación:
+
+-Dado que un invitado recibe el enlace directo de un pedido colaborativo abierto, cuando hace clic en el link teniendo la sesión iniciada, entonces el sistema lo asocia automáticamente a la sala y lo redirige al catálogo del restaurante correspondiente.
+-Dado que el invitado prefiere no usar el enlace directo, cuando ingresa manualmente el código alfanumérico válido en la sección de unirse a sala, entonces el sistema lo incorpora al pedido grupal del organizador.
+-Dado que un invitado intenta unirse a una sala, cuando ingresa un código alfanumérico que es incorrecto o que pertenece a una sala ya eliminada, entonces el sistema rechaza la solicitud mostrando un mensaje de error por código inválido o expirado.
+-Dado que el invitado hace clic en el link de invitación, cuando el organizador ya procedió al pago o cerró la sala, entonces el sistema le impide el ingreso y muestra una notificación indicando que el pedido grupal ya no admite modificaciones.
+-Dado que una persona recibe la invitación pero no posee cuenta en EasyEat, cuando hace clic en el link, entonces el sistema la redirige a la pantalla de registro y, una vez completado el alta, la incorpora automáticamente a la sala colaborativa.
+-Dado que un invitado intenta unirse a un nuevo pedido grupal, cuando ya forma parte de otra sala activa en ese momento, entonces el sistema emite una alerta solicitando confirmación para abandonar la sala anterior antes de ingresar a la nueva.",,,,,,,,,,,,"Criterios de Aceptación:
+Dado que el tiempo estándar global de preparación está configurado (ej: 15 min), Cuando el cronómetro (Count-Up) de un pedido supera ese límite, Entonces la interfaz de la tarjeta cambia su color normal a color amarillo.",,,,,,"Criterios de Aceptación:
+Dado que el admin define un valor, Cuando lo guarda, Entonces el precio queda fijado en la ficha.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 2.3.1,Título: Monitorear miembros de la orden,Prioridad:,Estimación: 5,,,,,,,,,Nro: 4.2.1,Título: Gatillar alerta al comensal,Prioridad:,Estimación: 3,,,Nro: 5.2.2,Título: Aprobar y Publicar,Prioridad:,Estimación: 2
+"Descripción:
+
+Como organizador
+Quiero ver una pantalla que me muestre qué colegas ya entraron a la sala y qué platos agregaron
+Para saber cuándo todos terminaron de elegir y poder proceder al pago.
+
+",,,,,,,,,,,,"Descripción:
+
+Como chef
+Quiero que al marcar un pedido como ""Listo"", el sistema le actualice por su cuenta al comensal el estado
+Para no tener que llamarlo a los gritos ni perder tiempo enviando mensajes manuales.",,,,,,"Descripción:
+
+Como administrador
+Quiero tocar un botón para ""Aprobar"" el plato
+Para que impacte inmediatamente en el catálogo visible de los comensales.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el organizador se encuentra visualizando la pantalla del carrito grupal, cuando los invitados agregan o modifican las cantidades de sus platos, entonces el sistema actualiza la lista de productos y el subtotal en tiempo real mediante WebSockets sin necesidad de recargar la página.
+-Dado que un invitado se une a la sala colaborativa mediante el código o enlace, cuando ingresa exitosamente pero aún no selecciona productos, entonces el organizador visualiza su nombre en la lista bajo un estado indicativo de que se encuentra eligiendo.
+-Dado que el organizador monitorea el avance del pedido, cuando un invitado decide abandonar la sala o elimina todos sus platos, entonces el sistema refleja inmediatamente esa ausencia retirando los productos correspondientes del carrito centralizado.
+-Dado que el organizador se encuentra monitoreando la orden grupal, cuando sufre un microcorte de internet o pierde la conexión, entonces el sistema muestra un indicador de reconexión y al recuperar la red obtiene el estado más reciente de la sala.
+-Dado que el organizador visualiza que todos los miembros finalizaron su selección, cuando presiona el botón para proceder al pago, entonces el sistema bloquea temporalmente la sala impidiendo que los invitados realicen nuevas modificaciones mientras se procesa la transacción.
+-Dado que el organizador revisa el detalle del carrito grupal, cuando un plato seleccionado por un invitado agota su stock real en la cocina debido a un pedido concurrente externo, entonces el sistema marca ese ítem en rojo notificando al organizador sobre la falta de disponibilidad.",,,,,,,,,,,,"Criterios de Aceptación:
+Dado que el chef completa el ticket, Cuando la orden pasa a estado Listo, Entonces el backend actualiza el estado del pedido y en el dispositivo del cliente se actualiza automaticamente a ""Listo"".",,,,,,"Criterios de Aceptación:
+Dado que el plato tiene precio, Cuando se aprueba, Entonces cambia de estado a ""Publicado"" y los usuarios pueden empezar a comprarlo.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 3.1.1,Título: Visualizar el menú planificado de la semana,Prioridad:,Estimación: 5,,,,,,,,,Nro: 4.2.2,Título: Sincronización con Mostrador (Próximos),Prioridad:,Estimación: 3,,,Nro: 5.2.3,Título: Rechazar al Chef con feedback,Prioridad:,Estimación: 3
+"Descripción:
+
+Como comensal recurrente
+Quiero ver una grilla con los platos que ofrece el restaurante de Lunes a Viernes
+Para poder planificar mis almuerzos laborales con anticipación.
+
+",,,,,,,,,,,,"Descripción:
+
+Como chef
+Quiero que el mostrador se entere automáticamente cuando empiezo a cocinar una orden
+Para que el Encargado vaya adelantando el armado de servilletas y bebidas frías.",,,,,,"Descripción:
+
+Como administrador
+Quiero rechazar un plato devolviéndolo al Chef con un comentario de texto
+Para pedirle correcciones (ej: ""Ingrediente muy caro, cambialo por otro"").
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal recurrente ingresa a la pestaña de planificación semanal, cuando el restaurante tiene habilitada esta modalidad, entonces el sistema despliega un calendario interactivo mostrando los platos planificados y disponibles de lunes a viernes.
+-Dado que el comensal visualiza el calendario semanal, cuando un día específico corresponde a un feriado o el comedor no prestará servicio, entonces el sistema deshabilita esa fecha marcándola visualmente como sin servicio y bloquea la selección de platos.
+-Dado que el comensal revisa la grilla de platos planificados de la semana en curso, cuando intenta seleccionar un menú para un día que ya transcurrió en el calendario, entonces el sistema muestra esa columna en modo de solo lectura impidiendo cargar pedidos retroactivos.
+-Dado que el administrador del comedor aún no cargó la oferta gastronómica para la semana próxima, cuando el comensal avanza en el calendario interactivo hacia esas fechas, entonces el sistema despliega un mensaje indicando que el menú aún no se encuentra disponible.
+-Dado que el comensal tiene configuradas restricciones alimentarias en su perfil, cuando visualiza la grilla de platos semanales, entonces el sistema aplica los filtros vivos automáticamente resaltando u ocultando las viandas que no son aptas para su consumo.
+-Dado que el comensal navega por las opciones del calendario semanal, cuando el stock proyectado de un plato específico se agota debido a la cantidad de reservas previas, entonces el sistema marca la vianda como agotada y no permite sumarla a la planificación del usuario.",,,,,,,,,,,,"Criterios de Aceptación:
+Dado que paso la orden a ""En preparación"", Cuando el estado impacta, Entonces aparece en la columna de ""Próximos a salir"" de la vista del Encargado.",,,,,,"Criterios de Aceptación:
+Dado que el plato necesita ajustes, Cuando el admin lo rechaza y escribe la nota, Entonces el plato vuelve al estado de ""Borrador"" en el panel del Chef.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 3.1.2,Título: Comprar viandas múltiples,Prioridad:,Estimación: 8,,,,,,,,,Nro: 4.2.3,Título: Sincronización con Mostrador (Listos),Prioridad:,Estimación: 2,,,Nro: 5.3.1,Título: Configurar promociones dinámicas,Prioridad:,Estimación: 8
+"Descripción:
+
+Como comensal recurrente
+Quiero seleccionar platos para distintos días de la semana y meterlos todos en una misma orden
+Para pagar todo junto en una sola transacción y despreocuparme el resto de la semana.
+
+",,,,,,,,,,,,"Descripción:
+
+Como chef
+Quiero que la orden se traslade directamente al mostrador cuando la termino
+Para liberar mi línea de montaje físico y digital.",,,,,,"Descripción:
+
+Como administrador
+Quiero configurar las reglas y porcentajes de descuento (ej: 10% off por suscripción semanal)
+Para incentivar la venta por volumen y asegurar la retención de comensales.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal seleccionó comidas para diferentes días de la semana hábil, cuando ingresa al carrito de compras, entonces el sistema agrupa las viandas por fecha y consolida el cobro en una única transacción financiera.
+-Dado que el comensal intenta armar su pedido semanal, cuando selecciona platos para un día cuya franja horaria ya alcanzó el límite máximo de pedidos simultáneos en cocina, entonces el sistema le advierte que debe elegir otro horario u otro día.
+-Dado que el comensal planifica sus viandas semanales, cuando intenta agregar un plato para un día feriado o no laborable del comedor, entonces el sistema bloquea la acción indicando que no hay servicio disponible para esa fecha.
+-Dado que el comensal agregó viandas para cinco días distintos, cuando decide eliminar el plato del día martes directamente desde el carrito, entonces el sistema actualiza el monto total a pagar de forma instantánea manteniendo el resto de la planificación intacta.
+-Dado que el comensal se encuentra en el checkout de su orden múltiple, cuando intenta procesar el pago habiendo quedado uno de los días seleccionados sin stock real en ese mismo instante, entonces el sistema frena la transacción y le solicita que reemplace o elimine la vianda agotada.
+-Dado que el comensal organiza su semana laboral, cuando agrega más de una vianda para el mismo día y la misma franja horaria de retiro, entonces el sistema permite la acción agrupando todas las unidades bajo la misma fecha en el detalle de la orden.",,,,,,,,,,,,"Criterios de Aceptación:
+Dado que presiono ""LISTO"", Cuando mi KDS se actualiza, Entonces la orden entra en la cola principal de ""Listos para retirar"" del Encargado.",,,,,,"Criterios de Aceptación:
+Dado que existe una política de descuentos, Cuando el admin fija un porcentaje en el panel de promociones, Entonces el motor de reglas aplica ese descuento automáticamente en el checkout del comensal.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 3.1.3,Título: Asistente Mágico (IA),Prioridad:,Estimación: 13,,,,,,,,,Nro: 5.1.1,Título: Descuento de stock transaccional,Prioridad:,Estimación: 8,,,Nro: 5.3.2,Título: Destacar Plato del Día,Prioridad:,Estimación: 2
+"Descripción:
+
+Como comensal sin tiempo
+Quiero tocar un botón de ""Asistente Mágico"" para que la Inteligencia Artificial me autocomplete toda la semana de comidas
+Para no tener que pensar qué comer cada día, basándose en mis preferencias y restricciones alimentarias (sin fines médicos).
+
+",,,,,,,,,,,,"Descripción:
+
+Como chef responsable de cocina
+Quiero que el sistema le descuente automáticamente a mi inventario la cantidad exacta de ingredientes de la receta (ej: 2 panes, 150g carne) ni bien un comensal confirma y paga un pedido
+Para garantizar que la oferta del menú está atada a la realidad y evitar vender comida que ya no podemos preparar.",,,,,,"Descripción:
+
+Como administrador comercial
+Quiero poder marcar manualmente un plato específico como el ""Plato del Día""
+Para que el sistema se lo recomiende a los comensales y así potenciar su venta (ej: porque hay sobrestock de esos ingredientes).
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal configuró previamente sus restricciones alimentarias en el perfil, cuando presiona el botón del Asistente Mágico, entonces el sistema procesa sus preferencias y rellena el carrito instantáneamente con cinco platos recomendados que son estrictamente aptos para su consumo.
+-Dado que el comensal no posee ninguna restricción alimentaria cargada en su cuenta, cuando activa el Asistente Mágico, entonces el sistema genera una propuesta semanal variada basándose en la disponibilidad del menú y la popularidad de los platos.
+-Dado que el comensal solicita una recomendación semanal a la inteligencia artificial, cuando el inventario del local no cuenta con la variedad de insumos suficientes para cubrir cinco días distintos, entonces el sistema alerta sobre la escasez y le sugiere armar el pedido de manera manual con lo disponible.
+-Dado que la inteligencia artificial completó el carrito con la propuesta de viandas, cuando el comensal no está conforme con uno o más platos asignados, entonces el sistema le permite eliminarlos individualmente o presionar un botón de recarga para generar una sugerencia totalmente nueva.
+-Dado que el comensal utiliza el Asistente Mágico para planificar su semana, cuando revisa los detalles de los platos recomendados, entonces el sistema muestra únicamente información gastronómica y omite cualquier tipo de cálculo calórico, desglose de macronutrientes o recomendación de índole médica.
+-Dado que el comensal presiona el botón del Asistente Mágico, cuando el servicio de inteligencia artificial externo demora demasiado en responder o sufre una caída, entonces el sistema cancela la petición de forma segura y le indica que debe seleccionar los platos manualmente.",,,,,,,,,,,,"Criterios de Aceptación:
+Dado que un pago de cliente se aprueba, Cuando la orden ingresa al sistema, Entonces se restan las cantidades de la receta de cada insumo en la base de datos de forma atómica y estricta.",,,,,,"Criterios de Aceptación:
+Dado que un plato está ""Publicado"", Cuando el admin toca el botón ""Destacar como Plato del Día"", Entonces ese ítem aparece primero y resaltado en la vista principal del catálogo del comensal.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 3.2.1,Título: Modificar franja horaria de la suscripción,Prioridad:,Estimación: 3,,,,,,,,,,,,,,,Nro: 6.1.1,Título: Estadísticas de ingresos y volumen,Prioridad:,Estimación: 8
+"Descripción:
+
+Como comensal suscrito
+Quiero poder cambiar el horario en el que retiraré la vianda del Jueves
+Para ajustarme a un cambio en mi agenda laboral sin perder la comida.
+
+",,,,,,,,,,,,,,,,,,"Descripción:
+
+Como administrador
+Quiero ver paneles que muestren mis ingresos totales y la cantidad de pedidos concretados
+Para tener un pantallazo rápido de la salud financiera del día, semana o mes.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal posee un pedido semanal confirmado y el plato del día seleccionado aún no ingresó a la cola de preparación, cuando edita el horario de retiro, entonces el sistema actualiza su reserva asignándole el nuevo turno exitosamente.
+-Dado que el comensal intenta modificar el horario de retiro de una vianda, cuando el pedido ya pasó al estado de preparación o se encuentra dentro del tiempo límite de bloqueo definido por el local, entonces el sistema deniega el cambio y notifica que es demasiado tarde para reprogramarlo.
+-Dado que el comensal selecciona una nueva franja horaria para retirar su comida, cuando el turno elegido ya alcanzó su cupo máximo de reservas simultáneas, entonces el sistema rechaza la modificación y le solicita elegir un espacio con disponibilidad.
+-Dado que el comensal modifica la franja horaria de una vianda que ya fue abonada durante la planificación original, cuando confirma el nuevo turno válido, entonces el sistema realiza el cambio en la base de datos sin generar cobros adicionales.
+-Dado que el comensal intenta guardar la nueva franja horaria de su vianda, cuando se produce un corte en su conexión a internet, entonces el sistema interrumpe la acción y muestra un aviso de error garantizando que la reserva original no se altere.
+-Dado que el comensal se encuentra configurando su pedido semanal pero aún no efectuó el pago, cuando modifica la franja horaria de retiro para uno de los días en el carrito, entonces el sistema actualiza la preferencia temporalmente reteniendo el cupo por unos minutos.",,,,,,,,,,,,,,,,,,"Criterios de Aceptación:
+Dado que ingresaron pedidos, Cuando el admin entra al dashboard de BI, Entonces ve métricas financieras en formato de tabla o gráfico. (Nota de Scope: Provee estadísticas mediante reportes, pero no es un ERP contable complejo de uso generalizado).",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 4.1.1,Título: Ver catálogo en tiempo real,Prioridad:,Estimación: 5,,,,,,,,,,,,,,,Nro: 6.1.2,Título: Mapa de calor de franjas horarias,Prioridad:,Estimación: 8
+"Descripción:
+
+Como comensal
+Quiero navegar visualmente por las distintas categorías de comida (Ej: Hamburguesas, Bebidas)
+Para explorar qué ofrece el restaurante hoy.
+
+",,,,,,,,,,,,,,,,,,"Descripción:
+
+Como administrador
+Quiero ver gráficos de concurrencia segmentados por bloques de tiempo
+Para identificar cuáles son las horas pico y redistribuir el personal si hace falta.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal ingresa al local virtual del comedor, cuando el sistema carga la pantalla principal, entonces visualiza el menú organizado por categorías gastronómicas que incluyen fotografías en alta resolución, nombres y precios actualizados.
+-Dado que el comensal explora el catálogo, cuando una categoría específica no tiene ningún plato asociado o todos sus productos dependientes fueron dados de baja, entonces el sistema oculta dicha categoría de la vista principal para evitar mostrar secciones vacías.
+-Dado que el comensal visualiza el catálogo completo, cuando utiliza la barra de búsqueda interna ingresando el nombre de un plato, entonces el sistema filtra la grilla en tiempo real dejando visibles únicamente los productos que coinciden con el texto.
+-Dado que el comensal ingresa al catálogo y su conexión a internet es deficiente, cuando las fotografías en alta resolución no logran descargarse rápidamente, entonces el sistema despliega una imagen liviana por defecto garantizando que pueda leer el nombre y precio del plato sin bloqueos.
+-Dado que el comensal ingresa al menú del establecimiento, cuando el local se encuentra momentáneamente fuera de su horario operativo, entonces el sistema permite navegar por las categorías en modo lectura pero desactiva los controles para sumar productos al carrito.
+-Dado que el catálogo presenta una gran cantidad de platos, cuando el comensal selecciona una categoría desde la barra de navegación superior, entonces el sistema realiza un desplazamiento automático llevándolo directamente a la sección elegida.",,,,,,,,,,,,,,,,,,"Criterios de Aceptación:
+Dado que se registran múltiples ventas en distintos horarios, Cuando se visualiza el gráfico, Entonces se identifican fácilmente las franjas más demandadas.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 4.1.2,Título: Ocultar platos sin stock,Prioridad:,Estimación: 5,,,,,,,,,,,,,,,Nro: 6.2.1,Título: Ranking de Platos,Prioridad:,Estimación: 3
+"Descripción:
+
+Como comensal
+Quiero que el sistema oculte o tache automáticamente los platos que no tienen stock
+Para no ilusionarme ni intentar comprar algo que la cocina no puede preparar.
+
+",,,,,,,,,,,,,,,,,,"Descripción:
+
+Como administrador
+Quiero tener un ranking siempre actualizado de los ""Platos más vendidos""
+Para saber qué sacar del catálogo y qué promocionar más.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el inventario registra cero unidades de un insumo clave para una receta, cuando el comensal visualiza o recarga el catálogo, entonces el sistema muestra el plato dependiente en color gris y deshabilita su botón de compra para impedir que lo agregue al carrito.
+-Dado que un plato se encontraba deshabilitado por falta de insumos, cuando el personal de cocina ingresa nuevo stock del ingrediente faltante al sistema, entonces la plataforma rehabilita automáticamente el producto en el catálogo visual de los comensales.
+-Dado que múltiples platos comparten un mismo insumo crítico, cuando el stock de dicho ingrediente llega a cero al procesarse una venta, entonces el sistema impacta la carencia de manera concurrente e inhabilita inmediatamente todos los platos afectados en la interfaz.
+-Dado que el comensal tiene un plato en su carrito y demora en concretar el pago, cuando otro usuario procesa una orden que agota el stock de un insumo clave de esa misma receta, entonces el sistema le advierte al momento del checkout que el producto ya no está disponible y lo remueve de su orden.
+-Dado que quedan los últimos ingredientes exactos para preparar un plato, cuando dos comensales intentan agregarlo a sus respectivos carritos en simultáneo, entonces el sistema reserva temporalmente el cupo para el primero y bloquea la acción para el segundo notificando la falta de stock.
+-Dado que el control de disponibilidad se basa estrictamente en el stock real por receta, cuando los insumos son suficientes para la preparación, entonces el sistema mantiene el plato habilitado y a color independientemente de si faltan pocos minutos para el cierre de la franja horaria.",,,,,,,,,,,,,,,,,,"Criterios de Aceptación:
+Dado que existen históricos de venta, Cuando se abre el reporte, Entonces los platos se ordenan descendentemente por cantidad de unidades.",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 4.2.1,Título: Filtros de perfil automáticos,Prioridad:,Estimación: 3,,,,,,,,,,,,,,,Nro: 6.2.2,Título: Monitoreo de reputación (Reviews),Prioridad:,Estimación: 3
+"Descripción:
+
+Como comensal con perfil configurado
+Quiero que mis restricciones se apliquen solas como filtros
+Para no ver comida que no me sirve.
+
+",,,,,,,,,,,,,,,,,,"Descripción:
+
+Como administrador enfocado en la calidad
+Quiero ver el promedio de estrellas de cada plato y leer las críticas dejadas por los comensales
+Para poder auditar la calidad de la cocina y tomar decisiones.
+",,,
+"Criterios de Aceptación:
+
+-Dado que el comensal configuró restricciones alimentarias en su perfil, cuando ingresa al catálogo general del establecimiento, entonces el sistema activa automáticamente los filtros correspondientes y muestra únicamente los platos aptos para su dieta.
+-Dado que el comensal visualiza el catálogo con sus filtros de perfil aplicados automáticamente, cuando decide desactivar el control manual correspondiente, entonces el sistema actualiza la vista mostrando la totalidad de los platos y añadiendo advertencias visuales a los que infringen su dieta.
+-Dado que el comensal ingresa al catálogo con sus restricciones automáticas activas, cuando el establecimiento no dispone de ningún plato que cumpla con dichos criterios, entonces el sistema despliega un mensaje indicando que no hay opciones aptas disponibles en este momento.
+-Dado que el comensal desactiva temporalmente el filtro automático durante su sesión, cuando cambia de restaurante o recarga la página web, entonces el sistema vuelve a aplicar por defecto el filtro basado en la configuración estática de su perfil.
+-Dado que el comensal no posee ninguna restricción alimentaria configurada en su cuenta, cuando accede al catálogo del local, entonces el sistema muestra todos los platos disponibles sin activar ningún filtro excluyente por defecto.
+-Dado que el comensal posee múltiples restricciones configuradas en su perfil, cuando accede al menú, entonces el sistema aplica una intersección de filtros mostrando exclusivamente los platos que cumplen simultáneamente con todas sus condiciones.
+
+",,,,,,,,,,,,,,,,,,"Criterios de Aceptación:
+Dado que un comensal dejó una review, Cuando el admin entra al detalle de métricas del plato, Entonces puede leer el feedback. (Nota de Scope: Formato de solo lectura, sin posibilidad de crear hilos de discusión social).",,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 4.2.2,Título: Búsqueda por filtros manuales,Prioridad:,Estimación: 3,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero poder filtrar por categorías o rango de precio
+Para encontrar algo barato o de un tipo específico rápido.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal se encuentra en el catálogo completo, cuando selecciona una o más categorías desde la barra lateral de filtros manuales, entonces el sistema actualiza la vista inmediatamente mostrando únicamente los platos que pertenecen a las opciones marcadas.
+-Dado que el comensal utiliza el filtro de rango de precio, cuando establece un valor mínimo y un valor máximo, entonces el sistema ajusta la grilla para exhibir exclusivamente los productos cuyo costo final se encuentre dentro de ese margen.
+-Dado que el comensal combina filtros de categoría y de rango de precio simultáneamente, cuando el sistema procesa la solicitud, entonces muestra los resultados que satisfacen ambas condiciones de manera excluyente.
+-Dado que el comensal aplica una combinación de filtros manuales muy restrictiva, cuando ningún plato del menú actual cumple con dichas condiciones, entonces el sistema despliega un aviso de falta de resultados y ofrece un botón para limpiar los filtros.
+-Dado que el comensal tiene varios filtros manuales aplicados, cuando presiona la opción de restablecer o limpiar filtros, entonces el sistema remueve las selecciones y vuelve a mostrar el catálogo en su estado original.
+-Dado que el comensal aplica un filtro manual por categoría, cuando algunos platos de esa sección se encuentran sin stock, entonces el sistema los sigue mostrando dentro de los resultados filtrados pero en estado deshabilitado.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 4.2.3,Título: Barra de búsqueda de texto,Prioridad:,Estimación: 2,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero escribir el nombre de un plato en un buscador
+Para encontrar directamente mi comida favorita si ya sé lo que quiero.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal busca un plato específico, cuando comienza a tipear caracteres válidos en la barra de búsqueda de texto, entonces el sistema filtra el catálogo en tiempo real mostrando los productos que coinciden parcial o totalmente con el nombre.
+-Dado que el comensal ingresa una palabra en la barra de búsqueda, cuando el sistema evalúa la consulta, entonces incluye en los resultados tanto a los platos que contienen dicho término en su título como a los que lo poseen en su descripción de ingredientes.
+-Dado que el comensal tipea una cadena de texto en el buscador, cuando no existe ninguna coincidencia en el catálogo actual, entonces el sistema muestra un mensaje indicando que no se encontraron platos y sugiere revisar la ortografía.
+-Dado que el comensal utiliza el buscador de texto, cuando ingresa la consulta combinando letras mayúsculas, minúsculas o sin utilizar tildes, entonces el sistema ignora estas diferencias ortográficas y devuelve los resultados correctos de manera normalizada.
+-Dado que el comensal ingresa caracteres especiales no válidos o exclusivamente espacios en blanco en la barra de búsqueda, cuando el sistema procesa el texto, entonces ignora la entrada y mantiene el catálogo en su estado actual sin aplicar filtros erróneos.
+-Dado que el comensal tiene filtros manuales de precio o categoría activados previamente, cuando ingresa texto en la barra de búsqueda, entonces el sistema aplica la búsqueda de texto únicamente sobre el subconjunto de platos que ya están siendo filtrados.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 4.3.1,Título: Sección Destacada,Prioridad:,Estimación: 2,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal indeciso
+Quiero ver un cartel o banner principal que me sugiera el ""Plato del Día""
+Para aprovechar ofertas o recomendaciones especiales del Chef.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el administrador del comedor configuró un plato destacado del día, cuando el comensal ingresa a la vista principal del catálogo, entonces visualiza un banner prominente en la parte superior ofreciendo dicha sugerencia con su fotografía y precio.
+-Dado que el plato destacado configurado por el administrador agota el stock de sus insumos clave, cuando el comensal recarga la página, entonces el sistema lo desactiva automáticamente del banner principal o lo muestra grisado impidiendo su selección.
+-Dado que el comensal posee filtros de restricciones alimentarias activados automáticamente, cuando el plato destacado no es apto para su dieta, entonces el sistema oculta el banner o muestra una advertencia visual clara sobre la restricción impidiendo agregarlo por accidente.
+-Dado que el comensal visualiza el banner del plato destacado, cuando presiona el botón de agregar directo desde esa sección, entonces el sistema suma el producto a su carrito actual respetando las reglas de stock y cupos por franja horaria en tiempo real.
+-Dado que el administrador del comedor no configuró ninguna recomendación especial para la jornada, cuando el comensal accede a la plataforma web, entonces el sistema oculta la sección destacada y muestra el catálogo convencional sin dejar espacios vacíos en la interfaz.
+-Dado que el administrador configuró múltiples platos destacados simultáneos, cuando el comensal ingresa al catálogo, entonces el banner principal funciona como un carrusel deslizable permitiendo visualizar e interactuar con todas las recomendaciones de la jornada.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 5.1.1,Título: Visualizar multimedia y nombre,Prioridad:,Estimación: 2,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero tocar un plato y ver su foto en tamaño grande y su descripción detallada
+Para decidir si la presentación me resulta apetitosa.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal navega por el catálogo, cuando hace clic sobre la tarjeta de un plato, entonces el sistema despliega un modal superpuesto mostrando la fotografía en alta resolución, el nombre completo y la descripción detallada del producto.
+-Dado que el administrador no cargó una fotografía específica para el plato, cuando el comensal abre su detalle, entonces el sistema solo muestra el nombre y descripcion del producto.
+-Dado que el comensal se encuentra visualizando el detalle multimedia de un plato, cuando presiona el botón de cierre o hace clic fuera del modal, entonces el sistema lo devuelve al catálogo manteniendo la posición exacta de desplazamiento en la grilla.
+-Dado que el comensal tiene una conexión a internet inestable o lenta, cuando intenta abrir el detalle del plato, entonces el sistema carga primero el nombre y la descripción en texto junto con un indicador de carga temporal hasta renderizar la imagen de alta resolución.
+-Dado que el plato cuenta con un nombre o descripción comercial excesivamente largos, cuando el sistema procesa el modal, entonces ajusta el texto utilizando barras de desplazamiento interno para no romper la estructura visual de la interfaz.
+-Dado que el comensal se encuentra con el modal multimedia abierto evaluando un plato, cuando el stock del insumo principal se agota en tiempo real por un pedido ajeno, entonces el sistema actualiza la vista inmediatamente marcándolo como no disponible y deshabilitando la compra.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 5.1.2,Título: Ver ingredientes y alérgenos,Prioridad:,Estimación: 1,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal cuidadoso
+Quiero poder leer la lista exacta de ingredientes que componen el plato y sus etiquetas de alérgenos
+Para garantizar que no voy a tener una reacción alérgica ni comer algo que odio.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal visualiza el detalle de un plato configurado con alérgenos, cuando revisa la información nutricional, entonces el sistema despliega una lista completa de ingredientes.
+-Dado que la receta de un plato sufre un reemplazo de ingredientes en tiempo real en la cocina, cuando el comensal abre su ficha, entonces el sistema muestra la lista de componentes actualizada dinámicamente para reflejar la modificación real del stock.
+-Dado que un plato fue cargado en la base de datos omitiendo deliberadamente el detalle de sus ingredientes, cuando el comensal intenta consultar esta información, entonces el sistema muestra un mensaje indicando que la lista de componentes no se encuentra disponible.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 5.1.3,Título: Ver precio,Prioridad:,Estimación: 1,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero ver el precio final con impuestos incluidos de forma visible
+Para evaluar si se ajusta a mi presupuesto.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal ingresa al detalle del plato, cuando el administrador tiene fijado un valor comercial, entonces el sistema muestra el precio final unitario con impuestos incluidos en un tamaño destacado junto al botón de agregar al carrito.
+-Dado que el sistema opera bajo un contexto de configuración regional, cuando renderiza el precio del plato, entonces aplica el formato de moneda local correcto respetando el símbolo, los separadores de miles y la precisión de los decimales.
+-Dado que el administrador modifica el precio de un plato desde el panel de gestión, cuando el comensal recarga el catálogo o vuelve a abrir el modal, entonces el sistema refleja instantáneamente el nuevo valor actualizado sin requerir un nuevo inicio de sesión.
+-Dado que un plato se encuentra temporalmente sin stock, cuando el comensal abre su detalle, entonces el sistema mantiene visible el precio histórico como referencia pero inactiva la visualización de botones de suma y confirmación.
+-Dado que el comensal se encuentra evaluando el precio de un plato en el modal, cuando decide sumar más de una unidad utilizando el selector de cantidad, entonces el sistema actualiza dinámicamente un subtotal provisorio en la pantalla para facilitar la estimación de su gasto.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 5.2.1,Título: Ver puntuación histórica,Prioridad:,Estimación: 2,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero ver cuántas estrellas promedio le puso la gente a ese plato
+Para saber si tiene buen rendimiento antes de arriesgarme.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que un plato acumuló estrictamente más de tres calificaciones en su registro, cuando el comensal visualiza su tarjeta o su detalle, entonces el sistema despliega un widget resaltando el promedio histórico de estrellas sobre un máximo de cinco.
+-Dado que un plato cuenta con tres calificaciones o menos, cuando el sistema renderiza la interfaz, entonces oculta el widget de puntaje numérico y muestra una etiqueta indicando que el producto no posee reseñas suficientes para promediar.
+-Dado que el sistema calcula el promedio histórico de las calificaciones, cuando el comensal observa el widget, entonces el valor numérico resultante se presenta siempre redondeado a un solo decimal exacto para mantener la consistencia visual.
+-Dado que el comensal navega por el catálogo principal, cuando presiona el widget de estrellas ubicado en la tarjeta del plato, entonces el sistema abre el modal y lo redirige automáticamente anclando la vista en la sección de comentarios.
+-Dado que un plato estacional fue retirado del menú y reingresado tiempo después, cuando el comensal revisa su puntuación, entonces el sistema recupera y muestra el promedio histórico acumulado sin reiniciar el contador desde cero.
+-Dado que un usuario finaliza un pedido y califica un plato, cuando la base de datos registra la nueva puntuación, entonces el sistema recalcula de fondo el promedio global para que las futuras consultas devuelvan el valor inmediatamente actualizado.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 5.2.2,Título: Leer comentarios de otros comensales,Prioridad:,Estimación: 3,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero poder desplegar una sección de reseñas de texto sobre ese plato
+Para conocer experiencias específicas sobre el tamaño de la porción o el sabor.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el plato posee reseñas de texto aprobadas previamente, cuando el comensal hace scroll hacia la sección inferior del modal, entonces el sistema lista los comentarios publicados ordenándolos cronológicamente desde el más reciente hasta el más antiguo.
+-Dado que el comensal visualiza la sección de opiniones, cuando intenta interactuar con las reseñas de otros usuarios, entonces el sistema las presenta en un formato de estricta lectura inhabilitando cualquier botón para responder, dar aprobación o generar debates.
+-Dado que el sistema prioriza la privacidad de los comensales dentro de la institución, cuando renderiza cada comentario, entonces oculta el apellido completo del autor mostrando únicamente su nombre de pila acompañado por la inicial del apellido y la fecha exacta de publicación.
+-Dado que un plato no recibió ninguna reseña escrita hasta el momento, cuando el comensal navega hacia la sección inferior del detalle, entonces el sistema despliega un componente vacío indicando que aún no hay opiniones disponibles.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 6.1.1,Título: Agregar plato al pedido,Prioridad:,Estimación: 2,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero tocar un botón para añadir un plato al carrito
+Para ir armando mi orden antes de pagar.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+Dado que el usuario está en el detalle del plato, Cuando toca ""Agregar al Carrito"", Entonces el producto se suma a su sesión local y se muestra una notificación de éxito.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 6.1.2,Título: Ver acumulado del carrito,Prioridad:,Estimación: 1,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero ver un botón flotante que me indique la cantidad de ítems que tengo seleccionados y el precio total
+Para tener siempre presente cuánto estoy gastando mientras sigo navegando.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal posee al menos un producto agregado en su sesión local, cuando navega por las distintas secciones del catálogo, entonces el sistema despliega un botón flotante visible en todo momento indicando la cantidad total de ítems y el subtotal acumulado.
+-Dado que el comensal visualiza el botón flotante del carrito, cuando elimina el último producto de su orden dejando la sesión vacía, entonces el sistema oculta el indicador flotante de la interfaz inmediatamente.
+-Dado que el comensal presiona el botón flotante del carrito desde cualquier vista del catálogo, cuando el sistema registra la interacción, entonces despliega un modal superpuesto o pantalla lateral con el detalle completo de los productos seleccionados.
+-Dado que el comensal agrega o remueve productos de su orden, cuando el sistema procesa la modificación, entonces el botón flotante actualiza la cantidad de ítems y el subtotal monetario en tiempo real sin requerir recargar la página.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 6.1.3,Título: Modificar cantidades,Prioridad:,Estimación: 2,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal revisando su orden
+Quiero poder sumar o restar unidades de un producto ya agregado desde la vista del carrito
+Para corregir errores rápidos sin tener que volver al menú principal.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal se encuentra en el modal del carrito, cuando presiona el botón de suma o resta sobre un producto, entonces el sistema incrementa o reduce la cantidad unitaria y recalcula el subtotal del ítem y el total de la orden al instante.
+-Dado que el comensal presiona el botón de suma para incrementar las unidades de un plato, cuando alcanza el límite máximo de stock real disponible en cocina, entonces el sistema deshabilita la acción y muestra una advertencia de límite de inventario.
+-Dado que el comensal tiene una sola unidad de un plato en el carrito, cuando presiona el botón de resta, entonces el sistema retira el producto completamente de la orden y actualiza los montos asociados.
+-Dado que el comensal modifica rápidamente las cantidades en el carrito, cuando el sistema experimenta un fallo de red antes de sincronizar, entonces revierte el contador a su estado anterior y notifica el error de conexión.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 6.2.1,Título: Seleccionar Inmediato o Reserva,Prioridad:,Estimación: 1,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero indicar si mi pedido lo quiero ""Lo antes posible"" o ""Para más tarde""
+Para avisarle a la cocina cómo manejar mi ticket.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal avanza a la pantalla de checkout, cuando el sistema le solicita definir la modalidad de entrega, entonces le permite seleccionar exclusivamente entre las opciones de retiro inmediato o reserva programada.
+-Dado que el comensal intenta confirmar su pedido, cuando omite seleccionar una de las dos modalidades de retiro, entonces el sistema bloquea el avance y resalta la sección indicando que es un campo obligatorio.
+-Dado que la cola de la cocina se encuentra operando al límite máximo de su capacidad para el momento actual, cuando el comensal ingresa al checkout, entonces el sistema deshabilita la opción de retiro inmediato y lo obliga a seleccionar una reserva programada para un horario posterior.
+-Dado que el comensal seleccionó la opción de reserva programada y desplegó el selector de horarios, cuando cambia de opinión y marca la opción de retiro inmediato, entonces el sistema borra la franja horaria previamente elegida y actualiza la vista.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 6.2.2,Título: Elegir día y franja (Reservas),Prioridad:,Estimación: 3,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal que planifica
+Quiero elegir el día exacto y un bloque horario de 15 minutos (ej: 13:00 a 13:15)
+Para retirar la comida exactamente durante el corte de mi trabajo.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal selecciona la modalidad de reserva programada, cuando despliega el calendario, entonces el sistema le permite elegir días operativos futuros y bloques horarios segmentados cada quince minutos.
+-Dado que el comensal interactúa con el calendario de reservas, cuando intenta seleccionar un día marcado como feriado, fin de semana o fuera del esquema del comedor, entonces el sistema mantiene la fecha deshabilitada para prevenir pedidos inválidos.
+-Dado que el comensal visualiza las franjas horarias disponibles para el día actual, cuando el horario real supera el inicio de un bloque, entonces el sistema oculta o bloquea los turnos pasados y solo permite seleccionar franjas futuras.
+-Dado que el comensal elige una franja horaria válida para su reserva, cuando el local requiere un tiempo de anticipación mínimo para preparar los platos seleccionados, entonces el sistema valida que el bloque elegido cumpla con dicho margen de preparación antes de permitir la confirmación.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 6.2.3,Título: Indicador de saturación de franja,Prioridad:,Estimación: 3,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero ver un indicador visual (ej: color naranja) si un horario está muy demandado
+Para saber que si elijo esa franja es probable que haya demora.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que una franja horaria alcanza o supera el ochenta por ciento de su capacidad máxima de pedidos, cuando el comensal visualiza el selector de turnos, entonces el sistema pinta esa opción de un color preventivo y le adosa la leyenda de alta demanda.
+-Dado que el comensal selecciona conscientemente una franja horaria marcada con el indicador de alta demanda, cuando avanza en el proceso de pago, entonces el sistema le muestra un aviso preventivo indicando que su pedido podría sufrir ligeras demoras al momento del retiro.
+-Dado que el volumen de pedidos de una franja horaria disminuye por debajo del umbral de saturación debido a cancelaciones, cuando un nuevo comensal abre el calendario, entonces el sistema remueve el indicador y muestra el turno con su formato visual normal.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 6.2.4,Título: Ocultar franjas saturadas,Prioridad:,Estimación: 2,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero que el sistema me prohíba elegir horarios donde la cocina ya superó su capacidad física
+Para que el local pueda garantizarme la entrega a tiempo de lo que prometen.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que la cocina alcanza el cien por ciento del cupo máximo de preparación para una franja horaria específica, cuando el comensal despliega el selector de turnos, entonces el sistema muestra esa opción completamente deshabilitada o grisada impidiendo su selección.
+-Dado que el comensal seleccionó una franja horaria que aún tenía disponibilidad, cuando demora en procesar el pago y el cupo se completa por pedidos de otros usuarios en simultáneo, entonces el sistema frena la transacción en el checkout y le solicita elegir un nuevo horario.
+-Dado que un turno saturado libera espacio por la cancelación de un pedido previo, cuando el sistema actualiza la capacidad en tiempo real, entonces vuelve a habilitar la franja horaria en el selector para que nuevos comensales puedan reservarla.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 7.1.1,Título: Usar método guardado,Prioridad:,Estimación: 3,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal recurrente
+Quiero seleccionar mi tarjeta de crédito/débito que ya usé antes
+Para pagar en un solo toque sin buscar la billetera.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal posee un token de tarjeta de crédito o débito guardado, cuando ingresa al checkout y selecciona la tarjeta enmascarada para confirmar el pago, entonces el sistema procesa la transacción exitosamente sin requerir la carga manual de datos.
+-Dado que el comensal selecciona una tarjeta guardada previamente, cuando el sistema lo requiere por políticas de seguridad de la pasarela, entonces le solicita ingresar únicamente el código de seguridad para autorizar el cobro.
+-Dado que el comensal intenta pagar con una tarjeta tokenizada, cuando la fecha de vencimiento de la misma ya expiró, entonces el sistema la muestra deshabilitada y rechaza el pago indicando que debe actualizar el medio.
+-Dado que el comensal confirma el pago con su tarjeta guardada, cuando la pasarela de pagos rechaza la transacción por fondos insuficientes o sospecha de fraude, entonces el sistema deniega el pedido y muestra un mensaje de error solicitando intentar con otro método.
+-Dado que el comensal visualiza su lista de tarjetas guardadas en el checkout, cuando selecciona la opción de eliminar una de ellas, entonces el sistema revoca el token de forma segura en el backend y remueve la tarjeta de sus opciones de pago.
+",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 7.1.2,Título: Cargar nueva tarjeta,Prioridad:,Estimación: 8,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal nuevo
+Quiero poder ingresar los datos de una nueva tarjeta en un formulario seguro
+Para efectuar mi primera compra.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal elige ingresar una nueva tarjeta, cuando completa todos los campos obligatorios con datos válidos y confirma el pago, entonces la pasarela autoriza la transacción y el sistema procesa el pedido exitosamente.
+-Dado que el comensal se encuentra completando el formulario de pago, cuando ingresa un número de tarjeta inválido o que no supera el algoritmo de validación de formato, entonces el sistema resalta el campo y bloquea el botón de confirmación.
+-Dado que el comensal intenta cargar una nueva tarjeta, cuando ingresa una fecha de vencimiento pasada, entonces el sistema invalida el campo inmediatamente indicando que el plástico se encuentra vencido.
+-Dado que el comensal ingresa los datos de su tarjeta, cuando omite el código de seguridad o el nombre del titular y presiona pagar, entonces el sistema detiene la petición y exige completar la información faltante.
+-Dado que el comensal confirma el pago con una tarjeta nueva, cuando se pierde la conexión con la pasarela durante el procesamiento, entonces el sistema revierte la operación, no debita fondos y le notifica que el pago no pudo concretarse.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 7.1.3,Título: Opción de recordar pago,Prioridad:,Estimación: 3,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero marcar un checkbox que diga ""Recordar esta tarjeta""
+Para tokenizarla y usarla en futuros pedidos.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal ingresa los datos de una tarjeta no registrada, cuando marca la casilla de recordar pago y la transacción resulta exitosa, entonces el sistema envía la solicitud de tokenización a la pasarela y asocia el token de forma segura a su perfil.
+-Dado que el comensal completa el formulario con una nueva tarjeta, cuando deja desmarcada la opción de recordar pago y confirma la compra, entonces el sistema procesa el cobro pero no almacena ningún registro del medio de pago para futuros usos.
+-Dado que el comensal marca la opción de guardar tarjeta, cuando el pago es rechazado por la entidad bancaria, entonces el sistema deniega la transacción y aborta el proceso de tokenización sin guardar los datos en la base.
+-Dado que el comensal ingresa manualmente los datos de una tarjeta, cuando el sistema detecta que dicha numeración ya se encuentra tokenizada y asociada a su perfil, entonces procesa el pago normalmente sin duplicar el registro visual en su lista de opciones.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 7.2.1,Título: Pago de carrito individual,Prioridad:,Estimación: 8,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal solitario
+Quiero pagar el 100% de mi orden y que se confirme de inmediato
+Para enviar la orden a la cocina.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal posee un carrito con monto mayor a cero, cuando el pago es aprobado por la pasarela, entonces el sistema debita el stock real de los insumos, cambia el estado de la orden a en curso y la envía automáticamente a la cola del KDS.
+-Dado que el comensal inicia el proceso de pago, cuando los insumos de su pedido se agotan por una transacción concurrente antes de confirmarse su cobro, entonces el sistema rechaza el pago, no debita dinero y le avisa que debe modificar su carrito.
+-Dado que el comensal demora en la pantalla de pagos, cuando la franja horaria seleccionada alcanza su cupo máximo de reservas por otros usuarios, entonces el sistema interrumpe la transacción indicando que debe elegir un nuevo horario de retiro.
+-Dado que el monto total del carrito individual es igual a cero debido a una bonificación del cien por ciento, cuando el comensal confirma la orden, entonces el sistema omite el flujo de la pasarela de pagos y envía el pedido directamente a la cocina.
+-Dado que el comensal efectúa el pago, cuando la pasarela demora en emitir la confirmación y devuelve un estado pendiente, entonces el sistema retiene el stock temporalmente y no envía la orden al KDS hasta obtener la aprobación final.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 7.2.2,Título: Dividir cuenta de pedido grupal,Prioridad:,Estimación: 13,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como invitado en un pedido colaborativo
+Quiero poder pagar únicamente el valor de mi propio plato desde mi dispositivo
+Para no tener que andar haciendo transferencias engorrosas a mis colegas después.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal participa en un pedido colaborativo cerrado, cuando accede a la pantalla de pago, entonces el sistema le habilita a abonar exclusivamente el subtotal correspondiente a los platos asociados a su sesión.
+-Dado que varios miembros del pedido grupal ya abonaron su parte, cuando aún resta al menos un invitado por pagar, entonces el sistema mantiene la orden general en estado de espera y bloquea su envío a la cola de la cocina.
+-Dado que el último integrante del pedido colaborativo aprueba su pago, cuando el sistema registra que el cien por ciento del monto total de la sala fue cubierto, entonces consolida la orden, impacta el stock y la envía al KDS.
+-Dado que la sala se cerró para el pago, cuando transcurre el tiempo límite establecido y uno o más invitados no completan su transacción, entonces el sistema cancela la orden completa y emite el reembolso automático a quienes ya habían pagado.
+-Dado que un invitado tiene problemas para abonar su parte, cuando el organizador de la sala selecciona la cuota pendiente, entonces el sistema le permite asumir ese costo y pagarlo junto con su propia selección para destrabar el pedido.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 7.2.3,Título: Pago de suscripción,Prioridad:,Estimación: 3,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal planificador
+Quiero que al pagar un menú semanal, se aplique un descuento automático al monto final
+Para aprovechar el beneficio por comprar al por mayor.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal armó un pedido de viandas para múltiples días de la semana, cuando ingresa a la pantalla de checkout, entonces el motor de reglas aplica automáticamente el porcentaje de descuento configurado sobre el subtotal y actualiza el monto a pagar.
+-Dado que el administrador configuró un mínimo de días para aplicar el beneficio, cuando el comensal selecciona una cantidad de viandas inferior a esa regla, entonces el sistema procesa el pago cobrando el precio regular sin aplicar descuentos.
+-Dado que el sistema aplica el descuento por suscripción semanal, cuando el comensal revisa el detalle de los montos en el checkout, entonces visualiza el precio original tachado y el valor descontado desglosado claramente antes de confirmar la transacción.
+-Dado que el comensal posee un código de descuento manual, cuando intenta aplicarlo sobre una suscripción que ya posee el beneficio semanal automático, entonces el sistema evalúa la regla de negocio y rechaza la acumulación indicando que las promociones no son combinables.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 7.3.1,Título: Confirmación de pago,Prioridad:,Estimación: 5,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero ver una pantalla verde de éxito apenas el banco aprueba el pago
+Para quedarme tranquilo de que la transacción funcionó.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que la pasarela de pagos retorna un código de aprobación exitoso, cuando el sistema procesa la respuesta, entonces redirige al comensal a una pantalla verde de éxito con animaciones visuales y le muestra el número de orden generado.
+-Dado que el pago es aprobado exitosamente, cuando el navegador del comensal sufre una interrupción antes de cargar la pantalla de éxito, entonces el sistema garantiza el envío de un correo electrónico con el comprobante y el detalle de la orden.
+-Dado que el comensal visualiza la pantalla de confirmación, cuando revisa la información mostrada, entonces el sistema le detalla explícitamente la franja horaria de retiro elegida y habilita un botón para hacer seguimiento en vivo.
+-Dado que el sistema se encuentra procesando el pago y esperando la respuesta de la pasarela, cuando el comensal presiona múltiples veces el botón de confirmación, entonces la interfaz bloquea las interacciones previniendo cobros duplicados.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 7.3.2,Título: Tiempo estimado en vivo,Prioridad:,Estimación: 5,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal esperando
+Quiero ver en la pantalla de mi orden el tiempo estimado para que me la entreguen
+Para saber cuánto tiempo libre tengo antes de ir a mostrador.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal confirmó un pedido de retiro inmediato, cuando ingresa a la sección de seguimiento, entonces visualiza una barra de progreso y un tiempo estimado de entrega calculado dinámicamente según la saturación actual de la cola en el KDS.
+-Dado que el comensal posee una reserva programada para una franja horaria futura, cuando revisa su pedido, entonces el sistema muestra el horario de retiro pactado en lugar de un contador en vivo, activando la cuenta regresiva únicamente al acercarse el turno.
+-Dado que el pedido sufre demoras operativas imprevistas en la cocina, cuando el personal del KDS ajusta los tiempos de preparación globales, entonces el sistema actualiza automáticamente el reloj dinámico en la pantalla del comensal para reflejar el nuevo escenario.
+-Dado que el personal de cocina marca el pedido como finalizado en el KDS, cuando el sistema recibe la actualización, entonces el tiempo estimado desaparece y la pantalla cambia a un estado destacado indicando que el comensal ya puede retirar su comida por mostrador.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 8.1.1,Título: Indicadores visuales de cambio de estado,Prioridad:,Estimación: 2,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero visualizar un cambio de estado en la interfaz cuando el Chef empieza a cocinar mi pedido
+Para poder empezar a caminar en dirección al restaurante.
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal posee un pedido confirmado en la cola de la cocina, cuando el chef cambia el estado de la orden a """"En preparación"""" desde el KDS, entonces el sistema actualiza el estado en la pantalla de seguimiento de forma visual.
+-Dado que el comensal se encuentra visualizando la plataforma web, cuando el pedido pasa al estado """"En preparación"""", entonces el sistema recalcula y muestra la cuenta regresiva del tiempo estimado para la entrega en función de la receta.
+-Dado que el dispositivo del comensal pierde la conexión a internet al momento en que el chef inicia la cocción, cuando el equipo restablece la conectividad, entonces el sistema sincroniza automáticamente la orden actualizando el estado a """"En preparación"""".
+-Dado que el pedido corresponde a una reserva programada para una franja horaria determinada, cuando la cocina inicia la preparación previa dentro del margen operativo, entonces el sistema notifica al comensal indicando que su plato ya se está elaborando para el turno elegido.
+-Dado que la conexión en tiempo real mediante WebSockets experimenta una falla al momento del cambio de estado, cuando la plataforma web detecta la interrupción, entonces ejecuta una consulta de respaldo para actualizar el indicador de preparación en pantalla.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 8.1.2,"Título: Aviso visual de ""Listo para retirar""",Prioridad:,Estimación: 2,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero visualizar de forma destacada en la pantalla cuando el pedido ya está en mostrador
+Para que la comida no se enfríe esperándome.",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal posee un pedido en preparación, cuando el cocinero cambia el estado de la orden a """"Listo"""" en el KDS, entonces el sistema resalta el pedido en pantalla con un color distintivo (ej. verde).
+-Dado que el pedido se encuentra en estado listo para retirar y el comensal no se presenta en mostrador tras transcurrir un tiempo límite configurado, entonces el sistema mantiene el estado resaltado en la UI para evitar que la comida se enfríe.
+-Dado que el dispositivo del comensal pierde la conexión a internet al momento de terminarse el pedido en cocina, cuando el equipo recupera la conectividad, entonces el sistema sincroniza el estado de la orden e impacta inmediatamente la alerta pendiente.
+-Dado que la conexión en tiempo real vía WebSockets sufre una interrupción momentánea, cuando la cocina finaliza el plato, entonces el sistema recurre al mecanismo de consulta periódica de respaldo para actualizar la pantalla y emitir la notificación sin perder el evento.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 8.1.3,Título: Alerta de congestión en el local,Prioridad:,Estimación: 3,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal que va camino a retirar
+Quiero recibir un aviso preventivo si hay mucha gente acumulada en el mostrador
+Para no perder el tiempo parado haciendo fila y esperar un rato más en mi oficina.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el mostrador del establecimiento acumula más de quince pedidos en estado ""Listo para retirar"" sin haber sido entregados, cuando el comensal consulta el estado de su orden en camino, entonces el sistema despliega un cartel preventivo indicando ""Zona de entregas saturada, te avisamos cuando se descongestione"".
+-Dado que la cantidad de pedidos pendientes de entrega en mostrador es igual o inferior al umbral configurado de quince órdenes, cuando el comensal revisa el seguimiento de su compra, entonces el sistema oculta el cartel de saturación y muestra el tiempo estimado regular de retiro.
+-Dado que el cartel de zona de entregas saturada se encuentra activo en la pantalla del comensal, cuando el encargado de mostrador entrega los pedidos acumulados reduciendo la cantidad por debajo del límite, entonces el sistema remueve la alerta automáticamente en tiempo real y notifica que el área se descongestionó.
+-Dado que cada comedor institucional posee diferentes dimensiones físicas, cuando el administrador del local ajusta el umbral máximo de pedidos pendientes acumulados en la configuración, entonces el sistema calcula la alerta de congestión basándose estrictamente en el nuevo valor definido.
+-Dado que el comensal decidió aguardar en su lugar de trabajo debido al aviso de congestión, cuando la cola de entregas se normaliza, entonces el sistema le envía una notificación avisándole que puede acercarse a retirar su orden sin demoras.
+-Dado que el comensal pierde conectividad mientras visualiza el estado del local, cuando el mostrador se satura durante ese lapso, entonces el sistema despliega una leyenda de información desactualizada hasta restablecer la conexión y verificar la cantidad real de entregas pendientes.
+-Dado que se alcanza el umbral de quince pedidos listos pero uno de los usuarios cancela o desecha su orden por demora extrema, cuando el sistema actualiza el contador de pedidos pendientes en mostrador, entonces descuenta la orden cancelada para recalcular de inmediato el nivel de saturación.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 8.2.1,Título: Código QR de seguridad,Prioridad:,Estimación: 8,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal
+Quiero abrir la plataforma web y que me muestre un Código QR gigante único de mi orden
+Para que el encargado lo escanee y me entregue mi bolsa sin hacer preguntas ni errores de identidad.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal posee un pedido listo y se encuentra frente al mostrador, cuando presiona el botón ""Ver código de retiro"", entonces la plataforma web incrementa el brillo de la pantalla al cien por ciento y despliega un código QR cifrado único para que el encargado lo escanee y confirme la entrega.
+-Dado que el encargado del local escanea exitosamente el código QR cifrado del comensal desde la interfaz del establecimiento, cuando el sistema valida la autenticidad del token, entonces cambia el estado de la orden a ""Entregado"" y cierra el ciclo de vida del pedido.
+-Dado que el código QR generado contiene un token de seguridad cifrado con tiempo de expiración dinámico, cuando el comensal mantiene abierta la pantalla por más del tiempo permitido, entonces el sistema regenera el código automáticamente sin interrumpir la experiencia del usuario.
+-Dado que el encargado intenta escanear un código QR adulterado, expirado o correspondiente a otro establecimiento, cuando el scanner del local procesa la lectura, entonces el sistema rechaza la validación, muestra un error de código inválido y no entrega el pedido.
+-Dado que el pedido del comensal aún se encuentra en estado de preparación o pendiente en cocina, cuando el usuario intenta presionar el botón de ""Ver código de retiro"", entonces el sistema deshabilita la acción e indica que el código se activará únicamente cuando la orden esté lista.
+-Dado que el código QR de un pedido ya fue escaneado y validado previamente por el encargado, cuando se intenta escanear nuevamente el mismo código desde mostrador, entonces el sistema deniega el procesamiento alertando que la orden ya figura como entregada.
+-Dado que el dispositivo del encargado o la cámara no logran escanear el código QR por fallas de lectura o reflejos en la pantalla, cuando se selecciona la opción de contingencia, entonces el sistema permite ingresar un código alfanumérico corto de seguridad visible debajo del QR para validar la entrega de forma manual.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 9.1.1,Título: Puntuación de estrellas,Prioridad:,Estimación: 5,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal que ya comió
+Quiero que la plataforma web me invite a ponerle entre 1 y 5 estrellas al pedido que acabo de retirar
+Para ayudar a otros usuarios y darle feedback al restaurante.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que transcurrieron al menos dos horas desde el escaneo del QR de entrega, cuando el comensal ingresa a la plataforma web, entonces el sistema despliega un pop-up invitándolo a calificar el pedido recibido con un puntaje de una a cinco estrellas.
+-Dado que el comensal visualiza el pop-up de calificación, cuando selecciona una puntuación entre una y cinco estrellas y presiona el botón de envío, entonces el sistema registra la valoración exitosamente y la impacta en el historial del pedido.
+-Dado que el comensal se encuentra frente al pop-up de calificación, cuando intenta confirmar la evaluación sin seleccionar ninguna estrella, entonces el sistema bloquea el envío y resalta la escala gráfica indicando que la puntuación es obligatoria.
+-Dado que el comensal no desea evaluar su pedido en ese momento, cuando presiona la opción de omitir o cierra la ventana emergente, entonces el sistema oculta el aviso y conserva la posibilidad de calificar desde el historial de pedidos.
+-Dado que una orden fue cancelada previamente o no registra el escaneo del QR de entrega en el sistema, cuando el comensal navega por la plataforma web, entonces el sistema omite la activación del pop-up de calificación.
+-Dado que el comensal ya envió la calificación de un pedido finalizado, cuando vuelve a ingresar a la aplicación web o navega por su historial, entonces el sistema no despliega el pop-up nuevamente y muestra las estrellas otorgadas en modo solo lectura.
+-Dado que la orden entregada incluye múltiples platos distintos, cuando el comensal interactúa con el modal de evaluación, entonces el sistema le permite asignar una puntuación individual en estrellas a cada uno de los productos de la comanda.",,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,
+Nro: 9.1.2,Título: Comentarios de texto,Prioridad:,Estimación: 5,,,,,,,,,,,,,,,,,,
+"Descripción:
+
+Como comensal (feliz o enojado)
+Quiero poder explayarme escribiendo un texto explicando por qué le puse esa cantidad de estrellas
+Para hacerle llegar un reclamo constructivo al Administrador o felicitar al Chef.
+
+",,,,,,,,,,,,,,,,,,,,,
+"Criterios de Aceptación:
+
+-Dado que el comensal seleccionó la puntuación de estrellas, cuando se habilita la caja de texto opcional e ingresa una reseña sobre su experiencia, entonces el sistema guarda el comentario y lo asocia al plato para su posterior publicación.
+-Dado que el comensal marcó las estrellas de evaluación, cuando decide no escribir texto en la caja opcional y presiona ""Enviar"", entonces el sistema procesa la puntuación numérica exitosamente sin exigir explicaciones.
+-Dado que el comensal redacta un comentario explicativo, cuando la extensión del mensaje alcanza el límite máximo permitido de quinientos caracteres, entonces el sistema frena el ingreso de más texto y muestra un aviso visual de límite alcanzado.
+-Dado que el comensal confirma la publicación de su reseña, cuando la misma se despliega en el detalle público del plato, entonces el sistema publica el texto en formato de solo lectura resguardando la identidad del usuario mediante el enmascarado del apellido.
+-Dado que el comensal incluye términos ofensivos en la caja de texto, cuando presiona el botón de envío, entonces el sistema bloquea la publicación automática y envía el contenido a la cola de moderación previa del administrador.
+-Dado que el comensal sufre un corte de conexión a internet mientras envía su opinión, cuando el sistema detecta la falla de red, entonces despliega una alerta de error conservando el texto tipeado para permitir un nuevo intento.
+-Dado que la reseña ya fue procesada y publicada en la plataforma, cuando el comensal intenta editar o eliminar el comentario enviado, entonces el sistema bloquea la edición garantizando la inmutabilidad de la opinión registrada.",,,,,,,,,,,,,,,,,,,,,

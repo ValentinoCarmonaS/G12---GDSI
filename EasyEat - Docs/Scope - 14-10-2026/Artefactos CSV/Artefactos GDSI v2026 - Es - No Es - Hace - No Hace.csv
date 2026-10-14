@@ -1,0 +1,26 @@
+Es • No Es • Hace • No Hace,
+Es ,No Es
+• Una aplicacion web.,• Una aplicación móvil.
+"• Una plataforma de gestión gastronómica enfocado a comedores institucionales (educativos, corporativos o deportivos) y restaurantes de menú diario.",• Una aplicación de delivery tradicional a domicilio.
+,• Una red social o comunidad de reseñas gastronómicas.
+,• Un ERP financiero completo o un sistema contable complejo para toda la administración general de la empresa.
+Hace,No Hace
+• Sincroniza la disponibilidad del menú y los combos con el stock real de ingredientes.,• No calcula sueldos del personal de cocina.
+• Gestiona pedidos mediante un sistema de reservas por franjas horarias.,• No gestiona compras a proveedores automáticamente.
+• Permite guardar preferencias y restricciones alimentarias en el perfil del comensal para aplicarlas automáticamente por defecto al catálogo.,"• No lleva el control ni el estado de las mesas del salón (libres, ocupadas, reservadas)."
+"• Aplica filtros vivos por restricciones alimentarias, categorías de platos y preferencias personales sobre el menú.",• No calcula rutas ni tiempos de viaje de delivery.
+"• Organiza visualmente la cola de preparación para el equipo de cocina y mostrador (mozos), priorizando pedidos según urgencia y franja horaria.",• No carga de forma automatizada el stock inicial de ingredientes
+• Calcula y muestra tiempos estimados de espera (fila virtual).,• No arma dietas médicas personalizadas.
+• Notifica en tiempo real los cambios de estado del pedido al comensal.,"• No hace cálculos avanzados sobre información de nutrición, como las macros/calorías insumidas por cada pedido realizado."
+• Emite alertas al personal cuando el stock real está próximo a agotarse.,"• No realiza integración con hardware de caja fiscal, controladores fiscales físicos ni impresoras de comanda térmicas."""
+• Provee estadísticas de consumo al administrador mediante reportes en tabla.,
+• Procesa promociones dinámicas.,
+• Recomienda el Plato del día.,
+"• Actualiza el Stock Real automáticamente a medida que ingresa cada pedido, según la receta.",
+• Carga automáticamente el pedido en métricas analíticas.,
+"• Opera bajo un modelo multi-tenant (SaaS), permitiendo que múltiples restaurantes utilicen la misma aplicación de forma aislada, accediendo cada """"Persona"""" al entorno de su establecimiento tras el login.",
+• Permite al cocinero cambiar el estado de un pedido en 1 clic.,
+• Alerta al cocinero a medida que el tiempo de espera aumenta,
+• Permite al cocinero la pausa/inhabilitación manual de platos de forma arbitraria.,
+• Permite al mozo/encargado de mostrador ingresar observaciones breves en la comanda para que las lea la cocina.,
+• Permite al mozo/encargado de mostrador ingresar un pedido manual en tiempo real desde la vista de mostrador/atención para que pase directo al KDS de la cocina,
