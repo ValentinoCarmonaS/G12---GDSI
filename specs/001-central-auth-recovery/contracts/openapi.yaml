@@ -1,0 +1,500 @@
+openapi: "3.0.3"
+
+info:
+  title: EasyEat Authentication API
+  version: "1.0.0"
+  description: |
+    Central Authentication and Password Recovery Service for the EasyEat multi-tenant platform.
+    
+    Covers registration, unified role-based login, and email-based password recovery
+    for all platform roles: `COMENSAL`, `ENCARGADO`, `CHEF`, `ADMINISTRADOR`.
+    
+    ### Error Format
+    All 4xx and 5xx responses return `application/problem+json` (RFC 9457 Problem Details).
+    HTTP 422 responses include an `errors` array with field-level validation messages.
+    
+    ### Authentication
+    Successful login returns a Bearer JWT (HS256). Token lifetime: **8 hours**.
+    Include in subsequent requests as: `Authorization: Bearer <token>`.
+    
+    ### Rate Limiting
+    - Login: 5 consecutive failures per email OR per IP → 15-minute lockout (HTTP 429).
+    - Password reset request: 3 requests per email per 15 minutes → cooldown (HTTP 429).
+    
+    ### Security Invariants
+    - Email normalization (trim + lowercase) applied server-side on every operation.
+    - Non-existent emails produce identical responses and timing as invalid passwords (anti-enumeration).
+    - Passwords exceeding 72 UTF-8 bytes are rejected (BCrypt truncation prevention).
+  contact:
+    name: EasyEat Engineering — Grupo 12 GDSI FIUBA 2026
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+tags:
+  - name: Authentication
+    description: Account registration and unified login
+  - name: Password Recovery
+    description: Email-based credential recovery
+
+paths:
+
+  /api/v1/auth/register:
+    post:
+      operationId: registerUser
+      tags: [Authentication]
+      summary: Register a new comensal account
+      description: |
+        Creates a new platform account for a `COMENSAL`. The email is normalized
+        (trimmed and lowercased) before uniqueness validation and storage. The password
+        is hashed with BCrypt (work factor 12) and **never** stored in plaintext.
+        
+        Passwords must be 8–72 UTF-8 bytes and meet the complexity policy.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              valid:
+                summary: Valid registration
+                value:
+                  email: "comensal@example.com"
+                  password: "SecurePass1"
+              duplicate_email:
+                summary: Already registered email
+                value:
+                  email: "existing@example.com"
+                  password: "SecurePass1"
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+              example:
+                message: "Account created successfully."
+        '409':
+          description: Email address is already registered
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "https://easyeat.com/errors/email-already-registered"
+                title: "Email Already Registered"
+                status: 409
+                detail: "An account with this email address already exists."
+                instance: "/api/v1/auth/register"
+        '422':
+          description: Validation error (invalid email format, password policy violation, blank fields)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "https://easyeat.com/errors/validation-failed"
+                title: "Validation Failed"
+                status: 422
+                detail: "One or more fields failed validation."
+                instance: "/api/v1/auth/register"
+                errors:
+                  - field: "password"
+                    message: "Password must contain at least one uppercase letter."
+                  - field: "password"
+                    message: "Password must be at least 8 characters."
+
+  /api/v1/auth/login:
+    post:
+      operationId: loginUser
+      tags: [Authentication]
+      summary: Unified login for all platform roles
+      description: |
+        Authenticates any platform user (`COMENSAL`, `ENCARGADO`, `CHEF`, `ADMINISTRADOR`).
+        Email is normalized before lookup.
+        
+        On success, issues a signed JWT (HS256) with **8-hour validity** containing:
+        `sub` (user_id), `role`, `tenant_id`, `token_version`, `iat`, `exp`.
+        
+        **Anti-enumeration**: invalid password and non-existent email produce the identical
+        error message and approximately equal response time (DUMMY_HASH applied for
+        non-existent emails).
+        
+        **Rate limiting**: 5 consecutive failures per email OR per IP within 15 minutes
+        triggers HTTP 429. The rate limit counter increments BEFORE password verification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              valid:
+                summary: Valid credentials
+                value:
+                  email: "comensal@example.com"
+                  password: "SecurePass1"
+      responses:
+        '200':
+          description: Authentication successful — signed JWT issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                access_token: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI..."
+                token_type: "Bearer"
+                expires_in: 28800
+        '401':
+          description: Invalid credentials (email not found OR password incorrect — same message for both)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "https://easyeat.com/errors/invalid-credentials"
+                title: "Invalid Credentials"
+                status: 401
+                detail: "The provided email or password is incorrect."
+                instance: "/api/v1/auth/login"
+        '403':
+          description: Account suspended or disabled — authentication blocked
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "https://easyeat.com/errors/account-disabled"
+                title: "Account Disabled"
+                status: 403
+                detail: "This account has been suspended and is not authorized to operate."
+                instance: "/api/v1/auth/login"
+        '422':
+          description: Validation error (blank email, blank password, malformed email format)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          description: Too Many Requests — rate limit exceeded (per-email or per-IP lockout)
+          headers:
+            Retry-After:
+              description: Seconds until the lockout period expires
+              schema:
+                type: integer
+                example: 900
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "https://easyeat.com/errors/rate-limit-exceeded"
+                title: "Too Many Requests"
+                status: 429
+                detail: "Too many failed login attempts. Please try again in 15 minutes."
+                instance: "/api/v1/auth/login"
+
+  /api/v1/auth/password-reset/request:
+    post:
+      operationId: requestPasswordReset
+      tags: [Password Recovery]
+      summary: Request a password recovery email
+      description: |
+        Accepts an email address and, if the account exists and is `ACTIVE`, generates a
+        cryptographically random single-use reset token (15-minute expiry) and dispatches
+        a transactional recovery email containing the reset link.
+        
+        **Anti-enumeration**: the HTTP 200 response body is **identical** whether or not
+        the email is registered. No email is sent for unregistered addresses.
+        
+        **Rate limiting**: 3 requests per email per 15 minutes → HTTP 429 cooldown.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestDto'
+            examples:
+              valid:
+                value:
+                  email: "comensal@example.com"
+      responses:
+        '200':
+          description: Request accepted — uniform response regardless of email existence
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+              example:
+                message: "If that email address is registered, a recovery link has been sent."
+        '422':
+          description: Validation error (invalid email syntax or blank field)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          description: Too Many Requests — reset request rate limit exceeded
+          headers:
+            Retry-After:
+              description: Seconds until cooldown expires
+              schema:
+                type: integer
+                example: 900
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "https://easyeat.com/errors/rate-limit-exceeded"
+                title: "Too Many Requests"
+                status: 429
+                detail: "Too many password reset requests. Please try again later."
+                instance: "/api/v1/auth/password-reset/request"
+
+  /api/v1/auth/password-reset/confirm:
+    post:
+      operationId: confirmPasswordReset
+      tags: [Password Recovery]
+      summary: Consume a reset token and set a new password
+      description: |
+        Validates the reset token (authentic, unconsumed, unexpired, account active),
+        updates the password hash, marks the token as `CONSUMED`, and increments
+        `token_version` on the user record — all in a single atomic transaction.
+        
+        Incrementing `token_version` immediately invalidates all previously issued JWTs
+        for that account (FR-015, SC-007).
+        
+        On success, the user must log in again with the new credentials.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+            examples:
+              valid:
+                value:
+                  token: "a3f8c2d1e5b74a9c..."
+                  new_password: "NewSecurePass9"
+      responses:
+        '200':
+          description: Password updated — all previous sessions invalidated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+              example:
+                message: "Password updated successfully. All previous sessions have been invalidated."
+        '400':
+          description: Token invalid, expired, or already consumed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              examples:
+                expired:
+                  summary: Token expired
+                  value:
+                    type: "https://easyeat.com/errors/token-expired"
+                    title: "Reset Token Expired"
+                    status: 400
+                    detail: "This password reset link has expired. Please request a new one."
+                    instance: "/api/v1/auth/password-reset/confirm"
+                consumed:
+                  summary: Token already used
+                  value:
+                    type: "https://easyeat.com/errors/token-already-consumed"
+                    title: "Reset Token Already Used"
+                    status: 400
+                    detail: "This password reset link has already been used."
+                    instance: "/api/v1/auth/password-reset/confirm"
+                invalid:
+                  summary: Token not found or tampered
+                  value:
+                    type: "https://easyeat.com/errors/token-invalid"
+                    title: "Invalid Reset Token"
+                    status: 400
+                    detail: "The password reset token is invalid."
+                    instance: "/api/v1/auth/password-reset/confirm"
+        '403':
+          description: Account is suspended — password reset blocked
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "https://easyeat.com/errors/account-disabled"
+                title: "Account Disabled"
+                status: 403
+                detail: "This account has been suspended. Password reset is not available."
+                instance: "/api/v1/auth/password-reset/confirm"
+        '422':
+          description: Validation error (blank token, password policy violation)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "https://easyeat.com/errors/validation-failed"
+                title: "Validation Failed"
+                status: 422
+                detail: "One or more fields failed validation."
+                instance: "/api/v1/auth/password-reset/confirm"
+                errors:
+                  - field: "new_password"
+                    message: "Password must contain at least one digit."
+
+components:
+  schemas:
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          description: |
+            Email address to register. Normalized (trimmed + lowercased) server-side
+            before validation and storage.
+          maxLength: 255
+          example: "comensal@example.com"
+        password:
+          type: string
+          format: password
+          description: |
+            Password must be 8–72 UTF-8 bytes (inputs exceeding 72 bytes are rejected to
+            prevent BCrypt silent truncation), contain at least one uppercase letter, one
+            lowercase letter, and one numeric digit.
+          minLength: 8
+          maxLength: 72
+          example: "SecurePass1"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          description: Registered email address. Normalized server-side before lookup.
+          maxLength: 255
+          example: "comensal@example.com"
+        password:
+          type: string
+          format: password
+          maxLength: 72
+          example: "SecurePass1"
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: |
+            Signed JWT (HS256). Decode at jwt.io to inspect claims:
+            `sub` (user_id UUID), `role`, `tenant_id` (absent for unassociated comensales),
+            `token_version`, `iat`, `exp`.
+          example: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI..."
+        token_type:
+          type: string
+          enum: [Bearer]
+          example: "Bearer"
+        expires_in:
+          type: integer
+          description: Token lifetime in seconds. Always 28800 (8 hours).
+          example: 28800
+
+    PasswordResetRequestDto:
+      type: object
+      required: [email]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Email address of the account requesting recovery. Normalized server-side.
+          example: "comensal@example.com"
+
+    PasswordResetConfirmRequest:
+      type: object
+      required: [token, new_password]
+      additionalProperties: false
+      properties:
+        token:
+          type: string
+          description: |
+            The raw reset token extracted from the recovery link's query parameter
+            (e.g., `?token=<value>`). The server computes SHA-256 of this value to
+            look up the stored `token_hash`. Never stored raw.
+          minLength: 32
+          maxLength: 128
+          example: "a3f8c2d1e5b74a9c8f0d2e3b6c7a1d4e"
+        new_password:
+          type: string
+          format: password
+          description: New password complying with the complexity policy (same rules as registration).
+          minLength: 8
+          maxLength: 72
+          example: "NewSecurePass9"
+
+    SuccessMessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Operation completed successfully."
+
+    ProblemDetail:
+      description: |
+        RFC 9457 Problem Details for HTTP APIs.
+        Content-Type: application/problem+json
+      type: object
+      required: [type, title, status, detail]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI reference that identifies the problem type.
+          example: "https://easyeat.com/errors/invalid-credentials"
+        title:
+          type: string
+          description: Short human-readable summary of the problem type.
+          example: "Invalid Credentials"
+        status:
+          type: integer
+          description: HTTP status code.
+          example: 401
+        detail:
+          type: string
+          description: Human-readable explanation of this specific occurrence.
+          example: "The provided email or password is incorrect."
+        instance:
+          type: string
+          format: uri-reference
+          description: URI reference identifying the specific request instance.
+          example: "/api/v1/auth/login"
+        errors:
+          type: array
+          description: Field-level validation errors. Present only on HTTP 422 responses.
+          items:
+            $ref: '#/components/schemas/FieldError'
+
+    FieldError:
+      type: object
+      properties:
+        field:
+          type: string
+          description: Name of the request body field that failed validation.
+          example: "password"
+        message:
+          type: string
+          description: Human-readable description of the validation failure.
+          example: "Password must contain at least one uppercase letter."
