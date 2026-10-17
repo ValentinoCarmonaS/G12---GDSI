@@ -1,0 +1,21 @@
+hooks:
+  before_specify:
+  - extension: git
+    command: speckit.git.branch
+    description: Auto-create and checkout a feature branch
+    optional: false
+  after_tasks:
+  - extension: git
+    command: speckit.git.commit
+    description: Commit task breakdown
+    optional: true
+  after_implement:
+  - extension: git
+    command: speckit.git.commit
+    description: Commit implemented feature
+    optional: true
+installed:
+- assess
+- bug
+settings:
+  auto_execute_hooks: true
