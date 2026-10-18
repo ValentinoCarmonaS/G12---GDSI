@@ -77,22 +77,33 @@ easyeat/
 │       │   │   │   ├── dto/LoginRequest.java
 │       │   │   │   ├── dto/LoginResponse.java
 │       │   │   │   ├── service/AuthService.java
-│       │   │   │   └── security/
-│       │   │   │       ├── JwtTokenProvider.java
-│       │   │   │       ├── JwtAuthenticationFilter.java
-│       │   │   │       └── SecurityConfig.java
-│       │   │   └── user/
-│       │   │       ├── entity/User.java
-│       │   │       ├── entity/Role.java
-│       │   │       └── repository/UserRepository.java
+│       │   │   │   ├── security/
+│       │   │   │   │   ├── JwtService.java             # Generates/validates tokens and token_version
+│       │   │   │   │   ├── JwtAuthenticationFilter.java # Enforces single active session check
+│       │   │   │   │   └── RateLimitingService.java    # Caffeine rate limiters (from 001)
+│       │   │   │   ├── entity/
+│       │   │   │   │   ├── User.java                   # User entity with token_version (from 001)
+│       │   │   │   │   └── PasswordResetToken.java     # From 001
+│       │   │   │   └── repository/
+│       │   │   │       └── UserRepository.java         # findByEmail, existsByEmail (from 001)
+│       │   │   ├── config/
+│       │   │   │   ├── SecurityConfig.java         # SecurityFilterChain configuration
+│       │   │   │   └── AppConfig.java              # Cache beans & general config
+│       │   │   └── exception/
+│       │   │       └── GlobalExceptionHandler.java # RFC 9457 ProblemDetail handler
 │       │   └── resources/
 │       │       ├── application.yml
-│       │       └── db/migration/V2__add_token_version_to_users.sql
+│       │       ├── application-dev.yml
+│       │       └── db/migration/
+│       │           ├── V1__create_users.sql            # Base users schema with token_version (from 001)
+│       │           └── V2__create_password_reset_tokens.sql # From 001
 │       └── test/java/com/easyeat/
 │           ├── auth/
 │           │   ├── controller/AuthControllerTest.java
-│           │   └── security/JwtAuthenticationFilterTest.java
-│           └── user/service/UserServiceTest.java
+│           │   └── security/
+│           │       ├── JwtServiceTest.java
+│           │       └── JwtAuthenticationFilterTest.java
+│           └── user/service/AuthServiceTest.java
 │
 └── frontend/
     ├── package.json

@@ -117,38 +117,25 @@ components:
     LoginResponse:
       type: object
       required:
-        - token
-        - tokenType
-        - userId
-        - email
-        - role
+        - access_token
+        - token_type
+        - expires_in
       properties:
-        token:
+        access_token:
           type: string
-          description: Signed JWT access token (8-hour validity).
+          description: |
+            Signed JWT (HS256) valid for 8 hours. Claims payload contains `sub` (userId UUID),
+            `email`, `role` (COMENSAL, ENCARGADO, CHEF, ADMINISTRADOR), `tenant_id` (UUID),
+            `token_version` (integer), `iat`, and `exp`.
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        tokenType:
+        token_type:
           type: string
           enum: [Bearer]
           example: "Bearer"
-        userId:
-          type: string
-          format: uuid
-          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-        email:
-          type: string
-          format: email
-          example: "maria.encargada@laesquina.com"
-        role:
-          type: string
-          enum: [COMENSAL, ENCARGADO, CHEF, ADMINISTRADOR]
-          example: "ENCARGADO"
-        tenantId:
-          type: string
-          format: uuid
-          nullable: true
-          description: Establishment identifier. Non-null for staff roles.
-          example: "8bb12c8a-2d4e-4f76-a0b2-9a0910f13341"
+        expires_in:
+          type: integer
+          description: Token lifetime in seconds. Always 28800 (8 hours).
+          example: 28800
 
     ProblemDetail:
       type: object

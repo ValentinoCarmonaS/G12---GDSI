@@ -9,11 +9,11 @@
 ## 1. Single Active Session & Token Invalidation Mechanism
 
 ### Decision
-Implement an integer `token_version` column on the `User` entity in PostgreSQL. The `token_version` is embedded as a numeric claim in the issued JWT access token. 
+Leverage the integer `token_version` column on the `User` entity in PostgreSQL (defined in `V1__create_users.sql` from feature 001). The `token_version` is embedded as a numeric claim in the issued JWT access token. 
 
-- On every successful login (`POST /api/v1/auth/login`), the backend atomically increments `user.token_version` in the database and embeds the new version in the token. This immediately invalidates any existing active tokens held by other browsers, devices, or tabs for that account.
+- On every successful login (`POST /api/v1/auth/login`), the backend atomically increments `user.token_version` in the database and embeds the new version in the token. This immediately invalidates any existing active tokens held by other browsers, devices, or tabs for that account (single active session).
 - On explicit logout (`POST /api/v1/auth/logout`), the backend increments `user.token_version`, instantly invalidating the current token.
-- `JwtAuthenticationFilter` extracts the `token_version` claim from the incoming JWT and compares it against the persisted `user.token_version`. If they do not match, the filter rejects the request with HTTP 401 Unauthorized.
+- `JwtAuthenticationFilter` (configured in feature 001) extracts the `token_version` claim from the incoming JWT and compares it against the persisted `user.token_version`. If they do not match, the filter rejects the request with HTTP 401 Unauthorized.
 
 ### Rationale
 - Applies KISS (Constitution Principle IV: Simple, Cohesive, and Justified Design).

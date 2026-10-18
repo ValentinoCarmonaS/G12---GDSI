@@ -45,7 +45,7 @@ Run the backend authentication and filter test suite:
 
 ```bash
 cd easyeat/backend
-mvn test -Dtest=AuthControllerTest,JwtAuthenticationFilterTest,UserServiceTest
+mvn test -Dtest=AuthControllerTest,JwtAuthenticationFilterTest,AuthServiceTest
 ```
 
 **Expected Results**:

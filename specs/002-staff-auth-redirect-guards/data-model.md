@@ -16,19 +16,19 @@ Represents an identity within the platform (diner, staff, or admin).
 |---|---|---|---|---|
 | `id` | `UUID` | No | `gen_random_uuid()` | Primary key. Unique account identifier. |
 | `email` | `VARCHAR(255)` | No | N/A | Normalized lowercase email address. Unique index. |
-| `password_hash` | `VARCHAR(255)` | No | N/A | Salted bcrypt cryptographic password hash. |
-| `role` | `VARCHAR(32)` | No | `'COMENSAL'` | Assigned system role: `COMENSAL`, `ENCARGADO`, `CHEF`, `ADMINISTRADOR`. |
-| `status` | `VARCHAR(32)` | No | `'ACTIVE'` | Operational status: `ACTIVE`, `SUSPENDED`, `INACTIVE`. |
-| `tenant_id` | `UUID` | Yes | `NULL` | Establishment identifier. Mandatory for staff roles; optional for platform comensales. |
-| `token_version` | `INTEGER` | No | `1` | Session version sequence. Atomically incremented on login and logout. |
-| `created_at` | `TIMESTAMPTZ` | No | `CURRENT_TIMESTAMP` | Account creation timestamp. |
-| `updated_at` | `TIMESTAMPTZ` | No | `CURRENT_TIMESTAMP` | Last profile update timestamp. |
+| `password_hash` | `VARCHAR(255)` | No | N/A | Salted bcrypt cryptographic password hash (cost 12). |
+| `role` | `VARCHAR(50)` | No | `'COMENSAL'` | Assigned system role: `COMENSAL`, `ENCARGADO`, `CHEF`, `ADMINISTRADOR`. |
+| `status` | `VARCHAR(50)` | No | `'ACTIVE'` | Operational status: `ACTIVE`, `SUSPENDED`, `UNVERIFIED`. |
+| `tenant_id` | `UUID` | Yes | `NULL` | Establishment identifier. Mandatory for staff roles; null for platform comensales. |
+| `token_version` | `INTEGER` | No | `0` | Session version sequence (from `V1__create_users.sql`). Incremented on login & logout. |
+| `created_at` | `TIMESTAMPTZ` | No | `NOW()` | Account creation timestamp. |
+| `updated_at` | `TIMESTAMPTZ` | No | `NOW()` | Last profile update timestamp. |
 
-#### Database Constraints & Invariants
-- `uk_users_email`: Unique constraint on `email`.
-- `idx_users_email`: B-tree index for efficient login lookup.
-- `chk_staff_tenant_id`: Check constraint or domain invariant ensuring `tenant_id IS NOT NULL` when `role IN ('ENCARGADO', 'CHEF', 'ADMINISTRADOR')`.
-- `chk_token_version_positive`: Invariant ensuring `token_version >= 1`.
+#### Database Constraints & Invariants (Inherited from `V1__create_users.sql` in 001)
+- `uq_users_email`: Unique constraint on `email`.
+- `idx_users_email`: B-tree index on `email` for O(log n) login lookup.
+- `chk_users_role`: Check constraint `CHECK (role IN ('COMENSAL','ENCARGADO','CHEF','ADMINISTRADOR'))`.
+- `chk_users_status`: Check constraint `CHECK (status IN ('ACTIVE','SUSPENDED','UNVERIFIED'))`.
 
 ---
 
@@ -97,15 +97,25 @@ export interface LoginRequest {
 }
 ```
 
-### Interface: `LoginResponse`
+### Interface: `LoginResponse` (Wire format matching 001)
 ```typescript
 export interface LoginResponse {
-  token: string;
-  tokenType: 'Bearer';
-  userId: string;
+  access_token: string;
+  token_type: 'Bearer';
+  expires_in: number; // 28800 (8 hours)
+}
+```
+
+### Interface: `JwtClaims` (Decoded payload from access_token)
+```typescript
+export interface JwtClaims {
+  sub: string; // userId (UUID)
   email: string;
   role: Role;
-  tenantId: string | null;
+  tenant_id: string | null;
+  token_version: number;
+  iat: number;
+  exp: number;
 }
 ```
 
