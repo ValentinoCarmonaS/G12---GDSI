@@ -31,6 +31,6 @@
 
 ## Notes
 
-- All 16 checklist items pass. Specification is ready for `/speckit-clarify` or `/speckit-plan`.
-- The user description was exceptionally detailed, eliminating the need for any [NEEDS CLARIFICATION] markers.
-- 27 functional requirements, 9 success criteria, 5 user stories with 30+ acceptance scenarios, and 9 edge cases documented.
+- All 16 checklist items pass. Specification is ready for `/speckit-plan`.
+- Clarification session completed on 20/10/2026: 5 targeted ambiguities resolved across credential delivery, catalog pagination/sorting, ingredient reactivation, temporary credential validity, and stock adjustments on discontinued items.
+- 27 functional requirements, 9 success criteria, 5 user stories with 32 acceptance scenarios, and 9 edge cases documented.
