@@ -50,4 +50,14 @@ public class AuthController {
         return ResponseEntity.ok(new UserSummaryResponse(
                 "Password updated successfully. All previous sessions have been invalidated."));
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.easyeat.auth.domain.User authenticatedUser) {
+        if (authenticatedUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        authService.logout(authenticatedUser.getId());
+        return ResponseEntity.noContent().build();
+    }
 }
