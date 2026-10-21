@@ -183,7 +183,7 @@ class PasswordRecoveryIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.access_token").isNotEmpty());
 
-        // Verify OLD JWT session is revoked (401 Unauthorized due to token_version mismatch)
+        // Verify OLD JWT session is revoked (401 Unauthorized ProblemDetail due to token_version mismatch)
         mockMvc.perform(get("/api/v1/any-protected")
                         .header("Authorization", "Bearer " + oldJwt))
                 .andExpect(status().isUnauthorized());

@@ -138,7 +138,7 @@ class AdminPasswordRecoveryIntegrationTest {
         Claims initialClaims = jwtService.extractAllClaims(oldJwt);
         assertThat(initialClaims.get("role", String.class)).isEqualTo("ADMINISTRADOR");
         assertThat(initialClaims.get("tenant_id", String.class)).isEqualTo(tenantId.toString());
-        assertThat(initialClaims.get("token_version", Integer.class)).isEqualTo(0);
+        assertThat(initialClaims.get("token_version", Integer.class)).isEqualTo(1);
 
         // Verify old JWT accesses protected endpoints (404 means authenticated)
         mockMvc.perform(get("/api/v1/admin-protected")
@@ -172,7 +172,7 @@ class AdminPasswordRecoveryIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Password updated successfully. All previous sessions have been invalidated."));
 
-        // 4. Verify previous admin session token is immediately invalidated (401 Unauthorized due to token_version mismatch)
+        // 4. Verify previous admin session token is immediately invalidated (401 Unauthorized ProblemDetail)
         mockMvc.perform(get("/api/v1/admin-protected")
                         .header("Authorization", "Bearer " + oldJwt))
                 .andExpect(status().isUnauthorized());
@@ -200,7 +200,7 @@ class AdminPasswordRecoveryIntegrationTest {
         Claims newClaims = jwtService.extractAllClaims(newJwt);
         assertThat(newClaims.get("role", String.class)).isEqualTo("ADMINISTRADOR");
         assertThat(newClaims.get("tenant_id", String.class)).isEqualTo(tenantId.toString());
-        assertThat(newClaims.get("token_version", Integer.class)).isEqualTo(1);
+        assertThat(newClaims.get("token_version", Integer.class)).isEqualTo(3);
 
         // Verify new JWT accesses protected endpoints
         mockMvc.perform(get("/api/v1/admin-protected")

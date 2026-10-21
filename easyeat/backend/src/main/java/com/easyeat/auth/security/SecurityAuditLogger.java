@@ -72,6 +72,13 @@ public class SecurityAuditLogger {
         emit("ACCESS_DENIED", email, clientIp, details, true);
     }
 
+    public void logLogout(String email, String role, Object userId) {
+        Map<String, Object> details = new LinkedHashMap<>();
+        if (role != null) details.put("role", role);
+        if (userId != null) details.put("userId", userId.toString());
+        emit("LOGOUT", email, null, details, false);
+    }
+
     public String formatEvent(String eventType, String email, String clientIp, Map<String, Object> details) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("timestamp", Instant.now().toString());
