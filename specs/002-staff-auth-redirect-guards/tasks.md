@@ -74,20 +74,20 @@
 
 ### Tests for User Story 2 (TDD) ⚠️
 
-- [ ] T017 [P] [US2] Unit tests for role-to-route mapping policy and deep link resolution in `easyeat/frontend/tests/router/postAuthRouting.test.ts`
-- [ ] T018 [P] [US2] Unit tests for `AuthContext` token decoding, payload extraction (`role`, `tenant_id`, `user_id`), and `sessionStorage` synchronization in `easyeat/frontend/tests/context/AuthContext.test.tsx`
+- [x] T017 [P] [US2] Unit tests for role-to-route mapping policy and deep link resolution in `easyeat/frontend/tests/router/postAuthRouting.test.ts`
+- [x] T018 [P] [US2] Unit tests for `AuthContext` token decoding, payload extraction (`role`, `tenant_id`, `user_id`), and `sessionStorage` synchronization in `easyeat/frontend/tests/context/AuthContext.test.tsx`
 
 ### Implementation for User Story 2
 
-- [ ] T019 [P] [US2] Implement pure post-auth routing functions (`getRoleDefaultRoute`, `resolvePostAuthRedirect`) in `easyeat/frontend/src/router/postAuthRouting.ts`
-- [ ] T020 [US2] Implement `AuthContext` with JWT decoding, `sessionStorage` persistence, and reactive auth state in `easyeat/frontend/src/context/AuthContext.tsx`
-- [ ] T021 [P] [US2] Implement `useAuth` custom hook exposing auth state and dispatch actions in `easyeat/frontend/src/hooks/useAuth.ts`
-- [ ] T022 [P] [US2] Create `WorkspaceLayout` common wrapper with role badge, tenant display, and logout slot in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
-- [ ] T023 [P] [US2] Create `CounterWorkspacePage` landing view for `ENCARGADO` in `easyeat/frontend/src/pages/CounterWorkspacePage.tsx`
-- [ ] T024 [P] [US2] Create `KitchenWorkspacePage` landing view for `CHEF` in `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
-- [ ] T025 [P] [US2] Create `AdminWorkspacePage` landing view for `ADMINISTRADOR` in `easyeat/frontend/src/pages/AdminWorkspacePage.tsx`
-- [ ] T026 [P] [US2] Create `CatalogPage` landing view for `COMENSAL` / fallback in `easyeat/frontend/src/pages/CatalogPage.tsx`
-- [ ] T027 [US2] Integrate post-auth redirection in `LoginForm` upon successful login in `easyeat/frontend/src/components/auth/LoginForm.tsx`
+- [x] T019 [P] [US2] Implement pure post-auth routing functions (`getRoleDefaultRoute`, `resolvePostAuthRedirect`) in `easyeat/frontend/src/router/postAuthRouting.ts`
+- [x] T020 [US2] Implement `AuthContext` with JWT decoding, `sessionStorage` persistence, and reactive auth state in `easyeat/frontend/src/context/AuthContext.tsx`
+- [x] T021 [P] [US2] Implement `useAuth` custom hook exposing auth state and dispatch actions in `easyeat/frontend/src/hooks/useAuth.ts`
+- [x] T022 [P] [US2] Create `WorkspaceLayout` common wrapper with role badge, tenant display, and logout slot in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
+- [x] T023 [P] [US2] Create `CounterWorkspacePage` landing view for `ENCARGADO` in `easyeat/frontend/src/pages/CounterWorkspacePage.tsx`
+- [x] T024 [P] [US2] Create `KitchenWorkspacePage` landing view for `CHEF` in `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
+- [x] T025 [P] [US2] Create `AdminWorkspacePage` landing view for `ADMINISTRADOR` in `easyeat/frontend/src/pages/AdminWorkspacePage.tsx`
+- [x] T026 [P] [US2] Create `CatalogPage` landing view for `COMENSAL` / fallback in `easyeat/frontend/src/pages/CatalogPage.tsx`
+- [x] T027 [US2] Integrate post-auth redirection in `LoginForm` upon successful login in `easyeat/frontend/src/components/auth/LoginForm.tsx`
 
 **Checkpoint**: User Story 2 functional — staff members authenticate and are instantly routed to their assigned operational workspace without intermediate prompts.
 
