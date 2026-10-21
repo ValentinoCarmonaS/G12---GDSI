@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
+import { authApi } from '../api/authApi';
 
 export const AdminWorkspacePage: React.FC = () => {
+  useEffect(() => {
+    authApi.me().catch(() => { /* handled by interceptor */ });
+  }, []);
+
   return (
     <WorkspaceLayout
       title="Panel de Administración"
