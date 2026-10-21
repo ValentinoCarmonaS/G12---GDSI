@@ -6,53 +6,72 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend-checks:
-    name: Backend Lint & Tests
+    name: Backend Lint, Tests & Verify (Spring Boot)
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          python-version: "3.12"
+          java-version: "21"
+          distribution: "temurin"
+          cache: "maven"
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt
-          pip install ruff
-
-      - name: Run Ruff Linter
-        run: |
-          ruff check backend
-
-      - name: Run Pytest Suite with Coverage
-        env:
-          PYTHONPATH: .
-        run: |
-          python -m pytest backend/tests --cov=backend/src --cov-report=term-missing --cov-fail-under=90
+      - name: Run Backend Tests & Package (mvn verify)
+        working-directory: easyeat/backend
+        run: mvn -B clean verify
 
   frontend-checks:
-    name: Frontend Build & Type Check
+    name: Frontend Lint & Build (React)
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Check if Frontend is Scaffolded
+        id: check_frontend
+        run: |
+          if [ -f "easyeat/frontend/package.json" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Frontend not yet scaffolded in this branch; skipping checks."
+          fi
+
       - name: Set up Node.js 20
+        if: steps.check_frontend.outputs.exists == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: "npm"
+          cache-dependency-path: easyeat/frontend/package-lock.json
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm install
+      - name: Install Frontend Dependencies
+        if: steps.check_frontend.outputs.exists == 'true'
+        working-directory: easyeat/frontend
+        run: npm ci
+
+      - name: Run Frontend Linter
+        if: steps.check_frontend.outputs.exists == 'true'
+        working-directory: easyeat/frontend
+        run: npm run lint --if-present
+
+      - name: Run Frontend Tests
+        if: steps.check_frontend.outputs.exists == 'true'
+        working-directory: easyeat/frontend
+        run: npm test --if-present
 
       - name: Verify Production Build
-        working-directory: frontend
+        if: steps.check_frontend.outputs.exists == 'true'
+        working-directory: easyeat/frontend
         run: npm run build
