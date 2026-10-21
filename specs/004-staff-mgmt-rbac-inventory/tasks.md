@@ -70,7 +70,7 @@
 ### Tests for User Story 3 (TDD - Write First) ⚠️
 
 - [x] T021 [P] [US3] Unit test `IngredientServiceTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/service/IngredientServiceTest.java` validating ingredient creation, unique tenant name checks, unit of measure modification locks, and state transitions (`Active` ↔ `Discontinued` → `Archived` only at zero stock)
-- [ ] T022 [P] [US3] Web layer contract test `AdminIngredientControllerTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/controller/AdminIngredientControllerTest.java` validating `POST`, `GET`, `PUT`, and `PATCH /status` endpoints on `/api/v1/admin/ingredients/**`
+- [x] T022 [P] [US3] Web layer contract test `AdminIngredientControllerTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/controller/AdminIngredientControllerTest.java` validating `POST`, `GET`, `PUT`, and `PATCH /status` endpoints on `/api/v1/admin/ingredients/**`
 
 ### Implementation for User Story 3
 
