@@ -3,6 +3,8 @@ package com.easyeat.inventory.repository;
 import com.easyeat.inventory.dto.IngredientCategory;
 import com.easyeat.inventory.dto.IngredientStatus;
 import com.easyeat.inventory.entity.Ingredient;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -42,4 +44,14 @@ public interface IngredientRepository extends JpaRepository<Ingredient, UUID> {
             @Param("tenantId") UUID tenantId,
             @Param("name") String name,
             @Param("excludeId") UUID excludeId);
+
+    @Query("SELECT i FROM Ingredient i WHERE i.tenantId = :tenantId " +
+            "AND i.status = com.easyeat.inventory.dto.IngredientStatus.ACTIVE " +
+            "AND (:category IS NULL OR i.category = :category) " +
+            "AND (:search IS NULL OR LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%')))")
+    org.springframework.data.domain.Page<Ingredient> findChefCatalog(
+            @Param("tenantId") UUID tenantId,
+            @Param("category") IngredientCategory category,
+            @Param("search") String search,
+            org.springframework.data.domain.Pageable pageable);
 }
