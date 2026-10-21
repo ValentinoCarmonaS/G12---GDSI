@@ -123,7 +123,7 @@
 
 - [x] T038 [P] [US5] Create Chef Catalog DTOs (`StockAvailabilityStatus`, `ChefIngredientItemResponse`, `ChefIngredientPageResponse`) in `easyeat/backend/src/main/java/com/easyeat/inventory/dto/` without purchase cost or audit attributes
 - [x] T039 [US5] Add Chef catalog query method to `IngredientRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java` filtering by `tenant_id`, `status = 'ACTIVE'`, optional category, and case-insensitive name match with `Pageable`
-- [ ] T040 [US5] Implement `ChefCatalogController` exposing `GET /api/v1/chef/ingredients` guarded with `@PreAuthorize("hasRole('CHEF')")` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/ChefCatalogController.java`
+- [x] T040 [US5] Implement `ChefCatalogController` exposing `GET /api/v1/chef/ingredients` guarded with `@PreAuthorize("hasRole('CHEF')")` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/ChefCatalogController.java`
 
 **Checkpoint**: User Story 5 fully functional. Kitchen staff can browse available ingredients safely.
 
