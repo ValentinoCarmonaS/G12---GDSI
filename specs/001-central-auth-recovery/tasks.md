@@ -26,7 +26,7 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T007 Create Flyway database migration `V1__create_users.sql` in `easyeat/backend/src/main/resources/db/migration/V1__create_users.sql` defining `users` table with UUID PK (`gen_random_uuid()`), unique lowercase email check, and role/tenant integrity constraint.
+- [X] T007 Create Flyway database migration `V1__create_users.sql` in `easyeat/backend/src/main/resources/db/migration/V1__create_users.sql` defining `users` table with UUID PK (`gen_random_uuid()`), unique lowercase email check, and role/tenant integrity constraint.
 - [ ] T008 [P] Create Flyway database migration `V2__create_password_reset_tokens.sql` in `easyeat/backend/src/main/resources/db/migration/V2__create_password_reset_tokens.sql` defining `password_reset_tokens` table with FK to users (CASCADE) and unique index on `token_hash`.
 - [ ] T009 [P] Implement `ClockConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/ClockConfig.java` providing an injectable `java.time.Clock` bean for deterministic time validation.
 - [ ] T010 [P] Implement `User.java` JPA entity, `UserRole.java`, and `UserStatus.java` enums in `easyeat/backend/src/main/java/com/easyeat/auth/domain/User.java`.
