@@ -11,12 +11,12 @@
 
 **Purpose**: Project initialization, build configuration, and local runtime dependencies.
 
-- [ ] T001 Initialize Maven single-project build configuration in `easyeat/backend/pom.xml` with Java 21, Spring Boot 3.3.4 parent, Spring Security 6, JJWT 0.12.6, Caffeine, Flyway 10, PostgreSQL driver, and Testcontainers.
-- [ ] T002 [P] Configure local Docker services in `easyeat/backend/docker-compose.yml` for PostgreSQL 16 (port 5432) and Mailpit (SMTP port 1025, Web UI port 8025).
-- [ ] T003 [P] Configure base application configuration in `easyeat/backend/src/main/resources/application.yml` with JWT settings, BCrypt cost 12, rate limit settings, and RFC 9457 ProblemDetail enabled.
-- [ ] T004 [P] Configure local development profile in `easyeat/backend/src/main/resources/application-dev.yml` pointing to local Docker PostgreSQL and Mailpit SMTP.
-- [ ] T005 [P] Configure test profile in `easyeat/backend/src/test/resources/application-test.yml` with fixed test JWT signing secret and dynamic Testcontainers datasource.
-- [ ] T006 Create main Spring Boot application class in `easyeat/backend/src/main/java/com/easyeat/EasyEatApplication.java`.
+- [X] T001 Initialize Maven single-project build configuration in `easyeat/backend/pom.xml` with Java 21, Spring Boot 3.3.4 parent, Spring Security 6, JJWT 0.12.6, Caffeine, Flyway 10, PostgreSQL driver, and Testcontainers.
+- [X] T002 [P] Configure local Docker services in `easyeat/backend/docker-compose.yml` for PostgreSQL 16 (port 5432) and Mailpit (SMTP port 1025, Web UI port 8025).
+- [X] T003 [P] Configure base application configuration in `easyeat/backend/src/main/resources/application.yml` with JWT settings, BCrypt cost 12, rate limit settings, and RFC 9457 ProblemDetail enabled.
+- [X] T004 [P] Configure local development profile in `easyeat/backend/src/main/resources/application-dev.yml` pointing to local Docker PostgreSQL and Mailpit SMTP.
+- [X] T005 [P] Configure test profile in `easyeat/backend/src/test/resources/application-test.yml` with fixed test JWT signing secret and dynamic Testcontainers datasource.
+- [X] T006 Create main Spring Boot application class in `easyeat/backend/src/main/java/com/easyeat/EasyEatApplication.java`.
 
 ---
 
@@ -26,13 +26,13 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T007 Create Flyway database migration `V1__create_users.sql` in `easyeat/backend/src/main/resources/db/migration/V1__create_users.sql` defining `users` table with UUID PK (`gen_random_uuid()`), unique lowercase email check, and role/tenant integrity constraint.
-- [ ] T008 [P] Create Flyway database migration `V2__create_password_reset_tokens.sql` in `easyeat/backend/src/main/resources/db/migration/V2__create_password_reset_tokens.sql` defining `password_reset_tokens` table with FK to users (CASCADE) and unique index on `token_hash`.
-- [ ] T009 [P] Implement `ClockConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/ClockConfig.java` providing an injectable `java.time.Clock` bean for deterministic time validation.
-- [ ] T010 [P] Implement `User.java` JPA entity, `UserRole.java`, and `UserStatus.java` enums in `easyeat/backend/src/main/java/com/easyeat/auth/domain/User.java`.
-- [ ] T011 [P] Implement `UserRepository.java` in `easyeat/backend/src/main/java/com/easyeat/auth/repository/UserRepository.java` with `findByEmail(String email)` and `existsByEmail(String email)`.
-- [ ] T012 Implement baseline `SecurityConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` with `BCryptPasswordEncoder(12)`, stateless session creation policy, and permitAll for public `/api/v1/auth/**` endpoints.
-- [ ] T013 Implement centralized RFC 9457 exception handler `GlobalExceptionHandler.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` returning `ProblemDetail` responses for validation errors, conflict, bad request, and unauthorized errors.
+- [X] T007 Create Flyway database migration `V1__create_users.sql` in `easyeat/backend/src/main/resources/db/migration/V1__create_users.sql` defining `users` table with UUID PK (`gen_random_uuid()`), unique lowercase email check, and role/tenant integrity constraint.
+- [X] T008 [P] Create Flyway database migration `V2__create_password_reset_tokens.sql` in `easyeat/backend/src/main/resources/db/migration/V2__create_password_reset_tokens.sql` defining `password_reset_tokens` table with FK to users (CASCADE) and unique index on `token_hash`.
+- [X] T009 [P] Implement `ClockConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/ClockConfig.java` providing an injectable `java.time.Clock` bean for deterministic time validation.
+- [X] T010 [P] Implement `User.java` JPA entity, `UserRole.java`, and `UserStatus.java` enums in `easyeat/backend/src/main/java/com/easyeat/auth/domain/User.java`.
+- [X] T011 [P] Implement `UserRepository.java` in `easyeat/backend/src/main/java/com/easyeat/auth/repository/UserRepository.java` with `findByEmail(String email)` and `existsByEmail(String email)`.
+- [X] T012 Implement baseline `SecurityConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` with `BCryptPasswordEncoder(12)`, stateless session creation policy, and permitAll for public `/api/v1/auth/**` endpoints.
+- [X] T013 Implement centralized RFC 9457 exception handler `GlobalExceptionHandler.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` returning `ProblemDetail` responses for validation errors, conflict, bad request, and unauthorized errors.
 
 **Checkpoint**: Foundation ready. User story implementation can now proceed in priority order.
 
@@ -48,16 +48,16 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation.**
 
-- [ ] T014 [P] [US1] Write failing unit tests for `@MaxBytes(72)` custom validator and registration DTO constraints in `easyeat/backend/src/test/java/com/easyeat/auth/validation/MaxBytesValidatorTest.java`.
-- [ ] T015 [P] [US1] Write failing MockMvc WebMvc contract tests for `POST /api/v1/auth/register` (201 Created, 400 Bad Request for invalid password/email, 409 Conflict for duplicate email) in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerRegistrationTest.java`.
+- [X] T014 [P] [US1] Write failing unit tests for `@MaxBytes(72)` custom validator and registration DTO constraints in `easyeat/backend/src/test/java/com/easyeat/auth/validation/MaxBytesValidatorTest.java`.
+- [X] T015 [P] [US1] Write failing MockMvc WebMvc contract tests for `POST /api/v1/auth/register` (201 Created, 400 Bad Request for invalid password/email, 409 Conflict for duplicate email) in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerRegistrationTest.java`.
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Implement `@MaxBytes` annotation and `MaxBytesValidator.java` in `easyeat/backend/src/main/java/com/easyeat/auth/validation/MaxBytes.java` verifying that UTF-8 byte length of passwords does not exceed 72 bytes.
-- [ ] T017 [P] [US1] Implement registration DTOs `RegisterRequest.java` and `UserSummaryResponse.java` in `easyeat/backend/src/main/java/com/easyeat/auth/dto/RegisterRequest.java`.
-- [ ] T018 [US1] Implement registration business logic in `AuthService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java` normalizing email (`toLowerCase().trim()`), checking uniqueness, and hashing password with BCrypt cost 12.
-- [ ] T019 [US1] Implement `register` endpoint in `AuthController.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java` handling `POST /api/v1/auth/register` and returning 201 Created with `UserSummaryResponse`.
-- [ ] T020 [US1] Write and run Testcontainers integration test in `easyeat/backend/src/test/java/com/easyeat/auth/integration/RegistrationIntegrationTest.java` verifying end-to-end comensal persistence, lowercase DB constraint adherence, and duplicate email rejection.
+- [X] T016 [US1] Implement `@MaxBytes` annotation and `MaxBytesValidator.java` in `easyeat/backend/src/main/java/com/easyeat/auth/validation/MaxBytes.java` verifying that UTF-8 byte length of passwords does not exceed 72 bytes.
+- [X] T017 [P] [US1] Implement registration DTOs `RegisterRequest.java` and `UserSummaryResponse.java` in `easyeat/backend/src/main/java/com/easyeat/auth/dto/RegisterRequest.java`.
+- [X] T018 [US1] Implement registration business logic in `AuthService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java` normalizing email (`toLowerCase().trim()`), checking uniqueness, and hashing password with BCrypt cost 12.
+- [X] T019 [US1] Implement `register` endpoint in `AuthController.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java` handling `POST /api/v1/auth/register` and returning 201 Created with `UserSummaryResponse`.
+- [X] T020 [US1] Write and run Testcontainers integration test in `easyeat/backend/src/test/java/com/easyeat/auth/integration/RegistrationIntegrationTest.java` verifying end-to-end comensal persistence, lowercase DB constraint adherence, and duplicate email rejection.
 
 **Checkpoint**: User Story 1 is fully functional and testable independently (MVP deliverable).
 
