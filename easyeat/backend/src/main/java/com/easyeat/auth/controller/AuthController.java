@@ -1,8 +1,11 @@
 package com.easyeat.auth.controller;
 
+import com.easyeat.auth.dto.AuthTokenResponse;
+import com.easyeat.auth.dto.LoginRequest;
 import com.easyeat.auth.dto.RegisterRequest;
 import com.easyeat.auth.dto.UserSummaryResponse;
 import com.easyeat.auth.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,9 +28,10 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<com.easyeat.auth.dto.AuthTokenResponse> login(
-            @Valid @RequestBody com.easyeat.auth.dto.LoginRequest request,
-            jakarta.servlet.http.HttpServletRequest httpRequest) {
-        return ResponseEntity.ok(authService.login(request, httpRequest.getRemoteAddr()));
+    public ResponseEntity<AuthTokenResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
+        AuthTokenResponse response = authService.login(request, httpRequest.getRemoteAddr());
+        return ResponseEntity.ok(response);
     }
 }
