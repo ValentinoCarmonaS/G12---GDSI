@@ -24,7 +24,7 @@
 
 **⚠️ CRITICAL**: No user story implementation can proceed until this phase is complete and verified.
 
-- [ ] T005 [P] Create Flyway migration script `easyeat/backend/src/main/resources/db/migration/V3__extend_users_staff.sql` extending `users` with `full_name`, `must_change_password`, and updated role/status CHECK constraints
+- [x] T005 [P] Create Flyway migration script `easyeat/backend/src/main/resources/db/migration/V3__extend_users_staff.sql` extending `users` with `full_name`, `must_change_password`, and updated role/status CHECK constraints
 - [ ] T006 [P] Create Flyway migration script `easyeat/backend/src/main/resources/db/migration/V4__create_ingredients_and_stock_audit.sql` defining `ingredients` and append-only `stock_audit_entries` tables, indexes, constraints, and immutability rules
 - [ ] T007 Implement `TenantContextHolder` backed by `ThreadLocal<UUID>` in `easyeat/backend/src/main/java/com/easyeat/common/context/TenantContextHolder.java`
 - [ ] T008 Implement `TenantContextFilter` extracting and validating `tenant_id` from JWT claims into `TenantContextHolder` in `easyeat/backend/src/main/java/com/easyeat/common/filter/TenantContextFilter.java`
