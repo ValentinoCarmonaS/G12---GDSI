@@ -1,4 +1,4 @@
-# Implementation Tasks: Staff Management, RBAC, and Initial Ingredient Inventory
+    # Implementation Tasks: Staff Management, RBAC, and Initial Ingredient Inventory
 
 **Feature**: Staff Management, RBAC, and Initial Ingredient Inventory  
 **Branch**: `004-staff-mgmt-rbac-inventory`  
