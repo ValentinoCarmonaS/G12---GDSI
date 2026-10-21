@@ -25,6 +25,7 @@ describe('RoleRouteGuard Component', () => {
       token: null,
       setToken: vi.fn(),
       clearAuth: vi.fn(),
+      logout: vi.fn(),
     });
 
     render(
@@ -63,6 +64,7 @@ describe('RoleRouteGuard Component', () => {
       token: 'mock-token',
       setToken: vi.fn(),
       clearAuth: vi.fn(),
+      logout: vi.fn(),
     });
 
     render(
@@ -100,6 +102,7 @@ describe('RoleRouteGuard Component', () => {
       token: 'mock-token',
       setToken: vi.fn(),
       clearAuth: vi.fn(),
+      logout: vi.fn(),
     });
 
     render(

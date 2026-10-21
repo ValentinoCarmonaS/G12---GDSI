@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { AuthenticatedUser, JwtClaims, Role } from '../types/auth';
+import { authApi } from '../api/authApi';
 
 interface AuthContextType {
   user: AuthenticatedUser | null;
@@ -66,7 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(async () => {
     try {
-      const { authApi } = await import('../api/authApi');
       await authApi.logout();
     } catch {
       // Ignored: network failure during logout shouldn't prevent local eviction
