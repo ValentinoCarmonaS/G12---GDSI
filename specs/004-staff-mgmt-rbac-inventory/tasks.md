@@ -29,7 +29,7 @@
 - [x] T007 Implement `TenantContextHolder` backed by `ThreadLocal<UUID>` in `easyeat/backend/src/main/java/com/easyeat/common/context/TenantContextHolder.java`
 - [x] T008 Implement `TenantContextFilter` extracting and validating `tenant_id` from JWT claims into `TenantContextHolder` in `easyeat/backend/src/main/java/com/easyeat/common/filter/TenantContextFilter.java`
 - [x] T009 Implement structured security audit logger emitting JSON audit events for access denials in `easyeat/backend/src/main/java/com/easyeat/auth/security/SecurityAuditLogger.java`
-- [ ] T010 Register `TenantContextFilter` into the Spring Security filter chain after `JwtAuthenticationFilter` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [x] T010 Register `TenantContextFilter` into the Spring Security filter chain after `JwtAuthenticationFilter` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
 
 **Checkpoint**: Foundational database schemas and tenant isolation filters verified.
 
