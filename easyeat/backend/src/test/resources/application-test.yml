@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:16-alpine:///easyeat_test
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+  mail:
+    host: localhost
+    port: 1025
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+app:
+  security:
+    jwt:
+      secret: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      expiration-ms: 28800000
+    bcrypt:
+      cost: 12
+    rate-limiting:
+      login:
+        max-attempts: 5
+        duration-minutes: 15
+      reset:
+        max-attempts: 1
+        duration-seconds: 60
+    password-reset:
+      token-validity-minutes: 15
+      base-url: http://localhost:3000/auth/reset-password
