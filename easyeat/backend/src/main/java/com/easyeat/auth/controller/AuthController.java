@@ -35,6 +35,20 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Returns the authenticated user's profile by validating the bearer token
+     * against the persisted token_version. Used by workspace views on mount
+     * to detect single-session invalidation (concurrent login scenario).
+     */
+    @GetMapping("/me")
+    public ResponseEntity<AuthenticatedUserResponse> me(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.easyeat.auth.domain.User authenticatedUser) {
+        if (authenticatedUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(AuthenticatedUserResponse.from(authenticatedUser));
+    }
+
     @PostMapping("/password-reset/request")
     public ResponseEntity<UserSummaryResponse> requestPasswordReset(
             @Valid @RequestBody PasswordResetRequest request) {
@@ -49,5 +63,15 @@ public class AuthController {
         passwordResetService.confirmPasswordReset(request.token(), request.newPassword());
         return ResponseEntity.ok(new UserSummaryResponse(
                 "Password updated successfully. All previous sessions have been invalidated."));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.easyeat.auth.domain.User authenticatedUser) {
+        if (authenticatedUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        authService.logout(authenticatedUser.getId());
+        return ResponseEntity.noContent().build();
     }
 }

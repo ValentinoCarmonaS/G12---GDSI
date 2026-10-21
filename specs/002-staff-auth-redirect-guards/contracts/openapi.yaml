@@ -1,0 +1,159 @@
+openapi: 3.0.3
+info:
+  title: EasyEat Staff Authentication & Route Protection API
+  version: 1.0.0
+  description: >
+    Specification for unified authentication, session invalidation, and post-login
+    routing contracts supporting staff and diner personas.
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Unified login with email and password
+      description: >
+        Authenticates a user (Comensal, Encargado, Chef, or Administrador).
+        Atomically increments token_version on the User entity (invalidating any prior
+        active session on other devices) and returns a signed 8-hour JWT asserting identity,
+        role, tenant_id, and token_version.
+      operationId: login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful authentication. Returns JWT and user context.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Missing or syntactically invalid input fields.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: >
+            Authentication failed. Generic error response returned for both mismatched
+            passwords and non-existent email addresses to prevent account enumeration.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "about:blank"
+                title: "Unauthorized"
+                status: 401
+                detail: "Credenciales inválidas"
+                instance: "/api/v1/auth/login"
+        '403':
+          description: Account is suspended or inactive.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "about:blank"
+                title: "Forbidden"
+                status: 403
+                detail: "La cuenta se encuentra inactiva o suspendida"
+                instance: "/api/v1/auth/login"
+        '429':
+          description: Rate limit exceeded (temporary cooldown lockout).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/auth/logout:
+    post:
+      summary: Explicit logout and session revocation
+      description: >
+        Terminates the active session for the authenticated user by atomically
+        incrementing token_version in the database, rendering the current token
+        and all previous tokens invalid.
+      operationId: logout
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Session successfully terminated.
+        '401':
+          description: Unauthenticated, expired, or previously invalidated token.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "maria.encargada@laesquina.com"
+        password:
+          type: string
+          format: password
+          example: "SecretPassword123"
+
+    LoginResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          description: |
+            Signed JWT (HS256) valid for 8 hours. Claims payload contains `sub` (userId UUID),
+            `email`, `role` (COMENSAL, ENCARGADO, CHEF, ADMINISTRADOR), `tenant_id` (UUID),
+            `token_version` (integer), `iat`, and `exp`.
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          enum: [Bearer]
+          example: "Bearer"
+        expires_in:
+          type: integer
+          description: Token lifetime in seconds. Always 28800 (8 hours).
+          example: 28800
+
+    ProblemDetail:
+      type: object
+      description: Standard RFC 9457 error representation.
+      required:
+        - status
+        - title
+      properties:
+        type:
+          type: string
+          format: uri
+          default: "about:blank"
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference

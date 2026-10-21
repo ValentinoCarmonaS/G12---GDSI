@@ -43,11 +43,16 @@ public class JwtService {
 
         var builder = Jwts.builder()
                 .subject(user.getId().toString())
+                .claim("user_id", user.getId().toString())
                 .claim("role", user.getRole().name())
                 .claim("token_version", user.getTokenVersion() == null ? 0 : user.getTokenVersion())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
                 .signWith(key);
+
+        if (user.getEmail() != null) {
+            builder.claim("email", user.getEmail());
+        }
 
         if (user.getTenantId() != null) {
             builder.claim("tenant_id", user.getTenantId().toString());

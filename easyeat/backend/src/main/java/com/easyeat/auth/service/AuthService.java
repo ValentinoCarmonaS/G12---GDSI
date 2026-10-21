@@ -82,7 +82,7 @@ public class AuthService {
         return new UserSummaryResponse("Account created successfully.");
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthTokenResponse login(LoginRequest request, String clientIp) {
         String normalizedEmail = request.email().trim().toLowerCase();
 
@@ -117,12 +117,23 @@ public class AuthService {
             throw new AccountSuspendedException("The account has been suspended or is not authorized to operate.");
         }
 
-        // 5. Successful login resets failure counter and issues JWT
+        // 5. Successful login resets failure counter, increments token_version (invalidating prior sessions), and issues JWT
         rateLimitingService.resetLoginAttempts(normalizedEmail, clientIp);
+        user.incrementTokenVersion();
+        userRepository.save(user);
         String token = jwtService.generateToken(user);
 
         securityAuditLogger.logLoginSuccess(normalizedEmail, user.getRole().name(), clientIp, user.getId());
 
         return new AuthTokenResponse(token);
+    }
+
+    @Transactional
+    public void logout(java.util.UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidCredentialsException("User account not found."));
+        user.incrementTokenVersion();
+        userRepository.save(user);
+        securityAuditLogger.logLogout(user.getEmail(), user.getRole().name(), userId);
     }
 }
