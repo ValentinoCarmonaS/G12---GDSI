@@ -64,6 +64,11 @@ public class RateLimitingService {
         }
     }
 
+    public void clear() {
+        emailAttempts.invalidateAll();
+        ipAttempts.invalidateAll();
+    }
+
     private String normalize(String email) {
         return email.trim().toLowerCase();
     }

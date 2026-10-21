@@ -84,7 +84,7 @@
 - [X] T028 [US2] Implement `JwtAuthenticationFilter.java` in `easyeat/backend/src/main/java/com/easyeat/auth/security/JwtAuthenticationFilter.java` extracting Bearer token, verifying signature, and asserting that database `token_version` matches and account is `ACTIVE`.
 - [X] T029 [US2] Register `JwtAuthenticationFilter` before `UsernamePasswordAuthenticationFilter` in `SecurityConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`.
 - [X] T030 [US2] Implement `login` endpoint in `AuthController.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java` handling `POST /api/v1/auth/login`.
-- [ ] T031 [US2] Write and run Testcontainers integration tests in `easyeat/backend/src/test/java/com/easyeat/auth/integration/LoginIntegrationTest.java` verifying unified login for all 4 roles, account suspension blocking (403), rate-limiting lockout (429), and timing resistance.
+- [X] T031 [US2] Write and run Testcontainers integration tests in `easyeat/backend/src/test/java/com/easyeat/auth/integration/LoginIntegrationTest.java` verifying unified login for all 4 roles, account suspension blocking (403), rate-limiting lockout (429), and timing resistance.
 
 **Checkpoint**: User Stories 1 AND 2 are fully functional and integrated.
 
