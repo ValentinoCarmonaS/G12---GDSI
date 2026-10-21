@@ -4,10 +4,12 @@ import com.easyeat.inventory.dto.IngredientCategory;
 import com.easyeat.inventory.dto.IngredientStatus;
 import com.easyeat.inventory.entity.Ingredient;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,6 +18,10 @@ import java.util.UUID;
 public interface IngredientRepository extends JpaRepository<Ingredient, UUID> {
 
     Optional<Ingredient> findByIdAndTenantId(UUID id, UUID tenantId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM Ingredient i WHERE i.id = :id AND i.tenantId = :tenantId")
+    Optional<Ingredient> findByIdAndTenantIdForUpdate(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
 
     List<Ingredient> findAllByTenantIdOrderByCreatedAtDesc(UUID tenantId);
 

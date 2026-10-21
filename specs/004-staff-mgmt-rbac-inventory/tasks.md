@@ -100,7 +100,7 @@
 
 - [x] T031 [P] [US4] Create Stock Adjustment DTOs (`StockAdjustmentMode`, `StockAdjustmentRequest`, `StockAdjustmentResponse`, `StockAuditEntryResponse`) in `easyeat/backend/src/main/java/com/easyeat/inventory/dto/`
 - [x] T032 [P] [US4] Create `StockAuditEntry` JPA entity in `easyeat/backend/src/main/java/com/easyeat/inventory/entity/StockAuditEntry.java` mapping `tenant_id`, `ingredient_id`, `user_id`, `adjustment_mode`, `previous_stock`, `new_stock`, `net_delta`, and `justification`
-- [ ] T033 [US4] Add pessimistic locking query `findByIdAndTenantIdForUpdate` with `@Lock(LockModeType.PESSIMISTIC_WRITE)` to `IngredientRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java`
+- [x] T033 [US4] Add pessimistic locking query `findByIdAndTenantIdForUpdate` with `@Lock(LockModeType.PESSIMISTIC_WRITE)` to `IngredientRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java`
 - [ ] T034 [US4] Create `StockAuditEntryRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/StockAuditEntryRepository.java` providing append-only `save()` and chronological retrieval methods
 - [ ] T035 [US4] Implement `StockAdjustmentService` in `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockAdjustmentService.java` handling `@Transactional` stock calculation, non-negative validation, discrete vs continuous unit scale validation, and immutable audit persistence
 - [ ] T036 [US4] Add adjustment endpoints `POST /api/v1/admin/ingredients/{id}/stock-adjustments` and `GET /api/v1/admin/ingredients/{id}/stock-audit` to `AdminIngredientController` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/AdminIngredientController.java`
