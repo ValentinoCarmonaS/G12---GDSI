@@ -1,163 +1,163 @@
-# Investigación Técnica y Registro de Decisiones (Phase 0)
+# Technical Research and Decision Log (Phase 0)
 
-**Característica**: Gestión de Personal, RBAC e Inventario Inicial de Ingredientes  
-**Rama**: `004-staff-mgmt-rbac-inventory`  
-**Fecha**: 2026-10-20  
-**Estado**: Completado  
-
----
-
-## Resumen Ejecutivo
-
-El presente documento consolida la investigación técnica y las decisiones de diseño para la implementación del módulo de personal, control de acceso basado en roles (RBAC), aislamiento multi-tenant y el catálogo de ingredientes con ajustes de stock y trazabilidad inmutable.
-
-El diseño se apoya y extiende las bases tecnológicas definidas en la iteración 001 (`central-auth-recovery`):
-- **Lenguaje y Entorno**: Java 21 (LTS).
-- **Framework Principal**: Spring Boot 3.3.4 con Spring Security 6.3.
-- **Persistencia**: PostgreSQL 16 con Flyway para migraciones evolutivas y Spring Data JPA.
-- **Autenticación**: JSON Web Tokens (JJWT 0.12.6) con claims criptográficos de identidad, rol y `tenant_id`.
-- **Estrategia de Pruebas**: JUnit 5, Mockito y Testcontainers con PostgreSQL real para pruebas de integración con aislamiento transaccional.
+**Feature**: Staff Management, RBAC, and Initial Ingredient Inventory  
+**Branch**: `004-staff-mgmt-rbac-inventory`  
+**Date**: 2026-10-20  
+**Status**: Completed  
 
 ---
 
-## Registro de Decisiones de Arquitectura e Implementación
+## Executive Summary
 
-### D-001 · Estructura Modular y Paquetes de Backend
+This document consolidates the technical research and architecture design decisions for the staff management module, role-based access control (RBAC), multi-tenant isolation, and master ingredient catalog with stock adjustments and immutable audit logging.
 
-- **Decisión**: Organizar los nuevos componentes en dos paquetes de dominio vertical dentro de `easyeat/backend/src/main/java/com/easyeat/`:
-  1. `com.easyeat.staff`: Gestión de empleados, asignación de roles y control de credenciales iniciales.
-  2. `com.easyeat.inventory`: Catálogo de ingredientes, ciclo de vida de insumos, ajustes de stock y auditoría inmutable.
-- **Racionalidad**: Mantiene la alta cohesión por contexto delimitado (Bounded Context), desacoplando la gestión administrativa del personal respecto a la operatoria de insumos de cocina, a la vez que reutiliza `com.easyeat.auth` para la infraestructura central de seguridad y emisión de tokens.
-- **Alternativas evaluadas**:
-  - *Monolito por capas (`controllers`, `services`, `repositories` globales)*: Rechazado por diluir la cohesión de dominio y dificultar el mantenimiento a medida que crecen las historias de usuario.
-  - *Módulos Maven separados (`staff-service`, `inventory-service`)*: Rechazado para el alcance del MVP; introduce sobrecarga de compilación y despliegue sin justificación operativa actual.
-
----
-
-### D-002 · Control de Acceso (RBAC) y Aislamiento Multi-Tenant
-
-- **Decisión**:
-  1. Utilizar un filtro de contexto `TenantContextFilter` para extraer y validar el claim `tenant_id` del token JWT verificado, almacenándolo en un `TenantContextHolder` respaldado por `ThreadLocal`.
-  2. Aplicar seguridad declarativa de métodos mediante `@PreAuthorize("hasRole('ADMIN')")`, `@PreAuthorize("hasAnyRole('ADMIN', 'CHEF')")`, etc., habilitada vía `@EnableMethodSecurity`.
-  3. Aplicar filtrado obligatorio de `tenant_id` en todas las consultas y mutaciones de persistencia (`UserRepository`, `IngredientRepository`, `StockAuditEntryRepository`).
-  4. En caso de acceso no autorizado (violación de rol o intento de cruce de tenant), emitir respuesta HTTP `403 Forbidden` estructurada según RFC 9457 (`ProblemDetail`) y registrar un evento de auditoría de seguridad a través de SLF4J (`SecurityAuditLogger`).
-- **Racionalidad**: Garantiza aislamiento estricto tanto en la capa de transporte como en la de aplicación y datos. Los tokens son firmados criptográficamente; un cliente no puede falsificar su `tenant_id`. La inyección obligatoria del tenant en las consultas SQL previene cualquier fuga accidental de datos entre locales gastronómicos.
-- **Alternativas evaluadas**:
-  - *Row-Level Security (RLS) en PostgreSQL*: Muy potente, pero incrementa la complejidad del pool de conexiones (requiere fijar variables de sesión por conexión en HikariCP) y dificulta las pruebas unitarias y de integración livianas en el MVP.
+The technical design builds upon and directly extends the foundation established in iteration 001 (`central-auth-recovery`):
+- **Language and Runtime**: Java 21 (LTS).
+- **Core Framework**: Spring Boot 3.3.4 with Spring Security 6.3.
+- **Persistence**: PostgreSQL 16 with Flyway schema migration and Spring Data JPA.
+- **Authentication**: JSON Web Tokens (JJWT 0.12.6) with cryptographic claims asserting identity, role, and `tenant_id`.
+- **Testing Strategy**: JUnit 5, Mockito, and Testcontainers running real PostgreSQL for isolated integration tests.
 
 ---
 
-### D-003 · Concurrencia y Bloqueo Pesimista en Ajustes de Stock
+## Architectural and Implementation Decision Log
 
-- **Decisión**: Emplear bloqueo pesimista de escritura (`SELECT ... FOR UPDATE`) en la consulta de lectura del ingrediente previo a cualquier ajuste de stock:
+### D-001 · Backend Modular Structure and Package Layout
+
+- **Decision**: Organize the new components into two vertical domain packages under `easyeat/backend/src/main/java/com/easyeat/`:
+  1. `com.easyeat.staff`: Staff member administration, role assignment, and initial credential controls.
+  2. `com.easyeat.inventory`: Raw ingredient master catalog, lifecycle management, physical stock adjustments, and immutable audit log.
+- **Rationale**: Preserves high cohesion within bounded contexts, cleanly separating administrative staff operations from kitchen ingredient management, while reusing `com.easyeat.auth` for core security infrastructure and JWT verification.
+- **Alternatives Considered**:
+  - *Layered monolith (`controllers`, `services`, `repositories` globally)*: Rejected because it dilutes domain cohesion and hinders maintainability as user stories grow.
+  - *Separate Maven submodules (`staff-service`, `inventory-service`)*: Rejected for MVP scope; introduces build and deployment overhead without operational justification.
+
+---
+
+### D-002 · Role-Based Access Control (RBAC) and Multi-Tenant Isolation
+
+- **Decision**:
+  1. Implement a `TenantContextFilter` to extract and validate the `tenant_id` claim from verified JWTs, storing it in a `TenantContextHolder` backed by `ThreadLocal`.
+  2. Enforce declarative method-level security using `@PreAuthorize("hasRole('ADMIN')")`, `@PreAuthorize("hasAnyRole('ADMIN', 'CHEF')")`, etc., enabled via `@EnableMethodSecurity`.
+  3. Enforce mandatory tenant scoping in all persistence queries and mutations (`UserRepository`, `IngredientRepository`, `StockAuditEntryRepository`).
+  4. On unauthorized access attempts (role violation or cross-tenant access attempt), respond with HTTP `403 Forbidden` structured according to RFC 9457 (`ProblemDetail`) and persist a structured security audit log entry via SLF4J (`SecurityAuditLogger`).
+- **Rationale**: Guarantees strict isolation across transport, application, and data layers. Cryptographically signed tokens prevent clients from tampering with `tenant_id`. Enforcing tenant parameters in database queries prevents cross-tenant data leaks.
+- **Alternatives Considered**:
+  - *PostgreSQL Row-Level Security (RLS)*: Powerful, but increases connection pool complexity (requires setting session variables per connection in HikariCP) and adds friction to lightweight test suites.
+
+---
+
+### D-003 · Concurrency and Pessimistic Locking for Stock Adjustments
+
+- **Decision**: Use pessimistic write locking (`SELECT ... FOR UPDATE`) on ingredient retrieval prior to any stock adjustment:
   ```java
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("SELECT i FROM Ingredient i WHERE i.id = :id AND i.tenantId = :tenantId")
   Optional<Ingredient> findByIdAndTenantIdForUpdate(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
   ```
-- **Racionalidad**: El requerimiento FR-016 y FR-020 exige garantizar que el stock resultante nunca sea negativo (`resulting_stock >= 0`) y que dos ajustes concurrentes sobre el mismo ingrediente no generen condiciones de carrera ni pérdidas de actualización (lost updates). El bloqueo pesimista serializa a nivel de base de datos la fila del ingrediente durante la transacción `@Transactional`, calculando el nuevo balance y grabando la auditoría de forma atómica.
-- **Alternativas evaluadas**:
-  - *Bloqueo optimista (`@Version`)*: Si dos administradores ajustan el stock simultáneamente, uno de ellos recibiría una excepción `OptimisticLockException` y su operación fallaría, requiriendo reintentos y potencialmente confundiendo al usuario en conteos físicos. El bloqueo pesimista garantiza ejecución determinista.
+- **Rationale**: Requirements FR-016 and FR-020 strictly mandate that resulting stock cannot be negative (`resulting_stock >= 0`) and that concurrent stock adjustments on the same ingredient must not cause race conditions or lost updates. Pessimistic locking serializes the ingredient row at the database level during the `@Transactional` boundary, guaranteeing atomic balance updates and audit logging.
+- **Alternatives Considered**:
+  - *Optimistic Locking (`@Version`)*: If two administrators adjust stock simultaneously, one transaction would fail with `OptimisticLockException`, requiring manual retry workflows that complicate physical warehouse inventory counts. Pessimistic locking provides deterministic execution.
 
 ---
 
-### D-004 · Precisión Numérica Exacta para Cantidades Físicas y Costos
+### D-004 · Exact Numeric Precision for Physical Quantities and Costs
 
-- **Decisión**:
-  1. En Java: Utilizar `BigDecimal` para cantidades físicas continuas y costos monetarios.
-  2. En PostgreSQL: Definir tipos de columna `NUMERIC(12, 4)` para cantidades de stock y deltas, y `NUMERIC(12, 4)` para costos de compra unitarios.
-  3. Para la unidad discreta unidad (`u`): Validar en la capa de servicios que la escala efectiva sea cero o que el valor represente un número entero (ej. `value.stripTrailingZeros().scale() <= 0`).
-  4. Para unidades continuas (`g`, `kg`, `ml`, `l`): Aceptar y almacenar valores decimales con escala de hasta 3 decimales para cantidades físicas (ej. 1.750 kg, 250.500 g).
-- **Racionalidad**: Cumple estrictamente con el principio de exactitud contable e inventario (FR-025), eliminando cualquier error de redondeo inherente a la aritmética de coma flotante binaria (`double` o `float`).
-- **Alternativas evaluadas**:
-  - *Almacenamiento en enteros mínimos (ej. miligramos o centavos)*: Aumenta la complejidad de conversión en las capas de presentación y consulta, y dificulta la lectura directa de auditorías en base de datos. `NUMERIC(12, 4)` ofrece precisión absoluta nativa.
-
----
-
-### D-005 · Provisión de Credencial Temporal y Flujo de Primer Acceso
-
-- **Decisión**:
-  1. Generar una credencial aleatoria criptográficamente segura de 12 caracteres (incluyendo mayúsculas, minúsculas, dígitos y caracteres especiales) mediante `SecureRandom`.
-  2. Almacenar el hash de dicha clave mediante `BCryptPasswordEncoder` (costo 12).
-  3. Crear al empleado en la tabla `users` con estado `PENDING_FIRST_LOGIN` (o booleano `must_change_password = true`).
-  4. Retornar la clave en texto plano únicamente en el cuerpo de la respuesta HTTP 201 Created al Administrador que dio el alta, para su visualización única con acción de copiado.
-  5. La credencial no expira por paso del tiempo; permanece activa hasta el primer inicio de sesión o hasta que el Administrador reemita la credencial.
-  6. En el primer inicio de sesión exitoso, el sistema detecta `must_change_password = true` y bloquea cualquier otra operación de la plataforma, forzando la invocación al endpoint de cambio de clave inicial (`POST /api/v1/auth/first-login-password-change`), actualizando el hash y pasando el usuario a estado `ACTIVE`.
-- **Racionalidad**: Cumple al 100% las decisiones de clarificación (Sesión 2026-10-20) y los requisitos FR-003 y FR-004, protegiendo las credenciales contra filtraciones en logs o persistencia insegura.
-- **Alternativas evaluadas**:
-  - *Envío por correo electrónico automático*: Descartado por el usuario en la sesión de clarificación en favor de la visualización en pantalla con copia al portapapeles.
+- **Decision**:
+  1. In Java: Use `BigDecimal` for continuous physical quantities and financial costs.
+  2. In PostgreSQL: Use `NUMERIC(12, 4)` for stock quantities, deltas, and unit purchase costs.
+  3. For discrete units (`u`): Validate in the service layer that the effective scale is zero or that the value represents an integer (e.g., `value.stripTrailingZeros().scale() <= 0`).
+  4. For continuous units (`g`, `kg`, `ml`, `l`): Accept and store decimal quantities with up to 3 decimal places for physical quantities (e.g., 1.750 kg, 250.500 g).
+- **Rationale**: Strictly adheres to the inventory and accounting precision invariant (FR-025), eliminating rounding errors inherent to binary floating-point representations (`double` or `float`).
+- **Alternatives Considered**:
+  - *Integer-only smallest units (e.g., milligrams or cents)*: Increases conversion complexity across presentation and query layers, making direct database inspection and audit trail reviews error-prone. `NUMERIC(12, 4)` offers native exact precision.
 
 ---
 
-### D-006 · Prevención de Administrador Huérfano y Auto-Degradación
+### D-005 · Temporary Credential Provisioning and First Login Flow
 
-- **Decisión**: En las operaciones de edición de perfil (`PUT /api/v1/admin/staff/{id}`) y cambio de rol:
-  1. Si se intenta modificar el rol de un usuario con rol `ADMIN` hacia otro rol (`CHEF` o `COUNTER_CLERK`):
-  2. Ejecutar una consulta de verificación: `SELECT COUNT(u) FROM User u WHERE u.tenantId = :tenantId AND u.role = 'ADMIN' AND u.status = 'ACTIVE' AND u.id != :targetUserId`.
-  3. Si la cuenta de administradores restantes es 0, abortar la transacción y responder HTTP `409 Conflict` (o `422 Unprocessable Entity`) con el mensaje: "No es posible degradar al único Administrador activo del establecimiento".
-- **Racionalidad**: Garantiza el invariante de gobernanza FR-006, evitando que un local quede bloqueado administrativamente sin usuarios con privilegios de gestión.
-- **Alternativas evaluadas**:
-  - *Bloqueo únicamente en el frontend*: Rechazado; la regla de negocio debe ser inviolable a nivel de backend.
-
----
-
-### D-007 · Máquina de Estados y Ciclo de Vida del Ingrediente
-
-- **Decisión**: Modelar el ciclo de vida del ingrediente mediante tres estados formales:
-  - `ACTIVE`: Ingrediente disponible. Visible para el Administrador en la gestión de inventario y para el Chef en el catálogo de cocina. Admite ajustes de stock.
-  - `DISCONTINUED`: Ingrediente dado de baja operativa pero con stock remanente mayor a cero. Queda oculto del catálogo del Chef. Sigue visible para el Administrador y **admite ajustes de stock** (ej. mermas, descarte físico) hasta que el stock llegue a 0. Puede ser reactivado a `ACTIVE` por el Administrador.
-  - `ARCHIVED`: Archivo permanente. Solo permitido cuando `current_stock == 0`. Queda fuera de las vistas operativas de catálogo y recetas. No admite nuevos ajustes.
-- **Transiciones autorizadas**:
-  - `ACTIVE` → `DISCONTINUED`: Permitido si `current_stock > 0`.
-  - `ACTIVE` → `ARCHIVED`: Permitido únicamente si `current_stock == 0`.
-  - `DISCONTINUED` → `ACTIVE`: Permitido en cualquier momento por decisión del Administrador (restaura visibilidad al Chef).
-  - `DISCONTINUED` → `ARCHIVED`: Permitido únicamente cuando `current_stock == 0`.
-- **Restricción de cambio de unidad de medida**: Solo se permite cambiar la unidad de medida si `current_stock == 0` y no existen ajustes históricos que entren en conflicto conceptual (FR-013).
-- **Racionalidad**: Modela con total fidelidad la realidad operativa de una cocina profesional y las decisiones de la sesión de clarificación.
-- **Alternativas evaluadas**:
-  - *Borrado físico (`DELETE` en SQL)*: Inadmisible; violaría la integridad referencial histórica y la trazabilidad de auditoría.
+- **Decision**:
+  1. Generate a cryptographically secure random 12-character credential (including uppercase, lowercase, digits, and special characters) via `SecureRandom`.
+  2. Store its hash using `BCryptPasswordEncoder` (cost factor 12).
+  3. Create the staff member in `users` with status `PENDING_FIRST_LOGIN` (and boolean flag `must_change_password = true`).
+  4. Return the plaintext credential exclusively in the HTTP 201 Created response to the registering Administrator for a one-time screen display with clipboard copy support.
+  5. The temporary credential does not expire automatically by time; it remains valid until the first login or until an Administrator re-issues it.
+  6. On successful initial authentication, the system detects `must_change_password = true` and blocks access to platform resources, requiring the user to invoke `POST /api/v1/auth/first-login-password-change`, updating the hash and transitioning the account to `ACTIVE`.
+- **Rationale**: Aligns completely with clarification decisions (Session 2026-10-20) and requirements FR-003 and FR-004, preventing credential leakage in logs or insecure storage.
+- **Alternatives Considered**:
+  - *Automated email delivery*: Rejected in the clarification session in favor of one-time on-screen display with clipboard copy.
 
 ---
 
-### D-008 · Paginación y Proyecciones Seguras en el Catálogo del Chef
+### D-006 · Orphaned Administrator and Self-Demotion Prevention
 
-- **Decisión**:
-  1. Crear un endpoint exclusivo para cocina: `GET /api/v1/chef/ingredients`.
-  2. Parámetros de consulta: `page` (default 0), `size` (default 20, FR-021), `category` (opcional), `search` (opcional, búsqueda case-insensitive por nombre).
-  3. Ordenamiento obligatorio por defecto: Alfabético ascendente por nombre (`ORDER BY LOWER(name) ASC`).
-  4. Proyección de DTO (`ChefIngredientResponseDto`):
+- **Decision**: In profile update operations (`PUT /api/v1/admin/staff/{id}`) and role reassignments:
+  1. If an attempt is made to reassign a user with role `ADMIN` to another role (`CHEF` or `COUNTER_CLERK`):
+  2. Execute a validation query: `SELECT COUNT(u) FROM User u WHERE u.tenantId = :tenantId AND u.role = 'ADMIN' AND u.status = 'ACTIVE' AND u.id != :targetUserId`.
+  3. If remaining active administrators count is 0, abort the transaction and respond with HTTP `409 Conflict` (or `422 Unprocessable Entity`) with message: "Cannot demote the sole active Administrator of the establishment".
+- **Rationale**: Enforces governance invariant FR-006, ensuring restaurants never enter an unmanageable state without an active Administrator.
+- **Alternatives Considered**:
+  - *Client-side-only enforcement*: Rejected; business invariants must be strictly enforced at the backend layer.
+
+---
+
+### D-007 · Ingredient Lifecycle State Machine
+
+- **Decision**: Model the ingredient lifecycle through three formal statuses:
+  - `ACTIVE`: Available ingredient. Visible to both Administrator (inventory management) and Chef (kitchen catalog). Allows stock adjustments.
+  - `DISCONTINUED`: Decommissioned ingredient with physical stock remaining greater than zero. Excluded from Chef's catalog. Retained in Administrator inventory and **allows stock adjustments** (e.g., spoilage write-offs, physical counts) until stock reaches 0. Can be reactivated to `ACTIVE` by an Administrator.
+  - `ARCHIVED`: Permanently archived. Permitted only when `current_stock == 0`. Excluded from operational views. Does not allow stock adjustments.
+- **Authorized Transitions**:
+  - `ACTIVE` → `DISCONTINUED`: Permitted if `current_stock > 0`.
+  - `ACTIVE` → `ARCHIVED`: Permitted strictly when `current_stock == 0`.
+  - `DISCONTINUED` → `ACTIVE`: Permitted at any time by an Administrator (restores Chef visibility).
+  - `DISCONTINUED` → `ARCHIVED`: Permitted strictly when `current_stock == 0`.
+- **Unit of Measure Modification Restriction**: Changing unit of measure is allowed only if `current_stock == 0` and no conflicting stock history exists (FR-013).
+- **Rationale**: Faithfully mirrors restaurant kitchen operations and incorporates all clarification decisions.
+- **Alternatives Considered**:
+  - *Hard physical deletion (`DELETE` in SQL)*: Inadmissible; would destroy historical referential integrity and audit records.
+
+---
+
+### D-008 · Pagination and Secure Projections for Chef Catalog
+
+- **Decision**:
+  1. Provide a dedicated kitchen endpoint: `GET /api/v1/chef/ingredients`.
+  2. Query parameters: `page` (default 0), `size` (default 20, FR-021), `category` (optional), `search` (optional case-insensitive name filter).
+  3. Mandatory default sort: Alphabetical ascending by name (`ORDER BY LOWER(name) ASC`).
+  4. Response projection DTO (`ChefIngredientResponseDto`):
      - `id`: UUID.
      - `name`: String.
      - `category`: String.
      - `unitOfMeasure`: String.
-     - `stockStatus`: String (`IN_STOCK` si `current_stock > 0`, `OUT_OF_STOCK` si `current_stock == 0`).
-  5. **Omisión deliberada de campos sensibles**: El DTO no expone ni `unitPurchaseCost` ni el historial de auditoría de ajustes, cumpliendo estrictamente con FR-024.
-- **Racionalidad**: Optimiza el consumo de red mediante paginación indexada y garantiza el principio de mínimo privilegio en la visualización de información de costos de la empresa.
-- **Alternativas evaluadas**:
-  - *Reutilizar el endpoint del Administrador filtrando en cliente*: Violación flagrante de seguridad; la API filtraría datos financieros al cliente web del Chef.
+     - `stockStatus`: String (`IN_STOCK` if `current_stock > 0`, `OUT_OF_STOCK` if `current_stock == 0`).
+  5. **Deliberate omission of sensitive fields**: The DTO does not expose `unitPurchaseCost` or stock adjustment audit logs, strictly complying with FR-024.
+- **Rationale**: Optimizes network payload via indexed pagination and enforces the principle of least privilege regarding business financial data.
+- **Alternatives Considered**:
+  - *Reuse Administrator endpoint with frontend filtering*: Critical security violation; would leak financial purchase costs to Chef clients.
 
 ---
 
-### D-009 · Inmutabilidad y Trazabilidad del Registro de Auditoría de Stock
+### D-009 · Immutability and Traceability for Stock Audit Log
 
-- **Decisión**:
-  1. Tabla `stock_audit_entries` gestionada exclusivamente como append-only (solo `INSERT`).
-  2. No existen métodos de actualización (`UPDATE`) ni de borrado (`DELETE`) en el repositorio JPA ni en los endpoints de la API.
-  3. Regla de base de datos o trigger opcional: Denegar comandos `UPDATE` o `DELETE` sobre la tabla `stock_audit_entries` a nivel de DDL/permisos de PostgreSQL para máxima garantía de inmutabilidad (FR-019).
-  4. Los campos almacenados son: `id`, `tenant_id`, `ingredient_id`, `user_id` (del administrador que ejecutó el ajuste), `adjustment_mode` (`ABSOLUTE` o `RELATIVE`), `previous_stock`, `new_stock`, `net_delta`, `justification`, y `created_at`.
-- **Racionalidad**: Garantiza evidencia forense inalterable requerida para auditorías contables y control de mermas gastronómicas.
-- **Alternativas evaluadas**:
-  - *Almacenar solo el balance acumulado en la fila del ingrediente*: Rechazado; destruye la trazabilidad y la justificación requerida por FR-018.
+- **Decision**:
+  1. Manage `stock_audit_entries` as append-only (`INSERT` only).
+  2. No update (`UPDATE`) or delete (`DELETE`) methods in repository or API controllers.
+  3. PostgreSQL database rules/triggers: Reject any `UPDATE` or `DELETE` statements on `stock_audit_entries` at the DDL/database level for strict immutability (FR-019).
+  4. Stored attributes: `id`, `tenant_id`, `ingredient_id`, `user_id` (admin identity), `adjustment_mode` (`ABSOLUTE` or `RELATIVE`), `previous_stock`, `new_stock`, `net_delta`, `justification`, and `created_at`.
+- **Rationale**: Guarantees forensic audit integrity required for food cost management, spoilage tracing, and inventory reconciliation.
+- **Alternatives Considered**:
+  - *Store only current balance in ingredient row*: Rejected; destroys historical traceability and justification mandated by FR-018.
 
 ---
 
-## Matriz de Cobertura Tecnológica
+## Technology Stack and Version Pinning Matrix
 
-| Componente | Elección Tecnológica | Justificación |
+| Component | Technology Choice | Rationale |
 |---|---|---|
-| Plataforma de Ejecución | Java 21 / Spring Boot 3.3.4 | Continuidad de iteración 001, soporte LTS de largo plazo |
-| Seguridad | Spring Security 6.3 + JJWT 0.12.6 | Validación criptográfica de claims y RBAC declarativo |
-| Motor de Persistencia | PostgreSQL 16 + Hibernate ORM 6.5 | Tipos `NUMERIC` exactos, UUID nativos y bloqueo pesimista |
-| Migraciones | Flyway 10.x | Evolución versionada y determinista del esquema SQL |
-| Aislamiento Multi-Tenant | `TenantContextHolder` (ThreadLocal) + Filter | Inyección transversal de `tenant_id` en capa de servicio y datos |
-| Testing Automatizado | JUnit 5 + Mockito + Testcontainers (PostgreSQL) | Validación de concurrencia y restricciones relacionales en DB real |
+| Execution Runtime | Java 21 (LTS) / Spring Boot 3.3.4 | Consistency with iteration 001, long-term LTS enterprise support |
+| Security | Spring Security 6.3 + JJWT 0.12.6 | Cryptographic claim validation and declarative method-level RBAC |
+| Persistence Engine | PostgreSQL 16 + Hibernate ORM 6.5 | Exact `NUMERIC` types, native UUIDs, and pessimistic row locking |
+| Migrations | Flyway 10.x | Versioned, deterministic SQL schema evolution |
+| Multi-Tenant Isolation | `TenantContextHolder` (ThreadLocal) + Filter | Cross-cutting `tenant_id` injection in service and data layers |
+| Automated Testing | JUnit 5 + Mockito + Testcontainers (PostgreSQL) | Multithreaded concurrency tests and schema verification on real DB |

@@ -1,31 +1,31 @@
 openapi: 3.0.3
 info:
-  title: EasyEat - API de Gestión de Personal, RBAC e Inventario Inicial
+  title: EasyEat - Staff Management, RBAC, and Initial Inventory API
   description: |
-    Contrato de interfaz OpenAPI 3.0 para la iteración 004 del proyecto EasyEat.
-    Cubre la gestión de nómina de personal de restaurante (ADM-3.1.1), control de acceso basado
-    en roles y aislamiento multi-tenant (ADM-3.1.2), catálogo maestro de ingredientes y su ciclo de vida
-    (ADM-4.1.1), ajustes manuales de stock con auditoría inmutable (ADM-4.1.2) y catálogo de cocina para el Chef (CHF-2.1.1).
+    OpenAPI 3.0 interface specification for iteration 004 of the EasyEat platform.
+    Covers restaurant staff roster management (ADM-3.1.1), role-based access control and multi-tenant isolation
+    (ADM-3.1.2), master ingredient catalog and lifecycle transitions (ADM-4.1.1), manual stock adjustments with
+    immutable audit trail (ADM-4.1.2), and the kitchen ingredient catalog for the Chef (CHF-2.1.1).
   version: 1.0.0
 servers:
   - url: http://localhost:8080/api/v1
-    description: Servidor de desarrollo local
+    description: Local development server
 
 paths:
   # =========================================================================
-  # 1. GESTIÓN DE PERSONAL (ADMIN)
+  # 1. STAFF MANAGEMENT (ADMIN)
   # =========================================================================
   /admin/staff:
     post:
-      summary: Alta de nuevo personal del establecimiento (ADM-3.1.1)
+      summary: Register new establishment staff member (ADM-3.1.1)
       description: |
-        Registra a un nuevo empleado vinculado al establecimiento del Administrador autenticado.
-        Genera una credencial temporal segura devuelta de forma única en la respuesta.
-        Enforza unicidad global del email en minúsculas.
+        Registers a new staff member linked to the authenticated Administrator's establishment.
+        Generates a secure temporary credential returned exactly once in the response.
+        Enforces global case-insensitive email uniqueness.
       security:
         - BearerAuth: []
       tags:
-        - Admin - Personal
+        - Admin - Staff
       requestBody:
         required: true
         content:
@@ -34,7 +34,7 @@ paths:
               $ref: '#/components/schemas/StaffRegistrationRequest'
       responses:
         '201':
-          description: Personal registrado exitosamente con credencial temporal generada.
+          description: Staff member registered successfully with one-time temporary credential.
           content:
             application/json:
               schema:
@@ -46,22 +46,22 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '409':
-          description: El correo electrónico ya se encuentra registrado en la plataforma.
+          description: Email address is already registered on the platform.
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
     get:
-      summary: Obtener nómina de personal del establecimiento (ADM-3.1.1)
-      description: Retorna la lista completa de empleados que pertenecen al establecimiento del Administrador autenticado.
+      summary: List establishment staff roster (ADM-3.1.1)
+      description: Returns the full roster of staff members belonging to the authenticated Administrator's establishment.
       security:
         - BearerAuth: []
       tags:
-        - Admin - Personal
+        - Admin - Staff
       responses:
         '200':
-          description: Lista de miembros de personal del establecimiento.
+          description: List of establishment staff members.
           content:
             application/json:
               schema:
@@ -78,19 +78,19 @@ paths:
       - name: id
         in: path
         required: true
-        description: Identificador UUID del miembro de personal.
+        description: UUID identifier of the staff member.
         schema:
           type: string
           format: uuid
     get:
-      summary: Obtener detalle de un empleado (ADM-3.1.1)
+      summary: Get staff member details (ADM-3.1.1)
       security:
         - BearerAuth: []
       tags:
-        - Admin - Personal
+        - Admin - Staff
       responses:
         '200':
-          description: Ficha del empleado.
+          description: Staff member profile.
           content:
             application/json:
               schema:
@@ -103,14 +103,14 @@ paths:
           $ref: '#/components/responses/NotFound'
 
     put:
-      summary: Modificar perfil o reasignar rol de un empleado (ADM-3.1.1, ADM-3.1.2)
+      summary: Update staff member details or reassign role (ADM-3.1.1, ADM-3.1.2)
       description: |
-        Actualiza el nombre, correo electrónico o rol de un miembro del personal.
-        Enforza la regla de no dejar al establecimiento sin al menos un Administrador activo.
+        Updates full name, email, or operational role of a staff member.
+        Enforces the orphaned admin constraint, preventing operations that leave the establishment with 0 active admins.
       security:
         - BearerAuth: []
       tags:
-        - Admin - Personal
+        - Admin - Staff
       requestBody:
         required: true
         content:
@@ -119,7 +119,7 @@ paths:
               $ref: '#/components/schemas/StaffUpdateRequest'
       responses:
         '200':
-          description: Perfil actualizado correctamente.
+          description: Staff member updated successfully.
           content:
             application/json:
               schema:
@@ -133,25 +133,25 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: Conflicto por email duplicado o por dejar al establecimiento sin Administrador.
+          description: Conflict due to duplicate email or orphaned admin constraint violation.
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
   # =========================================================================
-  # 2. CAMBIO DE CLAVE EN PRIMER INICIO DE SESIÓN
+  # 2. FIRST-LOGIN PASSWORD CHANGE
   # =========================================================================
   /auth/first-login-password-change:
     post:
-      summary: Cambio obligatorio de contraseña en primer acceso (ADM-3.1.1, FR-003)
+      summary: Mandatory password change on first login (ADM-3.1.1, FR-003)
       description: |
-        Permite a un empleado en estado PENDING_FIRST_LOGIN fijar su contraseña definitiva,
-        pasando su cuenta a estado ACTIVE.
+        Allows a staff member in PENDING_FIRST_LOGIN status to set their permanent password,
+        transitioning the account to ACTIVE.
       security:
         - BearerAuth: []
       tags:
-        - Autenticación
+        - Authentication
       requestBody:
         required: true
         content:
@@ -160,7 +160,7 @@ paths:
               $ref: '#/components/schemas/FirstLoginPasswordChangeRequest'
       responses:
         '200':
-          description: Contraseña cambiada exitosamente. Estado de cuenta actualizado a ACTIVE.
+          description: Password updated successfully. Account transitioned to ACTIVE.
           content:
             application/json:
               schema:
@@ -168,23 +168,23 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Contraseña actualizada exitosamente. Cuenta habilitada para operar."
+                    example: "Password updated successfully. Account is now active."
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
   # =========================================================================
-  # 3. CATÁLOGO MAESTRO DE INGREDIENTES (ADMIN)
+  # 3. MASTER INGREDIENT CATALOG (ADMIN)
   # =========================================================================
   /admin/ingredients:
     post:
-      summary: Crear ingrediente en el catálogo maestro (ADM-4.1.1)
-      description: Da de alta un nuevo ingrediente con nombre único en el tenant, categoría, unidad de medida y costo de compra.
+      summary: Create ingredient in master catalog (ADM-4.1.1)
+      description: Registers a new ingredient with unique name per tenant, category, unit of measure, and purchase cost.
       security:
         - BearerAuth: []
       tags:
-        - Admin - Ingredientes
+        - Admin - Ingredients
       requestBody:
         required: true
         content:
@@ -193,7 +193,7 @@ paths:
               $ref: '#/components/schemas/CreateIngredientRequest'
       responses:
         '201':
-          description: Ingrediente creado exitosamente.
+          description: Ingredient created successfully.
           content:
             application/json:
               schema:
@@ -205,19 +205,19 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
         '409':
-          description: Ya existe un ingrediente con ese nombre en el establecimiento.
+          description: An ingredient with this name already exists in the establishment.
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
     get:
-      summary: Listar ingredientes para administración (ADM-4.1.1)
-      description: Retorna la lista de ingredientes del establecimiento con soporte de filtrado por categoría y estado.
+      summary: List ingredients for administration (ADM-4.1.1)
+      description: Returns the establishment ingredient list with optional category and status filtering.
       security:
         - BearerAuth: []
       tags:
-        - Admin - Ingredientes
+        - Admin - Ingredients
       parameters:
         - name: category
           in: query
@@ -231,7 +231,7 @@ paths:
             $ref: '#/components/schemas/IngredientStatus'
       responses:
         '200':
-          description: Catálogo administrativo de ingredientes.
+          description: Administrative ingredient catalog.
           content:
             application/json:
               schema:
@@ -248,19 +248,19 @@ paths:
       - name: id
         in: path
         required: true
-        description: Identificador UUID del ingrediente.
+        description: UUID identifier of the ingredient.
         schema:
           type: string
           format: uuid
     get:
-      summary: Obtener detalle completo de un ingrediente (ADM-4.1.1)
+      summary: Get complete ingredient details (ADM-4.1.1)
       security:
         - BearerAuth: []
       tags:
-        - Admin - Ingredientes
+        - Admin - Ingredients
       responses:
         '200':
-          description: Detalle del ingrediente.
+          description: Ingredient details.
           content:
             application/json:
               schema:
@@ -273,14 +273,14 @@ paths:
           $ref: '#/components/responses/NotFound'
 
     put:
-      summary: Editar ficha de ingrediente (ADM-4.1.1)
+      summary: Edit ingredient details (ADM-4.1.1)
       description: |
-        Actualiza el nombre, categoría o costo unitario de compra.
-        El cambio de unidad de medida se bloquea si existe stock físico (> 0).
+        Updates ingredient name, category, or unit purchase cost.
+        Unit of measure modification is rejected if physical stock exists (> 0).
       security:
         - BearerAuth: []
       tags:
-        - Admin - Ingredientes
+        - Admin - Ingredients
       requestBody:
         required: true
         content:
@@ -289,7 +289,7 @@ paths:
               $ref: '#/components/schemas/UpdateIngredientRequest'
       responses:
         '200':
-          description: Ingrediente actualizado correctamente.
+          description: Ingredient updated successfully.
           content:
             application/json:
               schema:
@@ -303,7 +303,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: Nombre duplicado o intento de cambiar unidad de medida con stock existente.
+          description: Duplicate name or attempt to modify unit of measure when stock is non-zero.
           content:
             application/problem+json:
               schema:
@@ -318,16 +318,16 @@ paths:
           type: string
           format: uuid
     patch:
-      summary: Transición de ciclo de vida del ingrediente (ADM-4.1.1, FR-014)
+      summary: Transition ingredient lifecycle status (ADM-4.1.1, FR-014)
       description: |
-        Permite transicionar un ingrediente:
-        - ACTIVE -> DISCONTINUED (si stock > 0)
-        - DISCONTINUED -> ACTIVE (reactivación explícita)
-        - DISCONTINUED/ACTIVE -> ARCHIVED (estrictamente permitido solo si stock == 0)
+        Transitions ingredient status:
+        - ACTIVE -> DISCONTINUED (if stock > 0)
+        - DISCONTINUED -> ACTIVE (explicit reactivation)
+        - DISCONTINUED/ACTIVE -> ARCHIVED (strictly permitted only when stock == 0)
       security:
         - BearerAuth: []
       tags:
-        - Admin - Ingredientes
+        - Admin - Ingredients
       requestBody:
         required: true
         content:
@@ -341,7 +341,7 @@ paths:
                   $ref: '#/components/schemas/IngredientStatus'
       responses:
         '200':
-          description: Estado del ingrediente actualizado.
+          description: Ingredient status updated successfully.
           content:
             application/json:
               schema:
@@ -355,14 +355,14 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: Transición inválida (ej. archivar con stock mayor a cero).
+          description: Invalid transition (e.g., archiving an ingredient with stock greater than zero).
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
   # =========================================================================
-  # 4. AJUSTES MANUALES DE STOCK Y AUDITORÍA (ADMIN)
+  # 4. MANUAL STOCK ADJUSTMENTS & AUDIT TRAIL (ADMIN)
   # =========================================================================
   /admin/ingredients/{id}/stock-adjustments:
     parameters:
@@ -373,10 +373,10 @@ paths:
           type: string
           format: uuid
     post:
-      summary: Realizar ajuste manual de stock (ADM-4.1.2)
+      summary: Apply manual stock adjustment (ADM-4.1.2)
       description: |
-        Aplica un ajuste de inventario en modo ABSOLUTO (fija el stock contado) o RELATIVO (delta positivo/negativo).
-        Enforza el invariante de stock no negativo, justificación obligatoria y bloqueo pesimista en concurrencia.
+        Applies a physical inventory adjustment in ABSOLUTE mode (sets counted physical stock) or RELATIVE mode (positive/negative delta).
+        Enforces non-negative stock invariant, mandatory justification, and pessimistic locking during concurrent requests.
       security:
         - BearerAuth: []
       tags:
@@ -389,7 +389,7 @@ paths:
               $ref: '#/components/schemas/StockAdjustmentRequest'
       responses:
         '200':
-          description: Ajuste aplicado exitosamente y pista de auditoría registrada de forma inmutable.
+          description: Adjustment applied successfully and audit record created immutably.
           content:
             application/json:
               schema:
@@ -403,22 +403,22 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '422':
-          description: Violación de invariante (ej. stock resultante negativo o delta cero).
+          description: Invariant violation (e.g., resulting stock below zero or zero delta).
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
     get:
-      summary: Consultar historial de auditoría de stock del ingrediente (ADM-4.1.2)
-      description: Retorna el historial inmutable de ajustes aplicados sobre el ingrediente ordenado cronológicamente descendente.
+      summary: Get stock audit trail history for an ingredient (ADM-4.1.2)
+      description: Returns the immutable audit history of adjustments applied to the ingredient ordered chronologically descending.
       security:
         - BearerAuth: []
       tags:
         - Admin - Stock
       responses:
         '200':
-          description: Historial de auditoría de stock.
+          description: Stock audit history.
           content:
             application/json:
               schema:
@@ -433,24 +433,24 @@ paths:
           $ref: '#/components/responses/NotFound'
 
   # =========================================================================
-  # 5. CATÁLOGO DE INGREDIENTES PARA EL CHEF (CHEF)
+  # 5. KITCHEN INGREDIENT CATALOG (CHEF)
   # =========================================================================
   /chef/ingredients:
     get:
-      summary: Exploración del catálogo de ingredientes de cocina (CHF-2.1.1)
+      summary: Explore kitchen ingredient catalog (CHF-2.1.1)
       description: |
-        Consulta paginada de ingredientes activos del establecimiento para planificación culinaria.
-        Por defecto entrega 20 items por página ordenados alfabéticamente (A-Z).
-        Oculta deliberadamente costos de compra e historial de auditoría.
+        Paginated exploration of active ingredients belonging to the Chef's establishment.
+        Defaults to 20 items per page ordered alphabetically ascending (A-Z).
+        Deliberately hides purchase costs and stock adjustment audit trail.
       security:
         - BearerAuth: []
       tags:
-        - Chef - Catálogo
+        - Chef - Catalog
       parameters:
         - name: page
           in: query
           required: false
-          description: Número de página (0-indexed). Por defecto 0.
+          description: Page index (0-indexed). Defaults to 0.
           schema:
             type: integer
             default: 0
@@ -458,7 +458,7 @@ paths:
         - name: size
           in: query
           required: false
-          description: Tamaño de página. Por defecto 20.
+          description: Page size. Defaults to 20.
           schema:
             type: integer
             default: 20
@@ -466,18 +466,18 @@ paths:
         - name: category
           in: query
           required: false
-          description: Filtro exacto por categoría.
+          description: Exact category filter.
           schema:
             $ref: '#/components/schemas/IngredientCategory'
         - name: search
           in: query
           required: false
-          description: Búsqueda textual insensible a mayúsculas por nombre de ingrediente.
+          description: Case-insensitive search by ingredient name.
           schema:
             type: string
       responses:
         '200':
-          description: Página de ingredientes activos para cocina.
+          description: Page of active kitchen ingredients.
           content:
             application/json:
               schema:
@@ -488,7 +488,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
 
 # =========================================================================
-# COMPONENTES Y ESQUEMAS DE DATOS
+# COMPONENTS AND DATA SCHEMAS
 # =========================================================================
 components:
   securitySchemes:
@@ -544,11 +544,11 @@ components:
           type: string
           minLength: 2
           maxLength: 255
-          example: "Martín Fierro"
+          example: "John Doe"
         email:
           type: string
           format: email
-          example: "martin.fierro@easyeat.com"
+          example: "john.doe@easyeat.com"
         role:
           $ref: '#/components/schemas/StaffRole'
 
@@ -568,7 +568,7 @@ components:
           $ref: '#/components/schemas/StaffAccountStatus'
         temporaryCredential:
           type: string
-          description: Contraseña temporal generada. Se visualiza una única vez en pantalla para el Administrador.
+          description: Generated temporary credential. Displayed once on the Administrator's screen.
           example: "Tmp$8xK9#mQ2"
         createdAt:
           type: string
@@ -625,12 +625,12 @@ components:
           type: string
           minLength: 8
           maxLength: 72
-          example: "NuevaClaveSegura2026!"
+          example: "NewSecurePassword2026!"
         confirmNewPassword:
           type: string
           minLength: 8
           maxLength: 72
-          example: "NuevaClaveSegura2026!"
+          example: "NewSecurePassword2026!"
 
     CreateIngredientRequest:
       type: object
@@ -644,7 +644,7 @@ components:
           type: string
           minLength: 1
           maxLength: 255
-          example: "Tomate Perita"
+          example: "Roma Tomato"
         category:
           $ref: '#/components/schemas/IngredientCategory'
         unitOfMeasure:
@@ -717,14 +717,14 @@ components:
         value:
           type: number
           description: |
-            En modo ABSOLUTE: Stock físico total contado (debe ser >= 0).
-            En modo RELATIVE: Delta a sumar o restar (no puede ser 0).
+            In ABSOLUTE mode: Total counted physical inventory (must be >= 0).
+            In RELATIVE mode: Net delta to add or subtract (cannot be 0).
           example: 15.5000
         justification:
           type: string
           minLength: 5
           maxLength: 500
-          example: "Recepción de proveedor factura #8812"
+          example: "Delivery receipt invoice #8812"
 
     StockAdjustmentResponse:
       type: object
@@ -785,7 +785,7 @@ components:
           format: uuid
         name:
           type: string
-          example: "Harina 000"
+          example: "All-Purpose Flour"
         category:
           $ref: '#/components/schemas/IngredientCategory'
         unitOfMeasure:
@@ -832,41 +832,41 @@ components:
           example: "https://easyeat.com/errors/conflict"
         title:
           type: string
-          example: "Conflicto de dominio"
+          example: "Domain Conflict"
         status:
           type: integer
           example: 409
         detail:
           type: string
-          example: "No es posible archivar un ingrediente con stock remanente."
+          example: "Cannot archive an ingredient with positive stock."
         instance:
           type: string
           example: "/api/v1/admin/ingredients/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/status"
 
   responses:
     ValidationError:
-      description: Error de validación de sintaxis o campos obligatorios.
+      description: Syntax or required field validation error.
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetail'
 
     Unauthorized:
-      description: Token JWT ausente, expirado o con firma inválida.
+      description: JWT token missing, expired, or invalid.
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetail'
 
     Forbidden:
-      description: Acceso no autorizado por rol o intento de cruce de tenant.
+      description: Access denied due to role violation or cross-tenant access attempt.
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetail'
 
     NotFound:
-      description: Recurso no encontrado dentro del establecimiento.
+      description: Resource not found within the authenticated establishment.
       content:
         application/problem+json:
           schema:

@@ -1,96 +1,96 @@
-# Plan de Implementación Técnica: Gestión de Personal, RBAC e Inventario Inicial de Ingredientes
+# Technical Implementation Plan: Staff Management, RBAC, and Initial Ingredient Inventory
 
-**Rama**: `004-staff-mgmt-rbac-inventory` | **Fecha**: 2026-10-20 | **Especificación**: [spec.md](file:///c:/Users/seeba/OneDrive/Documentos/FIUBA/git/G12---GDSI/specs/004-staff-mgmt-rbac-inventory/spec.md)
+**Branch**: `004-staff-mgmt-rbac-inventory` | **Date**: 2026-10-20 | **Spec**: [spec.md](file:///c:/Users/seeba/OneDrive/Documentos/FIUBA/git/G12---GDSI/specs/004-staff-mgmt-rbac-inventory/spec.md)
 
-**Entrada**: Especificación funcional de `/specs/004-staff-mgmt-rbac-inventory/spec.md` y acuerdos de clarificación del 2026-10-20.
-
----
-
-## Resumen Ejecutivo
-
-Esta característica extiende la plataforma multi-tenant EasyEat integrando la administración de nómina de empleados del local gastronómico (`ADM-3.1.1`), el control de acceso basado en roles con aislamiento estricto de tenant (`ADM-3.1.2`), el catálogo maestro de ingredientes con ciclo de vida operativo (`ADM-4.1.1`), los ajustes manuales de stock físico con auditoría inmutable (`ADM-4.1.2`) y la exploración paginada del catálogo para cocina (`CHF-2.1.1`).
-
-El enfoque técnico reutiliza la arquitectura establecida en la iteración 001 (`central-auth-recovery`), desplegando servicios REST construidos sobre **Java 21** y **Spring Boot 3.3.4**, persistencia relacional en **PostgreSQL 16** con control de esquemas mediante **Flyway**, tokens **JWT** con claims de rol y establecimiento, bloqueo pesimista en base de datos para garantizar el invariante de stock no negativo ante concurrencia, y validación automatizada mediante **JUnit 5**, **Mockito** y **Testcontainers**.
+**Input**: Feature specification from `/specs/004-staff-mgmt-rbac-inventory/spec.md` and clarification agreements from 2026-10-20.
 
 ---
 
-## Contexto Técnico
+## Executive Summary
 
-**Lenguaje / Versión**: Java 21 (LTS)  
-**Dependencias Principales**:
+This feature extends the EasyEat multi-tenant platform by introducing restaurant staff roster administration (`ADM-3.1.1`), role-based access control with strict tenant isolation (`ADM-3.1.2`), the master ingredient catalog with operational lifecycle management (`ADM-4.1.1`), manual physical stock adjustments with immutable audit trail (`ADM-4.1.2`), and paginated kitchen catalog exploration for the Chef (`CHF-2.1.1`).
+
+The technical design reuses the architecture established in iteration 001 (`central-auth-recovery`), deploying REST services built on **Java 21** and **Spring Boot 3.3.4**, relational persistence in **PostgreSQL 16** with schema evolution managed by **Flyway**, signed **JWT** tokens with role and establishment claims, database pessimistic locking to guarantee the non-negative stock invariant under concurrency, and automated testing via **JUnit 5**, **Mockito**, and **Testcontainers**.
+
+---
+
+## Technical Context
+
+**Language / Version**: Java 21 (LTS)  
+**Primary Dependencies**:
 - Spring Boot 3.3.4 (`spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `spring-boot-starter-security`, `spring-boot-starter-validation`)
 - JJWT 0.12.6 (`jjwt-api`, `jjwt-impl`, `jjwt-jackson`)
 - Flyway Core + Flyway PostgreSQL Database Extension 10.x
 - PostgreSQL JDBC Driver 42.7.x
-- Lombok (para reducción de boilerplate en DTOs y entidades)
+- Lombok (for boilerplate reduction across DTOs and entities)
 
-**Almacenamiento y Persistencia**:
-- PostgreSQL 16 con tipos nativos `UUID` (`gen_random_uuid()`), `TIMESTAMPTZ` y `NUMERIC(12, 4)`.
-- Bloqueo pesimista de escritura (`SELECT ... FOR UPDATE`) en ajustes de inventario.
-- Tablas de auditoría inmutables (append-only) con reglas de denegación de `UPDATE` y `DELETE`.
+**Storage & Persistence**:
+- PostgreSQL 16 with native `UUID` (`gen_random_uuid()`), `TIMESTAMPTZ`, and `NUMERIC(12, 4)`.
+- Pessimistic write locking (`SELECT ... FOR UPDATE`) during inventory adjustments.
+- Immutable append-only audit tables with rules preventing `UPDATE` and `DELETE`.
 
-**Estrategia de Pruebas**:
-- JUnit 5 y Mockito para pruebas unitarias de servicios de dominio y validadores.
-- Spring Security Test (`MockMvc`, `@WithMockUser`) para verificación de filtros de seguridad y autorización por roles.
-- Testcontainers con contenedor PostgreSQL 16 para pruebas de integración reales con ejecución de migraciones Flyway y pruebas de concurrencia multihilo.
+**Testing Strategy**:
+- JUnit 5 and Mockito for domain service and validator unit tests.
+- Spring Security Test (`MockMvc`, `@WithMockUser`) for security filter and role authorization verification.
+- Testcontainers running PostgreSQL 16 for integration tests, Flyway migration execution, and multithreaded concurrency tests.
 
-**Plataforma de Despliegue**: Contenedores Linux / Docker (producción); ejecución local en JVM para desarrollo.  
-**Tipo de Proyecto**: Servicio web / REST API (módulo backend monolítico modular en monorepo).  
+**Target Platform**: Linux containers / Docker (production); local JVM execution for development.  
+**Project Type**: Web service / REST API (modular backend within monorepo).  
 
-**Metas de Rendimiento**:
-- Alta de personal y consulta de nómina: latencia p95 ≤ 150ms.
-- Ajuste de stock bajo bloqueo pesimista: latencia p95 ≤ 100ms.
-- Catálogo paginado del Chef (20 items indexados por tenant y nombre): latencia p95 ≤ 50ms.
+**Performance Goals**:
+- Staff registration and roster retrieval: p95 latency ≤ 150ms.
+- Stock adjustment transaction under pessimistic lock: p95 latency ≤ 100ms.
+- Chef paginated catalog query (20 items indexed by tenant and name): p95 latency ≤ 50ms.
 
-**Restricciones de Dominio y Seguridad**:
-- Claves temporales con hash BCrypt (costo 12) y visualización única en pantalla.
-- Forzado de cambio de clave en primer login (`must_change_password = true`).
-- Aislamiento multi-tenant: todas las consultas filtran obligatoriamente por `tenant_id`.
-- Precisión numérica contable absoluta con `BigDecimal` y `NUMERIC(12, 4)`.
-- Prevención de desadministración: rechazar operaciones que dejen al establecimiento sin Administrador.
+**Domain & Security Constraints**:
+- Temporary credentials hashed with BCrypt (cost factor 12) and displayed once on screen.
+- Mandatory password change on first login (`must_change_password = true`).
+- Multi-tenant isolation: all queries must be scoped to `tenant_id`.
+- Exact accounting numeric precision with `BigDecimal` and `NUMERIC(12, 4)`.
+- Orphaned admin prevention: reject operations that leave the establishment with zero Administrators.
 
-**Alcance / Escala**: MVP - 4 roles formales (`ADMIN`, `CHEF`, `COUNTER_CLERK`, `DINER`), arquitectura multi-tenant con esquema compartido y discriminación por columna `tenant_id`.
+**Scale / Scope**: MVP — 4 formal platform roles (`ADMIN`, `CHEF`, `COUNTER_CLERK`, `DINER`), multi-tenant shared-schema architecture with `tenant_id` discrimination.
 
 ---
 
-## Verificación de la Constitución (Constitution Check)
+## Constitution Check
 
-*GATE: Evaluación pre-diseño y post-diseño de conformidad con `.specify/memory/constitution.md`.*
+*GATE: Pre-design and post-design compliance evaluation against `.specify/memory/constitution.md`.*
 
-| Principio | Estado Pre-Diseño | Estado Post-Diseño | Evidencia y Justificación |
+| Principle | Pre-Design Status | Post-Design Status | Evidence and Justification |
 |---|---|---|---|
-| **I. La especificación es la fuente de verdad** | ✅ PASS | ✅ PASS | El plan, modelo de datos y contratos OpenAPI derivan de forma estricta de FR-001 a FR-027. No se agregaron funcionalidades no solicitadas. |
-| **II. Especificación antes de implementación** | ✅ PASS | ✅ PASS | Se completaron `spec.md`, clarificaciones, `research.md`, `data-model.md`, `contracts/openapi.yaml` y `quickstart.md` antes de generar código fuente. |
-| **III. Verificación por capas y proporcional al riesgo** | ✅ PASS | ✅ PASS | Estrategia de pruebas definida con unit tests (Mockito), seguridad (MockMvc) e integración real (Testcontainers con concurrencia multihilo). |
-| **IV. Diseño simple, cohesivo y justificado** | ✅ PASS | ✅ PASS | Paquetes modulares por contexto (`com.easyeat.staff`, `com.easyeat.inventory`). Bloqueo pesimista justificado para evitar race conditions en stock. |
-| **V. Alcance acotado** | ✅ PASS | ✅ PASS | Sin adiciones fuera de alcance (no recetas N:M ni pasarelas de pago en esta iteración; corresponden a Sprints 2 y 4). |
-| **VI. Deuda técnica controlada** | ✅ PASS | ✅ PASS | Todas las decisiones técnicas se encuentran documentadas en `research.md`. |
-| **VII. Trazabilidad, consistencia y documentación** | ✅ PASS | ✅ PASS | Matriz de trazabilidad exhaustiva en `data-model.md` vinculando cada requisito a entidades y restricciones relacionales. |
-| **VIII. Evidencia sobre suposición y escalamiento humano** | ✅ PASS | ✅ PASS | Se ejecutó sesión de clarificación interactiva resolviendo 5 ambigüedades clave antes del diseño técnico. |
-| **IX. Ingeniería por sobre conveniencia** | ✅ PASS | ✅ PASS | Precisión decimal exacta (`BigDecimal` / `NUMERIC`), bloqueo pesimista en concurrencia y auditoría inmutable en vez de soluciones superficiales. |
-| **X. Gobernanza agnóstica a la tecnología** | ✅ PASS | ✅ PASS | La arquitectura responde a principios de ingeniería sólidos respetando la continuidad del stack del proyecto. |
+| **I. The Specification Is the Source of Truth** | ✅ PASS | ✅ PASS | The plan, data model, and OpenAPI contracts derive strictly from FR-001 through FR-027. No unsolicited features were added. |
+| **II. Specification Before Implementation** | ✅ PASS | ✅ PASS | Completed `spec.md`, clarifications, `research.md`, `data-model.md`, `contracts/openapi.yaml`, and `quickstart.md` prior to code generation. |
+| **III. Layered Verification Proportional to Risk** | ✅ PASS | ✅ PASS | Testing strategy defined with unit tests (Mockito), security slice tests (MockMvc), and real integration tests (Testcontainers with concurrency testing). |
+| **IV. Simple, Cohesive, and Justified Design** | ✅ PASS | ✅ PASS | Bounded context package structure (`com.easyeat.staff`, `com.easyeat.inventory`). Pessimistic locking justified to eliminate stock race conditions. |
+| **V. Bounded Scope** | ✅ PASS | ✅ PASS | Strictly bounded (no recipes N:M or payment gateways in this iteration; scheduled for Sprints 2 and 4). |
+| **VI. Controlled Technical Debt** | ✅ PASS | ✅ PASS | All architectural decisions and trade-offs documented in `research.md`. |
+| **VII. Traceability, Consistency, and Documentation** | ✅ PASS | ✅ PASS | Exhaustive traceability matrix in `data-model.md` linking each functional requirement to entities and relational constraints. |
+| **VIII. Evidence Over Assumption and Human Escalation** | ✅ PASS | ✅ PASS | Executed interactive clarification session resolving 5 key domain ambiguities before technical design. |
+| **IX. Engineering Over Convenience** | ✅ PASS | ✅ PASS | Exact decimal precision (`BigDecimal` / `NUMERIC`), pessimistic locking in concurrency, and immutable audit logs instead of superficial shortcuts. |
+| **X. Technology-Agnostic Governance** | ✅ PASS | ✅ PASS | Architecture follows sound software engineering principles while maintaining stack continuity. |
 
-**RESULTADO DEL GATE: APROBADO (ALL PASS)**
+**GATE RESULT: ALL PASS**
 
 ---
 
-## Estructura del Proyecto
+## Project Structure
 
-### Documentación de la Característica (`specs/004-staff-mgmt-rbac-inventory/`)
+### Documentation (`specs/004-staff-mgmt-rbac-inventory/`)
 
 ```text
 specs/004-staff-mgmt-rbac-inventory/
-├── plan.md              # Este plan de implementación técnica
-├── research.md          # Registro de investigación técnica y decisiones de diseño (Phase 0)
-├── data-model.md        # Entidades, esquema SQL, transiciones de estado y matriz de trazabilidad (Phase 1)
-├── quickstart.md        # Guía de validación y escenarios ejecutables de extremo a extremo (Phase 1)
+├── plan.md              # Technical implementation plan
+├── research.md          # Technical research and decision log (Phase 0)
+├── data-model.md        # Entities, SQL schema, state transitions, and traceability matrix (Phase 1)
+├── quickstart.md        # End-to-end executable validation guide (Phase 1)
 ├── contracts/
-│   └── openapi.yaml     # Especificación formal de contratos de interfaz OpenAPI 3.0 (Phase 1)
+│   └── openapi.yaml     # OpenAPI 3.0 interface specification (Phase 1)
 └── checklists/
-    └── requirements.md  # Checklist de calidad de requisitos
+    └── requirements.md  # Requirements quality checklist
 ```
 
-### Código Fuente en el Repositorio (`easyeat/backend/`)
+### Source Code (`easyeat/backend/`)
 
 ```text
 easyeat/backend/
@@ -99,26 +99,26 @@ easyeat/backend/
     ├── main/
     │   ├── java/com/easyeat/
     │   │   ├── EasyEatApplication.java
-    │   │   ├── auth/                                    # Infraestructura de Auth (Iteración 001)
+    │   │   ├── auth/                                    # Auth Infrastructure (Iteration 001)
     │   │   │   ├── controller/AuthController.java
     │   │   │   ├── dto/FirstLoginPasswordChangeRequest.java
     │   │   │   ├── entity/User.java
     │   │   │   └── security/JwtService.java
     │   │   ├── common/
-    │   │   │   ├── context/TenantContextHolder.java     # Contexto ThreadLocal del tenant actual
-    │   │   │   ├── filter/TenantContextFilter.java      # Extractor de tenant_id desde claims JWT
-    │   │   │   └── audit/SecurityAuditLogger.java       # Emisor de logs estructurados de seguridad
-    │   │   ├── staff/                                   # Módulo de Personal y RBAC (Iteración 004)
-    │   │   │   ├── controller/StaffController.java      # Endpoints /api/v1/admin/staff/**
+    │   │   │   ├── context/TenantContextHolder.java     # ThreadLocal context for current tenant
+    │   │   │   ├── filter/TenantContextFilter.java      # Extracts tenant_id from JWT claims
+    │   │   │   └── audit/SecurityAuditLogger.java       # Structured security audit logger
+    │   │   ├── staff/                                   # Staff Management & RBAC (Iteration 004)
+    │   │   │   ├── controller/StaffController.java      # /api/v1/admin/staff/** endpoints
     │   │   │   ├── dto/StaffRegistrationRequest.java
     │   │   │   ├── dto/StaffRegistrationResponse.java
     │   │   │   ├── dto/StaffUpdateRequest.java
     │   │   │   ├── dto/StaffMemberResponse.java
-    │   │   │   ├── service/StaffService.java            # Alta, edición, credencial temporal, huérfano check
+    │   │   │   ├── service/StaffService.java            # Registration, update, one-time credential, orphaned admin check
     │   │   │   └── repository/StaffUserRepository.java
-    │   │   ├── inventory/                               # Módulo de Catálogo e Inventario (Iteración 004)
-    │   │   │   ├── controller/AdminIngredientController.java # Endpoints /api/v1/admin/ingredients/**
-    │   │   │   ├── controller/ChefCatalogController.java     # Endpoints /api/v1/chef/ingredients
+    │   │   ├── inventory/                               # Catalog & Inventory (Iteration 004)
+    │   │   │   ├── controller/AdminIngredientController.java # /api/v1/admin/ingredients/** endpoints
+    │   │   │   ├── controller/ChefCatalogController.java     # /api/v1/chef/ingredients endpoints
     │   │   │   ├── dto/CreateIngredientRequest.java
     │   │   │   ├── dto/UpdateIngredientRequest.java
     │   │   │   ├── dto/AdminIngredientDetailResponse.java
@@ -128,52 +128,52 @@ easyeat/backend/
     │   │   │   ├── dto/ChefIngredientPageResponse.java
     │   │   │   ├── entity/Ingredient.java
     │   │   │   ├── entity/StockAuditEntry.java
-    │   │   │   ├── repository/IngredientRepository.java      # Consulta con bloqueo pesimista
-    │   │   │   ├── repository/StockAuditEntryRepository.java # Repositorio append-only
-    │   │   │   ├── service/IngredientService.java            # CRUD y ciclo de vida de insumos
-    │   │   │   └── service/StockAdjustmentService.java       # Ajuste atómico de inventario y auditoría
+    │   │   │   ├── repository/IngredientRepository.java      # Query with pessimistic write lock
+    │   │   │   ├── repository/StockAuditEntryRepository.java # Append-only repository
+    │   │   │   ├── service/IngredientService.java            # Master catalog CRUD & lifecycle
+    │   │   │   └── service/StockAdjustmentService.java       # Atomic inventory adjustment & audit
     │   │   ├── config/
-    │   │   │   ├── SecurityConfig.java                  # Configuración de roles y WebSecurityCustomizer
-    │   │   │   └── MethodSecurityConfig.java            # Habilitación de @EnableMethodSecurity
+    │   │   │   ├── SecurityConfig.java                  # Role configurations and WebSecurityCustomizer
+    │   │   │   └── MethodSecurityConfig.java            # Enables @EnableMethodSecurity
     │   │   └── exception/
-    │   │       ├── GlobalExceptionHandler.java          # Manejador RFC 9457 ProblemDetail
+    │   │       ├── GlobalExceptionHandler.java          # RFC 9457 ProblemDetail handler
     │   │       ├── NegativeStockException.java
     │   │       ├── OrphanedAdminException.java
     │   │       └── TenantViolationException.java
     │   └── resources/
     │       ├── application.yml
     │       └── db/migration/
-    │           ├── V1__create_users.sql                 # Base de usuarios (001)
-    │           ├── V2__create_password_reset_tokens.sql # Recuperación de claves (001)
-    │           ├── V3__extend_users_staff.sql           # Personal de establecimiento (004)
-    │           └── V4__create_ingredients_and_stock_audit.sql # Catálogo y auditoría de stock (004)
+    │           ├── V1__create_users.sql                 # Baseline users (001)
+    │           ├── V2__create_password_reset_tokens.sql # Password reset tokens (001)
+    │           ├── V3__extend_users_staff.sql           # Staff members and first login (004)
+    │           └── V4__create_ingredients_and_stock_audit.sql # Master catalog & stock audit (004)
     └── test/
         ├── java/com/easyeat/
         │   ├── staff/
-        │   │   ├── controller/StaffControllerTest.java  # Pruebas MockMvc y RBAC de personal
-        │   │   └── service/StaffServiceTest.java        # Pruebas unitarias de alta y admin huérfano
+        │   │   ├── controller/StaffControllerTest.java  # MockMvc RBAC and staff endpoint tests
+        │   │   └── service/StaffServiceTest.java        # Registration & orphaned admin unit tests
         │   ├── inventory/
-        │   │   ├── controller/IngredientControllerTest.java # Pruebas MockMvc de catálogo y Chef
-        │   │   ├── service/StockAdjustmentServiceTest.java  # Pruebas unitarias de invariantes de stock
-        │   │   └── concurrency/StockAdjustmentConcurrencyTest.java # Prueba multihilo con Testcontainers
+        │   │   ├── controller/IngredientControllerTest.java # MockMvc catalog and Chef endpoint tests
+        │   │   ├── service/StockAdjustmentServiceTest.java  # Stock adjustment invariant unit tests
+        │   │   └── concurrency/StockAdjustmentConcurrencyTest.java # Multithreaded Testcontainers test
         │   └── security/
-        │       └── TenantIsolationIntegrationTest.java  # Validación estricta de aislamiento de tenant
+        │       └── TenantIsolationIntegrationTest.java  # Strict multi-tenant isolation integration test
         └── resources/
             └── application-test.yml
 ```
 
-**Decisión de Estructura**: Arquitectura modular orientada a dominios (`staff`, `inventory`, `auth`) dentro de una única aplicación backend monolítica ejecutable (`easyeat/backend/`), manteniendo cohesión vertical y simplificando la observabilidad y el despliegue.
+**Structure Decision**: Modular domain-driven organization (`staff`, `inventory`, `auth`) within a single deployable backend application (`easyeat/backend/`), maximizing cohesion while simplifying observability and deployment.
 
 ---
 
-## Control de Complejidad
+## Complexity Tracking
 
-> **Nota**: No se detectaron violaciones ni desvíos respecto a los principios de la Constitución del Proyecto.
-> Todos los componentes introducidos (bloqueo pesimista, filtro de tenant, DTOs de proyección) responden de manera directa y justificada a los requerimientos funcionales FR-001 a FR-027.
+> **Note**: No violations or deviations from the Project Constitution were detected.
+> All introduced patterns (pessimistic locking, tenant filter, projection DTOs) directly satisfy functional requirements FR-001 through FR-027.
 
-| Componente / Patrón | ¿Por qué es necesario? | Alternativa más simple rechazada y motivo |
+| Component / Pattern | Why Needed | Simpler Alternative Rejected Because |
 |---|---|---|
-| Bloqueo pesimista (`SELECT ... FOR UPDATE`) | Garantiza de manera atómica que el stock resultante no sea negativo (`>= 0`) ante ajustes concurrentes. | Bloqueo optimista (`@Version`): rechazaría transacciones concurrentes con excepciones de concurrencia obligando a reintentos confusos para el personal de depósito. |
-| Tabla inmutable `stock_audit_entries` | Requisito explícito de trazabilidad y auditoría contable inalterable (FR-019). | Almacenar solo el balance actual en `ingredients`: perdería por completo el motivo, usuario y delta del ajuste. |
-| Filtro y contexto de tenant (`ThreadLocal`) | Garantiza que ninguna consulta exponga o modifique datos de un local gastronómico ajeno. | Parámetro manual `tenant_id` en cada controlador: susceptible a omisiones humanas que generen fugas de seguridad. |
-| Proyección exclusiva para Chef | Protege información comercial sensible (costos unitarios) conforme al principio de mínimo privilegio. | Reutilizar el DTO del Administrador: filtraría datos financieros al cliente web de la cocina. |
+| Pessimistic locking (`SELECT ... FOR UPDATE`) | Atomically guarantees non-negative stock (`>= 0`) under concurrent physical adjustments. | Optimistic locking (`@Version`): rejects concurrent adjustments with exceptions, requiring cumbersome retries for warehouse staff. |
+| Immutable `stock_audit_entries` table | Explicit requirement for forensic accounting and untampered inventory trail (FR-019). | Storing only balance in `ingredients`: loses user identity, delta, timestamp, and justification mandated by FR-018. |
+| Tenant filter & context (`ThreadLocal`) | Guarantees queries never expose or alter data from another restaurant establishment. | Manual `tenant_id` parameters in every controller: prone to human error and cross-tenant data leaks. |
+| Dedicated Chef projection DTO | Protects sensitive commercial data (unit purchase costs) per principle of least privilege. | Reusing Administrator DTO: leaks internal financial costs to kitchen clients. |

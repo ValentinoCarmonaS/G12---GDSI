@@ -1,28 +1,28 @@
-# Guía Rápida de Validación y Ejecución (Phase 1)
+# Quickstart Validation and Execution Guide (Phase 1)
 
-**Característica**: Gestión de Personal, RBAC e Inventario Inicial de Ingredientes  
-**Rama**: `004-staff-mgmt-rbac-inventory`  
-**Fecha**: 2026-10-20  
-**Estado**: Completado  
+**Feature**: Staff Management, RBAC, and Initial Ingredient Inventory  
+**Branch**: `004-staff-mgmt-rbac-inventory`  
+**Date**: 2026-10-20  
+**Status**: Completed  
 
 ---
 
-## 1. Prerrequisitos y Configuración del Entorno
+## 1. Prerequisites and Environment Setup
 
-### Requisitos de Software
+### Software Requirements
 - **Java**: OpenJDK 21 (LTS).
-- **Maven**: 3.9.x o superior.
-- **Docker**: Docker Engine 24.x o superior con soporte para Testcontainers.
-- **PostgreSQL**: 16.x (para pruebas manuales locales; Testcontainers gestiona su propio contenedor en tests automáticos).
+- **Maven**: 3.9.x or higher.
+- **Docker**: Docker Engine 24.x or higher with Testcontainers support.
+- **PostgreSQL**: 16.x (for manual local execution; Testcontainers manages an isolated container during automated tests).
 
-### Variables de Entorno Requeridas
+### Required Environment Variables
 ```bash
 export JWT_SECRET="c2VjdXJlX2p3dF9zZWNyZXRfa2V5X2Zvcl9lYXN5ZWF0X3BsYXRmb3JtXzIwMjYh"
 export SPRING_PROFILES_ACTIVE="test"
 ```
 
-### Ejecución de Pruebas Automatizadas
-Para ejecutar la suite completa de pruebas unitarias, de integración y de seguridad:
+### Running Automated Test Suite
+To execute the complete unit, integration, and security test suite:
 ```bash
 cd easyeat/backend
 ./mvnw clean test
@@ -30,19 +30,19 @@ cd easyeat/backend
 
 ---
 
-## 2. Escenarios de Validación de Extremo a Extremo
+## 2. End-to-End Validation Scenarios
 
-Los siguientes escenarios prueban el funcionamiento integral de la funcionalidad implementada. Los contratos de carga útil y respuestas detalladas se encuentran referenciados en [contracts/openapi.yaml](file:///c:/Users/seeba/OneDrive/Documentos/FIUBA/git/G12---GDSI/specs/004-staff-mgmt-rbac-inventory/contracts/openapi.yaml) y las estructuras de datos en [data-model.md](file:///c:/Users/seeba/OneDrive/Documentos/FIUBA/git/G12---GDSI/specs/004-staff-mgmt-rbac-inventory/data-model.md).
+The following scenarios prove the full functional capabilities of this iteration. API payload schemas and response structures are defined in [contracts/openapi.yaml](file:///c:/Users/seeba/OneDrive/Documentos/FIUBA/git/G12---GDSI/specs/004-staff-mgmt-rbac-inventory/contracts/openapi.yaml) and database schemas in [data-model.md](file:///c:/Users/seeba/OneDrive/Documentos/FIUBA/git/G12---GDSI/specs/004-staff-mgmt-rbac-inventory/data-model.md).
 
 ---
 
-### Escenario 1: Alta de Empleado y Provisión de Credencial Temporal Única (ADM-3.1.1)
+### Scenario 1: Staff Registration and One-Time Temporary Credential Provisioning (ADM-3.1.1)
 
-**Objetivo**: Verificar que un Administrador puede registrar un empleado en su establecimiento y que la credencial se entrega una única vez en texto plano para visualización en pantalla.
+**Objective**: Verify that an Administrator can register an employee in their establishment and that the credential is delivered exactly once in plaintext for screen display.
 
-1. **Autenticación como Administrador**:
-   Obtener token JWT de Administrador para el `tenant_id` `11111111-1111-1111-1111-111111111111`.
-2. **Petición**:
+1. **Authentication as Administrator**:
+   Obtain an Administrator JWT token scoped to `tenant_id` `11111111-1111-1111-1111-111111111111`.
+2. **Request**:
    `POST /api/v1/admin/staff`
    ```json
    {
@@ -51,165 +51,165 @@ Los siguientes escenarios prueban el funcionamiento integral de la funcionalidad
      "role": "CHEF"
    }
    ```
-3. **Resultado Esperado**:
-   - Código HTTP `201 Created`.
-   - El cuerpo de la respuesta contiene `temporaryCredential` (ej. `"Tmp$9wK2#mL1"`) y `status = "PENDING_FIRST_LOGIN"`.
-   - La credencial en texto plano **no** se almacena en base de datos; solo su hash BCrypt.
-4. **Verificación de Nómina**:
+3. **Expected Outcome**:
+   - HTTP Status `201 Created`.
+   - Response body contains `temporaryCredential` (e.g., `"Tmp$9wK2#mL1"`) and `status = "PENDING_FIRST_LOGIN"`.
+   - Plaintext credential is **never** persisted in the database; only its BCrypt hash.
+4. **Roster Verification**:
    `GET /api/v1/admin/staff`
-   - Código HTTP `200 OK`.
-   - La lista incluye a Carlos Garmendia con estado `PENDING_FIRST_LOGIN`.
+   - HTTP Status `200 OK`.
+   - Staff list includes Carlos Garmendia with status `PENDING_FIRST_LOGIN`.
 
 ---
 
-### Escenario 2: Primer Inicio de Sesión y Forzado de Cambio de Contraseña (FR-003)
+### Scenario 2: First Login and Mandatory Password Change (FR-003)
 
-**Objetivo**: Comprobar que el empleado no puede operar con la credencial temporal hasta completar el cambio de clave obligatorio.
+**Objective**: Verify that a new staff member cannot perform operational tasks until completing the mandatory password change.
 
-1. **Intento de Acceso con Credencial Temporal**:
-   `POST /api/v1/auth/login` con correo `carlos.garmendia@easyeat.com` y la credencial temporal.
-   - Código HTTP `200 OK`. Retorna JWT con claim `must_change_password: true`.
-2. **Intento de Consulta de Catálogo con Clave Temporal**:
-   `GET /api/v1/chef/ingredients` con dicho JWT.
-   - Código HTTP `403 Forbidden` con detalle: `"Debe completar el cambio obligatorio de contraseña antes de operar en la plataforma"`.
-3. **Cambio Obligatorio de Contraseña**:
+1. **Login with Temporary Credential**:
+   `POST /api/v1/auth/login` with email `carlos.garmendia@easyeat.com` and the temporary credential.
+   - HTTP Status `200 OK`. Returns JWT with claim `must_change_password: true`.
+2. **Attempt Operational Request with Temporary Token**:
+   `GET /api/v1/chef/ingredients` using this token.
+   - HTTP Status `403 Forbidden` with detail: `"Must complete mandatory password change before accessing platform functionality"`.
+3. **Mandatory Password Change**:
    `POST /api/v1/auth/first-login-password-change`
    ```json
    {
      "currentPassword": "Tmp$9wK2#mL1",
-     "newPassword": "MiClaveDefinitivaChef2026!",
-     "confirmNewPassword": "MiClaveDefinitivaChef2026!"
+     "newPassword": "MyPermanentChefPassword2026!",
+     "confirmNewPassword": "MyPermanentChefPassword2026!"
    }
    ```
-   - Código HTTP `200 OK`.
-   - El estado del usuario en base de datos cambia a `ACTIVE` y `must_change_password` se fija en `false`.
-4. **Re-Login y Validación Operativa**:
-   El usuario inicia sesión con la nueva contraseña y el nuevo token le permite consultar el catálogo.
+   - HTTP Status `200 OK`.
+   - User status in database transitions to `ACTIVE` and `must_change_password` is set to `false`.
+4. **Operational Access Restored**:
+   User logs in with the new password; new token allows browsing the kitchen ingredient catalog.
 
 ---
 
-### Escenario 3: Enforzamiento de RBAC y Aislamiento Multi-Tenant (ADM-3.1.2)
+### Scenario 3: RBAC Enforcement and Multi-Tenant Isolation (ADM-3.1.2)
 
-**Objetivo**: Demostrar que los roles restringen endpoints y que los datos entre locales permanecen 100% aislados.
+**Objective**: Demonstrate that role boundaries are enforced and cross-tenant data access is strictly prevented.
 
-1. **Acceso Denegado por Rol**:
-   - Autenticado como `CHEF`: Enviar `POST /api/v1/admin/ingredients`.
-   - Resultado: Código HTTP `403 Forbidden` y generación de evento estructurado en logs de seguridad.
-   - Autenticado como `COUNTER_CLERK`: Enviar `GET /api/v1/chef/ingredients`.
-   - Resultado: Código HTTP `403 Forbidden`.
-2. **Aislamiento Multi-Tenant**:
-   - Administrador del Local A (`tenant_id = 11111111-1111-1111-1111-111111111111`) intenta consultar o modificar un ingrediente con ID perteneciente al Local B (`tenant_id = 22222222-2222-2222-2222-222222222222`).
-   - Resultado: Código HTTP `404 Not Found` (o `403 Forbidden`), garantizando que la existencia de datos ajenos nunca es expuesta.
+1. **Role-Based Denial**:
+   - Authenticated as `CHEF`: Send `POST /api/v1/admin/ingredients`.
+   - Result: HTTP `403 Forbidden` and a structured security audit event emitted in the log.
+   - Authenticated as `COUNTER_CLERK`: Send `GET /api/v1/chef/ingredients`.
+   - Result: HTTP `403 Forbidden`.
+2. **Multi-Tenant Isolation**:
+   - Administrator of Restaurant A (`tenant_id = 11111111-1111-1111-1111-111111111111`) queries or modifies an ingredient ID belonging to Restaurant B (`tenant_id = 22222222-2222-2222-2222-222222222222`).
+   - Result: HTTP `404 Not Found` (or `403 Forbidden`), ensuring the existence of another tenant's data is never exposed.
 
 ---
 
-### Escenario 4: Alta, Validación y Edición de Ingrediente en Catálogo Maestro (ADM-4.1.1)
+### Scenario 4: Ingredient Creation, Validation, and Detail Editing (ADM-4.1.1)
 
-**Objetivo**: Validar restricciones de campos, categorías permitidas y bloqueo de modificación de unidad de medida.
+**Objective**: Validate attribute constraints, fixed category set, and unit of measure modification locking.
 
-1. **Creación Válida**:
+1. **Valid Creation**:
    `POST /api/v1/admin/ingredients`
    ```json
    {
-     "name": "Aceite de Oliva Extra Virgen",
+     "name": "Extra Virgin Olive Oil",
      "category": "Dry Goods",
      "unitOfMeasure": "l",
      "unitPurchaseCost": 4500.0000
    }
    ```
-   - Código HTTP `201 Created`, estado inicial `ACTIVE`, `current_stock = 0.0000`.
-2. **Rechazo por Nombre Duplicado**:
-   Reintentar la creación con el mismo nombre en el mismo tenant.
-   - Código HTTP `409 Conflict`.
-3. **Rechazo por Categoría o Unidad Inválida**:
-   Intentar alta con `category: "Bebidas"` o `unitOfMeasure: "toneladas"`.
-   - Código HTTP `400 Bad Request` con errores de validación.
+   - HTTP Status `201 Created`, initial status `ACTIVE`, `current_stock = 0.0000`.
+2. **Duplicate Name Rejection**:
+   Attempt to create another ingredient with the same name within the same tenant.
+   - HTTP Status `409 Conflict`.
+3. **Invalid Category or Unit Rejection**:
+   Attempt creation with `category: "Beverages"` or `unitOfMeasure: "tons"`.
+   - HTTP Status `400 Bad Request` with validation error details.
 
 ---
 
-### Escenario 5: Carga Inicial de Stock y Ajustes con Invariante No Negativo (ADM-4.1.2)
+### Scenario 5: Initial Stock Load and Adjustments with Non-Negative Invariant (ADM-4.1.2)
 
-**Objetivo**: Comprobar los modos de ajuste Absoluto y Relativo, justificación obligatoria y rechazo de stock negativo.
+**Objective**: Verify Absolute and Relative adjustment modes, mandatory justification, and negative stock rejection.
 
-1. **Carga Inicial (Modo Absoluto)**:
+1. **Initial Stock Load (Absolute Mode)**:
    `POST /api/v1/admin/ingredients/{id}/stock-adjustments`
    ```json
    {
      "mode": "ABSOLUTE",
      "value": 20.0000,
-     "justification": "Carga inicial de inventario según remito #1040"
+     "justification": "Initial inventory load per receipt #1040"
    }
    ```
-   - Código HTTP `200 OK`. `new_stock = 20.0000`, `net_delta = 20.0000`.
-2. **Ajuste Relativo Negativo Válido (Merma)**:
+   - HTTP Status `200 OK`. `new_stock = 20.0000`, `net_delta = 20.0000`.
+2. **Valid Relative Adjustment (Negative Delta / Spoilage)**:
    `POST /api/v1/admin/ingredients/{id}/stock-adjustments`
    ```json
    {
      "mode": "RELATIVE",
      "value": -3.5000,
-     "justification": "Botella rota durante acomodamiento en depósito"
+     "justification": "Broken bottle during warehouse reorganization"
    }
    ```
-   - Código HTTP `200 OK`. `previous_stock = 20.0000`, `new_stock = 16.5000`, `net_delta = -3.5000`.
-3. **Rechazo de Ajuste con Resultado Negativo**:
-   Enviar ajuste relativo con `value = -25.0000` (el stock caería a `-8.5000`).
-   - Código HTTP `422 Unprocessable Entity` con mensaje: `"El stock resultante no puede ser inferior a cero"`.
-   - El stock en base de datos permanece intacto en `16.5000`.
-4. **Rechazo de Delta Cero**:
-   Enviar ajuste relativo con `value = 0`.
-   - Código HTTP `400 Bad Request` (o `422`).
-5. **Verificación de Auditoría Inmutable**:
+   - HTTP Status `200 OK`. `previous_stock = 20.0000`, `new_stock = 16.5000`, `net_delta = -3.5000`.
+3. **Negative Resulting Stock Rejection**:
+   Send relative adjustment with `value = -25.0000` (would drop stock to `-8.5000`).
+   - HTTP Status `422 Unprocessable Entity` with message: `"Resulting stock balance cannot fall below zero"`.
+   - Current stock in database remains untouched at `16.5000`.
+4. **Zero-Delta Rejection**:
+   Send relative adjustment with `value = 0`.
+   - HTTP Status `400 Bad Request` (or `422`).
+5. **Immutable Audit Trail Verification**:
    `GET /api/v1/admin/ingredients/{id}/stock-audit`
-   - Código HTTP `200 OK`. Retorna 2 registros inmutables con usuario, delta, stock previo y justificación.
+   - HTTP Status `200 OK`. Returns 2 immutable records capturing administrator, delta, previous stock, and justification.
 
 ---
 
-### Escenario 6: Validación de Concurrencia con Bloqueo Pesimista (FR-020)
+### Scenario 6: Concurrency Validation with Pessimistic Locking (FR-020)
 
-**Objetivo**: Probar la protección contra condiciones de carrera (`SELECT ... FOR UPDATE`).
+**Objective**: Verify race-condition protection via `SELECT ... FOR UPDATE`.
 
-1. **Configuración de Prueba de Integración Automatizada**:
-   - Crear un ingrediente con stock inicial `10.0000`.
-   - Lanzar dos hilos concurrentes que intentan aplicar simultáneamente un ajuste relativo de `-8.0000` cada uno.
-2. **Resultado Esperado**:
-   - Uno de los hilos obtiene el bloqueo de fila y descuenta `8.0000`, dejando el stock en `2.0000`.
-   - El segundo hilo se desbloquea e intenta restar `8.0000` sobre `2.0000`; la validación del invariante falla y la transacción hace rollback de forma segura retornando `422 Unprocessable Entity`.
-   - El stock final nunca es `-6.0000`; permanece consistentemente en `2.0000` con exactamente 1 registro de auditoría nuevo.
+1. **Integration Test Setup**:
+   - Seed an ingredient with initial stock `10.0000`.
+   - Launch two concurrent worker threads attempting to apply a relative adjustment of `-8.0000` each at the exact same moment.
+2. **Expected Outcome**:
+   - One thread acquires the row lock first and decrements `8.0000`, updating stock to `2.0000`.
+   - The second thread unblocks, reads the updated stock of `2.0000`, and attempts to subtract `8.0000`; the non-negative invariant validation fails and the transaction safely rolls back with HTTP `422 Unprocessable Entity`.
+   - Final stock is never `-6.0000`; it remains consistently at `2.0000` with exactly 1 new audit log entry.
 
 ---
 
-### Escenario 7: Ciclo de Vida y Reactivación de Ingrediente (FR-014)
+### Scenario 7: Ingredient Lifecycle and Reactivation (FR-014)
 
-**Objetivo**: Comprobar la transición a `DISCONTINUED`, su reactivación a `ACTIVE` y las condiciones de archivo.
+**Objective**: Verify transition to `DISCONTINUED`, reactivation to `ACTIVE`, and archival rules.
 
-1. **Descontinuar con Stock**:
-   Ingrediente con stock `16.5000`.
-   `PATCH /api/v1/admin/ingredients/{id}/status` con `targetStatus = "DISCONTINUED"`.
-   - Código HTTP `200 OK`. El ingrediente pasa a `DISCONTINUED`.
-2. **Verificación en Catálogo del Chef**:
+1. **Discontinue with Positive Stock**:
+   Ingredient with stock `16.5000`.
+   `PATCH /api/v1/admin/ingredients/{id}/status` with `targetStatus = "DISCONTINUED"`.
+   - HTTP Status `200 OK`. Ingredient status is now `DISCONTINUED`.
+2. **Chef Catalog Exclusion**:
    `GET /api/v1/chef/ingredients`.
-   - El ingrediente descontinuado ya **no** figura en el listado de cocina.
-3. **Ajuste de Stock en Descontinuado**:
-   `POST /api/v1/admin/ingredients/{id}/stock-adjustments` con ajuste absoluto `value = 0` y justificación `"Venta de stock remanente"`.
-   - Código HTTP `200 OK`. El stock queda en `0.0000`.
-4. **Reactivación o Archivo**:
-   - Si el Administrador envía `targetStatus = "ACTIVE"`, el insumo vuelve a estar disponible para el Chef.
-   - Si envía `targetStatus = "ARCHIVED"` (estando el stock en `0.0000`), el insumo se archiva exitosamente.
-   - Si se intentara archivar cuando el stock fuera mayor a 0, la API responde `409 Conflict`.
+   - The discontinued ingredient is **no longer visible** in the Chef's view.
+3. **Stock Adjustment on Discontinued Item**:
+   `POST /api/v1/admin/ingredients/{id}/stock-adjustments` with absolute adjustment `value = 0` and reason `"Liquidation of remaining stock"`.
+   - HTTP Status `200 OK`. Stock reaches `0.0000`.
+4. **Reactivation vs. Archival**:
+   - If Administrator sends `targetStatus = "ACTIVE"`, the ingredient transitions back to Active and reappears in the Chef catalog.
+   - If Administrator sends `targetStatus = "ARCHIVED"` (when stock == `0.0000`), the ingredient archives permanently.
+   - If archival is attempted while stock is > 0, API responds with HTTP `409 Conflict`.
 
 ---
 
-### Escenario 8: Exploración Paginada del Catálogo de Cocina (CHF-2.1.1)
+### Scenario 8: Kitchen Ingredient Catalog Exploration by Chef (CHF-2.1.1)
 
-**Objetivo**: Validar la vista segura y paginada del Chef sin filtración de datos de costos.
+**Objective**: Validate paginated kitchen catalog browsing with financial cost suppression.
 
-1. **Petición del Chef**:
+1. **Chef Query**:
    `GET /api/v1/chef/ingredients?page=0&size=20`
-2. **Resultado Esperado**:
-   - Código HTTP `200 OK`.
-   - Lista ordenada alfabéticamente de la A a la Z.
-   - Cada elemento incluye `name`, `category`, `unitOfMeasure` y `stockAvailability` (`IN_STOCK` o `OUT_OF_STOCK`).
-   - Los campos `unitPurchaseCost` y `stockAuditHistory` **no** existen en el payload JSON.
-3. **Filtro y Búsqueda**:
-   - `GET /api/v1/chef/ingredients?category=Produce&search=tomate`
-   - Retorna únicamente los ingredientes de huerta que coincidan con el término.
+2. **Expected Outcome**:
+   - HTTP Status `200 OK`.
+   - Ingredients sorted alphabetically ascending (A-Z) by name.
+   - Each item includes `name`, `category`, `unitOfMeasure`, and `stockAvailability` (`IN_STOCK` or `OUT_OF_STOCK`).
+   - Fields `unitPurchaseCost` and `stockAuditHistory` **never** appear in the response payload.
+3. **Filtering and Search**:
+   - `GET /api/v1/chef/ingredients?category=Produce&search=tomato`
+   - Returns only produce ingredients matching the search keyword.

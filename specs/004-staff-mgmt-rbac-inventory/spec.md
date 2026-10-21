@@ -12,11 +12,11 @@
 
 ### Session 2026-10-20
 
-- Q: ¿Cómo debe entregarse la credencial temporal al nuevo empleado tras su alta por parte del Administrador? (FR-003) → A: Visualización única en pantalla para el Administrador tras el registro, con opción de copiado al portapapeles.
-- Q: ¿Cuál debe ser el tamaño de página por defecto y el criterio de ordenamiento inicial en el catálogo de ingredientes para el Chef? (FR-021) → A: 20 ingredientes por página, ordenados alfabéticamente por nombre de forma ascendente (A-Z).
-- Q: ¿Puede un Administrador reactivar un ingrediente en estado "Discontinued" a estado "Active", o la transición del ciclo de vida es estrictamente unidireccional hasta su archivo? (FR-014) → A: Permitir reactivación explícita de "Discontinued" a "Active" por parte del Administrador, restaurándolo en el catálogo del Chef.
-- Q: ¿Tienen las credenciales temporales del personal un tiempo límite de expiración antes del primer inicio de sesión? (FR-003) → A: Sin expiración automática temporal; permanece en estado "Pending First Login" hasta el primer acceso o hasta que el Administrador regenere la credencial.
-- Q: ¿Se permiten ajustes manuales de stock sobre ingredientes que se encuentran en estado "Discontinued"? (FR-014, FR-015) → A: Permitir ajustes de stock (absolutos y relativos) en ingredientes "Discontinued" para registrar mermas o recuentos físicos.
+- Q: How must the temporary credential be delivered to the new staff member upon registration by the Administrator? (FR-003) → A: One-time screen display to the Administrator upon registration, with a copy-to-clipboard action.
+- Q: What should be the default page size and initial sort order for the Chef's ingredient catalog? (FR-021) → A: 20 ingredients per page, ordered alphabetically ascending (A-Z) by name.
+- Q: Can an Administrator reactivate an ingredient from "Discontinued" status back to "Active", or is the lifecycle transition strictly one-way until archival? (FR-014) → A: Allow explicit reactivation from "Discontinued" to "Active" by an Administrator, restoring it to the Chef's catalog.
+- Q: Do temporary staff credentials have an automatic time expiration before the first login? (FR-003) → A: No automatic time expiration; remains in "Pending First Login" status until the first login or until an Administrator re-issues the credential.
+- Q: Are manual stock adjustments allowed on ingredients that are in "Discontinued" status? (FR-014, FR-015) → A: Allow stock adjustments (both absolute and relative) on "Discontinued" ingredients to record spoilage, waste, or physical counts until stock reaches zero.
 
 ## User Scenarios & Testing *(mandatory)*
 

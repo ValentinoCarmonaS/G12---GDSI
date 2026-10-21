@@ -1,17 +1,17 @@
-# Modelo de Datos y Esquema de Persistencia (Phase 1)
+# Data Model and Persistence Schema (Phase 1)
 
-**Característica**: Gestión de Personal, RBAC e Inventario Inicial de Ingredientes  
-**Rama**: `004-staff-mgmt-rbac-inventory`  
-**Fecha**: 2026-10-20  
-**Estado**: Completado  
+**Feature**: Staff Management, RBAC, and Initial Ingredient Inventory  
+**Branch**: `004-staff-mgmt-rbac-inventory`  
+**Date**: 2026-10-20  
+**Status**: Completed  
 
 ---
 
-## 1. Diagrama Entidad-Relación y Estructura Conceptual
+## 1. Entity-Relationship Diagram and Conceptual Structure
 
-El modelo de datos extiende el núcleo de autenticación y multi-tenant previo introduciendo dos dominios operativos:
-1. **Personal y Roles (Staff)**: Empleados vinculados a un establecimiento (`tenant_id`) con roles de sistema y control de primer inicio de sesión.
-2. **Inventario e Insumos (Inventory)**: Catálogo de ingredientes por local, control de ciclo de vida, stock físico exacto y pista de auditoría inmutable.
+The data model extends the foundational authentication and multi-tenant schema by introducing two operational domains:
+1. **Staff & Roles**: Restaurant employees associated with an establishment (`tenant_id`) with system roles and initial login controls.
+2. **Inventory & Kitchen Master Catalog**: Tenant-specific ingredient catalog, lifecycle management, exact stock balances, and an immutable audit trail.
 
 ```
 ┌──────────────────────────────────────┐
@@ -60,148 +60,148 @@ El modelo de datos extiende el núcleo de autenticación y multi-tenant previo i
 
 ---
 
-## 2. Definición Detallada de Entidades
+## 2. Detailed Entity Definitions
 
-### 2.1. Entidad `User` (Extensión para Personal de Establecimiento)
+### 2.1. Entity `User` (Staff Member Extension)
 
-Representa a cualquier usuario que opera en la plataforma. Para el personal del restaurante (`ADMIN`, `CHEF`, `COUNTER_CLERK`), el campo `tenant_id` es estrictamente obligatorio.
+Represents any individual operating the platform. For restaurant staff (`ADMIN`, `CHEF`, `COUNTER_CLERK`), the `tenant_id` attribute is mandatory.
 
-**Tabla SQL**: `users`
+**Table**: `users`
 
-| Columna | Tipo SQL | Modificadores | Descripción y Restricciones |
+| Column | SQL Type | Modifiers | Description & Constraints |
 |---|---|---|---|
-| `id` | `UUID` | PK, NOT NULL, DEFAULT `gen_random_uuid()` | Identificador único del usuario. |
-| `tenant_id` | `UUID` | NULLABLE (obligatorio para roles staff) | Identificador del establecimiento al que pertenece el empleado. |
-| `email` | `VARCHAR(255)` | NOT NULL, UNIQUE | Correo electrónico normalizado (minúsculas, sin espacios externos). |
-| `full_name` | `VARCHAR(255)` | NOT NULL | Nombre y apellido completo del empleado. |
-| `password_hash` | `VARCHAR(255)` | NOT NULL | Hash BCrypt (costo 12) de la contraseña. |
-| `role` | `VARCHAR(50)` | NOT NULL | Rol asignado: `'ADMIN'`, `'CHEF'`, `'COUNTER_CLERK'`, `'DINER'`. |
-| `status` | `VARCHAR(50)` | NOT NULL, DEFAULT `'ACTIVE'` | Estado de la cuenta: `'PENDING_FIRST_LOGIN'`, `'ACTIVE'`, `'SUSPENDED'`. |
-| `must_change_password` | `BOOLEAN` | NOT NULL, DEFAULT `FALSE` | Bandera que fuerza el cambio de contraseña en el primer inicio de sesión. |
-| `token_version` | `INTEGER` | NOT NULL, DEFAULT `0` | Versión de credenciales para invalidación atómica de sesiones JWT. |
-| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Fecha y hora de creación de la cuenta. |
-| `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Fecha y hora de última modificación. |
+| `id` | `UUID` | PK, NOT NULL, DEFAULT `gen_random_uuid()` | Unique user identifier. |
+| `tenant_id` | `UUID` | NULLABLE (mandatory for staff roles) | Identifier of the establishment the staff member belongs to. |
+| `email` | `VARCHAR(255)` | NOT NULL, UNIQUE | Normalized email address (lowercase, trimmed). |
+| `full_name` | `VARCHAR(255)` | NOT NULL | Staff member's full name. |
+| `password_hash` | `VARCHAR(255)` | NOT NULL | BCrypt hash (work factor 12) of the credential. |
+| `role` | `VARCHAR(50)` | NOT NULL | Assigned role: `'ADMIN'`, `'CHEF'`, `'COUNTER_CLERK'`, `'DINER'`. |
+| `status` | `VARCHAR(50)` | NOT NULL, DEFAULT `'ACTIVE'` | Account status: `'PENDING_FIRST_LOGIN'`, `'ACTIVE'`, `'SUSPENDED'`. |
+| `must_change_password` | `BOOLEAN` | NOT NULL, DEFAULT `FALSE` | Flag forcing a password change on the first login. |
+| `token_version` | `INTEGER` | NOT NULL, DEFAULT `0` | Credential version for atomic JWT session invalidation. |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Account creation timestamp. |
+| `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Timestamp of last profile or status update. |
 
-**Restricciones e Índices**:
-- `uq_users_email`: `UNIQUE (email)` (Garantiza unicidad global en minúsculas).
+**Constraints and Indexes**:
+- `uq_users_email`: `UNIQUE (email)` (Enforces global case-insensitive email uniqueness).
 - `chk_users_role`: `CHECK (role IN ('ADMIN', 'CHEF', 'COUNTER_CLERK', 'DINER', 'ADMINISTRADOR', 'ENCARGADO', 'COMENSAL'))`.
 - `chk_users_status`: `CHECK (status IN ('PENDING_FIRST_LOGIN', 'ACTIVE', 'SUSPENDED', 'UNVERIFIED'))`.
-- `idx_users_tenant_role`: `CREATE INDEX idx_users_tenant_role ON users(tenant_id, role)` (Optimiza listado de personal y conteo de administradores).
+- `idx_users_tenant_role`: `CREATE INDEX idx_users_tenant_role ON users(tenant_id, role)` (Optimizes staff roster queries and admin counts).
 
-**Transiciones de Estado de Usuario**:
+**User Account Status Transitions**:
 ```
-[Alta de Staff por Admin]
-           │
-           ▼
- PENDING_FIRST_LOGIN  (must_change_password = true)
-           │
-           │ (Primer login exitoso + cambio de clave)
-           ▼
-        ACTIVE ────────► SUSPENDED (Inhabilitación administrativa)
-           ▲                 │
-           │                 │ (Reactivación)
-           └─────────────────┘
+[Staff Registration by Admin]
+             │
+             ▼
+   PENDING_FIRST_LOGIN  (must_change_password = true)
+             │
+             │ (First login + mandatory password change)
+             ▼
+          ACTIVE ────────► SUSPENDED (Administrative suspension)
+             ▲                 │
+             │                 │ (Reinstatement)
+             └─────────────────┘
 ```
 
 ---
 
-### 2.2. Entidad `Ingredient` (Maestro de Insumos de Cocina)
+### 2.2. Entity `Ingredient` (Kitchen Master Raw Material)
 
-Representa una materia prima en el catálogo de un establecimiento gastronómico. Los ingredientes pertenecen de forma exclusiva al `tenant_id` del restaurante que los registra.
+Represents a raw material in a restaurant's kitchen catalog. Ingredients belong strictly to the `tenant_id` of the registering restaurant.
 
-**Tabla SQL**: `ingredients`
+**Table**: `ingredients`
 
-| Columna | Tipo SQL | Modificadores | Descripción y Restricciones |
+| Column | SQL Type | Modifiers | Description & Constraints |
 |---|---|---|---|
-| `id` | `UUID` | PK, NOT NULL, DEFAULT `gen_random_uuid()` | Identificador único del ingrediente. |
-| `tenant_id` | `UUID` | NOT NULL | Identificador del establecimiento propietario. |
-| `name` | `VARCHAR(255)` | NOT NULL | Nombre del ingrediente (único dentro del tenant, insensible a mayúsculas). |
-| `category` | `VARCHAR(50)` | NOT NULL | Familia o categoría: `'Produce'`, `'Meat'`, `'Dairy'`, `'Dry Goods'`, `'Spices'`. |
-| `unit_of_measure` | `VARCHAR(20)` | NOT NULL | Unidad de medida aceptada: `'g'`, `'kg'`, `'ml'`, `'l'`, `'u'`. |
-| `unit_purchase_cost` | `NUMERIC(12, 4)` | NOT NULL | Costo unitario de compra (exacto, `>= 0.0000`). |
-| `status` | `VARCHAR(50)` | NOT NULL, DEFAULT `'ACTIVE'` | Ciclo de vida: `'ACTIVE'`, `'DISCONTINUED'`, `'ARCHIVED'`. |
-| `current_stock` | `NUMERIC(12, 4)` | NOT NULL, DEFAULT `0.0000` | Existencia física actual (invariante: `>= 0.0000`). |
-| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Fecha y hora de alta del insumo. |
-| `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Fecha y hora de última actualización de ficha o stock. |
+| `id` | `UUID` | PK, NOT NULL, DEFAULT `gen_random_uuid()` | Unique ingredient identifier. |
+| `tenant_id` | `UUID` | NOT NULL | Identifier of the owning establishment. |
+| `name` | `VARCHAR(255)` | NOT NULL | Ingredient name (unique per tenant, case-insensitive). |
+| `category` | `VARCHAR(50)` | NOT NULL | Category: `'Produce'`, `'Meat'`, `'Dairy'`, `'Dry Goods'`, `'Spices'`. |
+| `unit_of_measure` | `VARCHAR(20)` | NOT NULL | Accepted unit of measure: `'g'`, `'kg'`, `'ml'`, `'l'`, `'u'`. |
+| `unit_purchase_cost` | `NUMERIC(12, 4)` | NOT NULL | Unit purchase cost (exact decimal, `>= 0.0000`). |
+| `status` | `VARCHAR(50)` | NOT NULL, DEFAULT `'ACTIVE'` | Lifecycle: `'ACTIVE'`, `'DISCONTINUED'`, `'ARCHIVED'`. |
+| `current_stock` | `NUMERIC(12, 4)` | NOT NULL, DEFAULT `0.0000` | Physical stock balance (invariant: `>= 0.0000`). |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Registration timestamp. |
+| `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Timestamp of last detail or stock modification. |
 
-**Restricciones de Integridad e Índices**:
-- `uq_ingredient_tenant_lower_name`: `CREATE UNIQUE INDEX uq_ingredient_tenant_lower_name ON ingredients (tenant_id, LOWER(name))` (Garantiza unicidad de nombre por local).
+**Integrity Constraints and Indexes**:
+- `uq_ingredient_tenant_lower_name`: `CREATE UNIQUE INDEX uq_ingredient_tenant_lower_name ON ingredients (tenant_id, LOWER(name))` (Enforces unique name per establishment).
 - `chk_ingredient_cost_positive`: `CHECK (unit_purchase_cost >= 0)`.
-- `chk_ingredient_stock_non_negative`: `CHECK (current_stock >= 0)` (Enforzamiento a nivel de motor del invariante de no negatividad).
+- `chk_ingredient_stock_non_negative`: `CHECK (current_stock >= 0)` (Database-level enforcement of the non-negative stock invariant).
 - `chk_ingredient_category`: `CHECK (category IN ('Produce', 'Meat', 'Dairy', 'Dry Goods', 'Spices'))`.
 - `chk_ingredient_unit`: `CHECK (unit_of_measure IN ('g', 'kg', 'ml', 'l', 'u'))`.
 - `chk_ingredient_status`: `CHECK (status IN ('ACTIVE', 'DISCONTINUED', 'ARCHIVED'))`.
-- `idx_ingredient_chef_catalog`: `CREATE INDEX idx_ingredient_chef_catalog ON ingredients (tenant_id, status, name)` (Índice compuesto para consulta paginada del Chef O(log n)).
+- `idx_ingredient_chef_catalog`: `CREATE INDEX idx_ingredient_chef_catalog ON ingredients (tenant_id, status, name)` (Composite index for Chef paginated queries O(log n)).
 
-**Máquina de Estados del Ciclo de Vida del Ingrediente**:
+**Ingredient Lifecycle State Machine**:
 ```
-          [Creación por Admin]
-                    │
-                    ▼
-                 ACTIVE  (Visible para Chef y Admin; admite ajustes)
-                 │    ▲
-(Baja con stock) │    │ (Reactivación explícita por Admin)
-                 ▼    │
-              DISCONTINUED (Oculto para Chef; visible Admin; admite ajustes)
-                 │
-                 │ (Archivo definitivo; requiere stock == 0)
-                 ▼
-              ARCHIVED (Inmutable; excluido de vistas operativas)
+            [Created by Admin]
+                     │
+                     ▼
+                  ACTIVE  (Visible to Chef and Admin; accepts adjustments)
+                  │    ▲
+(Discontinue with │    │ (Explicit reactivation by Admin)
+ stock > 0)       ▼    │
+               DISCONTINUED (Hidden from Chef; visible to Admin; accepts adjustments)
+                  │
+                  │ (Permanent archive; requires stock == 0)
+                  ▼
+               ARCHIVED (Immutable; excluded from all operational views)
 ```
 
-**Reglas de Transición**:
-1. `ACTIVE` → `DISCONTINUED`: Solo si `current_stock > 0`.
-2. `ACTIVE` → `ARCHIVED`: Solo si `current_stock == 0`.
-3. `DISCONTINUED` → `ACTIVE`: Permitido en cualquier momento por el Administrador.
-4. `DISCONTINUED` → `ARCHIVED`: Permitido únicamente cuando `current_stock == 0`.
-5. Cambio de `unit_of_measure`: Denegado si existen registros de stock o si `current_stock != 0` (FR-013).
+**Transition Rules**:
+1. `ACTIVE` → `DISCONTINUED`: Allowed when `current_stock > 0`.
+2. `ACTIVE` → `ARCHIVED`: Allowed strictly when `current_stock == 0`.
+3. `DISCONTINUED` → `ACTIVE`: Allowed at any time by an Administrator.
+4. `DISCONTINUED` → `ARCHIVED`: Allowed strictly when `current_stock == 0`.
+5. Unit of Measure Modification: Blocked if stock records exist or if `current_stock != 0` (FR-013).
 
 ---
 
-### 2.3. Entidad `StockAuditEntry` (Pista de Auditoría Inmutable de Stock)
+### 2.3. Entity `StockAuditEntry` (Immutable Stock Audit Trail)
 
-Representa cada modificación física de stock realizada sobre un ingrediente. Esta tabla es estrictamente de solo anexado (**append-only**).
+Represents every manual physical stock adjustment performed on an ingredient. This table is strictly **append-only**.
 
-**Tabla SQL**: `stock_audit_entries`
+**Table**: `stock_audit_entries`
 
-| Columna | Tipo SQL | Modificadores | Descripción y Restricciones |
+| Column | SQL Type | Modifiers | Description & Constraints |
 |---|---|---|---|
-| `id` | `UUID` | PK, NOT NULL, DEFAULT `gen_random_uuid()` | Identificador único del evento de auditoría. |
-| `tenant_id` | `UUID` | NOT NULL | Establecimiento donde ocurrió el ajuste. |
-| `ingredient_id` | `UUID` | NOT NULL, FK → `ingredients(id)` | Ingrediente afectado. |
-| `user_id` | `UUID` | NOT NULL, FK → `users(id)` | Administrador que ejecutó el ajuste. |
-| `adjustment_mode` | `VARCHAR(20)` | NOT NULL | Modo: `'ABSOLUTE'` o `'RELATIVE'`. |
-| `previous_stock` | `NUMERIC(12, 4)` | NOT NULL | Stock inmediatamente previo al ajuste (`>= 0`). |
-| `new_stock` | `NUMERIC(12, 4)` | NOT NULL | Stock resultante tras la aplicación del ajuste (`>= 0`). |
-| `net_delta` | `NUMERIC(12, 4)` | NOT NULL | Diferencia algebraica neta (`new_stock - previous_stock`, `<> 0`). |
-| `justification` | `TEXT` | NOT NULL | Motivo obligatorio ingresado por el Administrador. |
-| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Timestamp de persistencia del ajuste. |
+| `id` | `UUID` | PK, NOT NULL, DEFAULT `gen_random_uuid()` | Unique audit event identifier. |
+| `tenant_id` | `UUID` | NOT NULL | Establishment where the adjustment occurred. |
+| `ingredient_id` | `UUID` | NOT NULL, FK → `ingredients(id)` | Targeted ingredient. |
+| `user_id` | `UUID` | NOT NULL, FK → `users(id)` | Administrator who executed the adjustment. |
+| `adjustment_mode` | `VARCHAR(20)` | NOT NULL | Mode: `'ABSOLUTE'` or `'RELATIVE'`. |
+| `previous_stock` | `NUMERIC(12, 4)` | NOT NULL | Stock immediately prior to the adjustment (`>= 0`). |
+| `new_stock` | `NUMERIC(12, 4)` | NOT NULL | Resulting stock after applying the adjustment (`>= 0`). |
+| `net_delta` | `NUMERIC(12, 4)` | NOT NULL | Algebraic difference (`new_stock - previous_stock`, `<> 0`). |
+| `justification` | `TEXT` | NOT NULL | Mandatory justification note entered by the Administrator. |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Timestamp when the adjustment was committed. |
 
-**Restricciones de Integridad e Índices**:
+**Integrity Constraints and Indexes**:
 - `chk_audit_mode`: `CHECK (adjustment_mode IN ('ABSOLUTE', 'RELATIVE'))`.
 - `chk_audit_previous_stock`: `CHECK (previous_stock >= 0)`.
 - `chk_audit_new_stock`: `CHECK (new_stock >= 0)`.
-- `chk_audit_nonzero_delta`: `CHECK (net_delta <> 0)` (Rechazo formal de ajustes sin efecto físico).
+- `chk_audit_nonzero_delta`: `CHECK (net_delta <> 0)` (Rejects zero-delta non-operations).
 - `chk_audit_justification_nonempty`: `CHECK (LENGTH(TRIM(justification)) > 0)`.
 - `idx_stock_audit_ingredient_history`: `CREATE INDEX idx_stock_audit_ingredient_history ON stock_audit_entries (tenant_id, ingredient_id, created_at DESC)`.
 
 ---
 
-## 3. Scripts de Migración de Base de Datos (Flyway)
+## 3. Database Migration Scripts (Flyway)
 
 ### `V3__extend_users_staff.sql`
 ```sql
--- Extensión de la tabla users para personal de establecimiento y primer acceso
+-- Extend users table for staff membership and first login password change
 ALTER TABLE users 
-    ADD COLUMN IF NOT EXISTS full_name VARCHAR(255) NOT NULL DEFAULT 'Sin Nombre',
+    ADD COLUMN IF NOT EXISTS full_name VARCHAR(255) NOT NULL DEFAULT 'Unnamed User',
     ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE;
 
--- Actualización del constraint de roles para soportar nomenclatura formal en inglés y español
+-- Update role constraint to support standard English and Spanish role constants
 ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_users_role;
 ALTER TABLE users ADD CONSTRAINT chk_users_role 
     CHECK (role IN ('ADMIN', 'CHEF', 'COUNTER_CLERK', 'DINER', 'ADMINISTRADOR', 'ENCARGADO', 'COMENSAL'));
 
--- Actualización del constraint de estados para soportar primer login pendiente
+-- Update status constraint to support pending first login status
 ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_users_status;
 ALTER TABLE users ADD CONSTRAINT chk_users_status 
     CHECK (status IN ('PENDING_FIRST_LOGIN', 'ACTIVE', 'SUSPENDED', 'UNVERIFIED'));
@@ -211,7 +211,7 @@ CREATE INDEX IF NOT EXISTS idx_users_tenant_role ON users(tenant_id, role);
 
 ### `V4__create_ingredients_and_stock_audit.sql`
 ```sql
--- Creación de la tabla de ingredientes
+-- Create ingredients master table
 CREATE TABLE ingredients (
     id                 UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id          UUID           NOT NULL,
@@ -233,7 +233,7 @@ CREATE TABLE ingredients (
 CREATE UNIQUE INDEX uq_ingredient_tenant_lower_name ON ingredients (tenant_id, LOWER(name));
 CREATE INDEX idx_ingredient_chef_catalog ON ingredients (tenant_id, status, name);
 
--- Creación de la tabla de auditoría inmutable de stock
+-- Create immutable stock adjustments audit table
 CREATE TABLE stock_audit_entries (
     id              UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id       UUID           NOT NULL,
@@ -254,37 +254,37 @@ CREATE TABLE stock_audit_entries (
 
 CREATE INDEX idx_stock_audit_ingredient_history ON stock_audit_entries (tenant_id, ingredient_id, created_at DESC);
 
--- Regla de inmutabilidad estricta: prevenir UPDATE o DELETE en stock_audit_entries
+-- Strict immutability rules: prevent UPDATE and DELETE on stock_audit_entries
 CREATE OR REPLACE RULE no_update_stock_audit AS ON UPDATE TO stock_audit_entries DO INSTEAD NOTHING;
 CREATE OR REPLACE RULE no_delete_stock_audit AS ON DELETE TO stock_audit_entries DO INSTEAD NOTHING;
 ```
 
 ---
 
-## 4. Matriz de Trazabilidad Requisitos vs. Modelo de Datos
+## 4. Requirement Traceability Matrix
 
-| Requisito Funcional | Entidad y Atributos | Mecanismo de Validación |
+| Functional Requirement | Entity & Attributes | Enforcement Mechanism |
 |---|---|---|
-| **FR-001** (Alta de staff) | `users` (`full_name`, `email`, `role`, `tenant_id`) | Inserción en DTO `@Valid` + FK tenant |
-| **FR-002** (Unicidad y normalización de correo) | `users.email` | `uq_users_email` + lowercase en `AuthService` |
-| **FR-003** (Credencial temporal de un solo uso) | `users.password_hash`, `users.status` | BCrypt hash, status `PENDING_FIRST_LOGIN` |
-| **FR-004** (Nómina de personal del local) | `users` filtrado por `tenant_id` | `idx_users_tenant_role` |
-| **FR-005** (Edición de datos de empleado) | `users` (`full_name`, `email`, `role`) | `PUT` con validación de unicidad |
-| **FR-006** (Prevención de admin huérfano) | `users` (`tenant_id`, `role`, `status`) | Query de conteo en `StaffService` antes de mutación |
-| **FR-007**, **FR-008** (RBAC y Aislamiento multi-tenant) | `users.role`, `TenantContextHolder` | `@PreAuthorize` + inyección de `tenant_id` |
-| **FR-009** (Log de auditoría en acceso denegado) | `SecurityAuditLogger` | Eventos SLF4J estructurados ante `AccessDeniedException` |
-| **FR-010** (Creación de ingrediente con costo y unidad) | `ingredients` | `chk_ingredient_cost_positive`, `chk_ingredient_unit` |
-| **FR-011** (Categorías fijas de ingredientes) | `ingredients.category` | `chk_ingredient_category` |
-| **FR-012** (Edición de ficha de ingrediente) | `ingredients` (`name`, `category`, `unit_purchase_cost`) | Actualización transaccional |
-| **FR-013** (Bloqueo de cambio de unidad con stock) | `ingredients.unit_of_measure` | Validación en `IngredientService` (`current_stock == 0`) |
-| **FR-014** (Ciclo de vida y reactivación) | `ingredients.status` | Máquina de estados en `IngredientService` |
-| **FR-015** (Modos de ajuste Absoluto y Relativo) | `stock_audit_entries.adjustment_mode` | `chk_audit_mode` |
-| **FR-016** (Invariante de stock no negativo) | `ingredients.current_stock` | `chk_ingredient_stock_non_negative` + check en servicio |
-| **FR-017** (Rechazo de delta cero) | `stock_audit_entries.net_delta` | `chk_audit_nonzero_delta` |
-| **FR-018** (Justificación obligatoria) | `stock_audit_entries.justification` | `chk_audit_justification_length` |
-| **FR-019** (Auditoría inmutable de stock) | `stock_audit_entries` | Tabla append-only + reglas PostgreSQL `no_update`/`no_delete` |
-| **FR-020** (Aislamiento concurrente de stock) | `ingredients` | Bloqueo pesimista `SELECT ... FOR UPDATE` |
-| **FR-021**, **FR-022** (Catálogo del Chef paginado) | `ingredients` (`status = 'ACTIVE'`) | `idx_ingredient_chef_catalog` (20 items, A-Z) |
-| **FR-023** (Filtro por categoría y búsqueda textual) | `ingredients` (`category`, `LOWER(name)`) | Query parametrizada con `Pageable` |
-| **FR-024** (Ocultamiento de costos al Chef) | Proyección `ChefIngredientResponseDto` | DTO específico sin campos `unitPurchaseCost` ni auditoría |
-| **FR-025** (Precisión decimal contable exacta) | `NUMERIC(12, 4)` / `BigDecimal` | Tipos nativos sin redondeo binario de coma flotante |
+| **FR-001** (Staff registration) | `users` (`full_name`, `email`, `role`, `tenant_id`) | Validated DTO + tenant FK |
+| **FR-002** (Email uniqueness & normalization) | `users.email` | `uq_users_email` + lowercase normalization in service |
+| **FR-003** (Single-use temporary credential) | `users.password_hash`, `users.status` | BCrypt hash, `PENDING_FIRST_LOGIN` status |
+| **FR-004** (Staff roster view) | `users` filtered by `tenant_id` | `idx_users_tenant_role` |
+| **FR-005** (Staff member editing) | `users` (`full_name`, `email`, `role`) | `PUT` endpoint with uniqueness check |
+| **FR-006** (Orphaned admin prevention) | `users` (`tenant_id`, `role`, `status`) | Admin count query in `StaffService` before demotion |
+| **FR-007**, **FR-008** (RBAC & Multi-tenant isolation) | `users.role`, `TenantContextHolder` | `@PreAuthorize` + tenant query parameter |
+| **FR-009** (Audit logging on access denied) | `SecurityAuditLogger` | Structured SLF4J log entries on `AccessDeniedException` |
+| **FR-010** (Ingredient creation with cost & unit) | `ingredients` | `chk_ingredient_cost_positive`, `chk_ingredient_unit` |
+| **FR-011** (Fixed ingredient categories) | `ingredients.category` | `chk_ingredient_category` |
+| **FR-012** (Ingredient detail editing) | `ingredients` (`name`, `category`, `unit_purchase_cost`) | Transactional update |
+| **FR-013** (Unit of measure change restriction) | `ingredients.unit_of_measure` | Service check: blocked if `current_stock != 0` |
+| **FR-014** (Ingredient lifecycle & reactivation) | `ingredients.status` | State machine in `IngredientService` |
+| **FR-015** (Absolute & Relative adjustment modes) | `stock_audit_entries.adjustment_mode` | `chk_audit_mode` |
+| **FR-016** (Non-negative stock invariant) | `ingredients.current_stock` | `chk_ingredient_stock_non_negative` + service calculation |
+| **FR-017** (Zero-delta rejection) | `stock_audit_entries.net_delta` | `chk_audit_nonzero_delta` |
+| **FR-018** (Mandatory justification) | `stock_audit_entries.justification` | `chk_audit_justification_length` |
+| **FR-019** (Immutable stock audit trail) | `stock_audit_entries` | Append-only table + PostgreSQL `no_update`/`no_delete` rules |
+| **FR-020** (Concurrent stock adjustment isolation) | `ingredients` | Pessimistic locking (`SELECT ... FOR UPDATE`) |
+| **FR-021**, **FR-022** (Chef paginated catalog) | `ingredients` (`status = 'ACTIVE'`) | `idx_ingredient_chef_catalog` (20 items, A-Z) |
+| **FR-023** (Category filter and text search) | `ingredients` (`category`, `LOWER(name)`) | Parameterized JPA query with `Pageable` |
+| **FR-024** (Cost hiding from Chef) | Projection `ChefIngredientResponseDto` | Dedicated DTO omitting purchase cost and audit trail |
+| **FR-025** (Exact decimal accounting precision) | `NUMERIC(12, 4)` / `BigDecimal` | Exact native numeric types avoiding binary float errors |
