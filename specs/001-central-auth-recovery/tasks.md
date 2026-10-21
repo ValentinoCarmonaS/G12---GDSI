@@ -79,7 +79,7 @@
 
 - [X] T024 [P] [US2] Implement login DTOs `LoginRequest.java` and `AuthTokenResponse.java` in `easyeat/backend/src/main/java/com/easyeat/auth/dto/LoginRequest.java`.
 - [X] T025 [US2] Implement `JwtService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/security/JwtService.java` using `jjwt` with HMAC-SHA256, 8-hour expiration, and deterministic claims (`sub`, `role`, `tenant_id`, `token_version`).
-- [ ] T026 [US2] Implement in-process rate limiter `RateLimitingService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/security/RateLimitingService.java` backed by Caffeine caches (per-email 5 attempts/15 min, per-IP 50 attempts/1 hr).
+- [X] T026 [US2] Implement in-process rate limiter `RateLimitingService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/security/RateLimitingService.java` backed by Caffeine caches (per-email 5 attempts/15 min, per-IP 50 attempts/1 hr).
 - [ ] T027 [US2] Implement login logic in `AuthService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java` with rate limit check before credentials, dynamic `DUMMY_HASH` comparison on non-existent users for timing attack mitigation, status check (`ACTIVE`), and token issuance.
 - [ ] T028 [US2] Implement `JwtAuthenticationFilter.java` in `easyeat/backend/src/main/java/com/easyeat/auth/security/JwtAuthenticationFilter.java` extracting Bearer token, verifying signature, and asserting that database `token_version` matches and account is `ACTIVE`.
 - [ ] T029 [US2] Register `JwtAuthenticationFilter` before `UsernamePasswordAuthenticationFilter` in `SecurityConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`.
