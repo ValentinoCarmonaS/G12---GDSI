@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { AuthenticatedUser, JwtClaims, Role } from '../types/auth';
+import { authApi } from '../api/authApi';
 
 interface AuthContextType {
   user: AuthenticatedUser | null;
@@ -7,6 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   setToken: (token: string) => void;
   clearAuth: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -63,6 +65,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   }, []);
 
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Ignored: network failure during logout shouldn't prevent local eviction
+    } finally {
+      clearAuth();
+      window.location.replace('/login');
+    }
+  }, [clearAuth]);
+
   const setToken = useCallback((newToken: string) => {
     const parsed = parseUserFromToken(newToken);
     if (parsed) {
@@ -105,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user && !!token,
         setToken,
         clearAuth,
+        logout,
       }}
     >
       {children}

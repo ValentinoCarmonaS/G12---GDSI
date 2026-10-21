@@ -19,12 +19,11 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   subtitle,
   children,
 }) => {
-  const { user, clearAuth } = useAuth();
+  const { user, logout } = useAuth();
   const roleColor = user?.role ? ROLE_BADGE_COLORS[user.role] || 'bg-gray-100 text-gray-800' : 'bg-gray-100 text-gray-800';
 
-  const handleLogout = () => {
-    clearAuth();
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
