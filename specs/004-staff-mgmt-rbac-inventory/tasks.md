@@ -94,7 +94,7 @@
 
 - [x] T028 [P] [US4] Unit test `StockAdjustmentServiceTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/service/StockAdjustmentServiceTest.java` verifying Absolute mode, Relative mode, non-negative invariant rejection, zero-delta rejection, mandatory justification, and audit record generation
 - [ ] T029 [P] [US4] Multithreaded integration test `StockAdjustmentConcurrencyTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/concurrency/StockAdjustmentConcurrencyTest.java` running against Testcontainers PostgreSQL, verifying that simultaneous adjustments are serialized with pessimistic locking and never result in negative stock
-- [ ] T030 [P] [US4] Web layer contract test `StockAdjustmentControllerTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/controller/StockAdjustmentControllerTest.java` verifying `POST /api/v1/admin/ingredients/{id}/stock-adjustments` and `GET /api/v1/admin/ingredients/{id}/stock-audit`
+- [x] T030 [P] [US4] Web layer contract test `StockAdjustmentControllerTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/controller/StockAdjustmentControllerTest.java` verifying `POST /api/v1/admin/ingredients/{id}/stock-adjustments` and `GET /api/v1/admin/ingredients/{id}/stock-audit`
 
 ### Implementation for User Story 4
 
