@@ -55,7 +55,7 @@
 - [x] T017 [US1] Implement `StaffService` in `easyeat/backend/src/main/java/com/easyeat/staff/service/StaffService.java` handling user registration with `SecureRandom` 12-char credential generation, BCrypt hashing (cost 12), lowercase normalization, and orphaned admin verification on updates
 - [x] T018 [US1] Implement `StaffController` exposing `/api/v1/admin/staff` endpoints protected with `@PreAuthorize("hasRole('ADMIN')")` in `easyeat/backend/src/main/java/com/easyeat/staff/controller/StaffController.java`
 - [x] T019 [US1] Implement `FirstLoginPasswordChangeRequest` DTO and endpoint `POST /api/v1/auth/first-login-password-change` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/FirstLoginPasswordController.java` to transition account from `PENDING_FIRST_LOGIN` to `ACTIVE`
-- [ ] T020 [US2] Configure authorization rules in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` ensuring `/api/v1/admin/**` requires `ROLE_ADMIN` and unauthenticated/unauthorized requests emit structured security audit entries
+- [x] T020 [US2] Configure authorization rules in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` ensuring `/api/v1/admin/**` requires `ROLE_ADMIN` and unauthenticated/unauthorized requests emit structured security audit entries
 
 **Checkpoint**: User Stories 1 and 2 fully functional. Staff can be registered, roles enforced, and temporary credentials changed on first login.
 
