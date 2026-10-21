@@ -46,6 +46,7 @@ public class PasswordResetService {
 
     private final Cache<String, Instant> emailCooldownCache;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public PasswordResetService(
             UserRepository userRepository,
             PasswordResetTokenRepository tokenRepository,
