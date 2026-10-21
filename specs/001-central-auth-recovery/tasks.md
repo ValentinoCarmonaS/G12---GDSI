@@ -16,7 +16,7 @@
 - [X] T003 [P] Configure base application configuration in `easyeat/backend/src/main/resources/application.yml` with JWT settings, BCrypt cost 12, rate limit settings, and RFC 9457 ProblemDetail enabled.
 - [X] T004 [P] Configure local development profile in `easyeat/backend/src/main/resources/application-dev.yml` pointing to local Docker PostgreSQL and Mailpit SMTP.
 - [X] T005 [P] Configure test profile in `easyeat/backend/src/test/resources/application-test.yml` with fixed test JWT signing secret and dynamic Testcontainers datasource.
-- [ ] T006 Create main Spring Boot application class in `easyeat/backend/src/main/java/com/easyeat/EasyEatApplication.java`.
+- [X] T006 Create main Spring Boot application class in `easyeat/backend/src/main/java/com/easyeat/EasyEatApplication.java`.
 
 ---
 
