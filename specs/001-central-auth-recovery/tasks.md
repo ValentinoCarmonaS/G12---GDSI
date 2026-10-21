@@ -82,7 +82,7 @@
 - [X] T026 [US2] Implement in-process rate limiter `RateLimitingService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/security/RateLimitingService.java` backed by Caffeine caches (per-email 5 attempts/15 min, per-IP 50 attempts/1 hr).
 - [X] T027 [US2] Implement login logic in `AuthService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java` with rate limit check before credentials, dynamic `DUMMY_HASH` comparison on non-existent users for timing attack mitigation, status check (`ACTIVE`), and token issuance.
 - [X] T028 [US2] Implement `JwtAuthenticationFilter.java` in `easyeat/backend/src/main/java/com/easyeat/auth/security/JwtAuthenticationFilter.java` extracting Bearer token, verifying signature, and asserting that database `token_version` matches and account is `ACTIVE`.
-- [ ] T029 [US2] Register `JwtAuthenticationFilter` before `UsernamePasswordAuthenticationFilter` in `SecurityConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`.
+- [X] T029 [US2] Register `JwtAuthenticationFilter` before `UsernamePasswordAuthenticationFilter` in `SecurityConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`.
 - [ ] T030 [US2] Implement `login` endpoint in `AuthController.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java` handling `POST /api/v1/auth/login`.
 - [ ] T031 [US2] Write and run Testcontainers integration tests in `easyeat/backend/src/test/java/com/easyeat/auth/integration/LoginIntegrationTest.java` verifying unified login for all 4 roles, account suspension blocking (403), rate-limiting lockout (429), and timing resistance.
 
