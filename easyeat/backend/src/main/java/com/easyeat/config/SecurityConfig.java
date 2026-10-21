@@ -1,6 +1,8 @@
 package com.easyeat.config;
 
 import com.easyeat.auth.security.JwtAuthenticationFilter;
+import com.easyeat.auth.security.SecurityAuditLogger;
+import com.easyeat.common.filter.TenantContextFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,22 +21,35 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.net.URI;
+import java.util.Optional;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final TenantContextFilter tenantContextFilter;
+    private final SecurityAuditLogger securityAuditLogger;
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, @Autowired(required = false) ObjectMapper objectMapper) {
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            Optional<TenantContextFilter> tenantContextFilter,
+            Optional<SecurityAuditLogger> securityAuditLogger,
+            Optional<ObjectMapper> objectMapper) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.objectMapper = (objectMapper != null) ? objectMapper : new ObjectMapper();
+        this.tenantContextFilter = tenantContextFilter.orElse(null);
+        this.securityAuditLogger = securityAuditLogger.orElse(null);
+        this.objectMapper = objectMapper.orElseGet(ObjectMapper::new);
+    }
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, ObjectMapper objectMapper) {
+        this(jwtAuthenticationFilter, Optional.empty(), Optional.empty(), Optional.ofNullable(objectMapper));
     }
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this(jwtAuthenticationFilter, new ObjectMapper());
+        this(jwtAuthenticationFilter, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     @Bean
@@ -44,17 +59,19 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
+        http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.cacheControl(Customizer.withDefaults()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/logout").authenticated()
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",
-                                "/api/v1/auth/password-reset/**"
+                                "/api/v1/auth/password-reset/**",
+                                "/api/v1/auth/first-login-password-change"
                         ).permitAll()
+                        .requestMatchers("/api/v1/auth/logout").authenticated()
+                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "ADMINISTRADOR")
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
@@ -70,8 +87,29 @@ public class SecurityConfig {
                             problem.setInstance(URI.create(request.getRequestURI()));
                             objectMapper.writeValue(response.getWriter(), problem);
                         })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            if (securityAuditLogger != null) {
+                                String userEmail = request.getUserPrincipal() != null ? request.getUserPrincipal().getName() : "anonymous";
+                                securityAuditLogger.logAccessDenied(userEmail, null, request.getRequestURI(), request.getRemoteAddr(), accessDeniedException.getMessage());
+                            }
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/problem+json;charset=UTF-8");
+                            ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                                    HttpStatus.FORBIDDEN,
+                                    "Access denied: insufficient operational role permissions."
+                            );
+                            problem.setType(URI.create("https://easyeat.com/errors/forbidden"));
+                            problem.setTitle("Forbidden");
+                            problem.setInstance(URI.create(request.getRequestURI()));
+                            objectMapper.writeValue(response.getWriter(), problem);
+                        })
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        if (tenantContextFilter != null) {
+            http.addFilterAfter(tenantContextFilter, JwtAuthenticationFilter.class);
+        }
+
+        return http.build();
     }
 }
