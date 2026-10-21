@@ -1,7 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
+import { authApi } from '../api/authApi';
 
 export const CounterWorkspacePage: React.FC = () => {
+  useEffect(() => {
+    // Validate token_version against the backend on workspace mount.
+    // A 401 response (concurrent session invalidation) is caught by the
+    // global session interceptor in apiClient, which clears auth and
+    // redirects to /login with "Tu sesión ha expirado".
+    authApi.me().catch(() => { /* handled by interceptor */ });
+  }, []);
+
   return (
     <WorkspaceLayout
       title="Mostrador y Despacho"
