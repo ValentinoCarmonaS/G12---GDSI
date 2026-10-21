@@ -20,7 +20,7 @@
 
 **Purpose**: Initialize frontend application and verify backend build configuration from `001-central-auth-recovery`.
 
-- [ ] T001 Initialize frontend React 18, Vite 5, Tailwind CSS, and React Router v6 setup in `easyeat/frontend/package.json` and `easyeat/frontend/vite.config.ts`
+- [x] T001 Initialize frontend React 18, Vite 5, Tailwind CSS, and React Router v6 setup in `easyeat/frontend/package.json` and `easyeat/frontend/vite.config.ts`
 - [ ] T002 [P] Verify or extend backend Maven build configuration from 001 to ensure `jjwt` (api, impl, jackson) and Spring Security dependencies exist in `easyeat/backend/pom.xml`
 - [ ] T003 [P] Verify or configure backend environment profiles (`jwt.secret`, `jwt.expiration`) for dev and test in `easyeat/backend/src/main/resources/application.yml` and `easyeat/backend/src/main/resources/application-dev.yml`
 
