@@ -242,3 +242,315 @@ Do not prescribe database schemas, ORM configurations, controller endpoints, or 
 -"
 [speckit-clarify](slashCommand;speckit-clarify) [/grill-me](slashCommand;grill-me) 
 "-
+
+---
+
+## 4. speckit-plan
+**Command**: `/speckit-plan`
+**Sprint:** 1
+**Scheduled Activity:** Servicio Central de Autenticación JWT y Recuperación de Claves
+
+**Sample Prompt**:
+-"
+/speckit-plan
+Create the technical implementation plan for the Central Authentication Service and Password Recovery feature based on the approved specification (specs/001-central-auth-recovery/spec.md) and the EasyEat product backlog.
+
+This is a green-field backend API service implementation for the EasyEat multi-tenant platform.
+
+## Architecture and Technology Stack
+
+- **Platform & Language**: Java 21 (LTS).
+- **Core Framework**: Spring Boot 3.3.4 (Web, Validation, Data JPA, Security).
+- **Security & Cryptography**: Spring Security 6, `BCryptPasswordEncoder` (work factor 12), and `jjwt` for stateless session token signing (HMAC-SHA256).
+- **Persistence & Storage**: PostgreSQL 16+ as primary relational storage. Database migrations managed via Flyway.
+- **API Contracts**: Pre-commit OpenAPI 3.0 specification in `specs/001-central-auth-recovery/contracts/openapi.yaml` serving as the design authority, validated during test runs with Springdoc.
+- **Error Format**: RFC 9457 `ProblemDetail` responses via a centralized `@RestControllerAdvice`.
+- **Testing Stack**: JUnit 5, Mockito, AssertJ, Spring Boot Test (`MockMvc`), and `Testcontainers` (PostgreSQL 16) for real integration verification.
+- **Time Abstraction**: Injectable `java.time.Clock` bean across all services to guarantee deterministic verification of token expiration and cooldown windows.
+
+## Core Technical Architecture and Identity Model
+
+1. **Global Identity Table (No Hibernate `@TenantId`)**:
+   - The `users` table is a global platform identity directory. It must NOT be annotated with Hibernate's `@TenantId` filter, because login lookups by email occur before tenant context exists, and comensales have no fixed tenant.
+   - Multi-tenant data isolation applies to restaurant business domains (menus, orders, inventory). For authentication, `tenant_id` is strictly an identity attribute stored on staff records and propagated as a claim inside the JWT.
+   - Enforce database constraint: `(role = 'COMENSAL' AND tenant_id IS NULL) OR (role IN ('ADMINISTRADOR', 'CHEF', 'ENCARGADO') AND tenant_id IS NOT NULL)`.
+2. **Deterministic JWT Claims and Stateful Revocation**:
+   - Session tokens contain standard claims (`iss = easyeat-auth`, `sub = userId`, `iat`, `exp = 8 hours`) and custom claims: `role`, `tenant_id` (null for comensales, UUID for staff), and `token_version` (integer).
+   - The JWT authentication filter checks both that `token_version` matches the database and that `status == 'ACTIVE'`. If an account is suspended or the token version has been incremented, the request is immediately rejected with `401 Unauthorized` / `403 Forbidden`.
+3. **Atomic Password Reset Consumption**:
+   - Password reset tokens are single-use, 15-minute lifespan, stored as SHA-256 hashes.
+   - Password reset is role-agnostic: any account in `ACTIVE` status can initiate and complete the flow.
+   - Consumption must be atomic via a single conditional update:
+     `UPDATE password_reset_tokens SET consumed_at = :now WHERE token_hash = :hash AND consumed_at IS NULL AND expires_at > :now`.
+     If affected rows == 0, the operation is rejected.
+   - Requesting a new reset token immediately invalidates any prior unconsumed tokens for that user.
+   - On successful reset, update `password_hash` and increment `token_version` on `User` to revoke all active sessions.
+
+## Domain and Data Model (Flyway Migrations)
+
+- **`V1__init_auth_schema.sql`** (stored in `classpath:db/migration`):
+  - **`users` table**:
+    - `id` (UUID, Primary Key, default `gen_random_uuid()`)
+    - `email` (VARCHAR(255), NOT NULL, UNIQUE)
+    - `password_hash` (VARCHAR(72), NOT NULL)
+    - `role` (VARCHAR(30), NOT NULL: `COMENSAL`, `ENCARGADO`, `CHEF`, `ADMINISTRADOR`)
+    - `tenant_id` (UUID, NULL for COMENSAL, NOT NULL for staff roles; synthetic UUID without foreign key in V1 until `tenants` table exists)
+    - `status` (VARCHAR(20), NOT NULL, default 'ACTIVE': `ACTIVE`, `SUSPENDED`)
+    - `token_version` (INT, NOT NULL, default 0)
+    - `created_at`, `updated_at` (TIMESTAMPTZ, NOT NULL)
+    - `CONSTRAINT ck_users_email_lowercase CHECK (email = lower(email))`
+    - `CONSTRAINT ck_users_role_tenant CHECK ((role = 'COMENSAL' AND tenant_id IS NULL) OR (role IN ('ADMINISTRADOR', 'CHEF', 'ENCARGADO') AND tenant_id IS NOT NULL))`
+  - **`password_reset_tokens` table**:
+    - `id` (UUID, Primary Key, default `gen_random_uuid()`)
+    - `user_id` (UUID, NOT NULL, FK to `users.id` ON DELETE CASCADE)
+    - `token_hash` (VARCHAR(64), NOT NULL, UNIQUE index, SHA-256 of the raw token)
+    - `expires_at` (TIMESTAMPTZ, NOT NULL)
+    - `consumed_at` (TIMESTAMPTZ, NULL)
+    - `created_at` (TIMESTAMPTZ, NOT NULL)
+- **Environment-Specific Seed (`V2__seed_dev_tenant.sql`)**:
+  - Located in `classpath:db/dev` and configured in Spring profiles (`spring.flyway.locations=classpath:db/migration,classpath:db/dev`) strictly for `dev` and `test`. Never loaded in production.
+  - The development administrator password must be loaded via the environment variable `DEV_ADMIN_PASSWORD` (hashed at startup or migration placeholder) rather than hardcoded in the repository.
+
+## API Design, Endpoints, and Product Trade-Offs
+
+- `POST /api/v1/auth/register`:
+  - Request: `RegisterRequest(@Email @NotBlank String email, @NotBlank @MaxBytes(72) String password)`.
+  - Normalizes email via `email.toLowerCase(Locale.ROOT).trim()`.
+  - Custom validator `@MaxBytes(72)` verifies `password.getBytes(StandardCharsets.UTF_8).length <= 72` (preventing BCrypt silent truncation of multi-byte characters), alongside password complexity (min 8 chars, 1 uppercase, 1 lowercase, 1 digit).
+  - **Product Decision (COM-1.1.1)**: If email already exists, returns `409 Conflict` with ProblemDetail ("El correo electrónico ya está asociado a un usuario existente"). Documented product trade-off, protected by rate limiting.
+  - Defaults: `role = COMENSAL`, `tenant_id = null`, `status = ACTIVE`.
+  - Response: `201 Created` with `UserSummaryResponse(id, email, role, status)`.
+- `POST /api/v1/auth/login`:
+  - Request: `LoginRequest(@NotBlank String email, @NotBlank String password)`.
+  - Normalizes email before lookup.
+  - **Timing Attack Mitigation**: Compute a dynamic `DUMMY_HASH` at application startup using the configured `BCryptPasswordEncoder` (cost 12). If the user does not exist, execute `passwordEncoder.matches(password, DUMMY_HASH)` to ensure uniform response timing.
+  - If user is missing or password does not match: return `401 Unauthorized` with generic message ("Credenciales inválidas").
+  - **Product Decision (COM-1.2.1)**: If credentials are valid but `status == 'SUSPENDED'`, return `403 Forbidden` with ProblemDetail message ("Perfil no autorizado para operar").
+  - If valid and active: return `200 OK` with `AuthTokenResponse(accessToken, tokenType, expiresIn, user)`.
+- `POST /api/v1/auth/password-reset/request`:
+  - Request: `PasswordResetRequest(@Email @NotBlank String email)`.
+  - Returns `200 OK` generic message immediately regardless of whether the email exists (anti-enumeration preserved).
+  - Transactional email dispatch is asynchronous (`@Async` or event publisher) and triggers only if the user exists and is active.
+- `POST /api/v1/auth/password-reset/confirm`:
+  - Request: `PasswordResetConfirmRequest(@NotBlank String token, @NotBlank @MaxBytes(72) String newPassword)`.
+  - Validates `newPassword` complexity and `@MaxBytes(72)`.
+  - Executes atomic token consumption. On success, updates `password_hash`, increments `token_version`, and returns `200 OK`.
+
+## Security, Rate Limiting, and Audit Logging
+
+- **Dual Independent Rate Limiting**:
+  - Implement two distinct rate limiters using Caffeine in-memory cache (documented assumption: single-instance for MVP v1; Redis required for horizontal scaling):
+    1. **Per-Email Lockout**: 5 failed login attempts on a normalized email (whether the email exists or not) trigger a 15-minute lockout.
+    2. **Per-IP Limiter**: 50 total attempts per IP per hour to protect against password-spraying and distributed attacks.
+  - **Password Reset Cooldown**: 1 reset request per normalized email per 60 seconds (increments counter even for non-existent emails, returning identical generic 200 OK).
+- **Reverse Proxy Header Security**:
+  - Configure `server.forward-headers-strategy=native` with `server.tomcat.remoteip.internal-proxies` restricting trusted proxy CIDRs (e.g. `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `127.0.0.1`) to prevent client IP spoofing via crafted `X-Forwarded-For` headers.
+- **Audit Logging**:
+  - `SecurityAuditLogger` records structured JSON logs: `eventType` (LOGIN_SUCCESS, LOGIN_FAILURE, LOCKOUT, RESET_REQUEST, RESET_CONFIRM), `timestamp`, `clientIp`, and masked email (`u***@domain.com`). Plaintext passwords and raw tokens must NEVER be logged.
+
+## Project Structure (Package by Feature)
+
+```text
+backend/
+├── pom.xml
+├── docker-compose.yml (PostgreSQL 16 + Mailpit)
+├── src/main/resources/
+│   ├── application.yml
+│   ├── application-dev.yml
+│   └── db/
+│       ├── migration/
+│       │   └── V1__init_auth_schema.sql
+│       └── dev/
+│           └── V2__seed_dev_tenant.sql (only in dev/test profiles)
+├── src/main/java/com/easyeat/
+│   ├── EasyEatApplication.java
+│   ├── config/ (ClockConfig, SecurityConfig, ProxyConfig)
+│   └── auth/
+│       ├── domain/ (User, UserRole, UserStatus, PasswordResetToken)
+│       ├── dto/ (RegisterRequest, LoginRequest, PasswordResetRequest, PasswordResetConfirmRequest, AuthTokenResponse, UserSummaryResponse)
+│       ├── validation/ (MaxBytes, MaxBytesValidator, PasswordComplexity)
+│       ├── repository/ (UserRepository, PasswordResetTokenRepository)
+│       ├── service/ (AuthService, PasswordResetService, JwtTokenService, EmailService)
+│       ├── controller/ (AuthController, PasswordResetController, AuthExceptionHandler)
+│       └── security/ (JwtAuthenticationFilter, LoginRateLimiter, SecurityAuditLogger)
+└── src/test/java/com/easyeat/auth/
+    ├── unit/ (MaxBytesValidatorTest, JwtTokenServiceTest, PasswordResetServiceTest)
+    ├── contract/ (OpenApiContractTest, ProblemDetailFormatTest)
+    └── integration/ (TestcontainersPostgresTest, AuthFlowIntegrationTest, ConcurrencyTokenTest, RateLimitingTest)
+
+"-
+
+---
+
+## 5. speckit-tasks
+**Command**: `/speckit-tasks`
+**Sprint:** 1
+**Scheduled Activity:** Servicio Central de Autenticación JWT y Recuperación de Claves
+
+**Sample Prompt**:
+-"
+/speckit-tasks
+Generate atomic, dependency-ordered tasks for the Central Authentication Service and Password Recovery feature based on the approved design artifacts in specs/001-central-auth-recovery/ (spec.md, plan.md, data-model.md, quickstart.md, and contracts/openapi.yaml).
+
+Target repository path: All implementation and test files live under `easyeat/backend/`.
+
+Enforce strict TDD ordering (write failing test first -> implement minimal code -> verify with Testcontainers/MockMvc) within each User Story phase.
+
+Ensure the task breakdown follows these exact phase requirements:
+
+1. Phase 1: Setup (Shared Infrastructure)
+   - Initialize Maven single-project configuration (`easyeat/backend/pom.xml`) with Java 21, Spring Boot 3.3.4, Spring Security 6, JJWT 0.12.6, Caffeine, Flyway 10, Testcontainers PostgreSQL, and Spring Mail.
+   - Configure local dev containers (`easyeat/backend/docker-compose.yml`) with PostgreSQL 16 and Mailpit.
+   - Set up application profiles (`application.yml`, `application-dev.yml`, `application-test.yml`).
+
+2. Phase 2: Foundational (Blocking Prerequisites)
+   - Create Flyway database migrations `V1__create_users.sql` and `V2__create_password_reset_tokens.sql` with checks for lowercase email and role/tenant constraints.
+   - Configure `ClockConfig` bean for deterministic time-based testing.
+   - Implement centralized RFC 9457 error handling in `GlobalExceptionHandler.java`.
+   - Implement base `User` entity and `UserRepository` with `findByEmail()` and `existsByEmail()`.
+   - Configure baseline `SecurityConfig.java` with `BCryptPasswordEncoder` (work factor 12) and stateless session policy.
+
+3. Phase 3: User Story 1 - Comensal Registration (Priority: P1) [US1]
+   - Test-first: Unit test for `@MaxBytes(72)` custom validator and registration DTO constraints.
+   - Test-first: MockMvc WebMvc contract tests for `POST /api/v1/auth/register` (201 Created, 400 Bad Request, 409 Conflict).
+   - Implementation: `@MaxBytes` validator, `RegisterRequest` DTO, and `AuthService.register()` enforcing normalized email and password hashing.
+   - Implementation: `AuthController.register()` endpoint.
+   - Integration: Testcontainers integration test verifying end-to-end comensal persistence and duplicate email conflict.
+
+4. Phase 4: User Story 2 - Unified Login with JWT (Priority: P1) [US2]
+   - Test-first: Unit tests for `JwtService` (token generation, claims extraction: `sub`, `role`, `tenant_id`, `token_version`, expiration, and tampering).
+   - Test-first: Unit tests for `RateLimitingService` (per-email 5-attempt lockout, per-IP limit, non-existent email counting).
+   - Test-first: MockMvc tests for `POST /api/v1/auth/login` (200 OK, 401 Unauthorized with timing mitigation, 403 Forbidden for SUSPENDED accounts).
+   - Implementation: `JwtService`, `RateLimitingService`, and `AuthService.login()` with dynamic `DUMMY_HASH` comparison on missing users.
+   - Implementation: `JwtAuthenticationFilter` verifying `token_version` match and `ACTIVE` account status.
+   - Implementation: `AuthController.login()` endpoint.
+   - Integration: Testcontainers integration tests verifying login for all 4 roles, account suspension blocking, and rate-limiting lockout.
+
+5. Phase 5: User Story 3 - Password Recovery for Comensales (Priority: P2) [US3]
+   - Test-first: Unit tests for `PasswordResetService` verifying 15-minute token generation, SHA-256 hashing, and cooldown rate limiting.
+   - Test-first: MockMvc tests for `POST /api/v1/auth/password-reset/request` (always 200 OK generic) and `POST /api/v1/auth/password-reset/confirm` (200 OK, 400 Bad Request).
+   - Implementation: `PasswordResetToken` entity, repository, and atomic SQL consumption update.
+   - Implementation: `EmailService` wrapping `JavaMailSender` with async reset email dispatch.
+   - Implementation: `PasswordResetService` and `AuthController` recovery endpoints (`request` and `confirm`), incrementing `token_version` on success.
+   - Integration: Testcontainers integration test for full recovery cycle and concurrency test proving single-use token consumption.
+
+6. Phase 6: User Story 4 - Password Recovery for Administrators (Priority: P2) [US4]
+   - Test-first: Integration test verifying admin password recovery using seeded tenant data, confirming token invalidation across active admin sessions.
+   - Verification: End-to-end test confirming that a reset admin account regains access to its tenant environment while prior admin JWTs are rejected.
+
+7. Phase 7: Polish and Cross-Cutting Concerns
+   - Contract verification test asserting live endpoints match `specs/001-central-auth-recovery/contracts/openapi.yaml`.
+   - Implement `SecurityAuditLogger` for structured SLF4J JSON security event logging.
+   - Complete quickstart validation scenarios from `quickstart.md`.
+
+Format Requirements:
+- Strictly format every task as `- [ ] [TaskID] [P?] [Story?] Description with exact file path`.
+- Sequential task IDs: T001, T002, T003...
+- Use `[P]` exclusively on parallelizable tasks touching independent files.
+- Use `[US1]`, `[US2]`, `[US3]`, `[US4]` labels only inside their respective User Story phases.
+"-
+
+---
+
+## 6. speckit-implement
+**Command**: `/speckit-implement`
+
+-"
+## Incremento 1: Setup, Fundacionales y Registro de Comensales (MVP)
+
+**Alcance:** Tareas `T001` a `T020` (Fase 1: Setup, Fase 2: Fundacionales, Fase 3: User Story 1).  
+**GitHub Issues:** [#1](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/1), [#2](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/2), [#3](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/3).
+
+```text
+/speckit-implement
+Implement Increment 1 (MVP: Setup, Foundational, and User Story 1 - Comensal Registration) for feature `001-central-auth-recovery`:
+- Checkout dedicated branch feature/001/mvp-registration from 001-central-auth-recovery.
+- Execute tasks T001 through T020 strictly adhering to specs/001-central-auth-recovery/tasks.md.
+- Follow strict TDD ordering (write failing tests before implementation in Phase 3).
+- Create 1:1 atomic commits per task with format "T###: description".
+- Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issues #1, #2, and #3.
+```
+
+PR - GitHub: [feat(auth): Increment 1 (MVP) - Setup, Foundational, and Comensal Registration (US1)- #8](https://github.com/ValentinoCarmonaS/G12---GDSI/pull/8)
+
+---
+
+## Incremento 2: Login Unificado con JWT
+
+**Alcance:** Tareas `T021` a `T031` (Fase 4: User Story 2).  
+**GitHub Issue:** [#4](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/4).
+
+```text
+/speckit-implement
+Implement Increment 2 (User Story 2 - Unified Login with JWT) for feature `001-central-auth-recovery`:
+- Checkout dedicated branch feature/001/login-jwt from 001-central-auth-recovery.
+- Execute tasks T021 through T031 strictly adhering to specs/001-central-auth-recovery/tasks.md.
+- Follow strict TDD ordering (write failing tests before implementation).
+- Create 1:1 atomic commits per task with format "T###: description".
+- Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #4.
+- Close issue 4, after verifying that I am the person responsible for it and that it bears the label corresponding to this specification.
+```
+
+PR - GitHub: [feat(auth): Increment 2 - Unified Login with JWT (US2)- #54](https://github.com/ValentinoCarmonaS/G12---GDSI/pull/54)
+
+---
+
+## Incremento 3: Recuperación de Contraseña para Comensales
+
+**Alcance:** Tareas `T032` a `T041` (Fase 5: User Story 3).  
+**GitHub Issue:** [#5](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/5).
+
+```text
+/speckit-implement
+Implement Increment 3 (User Story 3 - Password Recovery for Comensales) for feature `001-central-auth-recovery`:
+- Checkout dedicated branch feature/001/comensal-recovery from 001-central-auth-recovery.
+- Execute tasks T032 through T041 strictly adhering to specs/001-central-auth-recovery/tasks.md.
+- Follow strict TDD ordering (write failing tests before implementation).
+- Create 1:1 atomic commits per task with format "T###: description".
+- Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #5.
+- Close issue 5, after verifying that I am the person responsible for it and that it bears the label corresponding to this specification.
+```
+
+PR - GitHub: [feat(auth): Increment 3 - Password Recovery for Comensales (US3)- #62](https://github.com/ValentinoCarmonaS/G12---GDSI/pull/62)
+
+---
+
+## Incremento 4: Recuperación de Contraseña para Administradores
+
+**Alcance:** Tareas `T042` a `T044` (Fase 6: User Story 4).  
+**GitHub Issue:** [#6](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/6).
+
+```text
+/speckit-implement
+Implement Increment 4 (User Story 4 - Password Recovery for Administrators) for feature `001-central-auth-recovery`:
+- Checkout dedicated branch feature/001/admin-recovery from 001-central-auth-recovery.
+- Execute tasks T042 through T044 strictly adhering to specs/001-central-auth-recovery/tasks.md.
+- Follow strict TDD ordering (write failing tests before implementation and verification).
+- Create 1:1 atomic commits per task with format "T###: description".
+- Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #6.
+- Close issue 6, after verifying that I am the person responsible for it and that it bears the label corresponding to this specification.
+```
+
+PR - GitHub: [feat(auth): Increment 4 - Password Recovery for Administrators (US4)- #69](https://github.com/ValentinoCarmonaS/G12---GDSI/pull/69)
+
+---
+
+## Incremento 5: Pulido y Aspectos Transversales
+
+**Alcance:** Tareas `T045` a `T048` (Fase 7: Polish & Cross-Cutting Concerns).  
+**GitHub Issue:** [#7](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/7).
+
+```text
+/speckit-implement
+Implement Increment 5 (Phase 7 - Polish and Cross-Cutting Concerns) for feature `001-central-auth-recovery`:
+- Checkout dedicated branch feature/001/polish-audit from 001-central-auth-recovery.
+- Execute tasks T045 through T048 strictly adhering to specs/001-central-auth-recovery/tasks.md.
+- Ensure full test suite passes (mvn clean verify) and quickstart scenarios succeed.
+- Create 1:1 atomic commits per task with format "T###: description".
+- Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #7.
+- Close issue 7, after verifying that I am the person responsible for it and that it bears the label corresponding to this specification.
+```
+
+PR - GitHub: [feat(auth): Increment 5 - Polish and Cross-Cutting Concerns (Phase 7)- #70](https://github.com/ValentinoCarmonaS/G12---GDSI/pull/70)
+
+---
