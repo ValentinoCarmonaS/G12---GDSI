@@ -124,7 +124,7 @@
 
 ### Tests for User Story 4 (TDD - Write First)
 
-- [ ] T042 [P] [US4] Create dev/test seed migration `V2__seed_dev_tenant.sql` in `easyeat/backend/src/main/resources/db/dev/V2__seed_dev_tenant.sql` with synthetic tenant ID and admin user (active only in dev/test profiles).
+- [X] T042 [P] [US4] Create dev/test seed migration `V2__seed_dev_tenant.sql` in `easyeat/backend/src/main/resources/db/dev/V2__seed_dev_tenant.sql` with synthetic tenant ID and admin user (active only in dev/test profiles).
 - [ ] T043 [US4] Write failing integration test for administrator recovery in `easyeat/backend/src/test/java/com/easyeat/auth/integration/AdminPasswordRecoveryIntegrationTest.java` verifying that admin reset flows through centralized recovery service and invalidates active admin session tokens.
 
 ### Implementation and Verification for User Story 4
