@@ -48,7 +48,7 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation.**
 
-- [ ] T014 [P] [US1] Write failing unit tests for `@MaxBytes(72)` custom validator and registration DTO constraints in `easyeat/backend/src/test/java/com/easyeat/auth/validation/MaxBytesValidatorTest.java`.
+- [X] T014 [P] [US1] Write failing unit tests for `@MaxBytes(72)` custom validator and registration DTO constraints in `easyeat/backend/src/test/java/com/easyeat/auth/validation/MaxBytesValidatorTest.java`.
 - [ ] T015 [P] [US1] Write failing MockMvc WebMvc contract tests for `POST /api/v1/auth/register` (201 Created, 400 Bad Request for invalid password/email, 409 Conflict for duplicate email) in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerRegistrationTest.java`.
 
 ### Implementation for User Story 1
