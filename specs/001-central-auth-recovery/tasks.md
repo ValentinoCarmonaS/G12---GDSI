@@ -98,19 +98,19 @@
 
 ### Tests for User Story 3 (TDD - Write First)
 
-- [ ] T032 [P] [US3] Write failing unit tests for `PasswordResetService` (15-minute token generation, SHA-256 hash storage, 60-second cooldown per email, atomic consumption, session revocation via `token_version` increment) in `easyeat/backend/src/test/java/com/easyeat/auth/service/PasswordResetServiceTest.java`.
-- [ ] T033 [P] [US3] Write failing MockMvc tests for `POST /api/v1/auth/password-reset/request` (always 200 OK generic confirmation for existing and non-existent emails) and `POST /api/v1/auth/password-reset/confirm` (200 OK on success, 400 Bad Request on expired/consumed token) in `easyeat/backend/src/test/java/com/easyeat/auth/controller/PasswordResetControllerTest.java`.
+- [X] T032 [P] [US3] Write failing unit tests for `PasswordResetService` (15-minute token generation, SHA-256 hash storage, 60-second cooldown per email, atomic consumption, session revocation via `token_version` increment) in `easyeat/backend/src/test/java/com/easyeat/auth/service/PasswordResetServiceTest.java`.
+- [X] T033 [P] [US3] Write failing MockMvc tests for `POST /api/v1/auth/password-reset/request` (always 200 OK generic confirmation for existing and non-existent emails) and `POST /api/v1/auth/password-reset/confirm` (200 OK on success, 400 Bad Request on expired/consumed token) in `easyeat/backend/src/test/java/com/easyeat/auth/controller/PasswordResetControllerTest.java`.
 
 ### Implementation for User Story 3
 
-- [ ] T034 [P] [US3] Implement `PasswordResetToken.java` JPA entity in `easyeat/backend/src/main/java/com/easyeat/auth/domain/PasswordResetToken.java`.
-- [ ] T035 [US3] Implement `PasswordResetTokenRepository.java` in `easyeat/backend/src/main/java/com/easyeat/auth/repository/PasswordResetTokenRepository.java` with atomic query `consumeToken(tokenHash, now)` and revocation of prior unconsumed tokens for the user.
-- [ ] T036 [P] [US3] Implement password recovery DTOs `PasswordResetRequest.java` and `PasswordResetConfirmRequest.java` in `easyeat/backend/src/main/java/com/easyeat/auth/dto/PasswordResetRequest.java`.
-- [ ] T037 [US3] Implement `EmailService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/EmailService.java` wrapping `JavaMailSender` with async reset email dispatch (`@Async`).
-- [ ] T038 [US3] Implement `PasswordResetService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/PasswordResetService.java` with anti-enumeration response, atomic consumption, password update, and `token_version` increment.
-- [ ] T039 [US3] Implement recovery endpoints in `AuthController.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java` for `POST /api/v1/auth/password-reset/request` and `POST /api/v1/auth/password-reset/confirm`.
-- [ ] T040 [US3] Write and run Testcontainers integration tests in `easyeat/backend/src/test/java/com/easyeat/auth/integration/PasswordRecoveryIntegrationTest.java` verifying full reset lifecycle, double-consumption rejection, cooldown enforcement, and prior session token revocation.
-- [ ] T041 [US3] Write concurrency test in `easyeat/backend/src/test/java/com/easyeat/auth/integration/ConcurrentResetConsumptionTest.java` executing concurrent confirm requests to prove atomic single-use token consumption under race conditions.
+- [X] T034 [P] [US3] Implement `PasswordResetToken.java` JPA entity in `easyeat/backend/src/main/java/com/easyeat/auth/domain/PasswordResetToken.java`.
+- [X] T035 [US3] Implement `PasswordResetTokenRepository.java` in `easyeat/backend/src/main/java/com/easyeat/auth/repository/PasswordResetTokenRepository.java` with atomic query `consumeToken(tokenHash, now)` and revocation of prior unconsumed tokens for the user.
+- [X] T036 [P] [US3] Implement password recovery DTOs `PasswordResetRequest.java` and `PasswordResetConfirmRequest.java` in `easyeat/backend/src/main/java/com/easyeat/auth/dto/PasswordResetRequest.java`.
+- [X] T037 [US3] Implement `EmailService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/EmailService.java` wrapping `JavaMailSender` with async reset email dispatch (`@Async`).
+- [X] T038 [US3] Implement `PasswordResetService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/PasswordResetService.java` with anti-enumeration response, atomic consumption, password update, and `token_version` increment.
+- [X] T039 [US3] Implement recovery endpoints in `AuthController.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java` for `POST /api/v1/auth/password-reset/request` and `POST /api/v1/auth/password-reset/confirm`.
+- [X] T040 [US3] Write and run Testcontainers integration tests in `easyeat/backend/src/test/java/com/easyeat/auth/integration/PasswordRecoveryIntegrationTest.java` verifying full reset lifecycle, double-consumption rejection, cooldown enforcement, and prior session token revocation.
+- [X] T041 [US3] Write concurrency test in `easyeat/backend/src/test/java/com/easyeat/auth/integration/ConcurrentResetConsumptionTest.java` executing concurrent confirm requests to prove atomic single-use token consumption under race conditions.
 
 **Checkpoint**: User Stories 1, 2, and 3 are functional and independently testable.
 

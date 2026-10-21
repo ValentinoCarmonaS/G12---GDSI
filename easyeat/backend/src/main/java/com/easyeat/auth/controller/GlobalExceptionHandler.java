@@ -3,7 +3,10 @@ package com.easyeat.auth.controller;
 import com.easyeat.auth.exception.AccountSuspendedException;
 import com.easyeat.auth.exception.EmailAlreadyRegisteredException;
 import com.easyeat.auth.exception.InvalidCredentialsException;
+import com.easyeat.auth.exception.InvalidTokenException;
 import com.easyeat.auth.exception.RateLimitExceededException;
+import com.easyeat.auth.exception.TokenAlreadyConsumedException;
+import com.easyeat.auth.exception.TokenExpiredException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -86,6 +89,33 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setTitle("Too Many Requests");
         problem.setInstance(URI.create(request.getRequestURI()));
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(problem);
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidToken(InvalidTokenException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/token-invalid"));
+        problem.setTitle("Invalid Reset Token");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<ProblemDetail> handleTokenExpired(TokenExpiredException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/token-expired"));
+        problem.setTitle("Reset Token Expired");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    @ExceptionHandler(TokenAlreadyConsumedException.class)
+    public ResponseEntity<ProblemDetail> handleTokenAlreadyConsumed(TokenAlreadyConsumedException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/token-already-consumed"));
+        problem.setTitle("Reset Token Already Used");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
