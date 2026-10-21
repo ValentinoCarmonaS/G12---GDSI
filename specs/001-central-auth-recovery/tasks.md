@@ -129,7 +129,7 @@
 
 ### Implementation and Verification for User Story 4
 
-- [ ] T044 [US4] Verify and configure administrator password reset end-to-end integration in `easyeat/backend/src/test/java/com/easyeat/auth/integration/AdminPasswordRecoveryIntegrationTest.java` ensuring `tenant_id` claim is preserved on subsequent logins after reset.
+- [X] T044 [US4] Verify and configure administrator password reset end-to-end integration in `easyeat/backend/src/test/java/com/easyeat/auth/integration/AdminPasswordRecoveryIntegrationTest.java` ensuring `tenant_id` claim is preserved on subsequent logins after reset.
 
 **Checkpoint**: All 4 user stories (COM-1.1.1, COM-1.2.1, COM-1.3.1, ADM-1.2.1) are complete and verified.
 
