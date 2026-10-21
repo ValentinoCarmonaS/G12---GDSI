@@ -98,7 +98,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T031 [P] [US4] Create Stock Adjustment DTOs (`StockAdjustmentMode`, `StockAdjustmentRequest`, `StockAdjustmentResponse`, `StockAuditEntryResponse`) in `easyeat/backend/src/main/java/com/easyeat/inventory/dto/`
+- [x] T031 [P] [US4] Create Stock Adjustment DTOs (`StockAdjustmentMode`, `StockAdjustmentRequest`, `StockAdjustmentResponse`, `StockAuditEntryResponse`) in `easyeat/backend/src/main/java/com/easyeat/inventory/dto/`
 - [ ] T032 [P] [US4] Create `StockAuditEntry` JPA entity in `easyeat/backend/src/main/java/com/easyeat/inventory/entity/StockAuditEntry.java` mapping `tenant_id`, `ingredient_id`, `user_id`, `adjustment_mode`, `previous_stock`, `new_stock`, `net_delta`, and `justification`
 - [ ] T033 [US4] Add pessimistic locking query `findByIdAndTenantIdForUpdate` with `@Lock(LockModeType.PESSIMISTIC_WRITE)` to `IngredientRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java`
 - [ ] T034 [US4] Create `StockAuditEntryRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/StockAuditEntryRepository.java` providing append-only `save()` and chronological retrieval methods
