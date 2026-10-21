@@ -1,0 +1,873 @@
+openapi: 3.0.3
+info:
+  title: EasyEat - Staff Management, RBAC, and Initial Inventory API
+  description: |
+    OpenAPI 3.0 interface specification for iteration 004 of the EasyEat platform.
+    Covers restaurant staff roster management (ADM-3.1.1), role-based access control and multi-tenant isolation
+    (ADM-3.1.2), master ingredient catalog and lifecycle transitions (ADM-4.1.1), manual stock adjustments with
+    immutable audit trail (ADM-4.1.2), and the kitchen ingredient catalog for the Chef (CHF-2.1.1).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+
+paths:
+  # =========================================================================
+  # 1. STAFF MANAGEMENT (ADMIN)
+  # =========================================================================
+  /admin/staff:
+    post:
+      summary: Register new establishment staff member (ADM-3.1.1)
+      description: |
+        Registers a new staff member linked to the authenticated Administrator's establishment.
+        Generates a secure temporary credential returned exactly once in the response.
+        Enforces global case-insensitive email uniqueness.
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Staff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffRegistrationRequest'
+      responses:
+        '201':
+          description: Staff member registered successfully with one-time temporary credential.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffRegistrationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Email address is already registered on the platform.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+    get:
+      summary: List establishment staff roster (ADM-3.1.1)
+      description: Returns the full roster of staff members belonging to the authenticated Administrator's establishment.
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Staff
+      responses:
+        '200':
+          description: List of establishment staff members.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffMemberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/staff/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: UUID identifier of the staff member.
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get staff member details (ADM-3.1.1)
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Staff
+      responses:
+        '200':
+          description: Staff member profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffMemberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update staff member details or reassign role (ADM-3.1.1, ADM-3.1.2)
+      description: |
+        Updates full name, email, or operational role of a staff member.
+        Enforces the orphaned admin constraint, preventing operations that leave the establishment with 0 active admins.
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Staff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffUpdateRequest'
+      responses:
+        '200':
+          description: Staff member updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffMemberResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict due to duplicate email or orphaned admin constraint violation.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  # =========================================================================
+  # 2. FIRST-LOGIN PASSWORD CHANGE
+  # =========================================================================
+  /auth/first-login-password-change:
+    post:
+      summary: Mandatory password change on first login (ADM-3.1.1, FR-003)
+      description: |
+        Allows a staff member in PENDING_FIRST_LOGIN status to set their permanent password,
+        transitioning the account to ACTIVE.
+      security:
+        - BearerAuth: []
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FirstLoginPasswordChangeRequest'
+      responses:
+        '200':
+          description: Password updated successfully. Account transitioned to ACTIVE.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password updated successfully. Account is now active."
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # =========================================================================
+  # 3. MASTER INGREDIENT CATALOG (ADMIN)
+  # =========================================================================
+  /admin/ingredients:
+    post:
+      summary: Create ingredient in master catalog (ADM-4.1.1)
+      description: Registers a new ingredient with unique name per tenant, category, unit of measure, and purchase cost.
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Ingredients
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIngredientRequest'
+      responses:
+        '201':
+          description: Ingredient created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminIngredientDetailResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: An ingredient with this name already exists in the establishment.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+    get:
+      summary: List ingredients for administration (ADM-4.1.1)
+      description: Returns the establishment ingredient list with optional category and status filtering.
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Ingredients
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/IngredientCategory'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/IngredientStatus'
+      responses:
+        '200':
+          description: Administrative ingredient catalog.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminIngredientDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/ingredients/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: UUID identifier of the ingredient.
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get complete ingredient details (ADM-4.1.1)
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Ingredients
+      responses:
+        '200':
+          description: Ingredient details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminIngredientDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Edit ingredient details (ADM-4.1.1)
+      description: |
+        Updates ingredient name, category, or unit purchase cost.
+        Unit of measure modification is rejected if physical stock exists (> 0).
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Ingredients
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateIngredientRequest'
+      responses:
+        '200':
+          description: Ingredient updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminIngredientDetailResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Duplicate name or attempt to modify unit of measure when stock is non-zero.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /admin/ingredients/{id}/status:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      summary: Transition ingredient lifecycle status (ADM-4.1.1, FR-014)
+      description: |
+        Transitions ingredient status:
+        - ACTIVE -> DISCONTINUED (if stock > 0)
+        - DISCONTINUED -> ACTIVE (explicit reactivation)
+        - DISCONTINUED/ACTIVE -> ARCHIVED (strictly permitted only when stock == 0)
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Ingredients
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - targetStatus
+              properties:
+                targetStatus:
+                  $ref: '#/components/schemas/IngredientStatus'
+      responses:
+        '200':
+          description: Ingredient status updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminIngredientDetailResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Invalid transition (e.g., archiving an ingredient with stock greater than zero).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  # =========================================================================
+  # 4. MANUAL STOCK ADJUSTMENTS & AUDIT TRAIL (ADMIN)
+  # =========================================================================
+  /admin/ingredients/{id}/stock-adjustments:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Apply manual stock adjustment (ADM-4.1.2)
+      description: |
+        Applies a physical inventory adjustment in ABSOLUTE mode (sets counted physical stock) or RELATIVE mode (positive/negative delta).
+        Enforces non-negative stock invariant, mandatory justification, and pessimistic locking during concurrent requests.
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Stock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+      responses:
+        '200':
+          description: Adjustment applied successfully and audit record created immutably.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockAdjustmentResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Invariant violation (e.g., resulting stock below zero or zero delta).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+    get:
+      summary: Get stock audit trail history for an ingredient (ADM-4.1.2)
+      description: Returns the immutable audit history of adjustments applied to the ingredient ordered chronologically descending.
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Stock
+      responses:
+        '200':
+          description: Stock audit history.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockAuditEntryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # =========================================================================
+  # 5. KITCHEN INGREDIENT CATALOG (CHEF)
+  # =========================================================================
+  /chef/ingredients:
+    get:
+      summary: Explore kitchen ingredient catalog (CHF-2.1.1)
+      description: |
+        Paginated exploration of active ingredients belonging to the Chef's establishment.
+        Defaults to 20 items per page ordered alphabetically ascending (A-Z).
+        Deliberately hides purchase costs and stock adjustment audit trail.
+      security:
+        - BearerAuth: []
+      tags:
+        - Chef - Catalog
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Page index (0-indexed). Defaults to 0.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          required: false
+          description: Page size. Defaults to 20.
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: category
+          in: query
+          required: false
+          description: Exact category filter.
+          schema:
+            $ref: '#/components/schemas/IngredientCategory'
+        - name: search
+          in: query
+          required: false
+          description: Case-insensitive search by ingredient name.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Page of active kitchen ingredients.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChefIngredientPageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+# =========================================================================
+# COMPONENTS AND DATA SCHEMAS
+# =========================================================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    StaffRole:
+      type: string
+      enum: [ADMINISTRADOR, CHEF, ENCARGADO]
+      example: CHEF
+
+    StaffAccountStatus:
+      type: string
+      enum: [PENDING_FIRST_LOGIN, ACTIVE, SUSPENDED]
+      example: PENDING_FIRST_LOGIN
+
+    IngredientCategory:
+      type: string
+      enum: [Produce, Meat, Dairy, Dry Goods, Spices]
+      example: Produce
+
+    UnitOfMeasure:
+      type: string
+      enum: [g, kg, ml, l, u]
+      example: kg
+
+    IngredientStatus:
+      type: string
+      enum: [ACTIVE, DISCONTINUED, ARCHIVED]
+      example: ACTIVE
+
+    StockAdjustmentMode:
+      type: string
+      enum: [ABSOLUTE, RELATIVE]
+      example: RELATIVE
+
+    StockAvailabilityStatus:
+      type: string
+      enum: [IN_STOCK, OUT_OF_STOCK]
+      example: IN_STOCK
+
+    StaffRegistrationRequest:
+      type: object
+      required:
+        - fullName
+        - email
+        - role
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 255
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john.doe@easyeat.com"
+        role:
+          $ref: '#/components/schemas/StaffRole'
+
+    StaffRegistrationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+        role:
+          $ref: '#/components/schemas/StaffRole'
+        status:
+          $ref: '#/components/schemas/StaffAccountStatus'
+        temporaryCredential:
+          type: string
+          description: Generated temporary credential. Displayed once on the Administrator's screen.
+          example: "Tmp$8xK9#mQ2"
+        createdAt:
+          type: string
+          format: date-time
+
+    StaffUpdateRequest:
+      type: object
+      required:
+        - fullName
+        - email
+        - role
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+          maxLength: 255
+        email:
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/StaffRole'
+
+    StaffMemberResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+        role:
+          $ref: '#/components/schemas/StaffRole'
+        status:
+          $ref: '#/components/schemas/StaffAccountStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FirstLoginPasswordChangeRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+        - confirmNewPassword
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 72
+          example: "NewSecurePassword2026!"
+        confirmNewPassword:
+          type: string
+          minLength: 8
+          maxLength: 72
+          example: "NewSecurePassword2026!"
+
+    CreateIngredientRequest:
+      type: object
+      required:
+        - name
+        - category
+        - unitOfMeasure
+        - unitPurchaseCost
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: "Roma Tomato"
+        category:
+          $ref: '#/components/schemas/IngredientCategory'
+        unitOfMeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        unitPurchaseCost:
+          type: number
+          format: double
+          minimum: 0.0000
+          example: 1250.5000
+
+    UpdateIngredientRequest:
+      type: object
+      required:
+        - name
+        - category
+        - unitOfMeasure
+        - unitPurchaseCost
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/IngredientCategory'
+        unitOfMeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        unitPurchaseCost:
+          type: number
+          minimum: 0.0000
+
+    AdminIngredientDetailResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category:
+          $ref: '#/components/schemas/IngredientCategory'
+        unitOfMeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        unitPurchaseCost:
+          type: number
+          format: double
+        status:
+          $ref: '#/components/schemas/IngredientStatus'
+        currentStock:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    StockAdjustmentRequest:
+      type: object
+      required:
+        - mode
+        - value
+        - justification
+      properties:
+        mode:
+          $ref: '#/components/schemas/StockAdjustmentMode'
+        value:
+          type: number
+          description: |
+            In ABSOLUTE mode: Total counted physical inventory (must be >= 0).
+            In RELATIVE mode: Net delta to add or subtract (cannot be 0).
+          example: 15.5000
+        justification:
+          type: string
+          minLength: 5
+          maxLength: 500
+          example: "Delivery receipt invoice #8812"
+
+    StockAdjustmentResponse:
+      type: object
+      properties:
+        ingredientId:
+          type: string
+          format: uuid
+        ingredientName:
+          type: string
+        unitOfMeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        previousStock:
+          type: number
+        newStock:
+          type: number
+        netDelta:
+          type: number
+        auditEntryId:
+          type: string
+          format: uuid
+        adjustedAt:
+          type: string
+          format: date-time
+
+    StockAuditEntryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ingredientId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        adminName:
+          type: string
+        adjustmentMode:
+          $ref: '#/components/schemas/StockAdjustmentMode'
+        previousStock:
+          type: number
+        newStock:
+          type: number
+        netDelta:
+          type: number
+        justification:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ChefIngredientItemResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "All-Purpose Flour"
+        category:
+          $ref: '#/components/schemas/IngredientCategory'
+        unitOfMeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        stockAvailability:
+          $ref: '#/components/schemas/StockAvailabilityStatus'
+
+    ChefIngredientPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChefIngredientItemResponse'
+        page:
+          type: integer
+          example: 0
+        size:
+          type: integer
+          example: 20
+        totalElements:
+          type: integer
+          example: 45
+        totalPages:
+          type: integer
+          example: 3
+        first:
+          type: boolean
+          example: true
+        last:
+          type: boolean
+          example: false
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "https://easyeat.com/errors/conflict"
+        title:
+          type: string
+          example: "Domain Conflict"
+        status:
+          type: integer
+          example: 409
+        detail:
+          type: string
+          example: "Cannot archive an ingredient with positive stock."
+        instance:
+          type: string
+          example: "/api/v1/admin/ingredients/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11/status"
+
+  responses:
+    ValidationError:
+      description: Syntax or required field validation error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+    Unauthorized:
+      description: JWT token missing, expired, or invalid.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+    Forbidden:
+      description: Access denied due to role violation or cross-tenant access attempt.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+    NotFound:
+      description: Resource not found within the authenticated establishment.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
