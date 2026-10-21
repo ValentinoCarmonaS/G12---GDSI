@@ -78,7 +78,7 @@
 - [x] T024 [P] [US3] Create `Ingredient` JPA entity in `easyeat/backend/src/main/java/com/easyeat/inventory/entity/Ingredient.java` mapping `tenant_id`, `name`, `category`, `unit_of_measure`, `unit_purchase_cost` (`BigDecimal`), `status`, and `current_stock` (`BigDecimal`)
 - [x] T025 [US3] Create `IngredientRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java` with tenant-scoped lookups, name existence checks, and status filtering
 - [x] T026 [US3] Implement `IngredientService` in `easyeat/backend/src/main/java/com/easyeat/inventory/service/IngredientService.java` with CRUD business logic, lifecycle transition rules, and unit-of-measure modification validation
-- [ ] T027 [US3] Implement `AdminIngredientController` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/AdminIngredientController.java` exposing `/api/v1/admin/ingredients/**` guarded with `@PreAuthorize("hasRole('ADMIN')")`
+- [x] T027 [US3] Implement `AdminIngredientController` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/AdminIngredientController.java` exposing `/api/v1/admin/ingredients/**` guarded with `@PreAuthorize("hasRole('ADMIN')")`
 
 **Checkpoint**: User Story 3 fully functional. Master ingredients catalog can be managed throughout its lifecycle.
 
