@@ -103,7 +103,7 @@
 - [x] T033 [US4] Add pessimistic locking query `findByIdAndTenantIdForUpdate` with `@Lock(LockModeType.PESSIMISTIC_WRITE)` to `IngredientRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java`
 - [x] T034 [US4] Create `StockAuditEntryRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/StockAuditEntryRepository.java` providing append-only `save()` and chronological retrieval methods
 - [x] T035 [US4] Implement `StockAdjustmentService` in `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockAdjustmentService.java` handling `@Transactional` stock calculation, non-negative validation, discrete vs continuous unit scale validation, and immutable audit persistence
-- [ ] T036 [US4] Add adjustment endpoints `POST /api/v1/admin/ingredients/{id}/stock-adjustments` and `GET /api/v1/admin/ingredients/{id}/stock-audit` to `AdminIngredientController` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/AdminIngredientController.java`
+- [x] T036 [US4] Add adjustment endpoints `POST /api/v1/admin/ingredients/{id}/stock-adjustments` and `GET /api/v1/admin/ingredients/{id}/stock-audit` to `AdminIngredientController` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/AdminIngredientController.java`
 
 **Checkpoint**: User Story 4 fully functional. Stock adjustments are atomic, audit trail is immutable, and concurrency is safely locked.
 

@@ -48,6 +48,9 @@ class AdminIngredientControllerTest {
     private IngredientService ingredientService;
 
     @MockBean
+    private com.easyeat.inventory.service.StockAdjustmentService stockAdjustmentService;
+
+    @MockBean
     private JwtService jwtService;
 
     @MockBean
