@@ -99,7 +99,7 @@
 ### Tests for User Story 3 (TDD - Write First)
 
 - [X] T032 [P] [US3] Write failing unit tests for `PasswordResetService` (15-minute token generation, SHA-256 hash storage, 60-second cooldown per email, atomic consumption, session revocation via `token_version` increment) in `easyeat/backend/src/test/java/com/easyeat/auth/service/PasswordResetServiceTest.java`.
-- [ ] T033 [P] [US3] Write failing MockMvc tests for `POST /api/v1/auth/password-reset/request` (always 200 OK generic confirmation for existing and non-existent emails) and `POST /api/v1/auth/password-reset/confirm` (200 OK on success, 400 Bad Request on expired/consumed token) in `easyeat/backend/src/test/java/com/easyeat/auth/controller/PasswordResetControllerTest.java`.
+- [X] T033 [P] [US3] Write failing MockMvc tests for `POST /api/v1/auth/password-reset/request` (always 200 OK generic confirmation for existing and non-existent emails) and `POST /api/v1/auth/password-reset/confirm` (200 OK on success, 400 Bad Request on expired/consumed token) in `easyeat/backend/src/test/java/com/easyeat/auth/controller/PasswordResetControllerTest.java`.
 
 ### Implementation for User Story 3
 
