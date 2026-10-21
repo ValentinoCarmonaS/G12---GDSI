@@ -146,7 +146,7 @@
 ### Tests for User Story 5 (TDD - Backend First) ⚠️
 
 - [ ] T037 [P] [US5] WebMvc test for `POST /api/v1/auth/logout` validating atomic `token_version` incrementation and HTTP 204 No Content in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerLogoutTest.java`
-- [ ] T038 [P] [US5] Frontend logout interaction test verifying API call, storage purge, and navigation with `replace: true` in `easyeat/frontend/tests/session/LogoutFlow.test.tsx`
+- [x] T038 [P] [US5] Frontend logout interaction test verifying API call, storage purge, and navigation with `replace: true` in `easyeat/frontend/tests/session/LogoutFlow.test.tsx`
 
 ### Backend Implementation for User Story 5 (NEW in 002)
 
@@ -155,9 +155,9 @@
 
 ### Frontend Implementation for User Story 5
 
-- [ ] T041 [P] [US5] Add `logoutApi` function calling `POST /api/v1/auth/logout` in `easyeat/frontend/src/api/authApi.ts`
-- [ ] T042 [US5] Implement `logout` action in `AuthContext` that calls `logoutApi`, clears `sessionStorage`, and navigates to `/login` with `replace: true` in `easyeat/frontend/src/context/AuthContext.tsx`
-- [ ] T043 [US5] Wire "Cerrar sesión" action button in `WorkspaceLayout` to `useAuth().logout` in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
+- [x] T041 [P] [US5] Add `logoutApi` function calling `POST /api/v1/auth/logout` in `easyeat/frontend/src/api/authApi.ts`
+- [x] T042 [US5] Implement `logout` action in `AuthContext` that calls `logoutApi`, clears `sessionStorage`, and navigates to `/login` with `replace: true` in `easyeat/frontend/src/context/AuthContext.tsx`
+- [x] T043 [US5] Wire "Cerrar sesión" action button in `WorkspaceLayout` to `useAuth().logout` in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
 
 **Checkpoint**: User Story 5 functional — staff can explicitly log out, session tokens are permanently invalidated on the server, and browser back navigation remains on `/login`.
 
