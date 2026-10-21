@@ -53,7 +53,7 @@
 - [x] T015 [P] [US1] Update `User` entity in `easyeat/backend/src/main/java/com/easyeat/auth/domain/User.java` mapping `full_name`, `must_change_password`, and updated role/status enums
 - [x] T016 [US1] Implement `StaffUserRepository` with tenant-scoped query methods and active admin count queries in `easyeat/backend/src/main/java/com/easyeat/staff/repository/StaffUserRepository.java`
 - [x] T017 [US1] Implement `StaffService` in `easyeat/backend/src/main/java/com/easyeat/staff/service/StaffService.java` handling user registration with `SecureRandom` 12-char credential generation, BCrypt hashing (cost 12), lowercase normalization, and orphaned admin verification on updates
-- [ ] T018 [US1] Implement `StaffController` exposing `/api/v1/admin/staff` endpoints protected with `@PreAuthorize("hasRole('ADMIN')")` in `easyeat/backend/src/main/java/com/easyeat/staff/controller/StaffController.java`
+- [x] T018 [US1] Implement `StaffController` exposing `/api/v1/admin/staff` endpoints protected with `@PreAuthorize("hasRole('ADMIN')")` in `easyeat/backend/src/main/java/com/easyeat/staff/controller/StaffController.java`
 - [ ] T019 [US1] Implement `FirstLoginPasswordChangeRequest` DTO and endpoint `POST /api/v1/auth/first-login-password-change` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/FirstLoginPasswordController.java` to transition account from `PENDING_FIRST_LOGIN` to `ACTIVE`
 - [ ] T020 [US2] Configure authorization rules in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` ensuring `/api/v1/admin/**` requires `ROLE_ADMIN` and unauthenticated/unauthorized requests emit structured security audit entries
 
