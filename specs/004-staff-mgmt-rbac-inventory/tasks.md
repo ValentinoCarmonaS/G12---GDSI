@@ -50,7 +50,7 @@
 ### Implementation for User Story 1 & 2
 
 - [x] T014 [P] [US1] Create Staff DTOs (`StaffRole`, `StaffAccountStatus`, `StaffRegistrationRequest`, `StaffRegistrationResponse`, `StaffUpdateRequest`, `StaffMemberResponse`) in `easyeat/backend/src/main/java/com/easyeat/staff/dto/`
-- [ ] T015 [P] [US1] Update `User` entity in `easyeat/backend/src/main/java/com/easyeat/auth/entity/User.java` mapping `full_name`, `must_change_password`, and updated role/status enums
+- [x] T015 [P] [US1] Update `User` entity in `easyeat/backend/src/main/java/com/easyeat/auth/domain/User.java` mapping `full_name`, `must_change_password`, and updated role/status enums
 - [ ] T016 [US1] Implement `StaffUserRepository` with tenant-scoped query methods and active admin count queries in `easyeat/backend/src/main/java/com/easyeat/staff/repository/StaffUserRepository.java`
 - [ ] T017 [US1] Implement `StaffService` in `easyeat/backend/src/main/java/com/easyeat/staff/service/StaffService.java` handling user registration with `SecureRandom` 12-char credential generation, BCrypt hashing (cost 12), lowercase normalization, and orphaned admin verification on updates
 - [ ] T018 [US1] Implement `StaffController` exposing `/api/v1/admin/staff` endpoints protected with `@PreAuthorize("hasRole('ADMIN')")` in `easyeat/backend/src/main/java/com/easyeat/staff/controller/StaffController.java`

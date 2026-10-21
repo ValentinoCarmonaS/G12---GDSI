@@ -500,7 +500,7 @@ components:
   schemas:
     StaffRole:
       type: string
-      enum: [ADMIN, CHEF, COUNTER_CLERK]
+      enum: [ADMINISTRADOR, CHEF, ENCARGADO]
       example: CHEF
 
     StaffAccountStatus:

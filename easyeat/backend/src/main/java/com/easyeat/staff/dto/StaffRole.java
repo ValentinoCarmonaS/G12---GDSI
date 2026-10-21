@@ -1,7 +1,7 @@
 package com.easyeat.staff.dto;
 
 public enum StaffRole {
-    ADMIN,
+    ADMINISTRADOR,
     CHEF,
-    COUNTER_CLERK
+    ENCARGADO
 }
