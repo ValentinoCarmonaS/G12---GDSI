@@ -1,23 +1,48 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { LoginForm } from '../components/auth/LoginForm';
 import { authApi } from '../api/authApi';
-import { LoginCredentials } from '../types/auth';
+import { useAuth } from '../hooks/useAuth';
+import { resolvePostAuthRedirect } from '../router/postAuthRouting';
+import { LoginCredentials, JwtClaims, Role } from '../types/auth';
 
-interface LoginPageProps {
-  onLoginSuccess?: (token: string) => void;
+function decodeClaims(token: string): JwtClaims | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(json) as JwtClaims;
+  } catch {
+    return null;
+  }
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+export const LoginPage: React.FC = () => {
   const location = useLocation();
-  const stateReason = (location.state as { reason?: string })?.reason;
+  const navigate = useNavigate();
+  const { setToken } = useAuth();
+
+  const state = location.state as { from?: string; reason?: string } | undefined;
+  const stateReason = state?.reason;
+  const targetDeepLink = state?.from;
 
   const handleLogin = async (credentials: LoginCredentials) => {
     const data = await authApi.login(credentials);
-    sessionStorage.setItem('access_token', data.access_token);
-    if (onLoginSuccess) {
-      onLoginSuccess(data.access_token);
-    }
+    setToken(data.access_token);
+
+    const claims = decodeClaims(data.access_token);
+    const userRole = (claims?.role as Role) || 'COMENSAL';
+
+    // Resolve post-auth destination: preserve authorized deep link or fallback to role default
+    const destination = resolvePostAuthRedirect(userRole, targetDeepLink);
+    navigate(destination, { replace: true });
   };
 
   return (
