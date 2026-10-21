@@ -46,12 +46,6 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   {user.role}
                 </span>
 
-                {user.tenantId && (
-                  <span className="hidden sm:inline-block text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                    Establecimiento: {user.tenantId.slice(0, 8)}...
-                  </span>
-                )}
-
                 <span className="text-sm text-gray-600 hidden md:inline">{user.email}</span>
               </div>
             )}
