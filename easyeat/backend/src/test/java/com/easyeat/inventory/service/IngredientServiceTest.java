@@ -308,4 +308,53 @@ class IngredientServiceTest {
 
         verify(ingredientRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("listIngredients - delegates to repository with filters")
+    void listIngredients_withFilters() {
+        Ingredient ingredient = new Ingredient(tenantId, "Salt", IngredientCategory.SPICES, UnitOfMeasure.G, new BigDecimal("10.0000"));
+        ingredient.setId(UUID.randomUUID());
+
+        when(ingredientRepository.findAllByTenantIdAndFilters(tenantId, IngredientCategory.SPICES, IngredientStatus.ACTIVE))
+                .thenReturn(List.of(ingredient));
+
+        List<AdminIngredientDetailResponse> result = ingredientService.listIngredients(IngredientCategory.SPICES, IngredientStatus.ACTIVE);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).name()).isEqualTo("Salt");
+    }
+
+    @Test
+    @DisplayName("deleteIngredient - succeeds and archives when stock == 0")
+    void deleteIngredient_successWhenStockZero() {
+        UUID id = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Flour", IngredientCategory.DRY_GOODS, UnitOfMeasure.KG, new BigDecimal("200.0000"));
+        ingredient.setId(id);
+        ingredient.setCurrentStock(BigDecimal.ZERO);
+
+        when(ingredientRepository.findByIdAndTenantId(id, tenantId)).thenReturn(Optional.of(ingredient));
+        when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ingredientService.deleteIngredient(id);
+
+        assertThat(ingredient.getStatus()).isEqualTo(IngredientStatus.ARCHIVED);
+        verify(ingredientRepository).save(ingredient);
+    }
+
+    @Test
+    @DisplayName("deleteIngredient - throws InvalidLifecycleTransitionException when stock > 0")
+    void deleteIngredient_throwsWhenStockPositive() {
+        UUID id = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Flour", IngredientCategory.DRY_GOODS, UnitOfMeasure.KG, new BigDecimal("200.0000"));
+        ingredient.setId(id);
+        ingredient.setCurrentStock(new BigDecimal("5.0000"));
+
+        when(ingredientRepository.findByIdAndTenantId(id, tenantId)).thenReturn(Optional.of(ingredient));
+
+        assertThatThrownBy(() -> ingredientService.deleteIngredient(id))
+                .isInstanceOf(InvalidLifecycleTransitionException.class)
+                .hasMessageContaining("physical stock greater than zero");
+
+        verify(ingredientRepository, never()).save(any());
+    }
 }

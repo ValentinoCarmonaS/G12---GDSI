@@ -53,7 +53,7 @@ public class Ingredient {
         this.name = name;
         this.category = category;
         this.unitOfMeasure = unitOfMeasure;
-        this.unitPurchaseCost = unitPurchaseCost != null ? unitPurchaseCost.setScale(4) : BigDecimal.ZERO.setScale(4);
+        this.unitPurchaseCost = unitPurchaseCost != null ? unitPurchaseCost.setScale(4, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(4);
         this.status = IngredientStatus.ACTIVE;
         this.currentStock = BigDecimal.ZERO.setScale(4);
     }
@@ -73,12 +73,12 @@ public class Ingredient {
         if (currentStock == null) {
             currentStock = BigDecimal.ZERO.setScale(4);
         } else {
-            currentStock = currentStock.setScale(4);
+            currentStock = currentStock.setScale(4, java.math.RoundingMode.HALF_UP);
         }
         if (unitPurchaseCost == null) {
             unitPurchaseCost = BigDecimal.ZERO.setScale(4);
         } else {
-            unitPurchaseCost = unitPurchaseCost.setScale(4);
+            unitPurchaseCost = unitPurchaseCost.setScale(4, java.math.RoundingMode.HALF_UP);
         }
     }
 
@@ -86,10 +86,10 @@ public class Ingredient {
     protected void onUpdate() {
         updatedAt = Instant.now();
         if (currentStock != null) {
-            currentStock = currentStock.setScale(4);
+            currentStock = currentStock.setScale(4, java.math.RoundingMode.HALF_UP);
         }
         if (unitPurchaseCost != null) {
-            unitPurchaseCost = unitPurchaseCost.setScale(4);
+            unitPurchaseCost = unitPurchaseCost.setScale(4, java.math.RoundingMode.HALF_UP);
         }
     }
 
@@ -138,7 +138,7 @@ public class Ingredient {
     }
 
     public void setUnitPurchaseCost(BigDecimal unitPurchaseCost) {
-        this.unitPurchaseCost = unitPurchaseCost != null ? unitPurchaseCost.setScale(4) : BigDecimal.ZERO.setScale(4);
+        this.unitPurchaseCost = unitPurchaseCost != null ? unitPurchaseCost.setScale(4, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(4);
     }
 
     public IngredientStatus getStatus() {
@@ -154,7 +154,7 @@ public class Ingredient {
     }
 
     public void setCurrentStock(BigDecimal currentStock) {
-        this.currentStock = currentStock != null ? currentStock.setScale(4) : BigDecimal.ZERO.setScale(4);
+        this.currentStock = currentStock != null ? currentStock.setScale(4, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(4);
     }
 
     public Instant getCreatedAt() {

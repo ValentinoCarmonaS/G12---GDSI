@@ -1,35 +1,141 @@
 package com.easyeat.inventory.service;
 
+import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.inventory.dto.*;
+import com.easyeat.inventory.entity.Ingredient;
+import com.easyeat.inventory.exception.DuplicateIngredientNameException;
+import com.easyeat.inventory.exception.InvalidLifecycleTransitionException;
+import com.easyeat.inventory.exception.UnitOfMeasureModificationException;
+import com.easyeat.inventory.repository.IngredientRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class IngredientService {
 
+    private final IngredientRepository ingredientRepository;
+
+    public IngredientService(IngredientRepository ingredientRepository) {
+        this.ingredientRepository = ingredientRepository;
+    }
+
     public AdminIngredientDetailResponse createIngredient(CreateIngredientRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        UUID tenantId = TenantContextHolder.getTenantId();
+        String trimmedName = request.name() != null ? request.name().trim() : "";
+        if (ingredientRepository.existsByTenantIdAndNameIgnoreCase(tenantId, trimmedName)) {
+            throw new DuplicateIngredientNameException("An ingredient with name '" + trimmedName + "' already exists in this tenant.");
+        }
+
+        Ingredient ingredient = new Ingredient(
+                tenantId,
+                trimmedName,
+                request.category(),
+                request.unitOfMeasure(),
+                request.unitPurchaseCost()
+        );
+        Ingredient saved = ingredientRepository.save(ingredient);
+        return toResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public AdminIngredientDetailResponse getIngredient(UUID id) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        UUID tenantId = TenantContextHolder.getTenantId();
+        Ingredient ingredient = ingredientRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new NoSuchElementException("Ingredient not found with id: " + id));
+        return toResponse(ingredient);
     }
 
+    @Transactional(readOnly = true)
     public List<AdminIngredientDetailResponse> listIngredients(IngredientCategory category, IngredientStatus status) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        UUID tenantId = TenantContextHolder.getTenantId();
+        return ingredientRepository.findAllByTenantIdAndFilters(tenantId, category, status)
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     public AdminIngredientDetailResponse updateIngredient(UUID id, UpdateIngredientRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        UUID tenantId = TenantContextHolder.getTenantId();
+        Ingredient ingredient = ingredientRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new NoSuchElementException("Ingredient not found with id: " + id));
+
+        String trimmedName = request.name() != null ? request.name().trim() : "";
+        if (ingredientRepository.existsByTenantIdAndNameIgnoreCaseAndIdNot(tenantId, trimmedName, id)) {
+            throw new DuplicateIngredientNameException("An ingredient with name '" + trimmedName + "' already exists in this tenant.");
+        }
+
+        if (ingredient.getUnitOfMeasure() != request.unitOfMeasure()) {
+            if (ingredient.getCurrentStock() != null && ingredient.getCurrentStock().compareTo(BigDecimal.ZERO) > 0) {
+                throw new UnitOfMeasureModificationException(
+                        "Cannot change unit of measure for ingredient with physical stock greater than zero: " + ingredient.getCurrentStock());
+            }
+            ingredient.setUnitOfMeasure(request.unitOfMeasure());
+        }
+
+        ingredient.setName(trimmedName);
+        ingredient.setCategory(request.category());
+        ingredient.setUnitPurchaseCost(request.unitPurchaseCost());
+
+        Ingredient updated = ingredientRepository.save(ingredient);
+        return toResponse(updated);
     }
 
     public AdminIngredientDetailResponse updateIngredientStatus(UUID id, IngredientStatusUpdateRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        UUID tenantId = TenantContextHolder.getTenantId();
+        Ingredient ingredient = ingredientRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new NoSuchElementException("Ingredient not found with id: " + id));
+
+        IngredientStatus currentStatus = ingredient.getStatus();
+        IngredientStatus targetStatus = request.targetStatus();
+
+        if (currentStatus == IngredientStatus.ARCHIVED) {
+            throw new InvalidLifecycleTransitionException("Cannot transition ingredient from ARCHIVED status.");
+        }
+
+        if (targetStatus == IngredientStatus.ARCHIVED) {
+            if (ingredient.getCurrentStock() != null && ingredient.getCurrentStock().compareTo(BigDecimal.ZERO) > 0) {
+                throw new InvalidLifecycleTransitionException(
+                        "Cannot archive ingredient with physical stock greater than zero: " + ingredient.getCurrentStock());
+            }
+        }
+
+        ingredient.setStatus(targetStatus);
+        Ingredient updated = ingredientRepository.save(ingredient);
+        return toResponse(updated);
     }
 
     public void deleteIngredient(UUID id) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        UUID tenantId = TenantContextHolder.getTenantId();
+        Ingredient ingredient = ingredientRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new NoSuchElementException("Ingredient not found with id: " + id));
+
+        if (ingredient.getCurrentStock() != null && ingredient.getCurrentStock().compareTo(BigDecimal.ZERO) > 0) {
+            throw new InvalidLifecycleTransitionException(
+                    "Cannot archive ingredient with physical stock greater than zero: " + ingredient.getCurrentStock());
+        }
+
+        ingredient.setStatus(IngredientStatus.ARCHIVED);
+        ingredientRepository.save(ingredient);
+    }
+
+    private AdminIngredientDetailResponse toResponse(Ingredient ingredient) {
+        return new AdminIngredientDetailResponse(
+                ingredient.getId(),
+                ingredient.getTenantId(),
+                ingredient.getName(),
+                ingredient.getCategory(),
+                ingredient.getUnitOfMeasure(),
+                ingredient.getUnitPurchaseCost(),
+                ingredient.getStatus(),
+                ingredient.getCurrentStock(),
+                ingredient.getCreatedAt(),
+                ingredient.getUpdatedAt()
+        );
     }
 }
