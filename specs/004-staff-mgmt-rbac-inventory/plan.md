@@ -99,16 +99,17 @@ easyeat/backend/
     ├── main/
     │   ├── java/com/easyeat/
     │   │   ├── EasyEatApplication.java
-    │   │   ├── auth/                                    # Auth Infrastructure (Iteration 001)
+    │   │   ├── auth/                                    # Auth Infrastructure (Iteration 001 + 004 First-Login)
     │   │   │   ├── controller/AuthController.java
-    │   │   │   ├── dto/FirstLoginPasswordChangeRequest.java
-    │   │   │   ├── entity/User.java
-    │   │   │   └── security/JwtService.java
+    │   │   │   ├── controller/FirstLoginPasswordController.java # /api/v1/auth/first-login-password-change (004)
+    │   │   │   ├── dto/FirstLoginPasswordChangeRequest.java     # DTO for password change on first login (004)
+    │   │   │   ├── domain/User.java                             # Extended User domain entity (004)
+    │   │   │   ├── security/JwtService.java
+    │   │   │   └── security/SecurityAuditLogger.java            # Extended security audit logger with access denied events (004)
     │   │   ├── common/
-    │   │   │   ├── context/TenantContextHolder.java     # ThreadLocal context for current tenant
-    │   │   │   ├── filter/TenantContextFilter.java      # Extracts tenant_id from JWT claims
-    │   │   │   ├── audit/SecurityAuditLogger.java       # Structured security audit logger
-    │   │   │   └── exception/TenantViolationException.java
+    │   │   │   ├── context/TenantContextHolder.java     # ThreadLocal context for current tenant (004)
+    │   │   │   ├── filter/TenantContextFilter.java      # Extracts tenant_id from JWT claims (004)
+    │   │   │   └── exception/TenantViolationException.java      # Cross-cutting tenant boundary exception (004)
     │   │   ├── staff/                                   # Staff Management & RBAC (Iteration 004)
     │   │   │   ├── controller/StaffController.java      # /api/v1/admin/staff/** endpoints
     │   │   │   ├── dto/StaffRegistrationRequest.java
