@@ -8,7 +8,7 @@ import com.easyeat.config.MethodSecurityConfig;
 import com.easyeat.config.SecurityConfig;
 import com.easyeat.inventory.controller.AdminIngredientController;
 import com.easyeat.inventory.controller.ChefCatalogController;
-import com.easyeat.inventory.controller.StringToIngredientCategoryConverter;
+import com.easyeat.inventory.dto.StringToIngredientCategoryConverter;
 import com.easyeat.inventory.dto.*;
 import com.easyeat.inventory.service.IngredientService;
 import com.easyeat.inventory.service.StockAdjustmentService;
