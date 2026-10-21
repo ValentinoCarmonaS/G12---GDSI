@@ -100,4 +100,13 @@ public class PasswordResetToken {
     public boolean isPending() {
         return status == TokenStatus.PENDING;
     }
+
+    public void consume(Instant now) {
+        this.status = TokenStatus.CONSUMED;
+        this.consumedAt = now;
+    }
+
+    public boolean isExpired(Instant now) {
+        return expiresAt != null && expiresAt.isBefore(now);
+    }
 }

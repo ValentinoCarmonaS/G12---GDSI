@@ -103,7 +103,7 @@
 
 ### Implementation for User Story 3
 
-- [ ] T034 [P] [US3] Implement `PasswordResetToken.java` JPA entity in `easyeat/backend/src/main/java/com/easyeat/auth/domain/PasswordResetToken.java`.
+- [X] T034 [P] [US3] Implement `PasswordResetToken.java` JPA entity in `easyeat/backend/src/main/java/com/easyeat/auth/domain/PasswordResetToken.java`.
 - [ ] T035 [US3] Implement `PasswordResetTokenRepository.java` in `easyeat/backend/src/main/java/com/easyeat/auth/repository/PasswordResetTokenRepository.java` with atomic query `consumeToken(tokenHash, now)` and revocation of prior unconsumed tokens for the user.
 - [ ] T036 [P] [US3] Implement password recovery DTOs `PasswordResetRequest.java` and `PasswordResetConfirmRequest.java` in `easyeat/backend/src/main/java/com/easyeat/auth/dto/PasswordResetRequest.java`.
 - [ ] T037 [US3] Implement `EmailService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/EmailService.java` wrapping `JavaMailSender` with async reset email dispatch (`@Async`).
