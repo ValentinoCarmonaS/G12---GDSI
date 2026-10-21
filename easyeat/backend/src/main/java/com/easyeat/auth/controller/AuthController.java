@@ -23,4 +23,11 @@ public class AuthController {
         UserSummaryResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<com.easyeat.auth.dto.AuthTokenResponse> login(
+            @Valid @RequestBody com.easyeat.auth.dto.LoginRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(authService.login(request, httpRequest.getRemoteAddr()));
+    }
 }

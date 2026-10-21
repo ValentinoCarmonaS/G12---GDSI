@@ -49,4 +49,8 @@ public class AuthService {
 
         return new UserSummaryResponse("Account created successfully.");
     }
+
+    public com.easyeat.auth.dto.AuthTokenResponse login(com.easyeat.auth.dto.LoginRequest request, String clientIp) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 }
