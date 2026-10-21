@@ -139,10 +139,10 @@
 
 **Purpose**: Security audit logging, proxy header protection, contract conformance, and full end-to-end quickstart validation.
 
-- [ ] T045 [P] Implement `SecurityAuditLogger.java` in `easyeat/backend/src/main/java/com/easyeat/auth/security/SecurityAuditLogger.java` recording structured JSON audit events (LOGIN_SUCCESS, LOGIN_FAILURE, LOCKOUT, RESET_REQUEST, RESET_CONFIRM) with masked emails and client IPs.
-- [ ] T046 Configure trusted proxy headers strategy (`server.forward-headers-strategy=native` and `server.tomcat.remoteip.internal-proxies`) in `easyeat/backend/src/main/java/com/easyeat/config/ProxyConfig.java` to prevent client IP spoofing.
-- [ ] T047 Write OpenAPI contract conformance test in `easyeat/backend/src/test/java/com/easyeat/auth/contract/OpenApiContractTest.java` asserting that live endpoint schemas and status codes conform to `specs/001-central-auth-recovery/contracts/openapi.yaml`.
-- [ ] T048 Execute full test suite (`mvn clean verify`) and execute quickstart validation scenarios from `specs/001-central-auth-recovery/quickstart.md`.
+- [X] T045 [P] Implement `SecurityAuditLogger.java` in `easyeat/backend/src/main/java/com/easyeat/auth/security/SecurityAuditLogger.java` recording structured JSON audit events (LOGIN_SUCCESS, LOGIN_FAILURE, LOCKOUT, RESET_REQUEST, RESET_CONFIRM) with masked emails and client IPs.
+- [X] T046 Configure trusted proxy headers strategy (`server.forward-headers-strategy=native` and `server.tomcat.remoteip.internal-proxies`) in `easyeat/backend/src/main/java/com/easyeat/config/ProxyConfig.java` to prevent client IP spoofing.
+- [X] T047 Write OpenAPI contract conformance test in `easyeat/backend/src/test/java/com/easyeat/auth/contract/OpenApiContractTest.java` asserting that live endpoint schemas and status codes conform to `specs/001-central-auth-recovery/contracts/openapi.yaml`.
+- [X] T048 Execute full test suite (`mvn clean verify`) and execute quickstart validation scenarios from `specs/001-central-auth-recovery/quickstart.md`.
 
 ---
 

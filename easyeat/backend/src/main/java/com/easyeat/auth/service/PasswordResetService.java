@@ -10,6 +10,7 @@ import com.easyeat.auth.exception.TokenAlreadyConsumedException;
 import com.easyeat.auth.exception.TokenExpiredException;
 import com.easyeat.auth.repository.PasswordResetTokenRepository;
 import com.easyeat.auth.repository.UserRepository;
+import com.easyeat.auth.security.SecurityAuditLogger;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ public class PasswordResetService {
     private final Clock clock;
     private final String baseUrl;
     private final long tokenValidityMinutes;
+    private final SecurityAuditLogger securityAuditLogger;
     private final SecureRandom secureRandom = new SecureRandom();
 
     private final Cache<String, Instant> emailCooldownCache;
@@ -53,6 +55,7 @@ public class PasswordResetService {
             EmailService emailService,
             PasswordEncoder passwordEncoder,
             Clock clock,
+            SecurityAuditLogger securityAuditLogger,
             @Value("${app.security.password-reset.base-url:http://localhost:3000/auth/reset-password}") String baseUrl,
             @Value("${app.security.password-reset.token-validity-minutes:15}") long tokenValidityMinutes) {
         this.userRepository = userRepository;
@@ -60,6 +63,7 @@ public class PasswordResetService {
         this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
         this.clock = clock;
+        this.securityAuditLogger = securityAuditLogger;
         this.baseUrl = baseUrl;
         this.tokenValidityMinutes = tokenValidityMinutes;
         this.emailCooldownCache = Caffeine.newBuilder()
@@ -73,7 +77,7 @@ public class PasswordResetService {
             EmailService emailService,
             PasswordEncoder passwordEncoder,
             Clock clock) {
-        this(userRepository, tokenRepository, emailService, passwordEncoder, clock, "http://localhost:3000/auth/reset-password", 15);
+        this(userRepository, tokenRepository, emailService, passwordEncoder, clock, new SecurityAuditLogger(new com.fasterxml.jackson.databind.ObjectMapper()), "http://localhost:3000/auth/reset-password", 15);
     }
 
     @Transactional
@@ -119,7 +123,7 @@ public class PasswordResetService {
         String resetLink = baseUrl + "?token=" + rawToken;
         emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
 
-        log.info("AUDIT_SECURITY: event=PASSWORD_RESET_REQUESTED, userId={}, email={}", user.getId(), user.getEmail());
+        securityAuditLogger.logResetRequest(user.getEmail(), null, user.getId());
     }
 
     @Transactional
@@ -157,7 +161,7 @@ public class PasswordResetService {
         user.incrementTokenVersion();
         userRepository.save(user);
 
-        log.info("AUDIT_SECURITY: event=PASSWORD_RESET_COMPLETED, userId={}, email={}", user.getId(), user.getEmail());
+        securityAuditLogger.logResetConfirm(user.getEmail(), null, user.getId());
     }
 
     public void clearCooldowns() {
