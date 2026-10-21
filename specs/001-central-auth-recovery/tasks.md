@@ -32,7 +32,7 @@
 - [X] T010 [P] Implement `User.java` JPA entity, `UserRole.java`, and `UserStatus.java` enums in `easyeat/backend/src/main/java/com/easyeat/auth/domain/User.java`.
 - [X] T011 [P] Implement `UserRepository.java` in `easyeat/backend/src/main/java/com/easyeat/auth/repository/UserRepository.java` with `findByEmail(String email)` and `existsByEmail(String email)`.
 - [X] T012 Implement baseline `SecurityConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` with `BCryptPasswordEncoder(12)`, stateless session creation policy, and permitAll for public `/api/v1/auth/**` endpoints.
-- [ ] T013 Implement centralized RFC 9457 exception handler `GlobalExceptionHandler.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` returning `ProblemDetail` responses for validation errors, conflict, bad request, and unauthorized errors.
+- [X] T013 Implement centralized RFC 9457 exception handler `GlobalExceptionHandler.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` returning `ProblemDetail` responses for validation errors, conflict, bad request, and unauthorized errors.
 
 **Checkpoint**: Foundation ready. User story implementation can now proceed in priority order.
 
