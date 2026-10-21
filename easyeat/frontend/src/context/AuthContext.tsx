@@ -90,8 +90,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [token]);
+    window.addEventListener('easyeat:session-expired', clearAuth);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('easyeat:session-expired', clearAuth);
+    };
+  }, [token, clearAuth]);
 
   return (
     <AuthContext.Provider
