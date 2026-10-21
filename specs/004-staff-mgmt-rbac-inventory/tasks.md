@@ -13,8 +13,8 @@
 
 - [x] T001 Initialize package structure for staff and inventory modules under `easyeat/backend/src/main/java/com/easyeat/`
 - [x] T002 [P] Configure global method security by adding `@EnableMethodSecurity` in `easyeat/backend/src/main/java/com/easyeat/config/MethodSecurityConfig.java`
-- [ ] T003 [P] Add common domain exception classes (`NegativeStockException`, `OrphanedAdminException`, `TenantViolationException`) in `easyeat/backend/src/main/java/com/easyeat/exception/`
-- [ ] T004 Update `easyeat/backend/src/main/java/com/easyeat/exception/GlobalExceptionHandler.java` to map custom exceptions to RFC 9457 `ProblemDetail` responses with HTTP status codes 400, 403, 404, 409, and 422
+- [x] T003 [P] Add domain exception classes (`OrphanedAdminException` in `staff/exception`, `NegativeStockException` in `inventory/exception`, `TenantViolationException` in `common/exception`)
+- [ ] T004 Update `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` to map custom exceptions to RFC 9457 `ProblemDetail` responses with HTTP status codes 400, 403, 404, 409, and 422
 
 ---
 

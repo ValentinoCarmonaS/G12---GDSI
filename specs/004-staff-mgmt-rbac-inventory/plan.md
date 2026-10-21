@@ -107,13 +107,15 @@ easyeat/backend/
     │   │   ├── common/
     │   │   │   ├── context/TenantContextHolder.java     # ThreadLocal context for current tenant
     │   │   │   ├── filter/TenantContextFilter.java      # Extracts tenant_id from JWT claims
-    │   │   │   └── audit/SecurityAuditLogger.java       # Structured security audit logger
+    │   │   │   ├── audit/SecurityAuditLogger.java       # Structured security audit logger
+    │   │   │   └── exception/TenantViolationException.java
     │   │   ├── staff/                                   # Staff Management & RBAC (Iteration 004)
     │   │   │   ├── controller/StaffController.java      # /api/v1/admin/staff/** endpoints
     │   │   │   ├── dto/StaffRegistrationRequest.java
     │   │   │   ├── dto/StaffRegistrationResponse.java
     │   │   │   ├── dto/StaffUpdateRequest.java
     │   │   │   ├── dto/StaffMemberResponse.java
+    │   │   │   ├── exception/OrphanedAdminException.java
     │   │   │   ├── service/StaffService.java            # Registration, update, one-time credential, orphaned admin check
     │   │   │   └── repository/StaffUserRepository.java
     │   │   ├── inventory/                               # Catalog & Inventory (Iteration 004)
@@ -128,6 +130,7 @@ easyeat/backend/
     │   │   │   ├── dto/ChefIngredientPageResponse.java
     │   │   │   ├── entity/Ingredient.java
     │   │   │   ├── entity/StockAuditEntry.java
+    │   │   │   ├── exception/NegativeStockException.java
     │   │   │   ├── repository/IngredientRepository.java      # Query with pessimistic write lock
     │   │   │   ├── repository/StockAuditEntryRepository.java # Append-only repository
     │   │   │   ├── service/IngredientService.java            # Master catalog CRUD & lifecycle
@@ -135,11 +138,7 @@ easyeat/backend/
     │   │   ├── config/
     │   │   │   ├── SecurityConfig.java                  # Role configurations and WebSecurityCustomizer
     │   │   │   └── MethodSecurityConfig.java            # Enables @EnableMethodSecurity
-    │   │   └── exception/
-    │   │       ├── GlobalExceptionHandler.java          # RFC 9457 ProblemDetail handler
-    │   │       ├── NegativeStockException.java
-    │   │       ├── OrphanedAdminException.java
-    │   │       └── TenantViolationException.java
+
     │   └── resources/
     │       ├── application.yml
     │       └── db/migration/
