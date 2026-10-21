@@ -92,18 +92,18 @@
 
 ### Tests for User Story 4 (TDD - Write First) ⚠️
 
-- [ ] T028 [P] [US4] Unit test `StockAdjustmentServiceTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/service/StockAdjustmentServiceTest.java` verifying Absolute mode, Relative mode, non-negative invariant rejection, zero-delta rejection, mandatory justification, and audit record generation
-- [ ] T029 [P] [US4] Multithreaded integration test `StockAdjustmentConcurrencyTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/concurrency/StockAdjustmentConcurrencyTest.java` running against Testcontainers PostgreSQL, verifying that simultaneous adjustments are serialized with pessimistic locking and never result in negative stock
-- [ ] T030 [P] [US4] Web layer contract test `StockAdjustmentControllerTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/controller/StockAdjustmentControllerTest.java` verifying `POST /api/v1/admin/ingredients/{id}/stock-adjustments` and `GET /api/v1/admin/ingredients/{id}/stock-audit`
+- [x] T028 [P] [US4] Unit test `StockAdjustmentServiceTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/service/StockAdjustmentServiceTest.java` verifying Absolute mode, Relative mode, non-negative invariant rejection, zero-delta rejection, mandatory justification, and audit record generation
+- [x] T029 [P] [US4] Multithreaded integration test `StockAdjustmentConcurrencyTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/concurrency/StockAdjustmentConcurrencyTest.java` running against Testcontainers PostgreSQL, verifying that simultaneous adjustments are serialized with pessimistic locking and never result in negative stock
+- [x] T030 [P] [US4] Web layer contract test `StockAdjustmentControllerTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/controller/StockAdjustmentControllerTest.java` verifying `POST /api/v1/admin/ingredients/{id}/stock-adjustments` and `GET /api/v1/admin/ingredients/{id}/stock-audit`
 
 ### Implementation for User Story 4
 
-- [ ] T031 [P] [US4] Create Stock Adjustment DTOs (`StockAdjustmentMode`, `StockAdjustmentRequest`, `StockAdjustmentResponse`, `StockAuditEntryResponse`) in `easyeat/backend/src/main/java/com/easyeat/inventory/dto/`
-- [ ] T032 [P] [US4] Create `StockAuditEntry` JPA entity in `easyeat/backend/src/main/java/com/easyeat/inventory/entity/StockAuditEntry.java` mapping `tenant_id`, `ingredient_id`, `user_id`, `adjustment_mode`, `previous_stock`, `new_stock`, `net_delta`, and `justification`
-- [ ] T033 [US4] Add pessimistic locking query `findByIdAndTenantIdForUpdate` with `@Lock(LockModeType.PESSIMISTIC_WRITE)` to `IngredientRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java`
-- [ ] T034 [US4] Create `StockAuditEntryRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/StockAuditEntryRepository.java` providing append-only `save()` and chronological retrieval methods
-- [ ] T035 [US4] Implement `StockAdjustmentService` in `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockAdjustmentService.java` handling `@Transactional` stock calculation, non-negative validation, discrete vs continuous unit scale validation, and immutable audit persistence
-- [ ] T036 [US4] Add adjustment endpoints `POST /api/v1/admin/ingredients/{id}/stock-adjustments` and `GET /api/v1/admin/ingredients/{id}/stock-audit` to `AdminIngredientController` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/AdminIngredientController.java`
+- [x] T031 [P] [US4] Create Stock Adjustment DTOs (`StockAdjustmentMode`, `StockAdjustmentRequest`, `StockAdjustmentResponse`, `StockAuditEntryResponse`) in `easyeat/backend/src/main/java/com/easyeat/inventory/dto/`
+- [x] T032 [P] [US4] Create `StockAuditEntry` JPA entity in `easyeat/backend/src/main/java/com/easyeat/inventory/entity/StockAuditEntry.java` mapping `tenant_id`, `ingredient_id`, `user_id`, `adjustment_mode`, `previous_stock`, `new_stock`, `net_delta`, and `justification`
+- [x] T033 [US4] Add pessimistic locking query `findByIdAndTenantIdForUpdate` with `@Lock(LockModeType.PESSIMISTIC_WRITE)` to `IngredientRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java`
+- [x] T034 [US4] Create `StockAuditEntryRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/StockAuditEntryRepository.java` providing append-only `save()` and chronological retrieval methods
+- [x] T035 [US4] Implement `StockAdjustmentService` in `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockAdjustmentService.java` handling `@Transactional` stock calculation, non-negative validation, discrete vs continuous unit scale validation, and immutable audit persistence
+- [x] T036 [US4] Add adjustment endpoints `POST /api/v1/admin/ingredients/{id}/stock-adjustments` and `GET /api/v1/admin/ingredients/{id}/stock-audit` to `AdminIngredientController` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/AdminIngredientController.java`
 
 **Checkpoint**: User Story 4 fully functional. Stock adjustments are atomic, audit trail is immutable, and concurrency is safely locked.
 
@@ -117,13 +117,13 @@
 
 ### Tests for User Story 5 (TDD - Write First) ⚠️
 
-- [ ] T037 [P] [US5] Web and service contract test `ChefCatalogControllerTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/controller/ChefCatalogControllerTest.java` verifying 20-item pagination, alphabetical A-Z sorting, category filtering, name search, zero-stock inclusion, discontinued item exclusion, and financial cost suppression
+- [x] T037 [P] [US5] Web and service contract test `ChefCatalogControllerTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/controller/ChefCatalogControllerTest.java` verifying 20-item pagination, alphabetical A-Z sorting, category filtering, name search, zero-stock inclusion, discontinued item exclusion, and financial cost suppression
 
 ### Implementation for User Story 5
 
-- [ ] T038 [P] [US5] Create Chef Catalog DTOs (`StockAvailabilityStatus`, `ChefIngredientItemResponse`, `ChefIngredientPageResponse`) in `easyeat/backend/src/main/java/com/easyeat/inventory/dto/` without purchase cost or audit attributes
-- [ ] T039 [US5] Add Chef catalog query method to `IngredientRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java` filtering by `tenant_id`, `status = 'ACTIVE'`, optional category, and case-insensitive name match with `Pageable`
-- [ ] T040 [US5] Implement `ChefCatalogController` exposing `GET /api/v1/chef/ingredients` guarded with `@PreAuthorize("hasRole('CHEF')")` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/ChefCatalogController.java`
+- [x] T038 [P] [US5] Create Chef Catalog DTOs (`StockAvailabilityStatus`, `ChefIngredientItemResponse`, `ChefIngredientPageResponse`) in `easyeat/backend/src/main/java/com/easyeat/inventory/dto/` without purchase cost or audit attributes
+- [x] T039 [US5] Add Chef catalog query method to `IngredientRepository` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java` filtering by `tenant_id`, `status = 'ACTIVE'`, optional category, and case-insensitive name match with `Pageable`
+- [x] T040 [US5] Implement `ChefCatalogController` exposing `GET /api/v1/chef/ingredients` guarded with `@PreAuthorize("hasRole('CHEF')")` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/ChefCatalogController.java`
 
 **Checkpoint**: User Story 5 fully functional. Kitchen staff can browse available ingredients safely.
 
@@ -133,9 +133,9 @@
 
 **Purpose**: Validate end-to-end user journeys against quickstart scenarios, ensure build hygiene, and verify zero cross-tenant leakage.
 
-- [ ] T041 Implement end-to-end integration test `StaffAndInventoryQuickstartIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/integration/StaffAndInventoryQuickstartIntegrationTest.java` executing Scenarios 1 through 8 from `quickstart.md`
-- [ ] T042 [P] Verify code quality, formatting, and zero unhandled exceptions via Maven build: `./mvnw clean verify`
-- [ ] T043 [P] Validate OpenAPI contract compliance against running controllers in `easyeat/backend/src/test/java/com/easyeat/contract/OpenApiContractValidationTest.java`
+- [x] T041 Implement end-to-end integration test `StaffAndInventoryQuickstartIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/integration/StaffAndInventoryQuickstartIntegrationTest.java` executing Scenarios 1 through 8 from `quickstart.md`
+- [x] T042 [P] Verify code quality, formatting, and zero unhandled exceptions via Maven build: `./mvnw clean verify`
+- [x] T043 [P] Validate OpenAPI contract compliance against running controllers in `easyeat/backend/src/test/java/com/easyeat/contract/OpenApiContractValidationTest.java`
 
 ---
 

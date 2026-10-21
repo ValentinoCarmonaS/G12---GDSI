@@ -124,6 +124,44 @@ public class IngredientService {
         ingredientRepository.save(ingredient);
     }
 
+    @Transactional(readOnly = true)
+    public ChefIngredientPageResponse getChefCatalog(IngredientCategory category, String search, org.springframework.data.domain.Pageable pageable) {
+        UUID tenantId = TenantContextHolder.getTenantId();
+        org.springframework.data.domain.Pageable resolvedPageable = pageable;
+        if (pageable.getSort().isUnsorted()) {
+            resolvedPageable = org.springframework.data.domain.PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    org.springframework.data.domain.Sort.by("name").ascending()
+            );
+        }
+        String searchParam = (search != null && !search.isBlank()) ? search.trim() : null;
+        org.springframework.data.domain.Page<Ingredient> page = ingredientRepository.findChefCatalog(tenantId, category, searchParam, resolvedPageable);
+
+        List<ChefIngredientItemResponse> items = page.getContent().stream().map(ing -> {
+            StockAvailabilityStatus stockStatus = (ing.getCurrentStock() != null && ing.getCurrentStock().compareTo(BigDecimal.ZERO) > 0)
+                    ? StockAvailabilityStatus.IN_STOCK
+                    : StockAvailabilityStatus.OUT_OF_STOCK;
+            return new ChefIngredientItemResponse(
+                    ing.getId(),
+                    ing.getName(),
+                    ing.getCategory(),
+                    ing.getUnitOfMeasure(),
+                    stockStatus,
+                    ing.getCurrentStock() != null ? ing.getCurrentStock() : BigDecimal.ZERO.setScale(4)
+            );
+        }).toList();
+
+        return new ChefIngredientPageResponse(
+                items,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.hasNext()
+        );
+    }
+
     private AdminIngredientDetailResponse toResponse(Ingredient ingredient) {
         return new AdminIngredientDetailResponse(
                 ingredient.getId(),

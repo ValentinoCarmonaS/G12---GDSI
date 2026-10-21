@@ -2,6 +2,7 @@ package com.easyeat.inventory.controller;
 
 import com.easyeat.inventory.dto.*;
 import com.easyeat.inventory.service.IngredientService;
+import com.easyeat.inventory.service.StockAdjustmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,9 +17,12 @@ import java.util.UUID;
 public class AdminIngredientController {
 
     private final IngredientService ingredientService;
+    private final StockAdjustmentService stockAdjustmentService;
 
-    public AdminIngredientController(IngredientService ingredientService) {
+    public AdminIngredientController(IngredientService ingredientService,
+                                     StockAdjustmentService stockAdjustmentService) {
         this.ingredientService = ingredientService;
+        this.stockAdjustmentService = stockAdjustmentService;
     }
 
     @PostMapping
@@ -57,5 +61,17 @@ public class AdminIngredientController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteIngredient(@PathVariable UUID id) {
         ingredientService.deleteIngredient(id);
+    }
+
+    @PostMapping("/{id}/stock-adjustments")
+    public StockAdjustmentResponse adjustStock(
+            @PathVariable UUID id,
+            @Valid @RequestBody StockAdjustmentRequest request) {
+        return stockAdjustmentService.adjustStock(id, request);
+    }
+
+    @GetMapping(value = {"/{id}/stock-audit", "/{id}/stock-adjustments"})
+    public List<StockAuditEntryResponse> getAuditHistory(@PathVariable UUID id) {
+        return stockAdjustmentService.getAuditHistory(id);
     }
 }
