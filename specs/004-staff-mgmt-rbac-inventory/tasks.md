@@ -43,7 +43,7 @@
 
 ### Tests for User Story 1 & 2 (TDD - Write First) ⚠️
 
-- [ ] T011 [P] [US1] Unit test `StaffServiceTest` in `easyeat/backend/src/test/java/com/easyeat/staff/service/StaffServiceTest.java` covering staff registration, temporary credential generation, case-insensitive email normalization, and orphaned admin prevention
+- [x] T011 [P] [US1] Unit test `StaffServiceTest` in `easyeat/backend/src/test/java/com/easyeat/staff/service/StaffServiceTest.java` covering staff registration, temporary credential generation, case-insensitive email normalization, and orphaned admin prevention
 - [ ] T012 [P] [US1] Web layer contract test `StaffControllerTest` in `easyeat/backend/src/test/java/com/easyeat/staff/controller/StaffControllerTest.java` verifying `POST /api/v1/admin/staff`, `GET /api/v1/admin/staff`, and `PUT /api/v1/admin/staff/{id}`
 - [ ] T013 [P] [US2] Security integration test `TenantIsolationIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/security/TenantIsolationIntegrationTest.java` verifying that `CHEF`, `COUNTER_CLERK`, and `DINER` roles are rejected with 403 Forbidden on admin endpoints, cross-tenant data requests return 404/403, and security audit log events are recorded
 
