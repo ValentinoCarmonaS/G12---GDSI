@@ -5,7 +5,6 @@ import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.inventory.dto.*;
 import com.easyeat.inventory.entity.Ingredient;
-import com.easyeat.inventory.entity.IngredientStatus;
 import com.easyeat.inventory.entity.StockAuditEntry;
 import com.easyeat.inventory.exception.InvalidLifecycleTransitionException;
 import com.easyeat.inventory.exception.NegativeStockException;

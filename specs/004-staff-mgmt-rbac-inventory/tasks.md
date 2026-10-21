@@ -135,7 +135,7 @@
 
 - [x] T041 Implement end-to-end integration test `StaffAndInventoryQuickstartIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/integration/StaffAndInventoryQuickstartIntegrationTest.java` executing Scenarios 1 through 8 from `quickstart.md`
 - [ ] T042 [P] Verify code quality, formatting, and zero unhandled exceptions via Maven build: `./mvnw clean verify`
-- [ ] T043 [P] Validate OpenAPI contract compliance against running controllers in `easyeat/backend/src/test/java/com/easyeat/contract/OpenApiContractValidationTest.java`
+- [x] T043 [P] Validate OpenAPI contract compliance against running controllers in `easyeat/backend/src/test/java/com/easyeat/contract/OpenApiContractValidationTest.java`
 
 ---
 

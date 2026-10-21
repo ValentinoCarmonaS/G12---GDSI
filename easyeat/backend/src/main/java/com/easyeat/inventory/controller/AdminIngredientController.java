@@ -70,7 +70,7 @@ public class AdminIngredientController {
         return stockAdjustmentService.adjustStock(id, request);
     }
 
-    @GetMapping("/{id}/stock-audit")
+    @GetMapping(value = {"/{id}/stock-audit", "/{id}/stock-adjustments"})
     public List<StockAuditEntryResponse> getAuditHistory(@PathVariable UUID id) {
         return stockAdjustmentService.getAuditHistory(id);
     }
