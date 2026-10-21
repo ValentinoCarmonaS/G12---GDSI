@@ -11,7 +11,7 @@
 
 **Purpose**: Project initialization, build configuration, and local runtime dependencies.
 
-- [ ] T001 Initialize Maven single-project build configuration in `easyeat/backend/pom.xml` with Java 21, Spring Boot 3.3.4 parent, Spring Security 6, JJWT 0.12.6, Caffeine, Flyway 10, PostgreSQL driver, and Testcontainers.
+- [X] T001 Initialize Maven single-project build configuration in `easyeat/backend/pom.xml` with Java 21, Spring Boot 3.3.4 parent, Spring Security 6, JJWT 0.12.6, Caffeine, Flyway 10, PostgreSQL driver, and Testcontainers.
 - [ ] T002 [P] Configure local Docker services in `easyeat/backend/docker-compose.yml` for PostgreSQL 16 (port 5432) and Mailpit (SMTP port 1025, Web UI port 8025).
 - [ ] T003 [P] Configure base application configuration in `easyeat/backend/src/main/resources/application.yml` with JWT settings, BCrypt cost 12, rate limit settings, and RFC 9457 ProblemDetail enabled.
 - [ ] T004 [P] Configure local development profile in `easyeat/backend/src/main/resources/application-dev.yml` pointing to local Docker PostgreSQL and Mailpit SMTP.
