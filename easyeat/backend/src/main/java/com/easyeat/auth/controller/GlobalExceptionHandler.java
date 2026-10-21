@@ -28,6 +28,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
+
+import com.easyeat.common.exception.TenantViolationException;
+import com.easyeat.inventory.exception.NegativeStockException;
+import com.easyeat.staff.exception.OrphanedAdminException;
+import org.springframework.security.access.AccessDeniedException;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
@@ -125,5 +131,71 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setTitle("Bad Request");
         problem.setInstance(URI.create(request.getRequestURI()));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    @ExceptionHandler(NegativeStockException.class)
+    public ResponseEntity<ProblemDetail> handleNegativeStock(NegativeStockException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/negative-stock"));
+        problem.setTitle("Negative Stock Invariant Violated");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        if (ex.getCurrentStock() != null) {
+            problem.setProperty("currentStock", ex.getCurrentStock());
+        }
+        if (ex.getAttemptedDelta() != null) {
+            problem.setProperty("attemptedDelta", ex.getAttemptedDelta());
+        }
+        if (ex.getResultingStock() != null) {
+            problem.setProperty("resultingStock", ex.getResultingStock());
+        }
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem);
+    }
+
+    @ExceptionHandler(OrphanedAdminException.class)
+    public ResponseEntity<ProblemDetail> handleOrphanedAdmin(OrphanedAdminException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/orphaned-admin"));
+        problem.setTitle("Orphaned Administrator Constraint Violated");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        if (ex.getTenantId() != null) {
+            problem.setProperty("tenantId", ex.getTenantId().toString());
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    @ExceptionHandler(TenantViolationException.class)
+    public ResponseEntity<ProblemDetail> handleTenantViolation(TenantViolationException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/tenant-violation"));
+        problem.setTitle("Cross-Tenant Access Prohibited");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problem);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied: insufficient privileges.");
+        problem.setType(URI.create("https://easyeat.com/errors/forbidden"));
+        problem.setTitle("Forbidden");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problem);
+    }
+
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<ProblemDetail> handleNotFound(NoSuchElementException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/not-found"));
+        problem.setTitle("Resource Not Found");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ProblemDetail> handleIllegalState(IllegalStateException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/conflict"));
+        problem.setTitle("Operation Conflict");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }
 }

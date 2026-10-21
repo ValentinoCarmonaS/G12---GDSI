@@ -11,10 +11,10 @@
 
 **Purpose**: Establish package structure and configuration defaults for iteration 004 within the existing Spring Boot backend.
 
-- [ ] T001 Initialize package structure for staff and inventory modules under `easyeat/backend/src/main/java/com/easyeat/`
-- [ ] T002 [P] Configure global method security by adding `@EnableMethodSecurity` in `easyeat/backend/src/main/java/com/easyeat/config/MethodSecurityConfig.java`
-- [ ] T003 [P] Add common domain exception classes (`NegativeStockException`, `OrphanedAdminException`, `TenantViolationException`) in `easyeat/backend/src/main/java/com/easyeat/exception/`
-- [ ] T004 Update `easyeat/backend/src/main/java/com/easyeat/exception/GlobalExceptionHandler.java` to map custom exceptions to RFC 9457 `ProblemDetail` responses with HTTP status codes 400, 403, 404, 409, and 422
+- [x] T001 Initialize package structure for staff and inventory modules under `easyeat/backend/src/main/java/com/easyeat/`
+- [x] T002 [P] Configure global method security by adding `@EnableMethodSecurity` in `easyeat/backend/src/main/java/com/easyeat/config/MethodSecurityConfig.java`
+- [x] T003 [P] Add domain exception classes (`OrphanedAdminException` in `staff/exception`, `NegativeStockException` in `inventory/exception`, `TenantViolationException` in `common/exception`)
+- [x] T004 Update `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` to map custom exceptions to RFC 9457 `ProblemDetail` responses with HTTP status codes 400, 403, 404, 409, and 422
 
 ---
 
@@ -24,12 +24,12 @@
 
 **⚠️ CRITICAL**: No user story implementation can proceed until this phase is complete and verified.
 
-- [ ] T005 [P] Create Flyway migration script `easyeat/backend/src/main/resources/db/migration/V3__extend_users_staff.sql` extending `users` with `full_name`, `must_change_password`, and updated role/status CHECK constraints
-- [ ] T006 [P] Create Flyway migration script `easyeat/backend/src/main/resources/db/migration/V4__create_ingredients_and_stock_audit.sql` defining `ingredients` and append-only `stock_audit_entries` tables, indexes, constraints, and immutability rules
-- [ ] T007 Implement `TenantContextHolder` backed by `ThreadLocal<UUID>` in `easyeat/backend/src/main/java/com/easyeat/common/context/TenantContextHolder.java`
-- [ ] T008 Implement `TenantContextFilter` extracting and validating `tenant_id` from JWT claims into `TenantContextHolder` in `easyeat/backend/src/main/java/com/easyeat/common/filter/TenantContextFilter.java`
-- [ ] T009 Implement structured security audit logger emitting JSON audit events for access denials in `easyeat/backend/src/main/java/com/easyeat/common/audit/SecurityAuditLogger.java`
-- [ ] T010 Register `TenantContextFilter` into the Spring Security filter chain after `JwtAuthenticationFilter` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [x] T005 [P] Create Flyway migration script `easyeat/backend/src/main/resources/db/migration/V3__extend_users_staff.sql` extending `users` with `full_name`, `must_change_password`, and updated role/status CHECK constraints
+- [x] T006 [P] Create Flyway migration script `easyeat/backend/src/main/resources/db/migration/V4__create_ingredients_and_stock_audit.sql` defining `ingredients` and append-only `stock_audit_entries` tables, indexes, constraints, and immutability rules
+- [x] T007 Implement `TenantContextHolder` backed by `ThreadLocal<UUID>` in `easyeat/backend/src/main/java/com/easyeat/common/context/TenantContextHolder.java`
+- [x] T008 Implement `TenantContextFilter` extracting and validating `tenant_id` from JWT claims into `TenantContextHolder` in `easyeat/backend/src/main/java/com/easyeat/common/filter/TenantContextFilter.java`
+- [x] T009 Implement structured security audit logger emitting JSON audit events for access denials in `easyeat/backend/src/main/java/com/easyeat/auth/security/SecurityAuditLogger.java`
+- [x] T010 Register `TenantContextFilter` into the Spring Security filter chain after `JwtAuthenticationFilter` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
 
 **Checkpoint**: Foundational database schemas and tenant isolation filters verified.
 
@@ -43,19 +43,19 @@
 
 ### Tests for User Story 1 & 2 (TDD - Write First) ⚠️
 
-- [ ] T011 [P] [US1] Unit test `StaffServiceTest` in `easyeat/backend/src/test/java/com/easyeat/staff/service/StaffServiceTest.java` covering staff registration, temporary credential generation, case-insensitive email normalization, and orphaned admin prevention
-- [ ] T012 [P] [US1] Web layer contract test `StaffControllerTest` in `easyeat/backend/src/test/java/com/easyeat/staff/controller/StaffControllerTest.java` verifying `POST /api/v1/admin/staff`, `GET /api/v1/admin/staff`, and `PUT /api/v1/admin/staff/{id}`
-- [ ] T013 [P] [US2] Security integration test `TenantIsolationIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/security/TenantIsolationIntegrationTest.java` verifying that `CHEF`, `COUNTER_CLERK`, and `DINER` roles are rejected with 403 Forbidden on admin endpoints, cross-tenant data requests return 404/403, and security audit log events are recorded
+- [x] T011 [P] [US1] Unit test `StaffServiceTest` in `easyeat/backend/src/test/java/com/easyeat/staff/service/StaffServiceTest.java` covering staff registration, temporary credential generation, case-insensitive email normalization, and orphaned admin prevention
+- [x] T012 [P] [US1] Web layer contract test `StaffControllerTest` in `easyeat/backend/src/test/java/com/easyeat/staff/controller/StaffControllerTest.java` verifying `POST /api/v1/admin/staff`, `GET /api/v1/admin/staff`, and `PUT /api/v1/admin/staff/{id}`
+- [x] T013 [P] [US2] Security integration test `TenantIsolationIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/security/TenantIsolationIntegrationTest.java` verifying that `CHEF`, `COUNTER_CLERK`, and `DINER` roles are rejected with 403 Forbidden on admin endpoints, cross-tenant data requests return 404/403, and security audit log events are recorded
 
 ### Implementation for User Story 1 & 2
 
-- [ ] T014 [P] [US1] Create Staff DTOs (`StaffRole`, `StaffAccountStatus`, `StaffRegistrationRequest`, `StaffRegistrationResponse`, `StaffUpdateRequest`, `StaffMemberResponse`) in `easyeat/backend/src/main/java/com/easyeat/staff/dto/`
-- [ ] T015 [P] [US1] Update `User` entity in `easyeat/backend/src/main/java/com/easyeat/auth/entity/User.java` mapping `full_name`, `must_change_password`, and updated role/status enums
-- [ ] T016 [US1] Implement `StaffUserRepository` with tenant-scoped query methods and active admin count queries in `easyeat/backend/src/main/java/com/easyeat/staff/repository/StaffUserRepository.java`
-- [ ] T017 [US1] Implement `StaffService` in `easyeat/backend/src/main/java/com/easyeat/staff/service/StaffService.java` handling user registration with `SecureRandom` 12-char credential generation, BCrypt hashing (cost 12), lowercase normalization, and orphaned admin verification on updates
-- [ ] T018 [US1] Implement `StaffController` exposing `/api/v1/admin/staff` endpoints protected with `@PreAuthorize("hasRole('ADMIN')")` in `easyeat/backend/src/main/java/com/easyeat/staff/controller/StaffController.java`
-- [ ] T019 [US1] Implement `FirstLoginPasswordChangeRequest` DTO and endpoint `POST /api/v1/auth/first-login-password-change` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/FirstLoginPasswordController.java` to transition account from `PENDING_FIRST_LOGIN` to `ACTIVE`
-- [ ] T020 [US2] Configure authorization rules in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` ensuring `/api/v1/admin/**` requires `ROLE_ADMIN` and unauthenticated/unauthorized requests emit structured security audit entries
+- [x] T014 [P] [US1] Create Staff DTOs (`StaffRole`, `StaffAccountStatus`, `StaffRegistrationRequest`, `StaffRegistrationResponse`, `StaffUpdateRequest`, `StaffMemberResponse`) in `easyeat/backend/src/main/java/com/easyeat/staff/dto/`
+- [x] T015 [P] [US1] Update `User` entity in `easyeat/backend/src/main/java/com/easyeat/auth/domain/User.java` mapping `full_name`, `must_change_password`, and updated role/status enums
+- [x] T016 [US1] Implement `StaffUserRepository` with tenant-scoped query methods and active admin count queries in `easyeat/backend/src/main/java/com/easyeat/staff/repository/StaffUserRepository.java`
+- [x] T017 [US1] Implement `StaffService` in `easyeat/backend/src/main/java/com/easyeat/staff/service/StaffService.java` handling user registration with `SecureRandom` 12-char credential generation, BCrypt hashing (cost 12), lowercase normalization, and orphaned admin verification on updates
+- [x] T018 [US1] Implement `StaffController` exposing `/api/v1/admin/staff` endpoints protected with `@PreAuthorize("hasRole('ADMIN')")` in `easyeat/backend/src/main/java/com/easyeat/staff/controller/StaffController.java`
+- [x] T019 [US1] Implement `FirstLoginPasswordChangeRequest` DTO and endpoint `POST /api/v1/auth/first-login-password-change` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/FirstLoginPasswordController.java` to transition account from `PENDING_FIRST_LOGIN` to `ACTIVE`
+- [x] T020 [US2] Configure authorization rules in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` ensuring `/api/v1/admin/**` requires `ROLE_ADMIN` and unauthenticated/unauthorized requests emit structured security audit entries
 
 **Checkpoint**: User Stories 1 and 2 fully functional. Staff can be registered, roles enforced, and temporary credentials changed on first login.
 
