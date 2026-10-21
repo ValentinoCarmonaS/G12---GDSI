@@ -20,6 +20,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.easyeat.auth.repository.UserRepository;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -46,6 +48,9 @@ class StaffControllerTest {
 
     @MockBean
     private JwtService jwtService;
+
+    @MockBean
+    private UserRepository userRepository;
 
     @Test
     @WithMockUser(roles = "ADMINISTRADOR")

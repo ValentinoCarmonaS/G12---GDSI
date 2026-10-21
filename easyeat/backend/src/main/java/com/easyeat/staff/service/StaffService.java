@@ -116,7 +116,7 @@ public class StaffService {
                     tenantId, UserRole.ADMINISTRADOR, UserStatus.ACTIVE);
             if (activeAdminCount <= 1) {
                 throw new OrphanedAdminException(tenantId,
-                        "Cannot reassign role: establishment must retain at least one active administrator.");
+                        "Cannot reassign role: cannot demote the last active administrator for tenant " + tenantId);
             }
         }
 

@@ -1,6 +1,7 @@
 package com.easyeat.security;
 
 import com.easyeat.auth.controller.GlobalExceptionHandler;
+import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.auth.security.JwtAuthenticationFilter;
 import com.easyeat.auth.security.JwtService;
 import com.easyeat.auth.security.SecurityAuditLogger;
@@ -28,7 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(StaffController.class)
-@Import({SecurityConfig.class, MethodSecurityConfig.class, GlobalExceptionHandler.class, JwtAuthenticationFilter.class})
+@Import({SecurityConfig.class, MethodSecurityConfig.class, GlobalExceptionHandler.class, JwtAuthenticationFilter.class, TenantContextFilter.class})
 class TenantIsolationIntegrationTest {
 
     @Autowired
@@ -41,7 +42,7 @@ class TenantIsolationIntegrationTest {
     private JwtService jwtService;
 
     @MockBean
-    private TenantContextFilter tenantContextFilter;
+    private UserRepository userRepository;
 
     @MockBean
     private SecurityAuditLogger securityAuditLogger;
