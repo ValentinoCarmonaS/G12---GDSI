@@ -52,15 +52,15 @@
 ### Tests for User Story 1 (TDD - Frontend & Contract First) ⚠️
 
 - [ ] T010 [P] [US1] Backend contract integration test verifying `POST /api/v1/auth/login` issues JWT with all four required claims (`user_id`, `role`, `tenant_id`, `token_version`) in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerContractTest.java`
-- [ ] T011 [P] [US1] Unit and interaction tests for `LoginForm` (input validation, trim/lowercase transformation, submit debouncing, generic 401 error message, network failure display) in `easyeat/frontend/tests/components/LoginForm.test.tsx`
+- [x] T011 [P] [US1] Unit and interaction tests for `LoginForm` (input validation, trim/lowercase transformation, submit debouncing, generic 401 error message, network failure display) in `easyeat/frontend/tests/components/LoginForm.test.tsx`
 
 ### Implementation for User Story 1
 
 - [ ] T012 [P] [US1] Verify or consume `LoginRequest.java` and `LoginResponse.java` DTOs from 001 in `easyeat/backend/src/main/java/com/easyeat/auth/dto/LoginRequest.java` and `LoginResponse.java`
-- [ ] T013 [US1] Create Axios HTTP client instance with base URL, standard JSON headers, and credentials configuration in `easyeat/frontend/src/api/apiClient.ts`
-- [ ] T014 [US1] Create auth API service method invoking `POST /api/v1/auth/login` with typed request and response in `easyeat/frontend/src/api/authApi.ts`
-- [ ] T015 [US1] Implement `LoginForm` component with client-side validation, trim/lowercase transformation, and submission debouncing in `easyeat/frontend/src/components/auth/LoginForm.tsx`
-- [ ] T016 [US1] Implement `LoginPage` view wrapping `LoginForm` with responsive brand layout in `easyeat/frontend/src/pages/LoginPage.tsx`
+- [x] T013 [US1] Create Axios HTTP client instance with base URL, standard JSON headers, and credentials configuration in `easyeat/frontend/src/api/apiClient.ts`
+- [x] T014 [US1] Create auth API service method invoking `POST /api/v1/auth/login` with typed request and response in `easyeat/frontend/src/api/authApi.ts`
+- [x] T015 [US1] Implement `LoginForm` component with client-side validation, trim/lowercase transformation, and submission debouncing in `easyeat/frontend/src/components/auth/LoginForm.tsx`
+- [x] T016 [US1] Implement `LoginPage` view wrapping `LoginForm` with responsive brand layout in `easyeat/frontend/src/pages/LoginPage.tsx`
 
 **Checkpoint**: User Story 1 functional — staff credentials submitted via UI are validated, debounced, authenticated by 001 endpoint, and return conforming tokens.
 
