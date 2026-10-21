@@ -121,7 +121,7 @@
 ### Tests for User Story 4 (TDD - Backend First) ⚠️
 
 - [ ] T031 [P] [US4] Security filter test verifying rejection of requests with stale or mismatched `token_version` in `easyeat/backend/src/test/java/com/easyeat/auth/security/JwtAuthenticationFilterTest.java`
-- [ ] T032 [P] [US4] Session lifecycle integration test validating 401 interception, in-flight action cancellation, and expiration banner display in `easyeat/frontend/tests/session/SessionLifecycle.test.tsx`
+- [x] T032 [P] [US4] Session lifecycle integration test validating 401 interception, in-flight action cancellation, and expiration banner display in `easyeat/frontend/tests/session/SessionLifecycle.test.tsx`
 
 ### Backend Implementation for User Story 4 (NEW in 002)
 
@@ -130,8 +130,8 @@
 
 ### Frontend Implementation for User Story 4
 
-- [ ] T035 [US4] Add response interceptor in `apiClient` to capture HTTP 401 responses, clear `sessionStorage`, and dispatch session-expired event in `easyeat/frontend/src/api/apiClient.ts`
-- [ ] T036 [US4] Add session expiration banner and state eviction handling in `easyeat/frontend/src/context/AuthContext.tsx`
+- [x] T035 [US4] Add response interceptor in `apiClient` to capture HTTP 401 responses, clear `sessionStorage`, and dispatch session-expired event in `easyeat/frontend/src/api/apiClient.ts`
+- [x] T036 [US4] Add session expiration banner and state eviction handling in `easyeat/frontend/src/context/AuthContext.tsx`
 
 **Checkpoint**: User Story 4 functional — concurrent login on a second terminal immediately revokes the first terminal's access, and expired sessions cannot execute workspace actions.
 
