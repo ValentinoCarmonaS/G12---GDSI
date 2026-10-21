@@ -124,12 +124,12 @@
 
 ### Tests for User Story 4 (TDD - Write First)
 
-- [ ] T042 [P] [US4] Create dev/test seed migration `V2__seed_dev_tenant.sql` in `easyeat/backend/src/main/resources/db/dev/V2__seed_dev_tenant.sql` with synthetic tenant ID and admin user (active only in dev/test profiles).
-- [ ] T043 [US4] Write failing integration test for administrator recovery in `easyeat/backend/src/test/java/com/easyeat/auth/integration/AdminPasswordRecoveryIntegrationTest.java` verifying that admin reset flows through centralized recovery service and invalidates active admin session tokens.
+- [X] T042 [P] [US4] Create dev/test seed migration `V2__seed_dev_tenant.sql` in `easyeat/backend/src/main/resources/db/dev/V2__seed_dev_tenant.sql` with synthetic tenant ID and admin user (active only in dev/test profiles).
+- [X] T043 [US4] Write failing integration test for administrator recovery in `easyeat/backend/src/test/java/com/easyeat/auth/integration/AdminPasswordRecoveryIntegrationTest.java` verifying that admin reset flows through centralized recovery service and invalidates active admin session tokens.
 
 ### Implementation and Verification for User Story 4
 
-- [ ] T044 [US4] Verify and configure administrator password reset end-to-end integration in `easyeat/backend/src/test/java/com/easyeat/auth/integration/AdminPasswordRecoveryIntegrationTest.java` ensuring `tenant_id` claim is preserved on subsequent logins after reset.
+- [X] T044 [US4] Verify and configure administrator password reset end-to-end integration in `easyeat/backend/src/test/java/com/easyeat/auth/integration/AdminPasswordRecoveryIntegrationTest.java` ensuring `tenant_id` claim is preserved on subsequent logins after reset.
 
 **Checkpoint**: All 4 user stories (COM-1.1.1, COM-1.2.1, COM-1.3.1, ADM-1.2.1) are complete and verified.
 
