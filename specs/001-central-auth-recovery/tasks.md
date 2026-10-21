@@ -72,7 +72,7 @@
 ### Tests for User Story 2 (TDD - Write First)
 
 - [X] T021 [P] [US2] Write failing unit tests for `JwtService` (token signing, claims extraction: `sub`, `role`, `tenant_id`, `token_version`, expiration validation, signature tamper rejection) in `easyeat/backend/src/test/java/com/easyeat/auth/security/JwtServiceTest.java`.
-- [ ] T022 [P] [US2] Write failing unit tests for `RateLimitingService` (per-email 5-failure lockout, per-IP limit, tracking non-existent emails) in `easyeat/backend/src/test/java/com/easyeat/auth/security/RateLimitingServiceTest.java`.
+- [X] T022 [P] [US2] Write failing unit tests for `RateLimitingService` (per-email 5-failure lockout, per-IP limit, tracking non-existent emails) in `easyeat/backend/src/test/java/com/easyeat/auth/security/RateLimitingServiceTest.java`.
 - [ ] T023 [P] [US2] Write failing MockMvc tests for `POST /api/v1/auth/login` (200 OK with `AuthTokenResponse`, 401 Unauthorized for bad password/non-existent user, 403 Forbidden for SUSPENDED account, 429 Too Many Requests on lockout) in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerLoginTest.java`.
 
 ### Implementation for User Story 2
