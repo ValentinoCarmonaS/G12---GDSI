@@ -471,6 +471,8 @@ Implement Increment 1 (MVP: Setup, Foundational, and User Story 1 - Comensal Reg
 - Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issues #1, #2, and #3.
 ```
 
+PR - GitHub: [feat(auth): Increment 1 (MVP) - Setup, Foundational, and Comensal Registration (US1)- #8](https://github.com/ValentinoCarmonaS/G12---GDSI/pull/8)
+
 ---
 
 ## Incremento 2: Login Unificado con JWT
@@ -486,7 +488,10 @@ Implement Increment 2 (User Story 2 - Unified Login with JWT) for feature `001-c
 - Follow strict TDD ordering (write failing tests before implementation).
 - Create 1:1 atomic commits per task with format "T###: description".
 - Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #4.
+- Close issue 4, after verifying that I am the person responsible for it and that it bears the label corresponding to this specification.
 ```
+
+PR - GitHub: [feat(auth): Increment 2 - Unified Login with JWT (US2)- #54](https://github.com/ValentinoCarmonaS/G12---GDSI/pull/54)
 
 ---
 
@@ -503,7 +508,10 @@ Implement Increment 3 (User Story 3 - Password Recovery for Comensales) for feat
 - Follow strict TDD ordering (write failing tests before implementation).
 - Create 1:1 atomic commits per task with format "T###: description".
 - Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #5.
+- Close issue 5, after verifying that I am the person responsible for it and that it bears the label corresponding to this specification.
 ```
+
+PR - GitHub: [feat(auth): Increment 3 - Password Recovery for Comensales (US3)- #62](https://github.com/ValentinoCarmonaS/G12---GDSI/pull/62)
 
 ---
 
@@ -520,7 +528,10 @@ Implement Increment 4 (User Story 4 - Password Recovery for Administrators) for 
 - Follow strict TDD ordering (write failing tests before implementation and verification).
 - Create 1:1 atomic commits per task with format "T###: description".
 - Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #6.
+- Close issue 6, after verifying that I am the person responsible for it and that it bears the label corresponding to this specification.
 ```
+
+PR - GitHub: [feat(auth): Increment 4 - Password Recovery for Administrators (US4)- #69](https://github.com/ValentinoCarmonaS/G12---GDSI/pull/69)
 
 ---
 
@@ -537,5 +548,9 @@ Implement Increment 5 (Phase 7 - Polish and Cross-Cutting Concerns) for feature 
 - Ensure full test suite passes (mvn clean verify) and quickstart scenarios succeed.
 - Create 1:1 atomic commits per task with format "T###: description".
 - Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #7.
+- Close issue 7, after verifying that I am the person responsible for it and that it bears the label corresponding to this specification.
 ```
-"-
+
+PR - GitHub: [feat(auth): Increment 5 - Polish and Cross-Cutting Concerns (Phase 7)- #70](https://github.com/ValentinoCarmonaS/G12---GDSI/pull/70)
+
+---
