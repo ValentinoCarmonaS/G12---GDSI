@@ -179,7 +179,7 @@ So that my active session is completely terminated and subsequent users of the s
 
 ## Assumptions
 
-- The centralized authentication service (developed under feature `001-central-auth-recovery`) generates valid session tokens containing `user_id`, `role`, and `tenant_id`.
+- The centralized authentication service (developed under feature `001-central-auth-recovery`) generates valid session tokens containing `user_id`, `role`, `tenant_id`, and `token_version`.
 - Staff accounts are provisioned and linked to their specific tenant by an Administrator through employee onboarding (`ADM-3.1.1` and `ADM-3.1.2`); staff do not select establishments during login.
 - Diner registration and diner-specific catalog views exist and are maintained by separate feature deliverables (`COM-1.1.1`, `COM-1.2.1`).
 - The internal layouts, controls, and specific features within the destination workspaces (Counter Dispatch, Kitchen KDS, Back-Office Panel) are independent deliverables; this specification governs landing on the correct workspace and continuous perimeter route protection.

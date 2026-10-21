@@ -46,6 +46,31 @@ The technical approach introduces:
 - **Principle IX (Engineering Over Convenience)**: PASS. Quality gates and test matrices are strictly maintained.
 - **Principle X (Agnostic Constitution & Specific Artifacts)**: PASS. Technical stack choices are declared strictly in specification and planning artifacts.
 
+## Inter-Feature Dependencies
+
+> **CRITICAL**: This feature depends on `001-central-auth-recovery` for all backend infrastructure.
+> Phase 2 (Foundational) of this feature MUST NOT begin until the `001-central-auth-recovery`
+> branch is merged into the shared base branch and its Flyway migrations have been applied.
+
+| Dependency | Provider | Required By | Protocol |
+|---|---|---|---|
+| `V1__create_users.sql` — `users` table with `token_version`, `role`, `status`, `tenant_id` | 001 | Phase 2 prerequisite | Verify existence. **DO NOT recreate.** |
+| `V2__create_password_reset_tokens.sql` — `password_reset_tokens` table | 001 | Phase 2 prerequisite | Verify existence. **DO NOT recreate.** |
+| `User.java` — JPA entity (all columns, including `token_version`) | 001 | T036 (`JwtAuthenticationFilter`) | Verify existence. **DO NOT recreate.** |
+| `UserRepository.java` — `findByEmail()`, `findById()` | 001 | T036, T015 | Verify existence. **DO NOT recreate.** |
+| `POST /api/v1/auth/login` endpoint — JWT issuance with `role`, `tenant_id`, `token_version` | 001 | T019 (frontend `authApi.ts`), all US1 frontend tests | 002 **consumes** this endpoint. Does not re-implement it. |
+| `JwtService.java` — `validateToken()`, `extractClaims()` | 001 | T036 (`JwtAuthenticationFilter`) | Verify existence. **DO NOT recreate.** |
+| `RateLimitingService.java` — Caffeine per-email and per-IP limiters | 001 | Referenced only — rate limiting on login is handled by 001 | No action required from 002. |
+| `SecurityConfig.java` — base `SecurityFilterChain`, BCrypt bean, stateless session policy | 001 | T037 (register `JwtAuthenticationFilter`) | 002 **extends** this config to add the filter. Does not replace it. |
+| `GlobalExceptionHandler.java` — RFC 9457 `ProblemDetail` `@RestControllerAdvice` | 001 | T007 reference | Do not create a second advice bean. Extend 001's handler if new exception types are needed. |
+
+**Coordination requirement**: `AuthService.login()` in 001 MUST atomically increment `token_version`
+on every successful login. This is required for single active session enforcement (US4, FR-013).
+This behavior is within 001's implementation scope but is a **contract requirement of 002**.
+The 002 developer must communicate this to the 001 developer before 001's tasks are implemented.
+
+---
+
 ## Project Structure
 
 ### Documentation (this feature)
@@ -73,30 +98,30 @@ easyeat/
 │       ├── main/
 │       │   ├── java/com/easyeat/
 │       │   │   ├── auth/
-│       │   │   │   ├── controller/AuthController.java
-│       │   │   │   ├── dto/LoginRequest.java
-│       │   │   │   ├── dto/LoginResponse.java
-│       │   │   │   ├── service/AuthService.java
+│       │   │   │   ├── controller/AuthController.java          # ← FROM 001 | 002 adds: POST /api/v1/auth/logout
+│       │   │   │   ├── dto/LoginRequest.java                   # ← FROM 001 | do not recreate
+│       │   │   │   ├── dto/LoginResponse.java                  # ← FROM 001 | do not recreate
+│       │   │   │   ├── service/AuthService.java                # ← FROM 001 | 002 adds: logout() method
 │       │   │   │   ├── security/
-│       │   │   │   │   ├── JwtService.java             # Generates/validates tokens and token_version
-│       │   │   │   │   ├── JwtAuthenticationFilter.java # Enforces single active session check
-│       │   │   │   │   └── RateLimitingService.java    # Caffeine rate limiters (from 001)
+│       │   │   │   │   ├── JwtService.java                    # ← FROM 001 | do not recreate
+│       │   │   │   │   ├── JwtAuthenticationFilter.java       # ★ NEW in 002 | single active session check
+│       │   │   │   │   └── RateLimitingService.java           # ← FROM 001 | do not recreate
 │       │   │   │   ├── entity/
-│       │   │   │   │   ├── User.java                   # User entity with token_version (from 001)
-│       │   │   │   │   └── PasswordResetToken.java     # From 001
+│       │   │   │   │   ├── User.java                          # ← FROM 001 | do not recreate
+│       │   │   │   │   └── PasswordResetToken.java            # ← FROM 001 | do not recreate
 │       │   │   │   └── repository/
-│       │   │   │       └── UserRepository.java         # findByEmail, existsByEmail (from 001)
+│       │   │   │       └── UserRepository.java                # ← FROM 001 | do not recreate
 │       │   │   ├── config/
-│       │   │   │   ├── SecurityConfig.java         # SecurityFilterChain configuration
-│       │   │   │   └── AppConfig.java              # Cache beans & general config
+│       │   │   │   ├── SecurityConfig.java                    # ← FROM 001 | 002 extends: registers JwtAuthenticationFilter
+│       │   │   │   └── AppConfig.java                         # ← FROM 001 | do not recreate
 │       │   │   └── exception/
-│       │   │       └── GlobalExceptionHandler.java # RFC 9457 ProblemDetail handler
+│       │   │       └── GlobalExceptionHandler.java            # ← FROM 001 | extend only if new exception types needed
 │       │   └── resources/
-│       │       ├── application.yml
-│       │       ├── application-dev.yml
+│       │       ├── application.yml                            # ← FROM 001 | do not recreate
+│       │       ├── application-dev.yml                        # ← FROM 001 | do not recreate
 │       │       └── db/migration/
-│       │           ├── V1__create_users.sql            # Base users schema with token_version (from 001)
-│       │           └── V2__create_password_reset_tokens.sql # From 001
+│       │           ├── V1__create_users.sql                   # ← FROM 001 | DO NOT recreate — Flyway conflict
+│       │           └── V2__create_password_reset_tokens.sql   # ← FROM 001 | DO NOT recreate — Flyway conflict
 │       └── test/java/com/easyeat/
 │           ├── auth/
 │           │   ├── controller/AuthControllerTest.java
