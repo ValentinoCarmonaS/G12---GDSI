@@ -379,3 +379,163 @@ backend/
     └── integration/ (TestcontainersPostgresTest, AuthFlowIntegrationTest, ConcurrencyTokenTest, RateLimitingTest)
 
 "-
+
+---
+
+## 5. speckit-tasks
+**Command**: `/speckit-tasks`
+**Sprint:** 1
+**Scheduled Activity:** Servicio Central de Autenticación JWT y Recuperación de Claves
+
+**Sample Prompt**:
+-"
+/speckit-tasks
+Generate atomic, dependency-ordered tasks for the Central Authentication Service and Password Recovery feature based on the approved design artifacts in specs/001-central-auth-recovery/ (spec.md, plan.md, data-model.md, quickstart.md, and contracts/openapi.yaml).
+
+Target repository path: All implementation and test files live under `easyeat/backend/`.
+
+Enforce strict TDD ordering (write failing test first -> implement minimal code -> verify with Testcontainers/MockMvc) within each User Story phase.
+
+Ensure the task breakdown follows these exact phase requirements:
+
+1. Phase 1: Setup (Shared Infrastructure)
+   - Initialize Maven single-project configuration (`easyeat/backend/pom.xml`) with Java 21, Spring Boot 3.3.4, Spring Security 6, JJWT 0.12.6, Caffeine, Flyway 10, Testcontainers PostgreSQL, and Spring Mail.
+   - Configure local dev containers (`easyeat/backend/docker-compose.yml`) with PostgreSQL 16 and Mailpit.
+   - Set up application profiles (`application.yml`, `application-dev.yml`, `application-test.yml`).
+
+2. Phase 2: Foundational (Blocking Prerequisites)
+   - Create Flyway database migrations `V1__create_users.sql` and `V2__create_password_reset_tokens.sql` with checks for lowercase email and role/tenant constraints.
+   - Configure `ClockConfig` bean for deterministic time-based testing.
+   - Implement centralized RFC 9457 error handling in `GlobalExceptionHandler.java`.
+   - Implement base `User` entity and `UserRepository` with `findByEmail()` and `existsByEmail()`.
+   - Configure baseline `SecurityConfig.java` with `BCryptPasswordEncoder` (work factor 12) and stateless session policy.
+
+3. Phase 3: User Story 1 - Comensal Registration (Priority: P1) [US1]
+   - Test-first: Unit test for `@MaxBytes(72)` custom validator and registration DTO constraints.
+   - Test-first: MockMvc WebMvc contract tests for `POST /api/v1/auth/register` (201 Created, 400 Bad Request, 409 Conflict).
+   - Implementation: `@MaxBytes` validator, `RegisterRequest` DTO, and `AuthService.register()` enforcing normalized email and password hashing.
+   - Implementation: `AuthController.register()` endpoint.
+   - Integration: Testcontainers integration test verifying end-to-end comensal persistence and duplicate email conflict.
+
+4. Phase 4: User Story 2 - Unified Login with JWT (Priority: P1) [US2]
+   - Test-first: Unit tests for `JwtService` (token generation, claims extraction: `sub`, `role`, `tenant_id`, `token_version`, expiration, and tampering).
+   - Test-first: Unit tests for `RateLimitingService` (per-email 5-attempt lockout, per-IP limit, non-existent email counting).
+   - Test-first: MockMvc tests for `POST /api/v1/auth/login` (200 OK, 401 Unauthorized with timing mitigation, 403 Forbidden for SUSPENDED accounts).
+   - Implementation: `JwtService`, `RateLimitingService`, and `AuthService.login()` with dynamic `DUMMY_HASH` comparison on missing users.
+   - Implementation: `JwtAuthenticationFilter` verifying `token_version` match and `ACTIVE` account status.
+   - Implementation: `AuthController.login()` endpoint.
+   - Integration: Testcontainers integration tests verifying login for all 4 roles, account suspension blocking, and rate-limiting lockout.
+
+5. Phase 5: User Story 3 - Password Recovery for Comensales (Priority: P2) [US3]
+   - Test-first: Unit tests for `PasswordResetService` verifying 15-minute token generation, SHA-256 hashing, and cooldown rate limiting.
+   - Test-first: MockMvc tests for `POST /api/v1/auth/password-reset/request` (always 200 OK generic) and `POST /api/v1/auth/password-reset/confirm` (200 OK, 400 Bad Request).
+   - Implementation: `PasswordResetToken` entity, repository, and atomic SQL consumption update.
+   - Implementation: `EmailService` wrapping `JavaMailSender` with async reset email dispatch.
+   - Implementation: `PasswordResetService` and `AuthController` recovery endpoints (`request` and `confirm`), incrementing `token_version` on success.
+   - Integration: Testcontainers integration test for full recovery cycle and concurrency test proving single-use token consumption.
+
+6. Phase 6: User Story 4 - Password Recovery for Administrators (Priority: P2) [US4]
+   - Test-first: Integration test verifying admin password recovery using seeded tenant data, confirming token invalidation across active admin sessions.
+   - Verification: End-to-end test confirming that a reset admin account regains access to its tenant environment while prior admin JWTs are rejected.
+
+7. Phase 7: Polish and Cross-Cutting Concerns
+   - Contract verification test asserting live endpoints match `specs/001-central-auth-recovery/contracts/openapi.yaml`.
+   - Implement `SecurityAuditLogger` for structured SLF4J JSON security event logging.
+   - Complete quickstart validation scenarios from `quickstart.md`.
+
+Format Requirements:
+- Strictly format every task as `- [ ] [TaskID] [P?] [Story?] Description with exact file path`.
+- Sequential task IDs: T001, T002, T003...
+- Use `[P]` exclusively on parallelizable tasks touching independent files.
+- Use `[US1]`, `[US2]`, `[US3]`, `[US4]` labels only inside their respective User Story phases.
+"-
+
+---
+
+## 6. speckit-implement
+**Command**: `/speckit-implement`
+
+-"
+## Incremento 1: Setup, Fundacionales y Registro de Comensales (MVP)
+
+**Alcance:** Tareas `T001` a `T020` (Fase 1: Setup, Fase 2: Fundacionales, Fase 3: User Story 1).  
+**GitHub Issues:** [#1](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/1), [#2](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/2), [#3](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/3).
+
+```text
+/speckit-implement
+Implement Increment 1 (MVP: Setup, Foundational, and User Story 1 - Comensal Registration) for feature `001-central-auth-recovery`:
+- Checkout dedicated branch feature/001/mvp-registration from 001-central-auth-recovery.
+- Execute tasks T001 through T020 strictly adhering to specs/001-central-auth-recovery/tasks.md.
+- Follow strict TDD ordering (write failing tests before implementation in Phase 3).
+- Create 1:1 atomic commits per task with format "T###: description".
+- Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issues #1, #2, and #3.
+```
+
+---
+
+## Incremento 2: Login Unificado con JWT
+
+**Alcance:** Tareas `T021` a `T031` (Fase 4: User Story 2).  
+**GitHub Issue:** [#4](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/4).
+
+```text
+/speckit-implement
+Implement Increment 2 (User Story 2 - Unified Login with JWT) for feature `001-central-auth-recovery`:
+- Checkout dedicated branch feature/001/login-jwt from 001-central-auth-recovery.
+- Execute tasks T021 through T031 strictly adhering to specs/001-central-auth-recovery/tasks.md.
+- Follow strict TDD ordering (write failing tests before implementation).
+- Create 1:1 atomic commits per task with format "T###: description".
+- Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #4.
+```
+
+---
+
+## Incremento 3: Recuperación de Contraseña para Comensales
+
+**Alcance:** Tareas `T032` a `T041` (Fase 5: User Story 3).  
+**GitHub Issue:** [#5](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/5).
+
+```text
+/speckit-implement
+Implement Increment 3 (User Story 3 - Password Recovery for Comensales) for feature `001-central-auth-recovery`:
+- Checkout dedicated branch feature/001/comensal-recovery from 001-central-auth-recovery.
+- Execute tasks T032 through T041 strictly adhering to specs/001-central-auth-recovery/tasks.md.
+- Follow strict TDD ordering (write failing tests before implementation).
+- Create 1:1 atomic commits per task with format "T###: description".
+- Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #5.
+```
+
+---
+
+## Incremento 4: Recuperación de Contraseña para Administradores
+
+**Alcance:** Tareas `T042` a `T044` (Fase 6: User Story 4).  
+**GitHub Issue:** [#6](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/6).
+
+```text
+/speckit-implement
+Implement Increment 4 (User Story 4 - Password Recovery for Administrators) for feature `001-central-auth-recovery`:
+- Checkout dedicated branch feature/001/admin-recovery from 001-central-auth-recovery.
+- Execute tasks T042 through T044 strictly adhering to specs/001-central-auth-recovery/tasks.md.
+- Follow strict TDD ordering (write failing tests before implementation and verification).
+- Create 1:1 atomic commits per task with format "T###: description".
+- Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #6.
+```
+
+---
+
+## Incremento 5: Pulido y Aspectos Transversales
+
+**Alcance:** Tareas `T045` a `T048` (Fase 7: Polish & Cross-Cutting Concerns).  
+**GitHub Issue:** [#7](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/7).
+
+```text
+/speckit-implement
+Implement Increment 5 (Phase 7 - Polish and Cross-Cutting Concerns) for feature `001-central-auth-recovery`:
+- Checkout dedicated branch feature/001/polish-audit from 001-central-auth-recovery.
+- Execute tasks T045 through T048 strictly adhering to specs/001-central-auth-recovery/tasks.md.
+- Ensure full test suite passes (mvn clean verify) and quickstart scenarios succeed.
+- Create 1:1 atomic commits per task with format "T###: description".
+- Push the branch and open a GitHub Pull Request to 001-central-auth-recovery referencing Issue #7.
+```
+"-
