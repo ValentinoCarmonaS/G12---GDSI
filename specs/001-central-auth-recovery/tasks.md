@@ -57,7 +57,7 @@
 - [X] T017 [P] [US1] Implement registration DTOs `RegisterRequest.java` and `UserSummaryResponse.java` in `easyeat/backend/src/main/java/com/easyeat/auth/dto/RegisterRequest.java`.
 - [X] T018 [US1] Implement registration business logic in `AuthService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java` normalizing email (`toLowerCase().trim()`), checking uniqueness, and hashing password with BCrypt cost 12.
 - [X] T019 [US1] Implement `register` endpoint in `AuthController.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java` handling `POST /api/v1/auth/register` and returning 201 Created with `UserSummaryResponse`.
-- [ ] T020 [US1] Write and run Testcontainers integration test in `easyeat/backend/src/test/java/com/easyeat/auth/integration/RegistrationIntegrationTest.java` verifying end-to-end comensal persistence, lowercase DB constraint adherence, and duplicate email rejection.
+- [X] T020 [US1] Write and run Testcontainers integration test in `easyeat/backend/src/test/java/com/easyeat/auth/integration/RegistrationIntegrationTest.java` verifying end-to-end comensal persistence, lowercase DB constraint adherence, and duplicate email rejection.
 
 **Checkpoint**: User Story 1 is fully functional and testable independently (MVP deliverable).
 
