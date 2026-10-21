@@ -150,7 +150,7 @@
 
 ### Backend Implementation for User Story 5 (NEW in 002)
 
-- [ ] T039 [US5] Implement `logout` method in `AuthService` executing atomic `token_version` incrementation for the authenticated user in `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java`
+- [x] T039 [US5] Implement `logout` method in `AuthService` executing atomic `token_version` incrementation for the authenticated user in `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java`
 - [ ] T040 [US5] Add `POST /api/v1/auth/logout` endpoint in `AuthController` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java`
 
 ### Frontend Implementation for User Story 5

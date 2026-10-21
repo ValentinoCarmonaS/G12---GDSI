@@ -115,7 +115,7 @@ class LoginIntegrationTest {
         Claims claims = jwtService.extractAllClaims(tokenResponse.accessToken());
         assertThat(claims.getSubject()).isEqualTo(user.getId().toString());
         assertThat(claims.get("role", String.class)).isEqualTo(role.name());
-        assertThat(claims.get("token_version", Integer.class)).isEqualTo(0);
+        assertThat(claims.get("token_version", Integer.class)).isEqualTo(1);
 
         if (tenantId != null) {
             assertThat(claims.get("tenant_id", String.class)).isEqualTo(tenantId.toString());
@@ -237,6 +237,7 @@ class LoginIntegrationTest {
                 .andExpect(status().isNotFound());
 
         // 3. Increment token_version in database (simulates logout or password reset session revocation)
+        user = userRepository.findById(user.getId()).orElseThrow();
         user.incrementTokenVersion();
         userRepository.save(user);
 
