@@ -117,7 +117,7 @@
 
 ### Tests for User Story 5 (TDD - Write First) ⚠️
 
-- [ ] T037 [P] [US5] Web and service contract test `ChefCatalogControllerTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/controller/ChefCatalogControllerTest.java` verifying 20-item pagination, alphabetical A-Z sorting, category filtering, name search, zero-stock inclusion, discontinued item exclusion, and financial cost suppression
+- [x] T037 [P] [US5] Web and service contract test `ChefCatalogControllerTest` in `easyeat/backend/src/test/java/com/easyeat/inventory/controller/ChefCatalogControllerTest.java` verifying 20-item pagination, alphabetical A-Z sorting, category filtering, name search, zero-stock inclusion, discontinued item exclusion, and financial cost suppression
 
 ### Implementation for User Story 5
 
