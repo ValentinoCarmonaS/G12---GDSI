@@ -172,10 +172,10 @@ class AdminPasswordRecoveryIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Password updated successfully. All previous sessions have been invalidated."));
 
-        // 4. Verify previous admin session token is immediately invalidated (403 Forbidden)
+        // 4. Verify previous admin session token is immediately invalidated (401 Unauthorized due to token_version mismatch)
         mockMvc.perform(get("/api/v1/admin-protected")
                         .header("Authorization", "Bearer " + oldJwt))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         // 5. Verify old password is rejected
         mockMvc.perform(post("/api/v1/auth/login")
