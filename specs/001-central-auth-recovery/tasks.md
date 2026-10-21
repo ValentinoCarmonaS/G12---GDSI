@@ -110,7 +110,7 @@
 - [X] T038 [US3] Implement `PasswordResetService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/PasswordResetService.java` with anti-enumeration response, atomic consumption, password update, and `token_version` increment.
 - [X] T039 [US3] Implement recovery endpoints in `AuthController.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java` for `POST /api/v1/auth/password-reset/request` and `POST /api/v1/auth/password-reset/confirm`.
 - [X] T040 [US3] Write and run Testcontainers integration tests in `easyeat/backend/src/test/java/com/easyeat/auth/integration/PasswordRecoveryIntegrationTest.java` verifying full reset lifecycle, double-consumption rejection, cooldown enforcement, and prior session token revocation.
-- [ ] T041 [US3] Write concurrency test in `easyeat/backend/src/test/java/com/easyeat/auth/integration/ConcurrentResetConsumptionTest.java` executing concurrent confirm requests to prove atomic single-use token consumption under race conditions.
+- [X] T041 [US3] Write concurrency test in `easyeat/backend/src/test/java/com/easyeat/auth/integration/ConcurrentResetConsumptionTest.java` executing concurrent confirm requests to prove atomic single-use token consumption under race conditions.
 
 **Checkpoint**: User Stories 1, 2, and 3 are functional and independently testable.
 
