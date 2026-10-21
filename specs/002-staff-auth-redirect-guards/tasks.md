@@ -101,12 +101,12 @@
 
 ### Tests for User Story 3 (TDD) ⚠️
 
-- [ ] T028 [P] [US3] Component tests for `RoleRouteGuard` (unauthenticated redirect with `state.from`, cross-role silent redirect to assigned workspace, `replace: true` history replacement) in `easyeat/frontend/tests/router/RoleRouteGuard.test.tsx`
+- [x] T028 [P] [US3] Component tests for `RoleRouteGuard` (unauthenticated redirect with `state.from`, cross-role silent redirect to assigned workspace, `replace: true` history replacement) in `easyeat/frontend/tests/router/RoleRouteGuard.test.tsx`
 
 ### Implementation for User Story 3
 
-- [ ] T029 [US3] Implement `RoleRouteGuard` component with `allowedRoles` check, `state.from` preservation, and silent redirect in `easyeat/frontend/src/router/RoleRouteGuard.tsx`
-- [ ] T030 [US3] Assemble full declarative route tree with `RoleRouteGuard` wrappers in `easyeat/frontend/src/router/AppRoutes.tsx`
+- [x] T029 [US3] Implement `RoleRouteGuard` component with `allowedRoles` check, `state.from` preservation, and silent redirect in `easyeat/frontend/src/router/RoleRouteGuard.tsx`
+- [x] T030 [US3] Assemble full declarative route tree with `RoleRouteGuard` wrappers in `easyeat/frontend/src/router/AppRoutes.tsx`
 
 **Checkpoint**: User Story 3 functional — perimeter security actively isolates `/counter`, `/kds`, `/admin`, and `/catalog` against unauthorized direct navigation and history tampering.
 
