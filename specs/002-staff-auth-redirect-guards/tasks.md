@@ -126,7 +126,7 @@
 ### Backend Implementation for User Story 4 (NEW in 002)
 
 - [x] T033 [US4] Implement `JwtAuthenticationFilter` verifying token signature, expiration, and database `token_version` match in `easyeat/backend/src/main/java/com/easyeat/auth/security/JwtAuthenticationFilter.java`
-- [ ] T034 [US4] Register `JwtAuthenticationFilter` before `UsernamePasswordAuthenticationFilter` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [x] T034 [US4] Register `JwtAuthenticationFilter` before `UsernamePasswordAuthenticationFilter` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
 
 ### Frontend Implementation for User Story 4
 
