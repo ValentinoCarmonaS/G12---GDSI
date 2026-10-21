@@ -240,9 +240,12 @@ class LoginIntegrationTest {
         user.incrementTokenVersion();
         userRepository.save(user);
 
-        // 4. Request with old token (token_version mismatch) -> Filter does not set auth -> Spring Security blocks with 403 Forbidden
+        // 4. Request with old token (token_version mismatch) -> Filter rejects with HTTP 401 Unauthorized ProblemDetail
         mockMvc.perform(get("/api/v1/nonexistent-protected")
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("Content-Type", "application/problem+json;charset=UTF-8"))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.title").value("Unauthorized"));
     }
 }
