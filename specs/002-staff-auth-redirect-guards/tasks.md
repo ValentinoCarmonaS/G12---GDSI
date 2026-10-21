@@ -145,7 +145,7 @@
 
 ### Tests for User Story 5 (TDD - Backend First) ⚠️
 
-- [ ] T037 [P] [US5] WebMvc test for `POST /api/v1/auth/logout` validating atomic `token_version` incrementation and HTTP 204 No Content in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerLogoutTest.java`
+- [x] T037 [P] [US5] WebMvc test for `POST /api/v1/auth/logout` validating atomic `token_version` incrementation and HTTP 204 No Content in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerLogoutTest.java`
 - [x] T038 [P] [US5] Frontend logout interaction test verifying API call, storage purge, and navigation with `replace: true` in `easyeat/frontend/tests/session/LogoutFlow.test.tsx`
 
 ### Backend Implementation for User Story 5 (NEW in 002)
