@@ -4,6 +4,9 @@ import com.easyeat.auth.dto.RegisterRequest;
 import com.easyeat.auth.dto.UserSummaryResponse;
 import com.easyeat.auth.exception.EmailAlreadyRegisteredException;
 import com.easyeat.auth.service.AuthService;
+import com.easyeat.auth.repository.UserRepository;
+import com.easyeat.auth.security.JwtAuthenticationFilter;
+import com.easyeat.auth.security.JwtService;
 import com.easyeat.config.SecurityConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -21,7 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, GlobalExceptionHandler.class, JwtAuthenticationFilter.class})
 class AuthControllerRegistrationTest {
 
     @Autowired
@@ -32,6 +35,12 @@ class AuthControllerRegistrationTest {
 
     @MockBean
     private AuthService authService;
+
+    @MockBean
+    private JwtService jwtService;
+
+    @MockBean
+    private UserRepository userRepository;
 
     @Test
     @DisplayName("POST /api/v1/auth/register - 201 Created on valid comensal registration")
