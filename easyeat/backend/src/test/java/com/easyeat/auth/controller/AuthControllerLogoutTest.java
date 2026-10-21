@@ -25,6 +25,7 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
@@ -71,5 +72,23 @@ class AuthControllerLogoutTest {
     void shouldReturn401WhenUnauthenticated() throws Exception {
         mockMvc.perform(post("/api/v1/auth/logout"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Cache-Control header contains no-store to prevent caching on auth endpoints")
+    void shouldIncludeCacheControlNoStoreHeader() throws Exception {
+        UUID userId = UUID.randomUUID();
+        User user = new User("chef@restaurant.com", "hash", UserRole.CHEF);
+        user.setId(userId);
+        var auth = new UsernamePasswordAuthenticationToken(
+                user,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_CHEF"))
+        );
+
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(status().isNoContent())
+                .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")));
     }
 }

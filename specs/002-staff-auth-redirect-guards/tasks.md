@@ -168,7 +168,7 @@
 **Purpose**: End-to-end scenario verification, cache headers, and final quality checks across both monorepo modules.
 
 - [ ] T044 [P] Execute end-to-end manual validation scenarios following quickstart guide in `specs/002-staff-auth-redirect-guards/quickstart.md`
-- [ ] T045 Verify `Cache-Control: no-store` headers on auth endpoints to prevent browser caching of protected views in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [x] T045 Verify `Cache-Control: no-store` headers on auth endpoints to prevent browser caching of protected views in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
 - [ ] T046 [P] Run linter and formatting checks across backend (`mvn checkstyle:check`) and frontend (`npm run lint`) to ensure zero warnings
 
 ---
