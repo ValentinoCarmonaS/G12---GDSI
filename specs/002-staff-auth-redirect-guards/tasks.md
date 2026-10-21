@@ -21,8 +21,8 @@
 **Purpose**: Initialize frontend application and verify backend build configuration from `001-central-auth-recovery`.
 
 - [x] T001 Initialize frontend React 18, Vite 5, Tailwind CSS, and React Router v6 setup in `easyeat/frontend/package.json` and `easyeat/frontend/vite.config.ts`
-- [ ] T002 [P] Verify or extend backend Maven build configuration from 001 to ensure `jjwt` (api, impl, jackson) and Spring Security dependencies exist in `easyeat/backend/pom.xml`
-- [ ] T003 [P] Verify or configure backend environment profiles (`jwt.secret`, `jwt.expiration`) for dev and test in `easyeat/backend/src/main/resources/application.yml` and `easyeat/backend/src/main/resources/application-dev.yml`
+- [x] T002 [P] Verify or extend backend Maven build configuration from 001 to ensure `jjwt` (api, impl, jackson) and Spring Security dependencies exist in `easyeat/backend/pom.xml`
+- [x] T003 [P] Verify or configure backend environment profiles (`jwt.secret`, `jwt.expiration`) for dev and test in `easyeat/backend/src/main/resources/application.yml` and `easyeat/backend/src/main/resources/application-dev.yml`
 
 ---
 
@@ -32,12 +32,12 @@
 
 **⚠️ CRITICAL**: Merge of branch `001-central-auth-recovery` is a mandatory gate before backend tasks in this phase and subsequent stories can execute. Frontend work in Phase 3 can proceed in parallel against mocked contracts.
 
-- [ ] T004 Merge branch `001-central-auth-recovery` into `002-staff-auth-redirect-guards` to incorporate backend authentication baseline
-- [ ] T005 [P] Verify Flyway migration `V1__create_users.sql` from 001 defines `users` table with `role`, `status`, `tenant_id`, and `token_version` in `easyeat/backend/src/main/resources/db/migration/V1__create_users.sql`
-- [ ] T006 [P] Verify JPA `User` entity from 001 exposes `tokenVersion`, `status`, `role`, and `tenantId` fields in `easyeat/backend/src/main/java/com/easyeat/auth/entity/User.java`
-- [ ] T007 [P] Verify `UserRepository` from 001 provides `findByEmail` lookup in `easyeat/backend/src/main/java/com/easyeat/auth/repository/UserRepository.java`
-- [ ] T008 [P] Verify base `SecurityConfig` from 001 configures stateless session management and BCrypt password encoder in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
-- [ ] T009 [P] Verify RFC 9457 ProblemDetail `GlobalExceptionHandler` from 001 handles authentication exceptions without user enumeration in `easyeat/backend/src/main/java/com/easyeat/exception/GlobalExceptionHandler.java`
+- [x] T004 Merge branch `001-central-auth-recovery` into `002-staff-auth-redirect-guards` to incorporate backend authentication baseline
+- [x] T005 [P] Verify Flyway migration `V1__create_users.sql` from 001 defines `users` table with `role`, `status`, `tenant_id`, and `token_version` in `easyeat/backend/src/main/resources/db/migration/V1__create_users.sql`
+- [x] T006 [P] Verify JPA `User` entity from 001 exposes `tokenVersion`, `status`, `role`, and `tenantId` fields in `easyeat/backend/src/main/java/com/easyeat/auth/entity/User.java`
+- [x] T007 [P] Verify `UserRepository` from 001 provides `findByEmail` lookup in `easyeat/backend/src/main/java/com/easyeat/auth/repository/UserRepository.java`
+- [x] T008 [P] Verify base `SecurityConfig` from 001 configures stateless session management and BCrypt password encoder in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [x] T009 [P] Verify RFC 9457 ProblemDetail `GlobalExceptionHandler` from 001 handles authentication exceptions without user enumeration in `easyeat/backend/src/main/java/com/easyeat/exception/GlobalExceptionHandler.java`
 
 **Checkpoint**: Baseline verified — data layer, entity contracts, and base security configuration from 001 confirmed ready for consumption.
 
@@ -56,7 +56,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Verify or consume `LoginRequest.java` and `LoginResponse.java` DTOs from 001 in `easyeat/backend/src/main/java/com/easyeat/auth/dto/LoginRequest.java` and `LoginResponse.java`
+- [x] T012 [P] [US1] Verify or consume `LoginRequest.java` and `LoginResponse.java` DTOs from 001 in `easyeat/backend/src/main/java/com/easyeat/auth/dto/LoginRequest.java` and `LoginResponse.java`
 - [x] T013 [US1] Create Axios HTTP client instance with base URL, standard JSON headers, and credentials configuration in `easyeat/frontend/src/api/apiClient.ts`
 - [x] T014 [US1] Create auth API service method invoking `POST /api/v1/auth/login` with typed request and response in `easyeat/frontend/src/api/authApi.ts`
 - [x] T015 [US1] Implement `LoginForm` component with client-side validation, trim/lowercase transformation, and submission debouncing in `easyeat/frontend/src/components/auth/LoginForm.tsx`
