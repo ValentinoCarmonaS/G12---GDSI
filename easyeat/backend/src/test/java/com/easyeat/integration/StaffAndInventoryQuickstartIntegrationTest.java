@@ -52,6 +52,7 @@ class StaffAndInventoryQuickstartIntegrationTest {
 
     private static final Logger log = LoggerFactory.getLogger(StaffAndInventoryQuickstartIntegrationTest.class);
 
+    @SuppressWarnings("resource")
     static PostgreSQLContainer<?> postgres;
 
     static {
@@ -93,9 +94,6 @@ class StaffAndInventoryQuickstartIntegrationTest {
 
     @Autowired
     private IngredientRepository ingredientRepository;
-
-    @Autowired
-    private StockAuditEntryRepository stockAuditEntryRepository;
 
     @Autowired
     private StockAdjustmentService stockAdjustmentService;

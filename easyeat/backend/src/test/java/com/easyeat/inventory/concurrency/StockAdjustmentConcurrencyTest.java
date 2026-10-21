@@ -42,6 +42,7 @@ class StockAdjustmentConcurrencyTest {
 
     private static final Logger log = LoggerFactory.getLogger(StockAdjustmentConcurrencyTest.class);
 
+    @SuppressWarnings("resource")
     static PostgreSQLContainer<?> postgres;
 
     static {

@@ -49,9 +49,9 @@ public interface IngredientRepository extends JpaRepository<Ingredient, UUID> {
             "AND i.status = com.easyeat.inventory.dto.IngredientStatus.ACTIVE " +
             "AND (:category IS NULL OR i.category = :category) " +
             "AND (CAST(:search AS string) IS NULL OR LOWER(i.name) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))")
-    org.springframework.data.domain.Page<Ingredient> findChefCatalog(
+    Page<Ingredient> findChefCatalog(
             @Param("tenantId") UUID tenantId,
             @Param("category") IngredientCategory category,
             @Param("search") String search,
-            org.springframework.data.domain.Pageable pageable);
+            Pageable pageable);
 }
