@@ -16,6 +16,11 @@ public class OrphanedAdminException extends RuntimeException {
         this.tenantId = tenantId;
     }
 
+    public OrphanedAdminException(UUID tenantId, String message) {
+        super(message);
+        this.tenantId = tenantId;
+    }
+
     public UUID getTenantId() {
         return tenantId;
     }
