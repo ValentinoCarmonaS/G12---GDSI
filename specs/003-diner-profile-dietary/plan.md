@@ -1,10 +1,10 @@
 # Implementation Plan: Diner Profile Management, Dietary Restrictions & Automated Catalog Filtering
 
-**Branch**: `003-diner-profile-dietary` | **Date**: 2026-10-17 | **Spec**: [spec.md](./spec.md)
+**Branch**: `003-diner-profile-dietary` | **Date**: 2026-10-21 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `specs/003-diner-profile-dietary/spec.md` and product backlog (COM-1.4.1, COM-1.4.3, COM-4.2.1).
+**Input**: Feature specification from `specs/003-diner-profile-dietary/spec.md`, product backlog (COM-1.4.1, COM-1.4.3, COM-4.2.1), and architectural alignment with baseline iterations 001 (`central-auth-recovery`), 002 (`staff-auth-redirect-guards`), and 004 (`staff-mgmt-rbac-inventory`).
 
-**Note**: All design decisions grilled, tested, and resolved via `/grill-me` interactive design session prior to artifact creation.
+**Note**: All design decisions, integration points, and trade-offs grilled, verified against the codebase, and approved via `/grill-me` interactive design sessions (Decisions D-001 through D-012).
 
 ---
 
@@ -13,9 +13,19 @@
 Implement diner profile editing, dietary preference and allergen management, and their automatic application to establishment menu catalogs for the EasyEat multi-tenant platform (Sprint 1).
 
 Key capabilities delivered:
-- **Diner Personal Data Management (COM-1.4.1)**: First name, last name, phone number editing with strict format validation, and an asynchronous 24-hour verification token workflow for email changes with session revocation (`token_version`).
+- **Diner Personal Data Management (COM-1.4.1)**: First name, last name, phone number editing with strict format validation, independent from the existing `full_name` column in `users`. Asynchronous 24-hour verification token workflow for email changes with session revocation via `token_version`.
 - **Dietary Restrictions & Allergens Configuration (COM-1.4.3)**: Standardized platform taxonomy (Lifestyles: Celiac, Vegan, Vegetarian; Allergens: Dairy, Peanuts, Tree Nuts, Eggs, Fish, Shellfish, Soy, Wheat) with server-side persistence and live cart re-evaluation.
-- **Automated Catalog Filtering & Browsing (COM-4.2.1)**: Automated default injection of dietary profile filters using strict conjunction (AND logic), pre-computed compliance in the backend (`is_compliant`, `conflicting_restrictions`), an ephemeral session master toggle (ON/OFF) with 0ms perceived latency, empty state handling, and mandatory risk consent at checkout.
+- **Automated Catalog Filtering & Browsing (COM-4.2.1)**: Default injection of dietary profile filters using strict conjunction (AND logic), pre-computed compliance in backend (`is_compliant`, `conflicting_restrictions`), ephemeral session master toggle (ON/OFF) with 0ms perceived latency, empty state handling, public guest browsing with registration call-to-action (FR-026), and mandatory risk consent at checkout.
+
+---
+
+## Baseline Integration & Alignment
+
+| Baseline Iteration | Integration Points & Shared Contracts | Resolution in Feature 003 |
+|---|---|---|
+| **001 (`central-auth-recovery`)** | • `users` table baseline schema (`V1__create_users.sql`).<br>• JWT issuance with claims (`user_id`, `role`, `tenant_id`, `token_version`).<br>• Password recovery and BCrypt hashing conventions. | Inherits `users` table; extends it via Flyway migration `V5`. Uses `token_version` to invalidate sessions upon email change. |
+| **002 (`staff-auth-redirect-guards`)** | • Single active session enforcement in `JwtAuthenticationFilter` via `token_version`.<br>• `GET /api/v1/auth/me` session check.<br>• Frontend routing (`AppRoutes.tsx`, `RoleRouteGuard.tsx`, `WorkspaceLayout.tsx`).<br>• Role redirect to `/catalog` for `COMENSAL`. | • Increments `token_version` on email confirmation to trigger 002's filter rejection (HTTP 401).<br>• Adapts `SecurityConfig` and `AppRoutes.tsx` to permit unauthenticated guest browsing on `/catalog/*` (FR-026).<br>• Adds "Mi perfil" link in `WorkspaceLayout` for `COMENSAL`. |
+| **004 (`staff-mgmt-rbac-inventory`)** | • Added `V3__extend_users_staff.sql` (`full_name`, `must_change_password`, expanded role/status CHECKs).<br>• Added `V4__create_ingredients_and_stock_audit.sql`.<br>• Bounded-context repository pattern (`StaffUserRepository`).<br>• Multi-tenant scoping via `TenantContextFilter` & `TenantContextHolder`. | • Migration sequence numbered `V5__extend_users_profile_and_dietary.sql`.<br>• `first_name` and `last_name` kept independent from `full_name`.<br>• Creates `ProfileUserRepository` in `com.easyeat.profile.repository` following the 004 repository isolation pattern.<br>• Respects `tenant_id IS NULL` for diners while scoping catalog queries to establishment path `{tenantId}`. |
 
 ---
 
@@ -24,29 +34,32 @@ Key capabilities delivered:
 **Language/Version**: Java 21 (LTS) & TypeScript 5.x / React 18+
 
 **Primary Dependencies**:
-- Backend:
-  - `spring-boot-starter-web` — REST controllers, Jackson JSON, embedded Tomcat
-  - `spring-boot-starter-security` — Spring Security 6.3.x stateless filter chain
+- Backend (`easyeat/backend`):
+  - `spring-boot-starter-web` (Spring Boot 3.3.4) — REST controllers, Jackson JSON, embedded Tomcat
+  - `spring-boot-starter-security` — Spring Security stateless filter chain, `@AuthenticationPrincipal User user`
   - `spring-boot-starter-data-jpa` — Hibernate ORM, repository abstractions
   - `spring-boot-starter-validation` — Jakarta Bean Validation (`@Valid`, regex patterns)
   - `spring-boot-starter-mail` — Transactional email dispatch for verification links
   - `io.jsonwebtoken:jjwt-api:0.12.6` — Stateless JWT extraction and validation
   - `org.flywaydb:flyway-core` + `flyway-database-postgresql` — Schema migration management
-- Frontend:
-  - React 18+ with TypeScript
-  - Modular hooks and Context API for ephemeral state management
+- Frontend (`easyeat/frontend`):
+  - React 18+ with TypeScript (Vite bundler)
+  - React Router DOM 6.x
+  - Axios HTTP client with interceptors
+  - Context API for ephemeral toggle and cart state management
+  - Tailwind CSS for responsive UI
 
-**Storage**: PostgreSQL 16+ (relational storage); Flyway migration `V3__extend_users_profile_and_dietary.sql`
+**Storage**: PostgreSQL 16+ (relational storage); Flyway migration `V5__extend_users_profile_and_dietary.sql`
 
-**Testing**:
-- JUnit 5, Mockito, AssertJ (unit tests)
-- Spring Security Test (`MockMvc`) for controller contract testing
+**Testing Strategy**:
+- JUnit 5, Mockito, AssertJ (unit tests for services, validators, and conjunction engine)
+- Spring Security Test (`MockMvc`, `@WithMockUser`) for controller contract testing
 - Testcontainers (PostgreSQL 16) for repository and Flyway migration verification
-- React Testing Library + Jest for frontend component state and toggle tests
+- React Testing Library + Jest for frontend components, toggle behavior, and route guards
 
 **Target Platform**: Linux / Docker container (production); local environment (development)
 
-**Project Type**: Multi-tenant SaaS web application (Spring Boot backend + React frontend)
+**Project Type**: Multi-tenant web application within `easyeat/` monorepo (`easyeat/backend/` and `easyeat/frontend/`)
 
 **Performance Goals**:
 - Profile retrieval / update p95 ≤ 150ms
@@ -54,12 +67,12 @@ Key capabilities delivered:
 - Frontend catalog master toggle flip: 0ms perceived latency (compliance evaluated server-side upfront)
 
 **Constraints**:
-- Strict dual validation: client-side checks backed by server-side validation and database CHECK constraints
+- Dual validation: client-side checks backed by server-side Jakarta Bean Validation and database CHECK constraints
 - No optimistic local-only state on dietary changes (explicit error notification on failure)
 - Session-scoped master toggle: resets to ON upon page reload (F5) or restaurant change
-- Zero token compromise: verification tokens hashed with SHA-256 before persistence
+- Zero raw token exposure: verification tokens hashed with SHA-256 before persistence
 
-**Scale/Scope**: Sprint 1 MVP — Diner profile, dietary taxonomy, catalog filtering, cart risk evaluation. Out of scope: demographic data (avatar, age, gender), manual price/category filters, keyword search.
+**Scale/Scope**: Sprint 1 MVP — Diner profile, dietary taxonomy, catalog filtering, cart risk evaluation. Out of scope: demographic data (avatar, age, gender), recipe N:M ingredient links, manual price/category sliders, keyword search.
 
 ---
 
@@ -70,29 +83,29 @@ Key capabilities delivered:
 | Principle | Pre-Design Status | Post-Design Status | Evidence |
 |---|---|---|---|
 | I. Spec as source of truth | ✅ PASS | ✅ PASS | Plan, data model, and OpenAPI contracts derive directly from `spec.md` (FR-001–FR-027). |
-| II. Spec before implementation | ✅ PASS | ✅ PASS | Workflow: `spec.md` approved → `/grill-me` design → `plan.md` + design artifacts. No application code written yet. |
-| III. Layered verification | ✅ PASS | ✅ PASS | Unit tests (conjunction logic, validation) + Testcontainers integration tests (atomic email update, FK constraints) + MockMvc contract tests. |
-| IV. Simple, cohesive design | ✅ PASS | ✅ PASS | Feature-based packaging (`profile`, `catalog`, `cart`). In-memory compliance engine avoids complex SQL stored procedures while maximizing testability. |
-| V. Bounded scope | ✅ PASS | ✅ PASS | Excludes avatar upload, demographic data, category sliders, keyword search, payment gateways as stipulated in `spec.md`. |
-| VI. Controlled technical debt | ✅ PASS | ✅ PASS | Email resend rate-limiting handled with persisted timestamp in `users` table instead of premature Redis cluster setup. |
+| II. Spec before implementation | ✅ PASS | ✅ PASS | Full SDD workflow: `spec.md` → `/grill-me` design alignment → `research.md`, `data-model.md`, `contracts/openapi.yaml`, `quickstart.md`, and `plan.md`. No implementation code written before plan approval. |
+| III. Layered verification | ✅ PASS | ✅ PASS | Unit tests (conjunction logic, validation) + Testcontainers integration tests (Flyway V5, atomic email update, FK constraints) + MockMvc contract tests. |
+| IV. Simple, cohesive design | ✅ PASS | ✅ PASS | Feature-based backend packaging (`profile`, `catalog`) and layered frontend structure (`components/`, `pages/`, `context/`). In-memory compliance engine avoids complex SQL stored procedures while maximizing testability. |
+| V. Bounded scope | ✅ PASS | ✅ PASS | Excludes avatar upload, demographic data, recipe ingredient links, payment gateways as stipulated in `spec.md`. |
+| VI. Controlled technical debt | ✅ PASS | ✅ PASS | Email resend rate-limiting handled with persisted timestamp in `users` table instead of premature Redis cluster setup. Migration versioning ordered sequentially (V5). |
 | VII. Traceability | ✅ PASS | ✅ PASS | Complete Traceability Matrix in `data-model.md` mapping every FR-xxx requirement to schema columns, DTOs, and endpoints. |
-| VIII. Evidence over assumption | ✅ PASS | ✅ PASS | All 5 key technical decisions resolved interactively via `/grill-me` (compliance engine, cooldown persistence, dish schema, toggle state, principal injection). |
-| IX. Engineering over convenience | ✅ PASS | ✅ PASS | Real PostgreSQL Testcontainers chosen over H2; SHA-256 token hashing used; explicit risk consent enforced at checkout. |
+| VIII. Evidence over assumption | ✅ PASS | ✅ PASS | All 12 key technical decisions resolved interactively via `/grill-me` and verified against the actual repository code from 001, 002, and 004. |
+| IX. Engineering over convenience | ✅ PASS | ✅ PASS | Real PostgreSQL Testcontainers chosen; SHA-256 token hashing; explicit risk consent enforced at checkout; session revocation via `token_version`. |
 | X. Technology-agnostic governance | ✅ PASS | ✅ PASS | Follows project's technology stack without introducing unapproved libraries or architectural deviations. |
 
-**GATE RESULT: ALL PASS — Phase 0 and Phase 1 complete.**
+**GATE RESULT: ALL PASS**
 
 ---
 
 ## Project Structure
 
-### Documentation (this feature)
+### Documentation (`specs/003-diner-profile-dietary/`)
 
 ```text
 specs/003-diner-profile-dietary/
-├── plan.md              ← This file (Phase 0+1 output)
-├── research.md          ← Phase 0 output — all /grill-me technical decisions (D-001..D-008)
-├── data-model.md        ← Phase 1 output — entities, Flyway V3 migration, traceability
+├── plan.md              ← This file (Implementation Plan)
+├── research.md          ← Phase 0 output — all /grill-me technical decisions (D-001..D-012)
+├── data-model.md        ← Phase 1 output — entities, Flyway V5 migration, traceability
 ├── quickstart.md        ← Phase 1 output — runnable validation scenarios & curl guides
 ├── contracts/
 │   └── openapi.yaml     ← Phase 1 output — OpenAPI 3.0.3 contract specification
@@ -100,94 +113,108 @@ specs/003-diner-profile-dietary/
     └── requirements.md  ← Quality verification checklist
 ```
 
-### Source Code Layout
+### Source Code Layout (`easyeat/`)
 
 ```text
-backend/
-├── src/main/resources/
-│   ├── db/migration/
-│   │   └── V3__extend_users_profile_and_dietary.sql
-│   └── application.yml
-├── src/main/java/com/easyeat/
-│   ├── profile/
-│   │   ├── domain/
-│   │   │   ├── DietaryRestriction.java
-│   │   │   ├── DietaryCategory.java
-│   │   │   └── UserDietaryRestrictionId.java
-│   │   ├── dto/
-│   │   │   ├── PersonalDataRequest.java
-│   │   │   ├── ProfileResponse.java
-│   │   │   ├── EmailChangeRequestDto.java
-│   │   │   ├── EmailChangeInitiatedResponse.java
-│   │   │   ├── EmailConfirmationRequest.java
-│   │   │   ├── EmailConfirmedResponse.java
-│   │   │   ├── DietaryRestrictionItemDto.java
-│   │   │   └── DietaryPreferencesRequest.java
-│   │   ├── repository/
-│   │   │   ├── UserRepository.java (extended)
-│   │   │   └── DietaryRestrictionRepository.java
-│   │   ├── service/
-│   │   │   ├── ProfileService.java
-│   │   │   └── EmailChangeService.java
-│   │   └── controller/
-│   │       ├── ProfileController.java
-│   │       └── DietaryRestrictionController.java
-│   └── catalog/
-│       ├── domain/
-│       │   ├── Dish.java
-│       │   └── DishDietaryRestrictionId.java
-│       ├── dto/
-│       │   ├── EnrichedDishResponse.java
-│       │   ├── CartComplianceRequest.java
-│       │   ├── CartComplianceResponse.java
-│       │   └── CartItemEvaluation.java
-│       ├── repository/
-│       │   └── DishRepository.java
-│       ├── service/
-│       │   └── CatalogComplianceService.java
-│       └── controller/
-│           ├── CatalogController.java
-│           └── CartComplianceController.java
-└── src/test/java/com/easyeat/
-    ├── profile/
-    │   ├── service/ (ProfileServiceTest.java, EmailChangeServiceTest.java)
-    │   ├── repository/ (UserRepositoryProfileTest.java, Testcontainers)
-    │   └── controller/ (ProfileControllerTest.java, MockMvc)
-    └── catalog/
-        ├── service/ (CatalogComplianceServiceTest.java)
-        └── controller/ (CatalogControllerTest.java, CartComplianceControllerTest.java)
-
-frontend/
-├── src/
-│   ├── features/
+easyeat/
+├── backend/
+│   ├── src/main/resources/
+│   │   ├── db/migration/
+│   │   │   └── V5__extend_users_profile_and_dietary.sql
+│   │   └── application.yml
+│   ├── src/main/java/com/easyeat/
+│   │   ├── config/
+│   │   │   └── SecurityConfig.java (updated: permitAll for dishes, taxonomy, email confirm)
 │   │   ├── profile/
-│   │   │   ├── components/
-│   │   │   │   ├── PersonalDataForm.tsx
-│   │   │   │   ├── PendingEmailBanner.tsx
-│   │   │   │   └── DietaryRestrictionsSelector.tsx
-│   │   │   └── hooks/
-│   │   │       ├── useProfile.ts
-│   │   │       └── useDietaryRestrictions.ts
-│   │   ├── catalog/
-│   │   │   ├── components/
-│   │   │   │   ├── CatalogMasterToggle.tsx
-│   │   │   │   ├── DishCard.tsx
-│   │   │   │   ├── AllergenWarningBadge.tsx
-│   │   │   │   └── EmptyCatalogDietaryState.tsx
-│   │   │   ├── context/
-│   │   │   │   └── CatalogFilterContext.tsx
-│   │   │   └── hooks/
-│   │   │       └── useCatalog.ts
-│   │   └── cart/
-│   │       └── components/
-│   │           ├── CartItemWithBadge.tsx
-│   │           └── CheckoutDietaryRiskModal.tsx
+│   │   │   ├── domain/
+│   │   │   │   ├── DietaryRestriction.java
+│   │   │   │   ├── DietaryCategory.java
+│   │   │   │   └── UserDietaryRestrictionId.java
+│   │   │   ├── dto/
+│   │   │   │   ├── PersonalDataRequest.java
+│   │   │   │   ├── ProfileResponse.java
+│   │   │   │   ├── EmailChangeRequestDto.java
+│   │   │   │   ├── EmailChangeInitiatedResponse.java
+│   │   │   │   ├── EmailConfirmationRequest.java
+│   │   │   │   ├── EmailConfirmedResponse.java
+│   │   │   │   ├── DietaryRestrictionItemDto.java
+│   │   │   │   └── DietaryPreferencesRequest.java
+│   │   │   ├── repository/
+│   │   │   │   ├── ProfileUserRepository.java (extends JpaRepository<User, UUID>)
+│   │   │   │   └── DietaryRestrictionRepository.java
+│   │   │   ├── service/
+│   │   │   │   ├── ProfileService.java
+│   │   │   │   └── EmailChangeService.java
+│   │   │   └── controller/
+│   │   │       ├── ProfileController.java
+│   │   │       └── DietaryRestrictionController.java
+│   │   └── catalog/
+│   │       ├── domain/
+│   │       │   ├── Dish.java
+│   │       │   └── DishDietaryRestrictionId.java
+│   │       ├── dto/
+│   │       │   ├── EnrichedDishResponse.java
+│   │       │   ├── CartComplianceRequest.java
+│   │       │   ├── CartComplianceResponse.java
+│   │       │   └── CartItemEvaluation.java
+│   │       ├── repository/
+│   │       │   └── DishRepository.java
+│   │       ├── service/
+│   │       │   └── CatalogComplianceService.java
+│   │       └── controller/
+│   │           ├── CatalogController.java
+│   │           └── CartComplianceController.java
+│   └── src/test/java/com/easyeat/
+│       ├── profile/
+│       │   ├── service/ (ProfileServiceTest.java, EmailChangeServiceTest.java)
+│       │   ├── repository/ (ProfileUserRepositoryTest.java, Testcontainers)
+│       │   └── controller/ (ProfileControllerTest.java, MockMvc)
+│       └── catalog/
+│           ├── service/ (CatalogComplianceServiceTest.java)
+│           └── controller/ (CatalogControllerTest.java, CartComplianceControllerTest.java)
+│
+└── frontend/
+    └── src/
+        ├── api/
+        │   ├── profileApi.ts
+        │   └── catalogApi.ts
+        ├── components/
+        │   ├── common/
+        │   │   └── WorkspaceLayout.tsx (updated: "Mi perfil" link for COMENSAL)
+        │   ├── profile/
+        │   │   ├── PersonalDataForm.tsx
+        │   │   ├── PendingEmailBanner.tsx
+        │   │   └── DietaryRestrictionsSelector.tsx
+        │   ├── catalog/
+        │   │   ├── CatalogMasterToggle.tsx
+        │   │   ├── DishCard.tsx
+        │   │   ├── AllergenWarningBadge.tsx
+        │   │   └── EmptyCatalogDietaryState.tsx
+        │   └── cart/
+        │       ├── CartDrawer.tsx
+        │       ├── CartItemWithBadge.tsx
+        │       └── CheckoutDietaryRiskModal.tsx
+        ├── context/
+        │   ├── CatalogFilterContext.tsx
+        │   └── CartContext.tsx
+        ├── hooks/
+        │   ├── useProfile.ts
+        │   ├── useCatalog.ts
+        │   └── useCart.ts
+        ├── pages/
+        │   ├── ProfilePage.tsx
+        │   ├── VerifyEmailPage.tsx
+        │   └── CatalogPage.tsx (updated with toggle, badges, guest banner)
+        ├── router/
+        │   └── AppRoutes.tsx (updated: public catalog browsing, /profile, /verify-email)
+        └── types/
+            ├── profile.ts
+            ├── catalog.ts
+            └── cart.ts
 ```
-
-**Structure Decision**: Web application layout separating `backend` (Spring Boot 3.3.4, Java 21) and `frontend` (React 18+, TypeScript). Adheres to feature-sliced packaging (`profile`, `catalog`, `cart`) for high cohesion and low coupling.
 
 ---
 
 ## Complexity Tracking
 
-No constitution violations detected. Design utilizes standard Spring Data JPA, stateless Spring Security filters, and in-memory evaluation without premature infrastructure complexity.
+No constitution violations detected. Design utilizes standard Spring Data JPA, stateless Spring Security filters with `@AuthenticationPrincipal User user`, isolated repository interfaces (`ProfileUserRepository`), sequential Flyway migration numbering (`V5`), and in-memory compliance evaluation without premature distributed caching or complex database stored procedures.

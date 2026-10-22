@@ -1,6 +1,6 @@
 # Data Model: Diner Profile Management, Dietary Restrictions & Automated Catalog Filtering
 
-**Feature**: `003-diner-profile-dietary` | **Date**: 2026-10-17 | **Phase**: 1
+**Feature**: `003-diner-profile-dietary` | **Date**: 2026-10-21 | **Phase**: 1
 
 ---
 
@@ -8,7 +8,7 @@
 
 ### 1. User (Extension)
 
-Represents an authenticated user in EasyEat. In this iteration, the table is extended with personal contact information, pending email verification state, and resend rate-limit tracking.
+Represents an authenticated user in EasyEat. In this iteration, the table is extended with personal contact information, pending email verification state, and resend rate-limit tracking. Note that `full_name` already exists on the table from migration `V3__extend_users_staff.sql` (iteration 004); `first_name` and `last_name` operate independently for comensales.
 
 **Table**: `users` (extended)
 
@@ -23,7 +23,7 @@ Represents an authenticated user in EasyEat. In this iteration, the table is ext
 | `email_verification_token_hash` | `VARCHAR(64)` | NULLABLE, UNIQUE | SHA-256 hash of raw verification token |
 | `email_token_expires_at` | `TIMESTAMPTZ` | NULLABLE | Expiration deadline (created_at + 24 hours) |
 | `email_verification_last_sent_at` | `TIMESTAMPTZ` | NULLABLE | Timestamp of last email dispatch (for 60s cooldown) |
-| `token_version` | `INTEGER` | NOT NULL, DEFAULT 0 | Incremented on email confirmation to revoke active JWTs |
+| `token_version` | `INTEGER` | NOT NULL, DEFAULT 0 | Incremented on email confirmation to revoke active JWTs (001/002) |
 
 **CHECK Constraints**:
 - `chk_users_first_name_format`: `CHECK (first_name IS NULL OR first_name ~ '^[A-Za-zÁÉÍÓÚáéíóúÑñüÜ ]+$')`
@@ -119,22 +119,22 @@ Represents dishes offered by a restaurant establishment and their recipe dietary
 
 ---
 
-## Flyway Migration: `V3__extend_users_profile_and_dietary.sql`
+## Flyway Migration: `V5__extend_users_profile_and_dietary.sql`
 
 ```sql
 -- ====================================================================
--- EasyEat V3: Diner Profile Extension & Dietary Restrictions Taxonomy
+-- EasyEat V5: Diner Profile Extension & Dietary Restrictions Taxonomy
 -- ====================================================================
 
 -- 1. Extend users table for personal data and email change workflow
 ALTER TABLE users
-    ADD COLUMN first_name                     VARCHAR(100),
-    ADD COLUMN last_name                      VARCHAR(100),
-    ADD COLUMN phone                          VARCHAR(20),
-    ADD COLUMN pending_email                  VARCHAR(255),
-    ADD COLUMN email_verification_token_hash  VARCHAR(64),
-    ADD COLUMN email_token_expires_at         TIMESTAMPTZ,
-    ADD COLUMN email_verification_last_sent_at TIMESTAMPTZ;
+    ADD COLUMN IF NOT EXISTS first_name                     VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS last_name                      VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS phone                          VARCHAR(20),
+    ADD COLUMN IF NOT EXISTS pending_email                  VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS email_verification_token_hash  VARCHAR(64),
+    ADD COLUMN IF NOT EXISTS email_token_expires_at         TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS email_verification_last_sent_at TIMESTAMPTZ;
 
 ALTER TABLE users
     ADD CONSTRAINT chk_users_first_name_format
@@ -146,16 +146,16 @@ ALTER TABLE users
     ADD CONSTRAINT ck_users_pending_email_lowercase
         CHECK (pending_email IS NULL OR pending_email = lower(pending_email));
 
-CREATE UNIQUE INDEX uq_users_email_token_hash
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email_token_hash
     ON users(email_verification_token_hash)
     WHERE email_verification_token_hash IS NOT NULL;
 
-CREATE INDEX idx_users_pending_email
+CREATE INDEX IF NOT EXISTS idx_users_pending_email
     ON users(pending_email)
     WHERE pending_email IS NOT NULL;
 
 -- 2. Dietary Restrictions Taxonomy
-CREATE TABLE dietary_restrictions (
+CREATE TABLE IF NOT EXISTS dietary_restrictions (
     code        VARCHAR(50)  PRIMARY KEY,
     name        VARCHAR(100) NOT NULL,
     category    VARCHAR(50)  NOT NULL,
@@ -175,10 +175,11 @@ INSERT INTO dietary_restrictions (code, name, category, description) VALUES
     ('FISH', 'Pescado', 'COMMON_ALLERGEN', 'Presencia de pescados de cualquier variedad.'),
     ('SHELLFISH', 'Mariscos / Crustáceos', 'COMMON_ALLERGEN', 'Presencia de camarones, langostinos, calamares o moluscos.'),
     ('SOY', 'Soja', 'COMMON_ALLERGEN', 'Presencia de proteína de soja, lecitina o derivados.'),
-    ('WHEAT', 'Trigo / Gluten', 'COMMON_ALLERGEN', 'Presencia de harina de trigo, salvado o gluten.');
+    ('WHEAT', 'Trigo / Gluten', 'COMMON_ALLERGEN', 'Presencia de harina de trigo, salvado o gluten.')
+ON CONFLICT (code) DO NOTHING;
 
 -- 3. User Dietary Preferences Join Table
-CREATE TABLE user_dietary_restrictions (
+CREATE TABLE IF NOT EXISTS user_dietary_restrictions (
     user_id          UUID        NOT NULL,
     restriction_code VARCHAR(50) NOT NULL,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -187,10 +188,10 @@ CREATE TABLE user_dietary_restrictions (
     CONSTRAINT fk_udr_restriction FOREIGN KEY (restriction_code) REFERENCES dietary_restrictions(code) ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_udr_restriction ON user_dietary_restrictions(restriction_code);
+CREATE INDEX IF NOT EXISTS idx_udr_restriction ON user_dietary_restrictions(restriction_code);
 
--- 4. Dishes and Catalog Baseline Schema (for integration tests and catalog queries)
-CREATE TABLE dishes (
+-- 4. Dishes and Catalog Baseline Schema
+CREATE TABLE IF NOT EXISTS dishes (
     id          UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id   UUID           NOT NULL,
     name        VARCHAR(150)   NOT NULL,
@@ -202,9 +203,9 @@ CREATE TABLE dishes (
     CONSTRAINT chk_dishes_price CHECK (price >= 0)
 );
 
-CREATE INDEX idx_dishes_tenant ON dishes(tenant_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_dishes_tenant ON dishes(tenant_id, is_active);
 
-CREATE TABLE dish_dietary_restrictions (
+CREATE TABLE IF NOT EXISTS dish_dietary_restrictions (
     dish_id          UUID        NOT NULL,
     restriction_code VARCHAR(50) NOT NULL,
     CONSTRAINT pk_dish_dietary_restrictions PRIMARY KEY (dish_id, restriction_code),
@@ -212,7 +213,7 @@ CREATE TABLE dish_dietary_restrictions (
     CONSTRAINT fk_ddr_restriction FOREIGN KEY (restriction_code) REFERENCES dietary_restrictions(code) ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_ddr_dish ON dish_dietary_restrictions(dish_id);
+CREATE INDEX IF NOT EXISTS idx_ddr_dish ON dish_dietary_restrictions(dish_id);
 ```
 
 ---
@@ -229,7 +230,7 @@ CREATE INDEX idx_ddr_dish ON dish_dietary_restrictions(dish_id);
 | FR-006 (Old Email Active) | `users` | `email` preserved while `pending_email` is set | Service logic |
 | FR-007 (Pending Status in Profile) | `users` | `pending_email` populated | DTO `ProfileResponse` |
 | FR-008 (Revocation on New Email) | `users` | Overwriting `pending_email` + new hash | Service `@Transactional` |
-| FR-009 (Session Revocation) | `users` | `token_version = token_version + 1` | Service `@Transactional` |
+| FR-009 (Session Revocation) | `users` | `token_version = token_version + 1` | Service `@Transactional` (001/002) |
 | FR-011 (Immutable Past Orders) | N/A (Orders) | Orders store denormalized customer snapshot | Order Service (out of scope) |
 | FR-012 (Standard Taxonomy) | `dietary_restrictions` | `code`, `category` | Flyway Seed, Service |
 | FR-013 (Multi-restriction Selection) | `user_dietary_restrictions` | Composite PK `(user_id, restriction_code)` | Service `@Transactional` |
@@ -239,4 +240,5 @@ CREATE INDEX idx_ddr_dish ON dish_dietary_restrictions(dish_id);
 | FR-019 / FR-020 (Catalog Master Toggle) | N/A (Frontend) | React Context / `useCatalog` hook | Frontend component |
 | FR-022 (Checkout Informed Risk) | Checkout DTO | `acceptedDietaryRisks: boolean` | Checkout Controller |
 | FR-023 (Session-scoped Toggle Reset) | N/A (Frontend) | Component unmount / route listener | React lifecycle |
+| FR-026 (Unauthenticated Guest Browsing) | `dishes` | Anonymous catalog retrieval with guest banner | Controller / SecurityConfig / Frontend |
 | FR-027 (Dual Client-Server Validation) | All tables | Spring Bean Validation + PostgreSQL constraints | Layered Architecture |
