@@ -39,13 +39,14 @@ export const AppRoutes: React.FC = () => {
 
       {/* Role-Protected Kitchen Display System Workspace (CHEF) */}
       <Route
-        path="/kds/*"
+        path="/cocina/*"
         element={
           <RoleRouteGuard allowedRoles={['CHEF']}>
             <KitchenWorkspacePage />
           </RoleRouteGuard>
         }
       />
+      <Route path="/kds/*" element={<Navigate to="/cocina" replace />} />
 
       {/* Role-Protected Back-Office Administration Panel (ADMINISTRADOR) */}
       <Route
