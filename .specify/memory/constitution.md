@@ -1,9 +1,9 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.1 -> 1.1.0
+- Version change: 1.1.0 -> 1.2.0
 - Modified principles: none
 - Added sections:
-  - Fundamental Principle X: Full-Stack End-to-End Integrity (Vertical Slices)
+  - Fundamental Principle XI: Continuous Upstream Synchronization Awareness (Conciencia de Sincronización Continua con la Rama Principal)
 - Removed sections: none
 - Templates requiring updates: none
 - Deferred items: none
@@ -133,6 +133,17 @@ Each principle includes its **Compliance** criteria (verifiable during a review 
 
 **Rationale**: prevent fragmented, non-functional silos and orphan user stories where frontend interfaces lack functional backend contracts or backend endpoints lack frontend consumer verification.
 
+### XI. Continuous Upstream Synchronization Awareness (Conciencia de Sincronización Continua con la Rama Principal)
+
+- Al inicio de la invocación de cualquier comando o skill del ecosistema Spec-Kit (`/speckit-*`), el agente de IA MUST ejecutar de manera proactiva un fetch del repositorio remoto (`git fetch origin main`), inspeccionando el estado más reciente de la rama principal (`main`), independientemente de cuál sea la rama local activa en la que se encuentre trabajando el usuario.
+- El agente MUST comparar la rama local activa contra `origin/main`. Si detecta que la rama local está desactualizada (es decir, existen commits en `origin/main` que no están integrados en la rama actual), el agente MUST notificar de inmediato al usuario mediante un mensaje de alerta llamativo y explícito con formato de advertencia `grill-me`, indicando la cantidad de commits de desfasaje y la advertencia de desactualización.
+- El agente MUST NOT ejecutar automáticamente comandos de integración destructiva o mutativa (`git pull`, `git merge`, o `git rebase`); la decisión, el momento y la estrategia de sincronización corresponden con exclusividad al desarrollador humano.
+- El propósito de este principio es garantizar que el desarrollador nunca opere bajo ignorancia respecto al avance de la rama principal, previniendo divergencias tardías, retrabajos y conflictos de integración mayores.
+
+**Compliance**: en el ciclo de inicio de cualquier skill de Spec-Kit, consta en el registro la ejecución de `git fetch origin main`, la verificación comparativa de desfasaje y, en caso de detectarse commits nuevos en `origin/main`, la emisión visible y destacada de la alerta al usuario sin mutaciones automáticas de la rama de trabajo.
+
+**Rationale**: evitar que el desarrollador construya especificaciones, planes, tareas o código sobre una base de código desactualizada con respecto al estado consensuado en `main`, alertándolo a tiempo sin violar su autonomía sobre el árbol de trabajo local.
+
 ## Additional Constraints
 
 This section contains the mechanisms and decisions declared by the project. They are NOT universal principles: they may be modified without altering the Fundamental Principles, although they remain subject to the amendment procedure.
@@ -141,6 +152,10 @@ This section contains the mechanisms and decisions declared by the project. They
 - **Technological constraints**: none declared at this time.
 
 ## Development Workflow and Quality Gates
+
+Pre-ejecución de cualquier comando o skill de Spec-Kit:
+
+- **Sincronización continua de referencias remotas**: ejecución proactiva de `git fetch origin main`, verificación comparativa de desfasaje y emisión de alerta llamativa `grill-me` al usuario en caso de que la rama actual se encuentre desactualizada respecto a `origin/main`.
 
 Minimum process prior to implementing a user story, in this order:
 
@@ -168,4 +183,4 @@ Atomic, traceable, and reversible delivery:
 - **Periodic compliance review**: MUST be performed in each feature planning cycle via the plan's Constitution Check, and at least once per quarter across the entire project, verifying that plans and reviews comply with the principles.
 - **Mandatory principles vs. project decisions**: a mandatory principle applies regardless of technology and domain, and resides in Fundamental Principles. Any decision depending on a specific technology, tool, or context resides in Additional Constraints or in the specification and plan artifacts.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-10-23
+**Version**: 1.2.0 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-10-24
