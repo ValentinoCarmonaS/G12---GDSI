@@ -1,8 +1,10 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { WorkspaceLayout } from '@/components/common/WorkspaceLayout';
+import { AuthProvider, useAuth as useRealAuth } from '@/context/AuthContext';
 import { authApi } from '@/api/authApi';
 import * as AuthModule from '@/hooks/useAuth';
 
@@ -52,5 +54,41 @@ describe('Logout Flow (FR-016, SC-006)', () => {
     await waitFor(() => {
       expect(mockLogout).toHaveBeenCalled();
     });
+  });
+
+  it('purges sessionStorage and clears auth state even when server API throws network error (T041, FR-016)', async () => {
+    sessionStorage.setItem('access_token', 'token-to-purge');
+    vi.mocked(authApi.logout).mockRejectedValueOnce(new Error('Network error'));
+
+    const originalLocation = window.location;
+    const mockReplace = vi.fn();
+    // @ts-expect-error stubbing location for test
+    delete window.location;
+    window.location = { ...originalLocation, replace: mockReplace };
+
+    let logoutFn: () => Promise<void> = async () => {};
+
+    const Consumer: React.FC = () => {
+      const { logout } = useRealAuth();
+      logoutFn = logout;
+      return null;
+    };
+
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>
+    );
+
+    try {
+      await act(async () => {
+        await logoutFn();
+      });
+
+      expect(sessionStorage.getItem('access_token')).toBeNull();
+      expect(mockReplace).toHaveBeenCalledWith('/login');
+    } finally {
+      window.location = originalLocation;
+    }
   });
 });
