@@ -90,7 +90,7 @@ describe('ForgotPasswordForm Component', () => {
 
     resolveSubmit!();
     await waitFor(() => {
-      expect(submitBtn).not.toBeDisabled();
+      expect(screen.getByRole('status')).toBeInTheDocument();
     });
   });
 });
