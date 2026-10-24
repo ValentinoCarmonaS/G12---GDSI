@@ -5,6 +5,8 @@ import { RoleRouteGuard } from './RoleRouteGuard';
 import { getRoleDefaultRoute } from './postAuthRouting';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { CounterWorkspacePage } from '../pages/CounterWorkspacePage';
 import { KitchenWorkspacePage } from '../pages/KitchenWorkspacePage';
 import { AdminWorkspacePage } from '../pages/AdminWorkspacePage';
@@ -37,6 +39,22 @@ export const AppRoutes: React.FC = () => {
             <RegisterPage />
           )
         }
+      />
+
+      {/* Public Password Recovery Gateways */}
+      <Route
+        path="/forgot-password"
+        element={
+          isAuthenticated && user ? (
+            <Navigate to={getRoleDefaultRoute(user.role)} replace />
+          ) : (
+            <ForgotPasswordPage />
+          )
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={<ResetPasswordPage />}
       />
 
       {/* Role-Protected Counter / Dispatch Workspace (ENCARGADO) */}
