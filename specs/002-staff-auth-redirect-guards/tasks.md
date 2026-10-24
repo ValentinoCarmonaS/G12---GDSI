@@ -35,16 +35,16 @@
 
 **⚠️ CRITICAL**: Must complete before any user story work can execute.
 
-- [ ] T006 [P] Verify backend authentication baseline endpoints (`/login`, `/me`, `/logout`) and database token versioning in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java`
-- [ ] T007 [P] Verify backend SecurityConfig registers stateless session management, BCrypt cost 12, and `JwtAuthenticationFilter` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
-- [ ] T008 [P] Define frontend TypeScript types and interfaces (`Role`, `AuthenticatedUser`, `AuthContextState`, `LoginRequest`, `LoginResponse`, `JwtClaims`) in `easyeat/frontend/src/types/auth.ts`
-- [ ] T009 Implement pure role mapping and post-auth routing policy functions (`getRoleDefaultRoute`, `resolvePostAuthRedirect`) in `easyeat/frontend/src/router/postAuthRouting.ts`
-- [ ] T010 Implement `AuthContext` reactive state provider managing user identity, synchronous JWT decoding from `sessionStorage`, and logout state in `easyeat/frontend/src/context/AuthContext.tsx`
-- [ ] T011 [P] Implement `useAuth` custom hook exposing reactive auth state and action dispatchers in `easyeat/frontend/src/hooks/useAuth.ts`
-- [ ] T012 [P] Implement decoupled, role-agnostic controlled `LoginForm` component with validation, email normalization, submit debouncing, and anti-enumeration error handling in `easyeat/frontend/src/components/auth/LoginForm.tsx`
-- [ ] T013 [P] Implement `LoginPage` public route view wrapping `LoginForm` with responsive brand container in `easyeat/frontend/src/pages/LoginPage.tsx`
-- [ ] T014 [P] Implement `WorkspaceLayout` common wrapper component with role badge, tenant scope display, and logout action slot in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
-- [ ] T015 [P] Implement diner catalog fallback view `CatalogPage` for role `COMENSAL` in `easyeat/frontend/src/pages/CatalogPage.tsx`
+- [X] T006 [P] Verify backend authentication baseline endpoints (`/login`, `/me`, `/logout`) and database token versioning in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java`
+- [X] T007 [P] Verify backend SecurityConfig registers stateless session management, BCrypt cost 12, and `JwtAuthenticationFilter` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [X] T008 [P] Define frontend TypeScript types and interfaces (`Role`, `AuthenticatedUser`, `AuthContextState`, `LoginRequest`, `LoginResponse`, `JwtClaims`) in `easyeat/frontend/src/types/auth.ts`
+- [X] T009 Implement pure role mapping and post-auth routing policy functions (`getRoleDefaultRoute`, `resolvePostAuthRedirect`) in `easyeat/frontend/src/router/postAuthRouting.ts`
+- [X] T010 Implement `AuthContext` reactive state provider managing user identity, synchronous JWT decoding from `sessionStorage`, and logout state in `easyeat/frontend/src/context/AuthContext.tsx`
+- [X] T011 [P] Implement `useAuth` custom hook exposing reactive auth state and action dispatchers in `easyeat/frontend/src/hooks/useAuth.ts`
+- [X] T012 [P] Implement decoupled, role-agnostic controlled `LoginForm` component with validation, email normalization, submit debouncing, and anti-enumeration error handling in `easyeat/frontend/src/components/auth/LoginForm.tsx`
+- [X] T013 [P] Implement `LoginPage` public route view wrapping `LoginForm` with responsive brand container in `easyeat/frontend/src/pages/LoginPage.tsx`
+- [X] T014 [P] Implement `WorkspaceLayout` common wrapper component with role badge, tenant scope display, and logout action slot in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
+- [X] T015 [P] Implement diner catalog fallback view `CatalogPage` for role `COMENSAL` in `easyeat/frontend/src/pages/CatalogPage.tsx`
 
 **Checkpoint**: Foundation ready — reactive state, types, routing helpers, decoupled login form, and common layouts are verified and ready for user story integration.
 

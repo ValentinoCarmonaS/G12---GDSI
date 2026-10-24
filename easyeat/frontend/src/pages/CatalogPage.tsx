@@ -1,12 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
-import { authApi } from '../api/authApi';
 
 export const CatalogPage: React.FC = () => {
-  useEffect(() => {
-    authApi.me().catch(() => { /* handled by interceptor */ });
-  }, []);
-
   return (
     <WorkspaceLayout
       title="Catálogo de Productos"

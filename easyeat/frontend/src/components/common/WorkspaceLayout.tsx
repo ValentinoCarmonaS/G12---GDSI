@@ -46,6 +46,16 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   {user.role}
                 </span>
 
+                {user.tenantId && (
+                  <span
+                    data-testid="tenant-badge"
+                    className="px-2 py-0.5 rounded text-xs font-mono bg-gray-100 text-gray-700 border border-gray-200 hidden sm:inline"
+                    title={`Tenant: ${user.tenantId}`}
+                  >
+                    Local: {user.tenantId.slice(0, 8)}
+                  </span>
+                )}
+
                 <span className="text-sm text-gray-600 hidden md:inline">{user.email}</span>
               </div>
             )}

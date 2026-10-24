@@ -29,11 +29,11 @@ describe('RoleRouteGuard Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/counter/dispatch/10']}>
+      <MemoryRouter initialEntries={['/mostrador/despacho/10']}>
         <Routes>
           <Route path="/login" element={<div><p>Login Page</p><LocationWatcher /></div>} />
           <Route
-            path="/counter/dispatch/:id"
+            path="/mostrador/despacho/:id"
             element={
               <RoleRouteGuard allowedRoles={['ENCARGADO']}>
                 <p>Counter Workspace View</p>
@@ -47,7 +47,7 @@ describe('RoleRouteGuard Component', () => {
     expect(screen.getByText('Login Page')).toBeInTheDocument();
     expect(screen.queryByText('Counter Workspace View')).not.toBeInTheDocument();
     expect(screen.getByTestId('current-path')).toHaveTextContent('/login');
-    expect(screen.getByTestId('state-from')).toHaveTextContent('/counter/dispatch/10');
+    expect(screen.getByTestId('state-from')).toHaveTextContent('/mostrador/despacho/10');
   });
 
   it('silently redirects authenticated user attempting cross-role access to their own workspace (FR-012, SC-003)', () => {
@@ -70,7 +70,7 @@ describe('RoleRouteGuard Component', () => {
     render(
       <MemoryRouter initialEntries={['/admin']}>
         <Routes>
-          <Route path="/kds" element={<div><p>Kitchen KDS Workspace</p><LocationWatcher /></div>} />
+          <Route path="/cocina" element={<div><p>Kitchen KDS Workspace</p><LocationWatcher /></div>} />
           <Route
             path="/admin"
             element={
@@ -83,10 +83,10 @@ describe('RoleRouteGuard Component', () => {
       </MemoryRouter>
     );
 
-    // Guard silently routes CHEF to /kds without showing Admin content or intermediate prompt
+    // Guard silently routes CHEF to /cocina without showing Admin content or intermediate prompt
     expect(screen.getByText('Kitchen KDS Workspace')).toBeInTheDocument();
     expect(screen.queryByText('Admin Workspace View')).not.toBeInTheDocument();
-    expect(screen.getByTestId('current-path')).toHaveTextContent('/kds');
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/cocina');
   });
 
   it('renders protected child component when authenticated user has authorized role', () => {
@@ -106,10 +106,10 @@ describe('RoleRouteGuard Component', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/counter']}>
+      <MemoryRouter initialEntries={['/mostrador']}>
         <Routes>
           <Route
-            path="/counter"
+            path="/mostrador"
             element={
               <RoleRouteGuard allowedRoles={['ENCARGADO']}>
                 <p>Counter Protected Workspace</p>
