@@ -32,6 +32,19 @@ export interface RegisterResponse {
   message: string;
 }
 
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface PasswordResetConfirm {
+  token: string;
+  new_password: string;
+}
+
+export interface PasswordResetResponse {
+  message: string;
+}
+
 export interface LoginResponse {
   access_token: string;
   token_type: string;

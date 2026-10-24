@@ -1,5 +1,13 @@
 import { apiClient } from './apiClient';
-import { LoginCredentials, LoginResponse, RegisterCredentials, RegisterResponse } from '../types/auth';
+import {
+  LoginCredentials,
+  LoginResponse,
+  RegisterCredentials,
+  RegisterResponse,
+  PasswordResetRequest,
+  PasswordResetConfirm,
+  PasswordResetResponse,
+} from '../types/auth';
 
 export const authApi = {
   /**
@@ -7,6 +15,22 @@ export const authApi = {
    */
   async register(credentials: RegisterCredentials): Promise<RegisterResponse> {
     const response = await apiClient.post<RegisterResponse>('/auth/register', credentials);
+    return response.data;
+  },
+
+  /**
+   * Requests a password reset link sent to the user's email.
+   */
+  async requestPasswordReset(data: PasswordResetRequest): Promise<PasswordResetResponse> {
+    const response = await apiClient.post<PasswordResetResponse>('/auth/password-reset/request', data);
+    return response.data;
+  },
+
+  /**
+   * Confirms password reset with token and new password.
+   */
+  async confirmPasswordReset(data: PasswordResetConfirm): Promise<PasswordResetResponse> {
+    const response = await apiClient.post<PasswordResetResponse>('/auth/password-reset/confirm', data);
     return response.data;
   },
 
