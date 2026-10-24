@@ -2,6 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { authApi } from '@/api/authApi';
@@ -33,13 +34,19 @@ const LoginWithAuthContext: React.FC = () => {
 
 describe('LoginForm Component', () => {
   const mockOnSubmit = vi.fn();
+  const renderLoginForm = (props = {}) =>
+    render(
+      <MemoryRouter>
+        <LoginForm onSubmit={mockOnSubmit} {...props} />
+      </MemoryRouter>
+    );
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders email and password inputs and submit button', () => {
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
@@ -48,7 +55,7 @@ describe('LoginForm Component', () => {
 
   it('displays validation errors when submitting empty fields (FR-002)', async () => {
     const user = userEvent.setup();
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const submitBtn = screen.getByRole('button', { name: /ingresar/i });
     await user.click(submitBtn);
@@ -60,7 +67,7 @@ describe('LoginForm Component', () => {
 
   it('displays validation error on invalid email syntax (FR-003)', async () => {
     const user = userEvent.setup();
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const emailInput = screen.getByLabelText(/correo electrónico/i);
     const passwordInput = screen.getByLabelText(/contraseña/i);
@@ -77,7 +84,7 @@ describe('LoginForm Component', () => {
   it('normalizes email (strips whitespace and converts to lowercase) before submitting (FR-004)', async () => {
     const user = userEvent.setup();
     mockOnSubmit.mockResolvedValueOnce(undefined);
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const emailInput = screen.getByLabelText(/correo electrónico/i);
     const passwordInput = screen.getByLabelText(/contraseña/i);
@@ -103,7 +110,7 @@ describe('LoginForm Component', () => {
     });
     mockOnSubmit.mockReturnValue(submitPromise);
 
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const emailInput = screen.getByLabelText(/correo electrónico/i);
     const passwordInput = screen.getByLabelText(/contraseña/i);
@@ -137,7 +144,7 @@ describe('LoginForm Component', () => {
       },
     });
 
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), 'user@test.com');
     await user.type(screen.getByLabelText(/contraseña/i), 'WrongPass');
@@ -152,7 +159,7 @@ describe('LoginForm Component', () => {
     const user = userEvent.setup();
     mockOnSubmit.mockRejectedValueOnce(new Error('Network Error'));
 
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), 'user@test.com');
     await user.type(screen.getByLabelText(/contraseña/i), 'Password123');
@@ -161,6 +168,18 @@ describe('LoginForm Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/error de conexión/i)).toBeInTheDocument();
     });
+  });
+
+  it('renders accessible navigation links to /register and /forgot-password (FR-021)', () => {
+    renderLoginForm();
+
+    const forgotPasswordLink = screen.getByRole('link', { name: /olvidé mi contraseña/i });
+    expect(forgotPasswordLink).toBeInTheDocument();
+    expect(forgotPasswordLink).toHaveAttribute('href', '/forgot-password');
+
+    const registerLink = screen.getByRole('link', { name: /registrate/i });
+    expect(registerLink).toBeInTheDocument();
+    expect(registerLink).toHaveAttribute('href', '/register');
   });
 
   it('submits credentials for maria.encargada@laesquina.com, receives valid token, and initializes AuthContext (T019)', async () => {
@@ -182,9 +201,11 @@ describe('LoginForm Component', () => {
     });
 
     render(
-      <AuthProvider>
-        <LoginWithAuthContext />
-      </AuthProvider>
+      <MemoryRouter>
+        <AuthProvider>
+          <LoginWithAuthContext />
+        </AuthProvider>
+      </MemoryRouter>
     );
 
     expect(screen.getByTestId('auth-status')).toHaveTextContent('unauthenticated');

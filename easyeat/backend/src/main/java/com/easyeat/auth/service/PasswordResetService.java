@@ -56,7 +56,7 @@ public class PasswordResetService {
             PasswordEncoder passwordEncoder,
             Clock clock,
             SecurityAuditLogger securityAuditLogger,
-            @Value("${app.security.password-reset.base-url:http://localhost:3000/auth/reset-password}") String baseUrl,
+            @Value("${app.security.password-reset.base-url:http://localhost:3000/reset-password}") String baseUrl,
             @Value("${app.security.password-reset.token-validity-minutes:15}") long tokenValidityMinutes) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
@@ -77,7 +77,7 @@ public class PasswordResetService {
             EmailService emailService,
             PasswordEncoder passwordEncoder,
             Clock clock) {
-        this(userRepository, tokenRepository, emailService, passwordEncoder, clock, new SecurityAuditLogger(new com.fasterxml.jackson.databind.ObjectMapper()), "http://localhost:3000/auth/reset-password", 15);
+        this(userRepository, tokenRepository, emailService, passwordEncoder, clock, new SecurityAuditLogger(new com.fasterxml.jackson.databind.ObjectMapper()), "http://localhost:3000/reset-password", 15);
     }
 
     @Transactional

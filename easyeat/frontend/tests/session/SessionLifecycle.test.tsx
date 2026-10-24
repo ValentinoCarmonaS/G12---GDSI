@@ -75,4 +75,27 @@ describe('Session Lifecycle and 401 Interception (FR-014, FR-015)', () => {
     // Verified that storage is cleared after consumption
     expect(sessionStorage.getItem('session_expired_reason')).toBeNull();
   });
+
+  it('does not trigger session eviction or redirect when 401 is returned from /auth/login (bad credentials)', async () => {
+    sessionStorage.setItem('access_token', 'initial-token');
+    const mockAxiosInstance = axios.create();
+    const mockRedirect = vi.fn();
+    setupSessionInterceptor(mockAxiosInstance, mockRedirect);
+
+    try {
+      const interceptors = (mockAxiosInstance.interceptors.response as unknown as {
+        handlers: Array<{ rejected: (error: unknown) => Promise<never> }>;
+      }).handlers;
+      const errorHandler = interceptors[interceptors.length - 1].rejected;
+      await errorHandler({
+        response: { status: 401, data: { detail: 'The provided email or password is incorrect.' } },
+        config: { url: '/api/v1/auth/login' },
+      });
+    } catch {
+      // Expected to reject to let LoginForm handle it
+    }
+
+    expect(sessionStorage.getItem('access_token')).toBe('initial-token');
+    expect(mockRedirect).not.toHaveBeenCalled();
+  });
 });

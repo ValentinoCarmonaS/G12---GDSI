@@ -14,6 +14,11 @@
 
 - Q: What level of security audit logging must the authentication and credential recovery service provide? → A: Structured console/logger audit events (event type, timestamp, IP, userId/email) for all security events (login success/failure, rate-limit lockouts, reset requests and confirmations) without logging sensitive passwords or raw tokens and without requiring database audit tables.
 
+### Session 2026-10-23 (Backlog-US 2.0 Reconciliation)
+
+- Q: What is the delivery scope of feature 001 regarding frontend presentation vs backend services? → A: Full End-to-End (E2E) delivery. The specification mandates both backend REST endpoints and frontend user interfaces (Comensal registration, password recovery request/confirm, and login navigation links) to satisfy the user-verifiable acceptance criteria of Backlog-US 2.0.
+- Q: How is the comensal post-login redirect to "su establecimiento por defecto" (COM-1.2.1) handled in Sprint 1? → A: Comensales are routed to the general `/catalog` view. Dynamic restaurant selection and local preference persistence are formally deferred to Sprint 2 (`COM-1.5.1`).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Comensal Registration with Email and Password (Priority: P1)
@@ -49,13 +54,14 @@ So that I can securely access the platform with an authenticated session asserti
 
 **Acceptance Scenarios**:
 
-1. **Given** an active user account with correct email and password, **When** the user submits their credentials on the login page, **Then** the system authenticates the user, issues a secure session token valid for 8 hours containing user identity, role, and tenant context (where applicable), and redirects the user to their designated view (Comensal home/catalog, Mostrador dispatch view, Kitchen KDS, or Admin Back-Office).
+1. **Given** an active user account with correct email and password, **When** the user submits their credentials on the login page, **Then** the system authenticates the user, issues a secure session token valid for 8 hours containing user identity, role, and tenant context (where applicable), and redirects the user to their designated view (Comensal home/catalog at `/catalog` pending dynamic establishment selection in Sprint 2 via `COM-1.5.1`, Mostrador dispatch view, Kitchen KDS, or Admin Back-Office).
 2. **Given** a user on the login page, **When** they submit a registered email with an incorrect password, **Then** the system rejects access, preserves the entered email in the input field, and displays a generic security error message.
 3. **Given** a user on the login page, **When** they submit an email address that does not exist in the database with any password, **Then** the system rejects access and displays the exact same generic security error message as an incorrect password, preventing user enumeration.
 4. **Given** a user on the login page, **When** they submit the form with empty email, empty password, or both, **Then** the system blocks the request and highlights the required fields.
 5. **Given** a user attempting to log in, **When** their account status is marked as suspended, disabled, or inactive by an administrator, **Then** the system blocks authentication and displays an explicit notification that the profile is not authorized to operate.
 6. **Given** a user entering their email with leading/trailing whitespaces or uppercase characters, **When** they submit the correct password, **Then** the system normalizes the email (trimmed and lowercased) and successfully authenticates the user.
 7. **Given** any account or client IP, **When** 5 consecutive failed login attempts occur within a rolling window, **Then** the system temporarily throttles/locks access for 15 minutes, returning a generic retry-after message.
+8. **Given** a user on the login page who forgot their password, **When** they click "Olvidé mi contraseña" or the password recovery link, **Then** the system interrupts the login flow and navigates the user to the password recovery request screen.
 
 ---
 
@@ -78,6 +84,7 @@ So that I can securely regain access to my account without administrative interv
 5. **Given** a comensal navigating to a reset link, **When** the 15-minute validity window has expired, **Then** the system rejects token verification and notifies the user that the link has expired, prompting them to request a new one.
 6. **Given** a comensal navigating to a valid reset link, **When** they enter and confirm a new password that complies with the complexity policy, **Then** the system updates the stored cryptographic hash, invalidates the token, revokes all previously issued active sessions for that account, and redirects to login.
 7. **Given** a reset link that has already been successfully used once, **When** a user clicks or submits it again, **Then** the system rejects the token as already consumed.
+8. **Given** a comensal who has initiated the password recovery flow on the recovery request view, **When** they decide not to proceed and click "Cancelar" or "Volver al inicio de sesión", **Then** the system aborts the recovery process without dispatching emails and navigates the user back to the login screen.
 
 ---
 
@@ -116,7 +123,7 @@ So that I never permanently lose access to managing my restaurant business and t
 - **FR-003**: The system MUST enforce a password complexity policy requiring a minimum of 8 characters, at least one uppercase letter, at least one lowercase letter, and at least one numeric digit.
 - **FR-004**: The system MUST hash all passwords with a one-way cryptographic hash function and individual random salt (e.g., bcrypt) prior to storage. Plaintext passwords MUST NEVER be stored, logged, or returned in responses.
 - **FR-005**: The system MUST provide a single unified authentication endpoint supporting all user roles (`COMENSAL`, `ENCARGADO`, `CHEF`, `ADMINISTRADOR`).
-- **FR-006**: Upon successful authentication, the system MUST issue a signed session token (JWT) with a standard validity period of 8 hours, containing the user identity (`user_id`), assigned role (`role`), and associated establishment identifier (`tenant_id`, mandatory for staff roles, optional for unassociated comensales).
+- **FR-006**: Upon successful authentication, the system MUST issue a signed session token (JWT) with a standard validity period of 8 hours, containing the user identity (`user_id`), assigned role (`role`), and associated establishment identifier (`tenant_id`, mandatory for staff roles, optional for unassociated comensales). For comensales in Sprint 1, post-login navigation routes to the general catalog (`/catalog`); dynamic establishment selection is deferred to Sprint 2 (`COM-1.5.1`).
 - **FR-007**: The system MUST provide identical, generic error messages and timing-resistant behavior for invalid passwords and non-existent email addresses to prevent user enumeration.
 - **FR-008**: The system MUST enforce rate limiting on the login service, applying a 15-minute temporary cooldown/block after 5 consecutive failed login attempts for a given account or client IP address.
 - **FR-009**: The system MUST reject login attempts and token generation for accounts marked as suspended, inactive, or disabled.
@@ -128,6 +135,13 @@ So that I never permanently lose access to managing my restaurant business and t
 - **FR-015**: Upon successful password reset, the system MUST mark the reset token as consumed, update the stored password hash, and immediately invalidate all previously issued active session tokens for that account.
 - **FR-016**: The password recovery mechanism for administrators MUST reuse the same centralized recovery service used by comensales, guaranteeing identical security invariants.
 - **FR-017**: The system MUST emit structured security audit log events for all authentication and credential recovery actions (successful login, failed login, account rate-limit lockout, password reset requested, password reset completed) capturing event type, timestamp, client IP, and user identity, without logging plaintext passwords or raw tokens.
+- **FR-018**: The system MUST provide a Comensal Registration view allowing visitors to submit their email and password, displaying clear real-time or submit-time validation for missing fields, invalid email format, and visual indicators highlighting unsatisfied password complexity rules.
+- **FR-019**: Upon successful registration, the registration view MUST display a confirmation notice and automatically redirect the user to the Login view (`/login`).
+- **FR-020**: The registration view MUST include a navigation action ("Ya tengo una cuenta" / "Iniciar sesión") that aborts registration without preserving entered data and navigates directly to the Login view.
+- **FR-021**: The Login view MUST provide an accessible link ("Olvidé mi contraseña") that navigates the user directly to the password recovery request view.
+- **FR-022**: The system MUST provide a Password Recovery Request view allowing users to enter their email, submit a reset request, and view a uniform confirmation message regardless of account existence.
+- **FR-023**: The password recovery request view MUST provide a cancel/return action that aborts the flow and navigates back to the Login view without dispatching an email.
+- **FR-024**: The system MUST provide a Password Reset Confirmation view accessible via the tokenized link, allowing users to input and confirm a new password complying with security policies, and redirecting to Login upon successful reset.
 
 ### Key Entities
 
@@ -154,4 +168,4 @@ So that I never permanently lose access to managing my restaurant business and t
 - A reliable transactional email delivery service is configured for the platform.
 - Comensales are platform-level users who can select or browse establishments, while staff roles (`ENCARGADO`, `CHEF`, `ADMINISTRADOR`) are assigned to a specific tenant upon creation.
 - Social login (Google SSO), SMS-based recovery, and establishment QR onboarding are explicitly excluded from this MVP scope, as decided in the planning phase.
-- Frontend routing guards and UI layout styling will consume the issued session token claims to render appropriate views, but presentation details are decoupled from this functional specification.
+- Frontend presentation layer views for comensal registration, unified login navigation links, and self-service password recovery are fully in scope as end-to-end user-facing deliverables. Dynamic establishment selection for diners is formally integrated in Sprint 2 via COM-1.5.1.

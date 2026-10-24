@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { LoginCredentials } from '../../types/auth';
 
 interface LoginFormProps {
@@ -137,6 +138,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, className = '' }
         )}
       </div>
 
+      <div className="flex items-center justify-end text-sm">
+        <Link
+          to="/forgot-password"
+          className="font-medium text-amber-600 hover:text-amber-500 transition-colors"
+        >
+          Olvidé mi contraseña
+        </Link>
+      </div>
+
       <button
         type="submit"
         disabled={isLoading}
@@ -167,6 +177,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, className = '' }
           'Ingresar'
         )}
       </button>
+
+      <div className="text-center text-sm pt-2">
+        <span className="text-gray-500">¿No tenés una cuenta? </span>
+        <Link
+          to="/register"
+          className="font-medium text-amber-600 hover:text-amber-500 transition-colors"
+        >
+          Registrate
+        </Link>
+      </div>
     </form>
   );
 };

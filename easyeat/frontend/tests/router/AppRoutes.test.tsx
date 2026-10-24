@@ -276,4 +276,42 @@ describe('AppRoutes - Admin Workspace Routing (T036, ADM-1.1.1)', () => {
 
     expect(await screen.findByText(/panel de administración/i)).toBeInTheDocument();
   });
+
+  it('renders ResetPasswordPage when navigating to /reset-password with token', async () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: false,
+      user: null,
+      token: null,
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/reset-password?token=sample-reset-token']}>
+        <AppRoutes />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/restablecé tu contraseña/i)).toBeInTheDocument();
+  });
+
+  it('renders ResetPasswordPage when navigating to /auth/reset-password with token (email link compatibility)', async () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: false,
+      user: null,
+      token: null,
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/auth/reset-password?token=sample-reset-token']}>
+        <AppRoutes />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/restablecé tu contraseña/i)).toBeInTheDocument();
+  });
 });

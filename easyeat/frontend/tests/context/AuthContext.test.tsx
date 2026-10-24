@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { authApi } from '@/api/authApi';
@@ -134,9 +135,11 @@ describe('AuthContext and useAuth', () => {
     };
 
     render(
-      <AuthProvider>
-        <ChefLoginIntegration />
-      </AuthProvider>
+      <MemoryRouter>
+        <AuthProvider>
+          <ChefLoginIntegration />
+        </AuthProvider>
+      </MemoryRouter>
     );
 
     expect(screen.getByTestId('auth-status')).toHaveTextContent('unauthenticated');
