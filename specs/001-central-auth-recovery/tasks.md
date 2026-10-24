@@ -201,7 +201,7 @@
 **Purpose**: Execute full automated test suites across frontend to guarantee zero regression and 100% contract compliance.
 
 - [X] T063 Run frontend test suite (`npm run test` in `easyeat/frontend`) verifying all component, routing, and lifecycle tests pass with zero failures.
-- [ ] T064 Run frontend build validation (`npm run build` in `easyeat/frontend`) asserting TypeScript compilation and bundle generation succeed without warnings.
+- [X] T064 Run frontend build validation (`npm run build` in `easyeat/frontend`) asserting TypeScript compilation and bundle generation succeed without warnings.
 
 ---
 
