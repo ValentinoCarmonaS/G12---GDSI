@@ -8,10 +8,10 @@ export const ROLE_DEFAULT_ROUTES: Record<Role, string> = {
 };
 
 export const ROLE_ALLOWED_PREFIXES: Record<Role, string[]> = {
-  ENCARGADO: ['/mostrador'],
-  CHEF: ['/cocina'],
+  ENCARGADO: ['/mostrador', '/counter'],
+  CHEF: ['/cocina', '/kds'],
   ADMINISTRADOR: ['/admin'],
-  COMENSAL: ['/catalogo'],
+  COMENSAL: ['/catalogo', '/catalog'],
 };
 
 /**

@@ -9,6 +9,7 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { CounterWorkspacePage } from '../pages/CounterWorkspacePage';
 import { KitchenWorkspacePage } from '../pages/KitchenWorkspacePage';
+import { ChefIngredientsPage } from '../pages/ChefIngredientsPage';
 import { AdminWorkspacePage } from '../pages/AdminWorkspacePage';
 import { StaffManagementPage } from '../pages/StaffManagementPage';
 import { InventoryManagementPage } from '../pages/InventoryManagementPage';
@@ -93,6 +94,16 @@ export const AppRoutes: React.FC = () => {
       <Route path="/counter/*" element={<Navigate to="/mostrador" replace />} />
 
       {/* Role-Protected Kitchen Display System Workspace (CHEF) */}
+      <Route
+        path="/cocina/ingredientes"
+        element={
+          <RoleRouteGuard allowedRoles={['CHEF']}>
+            <ChefIngredientsPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route path="/kds/ingredients" element={<Navigate to="/cocina/ingredientes" replace />} />
+
       <Route
         path="/cocina/*"
         element={
