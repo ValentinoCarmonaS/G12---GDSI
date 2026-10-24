@@ -164,7 +164,7 @@
 - [X] T043 Wire "Cerrar sesión" action button in `WorkspaceLayout` to `useAuth().logout` in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
 - [X] T044 [P] Contract conformance test validating live requests against `contracts/openapi.yaml` schemas in `easyeat/backend/src/test/java/com/easyeat/auth/contract/OpenApiContractTest.java`
 - [ ] T045 [P] Execute end-to-end manual validation scenarios following quickstart guide in `specs/002-staff-auth-redirect-guards/quickstart.md`
-- [ ] T046 Verify `Cache-Control: no-store` headers on protected auth and workspace endpoints in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [X] T046 Verify `Cache-Control: no-store` headers on protected auth and workspace endpoints in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
 
 ---
 
