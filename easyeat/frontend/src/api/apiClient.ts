@@ -27,6 +27,12 @@ export function setupSessionInterceptor(
     (response) => response,
     (error) => {
       if (error?.response?.status === 401) {
+        // Skip session eviction for login credential failures (handled by LoginForm)
+        const requestUrl = error.config?.url || '';
+        if (requestUrl.includes('/auth/login')) {
+          return Promise.reject(error);
+        }
+
         // Purge invalid/expired token from client storage
         sessionStorage.removeItem('access_token');
 
