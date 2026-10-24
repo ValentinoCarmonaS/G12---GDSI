@@ -174,7 +174,7 @@
 
 ### Implementation for Login Navigation Links
 
-- [ ] T056 [US2] Update `LoginForm.tsx` in `easyeat/frontend/src/components/auth/LoginForm.tsx` to render the "Olvidé mi contraseña" link navigating to `/forgot-password` (FR-021) and the "¿No tenés una cuenta? Registrate" link navigating to `/register`.
+- [X] T056 [US2] Update `LoginForm.tsx` in `easyeat/frontend/src/components/auth/LoginForm.tsx` to render the "Olvidé mi contraseña" link navigating to `/forgot-password` (FR-021) and the "¿No tenés una cuenta? Registrate" link navigating to `/register`.
 
 ---
 

@@ -6,13 +6,19 @@ import { LoginForm } from '@/components/auth/LoginForm';
 
 describe('LoginForm Component', () => {
   const mockOnSubmit = vi.fn();
+  const renderLoginForm = (props = {}) =>
+    render(
+      <MemoryRouter>
+        <LoginForm onSubmit={mockOnSubmit} {...props} />
+      </MemoryRouter>
+    );
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders email and password inputs and submit button', () => {
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
@@ -21,7 +27,7 @@ describe('LoginForm Component', () => {
 
   it('displays validation errors when submitting empty fields (FR-002)', async () => {
     const user = userEvent.setup();
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const submitBtn = screen.getByRole('button', { name: /ingresar/i });
     await user.click(submitBtn);
@@ -33,7 +39,7 @@ describe('LoginForm Component', () => {
 
   it('displays validation error on invalid email syntax (FR-003)', async () => {
     const user = userEvent.setup();
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const emailInput = screen.getByLabelText(/correo electrónico/i);
     const passwordInput = screen.getByLabelText(/contraseña/i);
@@ -50,7 +56,7 @@ describe('LoginForm Component', () => {
   it('normalizes email (strips whitespace and converts to lowercase) before submitting (FR-004)', async () => {
     const user = userEvent.setup();
     mockOnSubmit.mockResolvedValueOnce(undefined);
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const emailInput = screen.getByLabelText(/correo electrónico/i);
     const passwordInput = screen.getByLabelText(/contraseña/i);
@@ -76,7 +82,7 @@ describe('LoginForm Component', () => {
     });
     mockOnSubmit.mockReturnValue(submitPromise);
 
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const emailInput = screen.getByLabelText(/correo electrónico/i);
     const passwordInput = screen.getByLabelText(/contraseña/i);
@@ -110,7 +116,7 @@ describe('LoginForm Component', () => {
       },
     });
 
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), 'user@test.com');
     await user.type(screen.getByLabelText(/contraseña/i), 'WrongPass');
@@ -125,7 +131,7 @@ describe('LoginForm Component', () => {
     const user = userEvent.setup();
     mockOnSubmit.mockRejectedValueOnce(new Error('Network Error'));
 
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), 'user@test.com');
     await user.type(screen.getByLabelText(/contraseña/i), 'Password123');
@@ -137,11 +143,7 @@ describe('LoginForm Component', () => {
   });
 
   it('renders accessible navigation links to /register and /forgot-password (FR-021)', () => {
-    render(
-      <MemoryRouter>
-        <LoginForm onSubmit={mockOnSubmit} />
-      </MemoryRouter>
-    );
+    renderLoginForm();
 
     const forgotPasswordLink = screen.getByRole('link', { name: /olvidé mi contraseña/i });
     expect(forgotPasswordLink).toBeInTheDocument();
