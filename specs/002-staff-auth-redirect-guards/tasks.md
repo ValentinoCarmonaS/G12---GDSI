@@ -1,14 +1,15 @@
 # Tasks: Staff Authentication Views and Automatic Role-Based Redirect Guards
 
 **Input**: Design documents from `/specs/002-staff-auth-redirect-guards/` (`spec.md`, `plan.md`, `data-model.md`, `research.md`, `contracts/openapi.yaml`, `quickstart.md`)  
-**Prerequisites**: `spec.md` (required), `plan.md` (required), `data-model.md`, `contracts/openapi.yaml`  
-**External Dependency**: Feature `001-central-auth-recovery` must be merged into branch `002-staff-auth-redirect-guards` before executing Phase 2 backend verification.  
-**Tests**: Strict TDD methodology applied (Unit, component & security tests before implementation; Frontend-first for UI stories, Backend-first for filter and logout extensions).  
-**Organization**: Tasks are grouped by User Story ([US1] to [US5]) to enable independent implementation and incremental testing.
+**Prerequisites**: `spec.md` (approved), `plan.md` (approved), `data-model.md`, `contracts/openapi.yaml`, `quickstart.md`  
+**Constitution Compliance**: v1.1.0 (Principle X: Full-Stack Vertical Slice Integrity)  
+**External Dependency**: Reuses centralized authentication service delivered in `001-central-auth-recovery` (`POST /api/v1/auth/login`, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout`, `token_version` on `User` entity).  
+**Tests**: Strict TDD methodology applied (Unit, component, router guard & security tests authored and failing before implementation; frontend-first for UI components, backend-first for filters and isolation).  
+**Organization**: Tasks are grouped chronologically by Setup, Foundational, User Stories ([US1] through [US5]), and Polish to enable independent delivery and verifiable checkpoints.
 
 ---
 
-## Format: `- [ ] [TaskID] [P?] [Story?] Description with file path`
+## Format: `- [ ] [TaskID] [P?] [Story?] Description with exact file path`
 
 - **[P]**: Can run in parallel (different files, no conflicting dependencies)
 - **[Story]**: Belongs to user story phase (`[US1]`, `[US2]`, `[US3]`, `[US4]`, `[US5]`)
@@ -16,160 +17,155 @@
 
 ---
 
-## Phase 1: Setup (Frontend Scaffolding & Backend Baseline Check)
+## Phase 1: Setup (Frontend Scaffolding & Shared Client Baseline)
 
-**Purpose**: Initialize frontend application and verify backend build configuration from `001-central-auth-recovery`.
+**Purpose**: Initialize frontend application dependencies, test runner, styling tokens, and HTTP client baseline.
 
-- [x] T001 Initialize frontend React 18, Vite 5, Tailwind CSS, and React Router v6 setup in `easyeat/frontend/package.json` and `easyeat/frontend/vite.config.ts`
-- [x] T002 [P] Verify or extend backend Maven build configuration from 001 to ensure `jjwt` (api, impl, jackson) and Spring Security dependencies exist in `easyeat/backend/pom.xml`
-- [x] T003 [P] Verify or configure backend environment profiles (`jwt.secret`, `jwt.expiration`) for dev and test in `easyeat/backend/src/main/resources/application.yml` and `easyeat/backend/src/main/resources/application-dev.yml`
-
----
-
-## Phase 2: Foundational (Branch Integration & Baseline Verification)
-
-**Purpose**: Integrate `001-central-auth-recovery` artifacts and verify core data model and security configuration required before user stories proceed.
-
-**⚠️ CRITICAL**: Merge of branch `001-central-auth-recovery` is a mandatory gate before backend tasks in this phase and subsequent stories can execute. Frontend work in Phase 3 can proceed in parallel against mocked contracts.
-
-- [x] T004 Merge branch `001-central-auth-recovery` into `002-staff-auth-redirect-guards` to incorporate backend authentication baseline
-- [x] T005 [P] Verify Flyway migration `V1__create_users.sql` from 001 defines `users` table with `role`, `status`, `tenant_id`, and `token_version` in `easyeat/backend/src/main/resources/db/migration/V1__create_users.sql`
-- [x] T006 [P] Verify JPA `User` entity from 001 exposes `tokenVersion`, `status`, `role`, and `tenantId` fields in `easyeat/backend/src/main/java/com/easyeat/auth/entity/User.java`
-- [x] T007 [P] Verify `UserRepository` from 001 provides `findByEmail` lookup in `easyeat/backend/src/main/java/com/easyeat/auth/repository/UserRepository.java`
-- [x] T008 [P] Verify base `SecurityConfig` from 001 configures stateless session management and BCrypt password encoder in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
-- [x] T009 [P] Verify RFC 9457 ProblemDetail `GlobalExceptionHandler` from 001 handles authentication exceptions without user enumeration in `easyeat/backend/src/main/java/com/easyeat/exception/GlobalExceptionHandler.java`
-
-**Checkpoint**: Baseline verified — data layer, entity contracts, and base security configuration from 001 confirmed ready for consumption.
+- [ ] T001 Configure frontend dependencies (React 18.3, Vite 5.4, React Router v6.27, Tailwind CSS 3.4, Lucide React, Vitest 2.1) in `easyeat/frontend/package.json`
+- [ ] T002 [P] Configure Vite application build and Vitest testing environment settings in `easyeat/frontend/vite.config.ts`
+- [ ] T003 [P] Configure TypeScript compiler options, JSX transform, and module resolution in `easyeat/frontend/tsconfig.json`
+- [ ] T004 [P] Configure Tailwind CSS utility classes and design tokens in `easyeat/frontend/tailwind.config.js` and `easyeat/frontend/src/index.css`
+- [ ] T005 Configure Axios HTTP client instance with base URL, standard JSON headers, and Bearer token injection in `easyeat/frontend/src/api/apiClient.ts`
 
 ---
 
-## Phase 3: User Story 1 - Unified Staff Login via Shared Interface (Priority: P1) 🎯 MVP
+## Phase 2: Foundational (Blocking Prerequisites)
 
-**Goal**: Deliver the shared staff credential authentication gateway with email normalization, anti-enumeration protection, submission debouncing, and token contract verification against 001's login endpoint.
+**Purpose**: Verify backend authentication baseline from `001-central-auth-recovery` and implement shared reactive auth context, types, routing policies, and common workspace shell.
 
-**Independent Test**: Execute `LoginForm.test.tsx` verifying client-side trimming/lowercasing, submit button debouncing, anti-enumeration error handling, and `AuthControllerContractTest.java` verifying JWT claim conformance (`user_id`, `role`, `tenant_id`, `token_version`).
+**⚠️ CRITICAL**: Must complete before any user story work can execute.
 
-### Tests for User Story 1 (TDD - Frontend & Contract First) ⚠️
+- [ ] T006 [P] Verify backend authentication baseline endpoints (`/login`, `/me`, `/logout`) and database token versioning in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java`
+- [ ] T007 [P] Verify backend SecurityConfig registers stateless session management, BCrypt cost 12, and `JwtAuthenticationFilter` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [ ] T008 [P] Define frontend TypeScript types and interfaces (`Role`, `AuthenticatedUser`, `AuthContextState`, `LoginRequest`, `LoginResponse`, `JwtClaims`) in `easyeat/frontend/src/types/auth.ts`
+- [ ] T009 Implement pure role mapping and post-auth routing policy functions (`getRoleDefaultRoute`, `resolvePostAuthRedirect`) in `easyeat/frontend/src/router/postAuthRouting.ts`
+- [ ] T010 Implement `AuthContext` reactive state provider managing user identity, token decoding, and `sessionStorage` synchronization in `easyeat/frontend/src/context/AuthContext.tsx`
+- [ ] T011 [P] Implement `useAuth` custom hook exposing reactive auth state and action dispatchers in `easyeat/frontend/src/hooks/useAuth.ts`
+- [ ] T012 [P] Implement `WorkspaceLayout` common wrapper component with role badge, tenant scope display, and logout action slot in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
+- [ ] T013 [P] Implement diner catalog fallback view `CatalogPage` for role `COMENSAL` in `easyeat/frontend/src/pages/CatalogPage.tsx`
 
-- [x] T010 [P] [US1] Backend contract integration test verifying `POST /api/v1/auth/login` issues JWT with all four required claims (`user_id`, `role`, `tenant_id`, `token_version`) in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerContractTest.java`
-- [x] T011 [P] [US1] Unit and interaction tests for `LoginForm` (input validation, trim/lowercase transformation, submit debouncing, generic 401 error message, network failure display) in `easyeat/frontend/tests/components/LoginForm.test.tsx`
+**Checkpoint**: Foundation ready — reactive state, types, routing helpers, and common layouts are verified and ready for user story integration.
+
+---
+
+## Phase 3: User Story 1 — Counter Manager Credential Login (ENC-1.1.1) [US1] 🎯 MVP
+
+**Goal**: Deliver the shared staff credential authentication gateway with email normalization (trim/lowercase), anti-enumeration protection, submission debouncing, and token contract verification against the login endpoint.
+
+**Independent Test**: Execute `LoginForm.test.tsx` verifying client-side trimming/lowercasing, submit button debouncing, anti-enumeration generic 401 handling, and `AuthControllerContractTest.java` verifying JWT claim conformance (`user_id`, `role: ENCARGADO`, `tenant_id`, `token_version`).
+
+### Tests for User Story 1 (TDD - Contract & Frontend First) ⚠️
+
+- [ ] T014 [P] [US1] Backend contract integration test verifying `POST /api/v1/auth/login` returns JWT carrying `role: ENCARGADO`, `user_id`, `tenant_id`, and `token_version` in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerContractTest.java`
+- [ ] T015 [P] [US1] Unit and interaction tests for `LoginForm` (email syntax check, whitespace trim, lowercasing, button debouncing, generic 401 error message, network failure display) in `easyeat/frontend/tests/components/LoginForm.test.tsx`
 
 ### Implementation for User Story 1
 
-- [x] T012 [P] [US1] Verify or consume `LoginRequest.java` and `LoginResponse.java` DTOs from 001 in `easyeat/backend/src/main/java/com/easyeat/auth/dto/LoginRequest.java` and `LoginResponse.java`
-- [x] T013 [US1] Create Axios HTTP client instance with base URL, standard JSON headers, and credentials configuration in `easyeat/frontend/src/api/apiClient.ts`
-- [x] T014 [US1] Create auth API service method invoking `POST /api/v1/auth/login` with typed request and response in `easyeat/frontend/src/api/authApi.ts`
-- [x] T015 [US1] Implement `LoginForm` component with client-side validation, trim/lowercase transformation, and submission debouncing in `easyeat/frontend/src/components/auth/LoginForm.tsx`
-- [x] T016 [US1] Implement `LoginPage` view wrapping `LoginForm` with responsive brand layout in `easyeat/frontend/src/pages/LoginPage.tsx`
+- [ ] T016 [US1] Implement authentication service client function calling `POST /api/v1/auth/login` with typed request and response in `easyeat/frontend/src/api/authApi.ts`
+- [ ] T017 [US1] Implement controlled `LoginForm` component with validation, email normalization, submit debouncing, and anti-enumeration error handling in `easyeat/frontend/src/components/auth/LoginForm.tsx`
+- [ ] T018 [US1] Implement `LoginPage` public route view wrapping `LoginForm` with responsive brand container in `easyeat/frontend/src/pages/LoginPage.tsx`
+- [ ] T019 [US1] Verify end-to-end credential submission for `maria.encargada@laesquina.com` asserting valid token receipt and context initialization in `easyeat/frontend/tests/components/LoginForm.test.tsx`
 
-**Checkpoint**: User Story 1 functional — staff credentials submitted via UI are validated, debounced, authenticated by 001 endpoint, and return conforming tokens.
+**Checkpoint**: User Story 1 functional (MVP achieved) — counter staff credentials submitted via UI are validated, debounced, authenticated by the backend, and issue conforming identity tokens.
 
 ---
 
-## Phase 4: User Story 2 - Automatic Post-Login Workspace Redirection (Priority: P1)
+## Phase 4: User Story 2 — Automatic Redirection to Counter Workspace (ENC-1.2.1) [US2]
 
-**Goal**: Automatically route authenticated staff immediately to their role-specific operational workspace (`/counter`, `/kds`, `/admin`) or catalog fallback (`/catalog`), preserving authorized deep links and discarding unauthorized targets.
+**Goal**: Automatically route authenticated counter managers immediately to their operational workspace (`/mostrador`), preserving authorized deep links and discarding unauthorized destination targets.
 
-**Independent Test**: Execute `postAuthRouting.test.ts` verifying exact destination mapping per role and deep link resolution policy.
+**Independent Test**: Execute `postAuthRouting.test.ts` verifying `/mostrador` destination mapping for `ENCARGADO` and `AppRoutes.test.tsx` asserting instant history replacement (`replace: true`).
 
 ### Tests for User Story 2 (TDD) ⚠️
 
-- [x] T017 [P] [US2] Unit tests for role-to-route mapping policy and deep link resolution in `easyeat/frontend/tests/router/postAuthRouting.test.ts`
-- [x] T018 [P] [US2] Unit tests for `AuthContext` token decoding, payload extraction (`role`, `tenant_id`, `user_id`), and `sessionStorage` synchronization in `easyeat/frontend/tests/context/AuthContext.test.tsx`
+- [ ] T020 [P] [US2] Unit tests for `resolvePostAuthRedirect` verifying resolution to `/mostrador`, deep link preservation for counter paths, and discarding out-of-role targets in `easyeat/frontend/tests/router/postAuthRouting.test.ts`
+- [ ] T021 [P] [US2] Router navigation tests asserting instant transition to `/mostrador` with history replacement (`replace: true`) upon successful login in `easyeat/frontend/tests/router/AppRoutes.test.tsx`
 
 ### Implementation for User Story 2
 
-- [x] T019 [P] [US2] Implement pure post-auth routing functions (`getRoleDefaultRoute`, `resolvePostAuthRedirect`) in `easyeat/frontend/src/router/postAuthRouting.ts`
-- [x] T020 [US2] Implement `AuthContext` with JWT decoding, `sessionStorage` persistence, and reactive auth state in `easyeat/frontend/src/context/AuthContext.tsx`
-- [x] T021 [P] [US2] Implement `useAuth` custom hook exposing auth state and dispatch actions in `easyeat/frontend/src/hooks/useAuth.ts`
-- [x] T022 [P] [US2] Create `WorkspaceLayout` common wrapper with role badge, tenant display, and logout slot in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
-- [x] T023 [P] [US2] Create `CounterWorkspacePage` landing view for `ENCARGADO` in `easyeat/frontend/src/pages/CounterWorkspacePage.tsx`
-- [x] T024 [P] [US2] Create `KitchenWorkspacePage` landing view for `CHEF` in `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
-- [x] T025 [P] [US2] Create `AdminWorkspacePage` landing view for `ADMINISTRADOR` in `easyeat/frontend/src/pages/AdminWorkspacePage.tsx`
-- [x] T026 [P] [US2] Create `CatalogPage` landing view for `COMENSAL` / fallback in `easyeat/frontend/src/pages/CatalogPage.tsx`
-- [x] T027 [US2] Integrate post-auth redirection in `LoginForm` upon successful login in `easyeat/frontend/src/components/auth/LoginForm.tsx`
+- [ ] T022 [US2] Implement `CounterWorkspacePage` landing view for `ENCARGADO` wrapped in `WorkspaceLayout` in `easyeat/frontend/src/pages/CounterWorkspacePage.tsx`
+- [ ] T023 [US2] Integrate post-auth redirection in `LoginForm` to route `ENCARGADO` to `/mostrador` via `resolvePostAuthRedirect` in `easyeat/frontend/src/components/auth/LoginForm.tsx`
+- [ ] T024 [US2] Register `/mostrador/*` route perimeter in `easyeat/frontend/src/router/AppRoutes.tsx`
 
-**Checkpoint**: User Story 2 functional — staff members authenticate and are instantly routed to their assigned operational workspace without intermediate prompts.
+**Checkpoint**: User Story 2 functional — counter managers authenticate and are instantly routed to `/mostrador` without intermediate prompts or history pollution.
 
 ---
 
-## Phase 5: User Story 3 - Role-Based Route Protection and Cross-Role Isolation (Priority: P1)
+## Phase 5: User Story 3 — Kitchen Chef Credential Login (CHF-1.1.1) [US3]
 
-**Goal**: Guard staff workspaces against unauthenticated access and enforce silent redirection on cross-role navigation attempts with history replacement (`replace: true`).
+**Goal**: Enable kitchen chefs to authenticate using their employee credentials through the shared portal, verifying active status and emitting structured security audit logs.
 
-**Independent Test**: Execute `RoleRouteGuard.test.tsx` verifying unauthenticated redirection to `/login` with preserved target, silent cross-role redirection, and browser back-button entrapment prevention.
+**Independent Test**: Execute backend tests asserting `role: CHEF` token claims and audit log emission, and verify inactive/suspended chef accounts are blocked with HTTP 403.
 
 ### Tests for User Story 3 (TDD) ⚠️
 
-- [x] T028 [P] [US3] Component tests for `RoleRouteGuard` (unauthenticated redirect with `state.from`, cross-role silent redirect to assigned workspace, `replace: true` history replacement) in `easyeat/frontend/tests/router/RoleRouteGuard.test.tsx`
+- [ ] T025 [P] [US3] Backend test verifying chef authentication against `POST /api/v1/auth/login`, asserting `role: CHEF` claim and structured audit log emission in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerTest.java`
+- [ ] T026 [P] [US3] Backend test asserting that suspended or unverified chef accounts receive HTTP 403 Forbidden with RFC 9457 ProblemDetail in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerTest.java`
 
 ### Implementation for User Story 3
 
-- [x] T029 [US3] Implement `RoleRouteGuard` component with `allowedRoles` check, `state.from` preservation, and silent redirect in `easyeat/frontend/src/router/RoleRouteGuard.tsx`
-- [x] T030 [US3] Assemble full declarative route tree with `RoleRouteGuard` wrappers in `easyeat/frontend/src/router/AppRoutes.tsx`
+- [ ] T027 [US3] Frontend integration test asserting chef login initializes active session state with `role: CHEF` in `easyeat/frontend/tests/context/AuthContext.test.tsx`
+- [ ] T028 [US3] Connect chef credential submission in `LoginForm` to initialize session context and audit event dispatch in `easyeat/frontend/src/components/auth/LoginForm.tsx`
 
-**Checkpoint**: User Story 3 functional — perimeter security actively isolates `/counter`, `/kds`, `/admin`, and `/catalog` against unauthorized direct navigation and history tampering.
-
----
-
-## Phase 6: User Story 4 - Session Expiration Handling and Action Protection (Priority: P2)
-
-**Goal**: Enforce single active session verification via `token_version` on every backend request and client-side 401 interception redirecting expired or invalidated sessions to login with an explicit alert notice.
-
-**Independent Test**: Execute `JwtAuthenticationFilterTest.java` and `SessionLifecycle.test.tsx` verifying immediate rejection of stale `token_version` requests and client-side session eviction.
-
-### Tests for User Story 4 (TDD - Backend First) ⚠️
-
-- [x] T031 [P] [US4] Security filter test verifying rejection of requests with stale or mismatched `token_version` in `easyeat/backend/src/test/java/com/easyeat/auth/security/JwtAuthenticationFilterTest.java`
-- [x] T032 [P] [US4] Session lifecycle integration test validating 401 interception, in-flight action cancellation, and expiration banner display in `easyeat/frontend/tests/session/SessionLifecycle.test.tsx`
-
-### Backend Implementation for User Story 4 (NEW in 002)
-
-- [x] T033 [US4] Implement `JwtAuthenticationFilter` verifying token signature, expiration, and database `token_version` match in `easyeat/backend/src/main/java/com/easyeat/auth/security/JwtAuthenticationFilter.java`
-- [x] T034 [US4] Register `JwtAuthenticationFilter` before `UsernamePasswordAuthenticationFilter` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
-
-### Frontend Implementation for User Story 4
-
-- [x] T035 [US4] Add response interceptor in `apiClient` to capture HTTP 401 responses, clear `sessionStorage`, and dispatch session-expired event in `easyeat/frontend/src/api/apiClient.ts`
-- [x] T036 [US4] Add session expiration banner and state eviction handling in `easyeat/frontend/src/context/AuthContext.tsx`
-
-**Checkpoint**: User Story 4 functional — concurrent login on a second terminal immediately revokes the first terminal's access, and expired sessions cannot execute workspace actions.
+**Checkpoint**: User Story 3 functional — kitchen chefs authenticate securely, suspended accounts are rejected, and audit logs record shift access.
 
 ---
 
-## Phase 7: User Story 5 - Explicit Logout and History Invalidation (Priority: P2)
+## Phase 6: User Story 4 — Automatic Redirection to Kitchen Display System (CHF-1.2.1) [US4]
 
-**Goal**: Terminate staff shift sessions via `POST /api/v1/auth/logout`, incrementing the database `token_version`, clearing client storage, and preventing cached back-button history navigation.
+**Goal**: Automatically route authenticated chefs to `/cocina` (KDS view), resolving chef deep links and silently redirecting cross-role access attempts with history replacement.
 
-**Independent Test**: Execute logout tests verifying database `token_version` incrementation, HTTP 204 response, local session purge, and redirection to `/login`.
+**Independent Test**: Execute `RoleRouteGuard.test.tsx` proving non-chef roles attempting to access `/cocina` are silently routed to their own workspace without error banners.
 
-### Tests for User Story 5 (TDD - Backend First) ⚠️
+### Tests for User Story 4 (TDD) ⚠️
 
-- [x] T037 [P] [US5] WebMvc test for `POST /api/v1/auth/logout` validating atomic `token_version` incrementation and HTTP 204 No Content in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerLogoutTest.java`
-- [x] T038 [P] [US5] Frontend logout interaction test verifying API call, storage purge, and navigation with `replace: true` in `easyeat/frontend/tests/session/LogoutFlow.test.tsx`
+- [ ] T029 [P] [US4] Unit tests for `RoleRouteGuard` verifying silent cross-role redirection to user's assigned workspace with `replace: true` in `easyeat/frontend/tests/router/RoleRouteGuard.test.tsx`
+- [ ] T030 [P] [US4] Routing tests verifying deep link resolution for chef station URLs and fallback to `/cocina` in `easyeat/frontend/tests/router/postAuthRouting.test.ts`
 
-### Backend Implementation for User Story 5 (NEW in 002)
+### Implementation for User Story 4
 
-- [x] T039 [US5] Implement `logout` method in `AuthService` executing atomic `token_version` incrementation for the authenticated user in `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java`
-- [x] T040 [US5] Add `POST /api/v1/auth/logout` endpoint in `AuthController` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/AuthController.java`
+- [ ] T031 [US4] Implement `KitchenWorkspacePage` landing view for `CHEF` wrapped in `WorkspaceLayout` in `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
+- [ ] T032 [US4] Implement declarative `RoleRouteGuard` component checking `allowedRoles`, preserving `state.from` on unauth, and executing silent redirect with `replace: true` in `easyeat/frontend/src/router/RoleRouteGuard.tsx`
+- [ ] T033 [US4] Register protected `/cocina/*` route perimeter enforcing `allowedRoles={['CHEF']}` in `easyeat/frontend/src/router/AppRoutes.tsx`
 
-### Frontend Implementation for User Story 5
-
-- [x] T041 [P] [US5] Add `logoutApi` function calling `POST /api/v1/auth/logout` in `easyeat/frontend/src/api/authApi.ts`
-- [x] T042 [US5] Implement `logout` action in `AuthContext` that calls `logoutApi`, clears `sessionStorage`, and navigates to `/login` with `replace: true` in `easyeat/frontend/src/context/AuthContext.tsx`
-- [x] T043 [US5] Wire "Cerrar sesión" action button in `WorkspaceLayout` to `useAuth().logout` in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
-
-**Checkpoint**: User Story 5 functional — staff can explicitly log out, session tokens are permanently invalidated on the server, and browser back navigation remains on `/login`.
+**Checkpoint**: User Story 4 functional — chefs land directly on `/cocina`, and unauthorized cross-role access is silently redirected to the user's home workspace.
 
 ---
 
-## Phase 8: Polish & Cross-Cutting Concerns
+## Phase 7: User Story 5 — Back-Office Administrator Portal Access and Tenant Isolation (ADM-1.1.1) [US5]
 
-**Purpose**: End-to-end scenario verification, cache headers, and final quality checks across both monorepo modules.
+**Goal**: Authenticate restaurant administrators into the back-office panel (`/admin`), enforcing strict multi-tenant scoping (`tenant_id`) and blocking cross-role access attempts.
 
-- [x] T044 [P] Execute end-to-end manual validation scenarios following quickstart guide in `specs/002-staff-auth-redirect-guards/quickstart.md`
-- [x] T045 Verify `Cache-Control: no-store` headers on auth endpoints to prevent browser caching of protected views in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
-- [x] T046 [P] Run linter and formatting checks across backend (`mvn checkstyle:check`) and frontend (`npm run lint`) to ensure zero warnings
+**Independent Test**: Execute `TenantIsolationTest.java` verifying tenant-scoped query filtering and `RoleRouteGuard.test.tsx` asserting non-admin access rejection.
+
+### Tests for User Story 5 (TDD) ⚠️
+
+- [ ] T034 [P] [US5] Backend test verifying administrator endpoint access authorization and tenant-scoped query filtering by `tenant_id` in `easyeat/backend/src/test/java/com/easyeat/security/TenantIsolationTest.java`
+- [ ] T035 [P] [US5] Routing test verifying administrator login redirects to `/admin` and cross-role attempts by non-admins are blocked in `easyeat/frontend/tests/router/RoleRouteGuard.test.tsx`
+
+### Implementation for User Story 5
+
+- [ ] T036 [US5] Implement `AdminWorkspacePage` landing view for `ADMINISTRADOR` displaying tenant scope in `easyeat/frontend/src/pages/AdminWorkspacePage.tsx`
+- [ ] T037 [US5] Register protected `/admin/*` route perimeter enforcing `allowedRoles={['ADMINISTRADOR']}` in `easyeat/frontend/src/router/AppRoutes.tsx`
+- [ ] T038 [US5] Configure Spring Security RBAC rule `.requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "ADMINISTRADOR")` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+
+**Checkpoint**: User Story 5 functional — administrators access `/admin` with guaranteed multi-tenant data boundaries, and non-admins receive HTTP 403 on API routes.
+
+---
+
+## Phase 8: Polish & Cross-Cutting System Verification
+
+**Purpose**: Implement single active session eviction on HTTP 401, dual-tier shift logout, OpenAPI contract conformance testing, and execute end-to-end quickstart scenarios.
+
+- [ ] T039 [P] Integration test for single active session invalidation (stale `token_version` returns HTTP 401) in `easyeat/backend/src/test/java/com/easyeat/auth/security/JwtAuthenticationFilterTest.java`
+- [ ] T040 [P] Integration test for client-side HTTP 401 interception, `sessionStorage` clearance, and expiration alert banner display in `easyeat/frontend/tests/session/SessionLifecycle.test.tsx`
+- [ ] T041 Add Axios response interceptor in `apiClient` to intercept HTTP 401, clear `sessionStorage`, and dispatch session eviction event in `easyeat/frontend/src/api/apiClient.ts`
+- [ ] T042 [P] Integration test for dual-tier logout verifying database `token_version` incrementation (HTTP 204) and client storage purge in `easyeat/frontend/tests/session/LogoutFlow.test.tsx`
+- [ ] T043 Implement `logout` method in `AuthContext` calling `authApi.logout()`, clearing `sessionStorage`, and navigating to `/login` with `replace: true` in `easyeat/frontend/src/context/AuthContext.tsx`
+- [ ] T044 Wire "Cerrar sesión" action button in `WorkspaceLayout` to `useAuth().logout` in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
+- [ ] T045 [P] Contract conformance test validating live requests against `contracts/openapi.yaml` schemas in `easyeat/backend/src/test/java/com/easyeat/auth/contract/OpenApiContractTest.java`
+- [ ] T046 [P] Execute end-to-end manual validation scenarios following quickstart guide in `specs/002-staff-auth-redirect-guards/quickstart.md`
+- [ ] T047 Verify `Cache-Control: no-store` headers on protected auth and workspace endpoints in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
 
 ---
 
@@ -179,60 +175,62 @@
 
 ```mermaid
 flowchart TD
-    Phase1[Phase 1: Setup] --> Phase2[Phase 2: Foundational - Merge & Verify 001]
-    Phase2 --> Phase3[Phase 3: US1 - Staff Login MVP]
-    Phase3 --> Phase4[Phase 4: US2 - Post-Login Redirection]
-    Phase4 --> Phase5[Phase 5: US3 - Role Route Guards]
-    Phase5 --> Phase6[Phase 6: US4 - Session Expiration & Filter]
-    Phase6 --> Phase7[Phase 7: US5 - Explicit Logout]
-    Phase7 --> Phase8[Phase 8: Polish & E2E Verification]
+    Phase1[Phase 1: Setup] --> Phase2[Phase 2: Foundational Prerequisites]
+    Phase2 --> Phase3[Phase 3: US1 - Counter Login MVP]
+    Phase3 --> Phase4[Phase 4: US2 - Counter Redirection]
+    Phase3 --> Phase5[Phase 5: US3 - Chef Login]
+    Phase5 --> Phase6[Phase 6: US4 - Kitchen KDS Redirection]
+    Phase3 --> Phase7[Phase 7: US5 - Admin Portal & Isolation]
+    Phase4 --> Phase8[Phase 8: Polish & Cross-Cutting]
+    Phase6 --> Phase8
+    Phase7 --> Phase8
 ```
 
-- **Setup (Phase 1)**: Can start immediately. Frontend scaffolding and backend baseline verification can run in parallel.
-- **Foundational (Phase 2)**: Depends on branch `001-central-auth-recovery` merge; BLOCKS backend user stories. Frontend UI tasks in Phase 3 can proceed against mocked API endpoints if 001 merge is pending.
-- **User Story 1 (Phase 3 - MVP)**: Can start once Foundational verification is complete.
-- **User Story 2 (Phase 4)**: Depends on User Story 1 (consumes token and auth context).
-- **User Story 3 (Phase 5)**: Depends on User Story 2 (guards protect the routes created in US2).
-- **User Story 4 (Phase 6)**: Depends on User Story 3 (intercepts 401 across guarded routes).
-- **User Story 5 (Phase 7)**: Depends on User Story 4 (completes token invalidation lifecycle).
-- **Polish (Phase 8)**: Depends on all user stories complete.
+- **Setup (Phase 1)**: Independent — configures frontend dependencies, build settings, and HTTP client.
+- **Foundational (Phase 2)**: Depends on Phase 1 — BLOCKS all user stories. Establishes types, routing resolver, reactive auth context, and workspace layout shell.
+- **User Story 1 (Phase 3 - MVP)**: Depends on Phase 2. Establishes the login form and backend authentication.
+- **User Story 2 (Phase 4)**: Depends on Phase 3 (consumes authenticated session). Establishes counter landing and post-auth redirect.
+- **User Story 3 (Phase 5)**: Depends on Phase 3 (shares login form). Verifies chef authentication, audit logs, and account status.
+- **User Story 4 (Phase 6)**: Depends on Phase 4 and Phase 5. Establishes kitchen workspace landing and declarative route guards.
+- **User Story 5 (Phase 7)**: Depends on Phase 2 and Phase 3. Establishes admin panel landing and multi-tenant scoping.
+- **Polish (Phase 8)**: Depends on all user story phases complete. Finalizes 401 session eviction, dual-tier logout, and OpenAPI validation.
 
 ---
 
-## Parallel Execution Opportunities
+## Parallel Opportunities Matrix
 
-### Within Phase 1 (Setup)
-- `T001` (Frontend setup), `T002` (Backend pom check), and `T003` (Backend config check) can run in parallel.
-
-### Within Phase 2 (Foundational)
-- `T005`, `T006`, `T007`, `T008`, and `T009` (verifications of 001 code) can all run in parallel once `T004` (merge) is done.
-
-### Within Phase 3 (US1 - Staff Login)
-- Contract test `T010` and Frontend UI tests `T011` can run in parallel.
-- Frontend API client `T013` and DTO verification `T012` can run in parallel.
-
-### Within Phase 4 (US2 - Workspace Redirection)
-- All workspace landing views in parallel: `T022` (`WorkspaceLayout`), `T023` (`CounterWorkspacePage`), `T024` (`KitchenWorkspacePage`), `T025` (`AdminWorkspacePage`), and `T026` (`CatalogPage`).
-
-### Within Phase 6 & 7 (US4 & US5 - Session Lifecycle & Logout)
-- Tests `T031`, `T032`, `T037`, and `T038` can be authored in parallel with their respective contract tests.
+| Phase | Parallel Group A | Parallel Group B | Parallel Group C |
+|---|---|---|---|
+| **Phase 1** | `T002` (Vite config) | `T003` (tsconfig) | `T004` (Tailwind config) |
+| **Phase 2** | `T006` (Backend baseline check) | `T007` (SecurityConfig check) | `T008` (TypeScript types) |
+| **Phase 2** | `T011` (useAuth hook) | `T012` (WorkspaceLayout) | `T013` (CatalogPage) |
+| **Phase 3** | `T014` (Backend contract test) | `T015` (LoginForm test) | — |
+| **Phase 4** | `T020` (Routing unit test) | `T021` (AppRoutes test) | — |
+| **Phase 5** | `T025` (Chef login test) | `T026` (Suspended account test) | — |
+| **Phase 6** | `T029` (Route guard test) | `T030` (Station deep link test) | — |
+| **Phase 7** | `T034` (Tenant isolation test) | `T035` (Admin routing test) | — |
+| **Phase 8** | `T039` (Filter test) | `T040` (Lifecycle test) | `T042` (Logout test) |
+| **Phase 8** | `T045` (OpenAPI test) | `T046` (Quickstart manual scenarios) | — |
 
 ---
 
-## Implementation Strategy
+## Implementation & Verification Checkpoints
 
-### MVP First (Phases 1, 2, and 3 - User Story 1)
-
-1. Scaffold frontend project and check backend dependencies (Phase 1).
-2. Merge 001 and verify schema, JPA User entity, and base security (Phase 2).
-3. Author frontend `LoginForm.test.tsx` and backend contract test (TDD).
-4. Implement `LoginForm.tsx`, `LoginPage.tsx`, and API client.
-5. **STOP and VALIDATE**: Verify end-to-end credential authentication and token issuance against 001 contract.
-
-### Incremental Delivery (Phases 4 through 7)
-
-1. Deliver **User Story 2**: Add role routing policy, `AuthContext`, and workspace landing views.
-2. Deliver **User Story 3**: Add `RoleRouteGuard` and register protected routes in `AppRoutes.tsx`.
-3. Deliver **User Story 4**: Add `JwtAuthenticationFilter` single active session enforcement and client 401 interceptor.
-4. Deliver **User Story 5**: Add `POST /api/v1/auth/logout`, database `token_version` invalidation, and UI logout button.
-5. Deliver **Polish**: Execute `quickstart.md` manual validation suite.
+1. **Checkpoint 1 (Phase 2 Completion)**:
+   - Verify `AuthContext`, `postAuthRouting`, and `types/auth.ts` compile without TypeScript errors (`npm run lint`).
+2. **Checkpoint 2 (Phase 3 MVP Gate)**:
+   - Run `LoginForm.test.tsx` and `AuthControllerContractTest.java`.
+   - Confirm valid credentials authenticate and return token with `role: ENCARGADO`.
+3. **Checkpoint 3 (Phase 4 Counter Routing Gate)**:
+   - Run `postAuthRouting.test.ts` and `AppRoutes.test.tsx`.
+   - Confirm automatic transition to `/mostrador` executes with history replacement.
+4. **Checkpoint 4 (Phase 6 Kitchen KDS & Guard Gate)**:
+   - Run `RoleRouteGuard.test.tsx`.
+   - Confirm silent redirection prevents cross-role access to `/cocina` and back-button entrapment.
+5. **Checkpoint 5 (Phase 7 Admin & Multi-Tenant Gate)**:
+   - Run `TenantIsolationTest.java`.
+   - Confirm administrator operations scope records strictly by `tenant_id` and non-admins receive HTTP 403.
+6. **Checkpoint 6 (Final Feature Completion)**:
+   - Run full frontend test suite (`npm test`).
+   - Run full backend test suite (`mvn test`).
+   - Execute all 5 manual scenarios from `quickstart.md`.
