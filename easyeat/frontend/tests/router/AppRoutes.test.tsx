@@ -196,3 +196,85 @@ describe('AppRoutes - Kitchen Workspace Routing (T031, CHF-1.2.1)', () => {
     expect(await screen.findByText(/kitchen display system/i)).toBeInTheDocument();
   });
 });
+
+describe('AppRoutes - Admin Workspace Routing (T036, ADM-1.1.1)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(authApi, 'me').mockResolvedValue(undefined);
+  });
+
+  it('renders AdminWorkspacePage when authenticated ADMINISTRADOR visits /admin', async () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      user: {
+        id: 'admin-1',
+        email: 'roberto.admin@laesquina.com',
+        role: 'ADMINISTRADOR',
+        tenantId: 'tenant-123',
+        tokenVersion: 1,
+      },
+      token: 'mock-token',
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin']}>
+        <AppRoutes />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/panel de administración/i)).toBeInTheDocument();
+  });
+
+  it('instantly redirects authenticated ADMINISTRADOR from /login to /admin', async () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      user: {
+        id: 'admin-1',
+        email: 'roberto.admin@laesquina.com',
+        role: 'ADMINISTRADOR',
+        tenantId: 'tenant-123',
+        tokenVersion: 1,
+      },
+      token: 'mock-token',
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <AppRoutes />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/panel de administración/i)).toBeInTheDocument();
+  });
+
+  it('redirects authenticated ADMINISTRADOR from root / to /admin', async () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      user: {
+        id: 'admin-1',
+        email: 'roberto.admin@laesquina.com',
+        role: 'ADMINISTRADOR',
+        tenantId: 'tenant-123',
+        tokenVersion: 1,
+      },
+      token: 'mock-token',
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AppRoutes />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(/panel de administración/i)).toBeInTheDocument();
+  });
+});
