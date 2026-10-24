@@ -28,23 +28,25 @@ export const AppRoutes: React.FC = () => {
 
       {/* Role-Protected Counter / Dispatch Workspace (ENCARGADO) */}
       <Route
-        path="/counter/*"
+        path="/mostrador/*"
         element={
           <RoleRouteGuard allowedRoles={['ENCARGADO']}>
             <CounterWorkspacePage />
           </RoleRouteGuard>
         }
       />
+      <Route path="/counter/*" element={<Navigate to="/mostrador" replace />} />
 
       {/* Role-Protected Kitchen Display System Workspace (CHEF) */}
       <Route
-        path="/kds/*"
+        path="/cocina/*"
         element={
           <RoleRouteGuard allowedRoles={['CHEF']}>
             <KitchenWorkspacePage />
           </RoleRouteGuard>
         }
       />
+      <Route path="/kds/*" element={<Navigate to="/cocina" replace />} />
 
       {/* Role-Protected Back-Office Administration Panel (ADMINISTRADOR) */}
       <Route
@@ -58,13 +60,14 @@ export const AppRoutes: React.FC = () => {
 
       {/* Diner Home / Catalog Fallback View (COMENSAL + Staff Fallback) */}
       <Route
-        path="/catalog/*"
+        path="/catalogo/*"
         element={
           <RoleRouteGuard allowedRoles={['COMENSAL', 'ENCARGADO', 'CHEF', 'ADMINISTRADOR']}>
             <CatalogPage />
           </RoleRouteGuard>
         }
       />
+      <Route path="/catalog/*" element={<Navigate to="/catalogo" replace />} />
 
       {/* Root redirect: to workspace if authenticated, or login if unauthenticated */}
       <Route

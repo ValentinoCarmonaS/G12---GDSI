@@ -157,4 +157,58 @@ class AuthControllerContractTest {
         assertThat(claims.get("tenant_id")).isNull();
         assertThat(claims.get("token_version", Integer.class)).isNotNull();
     }
+
+    @Test
+    @DisplayName("Contract: POST /api/v1/auth/login returns JWT asserting role: ENCARGADO, user_id, tenant_id, token_version for counter manager")
+    void shouldReturnJwtWithAllRequiredClaimsForCounterManager() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        String rawPassword = "EncargadoPassword123";
+        String email = "maria.encargada@laesquina.com";
+
+        User counterManager = new User(
+                email,
+                passwordEncoder.encode(rawPassword),
+                UserRole.ENCARGADO,
+                tenantId
+        );
+        counterManager.setTokenVersion(1);
+        counterManager = userRepository.save(counterManager);
+
+        LoginRequest request = new LoginRequest(email, rawPassword);
+
+        MvcResult result = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token_type").value("Bearer"))
+                .andExpect(jsonPath("$.expires_in").value(28800))
+                .andExpect(jsonPath("$.access_token").isNotEmpty())
+                .andReturn();
+
+        AuthTokenResponse response = objectMapper.readValue(
+                result.getResponse().getContentAsString(),
+                AuthTokenResponse.class
+        );
+
+        Claims claims = jwtService.extractAllClaims(response.accessToken());
+
+        // Standard sub claim matches user UUID
+        assertThat(claims.getSubject()).isEqualTo(counterManager.getId().toString());
+
+        // Explicit user_id claim
+        assertThat(claims.get("user_id", String.class)).isEqualTo(counterManager.getId().toString());
+
+        // Role claim asserts ENCARGADO
+        assertThat(claims.get("role", String.class)).isEqualTo(UserRole.ENCARGADO.name());
+
+        // Tenant ID claim
+        assertThat(claims.get("tenant_id", String.class)).isEqualTo(tenantId.toString());
+
+        // Token version claim
+        assertThat(claims.get("token_version", Integer.class)).isNotNull();
+
+        // Email claim
+        assertThat(claims.get("email", String.class)).isEqualTo(email);
+    }
 }
+

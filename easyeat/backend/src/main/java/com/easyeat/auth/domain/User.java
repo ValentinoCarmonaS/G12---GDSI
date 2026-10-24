@@ -26,6 +26,12 @@ public class User {
     @Column(name = "status", nullable = false, length = 50)
     private UserStatus status = UserStatus.ACTIVE;
 
+    @Column(name = "full_name", nullable = false, length = 255)
+    private String fullName = "Unnamed User";
+
+    @Column(name = "must_change_password", nullable = false)
+    private Boolean mustChangePassword = false;
+
     @Column(name = "tenant_id")
     private UUID tenantId;
 
@@ -47,11 +53,19 @@ public class User {
         this.role = role;
         this.status = UserStatus.ACTIVE;
         this.tokenVersion = 0;
+        this.fullName = "Unnamed User";
+        this.mustChangePassword = false;
     }
 
     public User(String email, String passwordHash, UserRole role, UUID tenantId) {
         this(email, passwordHash, role);
         this.tenantId = tenantId;
+    }
+
+    public User(String email, String passwordHash, UserRole role, UUID tenantId, String fullName, boolean mustChangePassword) {
+        this(email, passwordHash, role, tenantId);
+        this.fullName = fullName;
+        this.mustChangePassword = mustChangePassword;
     }
 
     @PrePersist
@@ -68,6 +82,12 @@ public class User {
         }
         if (tokenVersion == null) {
             tokenVersion = 0;
+        }
+        if (fullName == null) {
+            fullName = "Unnamed User";
+        }
+        if (mustChangePassword == null) {
+            mustChangePassword = false;
         }
     }
 
@@ -150,5 +170,21 @@ public class User {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public Boolean getMustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public void setMustChangePassword(Boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
     }
 }
