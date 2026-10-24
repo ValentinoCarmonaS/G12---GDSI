@@ -63,7 +63,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T018 [US1] Implement authentication service client function calling `POST /api/v1/auth/login` with typed request and response in `easyeat/frontend/src/api/authApi.ts`
+- [X] T018 [US1] Implement authentication service client function calling `POST /api/v1/auth/login` with typed request and response in `easyeat/frontend/src/api/authApi.ts`
 - [ ] T019 [US1] Verify end-to-end credential submission for `maria.encargada@laesquina.com` asserting valid token receipt and context initialization in `easyeat/frontend/tests/components/LoginForm.test.tsx`
 
 **Checkpoint**: User Story 1 functional (MVP achieved) — counter staff credentials submitted via UI are validated, debounced, authenticated by the backend, and issue conforming identity tokens.
