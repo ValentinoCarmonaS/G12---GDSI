@@ -191,7 +191,7 @@
 
 - [X] T059 [P] [US3] Define `PasswordResetRequest` and `PasswordResetConfirm` types in `easyeat/frontend/src/types/auth.ts` and implement `requestPasswordReset(email)` and `confirmPasswordReset(data)` methods in `easyeat/frontend/src/api/authApi.ts`.
 - [X] T060 [US3] Implement `ForgotPasswordForm.tsx` in `easyeat/frontend/src/components/auth/ForgotPasswordForm.tsx` and `ForgotPasswordPage.tsx` in `easyeat/frontend/src/pages/ForgotPasswordPage.tsx` with cancel action navigating to `/login` (FR-022, FR-023).
-- [ ] T061 [US3] Implement `ResetPasswordForm.tsx` in `easyeat/frontend/src/components/auth/ResetPasswordForm.tsx` and `ResetPasswordPage.tsx` in `easyeat/frontend/src/pages/ResetPasswordPage.tsx` extracting token from search params, enforcing complexity policies, and redirecting to `/login` on success (FR-024).
+- [X] T061 [US3] Implement `ResetPasswordForm.tsx` in `easyeat/frontend/src/components/auth/ResetPasswordForm.tsx` and `ResetPasswordPage.tsx` in `easyeat/frontend/src/pages/ResetPasswordPage.tsx` extracting token from search params, enforcing complexity policies, and redirecting to `/login` on success (FR-024).
 - [ ] T062 [US3] Register public routes `/forgot-password` and `/reset-password` in `easyeat/frontend/src/router/AppRoutes.tsx`.
 
 ---
