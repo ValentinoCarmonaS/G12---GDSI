@@ -110,4 +110,25 @@ class AuthServiceTest {
         verify(userRepository).save(user);
         verify(securityAuditLogger).logLoginSuccess(eq(email), eq("ENCARGADO"), eq("127.0.0.1"), eq(user.getId()));
     }
+
+    @Test
+    @DisplayName("login - chef authentication emits structured audit log and verifies role CHEF (T024, CHF-1.1.1)")
+    void shouldEmitAuditLogOnChefLogin() {
+        String email = "carlos.chef@comedorcentral.com";
+        String password = "ChefPassword123";
+        User user = new User(email, "hashedChefPassword", UserRole.CHEF);
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.ACTIVE);
+        user.setTokenVersion(1);
+
+        when(rateLimitingService.isLoginLocked(email, "192.168.1.50")).thenReturn(false);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(password, "hashedChefPassword")).thenReturn(true);
+        when(jwtService.generateToken(user)).thenReturn("mock.chef.token");
+
+        AuthTokenResponse response = authService.login(new LoginRequest(email, password), "192.168.1.50");
+
+        assertThat(response.accessToken()).isEqualTo("mock.chef.token");
+        verify(securityAuditLogger).logLoginSuccess(eq(email), eq("CHEF"), eq("192.168.1.50"), eq(user.getId()));
+    }
 }

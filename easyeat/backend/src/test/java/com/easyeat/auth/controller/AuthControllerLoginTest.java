@@ -65,6 +65,22 @@ class AuthControllerLoginTest {
     }
 
     @Test
+    @DisplayName("POST /api/v1/auth/login - 200 OK for kitchen chef issuing token and verifying role CHEF (T024, CHF-1.1.1)")
+    void shouldLoginSuccessfullyForChef() throws Exception {
+        LoginRequest request = new LoginRequest("carlos.chef@comedorcentral.com", "ChefPass123");
+        when(authService.login(any(LoginRequest.class), anyString()))
+                .thenReturn(new AuthTokenResponse("fake.chef.jwt.token", "Bearer", 28800L));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.access_token").value("fake.chef.jwt.token"))
+                .andExpect(jsonPath("$.token_type").value("Bearer"))
+                .andExpect(jsonPath("$.expires_in").value(28800));
+    }
+
+    @Test
     @DisplayName("POST /api/v1/auth/login - 401 Unauthorized on invalid credentials")
     void shouldReturn401WhenInvalidCredentials() throws Exception {
         LoginRequest request = new LoginRequest("user@example.com", "WrongPassword");

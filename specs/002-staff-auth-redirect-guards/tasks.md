@@ -98,7 +98,7 @@
 
 ### Tests for User Story 3 (TDD) ⚠️
 
-- [ ] T024 [P] [US3] Backend test verifying chef authentication against `POST /api/v1/auth/login`, asserting `role: CHEF` claim and structured audit log emission in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerTest.java`
+- [X] T024 [P] [US3] Backend test verifying chef authentication against `POST /api/v1/auth/login`, asserting `role: CHEF` claim and structured audit log emission in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerLoginTest.java`
 - [ ] T025 [P] [US3] Backend test asserting that suspended or unverified chef accounts receive HTTP 403 Forbidden with RFC 9457 ProblemDetail in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerTest.java`
 
 ### Implementation for User Story 3
