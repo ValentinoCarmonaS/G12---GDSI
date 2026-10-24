@@ -152,7 +152,7 @@
 
 ### Tests for Frontend Registration (TDD - Write First)
 
-- [ ] T049 [P] [US1] Write failing Vitest + RTL component tests for `RegisterForm` in `easyeat/frontend/tests/components/RegisterForm.test.tsx` verifying: renders email and password fields; validates required fields; validates email syntax; visually highlights password complexity criteria in real-time (min 8 chars, uppercase, lowercase, digit); debounces rapid submissions; displays duplicate email error on 409; displays generic network failure message on connectivity errors.
+- [X] T049 [P] [US1] Write failing Vitest + RTL component tests for `RegisterForm` in `easyeat/frontend/tests/components/RegisterForm.test.tsx` verifying: renders email and password fields; validates required fields; validates email syntax; visually highlights password complexity criteria in real-time (min 8 chars, uppercase, lowercase, digit); debounces rapid submissions; displays duplicate email error on 409; displays generic network failure message on connectivity errors.
 
 ### Implementation for Frontend Registration
 
