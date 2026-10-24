@@ -139,7 +139,7 @@
 
 ---
 
-## Phase 8: Frontend Foundational Types, API Clients & Route Perimeter
+## Phase 8: Frontend Foundational Types, API Clients & Route Perimeter (#105)
 
 **Purpose**: Define TypeScript domain contracts and Axios API client modules connecting frontend interfaces to the existing backend services.
 
@@ -151,7 +151,7 @@
 
 ---
 
-## Phase 9: Mandatory First-Login Password Change Flow (FR-003, FR-030)
+## Phase 9: Mandatory First-Login Password Change Flow (FR-003, FR-030) (#106)
 
 **Goal**: Force newly registered staff members logging in for the first time to change their temporary credential before accessing operational workspaces.
 
@@ -163,7 +163,7 @@
 
 ---
 
-## Phase 10: Staff Member Registration & Profile Management UI (FR-001, FR-002, FR-028, FR-029)
+## Phase 10: Staff Member Registration & Profile Management UI (FR-001, FR-002, FR-028, FR-029) (#107)
 
 **Goal**: Provide Administrators with a staff management view displaying the establishment's staff roster, creating new staff with temporary credential modals, and editing roles with orphaned admin protection.
 
@@ -176,7 +176,7 @@
 
 ---
 
-## Phase 11: Master Ingredient Catalog & Lifecycle Management UI (FR-010, FR-011, FR-014, FR-026, FR-031)
+## Phase 11: Master Ingredient Catalog & Lifecycle Management UI (FR-010, FR-011, FR-014, FR-026, FR-031) (#108)
 
 **Goal**: Enable Administrators to manage ingredients in `/admin/inventory`, creating new ingredients, editing attributes (locking UOM if stock > 0), and updating lifecycle states (Active, Discontinued, Archived).
 
@@ -188,7 +188,7 @@
 
 ---
 
-## Phase 12: Manual Stock Adjustments & Immutable Audit Trail UI (FR-015, FR-016, FR-017, FR-018, FR-027, FR-031)
+## Phase 12: Manual Stock Adjustments & Immutable Audit Trail UI (FR-015, FR-016, FR-017, FR-018, FR-027, FR-031) (#109)
 
 **Goal**: Allow Administrators to execute Absolute and Relative stock adjustments with live validation and view the chronological, immutable audit trail.
 
@@ -199,7 +199,7 @@
 
 ---
 
-## Phase 13: Chef Read-Only Kitchen Ingredient Catalog UI (FR-021, FR-022, FR-023, FR-032)
+## Phase 13: Chef Read-Only Kitchen Ingredient Catalog UI (FR-021, FR-022, FR-023, FR-032) (#110)
 
 **Goal**: Provide Chefs with a paginated, sorted kitchen catalog of active ingredients displaying stock availability (`IN_STOCK` / `OUT_OF_STOCK`), while strictly hiding unit purchase costs and audit logs.
 
@@ -210,7 +210,7 @@
 
 ---
 
-## Phase 14: End-to-End Frontend Integration, Quality Gates & Regression Verification
+## Phase 14: End-to-End Frontend Integration, Quality Gates & Regression Verification (#111)
 
 **Purpose**: Tie together all workspaces, verify complete test suite, and ensure production build hygiene.
 
