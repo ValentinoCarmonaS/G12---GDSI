@@ -42,10 +42,12 @@ describe('TemporaryCredentialsModal Component (FR-003, FR-029)', () => {
   it('copies credential to clipboard on copy button click', async () => {
     const user = userEvent.setup();
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {
         writeText: writeTextMock,
       },
+      configurable: true,
+      writable: true,
     });
 
     render(<TemporaryCredentialsModal {...defaultProps} />);
