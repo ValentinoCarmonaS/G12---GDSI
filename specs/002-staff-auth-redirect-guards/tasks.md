@@ -140,7 +140,7 @@
 
 - [X] T032 [P] [US5] Backend integration test execution verifying administrator endpoint access authorization and tenant-scoped query filtering by `tenant_id` in `easyeat/backend/src/test/java/com/easyeat/security/TenantIsolationIntegrationTest.java`
 - [X] T033 [P] [US5] Frontend test verifying administrator credential submission via shared `LoginForm` authenticates and routes to `/admin` in `easyeat/frontend/tests/components/AdminLogin.test.tsx`
-- [ ] T034 [P] [US5] Routing test verifying administrator login redirects to `/admin` and cross-role attempts by non-admins are blocked in `easyeat/frontend/tests/router/RoleRouteGuard.test.tsx`
+- [X] T034 [P] [US5] Routing test verifying administrator login redirects to `/admin` and cross-role attempts by non-admins are blocked in `easyeat/frontend/tests/router/RoleRouteGuard.test.tsx`
 
 ### Implementation for User Story 5
 
