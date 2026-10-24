@@ -156,7 +156,7 @@
 
 ### Implementation for Frontend Registration
 
-- [ ] T050 [P] [US1] Define `RegisterCredentials` interface and error types in `easyeat/frontend/src/types/auth.ts` matching backend `RegisterRequest` DTO.
+- [X] T050 [P] [US1] Define `RegisterCredentials` interface and error types in `easyeat/frontend/src/types/auth.ts` matching backend `RegisterRequest` DTO.
 - [ ] T051 [US1] Implement `authApi.register(credentials)` method in `easyeat/frontend/src/api/authApi.ts` making `POST /auth/register` via configured `apiClient`.
 - [ ] T052 [US1] Implement `RegisterForm.tsx` component in `easyeat/frontend/src/components/auth/RegisterForm.tsx` implementing real-time password criteria checklist, email normalization, submit debouncing, and accessible error alerts conforming to FR-002, FR-003, and FR-018.
 - [ ] T053 [US1] Implement `RegisterPage.tsx` page component in `easyeat/frontend/src/pages/RegisterPage.tsx` with card layout, brand header, link "Ya tengo una cuenta" navigating to `/login` (FR-020), and post-registration confirmation toast/notification with automatic redirect to `/login` (FR-019).
