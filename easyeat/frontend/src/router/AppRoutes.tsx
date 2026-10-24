@@ -11,6 +11,7 @@ import { CounterWorkspacePage } from '../pages/CounterWorkspacePage';
 import { KitchenWorkspacePage } from '../pages/KitchenWorkspacePage';
 import { AdminWorkspacePage } from '../pages/AdminWorkspacePage';
 import { StaffManagementPage } from '../pages/StaffManagementPage';
+import { InventoryManagementPage } from '../pages/InventoryManagementPage';
 import { CatalogPage } from '../pages/CatalogPage';
 import { FirstLoginPasswordPage } from '../pages/FirstLoginPasswordPage';
 
@@ -108,6 +109,16 @@ export const AppRoutes: React.FC = () => {
         element={
           <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
             <StaffManagementPage />
+          </RoleRouteGuard>
+        }
+      />
+
+      {/* Role-Protected Inventory Management (ADMINISTRADOR) */}
+      <Route
+        path="/admin/inventory"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <InventoryManagementPage />
           </RoleRouteGuard>
         }
       />

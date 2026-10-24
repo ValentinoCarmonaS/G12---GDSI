@@ -135,7 +135,7 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
     expect(await screen.findByRole('heading', { name: /nuevo ingrediente/i })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText(/nombre del ingrediente/i), 'Queso Mozzarella');
-    await user.selectOptions(screen.getByLabelText(/categoría/i), 'Dairy');
+    await user.selectOptions(screen.getByLabelText(/^categoría$/i), 'Dairy');
     await user.selectOptions(screen.getByLabelText(/unidad de medida/i), 'kg');
     await user.type(screen.getByLabelText(/costo unitario/i), '800');
 
