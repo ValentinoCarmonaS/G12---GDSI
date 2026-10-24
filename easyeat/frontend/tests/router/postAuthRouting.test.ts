@@ -82,4 +82,26 @@ describe('postAuthRouting Policy (Canonical Spanish Routes)', () => {
       expect(resolvePostAuthRedirect('COMENSAL', '/mostrador')).toBe('/catalogo');
     });
   });
+
+  describe('User Story 2: Redirection Policy for ENCARGADO (T020, ENC-1.2.1)', () => {
+    it('resolves directly to /mostrador when no target link is specified', () => {
+      expect(resolvePostAuthRedirect('ENCARGADO')).toBe('/mostrador');
+      expect(resolvePostAuthRedirect('ENCARGADO', '')).toBe('/mostrador');
+    });
+
+    it('preserves authorized deep link targets within /mostrador hierarchy', () => {
+      expect(resolvePostAuthRedirect('ENCARGADO', '/mostrador/entregas')).toBe('/mostrador/entregas');
+      expect(resolvePostAuthRedirect('ENCARGADO', '/mostrador/caja')).toBe('/mostrador/caja');
+      expect(resolvePostAuthRedirect('ENCARGADO', '/mostrador/pedidos/turno-tarde')).toBe('/mostrador/pedidos/turno-tarde');
+    });
+
+    it('discards unauthorized targets outside /mostrador and redirects to /mostrador', () => {
+      expect(resolvePostAuthRedirect('ENCARGADO', '/cocina')).toBe('/mostrador');
+      expect(resolvePostAuthRedirect('ENCARGADO', '/cocina/pedidos')).toBe('/mostrador');
+      expect(resolvePostAuthRedirect('ENCARGADO', '/admin')).toBe('/mostrador');
+      expect(resolvePostAuthRedirect('ENCARGADO', '/admin/usuarios')).toBe('/mostrador');
+      expect(resolvePostAuthRedirect('ENCARGADO', '/catalogo')).toBe('/mostrador');
+    });
+  });
 });
+
