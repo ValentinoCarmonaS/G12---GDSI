@@ -37,10 +37,19 @@ export function isRouteAllowedForRole(role: Role, path: string): boolean {
 
 /**
  * Resolves the final destination URL following authentication:
+ * - If mustChangePassword is true, forces redirection to '/first-login-password-change'.
  * - If target URL is provided and authorized for the user's role, it is preserved.
  * - If target URL is unauthorized, root '/', or '/login', it falls back to the role's default workspace.
  */
-export function resolvePostAuthRedirect(role?: Role | null, targetUrl?: string): string {
+export function resolvePostAuthRedirect(
+  role?: Role | null,
+  targetUrl?: string,
+  mustChangePassword?: boolean
+): string {
+  if (mustChangePassword) {
+    return '/first-login-password-change';
+  }
+
   const defaultRoute = getRoleDefaultRoute(role);
 
   if (!targetUrl || targetUrl === '/' || targetUrl === '/login') {
