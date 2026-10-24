@@ -60,6 +60,26 @@ class OpenApiContractTest {
         assertThat(contractYaml).contains("/api/v1/auth/login:");
         assertThat(contractYaml).contains("/api/v1/auth/password-reset/request:");
         assertThat(contractYaml).contains("/api/v1/auth/password-reset/confirm:");
+
+        Path contractPath002 = Paths.get("../../specs/002-staff-auth-redirect-guards/contracts/openapi.yaml").toAbsolutePath().normalize();
+        if (!Files.exists(contractPath002)) {
+            contractPath002 = Paths.get("specs/002-staff-auth-redirect-guards/contracts/openapi.yaml").toAbsolutePath().normalize();
+        }
+        assertThat(Files.exists(contractPath002))
+                .withFailMessage("Feature 002 OpenAPI contract file not found at " + contractPath002)
+                .isTrue();
+
+        String contract002Yaml = Files.readString(contractPath002);
+        assertThat(contract002Yaml).contains("/api/v1/auth/login:");
+        assertThat(contract002Yaml).contains("/api/v1/auth/me:");
+        assertThat(contract002Yaml).contains("/api/v1/auth/logout:");
+    }
+
+    @Test
+    @DisplayName("Verify /api/v1/auth/logout returns 401 Unauthorized when unauthenticated (T044)")
+    void shouldReturn401OnLogoutWhenUnauthenticated() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/logout"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

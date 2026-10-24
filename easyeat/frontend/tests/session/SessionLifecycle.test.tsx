@@ -1,5 +1,10 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { setupSessionInterceptor } from '@/api/apiClient';
+import { LoginPage } from '@/pages/LoginPage';
+import { AuthProvider } from '@/context/AuthContext';
 import axios from 'axios';
 
 describe('Session Lifecycle and 401 Interception (FR-014, FR-015)', () => {
@@ -42,5 +47,33 @@ describe('Session Lifecycle and 401 Interception (FR-014, FR-015)', () => {
     expect(eventListener).toHaveBeenCalled();
 
     window.removeEventListener('easyeat:session-expired', eventListener);
+  });
+
+  it('displays session expiration alert banner on /login when redirected after 401 eviction (T039)', () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { reason: 'Tu sesión ha expirado. Por favor, iniciá sesión nuevamente.' } }]}>
+        <AuthProvider>
+          <LoginPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/tu sesión ha expirado/i);
+  });
+
+  it('displays session expiration alert banner on /login when session_expired_reason is in sessionStorage (T039)', () => {
+    sessionStorage.setItem('session_expired_reason', 'Tu sesión ha expirado. Por favor, iniciá sesión nuevamente.');
+
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <AuthProvider>
+          <LoginPage />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/tu sesión ha expirado/i);
+    // Verified that storage is cleared after consumption
+    expect(sessionStorage.getItem('session_expired_reason')).toBeNull();
   });
 });

@@ -22,8 +22,10 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -152,5 +154,18 @@ class TenantIsolationIntegrationTest {
         mockMvc.perform(get("/api/v1/admin/staff"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.title").value("Cross-Tenant Access Prohibited"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRADOR")
+    @DisplayName("Protected endpoint returns Cache-Control: no-store header to prevent sensitive data caching (FR-013, T046)")
+    void protectedEndpoint_returnsCacheControlNoStore() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        TenantContextHolder.setTenantId(tenantId);
+        when(staffService.listStaff()).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/v1/admin/staff"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-store")));
     }
 }
