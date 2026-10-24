@@ -64,12 +64,13 @@ This feature is an incremental vertical slice built upon the foundational infras
 |---|---|---|---|
 | `V1__create_users.sql` | Spec 001 | Provides `users` table with `token_version`, `role`, `status`, `tenant_id` | **Consumed as baseline**. Do NOT recreate or modify migration. |
 | `User.java` / `UserRepository.java` | Spec 001 | Domain entity and JPA repository | **Consumed as baseline**. Uses existing `token_version` increment logic. |
-| `POST /api/v1/auth/login` | Spec 001 | Authenticates credentials, validates active status, increments `token_version`, returns 8-hour JWT | **Consumed by frontend**. |
-| `GET /api/v1/auth/me` | Spec 001 | Validates bearer token signature and asserts matching `token_version` | **Consumed by client on mount/interaction** to detect concurrent session invalidation. |
-| `POST /api/v1/auth/logout` | Spec 001 | Atomically increments `token_version` in DB, revoking current token (returns 204) | **Consumed by frontend** on explicit logout action. |
+| `POST /api/v1/auth/login` | Baseline Backend | Authenticates credentials, validates active status, increments `token_version`, returns 8-hour JWT | **Consumed by frontend**. |
+| `GET /api/v1/auth/me` | Baseline Backend | Profile endpoint returning authenticated user summary | **Available on backend**. Frontend hydrates from JWT and does not block mount. |
+| `POST /api/v1/auth/logout` | Baseline Backend | Atomically increments `token_version` in DB, revoking current token (returns 204) | **Consumed by frontend** on explicit logout action via `AuthContext`. |
+| `TenantContextFilter.java` | Baseline Backend | Extracts `tenant_id` from JWT / principal and sets `TenantContextHolder` | **Consumed as baseline**. Verified by `TenantIsolationIntegrationTest`. |
 | `JwtService.java` | Spec 001 | Generates and parses JWT with claims (`sub`, `email`, `role`, `tenant_id`, `token_version`) | **Consumed by backend security layer**. |
 | `JwtAuthenticationFilter.java` | Spec 001 | Intercepts requests, asserts token signature, expiration, and matching `token_version` | **Active perimeter gate**. Rejects stale tokens with 401 ProblemDetail. |
-| `SecurityConfig.java` | Spec 001 | Spring Security configuration | **Synchronize RBAC rules** for staff workspace API perimeters (`/api/v1/admin/**`, `/api/v1/counter/**`, `/api/v1/kitchen/**`). |
+| `SecurityConfig.java` | Spec 001 | Spring Security configuration | **Synchronize RBAC rules** strictly using `hasRole('ADMINISTRADOR')` for `/api/v1/admin/**`. |
 
 ---
 
@@ -92,7 +93,7 @@ easyeat/frontend/src/
 │   └── postAuthRouting.ts          # Pure routing policy: getRoleDefaultRoute(), resolvePostAuthRedirect()
 ├── components/
 │   ├── auth/
-│   │   └── LoginForm.tsx           # Controlled login form with debounce, input normalization, error display
+│   │   └── LoginForm.tsx           # Decoupled controlled login form (built in Phase 2) with normalization
 │   └── common/
 │       └── WorkspaceLayout.tsx     # Shell for operational views (header, role badge, tenant scope, logout)
 ├── pages/
@@ -106,10 +107,15 @@ easyeat/frontend/src/
 ```
 
 ### Key Frontend Mechanisms
-1. **Input Normalization & Debouncing**:
-   - `LoginForm.tsx` trims and lowercases email input before submission.
-   - Disables submit button while the authentication request is in flight to prevent duplicate submissions.
-2. **Post-Authentication Routing Policy (`postAuthRouting.ts`)**:
+1. **Decoupled Login Form (Built in Phase 2)**:
+   - `LoginForm.tsx` is built once in Phase 2 (Foundational) as a decoupled, role-agnostic component following SRP.
+   - Trims and lowercases email input before submission, debounces submissions, and disables submit controls in flight.
+   - Delegates authentication to `authApi.login()`, updates session in `AuthContext`, and calls `resolvePostAuthRedirect(user.role)`.
+   - Subsequent user stories (ENC, CHF, ADM) strictly test integration and role redirection without altering `LoginForm` code or attempting client-side security auditing.
+2. **Synchronous Session Hydration & Reactive Eviction**:
+   - `AuthContext.tsx` hydrates `user` and `token` synchronously from `sessionStorage` on mount (0ms latency, zero render waterfalls).
+   - Reactive eviction: when another device logs in and increments `token_version`, the global Axios response interceptor in `apiClient.ts` captures the resulting HTTP 401 ProblemDetail, clears `sessionStorage`, and redirects to `/login` with an expiration banner.
+3. **Post-Authentication Routing Policy (`postAuthRouting.ts`)**:
    - Pure, fully testable function:
      ```typescript
      export function resolvePostAuthRedirect(role?: Role | null, targetUrl?: string): string {
@@ -124,13 +130,10 @@ easyeat/frontend/src/
      - `CHEF` → `/cocina`
      - `ADMINISTRADOR` → `/admin`
      - `COMENSAL` / Unassigned → `/catalogo`
-3. **Route Perimeter Guard (`RoleRouteGuard.tsx`)**:
+4. **Route Perimeter Guard (`RoleRouteGuard.tsx`)**:
    - Evaluates `isAuthenticated` and `allowedRoles`.
    - If unauthenticated: redirects to `/login` with `state: { from: location }` and `replace: true`.
    - If authenticated but role unauthorized (cross-role navigation): silently redirects to `getRoleDefaultRoute(user.role)` with `replace: true` (no error banners, no history pollution).
-4. **Session Eviction via Interceptor (`apiClient.ts`)**:
-   - Global Axios response interceptor intercepts HTTP 401 responses.
-   - Clears `sessionStorage`, resets `AuthContext`, and redirects to `/login` with `{ state: { sessionExpired: true } }`.
 
 ---
 

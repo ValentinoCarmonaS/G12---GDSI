@@ -22,6 +22,13 @@ In strict accordance with Project Constitution Principle X, this feature is form
 - Q: How does the system handle an authenticated identity without an assigned role or with an unassigned profile? → A: The system defaults client routing and server access permissions to the `COMENSAL` role, redirecting the user to the public dining catalog workspace (`/catalogo`).
 - Q: How are shift terminations (logout) handled between tiers? → A: Explicit logout requires client-side storage clearance paired with a server-side session termination contract (`POST /api/v1/auth/logout`) that permanently invalidates the issued token session and returns HTTP `204 No Content`.
 
+### Session 2026-10-24 (Backlog Audit & SOLID Clarification)
+
+- Q: How should the client hydrate session state and validate single active session (`token_version`)? → A: `AuthContext` hydrates session state synchronously from the stored JWT in `sessionStorage` upon mounting to eliminate blocking network waterfalls and render delays. Concurrency eviction is handled reactively by the HTTP client interceptor (`apiClient`) capturing any `401 Unauthorized` ProblemDetail response on subsequent operational requests and clearing `sessionStorage`. `GET /api/v1/auth/me` remains available on the backend as a profile endpoint, but workspace views and guards do not execute blocking polling on mount.
+- Q: Where does `LoginForm` belong in the component lifecycle? → A: Following SRP, `LoginForm` is implemented once in Phase 2 (Foundational) as a decoupled, role-agnostic component accepting credentials, delegating authentication to `authApi.login()`, setting session state via `AuthContext`, and redirecting via `resolvePostAuthRedirect()`. Subsequent role-specific user stories (ENC, CHF, ADM) strictly test integration and role-specific redirection without modifying `LoginForm` internals or attempting client-side security audit dispatching.
+- Q: What is the canonical role name for administrators across all artifacts and code? → A: Strictly `ADMINISTRADOR`. Any reference to `ADMIN` is deprecated and normalized to `ADMINISTRADOR` across data models, route guards, and Spring Security configurations.
+- Q: What is the implementation status of `POST /api/v1/auth/logout` and tenant isolation in the backend? → A: Both `AuthController.logout()` / `AuthService.logout()` (with atomic `token_version` increment) and `TenantContextFilter` / `StaffController` (`/api/v1/admin/staff`) are already implemented in `easyeat/backend` and covered by integration tests (`AuthControllerLogoutTest`, `TenantIsolationIntegrationTest`). Spec 002 development focuses on the frontend integration, route guards, and full-stack contract validation.
+
 ---
 
 ## User Scenarios & Testing *(mandatory)*
