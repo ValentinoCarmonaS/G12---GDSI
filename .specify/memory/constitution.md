@@ -1,8 +1,9 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 -> 1.0.1
-- Modified principles: none (translated to English without semantic alterations)
-- Added sections: none
+- Version change: 1.0.1 -> 1.1.0
+- Modified principles: none
+- Added sections:
+  - Fundamental Principle X: Full-Stack End-to-End Integrity (Vertical Slices)
 - Removed sections: none
 - Templates requiring updates: none
 - Deferred items: none
@@ -121,6 +122,17 @@ Each principle includes its **Compliance** criteria (verifiable during a review 
 
 **Rationale**: prevent the structural quality of the project from degrading in exchange for short-term speed.
 
+### X. Full-Stack End-to-End Integrity (Vertical Slices)
+
+- A feature specification MUST NOT isolate frontend or backend delivery without specifying and implementing its counterpart (vertical slice).
+- The agent MUST NOT accept, specify, plan, or implement a user story or feature that exclusively targets only the frontend or only the backend without direct, explicit human authorization.
+- If an incoming feature request or draft specification attempts to implement a single layer in isolation, the agent MUST immediately halt execution and escalate the decision to the human user via the designated escalation mechanism (`grill-me`) to clarify the true end-to-end intent and contracts before any planning or implementation proceeds.
+- No automatic exceptions are permitted for setup, foundational, or infrastructure tasks; any single-tier work MUST be explicitly approved by the human user.
+
+**Compliance**: every approved specification defines both frontend and backend scope, contracts, and verification criteria, or includes an explicit, documented human authorization for single-tier execution.
+
+**Rationale**: prevent fragmented, non-functional silos and orphan user stories where frontend interfaces lack functional backend contracts or backend endpoints lack frontend consumer verification.
+
 ## Additional Constraints
 
 This section contains the mechanisms and decisions declared by the project. They are NOT universal principles: they may be modified without altering the Fundamental Principles, although they remain subject to the amendment procedure.
@@ -133,7 +145,7 @@ This section contains the mechanisms and decisions declared by the project. They
 Minimum process prior to implementing a user story, in this order:
 
 1. defined constitution;
-2. functional specification;
+2. functional specification (including full-stack vertical slice verification or human escalation in case of single-tier requests);
 3. ambiguity resolution;
 4. technical planning, including the compliance verification with this constitution;
 5. specification quality checklist;
@@ -156,4 +168,4 @@ Atomic, traceable, and reversible delivery:
 - **Periodic compliance review**: MUST be performed in each feature planning cycle via the plan's Constitution Check, and at least once per quarter across the entire project, verifying that plans and reviews comply with the principles.
 - **Mandatory principles vs. project decisions**: a mandatory principle applies regardless of technology and domain, and resides in Fundamental Principles. Any decision depending on a specific technology, tool, or context resides in Additional Constraints or in the specification and plan artifacts.
 
-**Version**: 1.0.1 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-10-14
+**Version**: 1.1.0 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-10-23
