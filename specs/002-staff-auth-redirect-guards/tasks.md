@@ -103,7 +103,7 @@
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] Frontend integration test asserting chef login via shared `LoginForm` initializes active session state with `role: CHEF` in `easyeat/frontend/tests/context/AuthContext.test.tsx`
+- [X] T026 [US3] Frontend integration test asserting chef login via shared `LoginForm` initializes active session state with `role: CHEF` in `easyeat/frontend/tests/context/AuthContext.test.tsx`
 
 **Checkpoint**: User Story 3 functional — kitchen chefs authenticate securely through shared login form, suspended accounts are rejected, and audit logs record shift access.
 
