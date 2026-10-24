@@ -43,7 +43,7 @@
 - [X] T011 [P] Implement `useAuth` custom hook exposing reactive auth state and action dispatchers in `easyeat/frontend/src/hooks/useAuth.ts`
 - [X] T012 [P] Implement decoupled, role-agnostic controlled `LoginForm` component with validation, email normalization, submit debouncing, and anti-enumeration error handling in `easyeat/frontend/src/components/auth/LoginForm.tsx`
 - [X] T013 [P] Implement `LoginPage` public route view wrapping `LoginForm` with responsive brand container in `easyeat/frontend/src/pages/LoginPage.tsx`
-- [ ] T014 [P] Implement `WorkspaceLayout` common wrapper component with role badge, tenant scope display, and logout action slot in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
+- [X] T014 [P] Implement `WorkspaceLayout` common wrapper component with role badge, tenant scope display, and logout action slot in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx`
 - [ ] T015 [P] Implement diner catalog fallback view `CatalogPage` for role `COMENSAL` in `easyeat/frontend/src/pages/CatalogPage.tsx`
 
 **Checkpoint**: Foundation ready — reactive state, types, routing helpers, decoupled login form, and common layouts are verified and ready for user story integration.
