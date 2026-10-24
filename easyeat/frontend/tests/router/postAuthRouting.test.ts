@@ -3,8 +3,6 @@ import {
   getRoleDefaultRoute,
   isRouteAllowedForRole,
   resolvePostAuthRedirect,
-  ROLE_DEFAULT_ROUTES,
-  ROLE_ALLOWED_PREFIXES,
 } from '@/router/postAuthRouting';
 import { Role } from '@/types/auth';
 
