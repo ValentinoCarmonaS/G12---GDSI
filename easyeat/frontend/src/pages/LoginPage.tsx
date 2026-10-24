@@ -30,8 +30,14 @@ export const LoginPage: React.FC = () => {
   const { setToken } = useAuth();
 
   const state = location.state as { from?: string; reason?: string } | undefined;
-  const stateReason = state?.reason;
+  const stateReason = state?.reason || sessionStorage.getItem('session_expired_reason');
   const targetDeepLink = state?.from;
+
+  React.useEffect(() => {
+    if (sessionStorage.getItem('session_expired_reason')) {
+      sessionStorage.removeItem('session_expired_reason');
+    }
+  }, []);
 
   const handleLogin = async (credentials: LoginCredentials) => {
     const data = await authApi.login(credentials);

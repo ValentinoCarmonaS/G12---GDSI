@@ -21,12 +21,22 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Collections;
-import java.util.UUID;
-
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.easyeat.common.exception.TenantViolationException;
+import com.easyeat.staff.dto.StaffAccountStatus;
+import com.easyeat.staff.dto.StaffMemberResponse;
+import com.easyeat.staff.dto.StaffRole;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 @WebMvcTest(StaffController.class)
 @Import({SecurityConfig.class, MethodSecurityConfig.class, GlobalExceptionHandler.class, JwtAuthenticationFilter.class, TenantContextFilter.class})
@@ -105,5 +115,57 @@ class TenantIsolationIntegrationTest {
 
         mockMvc.perform(get("/api/v1/admin/staff"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRADOR")
+    @DisplayName("ADMINISTRADOR query is scoped strictly to active tenant_id, preventing cross-tenant data leak")
+    void administradorQuery_isScopedToActiveTenant() throws Exception {
+        UUID tenantAlpha = UUID.randomUUID();
+        UUID tenantBeta = UUID.randomUUID();
+        TenantContextHolder.setTenantId(tenantAlpha);
+
+        when(staffService.listStaff()).thenAnswer(invocation -> {
+            assertThat(TenantContextHolder.getTenantId()).isEqualTo(tenantAlpha);
+            assertThat(TenantContextHolder.getTenantId()).isNotEqualTo(tenantBeta);
+            return List.of(new StaffMemberResponse(
+                    UUID.randomUUID(),
+                    "Admin Alpha",
+                    "admin@alpha.com",
+                    StaffRole.ADMINISTRADOR,
+                    StaffAccountStatus.ACTIVE,
+                    Instant.now(),
+                    Instant.now()
+            ));
+        });
+
+        mockMvc.perform(get("/api/v1/admin/staff"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].email").value("admin@alpha.com"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRADOR")
+    @DisplayName("Request with missing tenant context triggers TenantViolationException and returns 403")
+    void missingTenantContext_returns403() throws Exception {
+        TenantContextHolder.clear();
+        when(staffService.listStaff()).thenThrow(new TenantViolationException("Active tenant context is required to query staff members"));
+
+        mockMvc.perform(get("/api/v1/admin/staff"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.title").value("Cross-Tenant Access Prohibited"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRADOR")
+    @DisplayName("Protected endpoint returns Cache-Control: no-store header to prevent sensitive data caching (FR-013, T046)")
+    void protectedEndpoint_returnsCacheControlNoStore() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        TenantContextHolder.setTenantId(tenantId);
+        when(staffService.listStaff()).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/v1/admin/staff"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-store")));
     }
 }
