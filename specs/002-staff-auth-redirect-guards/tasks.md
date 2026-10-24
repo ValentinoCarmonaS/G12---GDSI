@@ -58,13 +58,13 @@
 
 ### Tests for User Story 1 (TDD - Contract & Frontend First) ⚠️
 
-- [ ] T016 [P] [US1] Backend contract integration test verifying `POST /api/v1/auth/login` returns JWT carrying `role: ENCARGADO`, `user_id`, `tenant_id`, and `token_version` in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerContractTest.java`
-- [ ] T017 [P] [US1] Unit and interaction tests for `LoginForm` (email syntax check, whitespace trim, lowercasing, button debouncing, generic 401 error message, network failure display) in `easyeat/frontend/tests/components/LoginForm.test.tsx`
+- [X] T016 [P] [US1] Backend contract integration test verifying `POST /api/v1/auth/login` returns JWT carrying `role: ENCARGADO`, `user_id`, `tenant_id`, and `token_version` in `easyeat/backend/src/test/java/com/easyeat/auth/controller/AuthControllerContractTest.java`
+- [X] T017 [P] [US1] Unit and interaction tests for `LoginForm` (email syntax check, whitespace trim, lowercasing, button debouncing, generic 401 error message, network failure display) in `easyeat/frontend/tests/components/LoginForm.test.tsx`
 
 ### Implementation for User Story 1
 
-- [ ] T018 [US1] Implement authentication service client function calling `POST /api/v1/auth/login` with typed request and response in `easyeat/frontend/src/api/authApi.ts`
-- [ ] T019 [US1] Verify end-to-end credential submission for `maria.encargada@laesquina.com` asserting valid token receipt and context initialization in `easyeat/frontend/tests/components/LoginForm.test.tsx`
+- [X] T018 [US1] Implement authentication service client function calling `POST /api/v1/auth/login` with typed request and response in `easyeat/frontend/src/api/authApi.ts`
+- [X] T019 [US1] Verify end-to-end credential submission for `maria.encargada@laesquina.com` asserting valid token receipt and context initialization in `easyeat/frontend/tests/components/LoginForm.test.tsx`
 
 **Checkpoint**: User Story 1 functional (MVP achieved) — counter staff credentials submitted via UI are validated, debounced, authenticated by the backend, and issue conforming identity tokens.
 
