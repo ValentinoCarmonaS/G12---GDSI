@@ -6,6 +6,7 @@ export interface AuthenticatedUser {
   role: Role;
   tenantId: string | null;
   tokenVersion: number;
+  mustChangePassword?: boolean;
 }
 
 export interface JwtClaims {
@@ -14,6 +15,7 @@ export interface JwtClaims {
   role: Role;
   tenant_id: string | null;
   token_version: number;
+  must_change_password?: boolean;
   iat: number;
   exp: number;
 }
@@ -42,6 +44,17 @@ export interface PasswordResetConfirm {
 }
 
 export interface PasswordResetResponse {
+  message: string;
+}
+
+export interface FirstLoginPasswordChangeRequest {
+  email?: string;
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
+export interface FirstLoginPasswordChangeResponse {
   message: string;
 }
 
