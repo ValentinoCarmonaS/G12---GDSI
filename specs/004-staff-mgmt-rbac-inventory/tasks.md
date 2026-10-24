@@ -203,10 +203,10 @@
 
 **Goal**: Provide Chefs with a paginated, sorted kitchen catalog of active ingredients displaying stock availability (`IN_STOCK` / `OUT_OF_STOCK`), while strictly hiding unit purchase costs and audit logs.
 
-- [ ] T069 [P] [FR-021, FR-022, FR-023, FR-024, FR-032] Write failing tests for `ChefIngredientTable` and `ChefIngredientsPage` in `easyeat/frontend/tests/pages/ChefIngredientsPage.test.tsx` asserting pagination (20/page), A-Z sort, category filters, cost suppression, and availability badges
-- [ ] T070 [FR-021, FR-022, FR-023, FR-024, FR-032] Implement `ChefIngredientTable.tsx` in `easyeat/frontend/src/components/chef/ChefIngredientTable.tsx`
-- [ ] T071 [FR-021, FR-032] Implement `ChefIngredientsPage.tsx` in `easyeat/frontend/src/pages/ChefIngredientsPage.tsx` mounted at `/cocina/ingredientes` (with alias `/kds/ingredients`)
-- [ ] T072 [FR-032] Update `WorkspaceLayout.tsx` and `KitchenWorkspacePage.tsx` to provide accessible navigation to `/cocina/ingredientes`
+- [x] T069 [P] [FR-021, FR-022, FR-023, FR-024, FR-032] Write failing tests for `ChefIngredientTable` and `ChefIngredientsPage` in `easyeat/frontend/tests/pages/ChefIngredientsPage.test.tsx` asserting pagination (20/page), A-Z sort, category filters, cost suppression, and availability badges
+- [x] T070 [FR-021, FR-022, FR-023, FR-024, FR-032] Implement `ChefIngredientTable.tsx` in `easyeat/frontend/src/components/chef/ChefIngredientTable.tsx`
+- [x] T071 [FR-021, FR-032] Implement `ChefIngredientsPage.tsx` in `easyeat/frontend/src/pages/ChefIngredientsPage.tsx` mounted at `/cocina/ingredientes` (with alias `/kds/ingredients`)
+- [x] T072 [FR-032] Update `WorkspaceLayout.tsx` and `KitchenWorkspacePage.tsx` to provide accessible navigation to `/cocina/ingredientes`
 
 ---
 
