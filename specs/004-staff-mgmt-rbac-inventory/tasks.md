@@ -143,11 +143,11 @@
 
 **Purpose**: Define TypeScript domain contracts and Axios API client modules connecting frontend interfaces to the existing backend services.
 
-- [ ] T044 [P] [FR-001, FR-010, FR-011] Define Staff and Inventory TypeScript types and DTO interfaces in `easyeat/frontend/src/types/staff.ts` and `easyeat/frontend/src/types/inventory.ts`
-- [ ] T045 [P] [FR-001, FR-004, FR-005, FR-028] Implement `staffApi.ts` client in `easyeat/frontend/src/api/staffApi.ts` for listing, creating, and updating staff members
-- [ ] T046 [P] [FR-010, FR-012, FR-014, FR-015, FR-019, FR-021, FR-031, FR-032] Implement `inventoryApi.ts` client in `easyeat/frontend/src/api/inventoryApi.ts` for ingredient CRUD, lifecycle status updates, stock adjustments, audit history, and chef catalog queries
-- [ ] T047 [P] [FR-003, FR-030] Extend `authApi.ts` in `easyeat/frontend/src/api/authApi.ts` with `changeFirstLoginPassword` method
-- [ ] T048 [P] [FR-001, FR-010] Write unit tests for API clients in `easyeat/frontend/tests/api/staffApi.test.ts` and `easyeat/frontend/tests/api/inventoryApi.test.ts`
+- [x] T044 [P] [FR-001, FR-010, FR-011] Define Staff and Inventory TypeScript types and DTO interfaces in `easyeat/frontend/src/types/staff.ts` and `easyeat/frontend/src/types/inventory.ts`
+- [x] T045 [P] [FR-001, FR-004, FR-005, FR-028] Implement `staffApi.ts` client in `easyeat/frontend/src/api/staffApi.ts` for listing, creating, and updating staff members
+- [x] T046 [P] [FR-010, FR-012, FR-014, FR-015, FR-019, FR-021, FR-031, FR-032] Implement `inventoryApi.ts` client in `easyeat/frontend/src/api/inventoryApi.ts` for ingredient CRUD, lifecycle status updates, stock adjustments, audit history, and chef catalog queries
+- [x] T047 [P] [FR-003, FR-030] Extend `authApi.ts` in `easyeat/frontend/src/api/authApi.ts` with `changeFirstLoginPassword` method
+- [x] T048 [P] [FR-001, FR-010] Write unit tests for API clients in `easyeat/frontend/tests/api/staffApi.test.ts` and `easyeat/frontend/tests/api/inventoryApi.test.ts`
 
 ---
 
