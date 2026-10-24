@@ -3,7 +3,7 @@ Sync Impact Report
 - Version change: 1.1.0 -> 1.2.0
 - Modified principles: none
 - Added sections:
-  - Fundamental Principle XI: Continuous Upstream Synchronization Awareness (Conciencia de Sincronización Continua con la Rama Principal)
+  - Fundamental Principle XI: Continuous Upstream Synchronization Awareness
 - Removed sections: none
 - Templates requiring updates: none
 - Deferred items: none
@@ -133,16 +133,16 @@ Each principle includes its **Compliance** criteria (verifiable during a review 
 
 **Rationale**: prevent fragmented, non-functional silos and orphan user stories where frontend interfaces lack functional backend contracts or backend endpoints lack frontend consumer verification.
 
-### XI. Continuous Upstream Synchronization Awareness (Conciencia de Sincronización Continua con la Rama Principal)
+### XI. Continuous Upstream Synchronization Awareness
 
-- Al inicio de la invocación de cualquier comando o skill del ecosistema Spec-Kit (`/speckit-*`), el agente de IA MUST ejecutar de manera proactiva un fetch del repositorio remoto (`git fetch origin main`), inspeccionando el estado más reciente de la rama principal (`main`), independientemente de cuál sea la rama local activa en la que se encuentre trabajando el usuario.
-- El agente MUST comparar la rama local activa contra `origin/main`. Si detecta que la rama local está desactualizada (es decir, existen commits en `origin/main` que no están integrados en la rama actual), el agente MUST notificar de inmediato al usuario mediante un mensaje de alerta llamativo y explícito con formato de advertencia `grill-me`, indicando la cantidad de commits de desfasaje y la advertencia de desactualización.
-- El agente MUST NOT ejecutar automáticamente comandos de integración destructiva o mutativa (`git pull`, `git merge`, o `git rebase`); la decisión, el momento y la estrategia de sincronización corresponden con exclusividad al desarrollador humano.
-- El propósito de este principio es garantizar que el desarrollador nunca opere bajo ignorancia respecto al avance de la rama principal, previniendo divergencias tardías, retrabajos y conflictos de integración mayores.
+- At the invocation start of any command or skill in the Spec-Kit ecosystem (`/speckit-*`), the AI agent MUST proactively execute a fetch of the remote repository (`git fetch origin main`), inspecting the latest state of the main integration branch (`main`), regardless of whichever local active branch the user is currently working on.
+- The agent MUST compare the active local branch against `origin/main`. If it detects that the local branch is outdated (i.e., there are commits on `origin/main` that are not integrated into the current branch), the agent MUST immediately notify the user via a prominent, eye-catching alert message under the `grill-me` advisory format, indicating the number of commits drifted and an explicit staleness warning.
+- The agent MUST NOT automatically execute mutative or destructive integration commands (`git pull`, `git merge`, or `git rebase`); the decision, timing, and integration strategy belong strictly and exclusively to the human developer.
+- The purpose of this principle is to guarantee that the developer never operates in ignorance of progress on the main branch, preventing late divergence, rework, and major integration conflicts.
 
-**Compliance**: en el ciclo de inicio de cualquier skill de Spec-Kit, consta en el registro la ejecución de `git fetch origin main`, la verificación comparativa de desfasaje y, en caso de detectarse commits nuevos en `origin/main`, la emisión visible y destacada de la alerta al usuario sin mutaciones automáticas de la rama de trabajo.
+**Compliance**: at the initialization cycle of any Spec-Kit skill, the execution of `git fetch origin main`, comparative drift verification, and (in case new commits are detected on `origin/main`) the visible, prominent delivery of the staleness alert to the user without automatic local branch mutations are recorded.
 
-**Rationale**: evitar que el desarrollador construya especificaciones, planes, tareas o código sobre una base de código desactualizada con respecto al estado consensuado en `main`, alertándolo a tiempo sin violar su autonomía sobre el árbol de trabajo local.
+**Rationale**: prevent the developer from building specifications, plans, tasks, or code upon an outdated baseline relative to the agreed state on `main`, alerting them in time without violating developer autonomy over the local working tree.
 
 ## Additional Constraints
 
@@ -153,9 +153,9 @@ This section contains the mechanisms and decisions declared by the project. They
 
 ## Development Workflow and Quality Gates
 
-Pre-ejecución de cualquier comando o skill de Spec-Kit:
+Pre-execution check for any Spec-Kit command or skill:
 
-- **Sincronización continua de referencias remotas**: ejecución proactiva de `git fetch origin main`, verificación comparativa de desfasaje y emisión de alerta llamativa `grill-me` al usuario en caso de que la rama actual se encuentre desactualizada respecto a `origin/main`.
+- **Continuous upstream reference synchronization**: proactive execution of `git fetch origin main`, comparative drift verification, and emission of a prominent `grill-me` alert to the user whenever the active branch is behind `origin/main`.
 
 Minimum process prior to implementing a user story, in this order:
 
