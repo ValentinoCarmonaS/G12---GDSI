@@ -122,7 +122,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T029 [US4] Implement `KitchenWorkspacePage` landing view for `CHEF` wrapped in `WorkspaceLayout` in `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
+- [X] T029 [US4] Implement `KitchenWorkspacePage` landing view for `CHEF` wrapped in `WorkspaceLayout` in `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
 - [ ] T030 [US4] Implement declarative `RoleRouteGuard` component checking `allowedRoles`, preserving `state.from` on unauth, and executing silent redirect with `replace: true` in `easyeat/frontend/src/router/RoleRouteGuard.tsx`
 - [ ] T031 [US4] Register protected `/cocina/*` route perimeter enforcing `allowedRoles={['CHEF']}` in `easyeat/frontend/src/router/AppRoutes.tsx`
 
