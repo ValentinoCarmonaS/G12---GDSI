@@ -1,186 +1,264 @@
 # Feature Specification: Staff Authentication Views and Automatic Role-Based Redirect Guards
 
-**Feature Branch**: `002-staff-auth-redirect-guards`
+**Feature Branch**: `002-staff-auth-redirect-guards`  
+**Created**: 2026-10-17  
+**Last Updated**: 2026-10-23  
+**Status**: Approved  
+**Constitution Compliance**: v1.1.0 (Principle X: Full-Stack End-to-End Integrity / Vertical Slices)  
+**Input**: Official Backlog User Stories: ENC-1.1.1, ENC-1.2.1, CHF-1.1.1, CHF-1.2.1, ADM-1.1.1.  
 
-**Created**: 2026-10-17
+---
 
-**Status**: Draft
+## Clarifications & Constitution Alignment
 
-**Input**: User description: "Define the product specification for: Staff Authentication Views and Automatic Role-Based Redirect Guards. This feature covers the login experience and post-authentication routing for the three staff profiles of the EasyEat platform: Counter Manager (Encargado de Mostrador), Kitchen Chef (Chef de Cocina), and Back-Office Administrator (Administrador). It maps to five user stories: ENC-1.1.1, ENC-1.2.1, CHF-1.1.1, CHF-1.2.1, and ADM-1.1.1."
+### Full-Stack Scope Ratification (Principle X)
+In strict accordance with Project Constitution Principle X, this feature is formulated as an integrated, full-stack vertical slice. Each of the five user stories comprises both client-facing presentation/routing interactions and corresponding server-side authentication, authorization, and tenant isolation contracts.
 
-## Clarifications
+### Session 2026-10-23
 
-### Session 2026-10-17
+- Q: How does this feature integrate with the existing authentication backend and the Sprint 1 scope? → A: Spec 002 strictly consumes the centralized authentication infrastructure already specified in Spec 001 and implemented in `easyeat/backend` (`POST /api/v1/auth/login`, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout`, 8-hour JWT TTL / 28800000 ms, BCrypt cost 12, rate limit 5 attempts/15 min). Spec 002 introduces zero redundant auth logic; its scope is strictly the 5 Sprint 1 backlog user stories (`ENC-1.1.1`, `ENC-1.2.1`, `CHF-1.1.1`, `CHF-1.2.1`, `ADM-1.1.1`) focusing on role-based client views, automatic workspace redirections (`/mostrador`, `/cocina`, `/admin`), client route guards, and server-side RBAC protection.
+- Q: When an authenticated staff member navigates directly to a workspace outside their role (cross-role navigation), how must both client and server enforce isolation? → A: The client-side guard must immediately execute a silent redirection to the user's assigned operational workspace without intermediate error banners, replacing browser history. The server-side security layer must reject any unauthorized API request targeting another role's operational resources with HTTP `403 Forbidden`.
+- Q: How is concurrent multi-device login handled across both tiers? → A: Enforced single active session: when a staff member authenticates from a new terminal, the server establishes a new session token version. Any subsequent API request made with a stale token version is rejected with HTTP `401 Unauthorized`, triggering client-side session eviction.
+- Q: How does the system handle an authenticated identity without an assigned role or with an unassigned profile? → A: The system defaults client routing and server access permissions to the `COMENSAL` role, redirecting the user to the public dining catalog workspace (`/catalogo`).
+- Q: How are shift terminations (logout) handled between tiers? → A: Explicit logout requires client-side storage clearance paired with a server-side session termination contract (`POST /api/v1/auth/logout`) that permanently invalidates the issued token session and returns HTTP `204 No Content`.
 
-- Q: When an authenticated staff member attempts to navigate to a workspace not matching their assigned role (cross-role access), how must the system respond? → A: The system must execute a silent redirect directly to the user's own assigned workspace without displaying an intermediate error or access-denied screen.
-- Q: What is the expected behavior when a staff member logs in from a second browser, tab, or device simultaneously? → A: Single active session enforcement: a new successful login invalidates any previously active session for that account across all devices.
-- Q: How does the system handle an account with no assigned role (data inconsistency or unassigned profile)? → A: The system defaults to the `COMENSAL` role, redirecting the user to the diner home/restaurant catalog.
-- Q: When a staff member's session expires while actively operating in a workspace or submitting an action, how does the interface react? → A: The action must be aborted without committing changes, and the user must be redirected immediately to the login screen with an explanatory notification ("Tu sesión ha expirado").
-- Q: When an unauthenticated user accesses a protected deep link URL and is redirected to the login form, where do they land after successfully authenticating? → A: If the requested destination URL matches the user's authenticated role, they are redirected to that requested target; if the requested URL does not match their role (or no target was preserved), they are redirected to the default root workspace of their role.
+---
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Unified Staff Login via Shared Interface (Priority: P1)
+### User Story 1: ENC-1.1.1 — Counter Manager Credential Login (Priority: P1) 🎯 MVP
 
-As a staff member (Counter Manager, Kitchen Chef, or Administrator),  
-I want to log into the platform using my employee email and password through the shared login interface,  
-So that I can securely establish my identity and start my work shift without needing role-specific login URLs.
+As a Counter Manager (`ENCARGADO`),  
+I want to log into the web platform using my administrative credentials through the unified login portal,  
+So that the system authenticates my identity and establishes my counter operational session.
 
-**Why this priority**: Serves as the primary operational gateway for all restaurant personnel (`ENC-1.1.1`, `CHF-1.1.1`, `ADM-1.1.1`). Without unified credential authentication, staff cannot access operational tools.
+**Why this priority**: Core onboarding gateway for counter staff. Without secure credential verification and token issuance, dispatch and delivery management tools cannot be operated.
 
-**Independent Test**: Can be tested independently by submitting valid credentials for each staff role on the shared login form and verifying that identity authentication succeeds, the session context is established, and access is granted.
+**Independent Test**: Submit valid counter manager credentials through the shared authentication interface. Verify that the client validates inputs, the backend authenticates the hash and issues an identity token with `role: ENCARGADO`, tenant binding, and active status, and access is granted.
 
-**Acceptance Scenarios**:
+#### Acceptance Scenarios (Given-When-Then)
 
-1. **Given** a staff user on the shared login page, **When** they enter their registered staff email and valid password and submit the form, **Then** the system authenticates the user, establishes an active session carrying their role and tenant context, and prepares the workspace redirect.
-2. **Given** a staff user on the login page, **When** they submit an empty email, an empty password, or both, **Then** the system blocks submission and visually highlights the required fields.
-3. **Given** a staff user on the login page, **When** they enter an email address with invalid syntax, **Then** the system prevents submission and displays an email format validation message.
-4. **Given** a staff user on the login page, **When** they enter incorrect credentials (unregistered email or mismatched password), **Then** the system rejects authentication and displays a generic error message without disclosing whether the email exists.
-5. **Given** a staff user whose account has been suspended or deactivated, **When** they attempt to authenticate, **Then** the system blocks login and displays an inactive account notification.
-6. **Given** a staff user entering their email with leading/trailing whitespace or mixed casing, **When** they submit the correct password, **Then** the system normalizes the email (trimmed and lowercased) and completes authentication successfully.
-7. **Given** a staff user submitting the login form, **When** the network connection is unavailable or the service fails, **Then** the system displays a connection error message and enables the user to retry.
-8. **Given** a staff user on the login form, **When** they click the submit button multiple times in rapid succession, **Then** the system disables the submission control while the request is in flight to prevent duplicate submissions.
-
----
-
-### User Story 2 - Automatic Post-Login Workspace Redirection (Priority: P1)
-
-As an authenticated staff member,  
-I want the system to automatically redirect me to my dedicated workspace immediately upon login,  
-So that I land directly on my operational tools without manual navigation, menu hunting, or role selection.
-
-**Why this priority**: Operational efficiency and speed are critical in food service environments (`ENC-1.2.1`, `CHF-1.2.1`, `ADM-1.1.1`). Staff must begin processing orders or managing operations without friction.
-
-**Independent Test**: Can be tested independently by logging in as each distinct role and verifying that immediate redirection occurs to the exact destination workspace prescribed by the role-to-workspace routing policy.
-
-**Acceptance Scenarios**:
-
-1. **Given** a user authenticated with the Counter Manager role (`ENCARGADO`), **When** authentication completes, **Then** the system immediately redirects the user to the Counter / Dispatch view without intermediate prompts.
-2. **Given** a user authenticated with the Kitchen Chef role (`CHEF`), **When** authentication completes, **Then** the system immediately redirects the user to the Kitchen Display System (KDS) view without intermediate prompts.
-3. **Given** a user authenticated with the Administrator role (`ADMINISTRADOR`), **When** authentication completes, **Then** the system immediately redirects the user to the Back-Office Administration panel without intermediate prompts.
-4. **Given** a user authenticated with the Diner role (`COMENSAL`), **When** authentication completes, **Then** the system redirects the user to the diner home / restaurant catalog view.
-5. **Given** an unauthenticated user attempting to access a valid deep link matching their role (e.g., a specific KDS station URL for a Chef), **When** they log in successfully, **Then** the system redirects them directly to the preserved target URL instead of the default root view.
-6. **Given** an unauthenticated user attempting to access a deep link not matching their role (e.g., a Chef attempting to access the Back-Office panel), **When** they log in successfully, **Then** the system ignores the requested target and redirects them to their own role's default workspace (KDS view).
+1. **Successful Counter Authentication**:
+   - **Given** an unauthenticated user on the login interface with registered `ENCARGADO` credentials,
+   - **When** they submit their email and correct password,
+   - **Then** the backend validates the credentials, records a security audit log entry, and returns an authenticated response carrying an identity token with claims `role: ENCARGADO`, `user_id`, `tenant_id`, and `token_version`, and the client stores the session context.
+2. **Email Normalization**:
+   - **Given** a counter manager submitting an email containing leading/trailing whitespace and uppercase characters,
+   - **When** the form is submitted with the valid password,
+   - **Then** the client normalizes the email (trimmed and lowercased) prior to transmission, and the backend authenticates the normalized record without case-sensitivity mismatch.
+3. **Anti-Enumeration Protection**:
+   - **Given** a user submitting an unregistered email or an invalid password,
+   - **When** the backend evaluates the request,
+   - **Then** it returns HTTP `401 Unauthorized` with a generic RFC 9457 problem detail without disclosing whether the email exists, and the client displays a generic error message.
+4. **Suspended Account Enforcement**:
+   - **Given** a counter manager account flagged with inactive or suspended status,
+   - **When** valid credentials are submitted,
+   - **Then** the backend rejects authentication with HTTP `403 Forbidden` citing suspended account status, and the client alerts the user without granting workspace entry.
+5. **Client Input Validation and Debouncing**:
+   - **Given** an empty or malformed email string in the login form,
+   - **When** the submission action is triggered,
+   - **Then** the client displays visual field validation errors without firing a network request, and disables the submission control while any request is in flight.
 
 ---
 
-### User Story 3 - Role-Based Route Protection and Cross-Role Isolation (Priority: P1)
+### User Story 2: ENC-1.2.1 — Automatic Redirection to Counter Workspace (Priority: P1)
 
-As the system security guardian,  
-I want all staff workspace URLs to be continuously protected by route guards,  
-So that unauthorized individuals and users from differing roles cannot view or interact with restricted operational environments.
+As a Counter Manager (`ENCARGADO`),  
+I want to be automatically redirected to the Counter Workspace (`/mostrador`) immediately upon successful authentication,  
+So that I can manage dispatch orders without navigating through irrelevant menus (such as Kitchen KDS or Diner views).
 
-**Why this priority**: Core architectural invariant. Prevents unauthorized operational actions (e.g., chefs modifying administrative settings, counter managers altering kitchen orders, or diners viewing internal dispatch screens).
+**Why this priority**: Eliminates operational delay during shift startup and prevents counter managers from accessing out-of-scope operational views.
 
-**Independent Test**: Can be tested by directly requesting forbidden workspace URLs with different authenticated roles and without authentication, verifying that access is deterministically denied and redirected.
+**Independent Test**: Authenticate as `ENCARGADO`. Verify that the post-authentication routing policy resolves `/mostrador`, replaces navigation history, and authorizes access against the backend counter status endpoint.
 
-**Acceptance Scenarios**:
+#### Acceptance Scenarios (Given-When-Then)
 
-1. **Given** an unauthenticated user, **When** they attempt to navigate directly to any staff workspace URL (Counter, KDS, or Back-Office), **Then** the system intercepts the navigation and redirects the user to the login screen, preserving the requested target for post-login evaluation.
-2. **Given** a user authenticated as Kitchen Chef, **When** they navigate directly to the Counter view URL or the Back-Office panel URL, **Then** the system denies access and silently redirects the user to their own Kitchen (KDS) view.
-3. **Given** a user authenticated as Counter Manager, **When** they navigate directly to the Kitchen KDS URL or the Back-Office panel URL, **Then** the system denies access and silently redirects the user to their own Counter / Dispatch view.
-4. **Given** a user authenticated as Administrator, **When** they navigate directly to the Counter view or Kitchen KDS view, **Then** the system denies access and silently redirects the user to the Back-Office panel.
-5. **Given** a user authenticated as Diner, **When** they attempt to navigate to any staff workspace URL, **Then** the system denies access and silently redirects the user to the diner home / restaurant catalog.
-6. **Given** an authenticated user who was redirected away from a forbidden workspace, **When** they press the browser's Back button, **Then** the route guard intercepts the history event and prevents re-entering the forbidden view, remaining on their own valid workspace.
-
----
-
-### User Story 4 - Session Expiration Handling and Action Protection (Priority: P2)
-
-As a staff member operating in a protected workspace,  
-I want the system to handle session expiration securely and predictably,  
-So that stale sessions do not execute uncommitted operations and expired interfaces cannot be manipulated.
-
-**Why this priority**: Guarantees data integrity and tenant security during long operational shifts when credentials or sessions reach their time limit.
-
-**Independent Test**: Can be tested by letting a session expire or revoking the active session token, then executing a workspace navigation or action, and confirming that the action is blocked and the user is redirected to login.
-
-**Acceptance Scenarios**:
-
-1. **Given** a staff user operating in any protected workspace, **When** their session expires due to elapsed time or invalidation, **Then** subsequent route navigation is blocked and the user is immediately redirected to the login screen with a notification stating "Tu sesión ha expirado".
-2. **Given** a staff user with an expired session submitting an in-workspace action (e.g., updating order status), **When** the submission is dispatched, **Then** the system aborts the operation without committing state changes, invalidates client session state, and redirects the user to the login screen with the expiration notice.
-3. **Given** an active staff session on Device A, **When** the same staff member logs in successfully on Device B, **Then** the session on Device A is invalidated, and the next action or navigation on Device A redirects to the login screen.
+1. **Automatic Landing Redirection**:
+   - **Given** an `ENCARGADO` user completing login with no deep link preserved,
+   - **When** authentication succeeds,
+   - **Then** the client immediately routes to the Counter Workspace (`/mostrador`) using history replacement, and the backend authorizes access to counter endpoints.
+2. **Authorized Deep Link Preservation**:
+   - **Given** an unauthenticated user attempting to access a protected counter URL (e.g., `/mostrador/pedidos/42`),
+   - **When** redirected to login and authenticated with role `ENCARGADO`,
+   - **Then** the client routes directly to the requested deep link destination.
+3. **Unauthorized Deep Link Discarding**:
+   - **Given** an unauthenticated user attempting to access a kitchen view (e.g., `/cocina`),
+   - **When** authenticated with role `ENCARGADO`,
+   - **Then** the client discards the kitchen destination and redirects the user to their default `/mostrador` workspace.
+4. **Server-Side Counter Protection**:
+   - **Given** a client request to backend counter operational endpoints,
+   - **When** the bearer token carries `role: ENCARGADO`,
+   - **Then** the server grants access; if the token carries any non-authorized role, the server rejects the request with HTTP `403 Forbidden`.
 
 ---
 
-### User Story 5 - Explicit Logout and History Invalidation (Priority: P2)
+### User Story 3: CHF-1.1.1 — Kitchen Chef Credential Login (Priority: P1)
 
-As an authenticated staff member finishing a shift,  
-I want to log out explicitly from my workspace,  
-So that my active session is completely terminated and subsequent users of the shared terminal cannot access my operational workspace.
+As a Kitchen Chef (`CHEF`),  
+I want to log into the web platform using my employee credentials,  
+So that the system authenticates my identity and opens my secure kitchen shift.
 
-**Why this priority**: Vital for shared restaurant workstations where multiple staff members alternate on the same physical terminal throughout the day.
+**Why this priority**: Primary access gateway for culinary personnel. Guarantees that food preparation and kitchen ticket operations can only be initiated by verified chefs.
 
-**Independent Test**: Can be tested by triggering logout from a staff workspace, verifying that session data is purged, the user lands on the login page, and browser back navigation does not reveal cached protected screens.
+**Independent Test**: Submit valid chef credentials through the login interface. Verify that the client transmits the request, the backend validates credentials and issues a token with `role: CHEF`, tenant binding, and security audit log.
 
-**Acceptance Scenarios**:
+#### Acceptance Scenarios (Given-When-Then)
 
-1. **Given** an authenticated staff user in their workspace, **When** they select the "Cerrar sesión" action, **Then** the system invalidates the session, purges local session storage, and redirects the user to the login page.
-2. **Given** a user who has just logged out, **When** they click the browser's Back button, **Then** the system detects the absence of an active session, prevents rendering cached workspace data, and keeps the user on the login screen.
+1. **Successful Chef Authentication**:
+   - **Given** a chef user submitting their valid registered employee email and password,
+   - **When** the authentication request is processed,
+   - **Then** the backend returns an authenticated response with `role: CHEF`, `user_id`, `tenant_id`, and `token_version`, and the client initializes the active chef session.
+2. **Chef Account Status Verification**:
+   - **Given** a chef account with `UNVERIFIED` or `SUSPENDED` status,
+   - **When** credentials are submitted,
+   - **Then** the backend returns an authorization rejection, and the client prevents shift initiation.
+3. **Audit Logging on Chef Authentication**:
+   - **Given** an authentication attempt for a chef account,
+   - **When** the outcome is evaluated (success or failure),
+   - **Then** the backend logs a structured security event containing event type, timestamp, IP, email, and role, without logging raw passwords.
 
 ---
 
-### Edge Cases
+### User Story 4: CHF-1.2.1 — Automatic Redirection to Kitchen Display System (KDS) (Priority: P1)
 
-- **Concurrent Multi-Device Login**: A staff user logs into the same account on a second device or browser tab while a session is active. The new login terminates previous active sessions (single active session model).
-- **Session Expiration During Mutation**: A staff member dispatches an action at the exact moment their token expires. The system blocks the mutation atomically, rolls back uncommitted client changes, and redirects to login with an expiration notice.
-- **Browser Back Button on Forbidden Redirection**: A user attempts cross-role navigation, gets redirected to their own view, and presses Back. The guard intercepts the navigation and maintains the user on their authorized workspace.
-- **Browser Back Button After Logout**: A user presses Back after logout. The guard enforces unauthenticated access rules, redirects to login, and ensures no cached sensitive information is exposed.
-- **Account Without Assigned Role**: A user account exists without an assigned staff role due to a data anomaly. The system falls back safely to treating the user as `COMENSAL`, routing them to the diner catalog.
-- **Rapid Double-Submission**: The user clicks the login button multiple times quickly. The client locks form controls and debounces requests to prevent duplicate authentication attempts.
-- **Obsolete Credential Autofill**: Browser autofills outdated credentials. The system evaluates them through the normal validation flow, fails gracefully with an anti-enumeration error, and preserves the email for correction.
-- **Whitespace and Case Sensitivity in Email**: Email entered with mixed casing or whitespace. The system normalizes email to lowercase and strips whitespace before processing.
-- **Deep Link Role Mismatch**: Unauthenticated user clicks a deep link for a workspace of a different role. Upon authentication, the system detects the mismatch and routes to the user's correct workspace instead of the requested deep link.
+As a Kitchen Chef (`CHEF`),  
+I want to be automatically redirected to the Kitchen Workspace (`/cocina`) immediately after logging in,  
+So that I can start reviewing and preparing pending kitchen tickets without manual navigation.
 
-## Requirements *(mandatory)*
+**Why this priority**: Operational velocity in kitchen environments requires immediate display of order tickets upon shift login.
 
-### Functional Requirements
+**Independent Test**: Authenticate as `CHEF`. Verify that the post-authentication routing policy resolves `/cocina`, replaces navigation history, and validates authorized communication with kitchen backend endpoints.
 
-- **FR-001**: The platform MUST provide a single, shared login interface for all user roles without role selectors, role-specific URLs, or differentiated login portals.
-- **FR-002**: The login interface MUST collect an email address and password, validating that both fields are non-empty before initiating authentication.
-- **FR-003**: The login interface MUST validate email syntax and display an informative validation message if the format is invalid.
-- **FR-004**: The system MUST normalize the email address (strip leading/trailing whitespace and convert to lowercase) prior to submitting the authentication request.
-- **FR-005**: The system MUST disable the login submit button and prevent duplicate submission requests while an authentication request is in flight.
-- **FR-006**: Upon failed authentication due to mismatched or non-existent credentials, the system MUST display a generic security error message that prevents account enumeration.
-- **FR-007**: Upon successful authentication, the system MUST immediately evaluate the role claim carried in the session context and execute an automatic redirect according to the following strict routing table:
-  - Role `ENCARGADO` MUST redirect to the Counter / Dispatch view.
-  - Role `CHEF` MUST redirect to the Kitchen Display System (KDS) view.
-  - Role `ADMINISTRADOR` MUST redirect to the Back-Office Administration panel.
-  - Role `COMENSAL` MUST redirect to the Diner home / restaurant catalog view.
-- **FR-008**: The post-login redirection MUST occur immediately without presenting any intermediate selection screens, manual prompts, or confirmation modals.
-- **FR-009**: If an unauthenticated user was intercepted while attempting to access a protected deep link URL, the post-login redirect MUST route to that deep link IF and ONLY IF the target belongs to the user's authenticated role; otherwise, it MUST route to the default workspace for that role.
-- **FR-010**: All staff workspace URLs MUST be protected by continuous route guards that evaluate authentication state and role permissions prior to rendering any view.
-- **FR-011**: If an unauthenticated user attempts direct navigation to any protected staff workspace, the route guard MUST intercept the request and redirect the user to the login screen, preserving the target URL for deep-link evaluation.
-- **FR-012**: If an authenticated user attempts direct navigation to a staff workspace that does not match their assigned role (cross-role access), the route guard MUST silently redirect the user to their own assigned workspace without displaying an intermediate error screen.
-- **FR-013**: The system MUST enforce a single active session policy per staff account: a new successful login MUST invalidate any existing active sessions for that account.
-- **FR-014**: If a staff user's session expires or is invalidated during active workspace usage, the system MUST immediately block further workspace interaction and redirect the user to the login screen with an explanatory expiration notification.
-- **FR-015**: Any workspace action or data mutation attempted with an expired or invalid session MUST be aborted without persisting changes or producing side effects.
-- **FR-016**: Upon explicit logout by a staff user, the system MUST terminate the active session, purge client-side session credentials, redirect to the login screen, and configure cache-control protections to prevent viewing workspace content via browser back navigation.
-- **FR-017**: If an authenticated account lacks an explicit staff role assignment, the system MUST apply a safe fallback treating the user as `COMENSAL` and redirecting to the diner catalog view.
-- **FR-018**: If the authentication request fails due to network unavailability or server errors, the login interface MUST display a clear communication error notification and allow the user to retry.
+#### Acceptance Scenarios (Given-When-Then)
 
-### Key Entities
+1. **Automatic Kitchen Landing**:
+   - **Given** a `CHEF` user completing authentication,
+   - **When** post-auth navigation executes,
+   - **Then** the client immediately routes to `/cocina` (KDS view), and the backend authorizes calls to kitchen order stream endpoints.
+2. **Cross-Role Isolation against Kitchen**:
+   - **Given** a user authenticated as `ENCARGADO` or `COMENSAL` attempting to access `/cocina`,
+   - **When** navigation is evaluated,
+   - **Then** the client silently redirects the user to their own workspace with history replacement, and the backend denies API access with HTTP `403 Forbidden`.
+3. **Deep Link Resolution for Chef**:
+   - **Given** an unauthenticated access attempt to a kitchen station URL (`/cocina/estacion-1`),
+   - **When** the user logs in as `CHEF`,
+   - **Then** the client routes to `/cocina/estacion-1`; if an unassigned target was requested, it falls back to `/cocina`.
 
-- **Staff Account**: Represents an employee authorized to operate in restaurant workspaces. Key attributes include unique user identifier, email, assigned role (`ENCARGADO`, `CHEF`, `ADMINISTRADOR`), associated tenant identifier (`tenant_id`), account status (`active`, `suspended`), and session revision indicator.
-- **Session Authorization Context**: Represents the verified client credentials and authority. Key attributes include user identifier, assigned role, tenant scope, session validity period, and active session identifier.
-- **Route Access Policy**: Represents the rule mapping each protected workspace route to its authorized role(s). Defines the destination for valid access, unauthorized cross-role redirects, and unauthenticated fallback.
+---
 
-## Success Criteria *(mandatory)*
+### User Story 5: ADM-1.1.1 — Back-Office Administrator Portal Access and Tenant Isolation (Priority: P1)
 
-### Measurable Outcomes
+As a Restaurant Administrator (`ADMINISTRADOR`),  
+I want to log into the web platform and be routed to the Back-Office Administration panel (`/admin`),  
+So that I can manage my restaurant's configuration within my strict tenant isolation boundaries without viewing other establishments.
 
-- **SC-001**: 100% of successful staff logins complete automated redirection to the role-assigned workspace in under 2 seconds from credential submission on standard network connections.
-- **SC-002**: 100% of unauthenticated attempts to access staff workspace URLs are intercepted and redirected to the login interface.
-- **SC-003**: 0% unauthorized cross-role access: 100% of cross-role navigation attempts are intercepted and silently redirected to the user's assigned workspace with zero leakage of unauthorized workspace content.
-- **SC-004**: 100% of credential failures produce identical, anti-enumeration error feedback without revealing whether the email address exists in the system.
-- **SC-005**: 100% of mutations or actions dispatched with an expired session are rejected with zero database updates or state side effects.
-- **SC-006**: 100% of post-logout browser back navigations fail to display cached protected workspace views and redirect to the login page.
-- **SC-007**: 100% of duplicate form submissions triggered by rapid double-clicking are prevented by client submission debouncing.
+**Why this priority**: Foundational tenant management and store governance capability. Enforces multi-tenant data isolation and administrative authority.
 
-## Assumptions
+**Independent Test**: Authenticate as `ADMINISTRADOR`. Verify that the system routes to `/admin`, the backend enforces tenant ID scoping across all administration endpoints, and cross-tenant data leakage is strictly blocked.
 
-- The centralized authentication service (developed under feature `001-central-auth-recovery`) generates valid session tokens containing `user_id`, `role`, `tenant_id`, and `token_version`.
-- Staff accounts are provisioned and linked to their specific tenant by an Administrator through employee onboarding (`ADM-3.1.1` and `ADM-3.1.2`); staff do not select establishments during login.
-- Diner registration and diner-specific catalog views exist and are maintained by separate feature deliverables (`COM-1.1.1`, `COM-1.2.1`).
-- The internal layouts, controls, and specific features within the destination workspaces (Counter Dispatch, Kitchen KDS, Back-Office Panel) are independent deliverables; this specification governs landing on the correct workspace and continuous perimeter route protection.
-- Client applications operate within standard modern web browsers with session storage and navigation history support.
+#### Acceptance Scenarios (Given-When-Then)
+
+1. **Automatic Admin Redirection**:
+   - **Given** an authenticated user with `role: ADMINISTRADOR`,
+   - **When** authentication completes,
+   - **Then** the client immediately routes to the Back-Office panel (`/admin`), and the backend authorizes access to administrative resources matching the user's `tenant_id`.
+2. **Strict Multi-Tenant Scoping**:
+   - **Given** an administrator for Tenant A (`tenant_id: tenant-alpha`),
+   - **When** accessing administrative endpoints and querying records,
+   - **Then** the backend filters all queries strictly by `tenant-alpha`, ensuring that data, staff, and configurations of other tenants are completely invisible.
+3. **Cross-Role Perimeter Defense**:
+   - **Given** a non-admin user (`CHEF`, `ENCARGADO`, `COMENSAL`) attempting to navigate to `/admin`,
+   - **When** the route or backend API is requested,
+   - **Then** the client silently redirects the non-admin to their operational workspace, and the server returns HTTP `403 Forbidden`.
+
+---
+
+## Cross-Cutting System Capabilities (Full-Stack Lifecycle)
+
+### Single Active Session and Invalidation
+- **Server**: Every request to protected API routes validates that the bearer token signature is authentic, unexpired, and matches the user's current `token_version` in persistent storage. A new login increments the stored version, invalidating previously issued tokens with HTTP `401 Unauthorized`.
+- **Client**: Any HTTP `401 Unauthorized` response received by the HTTP client immediately evicts local session storage, aborts in-flight actions, and routes the user to `/login` with an expiration alert banner.
+
+### Shift Termination (Logout)
+- **Client**: The common layout provides an explicit "Cerrar sesión" action. Triggering logout invokes the server logout endpoint, purges all stored tokens and identity state, and navigates to `/login` with history replacement (`replace: true`).
+- **Server**: Exposes `POST /api/v1/auth/logout`. Atomically increments the user's persistent `token_version` and returns HTTP `204 No Content`, ensuring that even if a token is intercepted, it cannot be reused.
+
+---
+
+## Edge Cases
+
+1. **Token Expiration During Active Form Submission**:
+   - If a staff member's token expires while submitting an operational form, the backend rejects the request with HTTP `401`. The client must discard unsaved state, evict the session, and redirect to login with a clear expiration notice.
+2. **Rapid Multi-Click Submissions**:
+   - Submitting the login button repeatedly must disable interactive controls during flight, preventing duplicate authentication calls and concurrency locks.
+3. **Browser Back-Button Navigation after Redirection**:
+   - All role-based and post-auth redirections must use history replacement (`replace: true`). Pressing the browser back button must not return to an unauthorized workspace or trap the user in a redirect loop.
+4. **Network Outage During Redirection**:
+   - If the network drops immediately after token issuance but before landing view resources load, the client displays a retryable offline notice while retaining session state for reconnection.
+5. **Simultaneous Multi-Tab Access**:
+   - If a user logs out in Tab A, Tab B must detect the invalidation on its next API interaction, evict local state, and redirect to login.
+
+---
+
+## Functional Requirements
+
+- **FR-001**: The system MUST provide a shared web login interface accepting email and password for all staff roles (`ENCARGADO`, `CHEF`, `ADMINISTRADOR`, `COMENSAL`).
+- **FR-002**: The client MUST validate email syntax and presence of required fields prior to sending requests, and MUST normalize emails by trimming whitespace and lowercasing characters.
+- **FR-003**: The backend MUST authenticate staff credentials using cost-12 BCrypt hashing and issue a signed JWT containing claims for `user_id`, `role`, `tenant_id`, and `token_version`.
+- **FR-004**: The system MUST reject invalid credentials with HTTP `401 Unauthorized` without disclosing whether the email exists (anti-enumeration).
+- **FR-005**: Upon successful authentication, the client router MUST automatically navigate the user to their designated workspace based on token role:
+  - `ENCARGADO` → `/mostrador`
+  - `CHEF` → `/cocina`
+  - `ADMINISTRADOR` → `/admin`
+  - `COMENSAL` or unassigned → `/catalogo`
+- **FR-006**: Client redirection MUST preserve authorized deep links if the target matches the authenticated role, and MUST discard deep links that do not match the role.
+- **FR-007**: Client route guards MUST protect `/mostrador`, `/cocina`, `/admin`, and `/catalogo`, silently redirecting unauthorized users to their own workspace with history replacement.
+- **FR-008**: Backend API endpoints for each workspace MUST enforce role-based access control (RBAC), returning HTTP `403 Forbidden` for cross-role attempts.
+- **FR-009**: Backend endpoints MUST enforce tenant isolation based on the authenticated `tenant_id` claim, preventing access to cross-tenant data.
+- **FR-010**: The backend MUST enforce single active session by validating token `token_version` on every protected request against persistent storage, rejecting stale versions with HTTP `401`.
+- **FR-011**: The client MUST intercept HTTP `401` responses, evict local session data, and redirect to `/login` with an expiration notification.
+- **FR-012**: The system MUST provide an explicit shift logout endpoint (`POST /api/v1/auth/logout`) that increments `token_version`, returns HTTP `204`, and triggers client session purge and redirection.
+- **FR-013**: Protected endpoints and views MUST enforce `Cache-Control: no-store` headers to prevent browser caching of sensitive operational data.
+
+---
+
+## Key Entities & Data Contracts
+
+- **User Identity Context**:
+  - `userId`: Globally unique identifier (UUID) of the staff member.
+  - `email`: Normalized unique corporate email.
+  - `role`: One of `COMENSAL`, `ENCARGADO`, `CHEF`, `ADMINISTRADOR`.
+  - `tenantId`: Tenant identifier to which the staff member belongs.
+  - `tokenVersion`: Monotonically incrementing integer tracking active session epoch.
+  - `accountStatus`: Active state (`ACTIVE`, `SUSPENDED`, `UNVERIFIED`).
+
+- **Workspace Route Map**:
+  - Counter Workspace: `/mostrador` (authorized: `ENCARGADO`).
+  - Kitchen Workspace: `/cocina` (authorized: `CHEF`).
+  - Back-Office Panel: `/admin` (authorized: `ADMINISTRADOR`).
+  - Dining Catalog: `/catalogo` (authorized: `COMENSAL`, fallback).
+
+---
+
+## Success Criteria
+
+- **SC-001**: 100% of valid credentials for each staff role successfully authenticate and issue tokens with the complete four-claim payload (`user_id`, `role`, `tenant_id`, `token_version`).
+- **SC-002**: Post-login redirection reaches the exact role-assigned landing view within 500ms of authentication completion under standard broadband conditions.
+- **SC-003**: 100% of cross-role navigation attempts (both in browser URL and API requests) are blocked: client silently redirects to own workspace; backend returns HTTP `403 Forbidden`.
+- **SC-004**: Stale session requests (after login on another terminal or explicit logout) are rejected by the backend with HTTP `401` within 100% of test scenarios.
+- **SC-005**: 100% of cross-tenant data isolation checks pass, ensuring zero cross-tenant leakages across administrative endpoints.
+- **SC-006**: Zero password enumeration leakages: identical response payload and timing variation within acceptable margin for non-existent vs. mismatched credential requests.
+
+---
+
+## Assumptions & Out-of-Scope Boundaries
+
+### In Scope
+- Client login interface and client routing tree with role guards for counter, kitchen, admin, and catalog.
+- Server authentication, token issuance, single-active-session validation, RBAC route protection, and explicit logout endpoint.
+- Integration tests validating end-to-end credential submission, token issuance, workspace isolation, and session revocation.
+
+### Out of Scope
+- Implementation of full operational business features inside workspaces (e.g., kitchen order ticket lifecycle algorithms, POS cash register hardware integrations, and full tenant menu management belong to their dedicated sprint features).
+- Social login (OAuth2/Google/Apple) or two-factor authentication (SMS/TOTP), which are not scheduled for Sprint 1.
+- Self-registration for staff members (staff accounts are provisioned exclusively by tenant administrators).
