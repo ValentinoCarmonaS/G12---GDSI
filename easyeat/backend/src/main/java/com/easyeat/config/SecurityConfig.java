@@ -71,7 +71,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/first-login-password-change"
                         ).permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
-                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "ADMINISTRADOR")
+                        .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMINISTRADOR", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

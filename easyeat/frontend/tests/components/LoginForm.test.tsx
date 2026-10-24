@@ -1,17 +1,52 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { LoginForm } from '@/components/auth/LoginForm';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { authApi } from '@/api/authApi';
+
+function createMockJwt(payload: Record<string, unknown>): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const body = btoa(JSON.stringify(payload));
+  return `${header}.${body}.mock-signature`;
+}
+
+const LoginWithAuthContext: React.FC = () => {
+  const { user, isAuthenticated, setToken } = useAuth();
+
+  const handleLogin = async (credentials: { email: string; password: string }) => {
+    const data = await authApi.login(credentials);
+    setToken(data.access_token);
+  };
+
+  return (
+    <div>
+      <div data-testid="auth-status">{isAuthenticated ? 'authenticated' : 'unauthenticated'}</div>
+      {user && <div data-testid="user-role">{user.role}</div>}
+      {user && <div data-testid="user-email">{user.email}</div>}
+      {user && <div data-testid="user-tenant">{user.tenantId}</div>}
+      <LoginForm onSubmit={handleLogin} />
+    </div>
+  );
+};
 
 describe('LoginForm Component', () => {
   const mockOnSubmit = vi.fn();
+  const renderLoginForm = (props = {}) =>
+    render(
+      <MemoryRouter>
+        <LoginForm onSubmit={mockOnSubmit} {...props} />
+      </MemoryRouter>
+    );
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders email and password inputs and submit button', () => {
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
@@ -20,7 +55,7 @@ describe('LoginForm Component', () => {
 
   it('displays validation errors when submitting empty fields (FR-002)', async () => {
     const user = userEvent.setup();
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const submitBtn = screen.getByRole('button', { name: /ingresar/i });
     await user.click(submitBtn);
@@ -32,7 +67,7 @@ describe('LoginForm Component', () => {
 
   it('displays validation error on invalid email syntax (FR-003)', async () => {
     const user = userEvent.setup();
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const emailInput = screen.getByLabelText(/correo electrónico/i);
     const passwordInput = screen.getByLabelText(/contraseña/i);
@@ -49,7 +84,7 @@ describe('LoginForm Component', () => {
   it('normalizes email (strips whitespace and converts to lowercase) before submitting (FR-004)', async () => {
     const user = userEvent.setup();
     mockOnSubmit.mockResolvedValueOnce(undefined);
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const emailInput = screen.getByLabelText(/correo electrónico/i);
     const passwordInput = screen.getByLabelText(/contraseña/i);
@@ -75,7 +110,7 @@ describe('LoginForm Component', () => {
     });
     mockOnSubmit.mockReturnValue(submitPromise);
 
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     const emailInput = screen.getByLabelText(/correo electrónico/i);
     const passwordInput = screen.getByLabelText(/contraseña/i);
@@ -109,7 +144,7 @@ describe('LoginForm Component', () => {
       },
     });
 
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), 'user@test.com');
     await user.type(screen.getByLabelText(/contraseña/i), 'WrongPass');
@@ -124,7 +159,7 @@ describe('LoginForm Component', () => {
     const user = userEvent.setup();
     mockOnSubmit.mockRejectedValueOnce(new Error('Network Error'));
 
-    render(<LoginForm onSubmit={mockOnSubmit} />);
+    renderLoginForm();
 
     await user.type(screen.getByLabelText(/correo electrónico/i), 'user@test.com');
     await user.type(screen.getByLabelText(/contraseña/i), 'Password123');
@@ -134,4 +169,66 @@ describe('LoginForm Component', () => {
       expect(screen.getByText(/error de conexión/i)).toBeInTheDocument();
     });
   });
+
+  it('renders accessible navigation links to /register and /forgot-password (FR-021)', () => {
+    renderLoginForm();
+
+    const forgotPasswordLink = screen.getByRole('link', { name: /olvidé mi contraseña/i });
+    expect(forgotPasswordLink).toBeInTheDocument();
+    expect(forgotPasswordLink).toHaveAttribute('href', '/forgot-password');
+
+    const registerLink = screen.getByRole('link', { name: /registrate/i });
+    expect(registerLink).toBeInTheDocument();
+    expect(registerLink).toHaveAttribute('href', '/register');
+  });
+
+  it('submits credentials for maria.encargada@laesquina.com, receives valid token, and initializes AuthContext (T019)', async () => {
+    sessionStorage.clear();
+    const user = userEvent.setup();
+    const mockToken = createMockJwt({
+      sub: 'maria-uuid-123',
+      email: 'maria.encargada@laesquina.com',
+      role: 'ENCARGADO',
+      tenant_id: 'la-esquina-tenant-999',
+      token_version: 1,
+      exp: Math.floor(Date.now() / 1000) + 28800,
+    });
+
+    vi.spyOn(authApi, 'login').mockResolvedValueOnce({
+      access_token: mockToken,
+      token_type: 'Bearer',
+      expires_in: 28800,
+    });
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <LoginWithAuthContext />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('auth-status')).toHaveTextContent('unauthenticated');
+
+    const emailInput = screen.getByLabelText(/correo electrónico/i);
+    const passwordInput = screen.getByLabelText(/contraseña/i);
+    const submitBtn = screen.getByRole('button', { name: /ingresar/i });
+
+    await user.type(emailInput, '  Maria.Encargada@LaEsquina.com  ');
+    await user.type(passwordInput, 'EncargadoPassword123');
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(authApi.login).toHaveBeenCalledWith({
+        email: 'maria.encargada@laesquina.com',
+        password: 'EncargadoPassword123',
+      });
+      expect(screen.getByTestId('auth-status')).toHaveTextContent('authenticated');
+      expect(screen.getByTestId('user-role')).toHaveTextContent('ENCARGADO');
+      expect(screen.getByTestId('user-email')).toHaveTextContent('maria.encargada@laesquina.com');
+      expect(screen.getByTestId('user-tenant')).toHaveTextContent('la-esquina-tenant-999');
+      expect(sessionStorage.getItem('access_token')).toBe(mockToken);
+    });
+  });
 });
+

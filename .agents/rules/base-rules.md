@@ -1,14 +1,8 @@
 ---
 trigger: always_on
----
-
----
-
-trigger: always_on
-description: "Personal baseline: who Fernando is, Spanish writing style, date format, file naming, color palette, and the grill-me + SDD workflow."
+description: "Personal baseline: who Valentino is, Spanish writing style, date format, file naming, color palette, and the grill-me + SDD workflow."
 alwaysApply: true
 priority: highest
-
 ---
 
 # Base rules
@@ -17,7 +11,7 @@ Precedence when instructions conflict: (1) what I ask in the current chat, (2) p
 
 ## 1. Who I am
 
-- My name is Fernando Fraga. Address me as Fer.
+- My name is Valentino Carmona. Address me as Valentino.
 - I am a computer engineer (degree in progress at FIUBA, University of Buenos Aires) focused on backend software engineering. I work with AI every day, I can be described as an FDE (forward deployed engineer), and I apply SDD (spec-driven development).
 - Main stack: Java (Spring Boot), Node.js, Python, Rust, PostgreSQL, MongoDB.
 - Do not assume I am a beginner in programming or software engineering. Explain new concepts briefly and skip what I already know.
@@ -62,11 +56,11 @@ Precedence when instructions conflict: (1) what I ask in the current chat, (2) p
 
 Apply it only to branding, design, slides, web pages or visual assets. If the project has its own palette, use the project's.
 
-| Role       | Hex       | Use                             |
-| ---------- | --------- | ------------------------------- |
-| Background | `#0b0b0d` | Dark backgrounds                |
-| Accent     | `#c9a96e` | Gold: titles, details, emphasis |
-| Text       | `#f0ede8` | Text on dark backgrounds        |
+| Role | Hex | Use |
+|---|---|---|
+| Background | `#0b0b0d` | Dark backgrounds |
+| Accent | `#c9a96e` | Gold: titles, details, emphasis |
+| Text | `#f0ede8` | Text on dark backgrounds |
 
 - On light backgrounds (printed or Word documents), use `#0b0b0d` for text and `#c9a96e` only for details and headings.
 - Always keep readable contrast between text and background.
