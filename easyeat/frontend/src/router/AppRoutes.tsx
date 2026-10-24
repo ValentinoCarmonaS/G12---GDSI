@@ -11,6 +11,7 @@ import { CounterWorkspacePage } from '../pages/CounterWorkspacePage';
 import { KitchenWorkspacePage } from '../pages/KitchenWorkspacePage';
 import { AdminWorkspacePage } from '../pages/AdminWorkspacePage';
 import { CatalogPage } from '../pages/CatalogPage';
+import { FirstLoginPasswordPage } from '../pages/FirstLoginPasswordPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -22,9 +23,26 @@ export const AppRoutes: React.FC = () => {
         path="/login"
         element={
           isAuthenticated && user ? (
-            <Navigate to={getRoleDefaultRoute(user.role)} replace />
+            <Navigate
+              to={user.mustChangePassword ? '/first-login-password-change' : getRoleDefaultRoute(user.role)}
+              replace
+            />
           ) : (
             <LoginPage />
+          )
+        }
+      />
+
+      {/* Mandatory First-Login Password Change Gateway */}
+      <Route
+        path="/first-login-password-change"
+        element={
+          !isAuthenticated || !user ? (
+            <Navigate to="/login" replace />
+          ) : !user.mustChangePassword ? (
+            <Navigate to={getRoleDefaultRoute(user.role)} replace />
+          ) : (
+            <FirstLoginPasswordPage />
           )
         }
       />
@@ -109,7 +127,10 @@ export const AppRoutes: React.FC = () => {
         path="/"
         element={
           isAuthenticated && user ? (
-            <Navigate to={getRoleDefaultRoute(user.role)} replace />
+            <Navigate
+              to={user.mustChangePassword ? '/first-login-password-change' : getRoleDefaultRoute(user.role)}
+              replace
+            />
           ) : (
             <Navigate to="/login" replace />
           )

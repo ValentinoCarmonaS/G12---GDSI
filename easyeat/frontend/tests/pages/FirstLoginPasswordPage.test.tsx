@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { FirstLoginPasswordPage } from '@/pages/FirstLoginPasswordPage';
 import { authApi } from '@/api/authApi';
 import * as AuthModule from '@/hooks/useAuth';
@@ -106,11 +105,12 @@ describe('FirstLoginPasswordPage Component (FR-003, FR-030)', () => {
   it('submits valid password change, updates token, and navigates to default workspace', async () => {
     const user = userEvent.setup();
     vi.mocked(authApi.changeFirstLoginPassword).mockResolvedValueOnce({
+      message: 'Password updated successfully. Account is now active.',
+    });
+    vi.mocked(authApi.login).mockResolvedValueOnce({
       access_token: 'new-active-jwt-token',
       token_type: 'Bearer',
       expires_in: 28800,
-      user_id: 'user-pending-1',
-      status: 'ACTIVE',
     });
 
     render(
