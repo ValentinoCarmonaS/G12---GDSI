@@ -78,13 +78,13 @@
 
 ### Tests for User Story 2 (TDD) ⚠️
 
-- [ ] T020 [P] [US2] Unit tests for `resolvePostAuthRedirect` verifying resolution to `/mostrador`, deep link preservation for counter paths, and discarding out-of-role targets in `easyeat/frontend/tests/router/postAuthRouting.test.ts`
-- [ ] T021 [P] [US2] Router navigation tests asserting instant transition to `/mostrador` with history replacement (`replace: true`) upon successful login in `easyeat/frontend/tests/router/AppRoutes.test.tsx`
+- [X] T020 [P] [US2] Unit tests for `resolvePostAuthRedirect` verifying resolution to `/mostrador`, deep link preservation for counter paths, and discarding out-of-role targets in `easyeat/frontend/tests/router/postAuthRouting.test.ts`
+- [X] T021 [P] [US2] Router navigation tests asserting instant transition to `/mostrador` with history replacement (`replace: true`) upon successful login in `easyeat/frontend/tests/router/AppRoutes.test.tsx`
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Implement `CounterWorkspacePage` landing view for `ENCARGADO` wrapped in `WorkspaceLayout` in `easyeat/frontend/src/pages/CounterWorkspacePage.tsx`
-- [ ] T023 [US2] Register `/mostrador/*` route perimeter in `easyeat/frontend/src/router/AppRoutes.tsx`
+- [X] T022 [US2] Implement `CounterWorkspacePage` landing view for `ENCARGADO` wrapped in `WorkspaceLayout` in `easyeat/frontend/src/pages/CounterWorkspacePage.tsx`
+- [X] T023 [US2] Register `/mostrador/*` route perimeter in `easyeat/frontend/src/router/AppRoutes.tsx`
 
 **Checkpoint**: User Story 2 functional — counter managers authenticate and are instantly routed to `/mostrador` without intermediate prompts or history pollution.
 
