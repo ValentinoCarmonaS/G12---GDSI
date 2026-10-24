@@ -215,7 +215,7 @@ The Chef accesses a dedicated paginated catalog showing all active ingredients r
 - **SC-006**: No stock adjustment ever results in a negative stock balance under any circumstances, including concurrent operations.
 - **SC-007**: A Chef can load the first page of the ingredient catalog and locate a specific ingredient by name search in under 10 seconds.
 - **SC-008**: The ingredient catalog correctly reflects stock status changes (Active with stock, Active out of stock, Discontinued hidden) within 5 seconds of the change occurring.
-- **SC-009**: 95% of Administrators successfully complete the staff registration flow on their first attempt without encountering a validation error they did not expect.
+- **SC-009**: [Post-Release Usability Metric] 95% of Administrators successfully complete the staff registration flow on their first attempt without encountering a validation error they did not expect (monitored via production telemetry/analytics, not gated by local automated test suites).
 
 ## Assumptions
 

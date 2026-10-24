@@ -143,11 +143,11 @@
 
 **Purpose**: Define TypeScript domain contracts and Axios API client modules connecting frontend interfaces to the existing backend services.
 
-- [ ] T044 [P] Define Staff and Inventory TypeScript types and DTO interfaces in `easyeat/frontend/src/types/staff.ts` and `easyeat/frontend/src/types/inventory.ts`
-- [ ] T045 [P] Implement `staffApi.ts` client in `easyeat/frontend/src/api/staffApi.ts` for listing, creating, and updating staff members
-- [ ] T046 [P] Implement `inventoryApi.ts` client in `easyeat/frontend/src/api/inventoryApi.ts` for ingredient CRUD, lifecycle status updates, stock adjustments, audit history, and chef catalog queries
-- [ ] T047 [P] Extend `authApi.ts` in `easyeat/frontend/src/api/authApi.ts` with `changeFirstLoginPassword` method
-- [ ] T048 [P] Write unit tests for API clients in `easyeat/frontend/tests/api/staffApi.test.ts` and `easyeat/frontend/tests/api/inventoryApi.test.ts`
+- [ ] T044 [P] [FR-001, FR-010, FR-011] Define Staff and Inventory TypeScript types and DTO interfaces in `easyeat/frontend/src/types/staff.ts` and `easyeat/frontend/src/types/inventory.ts`
+- [ ] T045 [P] [FR-001, FR-004, FR-005, FR-028] Implement `staffApi.ts` client in `easyeat/frontend/src/api/staffApi.ts` for listing, creating, and updating staff members
+- [ ] T046 [P] [FR-010, FR-012, FR-014, FR-015, FR-019, FR-021, FR-031, FR-032] Implement `inventoryApi.ts` client in `easyeat/frontend/src/api/inventoryApi.ts` for ingredient CRUD, lifecycle status updates, stock adjustments, audit history, and chef catalog queries
+- [ ] T047 [P] [FR-003, FR-030] Extend `authApi.ts` in `easyeat/frontend/src/api/authApi.ts` with `changeFirstLoginPassword` method
+- [ ] T048 [P] [FR-001, FR-010] Write unit tests for API clients in `easyeat/frontend/tests/api/staffApi.test.ts` and `easyeat/frontend/tests/api/inventoryApi.test.ts`
 
 ---
 
@@ -155,11 +155,11 @@
 
 **Goal**: Force newly registered staff members logging in for the first time to change their temporary credential before accessing operational workspaces.
 
-- [ ] T049 [P] Inject `must_change_password` claim in backend `JwtService.java` and `AuthenticatedUserResponse.java` and adapt `AuthContext.tsx` to decode and expose it in user state
-- [ ] T050 [P] Write failing router and guard tests in `easyeat/frontend/tests/router/FirstLoginRouting.test.tsx` verifying redirection to `/first-login-password-change` when `mustChangePassword = true` and blocking operational routes
-- [ ] T051 Update `RoleRouteGuard.tsx` and `postAuthRouting.ts` to intercept `mustChangePassword` and enforce routing to `/first-login-password-change`
-- [ ] T052 [P] Write failing component tests for `FirstLoginPasswordPage` in `easyeat/frontend/tests/pages/FirstLoginPasswordPage.test.tsx`
-- [ ] T053 Implement `FirstLoginPasswordPage.tsx` in `easyeat/frontend/src/pages/FirstLoginPasswordPage.tsx` with validation, complexity checks, and successful submission transitioning account to active
+- [ ] T049 [P] [FR-003, FR-030] Inject `must_change_password` claim in backend `JwtService.java` and `AuthenticatedUserResponse.java` and adapt `AuthContext.tsx` to decode and expose it in user state
+- [ ] T050 [P] [FR-030] Write failing router and guard tests in `easyeat/frontend/tests/router/FirstLoginRouting.test.tsx` verifying redirection to `/first-login-password-change` when `mustChangePassword = true` and blocking operational routes
+- [ ] T051 [FR-030] Update `RoleRouteGuard.tsx` and `postAuthRouting.ts` to intercept `mustChangePassword` and enforce routing to `/first-login-password-change`
+- [ ] T052 [P] [FR-030] Write failing component tests for `FirstLoginPasswordPage` in `easyeat/frontend/tests/pages/FirstLoginPasswordPage.test.tsx`
+- [ ] T053 [FR-003, FR-030] Implement `FirstLoginPasswordPage.tsx` in `easyeat/frontend/src/pages/FirstLoginPasswordPage.tsx` with validation, complexity checks, and successful submission transitioning account to active
 
 ---
 
@@ -167,12 +167,12 @@
 
 **Goal**: Provide Administrators with a staff management view displaying the establishment's staff roster, creating new staff with temporary credential modals, and editing roles with orphaned admin protection.
 
-- [ ] T054 [P] Write failing tests for `TemporaryCredentialsModal` in `easyeat/frontend/tests/components/TemporaryCredentialsModal.test.tsx`
-- [ ] T055 Implement `TemporaryCredentialsModal.tsx` in `easyeat/frontend/src/components/staff/TemporaryCredentialsModal.tsx` with single-click copy to clipboard and dismissal warning
-- [ ] T056 [P] Write failing tests for `StaffFormModal` in `easyeat/frontend/tests/components/StaffFormModal.test.tsx`
-- [ ] T057 Implement `StaffFormModal.tsx` in `easyeat/frontend/src/components/staff/StaffFormModal.tsx` for creating and editing staff with real-time validation
-- [ ] T058 [P] Write failing tests for `StaffRosterTable` and `StaffManagementPage` in `easyeat/frontend/tests/pages/StaffManagementPage.test.tsx`
-- [ ] T059 Implement `StaffRosterTable.tsx` in `easyeat/frontend/src/components/staff/StaffRosterTable.tsx` and `StaffManagementPage.tsx` in `easyeat/frontend/src/pages/StaffManagementPage.tsx` mounted at `/admin/staff`
+- [ ] T054 [P] [FR-003, FR-029] Write failing tests for `TemporaryCredentialsModal` in `easyeat/frontend/tests/components/TemporaryCredentialsModal.test.tsx`
+- [ ] T055 [FR-003, FR-029] Implement `TemporaryCredentialsModal.tsx` in `easyeat/frontend/src/components/staff/TemporaryCredentialsModal.tsx` with single-click copy to clipboard and dismissal warning
+- [ ] T056 [P] [FR-001, FR-002, FR-005, FR-026] Write failing tests for `StaffFormModal` in `easyeat/frontend/tests/components/StaffFormModal.test.tsx`
+- [ ] T057 [FR-001, FR-002, FR-005, FR-006, FR-026] Implement `StaffFormModal.tsx` in `easyeat/frontend/src/components/staff/StaffFormModal.tsx` for creating and editing staff with real-time validation
+- [ ] T058 [P] [FR-004, FR-028] Write failing tests for `StaffRosterTable` and `StaffManagementPage` in `easyeat/frontend/tests/pages/StaffManagementPage.test.tsx`
+- [ ] T059 [FR-004, FR-028] Implement `StaffRosterTable.tsx` in `easyeat/frontend/src/components/staff/StaffRosterTable.tsx` and `StaffManagementPage.tsx` in `easyeat/frontend/src/pages/StaffManagementPage.tsx` mounted at `/admin/staff`
 
 ---
 
@@ -180,11 +180,11 @@
 
 **Goal**: Enable Administrators to manage ingredients in `/admin/inventory`, creating new ingredients, editing attributes (locking UOM if stock > 0), and updating lifecycle states (Active, Discontinued, Archived).
 
-- [ ] T060 [P] Write failing tests for `IngredientFormModal` in `easyeat/frontend/tests/components/IngredientFormModal.test.tsx`
-- [ ] T061 Implement `IngredientFormModal.tsx` in `easyeat/frontend/src/components/inventory/IngredientFormModal.tsx` with locked unit-of-measure rules when stock > 0
-- [ ] T062 [P] Write failing tests for `IngredientCatalogTable` and `InventoryManagementPage` in `easyeat/frontend/tests/pages/InventoryManagementPage.test.tsx`
-- [ ] T063 Implement `IngredientCatalogTable.tsx` in `easyeat/frontend/src/components/inventory/IngredientCatalogTable.tsx` and `InventoryManagementPage.tsx` in `easyeat/frontend/src/pages/InventoryManagementPage.tsx` mounted at `/admin/inventory`
-- [ ] T064 Implement status transition actions (decommission to DISCONTINUED, reactivate to ACTIVE, archive to ARCHIVED locked if stock > 0)
+- [ ] T060 [P] [FR-010, FR-013, FR-026] Write failing tests for `IngredientFormModal` in `easyeat/frontend/tests/components/IngredientFormModal.test.tsx`
+- [ ] T061 [FR-010, FR-011, FR-013, FR-026] Implement `IngredientFormModal.tsx` in `easyeat/frontend/src/components/inventory/IngredientFormModal.tsx` with locked unit-of-measure rules when stock > 0
+- [ ] T062 [P] [FR-012, FR-014, FR-031] Write failing tests for `IngredientCatalogTable` and `InventoryManagementPage` in `easyeat/frontend/tests/pages/InventoryManagementPage.test.tsx`
+- [ ] T063 [FR-012, FR-031] Implement `IngredientCatalogTable.tsx` in `easyeat/frontend/src/components/inventory/IngredientCatalogTable.tsx` and `InventoryManagementPage.tsx` in `easyeat/frontend/src/pages/InventoryManagementPage.tsx` mounted at `/admin/inventory`
+- [ ] T064 [FR-014] Implement status transition actions (decommission to DISCONTINUED, reactivate to ACTIVE, archive to ARCHIVED locked if stock > 0)
 
 ---
 
@@ -192,10 +192,10 @@
 
 **Goal**: Allow Administrators to execute Absolute and Relative stock adjustments with live validation and view the chronological, immutable audit trail.
 
-- [ ] T065 [P] Write failing tests for `StockAdjustmentModal` in `easyeat/frontend/tests/components/StockAdjustmentModal.test.tsx` verifying Absolute/Relative modes, computed deltas, zero-delta block, and negative stock block
-- [ ] T066 Implement `StockAdjustmentModal.tsx` in `easyeat/frontend/src/components/inventory/StockAdjustmentModal.tsx`
-- [ ] T067 [P] Write failing tests for `StockAuditModal` in `easyeat/frontend/tests/components/StockAuditModal.test.tsx`
-- [ ] T068 Implement `StockAuditModal.tsx` in `easyeat/frontend/src/components/inventory/StockAuditModal.tsx` displaying chronological append-only audit trail entries
+- [ ] T065 [P] [FR-015, FR-016, FR-017, FR-018, FR-027] Write failing tests for `StockAdjustmentModal` in `easyeat/frontend/tests/components/StockAdjustmentModal.test.tsx` verifying Absolute/Relative modes, computed deltas, zero-delta block, and negative stock block
+- [ ] T066 [FR-015, FR-016, FR-017, FR-018, FR-027] Implement `StockAdjustmentModal.tsx` in `easyeat/frontend/src/components/inventory/StockAdjustmentModal.tsx`
+- [ ] T067 [P] [FR-019] Write failing tests for `StockAuditModal` in `easyeat/frontend/tests/components/StockAuditModal.test.tsx`
+- [ ] T068 [FR-019] Implement `StockAuditModal.tsx` in `easyeat/frontend/src/components/inventory/StockAuditModal.tsx` displaying chronological append-only audit trail entries
 
 ---
 
@@ -203,10 +203,10 @@
 
 **Goal**: Provide Chefs with a paginated, sorted kitchen catalog of active ingredients displaying stock availability (`IN_STOCK` / `OUT_OF_STOCK`), while strictly hiding unit purchase costs and audit logs.
 
-- [ ] T069 [P] Write failing tests for `ChefIngredientTable` and `ChefIngredientsPage` in `easyeat/frontend/tests/pages/ChefIngredientsPage.test.tsx` asserting pagination (20/page), A-Z sort, category filters, cost suppression, and availability badges
-- [ ] T070 Implement `ChefIngredientTable.tsx` in `easyeat/frontend/src/components/chef/ChefIngredientTable.tsx`
-- [ ] T071 Implement `ChefIngredientsPage.tsx` in `easyeat/frontend/src/pages/ChefIngredientsPage.tsx` mounted at `/cocina/ingredientes` (with alias `/kds/ingredients`)
-- [ ] T072 Update `WorkspaceLayout.tsx` and `KitchenWorkspacePage.tsx` to provide accessible navigation to `/cocina/ingredientes`
+- [ ] T069 [P] [FR-021, FR-022, FR-023, FR-024, FR-032] Write failing tests for `ChefIngredientTable` and `ChefIngredientsPage` in `easyeat/frontend/tests/pages/ChefIngredientsPage.test.tsx` asserting pagination (20/page), A-Z sort, category filters, cost suppression, and availability badges
+- [ ] T070 [FR-021, FR-022, FR-023, FR-024, FR-032] Implement `ChefIngredientTable.tsx` in `easyeat/frontend/src/components/chef/ChefIngredientTable.tsx`
+- [ ] T071 [FR-021, FR-032] Implement `ChefIngredientsPage.tsx` in `easyeat/frontend/src/pages/ChefIngredientsPage.tsx` mounted at `/cocina/ingredientes` (with alias `/kds/ingredients`)
+- [ ] T072 [FR-032] Update `WorkspaceLayout.tsx` and `KitchenWorkspacePage.tsx` to provide accessible navigation to `/cocina/ingredientes`
 
 ---
 
@@ -214,9 +214,9 @@
 
 **Purpose**: Tie together all workspaces, verify complete test suite, and ensure production build hygiene.
 
-- [ ] T073 Update `AdminWorkspacePage.tsx` cards ("Personal Activo" and "Materias Primas") to link to `/admin/staff` and `/admin/inventory` displaying real counts
-- [ ] T074 Register all new routes (`/first-login-password-change`, `/admin/staff`, `/admin/inventory`, `/cocina/ingredientes`, `/kds/ingredients`) in `AppRoutes.tsx` with proper guards and test in `easyeat/frontend/tests/router/AppRoutes.test.tsx`
-- [ ] T075 [P] Verify full frontend test suite, typecheck, and production bundle build: `npx tsc --noEmit && npm test && npm run build`
+- [ ] T073 [FR-028, FR-031] Update `AdminWorkspacePage.tsx` cards ("Personal Activo" and "Materias Primas") to link to `/admin/staff` and `/admin/inventory` displaying real counts
+- [ ] T074 [FR-028, FR-030, FR-031, FR-032] Register all new routes (`/first-login-password-change`, `/admin/staff`, `/admin/inventory`, `/cocina/ingredientes`, `/kds/ingredients`) in `AppRoutes.tsx` with proper guards and test in `easyeat/frontend/tests/router/AppRoutes.test.tsx`
+- [ ] T075 [P] [FR-028, FR-030, FR-031, FR-032] Verify full frontend test suite, typecheck, and production bundle build: `npx tsc --noEmit && npm test && npm run build`
 
 
 ---
