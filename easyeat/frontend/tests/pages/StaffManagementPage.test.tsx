@@ -70,7 +70,8 @@ describe('StaffManagementPage Component (FR-001, FR-004, FR-028, FR-029)', () =>
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('heading', { name: /gestión del personal/i })).toBeInTheDocument();
+    expect(screen.getByText('Gestión del Personal')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /nómina del establecimiento/i })).toBeInTheDocument();
 
     expect(await screen.findByText('Administrador Principal')).toBeInTheDocument();
     expect(screen.getByText('carlos@restaurant.com')).toBeInTheDocument();
@@ -126,7 +127,7 @@ describe('StaffManagementPage Component (FR-001, FR-004, FR-028, FR-029)', () =>
 
     await user.type(screen.getByLabelText(/nombre completo/i), 'Nuevo Mozo');
     await user.type(screen.getByLabelText(/correo electrónico/i), 'mozo@restaurant.com');
-    await user.selectOptions(screen.getByLabelText(/rol/i), 'ENCARGADO');
+    await user.selectOptions(screen.getByLabelText(/^rol/i), 'ENCARGADO');
 
     await user.click(screen.getByRole('button', { name: /registrar empleado/i }));
 

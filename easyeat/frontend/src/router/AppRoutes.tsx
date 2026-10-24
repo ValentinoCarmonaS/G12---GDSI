@@ -10,6 +10,7 @@ import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { CounterWorkspacePage } from '../pages/CounterWorkspacePage';
 import { KitchenWorkspacePage } from '../pages/KitchenWorkspacePage';
 import { AdminWorkspacePage } from '../pages/AdminWorkspacePage';
+import { StaffManagementPage } from '../pages/StaffManagementPage';
 import { CatalogPage } from '../pages/CatalogPage';
 import { FirstLoginPasswordPage } from '../pages/FirstLoginPasswordPage';
 
@@ -100,6 +101,16 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route path="/kds/*" element={<Navigate to="/cocina" replace />} />
+
+      {/* Role-Protected Staff Management (ADMINISTRADOR) */}
+      <Route
+        path="/admin/staff"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <StaffManagementPage />
+          </RoleRouteGuard>
+        }
+      />
 
       {/* Role-Protected Back-Office Administration Panel (ADMINISTRADOR) */}
       <Route
