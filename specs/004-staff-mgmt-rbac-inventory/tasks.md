@@ -192,10 +192,10 @@
 
 **Goal**: Allow Administrators to execute Absolute and Relative stock adjustments with live validation and view the chronological, immutable audit trail.
 
-- [ ] T065 [P] [FR-015, FR-016, FR-017, FR-018, FR-027] Write failing tests for `StockAdjustmentModal` in `easyeat/frontend/tests/components/StockAdjustmentModal.test.tsx` verifying Absolute/Relative modes, computed deltas, zero-delta block, and negative stock block
-- [ ] T066 [FR-015, FR-016, FR-017, FR-018, FR-027] Implement `StockAdjustmentModal.tsx` in `easyeat/frontend/src/components/inventory/StockAdjustmentModal.tsx`
-- [ ] T067 [P] [FR-019] Write failing tests for `StockAuditModal` in `easyeat/frontend/tests/components/StockAuditModal.test.tsx`
-- [ ] T068 [FR-019] Implement `StockAuditModal.tsx` in `easyeat/frontend/src/components/inventory/StockAuditModal.tsx` displaying chronological append-only audit trail entries
+- [x] T065 [P] [FR-015, FR-016, FR-017, FR-018, FR-027] Write failing tests for `StockAdjustmentModal` in `easyeat/frontend/tests/components/StockAdjustmentModal.test.tsx` verifying Absolute/Relative modes, computed deltas, zero-delta block, and negative stock block
+- [x] T066 [FR-015, FR-016, FR-017, FR-018, FR-027] Implement `StockAdjustmentModal.tsx` in `easyeat/frontend/src/components/inventory/StockAdjustmentModal.tsx`
+- [x] T067 [P] [FR-019] Write failing tests for `StockAuditModal` in `easyeat/frontend/tests/components/StockAuditModal.test.tsx`
+- [x] T068 [FR-019] Implement `StockAuditModal.tsx` in `easyeat/frontend/src/components/inventory/StockAuditModal.tsx` displaying chronological append-only audit trail entries
 
 ---
 
