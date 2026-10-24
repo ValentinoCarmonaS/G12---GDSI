@@ -2,7 +2,7 @@
 
 **Feature**: `001-central-auth-recovery`
 **Input**: Design documents from `specs/001-central-auth-recovery/` (`spec.md`, `plan.md`, `data-model.md`, `contracts/openapi.yaml`, `quickstart.md`, `research.md`)
-**Target Repository Path**: `easyeat/backend/`
+**Target Repository Path**: `easyeat/` (monorepo: `easyeat/backend/` & `easyeat/frontend/`)
 **Testing Strategy**: Strict TDD ordering (write failing test first -> implement minimal code -> verify with Testcontainers/MockMvc).
 
 ---
@@ -146,6 +146,65 @@
 
 ---
 
+## Phase 8: Frontend - Comensal Registration (Priority: P1) [US1] 🎯 MVP
+
+**Goal**: Deliver the interactive registration interface allowing diners to create an account with email and password, displaying real-time feedback for password complexity criteria, handling errors, and redirecting to login.
+
+### Tests for Frontend Registration (TDD - Write First)
+
+- [ ] T049 [P] [US1] Write failing Vitest + RTL component tests for `RegisterForm` in `easyeat/frontend/tests/components/RegisterForm.test.tsx` verifying: renders email and password fields; validates required fields; validates email syntax; visually highlights password complexity criteria in real-time (min 8 chars, uppercase, lowercase, digit); debounces rapid submissions; displays duplicate email error on 409; displays generic network failure message on connectivity errors.
+
+### Implementation for Frontend Registration
+
+- [ ] T050 [P] [US1] Define `RegisterCredentials` interface and error types in `easyeat/frontend/src/types/auth.ts` matching backend `RegisterRequest` DTO.
+- [ ] T051 [US1] Implement `authApi.register(credentials)` method in `easyeat/frontend/src/api/authApi.ts` making `POST /auth/register` via configured `apiClient`.
+- [ ] T052 [US1] Implement `RegisterForm.tsx` component in `easyeat/frontend/src/components/auth/RegisterForm.tsx` implementing real-time password criteria checklist, email normalization, submit debouncing, and accessible error alerts conforming to FR-002, FR-003, and FR-018.
+- [ ] T053 [US1] Implement `RegisterPage.tsx` page component in `easyeat/frontend/src/pages/RegisterPage.tsx` with card layout, brand header, link "Ya tengo una cuenta" navigating to `/login` (FR-020), and post-registration confirmation toast/notification with automatic redirect to `/login` (FR-019).
+- [ ] T054 [US1] Register public route `/register` in `easyeat/frontend/src/router/AppRoutes.tsx` with redirect to default workspace if already authenticated.
+
+---
+
+## Phase 9: Frontend - Shared Login Navigation Links (Priority: P1) [US2]
+
+**Goal**: Extend the shared login interface with accessible navigation links to comensal registration and password recovery.
+
+### Tests for Login Navigation Links (TDD - Write First)
+
+- [ ] T055 [US2] Extend unit/component tests in `easyeat/frontend/tests/components/LoginForm.test.tsx` asserting that visible links to `/register` and `/forgot-password` are rendered and accessible.
+
+### Implementation for Login Navigation Links
+
+- [ ] T056 [US2] Update `LoginForm.tsx` in `easyeat/frontend/src/components/auth/LoginForm.tsx` to render the "Olvidé mi contraseña" link navigating to `/forgot-password` (FR-021) and the "¿No tenés una cuenta? Registrate" link navigating to `/register`.
+
+---
+
+## Phase 10: Frontend - Password Recovery & Reset (Priority: P2) [US3 & US4]
+
+**Goal**: Deliver the self-service credential recovery flow: recovery request view, anti-enumeration confirmation, and tokenized reset view with password validation.
+
+### Tests for Password Recovery (TDD - Write First)
+
+- [ ] T057 [P] [US3] Write failing Vitest + RTL tests for `ForgotPasswordForm` in `easyeat/frontend/tests/components/ForgotPasswordForm.test.tsx` verifying: renders email input; validates format; submits to API; always displays uniform confirmation alert (anti-enumeration); cancel button invokes navigation to `/login`.
+- [ ] T058 [P] [US3] Write failing Vitest + RTL tests for `ResetPasswordForm` in `easyeat/frontend/tests/components/ResetPasswordForm.test.tsx` verifying: renders new password and confirmation inputs; validates complexity rules; validates password mismatch; handles expired/consumed token error; navigates to `/login` on success.
+
+### Implementation for Password Recovery
+
+- [ ] T059 [P] [US3] Define `PasswordResetRequest` and `PasswordResetConfirm` types in `easyeat/frontend/src/types/auth.ts` and implement `requestPasswordReset(email)` and `confirmPasswordReset(data)` methods in `easyeat/frontend/src/api/authApi.ts`.
+- [ ] T060 [US3] Implement `ForgotPasswordForm.tsx` in `easyeat/frontend/src/components/auth/ForgotPasswordForm.tsx` and `ForgotPasswordPage.tsx` in `easyeat/frontend/src/pages/ForgotPasswordPage.tsx` with cancel action navigating to `/login` (FR-022, FR-023).
+- [ ] T061 [US3] Implement `ResetPasswordForm.tsx` in `easyeat/frontend/src/components/auth/ResetPasswordForm.tsx` and `ResetPasswordPage.tsx` in `easyeat/frontend/src/pages/ResetPasswordPage.tsx` extracting token from search params, enforcing complexity policies, and redirecting to `/login` on success (FR-024).
+- [ ] T062 [US3] Register public routes `/forgot-password` and `/reset-password` in `easyeat/frontend/src/router/AppRoutes.tsx`.
+
+---
+
+## Phase 11: Frontend End-to-End Test Suite Validation
+
+**Purpose**: Execute full automated test suites across frontend to guarantee zero regression and 100% contract compliance.
+
+- [ ] T063 Run frontend test suite (`npm run test` in `easyeat/frontend`) verifying all component, routing, and lifecycle tests pass with zero failures.
+- [ ] T064 Run frontend build validation (`npm run build` in `easyeat/frontend`) asserting TypeScript compilation and bundle generation succeed without warnings.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -155,57 +214,57 @@ Phase 1: Setup (T001–T006)
        ↓
 Phase 2: Foundational (T007–T013)  ← Blocks all stories
        ↓
-Phase 3: User Story 1 (T014–T020)  ← MVP Target
+Phase 3: User Story 1 Backend (T014–T020)
        ↓
-Phase 4: User Story 2 (T021–T031)
+Phase 4: User Story 2 Backend (T021–T031)
        ↓
-Phase 5: User Story 3 (T032–T041)
+Phase 5: User Story 3 Backend (T032–T041)
        ↓
-Phase 6: User Story 4 (T042–T044)
+Phase 6: User Story 4 Backend (T042–T044)
        ↓
 Phase 7: Polish & Audit (T045–T048)
+       ↓
+Phase 8: Frontend Registration [US1] (T049–T054)
+       ↓
+Phase 9: Frontend Login Links [US2] (T055–T056)
+       ↓
+Phase 10: Frontend Password Recovery [US3/US4] (T057–T062)
+       ↓
+Phase 11: Frontend Validation (T063–T064)
 ```
 
 ### User Story Dependencies
 
-- **User Story 1 (P1)**: Depends only on Foundational (Phase 2). No dependency on other stories.
-- **User Story 2 (P1)**: Depends on Foundational (Phase 2) and `User` entity from US1. Can be tested independently.
-- **User Story 3 (P2)**: Depends on Foundational (Phase 2) and `User` entity from US1.
-- **User Story 4 (P2)**: Depends on US3 centralized password recovery service and seeded tenant data.
+- **User Story 1 (P1)**: Backend in Phase 3 (`T014`–`T020`). Frontend registration in Phase 8 (`T049`–`T054`).
+- **User Story 2 (P1)**: Backend in Phase 4 (`T021`–`T031`). Frontend login navigation links in Phase 9 (`T055`–`T056`).
+- **User Story 3 & 4 (P2)**: Backend in Phase 5 & 6 (`T032`–`T044`). Frontend recovery and reset in Phase 10 (`T057`–`T062`).
 
 ### Parallel Opportunities
 
-- **Phase 1 (Setup)**: `T002`, `T003`, `T004`, `T005` can all be executed in parallel.
-- **Phase 2 (Foundational)**: `T008`, `T009`, `T010`, `T011` can be executed in parallel once `pom.xml` is configured.
-- **Within US1**: Failing tests `T014`, `T015` can be written in parallel; DTOs `T017` in parallel with validator `T016`.
-- **Within US2**: Unit tests `T021`, `T022`, and MockMvc tests `T023` can be written in parallel.
-- **Within US3**: Unit tests `T032` and MockMvc tests `T033` can be written in parallel.
-- **Phase 7 (Polish)**: `T045` (Audit Logger) and `T046` (Proxy Config) can run in parallel.
+- `T049` (RegisterForm test) and `T050` (auth types) can be written in parallel.
+- `T057` (ForgotPasswordForm test) and `T058` (ResetPasswordForm test) can be written in parallel.
+- `T060` (ForgotPassword components) and `T061` (ResetPassword components) can be implemented in parallel once types are defined.
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (User Story 1 Only)
-
-1. Complete Phase 1: Setup (`T001`–`T006`)
-2. Complete Phase 2: Foundational (`T007`–`T013`)
-3. Complete Phase 3: User Story 1 (`T014`–`T020`)
-4. **STOP and VALIDATE**: Run `mvn test -Dtest=RegistrationIntegrationTest`
-5. Deploy/Demo initial comensal registration capability.
-
 ### Incremental Delivery
 
-- **Increment 1 (MVP)**: Setup + Foundational + Registration (`T001`–`T020`).
-- **Increment 2**: Unified Login + JWT Filter + Rate Limiting (`T021`–`T031`).
-- **Increment 3**: Comensal Password Recovery with atomic consumption (`T032`–`T041`).
-- **Increment 4**: Administrator Recovery + Seeded Tenants (`T042`–`T044`).
-- **Increment 5**: Audit Logging, Proxy Security, OpenAPI Conformance (`T045`–`T048`).
+- **Increment 1 (MVP Backend)**: Setup + Foundational + Registration (`T001`–`T020`) [COMPLETED].
+- **Increment 2**: Unified Login + JWT Filter + Rate Limiting (`T021`–`T031`) [COMPLETED].
+- **Increment 3**: Comensal Password Recovery with atomic consumption (`T032`–`T041`) [COMPLETED].
+- **Increment 4**: Administrator Recovery + Seeded Tenants (`T042`–`T044`) [COMPLETED].
+- **Increment 5**: Audit Logging, Proxy Security, OpenAPI Conformance (`T045`–`T048`) [COMPLETED].
+- **Increment 6 (Frontend Registration)**: Comensal registration UI, form validation, route (`T049`–`T054`).
+- **Increment 7 (Frontend Login Links)**: Registration and recovery links in login view (`T055`–`T056`).
+- **Increment 8 (Frontend Password Recovery)**: Recovery request and reset confirmation views (`T057`–`T062`).
+- **Increment 9 (Verification)**: Full frontend test suite and production build check (`T063`–`T064`).
 
 ---
 
 ## Notes
 
-- All 48 tasks strictly follow `- [ ] [TaskID] [P?] [Story?] Description with exact file path`.
+- All 64 tasks strictly follow `- [ ] [TaskID] [P?] [Story?] Description with exact file path`.
 - Every User Story follows the TDD triad: write failing tests first → implement production code → verify with integration tests.
 - Zero plaintext credentials or raw tokens permitted in logs or responses.
