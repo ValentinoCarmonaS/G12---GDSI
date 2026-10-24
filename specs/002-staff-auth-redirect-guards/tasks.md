@@ -21,7 +21,7 @@
 
 **Purpose**: Initialize frontend application dependencies, test runner, styling tokens, and HTTP client baseline.
 
-- [ ] T001 Configure frontend dependencies (React 18.3, Vite 5.4, React Router v6.27, Tailwind CSS 3.4, Lucide React, Vitest 2.1) in `easyeat/frontend/package.json`
+- [X] T001 Configure frontend dependencies (React 18.3, Vite 5.4, React Router v6.27, Tailwind CSS 3.4, Lucide React, Vitest 2.1) in `easyeat/frontend/package.json`
 - [ ] T002 [P] Configure Vite application build and Vitest testing environment settings in `easyeat/frontend/vite.config.ts`
 - [ ] T003 [P] Configure TypeScript compiler options, JSX transform, and module resolution in `easyeat/frontend/tsconfig.json`
 - [ ] T004 [P] Configure Tailwind CSS utility classes and design tokens in `easyeat/frontend/tailwind.config.js` and `easyeat/frontend/src/index.css`
