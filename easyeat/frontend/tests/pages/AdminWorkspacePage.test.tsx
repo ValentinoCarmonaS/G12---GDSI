@@ -53,13 +53,13 @@ describe('AdminWorkspacePage (T035, ADM-1.1.1)', () => {
 
   it('links to /admin/staff and /admin/inventory and displays real counts (T073, FR-028, FR-031)', async () => {
     vi.mocked(staffApi.listStaff).mockResolvedValue([
-      { id: '1', email: 's1@test.com', firstName: 'Juan', lastName: 'Perez', role: 'CHEF', isActive: true, mustChangePassword: false, tenantId: 't1' },
-      { id: '2', email: 's2@test.com', firstName: 'Ana', lastName: 'Gomez', role: 'ENCARGADO', isActive: true, mustChangePassword: false, tenantId: 't1' },
-      { id: '3', email: 's3@test.com', firstName: 'Luis', lastName: 'Diaz', role: 'ADMINISTRADOR', isActive: true, mustChangePassword: false, tenantId: 't1' },
+      { id: '1', email: 's1@test.com', fullName: 'Juan Perez', role: 'CHEF', status: 'ACTIVE', createdAt: '2026-10-24', updatedAt: '2026-10-24' },
+      { id: '2', email: 's2@test.com', fullName: 'Ana Gomez', role: 'ENCARGADO', status: 'ACTIVE', createdAt: '2026-10-24', updatedAt: '2026-10-24' },
+      { id: '3', email: 's3@test.com', fullName: 'Luis Diaz', role: 'ADMINISTRADOR', status: 'ACTIVE', createdAt: '2026-10-24', updatedAt: '2026-10-24' },
     ]);
     vi.mocked(inventoryApi.listIngredients).mockResolvedValue([
-      { id: '1', name: 'Harina', unitOfMeasure: 'KG', currentStock: 25, minimumStock: 5, optimalStock: 50, costPerUnit: 100, lifecycleStatus: 'ACTIVE', category: 'ALMACEN', tenantId: 't1' },
-      { id: '2', name: 'Tomate', unitOfMeasure: 'KG', currentStock: 10, minimumStock: 2, optimalStock: 20, costPerUnit: 150, lifecycleStatus: 'ACTIVE', category: 'VERDURAS', tenantId: 't1' },
+      { id: '1', tenantId: 't1', name: 'Harina', unitOfMeasure: 'kg', currentStock: 25, unitPurchaseCost: 100, status: 'ACTIVE', category: 'Dry Goods', createdAt: '2026-10-24', updatedAt: '2026-10-24' },
+      { id: '2', tenantId: 't1', name: 'Tomate', unitOfMeasure: 'kg', currentStock: 10, unitPurchaseCost: 150, status: 'ACTIVE', category: 'Produce', createdAt: '2026-10-24', updatedAt: '2026-10-24' },
     ]);
 
     render(

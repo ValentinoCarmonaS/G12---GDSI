@@ -214,9 +214,9 @@
 
 **Purpose**: Tie together all workspaces, verify complete test suite, and ensure production build hygiene.
 
-- [ ] T073 [FR-028, FR-031] Update `AdminWorkspacePage.tsx` cards ("Personal Activo" and "Materias Primas") to link to `/admin/staff` and `/admin/inventory` displaying real counts
-- [ ] T074 [FR-028, FR-030, FR-031, FR-032] Register all new routes (`/first-login-password-change`, `/admin/staff`, `/admin/inventory`, `/cocina/ingredientes`, `/kds/ingredients`) in `AppRoutes.tsx` with proper guards and test in `easyeat/frontend/tests/router/AppRoutes.test.tsx`
-- [ ] T075 [P] [FR-028, FR-030, FR-031, FR-032] Verify full frontend test suite, typecheck, and production bundle build: `npx tsc --noEmit && npm test && npm run build`
+- [x] T073 [FR-028, FR-031] Update `AdminWorkspacePage.tsx` cards ("Personal Activo" and "Materias Primas") to link to `/admin/staff` and `/admin/inventory` displaying real counts
+- [x] T074 [FR-028, FR-030, FR-031, FR-032] Register all new routes (`/first-login-password-change`, `/admin/staff`, `/admin/inventory`, `/cocina/ingredientes`, `/kds/ingredients`) in `AppRoutes.tsx` with proper guards and test in `easyeat/frontend/tests/router/AppRoutes.test.tsx`
+- [x] T075 [P] [FR-028, FR-030, FR-031, FR-032] Verify full frontend test suite, typecheck, and production bundle build: `npx tsc --noEmit && npm test && npm run build`
 
 
 ---

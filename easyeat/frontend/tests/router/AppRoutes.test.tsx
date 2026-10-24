@@ -24,11 +24,12 @@ vi.mock('@/api/inventoryApi', () => ({
     adjustStock: vi.fn(),
     getAuditHistory: vi.fn(),
     getChefCatalog: vi.fn().mockResolvedValue({
-      content: [],
+      items: [],
       totalElements: 0,
       totalPages: 0,
       page: 0,
       size: 20,
+      hasNext: false,
     }),
   },
 }));
@@ -349,11 +350,12 @@ describe('AppRoutes - Feature 004 Routes & RBAC Perimeter (T074, FR-028, FR-030,
     vi.mocked(staffApi.listStaff).mockResolvedValue([]);
     vi.mocked(inventoryApi.listIngredients).mockResolvedValue([]);
     vi.mocked(inventoryApi.getChefCatalog).mockResolvedValue({
-      content: [],
+      items: [],
       totalElements: 0,
       totalPages: 0,
       page: 0,
       size: 20,
+      hasNext: false,
     });
   });
 
