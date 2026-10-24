@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { RoleRouteGuard } from './RoleRouteGuard';
 import { getRoleDefaultRoute } from './postAuthRouting';
 import { LoginPage } from '../pages/LoginPage';
+import { RegisterPage } from '../pages/RegisterPage';
 import { CounterWorkspacePage } from '../pages/CounterWorkspacePage';
 import { KitchenWorkspacePage } from '../pages/KitchenWorkspacePage';
 import { AdminWorkspacePage } from '../pages/AdminWorkspacePage';
@@ -22,6 +23,18 @@ export const AppRoutes: React.FC = () => {
             <Navigate to={getRoleDefaultRoute(user.role)} replace />
           ) : (
             <LoginPage />
+          )
+        }
+      />
+
+      {/* Public Registration Gateway */}
+      <Route
+        path="/register"
+        element={
+          isAuthenticated && user ? (
+            <Navigate to={getRoleDefaultRoute(user.role)} replace />
+          ) : (
+            <RegisterPage />
           )
         }
       />
