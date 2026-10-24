@@ -56,6 +56,10 @@ export const AppRoutes: React.FC = () => {
         path="/reset-password"
         element={<ResetPasswordPage />}
       />
+      <Route
+        path="/auth/reset-password"
+        element={<ResetPasswordPage />}
+      />
 
       {/* Role-Protected Counter / Dispatch Workspace (ENCARGADO) */}
       <Route
