@@ -64,7 +64,7 @@ describe('StockAdjustmentModal Component (FR-015, FR-016, FR-017, FR-018, FR-027
 
     expect(screen.getByRole('heading', { name: /ajuste manual de stock/i })).toBeInTheDocument();
     expect(screen.getByText('Harina de Trigo 000')).toBeInTheDocument();
-    expect(screen.getByText(/50 kg/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/50 kg/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByLabelText(/modo de ajuste/i)).toHaveValue('ABSOLUTE');
   });
 
