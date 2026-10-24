@@ -180,11 +180,11 @@
 
 **Goal**: Enable Administrators to manage ingredients in `/admin/inventory`, creating new ingredients, editing attributes (locking UOM if stock > 0), and updating lifecycle states (Active, Discontinued, Archived).
 
-- [ ] T060 [P] [FR-010, FR-013, FR-026] Write failing tests for `IngredientFormModal` in `easyeat/frontend/tests/components/IngredientFormModal.test.tsx`
-- [ ] T061 [FR-010, FR-011, FR-013, FR-026] Implement `IngredientFormModal.tsx` in `easyeat/frontend/src/components/inventory/IngredientFormModal.tsx` with locked unit-of-measure rules when stock > 0
-- [ ] T062 [P] [FR-012, FR-014, FR-031] Write failing tests for `IngredientCatalogTable` and `InventoryManagementPage` in `easyeat/frontend/tests/pages/InventoryManagementPage.test.tsx`
-- [ ] T063 [FR-012, FR-031] Implement `IngredientCatalogTable.tsx` in `easyeat/frontend/src/components/inventory/IngredientCatalogTable.tsx` and `InventoryManagementPage.tsx` in `easyeat/frontend/src/pages/InventoryManagementPage.tsx` mounted at `/admin/inventory`
-- [ ] T064 [FR-014] Implement status transition actions (decommission to DISCONTINUED, reactivate to ACTIVE, archive to ARCHIVED locked if stock > 0)
+- [x] T060 [P] [FR-010, FR-013, FR-026] Write failing tests for `IngredientFormModal` in `easyeat/frontend/tests/components/IngredientFormModal.test.tsx`
+- [x] T061 [FR-010, FR-011, FR-013, FR-026] Implement `IngredientFormModal.tsx` in `easyeat/frontend/src/components/inventory/IngredientFormModal.tsx` with locked unit-of-measure rules when stock > 0
+- [x] T062 [P] [FR-012, FR-014, FR-031] Write failing tests for `IngredientCatalogTable` and `InventoryManagementPage` in `easyeat/frontend/tests/pages/InventoryManagementPage.test.tsx`
+- [x] T063 [FR-012, FR-031] Implement `IngredientCatalogTable.tsx` in `easyeat/frontend/src/components/inventory/IngredientCatalogTable.tsx` and `InventoryManagementPage.tsx` in `easyeat/frontend/src/pages/InventoryManagementPage.tsx` mounted at `/admin/inventory`
+- [x] T064 [FR-014] Implement status transition actions (decommission to DISCONTINUED, reactivate to ACTIVE, archive to ARCHIVED locked if stock > 0)
 
 ---
 
