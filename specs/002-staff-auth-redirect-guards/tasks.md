@@ -84,7 +84,7 @@
 ### Implementation for User Story 2
 
 - [X] T022 [US2] Implement `CounterWorkspacePage` landing view for `ENCARGADO` wrapped in `WorkspaceLayout` in `easyeat/frontend/src/pages/CounterWorkspacePage.tsx`
-- [ ] T023 [US2] Register `/mostrador/*` route perimeter in `easyeat/frontend/src/router/AppRoutes.tsx`
+- [X] T023 [US2] Register `/mostrador/*` route perimeter in `easyeat/frontend/src/router/AppRoutes.tsx`
 
 **Checkpoint**: User Story 2 functional — counter managers authenticate and are instantly routed to `/mostrador` without intermediate prompts or history pollution.
 

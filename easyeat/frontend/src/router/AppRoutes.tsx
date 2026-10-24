@@ -28,13 +28,14 @@ export const AppRoutes: React.FC = () => {
 
       {/* Role-Protected Counter / Dispatch Workspace (ENCARGADO) */}
       <Route
-        path="/counter/*"
+        path="/mostrador/*"
         element={
           <RoleRouteGuard allowedRoles={['ENCARGADO']}>
             <CounterWorkspacePage />
           </RoleRouteGuard>
         }
       />
+      <Route path="/counter/*" element={<Navigate to="/mostrador" replace />} />
 
       {/* Role-Protected Kitchen Display System Workspace (CHEF) */}
       <Route
