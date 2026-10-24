@@ -25,7 +25,7 @@
 - [X] T002 [P] Configure Vite application build and Vitest testing environment settings in `easyeat/frontend/vite.config.ts`
 - [X] T003 [P] Configure TypeScript compiler options, JSX transform, and module resolution in `easyeat/frontend/tsconfig.json`
 - [X] T004 [P] Configure Tailwind CSS utility classes and design tokens in `easyeat/frontend/tailwind.config.js` and `easyeat/frontend/src/index.css`
-- [ ] T005 Configure Axios HTTP client instance with base URL, standard JSON headers, and Bearer token injection in `easyeat/frontend/src/api/apiClient.ts`
+- [X] T005 Configure Axios HTTP client instance with base URL, standard JSON headers, and Bearer token injection in `easyeat/frontend/src/api/apiClient.ts`
 
 ---
 
