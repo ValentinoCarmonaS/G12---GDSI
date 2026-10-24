@@ -157,7 +157,7 @@
 **Purpose**: Implement single active session eviction on HTTP 401, dual-tier shift logout, OpenAPI contract conformance testing, and execute end-to-end quickstart scenarios.
 
 - [X] T038 [P] Integration test for single active session invalidation (stale `token_version` returns HTTP 401) in `easyeat/backend/src/test/java/com/easyeat/auth/security/JwtAuthenticationFilterTest.java`
-- [ ] T039 [P] Integration test for client-side HTTP 401 interception, `sessionStorage` clearance, and expiration alert banner display in `easyeat/frontend/tests/session/SessionLifecycle.test.tsx`
+- [X] T039 [P] Integration test for client-side HTTP 401 interception, `sessionStorage` clearance, and expiration alert banner display in `easyeat/frontend/tests/session/SessionLifecycle.test.tsx`
 - [ ] T040 Add Axios response interceptor in `apiClient` to intercept HTTP 401, clear `sessionStorage`, and dispatch session eviction event in `easyeat/frontend/src/api/apiClient.ts`
 - [ ] T041 [P] Integration test for dual-tier logout verifying client storage purge and navigation in `easyeat/frontend/tests/session/LogoutFlow.test.tsx`
 - [ ] T042 Implement `logout` method in `AuthContext` calling `authApi.logout()`, clearing `sessionStorage`, and navigating to `/login` with `replace: true` in `easyeat/frontend/src/context/AuthContext.tsx`
