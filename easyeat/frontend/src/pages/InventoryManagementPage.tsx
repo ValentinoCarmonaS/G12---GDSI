@@ -3,11 +3,14 @@ import { Link } from 'react-router-dom';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { IngredientCatalogTable } from '../components/inventory/IngredientCatalogTable';
 import { IngredientFormModal } from '../components/inventory/IngredientFormModal';
+import { StockAdjustmentModal } from '../components/inventory/StockAdjustmentModal';
+import { StockAuditModal } from '../components/inventory/StockAuditModal';
 import { inventoryApi } from '../api/inventoryApi';
 import {
   AdminIngredientDetailResponse,
   CreateIngredientRequest,
   IngredientStatus,
+  StockAdjustmentRequest,
   UpdateIngredientRequest,
 } from '../types/inventory';
 
@@ -19,6 +22,10 @@ export const InventoryManagementPage: React.FC = () => {
   // Form modal state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState<AdminIngredientDetailResponse | null>(null);
+
+  // Adjustment & Audit modal states
+  const [selectedIngredientForAdjustment, setSelectedIngredientForAdjustment] = useState<AdminIngredientDetailResponse | null>(null);
+  const [selectedIngredientForAudit, setSelectedIngredientForAudit] = useState<AdminIngredientDetailResponse | null>(null);
 
   const fetchIngredients = useCallback(async () => {
     setIsLoading(true);
@@ -55,6 +62,11 @@ export const InventoryManagementPage: React.FC = () => {
       await inventoryApi.createIngredient(data as CreateIngredientRequest);
       await fetchIngredients();
     }
+  };
+
+  const handleStockAdjustment = async (ingredientId: string, request: StockAdjustmentRequest) => {
+    await inventoryApi.adjustStock(ingredientId, request);
+    await fetchIngredients();
   };
 
   const handleStatusChange = async (id: string, newStatus: IngredientStatus) => {
@@ -116,6 +128,8 @@ export const InventoryManagementPage: React.FC = () => {
         <IngredientCatalogTable
           ingredients={ingredients}
           onEdit={handleOpenEdit}
+          onAdjustStock={(ing) => setSelectedIngredientForAdjustment(ing)}
+          onViewAudit={(ing) => setSelectedIngredientForAudit(ing)}
           onStatusChange={handleStatusChange}
           isLoading={isLoading}
         />
@@ -127,6 +141,25 @@ export const InventoryManagementPage: React.FC = () => {
           onSubmit={handleFormSubmit}
           initialData={selectedIngredient}
         />
+
+        {/* Stock Adjustment Modal */}
+        {selectedIngredientForAdjustment && (
+          <StockAdjustmentModal
+            isOpen={Boolean(selectedIngredientForAdjustment)}
+            onClose={() => setSelectedIngredientForAdjustment(null)}
+            ingredient={selectedIngredientForAdjustment}
+            onAdjust={handleStockAdjustment}
+          />
+        )}
+
+        {/* Stock Audit Modal */}
+        {selectedIngredientForAudit && (
+          <StockAuditModal
+            isOpen={Boolean(selectedIngredientForAudit)}
+            onClose={() => setSelectedIngredientForAudit(null)}
+            ingredient={selectedIngredientForAudit}
+          />
+        )}
       </div>
     </WorkspaceLayout>
   );
