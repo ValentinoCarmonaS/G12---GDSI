@@ -146,7 +146,7 @@
 
 ---
 
-## Phase 8: Frontend - Comensal Registration (Priority: P1) [US1] 🎯 MVP
+## Phase 8: Frontend - Comensal Registration (Priority: P1) [US1] 🎯 MVP — [GitHub Issue #81](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/81)
 
 **Goal**: Deliver the interactive registration interface allowing diners to create an account with email and password, displaying real-time feedback for password complexity criteria, handling errors, and redirecting to login.
 
@@ -164,7 +164,7 @@
 
 ---
 
-## Phase 9: Frontend - Shared Login Navigation Links (Priority: P1) [US2]
+## Phase 9: Frontend - Shared Login Navigation Links (Priority: P1) [US2] — [GitHub Issue #82](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/82)
 
 **Goal**: Extend the shared login interface with accessible navigation links to comensal registration and password recovery.
 
@@ -178,7 +178,7 @@
 
 ---
 
-## Phase 10: Frontend - Password Recovery & Reset (Priority: P2) [US3 & US4]
+## Phase 10: Frontend - Password Recovery & Reset (Priority: P2) [US3 & US4] — [GitHub Issue #83](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/83)
 
 **Goal**: Deliver the self-service credential recovery flow: recovery request view, anti-enumeration confirmation, and tokenized reset view with password validation.
 
@@ -196,7 +196,7 @@
 
 ---
 
-## Phase 11: Frontend End-to-End Test Suite Validation
+## Phase 11: Frontend End-to-End Test Suite Validation — [GitHub Issue #84](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/84)
 
 **Purpose**: Execute full automated test suites across frontend to guarantee zero regression and 100% contract compliance.
 
