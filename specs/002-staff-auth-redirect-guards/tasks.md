@@ -138,15 +138,15 @@
 
 ### Tests for User Story 5 (TDD) ⚠️
 
-- [ ] T032 [P] [US5] Backend integration test execution verifying administrator endpoint access authorization and tenant-scoped query filtering by `tenant_id` in `easyeat/backend/src/test/java/com/easyeat/security/TenantIsolationIntegrationTest.java`
-- [ ] T033 [P] [US5] Frontend test verifying administrator credential submission via shared `LoginForm` authenticates and routes to `/admin` in `easyeat/frontend/tests/components/AdminLogin.test.tsx`
-- [ ] T034 [P] [US5] Routing test verifying administrator login redirects to `/admin` and cross-role attempts by non-admins are blocked in `easyeat/frontend/tests/router/RoleRouteGuard.test.tsx`
+- [X] T032 [P] [US5] Backend integration test execution verifying administrator endpoint access authorization and tenant-scoped query filtering by `tenant_id` in `easyeat/backend/src/test/java/com/easyeat/security/TenantIsolationIntegrationTest.java`
+- [X] T033 [P] [US5] Frontend test verifying administrator credential submission via shared `LoginForm` authenticates and routes to `/admin` in `easyeat/frontend/tests/components/AdminLogin.test.tsx`
+- [X] T034 [P] [US5] Routing test verifying administrator login redirects to `/admin` and cross-role attempts by non-admins are blocked in `easyeat/frontend/tests/router/RoleRouteGuard.test.tsx`
 
 ### Implementation for User Story 5
 
-- [ ] T035 [US5] Implement `AdminWorkspacePage` landing view for `ADMINISTRADOR` displaying tenant scope in `easyeat/frontend/src/pages/AdminWorkspacePage.tsx`
-- [ ] T036 [US5] Register protected `/admin/*` route perimeter enforcing `allowedRoles={['ADMINISTRADOR']}` in `easyeat/frontend/src/router/AppRoutes.tsx`
-- [ ] T037 [US5] Standardize Spring Security RBAC rule `.requestMatchers("/api/v1/admin/**").hasRole("ADMINISTRADOR")` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [X] T035 [US5] Implement `AdminWorkspacePage` landing view for `ADMINISTRADOR` displaying tenant scope in `easyeat/frontend/src/pages/AdminWorkspacePage.tsx`
+- [X] T036 [US5] Register protected `/admin/*` route perimeter enforcing `allowedRoles={['ADMINISTRADOR']}` in `easyeat/frontend/src/router/AppRoutes.tsx`
+- [X] T037 [US5] Standardize Spring Security RBAC rule `.requestMatchers("/api/v1/admin/**").hasRole("ADMINISTRADOR")` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
 
 **Checkpoint**: User Story 5 functional — administrators access `/admin` with guaranteed multi-tenant data boundaries, and non-admins receive HTTP 403 on API routes.
 
