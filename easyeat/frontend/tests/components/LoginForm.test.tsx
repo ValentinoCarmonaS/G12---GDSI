@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { LoginForm } from '@/components/auth/LoginForm';
 
 describe('LoginForm Component', () => {
@@ -133,5 +134,21 @@ describe('LoginForm Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/error de conexión/i)).toBeInTheDocument();
     });
+  });
+
+  it('renders accessible navigation links to /register and /forgot-password (FR-021)', () => {
+    render(
+      <MemoryRouter>
+        <LoginForm onSubmit={mockOnSubmit} />
+      </MemoryRouter>
+    );
+
+    const forgotPasswordLink = screen.getByRole('link', { name: /olvidé mi contraseña/i });
+    expect(forgotPasswordLink).toBeInTheDocument();
+    expect(forgotPasswordLink).toHaveAttribute('href', '/forgot-password');
+
+    const registerLink = screen.getByRole('link', { name: /registrate/i });
+    expect(registerLink).toBeInTheDocument();
+    expect(registerLink).toHaveAttribute('href', '/register');
   });
 });

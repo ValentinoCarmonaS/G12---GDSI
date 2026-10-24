@@ -170,7 +170,7 @@
 
 ### Tests for Login Navigation Links (TDD - Write First)
 
-- [ ] T055 [US2] Extend unit/component tests in `easyeat/frontend/tests/components/LoginForm.test.tsx` asserting that visible links to `/register` and `/forgot-password` are rendered and accessible.
+- [X] T055 [US2] Extend unit/component tests in `easyeat/frontend/tests/components/LoginForm.test.tsx` asserting that visible links to `/register` and `/forgot-password` are rendered and accessible.
 
 ### Implementation for Login Navigation Links
 
