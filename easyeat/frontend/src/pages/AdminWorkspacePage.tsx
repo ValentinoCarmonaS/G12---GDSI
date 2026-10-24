@@ -1,8 +1,11 @@
 import React, { useEffect } from 'react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { authApi } from '../api/authApi';
+import { useAuth } from '../hooks/useAuth';
 
 export const AdminWorkspacePage: React.FC = () => {
+  const { user } = useAuth();
+
   useEffect(() => {
     authApi.me().catch(() => { /* handled by interceptor */ });
   }, []);
@@ -12,6 +15,23 @@ export const AdminWorkspacePage: React.FC = () => {
       title="Panel de Administración"
       subtitle="Configuración global del establecimiento, usuarios y auditoría"
     >
+      <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4 flex items-center justify-between">
+        <div>
+          <h4 className="text-sm font-semibold text-purple-900">Ámbito de Administración Multi-Tenant</h4>
+          <p className="text-xs text-purple-700 mt-0.5">
+            Los datos y operaciones están estrictamente aislados para el establecimiento asignado.
+          </p>
+        </div>
+        {user?.tenantId && (
+          <span
+            data-testid="admin-tenant-scope"
+            className="text-xs font-mono bg-purple-100 text-purple-800 px-3 py-1 rounded-md border border-purple-300"
+          >
+            Tenant ID: {user.tenantId}
+          </span>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="font-semibold text-gray-900 text-lg mb-2">Personal Activo</h3>
