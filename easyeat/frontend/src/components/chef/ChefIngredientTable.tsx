@@ -75,3 +75,4 @@ export const ChefIngredientTable: React.FC<ChefIngredientTableProps> = ({
 };
 
 export default ChefIngredientTable;
+

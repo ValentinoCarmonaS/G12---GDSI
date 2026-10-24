@@ -291,3 +291,4 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
 };
 
 export default IngredientCatalogTable;
+

@@ -164,3 +164,4 @@ describe('First Login Routing & Perimeter Guard (FR-003, FR-030)', () => {
     expect(destination).toBe('/admin/inventory');
   });
 });
+

@@ -299,3 +299,4 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
 };
 
 export default IngredientFormModal;
+

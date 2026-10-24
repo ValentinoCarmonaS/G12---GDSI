@@ -98,3 +98,4 @@ export interface ChefCatalogParams {
   page?: number;
   size?: number;
 }
+

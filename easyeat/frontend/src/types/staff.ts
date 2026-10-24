@@ -50,3 +50,4 @@ export function normalizeStaffRole(role: string): StaffRole {
   }
   return 'ENCARGADO';
 }
+
