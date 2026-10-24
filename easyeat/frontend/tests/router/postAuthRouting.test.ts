@@ -103,5 +103,28 @@ describe('postAuthRouting Policy (Canonical Spanish Routes)', () => {
       expect(resolvePostAuthRedirect('ENCARGADO', '/catalogo')).toBe('/mostrador');
     });
   });
+
+  describe('User Story 4: Redirection Policy for CHEF (T028, CHF-1.2.1)', () => {
+    it('resolves directly to /cocina when no target link is specified or target is empty', () => {
+      expect(resolvePostAuthRedirect('CHEF')).toBe('/cocina');
+      expect(resolvePostAuthRedirect('CHEF', '')).toBe('/cocina');
+      expect(resolvePostAuthRedirect('CHEF', undefined)).toBe('/cocina');
+    });
+
+    it('preserves authorized deep link targets within /cocina station paths', () => {
+      expect(resolvePostAuthRedirect('CHEF', '/cocina/estacion-1')).toBe('/cocina/estacion-1');
+      expect(resolvePostAuthRedirect('CHEF', '/cocina/pedidos/urgentes')).toBe('/cocina/pedidos/urgentes');
+      expect(resolvePostAuthRedirect('CHEF', '/cocina/kds-turno-noche')).toBe('/cocina/kds-turno-noche');
+    });
+
+    it('discards unauthorized targets outside /cocina and redirects to default /cocina', () => {
+      expect(resolvePostAuthRedirect('CHEF', '/mostrador')).toBe('/cocina');
+      expect(resolvePostAuthRedirect('CHEF', '/mostrador/entregas')).toBe('/cocina');
+      expect(resolvePostAuthRedirect('CHEF', '/admin')).toBe('/cocina');
+      expect(resolvePostAuthRedirect('CHEF', '/admin/reportes')).toBe('/cocina');
+      expect(resolvePostAuthRedirect('CHEF', '/catalogo')).toBe('/cocina');
+    });
+  });
 });
+
 

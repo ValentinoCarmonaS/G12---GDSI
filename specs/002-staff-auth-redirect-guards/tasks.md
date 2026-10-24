@@ -118,7 +118,7 @@
 ### Tests for User Story 4 (TDD) ⚠️
 
 - [X] T027 [P] [US4] Unit tests for `RoleRouteGuard` verifying silent cross-role redirection to user's assigned workspace with `replace: true` in `easyeat/frontend/tests/router/RoleRouteGuard.test.tsx`
-- [ ] T028 [P] [US4] Routing tests verifying deep link resolution for chef station URLs and fallback to `/cocina` in `easyeat/frontend/tests/router/postAuthRouting.test.ts`
+- [X] T028 [P] [US4] Routing tests verifying deep link resolution for chef station URLs and fallback to `/cocina` in `easyeat/frontend/tests/router/postAuthRouting.test.ts`
 
 ### Implementation for User Story 4
 
