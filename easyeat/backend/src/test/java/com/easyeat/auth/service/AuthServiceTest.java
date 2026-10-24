@@ -5,6 +5,7 @@ import com.easyeat.auth.domain.UserRole;
 import com.easyeat.auth.domain.UserStatus;
 import com.easyeat.auth.dto.AuthTokenResponse;
 import com.easyeat.auth.dto.LoginRequest;
+import com.easyeat.auth.exception.AccountSuspendedException;
 import com.easyeat.auth.exception.InvalidCredentialsException;
 import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.auth.security.JwtService;
@@ -130,5 +131,25 @@ class AuthServiceTest {
 
         assertThat(response.accessToken()).isEqualTo("mock.chef.token");
         verify(securityAuditLogger).logLoginSuccess(eq(email), eq("CHEF"), eq("192.168.1.50"), eq(user.getId()));
+    }
+
+    @Test
+    @DisplayName("login - throws AccountSuspendedException and logs failure when chef account is suspended (T025, CHF-1.1.1)")
+    void shouldThrowAndLogWhenChefAccountIsSuspended() {
+        String email = "suspended.chef@comedorcentral.com";
+        String password = "ChefPassword123";
+        User user = new User(email, "hashedChefPassword", UserRole.CHEF);
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.SUSPENDED);
+
+        when(rateLimitingService.isLoginLocked(email, "192.168.1.50")).thenReturn(false);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(password, "hashedChefPassword")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest(email, password), "192.168.1.50"))
+                .isInstanceOf(AccountSuspendedException.class)
+                .hasMessageContaining("suspended");
+
+        verify(securityAuditLogger).logLoginFailure(eq(email), eq("192.168.1.50"), eq("ACCOUNT_SUSPENDED"));
     }
 }
