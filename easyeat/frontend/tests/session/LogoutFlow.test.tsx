@@ -62,9 +62,8 @@ describe('Logout Flow (FR-016, SC-006)', () => {
 
     const originalLocation = window.location;
     const mockReplace = vi.fn();
-    // @ts-expect-error stubbing location for test
-    delete window.location;
-    window.location = { ...originalLocation, replace: mockReplace };
+    delete (window as unknown as { location?: unknown }).location;
+    (window as unknown as { location?: unknown }).location = { ...originalLocation, replace: mockReplace };
 
     let logoutFn: () => Promise<void> = async () => {};
 
@@ -88,7 +87,7 @@ describe('Logout Flow (FR-016, SC-006)', () => {
       expect(sessionStorage.getItem('access_token')).toBeNull();
       expect(mockReplace).toHaveBeenCalledWith('/login');
     } finally {
-      window.location = originalLocation;
+      (window as unknown as { location?: unknown }).location = originalLocation;
     }
   });
 });
