@@ -167,12 +167,12 @@
 
 **Goal**: Provide Administrators with a staff management view displaying the establishment's staff roster, creating new staff with temporary credential modals, and editing roles with orphaned admin protection.
 
-- [ ] T054 [P] [FR-003, FR-029] Write failing tests for `TemporaryCredentialsModal` in `easyeat/frontend/tests/components/TemporaryCredentialsModal.test.tsx`
-- [ ] T055 [FR-003, FR-029] Implement `TemporaryCredentialsModal.tsx` in `easyeat/frontend/src/components/staff/TemporaryCredentialsModal.tsx` with single-click copy to clipboard and dismissal warning
-- [ ] T056 [P] [FR-001, FR-002, FR-005, FR-026] Write failing tests for `StaffFormModal` in `easyeat/frontend/tests/components/StaffFormModal.test.tsx`
-- [ ] T057 [FR-001, FR-002, FR-005, FR-006, FR-026] Implement `StaffFormModal.tsx` in `easyeat/frontend/src/components/staff/StaffFormModal.tsx` for creating and editing staff with real-time validation
-- [ ] T058 [P] [FR-004, FR-028] Write failing tests for `StaffRosterTable` and `StaffManagementPage` in `easyeat/frontend/tests/pages/StaffManagementPage.test.tsx`
-- [ ] T059 [FR-004, FR-028] Implement `StaffRosterTable.tsx` in `easyeat/frontend/src/components/staff/StaffRosterTable.tsx` and `StaffManagementPage.tsx` in `easyeat/frontend/src/pages/StaffManagementPage.tsx` mounted at `/admin/staff`
+- [x] T054 [P] [FR-003, FR-029] Write failing tests for `TemporaryCredentialsModal` in `easyeat/frontend/tests/components/TemporaryCredentialsModal.test.tsx`
+- [x] T055 [FR-003, FR-029] Implement `TemporaryCredentialsModal.tsx` in `easyeat/frontend/src/components/staff/TemporaryCredentialsModal.tsx` with single-click copy to clipboard and dismissal warning
+- [x] T056 [P] [FR-001, FR-002, FR-005, FR-026] Write failing tests for `StaffFormModal` in `easyeat/frontend/tests/components/StaffFormModal.test.tsx`
+- [x] T057 [FR-001, FR-002, FR-005, FR-006, FR-026] Implement `StaffFormModal.tsx` in `easyeat/frontend/src/components/staff/StaffFormModal.tsx` for creating and editing staff with real-time validation
+- [x] T058 [P] [FR-004, FR-028] Write failing tests for `StaffRosterTable` and `StaffManagementPage` in `easyeat/frontend/tests/pages/StaffManagementPage.test.tsx`
+- [x] T059 [FR-004, FR-028] Implement `StaffRosterTable.tsx` in `easyeat/frontend/src/components/staff/StaffRosterTable.tsx` and `StaffManagementPage.tsx` in `easyeat/frontend/src/pages/StaffManagementPage.tsx` mounted at `/admin/staff`
 
 ---
 
