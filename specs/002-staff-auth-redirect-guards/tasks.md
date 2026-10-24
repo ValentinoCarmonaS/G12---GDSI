@@ -24,7 +24,7 @@
 - [X] T001 Configure frontend dependencies (React 18.3, Vite 5.4, React Router v6.27, Tailwind CSS 3.4, Lucide React, Vitest 2.1) in `easyeat/frontend/package.json`
 - [X] T002 [P] Configure Vite application build and Vitest testing environment settings in `easyeat/frontend/vite.config.ts`
 - [X] T003 [P] Configure TypeScript compiler options, JSX transform, and module resolution in `easyeat/frontend/tsconfig.json`
-- [ ] T004 [P] Configure Tailwind CSS utility classes and design tokens in `easyeat/frontend/tailwind.config.js` and `easyeat/frontend/src/index.css`
+- [X] T004 [P] Configure Tailwind CSS utility classes and design tokens in `easyeat/frontend/tailwind.config.js` and `easyeat/frontend/src/index.css`
 - [ ] T005 Configure Axios HTTP client instance with base URL, standard JSON headers, and Bearer token injection in `easyeat/frontend/src/api/apiClient.ts`
 
 ---
