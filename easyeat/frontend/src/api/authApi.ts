@@ -1,7 +1,15 @@
 import { apiClient } from './apiClient';
-import { LoginCredentials, LoginResponse } from '../types/auth';
+import { LoginCredentials, LoginResponse, RegisterCredentials, RegisterResponse } from '../types/auth';
 
 export const authApi = {
+  /**
+   * Dispatches comensal registration request to the backend.
+   */
+  async register(credentials: RegisterCredentials): Promise<RegisterResponse> {
+    const response = await apiClient.post<RegisterResponse>('/auth/register', credentials);
+    return response.data;
+  },
+
   /**
    * Dispatches login authentication request to the backend.
    */
