@@ -51,6 +51,7 @@ describe('AuthContext and useAuth', () => {
       role: 'CHEF',
       tenantId: 'tenant-uuid-1',
       tokenVersion: 2,
+      mustChangePassword: false,
     });
   });
 
@@ -74,6 +75,24 @@ describe('AuthContext and useAuth', () => {
     expect(result.current.isAuthenticated).toBe(true);
     expect(result.current.user?.role).toBe('ENCARGADO');
     expect(result.current.user?.email).toBe('maria@laesquina.com');
+  });
+
+  it('correctly parses must_change_password from token when true', () => {
+    const mockToken = createMockJwt({
+      sub: 'newstaff-uuid-1',
+      email: 'newstaff@restaurant.com',
+      role: 'CHEF',
+      tenant_id: 'tenant-uuid-1',
+      token_version: 0,
+      must_change_password: true,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    });
+    sessionStorage.setItem('access_token', mockToken);
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    expect(result.current.isAuthenticated).toBe(true);
+    expect(result.current.user?.mustChangePassword).toBe(true);
   });
 
   it('clears state and storage on logout', () => {

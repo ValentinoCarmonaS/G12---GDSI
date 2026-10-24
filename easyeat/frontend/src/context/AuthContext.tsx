@@ -46,6 +46,7 @@ function parseUserFromToken(token: string): AuthenticatedUser | null {
     role: (claims.role as Role) || 'COMENSAL',
     tenantId: claims.tenant_id || null,
     tokenVersion: claims.token_version ?? 0,
+    mustChangePassword: claims.must_change_password ?? false,
   };
 }
 
