@@ -1,8 +1,9 @@
 # Phase 0 Research: Staff Authentication Views and Automatic Role-Based Redirect Guards
 
 **Feature**: `002-staff-auth-redirect-guards`  
-**Date**: 2026-10-17  
+**Date**: 2026-10-23  
 **Status**: Completed  
+**Constitution Compliance**: v1.1.0 (Principle X: Full-Stack Vertical Slice Integrity)  
 
 ---
 
@@ -13,7 +14,7 @@ Leverage the integer `token_version` column on the `User` entity in PostgreSQL (
 
 - On every successful login (`POST /api/v1/auth/login`), the backend atomically increments `user.token_version` in the database and embeds the new version in the token. This immediately invalidates any existing active tokens held by other browsers, devices, or tabs for that account (single active session).
 - On explicit logout (`POST /api/v1/auth/logout`), the backend increments `user.token_version`, instantly invalidating the current token.
-- `JwtAuthenticationFilter` (configured in feature 001) extracts the `token_version` claim from the incoming JWT and compares it against the persisted `user.token_version`. If they do not match, the filter rejects the request with HTTP 401 Unauthorized.
+- `JwtAuthenticationFilter` (configured in feature 001) extracts the `token_version` claim from the incoming JWT and compares it against the persisted `user.token_version`. If they do not match, the filter rejects the request with HTTP 401 Unauthorized (`Tu sesión ha expirado o ha sido invalidada`).
 
 ### Rationale
 - Applies KISS (Constitution Principle IV: Simple, Cohesive, and Justified Design).
@@ -68,28 +69,28 @@ Implement a declarative `RoleRouteGuard` component (`RoleRouteGuard.tsx`) using 
 ## 4. Deep Link Preservation & Post-Login Redirection Logic
 
 ### Decision
-Centralize the post-authentication routing policy in a dedicated routing helper (`getPostAuthRedirect(userRole, preservedLocation)`):
+Centralize the post-authentication routing policy in a dedicated routing helper (`resolvePostAuthRedirect(userRole, targetUrl)`):
 
-- If `preservedLocation` exists:
-  - If the target pathname is authorized for `userRole`, redirect to `preservedLocation.pathname`.
+- If `targetUrl` exists:
+  - If the target pathname is authorized for `userRole`, redirect to `targetUrl`.
   - If the target pathname does NOT belong to `userRole`, ignore it and redirect to `getRoleDefaultRoute(userRole)`.
-- If no `preservedLocation` exists: redirect to `getRoleDefaultRoute(userRole)`.
-- Default workspace mapping:
-  - `ENCARGADO` → `/counter`
-  - `CHEF` → `/kds`
+- If no `targetUrl` exists (or equals `/` or `/login`): redirect to `getRoleDefaultRoute(userRole)`.
+- Default workspace mapping (strictly aligned with `spec.md`):
+  - `ENCARGADO` → `/mostrador`
+  - `CHEF` → `/cocina`
   - `ADMINISTRADOR` → `/admin`
-  - `COMENSAL` (or unassigned/missing role) → `/catalog`
+  - `COMENSAL` (or unassigned/missing role) → `/catalogo`
 
 ### Rationale
 - Satisfies all invariants from `spec.md` with zero ambiguity.
-- Prevents cross-role privilege escalation via deep-linking while honoring legitimate deep links (e.g. chef bookmarking a specific KDS station).
+- Prevents cross-role privilege escalation via deep-linking while honoring legitimate deep links (e.g. chef bookmarking a specific kitchen station).
 
 ---
 
 ## 5. Session Expiration Interception & In-Flight Mutation Handling
 
 ### Decision
-Configure an HTTP client response interceptor (using Axios or Fetch wrapper) that inspects every response:
+Configure an HTTP client response interceptor (using Axios in `apiClient.ts`) that inspects every response:
 
 - When an HTTP 401 Unauthorized status is received:
   1. Aborts in-flight requests and mutations via `AbortController`.
@@ -106,14 +107,14 @@ Configure an HTTP client response interceptor (using Axios or Fetch wrapper) tha
 ## 6. Testing Strategy & Framework Alignment
 
 ### Decision
-Employ Jest + React Testing Library (`@testing-library/react`, `@testing-library/user-event`) for frontend component and routing tests, and JUnit 5 + MockMvc for backend controller and filter tests.
+Employ Vitest + React Testing Library (`@testing-library/react`, `@testing-library/user-event`) for frontend component and routing tests, and JUnit 5 + MockMvc for backend controller and filter tests.
 
-- **Frontend Tests**:
-  - `MemoryRouter` simulating all route entry points (`/login`, `/counter`, `/kds`, `/admin`, `/catalog`).
+- **Frontend Tests (Vitest)**:
+  - `MemoryRouter` simulating all route entry points (`/login`, `/mostrador`, `/cocina`, `/admin`, `/catalogo`).
   - Form validation, email trimming/lowercasing, submission debouncing, anti-enumeration messages.
   - Guard redirection tests verifying silent redirect for cross-role attempts and deep-link role evaluation.
   - Simulated 401 responses verifying context cleanup and expiration alert.
-- **Backend Tests**:
-  - Unit tests for `User` entity token versioning.
-  - Slice tests for `AuthController` verifying `login` and `logout` contracts and response schemas.
+- **Backend Tests (JUnit 5 + MockMvc)**:
+  - Unit tests for `User` entity token versioning and domain logic.
+  - Slice tests for `AuthController` verifying `login`, `me`, and `logout` contracts and response schemas.
   - Security filter tests verifying rejection of outdated `token_version` with RFC 9457 ProblemDetail 401.

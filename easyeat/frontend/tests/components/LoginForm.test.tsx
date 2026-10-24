@@ -1,8 +1,36 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { LoginForm } from '@/components/auth/LoginForm';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { authApi } from '@/api/authApi';
+
+function createMockJwt(payload: Record<string, unknown>): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const body = btoa(JSON.stringify(payload));
+  return `${header}.${body}.mock-signature`;
+}
+
+const LoginWithAuthContext: React.FC = () => {
+  const { user, isAuthenticated, setToken } = useAuth();
+
+  const handleLogin = async (credentials: { email: string; password: string }) => {
+    const data = await authApi.login(credentials);
+    setToken(data.access_token);
+  };
+
+  return (
+    <div>
+      <div data-testid="auth-status">{isAuthenticated ? 'authenticated' : 'unauthenticated'}</div>
+      {user && <div data-testid="user-role">{user.role}</div>}
+      {user && <div data-testid="user-email">{user.email}</div>}
+      {user && <div data-testid="user-tenant">{user.tenantId}</div>}
+      <LoginForm onSubmit={handleLogin} />
+    </div>
+  );
+};
 
 describe('LoginForm Component', () => {
   const mockOnSubmit = vi.fn();
@@ -153,4 +181,54 @@ describe('LoginForm Component', () => {
     expect(registerLink).toBeInTheDocument();
     expect(registerLink).toHaveAttribute('href', '/register');
   });
+
+  it('submits credentials for maria.encargada@laesquina.com, receives valid token, and initializes AuthContext (T019)', async () => {
+    sessionStorage.clear();
+    const user = userEvent.setup();
+    const mockToken = createMockJwt({
+      sub: 'maria-uuid-123',
+      email: 'maria.encargada@laesquina.com',
+      role: 'ENCARGADO',
+      tenant_id: 'la-esquina-tenant-999',
+      token_version: 1,
+      exp: Math.floor(Date.now() / 1000) + 28800,
+    });
+
+    vi.spyOn(authApi, 'login').mockResolvedValueOnce({
+      access_token: mockToken,
+      token_type: 'Bearer',
+      expires_in: 28800,
+    });
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <LoginWithAuthContext />
+        </AuthProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('auth-status')).toHaveTextContent('unauthenticated');
+
+    const emailInput = screen.getByLabelText(/correo electrónico/i);
+    const passwordInput = screen.getByLabelText(/contraseña/i);
+    const submitBtn = screen.getByRole('button', { name: /ingresar/i });
+
+    await user.type(emailInput, '  Maria.Encargada@LaEsquina.com  ');
+    await user.type(passwordInput, 'EncargadoPassword123');
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(authApi.login).toHaveBeenCalledWith({
+        email: 'maria.encargada@laesquina.com',
+        password: 'EncargadoPassword123',
+      });
+      expect(screen.getByTestId('auth-status')).toHaveTextContent('authenticated');
+      expect(screen.getByTestId('user-role')).toHaveTextContent('ENCARGADO');
+      expect(screen.getByTestId('user-email')).toHaveTextContent('maria.encargada@laesquina.com');
+      expect(screen.getByTestId('user-tenant')).toHaveTextContent('la-esquina-tenant-999');
+      expect(sessionStorage.getItem('access_token')).toBe(mockToken);
+    });
+  });
 });
+
