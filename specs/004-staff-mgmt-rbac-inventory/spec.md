@@ -4,7 +4,7 @@
 
 **Created**: 17/10/2026
 
-**Status**: Draft
+**Status**: Ready for Implementation
 
 **Input**: User description: "Staff Management, RBAC, and Initial Ingredient Inventory — ADM-3.1.1, ADM-3.1.2, ADM-4.1.1, ADM-4.1.2, CHF-2.1.1"
 
@@ -22,6 +22,13 @@
 
 - Q: What is the delivery scope of feature 004 regarding user interface views? → A: Full End-to-End delivery: the specification mandates both the backend REST services and the frontend React interfaces (Admin staff roster/creation with temporary credentials modal, first-login mandatory password change view, Admin ingredient catalog CRUD & stock adjustment modal, and Chef read-only ingredient catalog view).
 - Q: How do Backlog criteria mentioning future features (automatic stock deduction on orders in ADM-4.1.2, and recipe ingredient selection in CHF-2.1.1) map to this specification? → A: Explicit temporal decoupling: Sprint 1 delivers manual inventory adjustments, stock persistence, and catalog queries. Automatic order-based inventory deduction integrates in Sprint 4 (Order Processing), and chef recipe ingredient binding integrates in Sprint 2 (Recipe Management).
+
+### Session 2026-10-24 (SDD Reconciliation & Navigation Alignment)
+
+- Q: What navigation approach must be implemented for the mandatory first-login password change flow (FR-030)? → A: Dedicated route `/first-login-password-change` guarded against unauthenticated access and protecting operational workspaces. When a user has `must_change_password = true`, the system routes them to `/first-login-password-change` and prevents access to operational workspaces until the password change is confirmed.
+- Q: Where does the Chef access the read-only ingredient catalog (FR-032)? → A: Dedicated sub-route `/cocina/ingredientes` (with alias `/kds/ingredients`) with a navigation tab/link in `WorkspaceLayout` and from `KitchenWorkspacePage`.
+- Q: Where does the Administrator access the staff roster and ingredient inventory (FR-028, FR-031)? → A: Dedicated sub-routes `/admin/staff` and `/admin/inventory`, accessible from cards in `AdminWorkspacePage` and links in `WorkspaceLayout`.
+
 
 ## User Scenarios & Testing *(mandatory)*
 
