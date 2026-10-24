@@ -23,6 +23,37 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface RegisterCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+}
+
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface PasswordResetConfirm {
+  token: string;
+  new_password: string;
+}
+
+export interface PasswordResetResponse {
+  message: string;
+}
+
+export type LoginRequest = LoginCredentials;
+
+export interface AuthContextState {
+  user: AuthenticatedUser | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading?: boolean;
+}
+
 export interface LoginResponse {
   access_token: string;
   token_type: string;

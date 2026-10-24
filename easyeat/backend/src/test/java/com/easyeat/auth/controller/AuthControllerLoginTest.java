@@ -65,6 +65,22 @@ class AuthControllerLoginTest {
     }
 
     @Test
+    @DisplayName("POST /api/v1/auth/login - 200 OK for kitchen chef issuing token and verifying role CHEF (T024, CHF-1.1.1)")
+    void shouldLoginSuccessfullyForChef() throws Exception {
+        LoginRequest request = new LoginRequest("carlos.chef@comedorcentral.com", "ChefPass123");
+        when(authService.login(any(LoginRequest.class), anyString()))
+                .thenReturn(new AuthTokenResponse("fake.chef.jwt.token", "Bearer", 28800L));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.access_token").value("fake.chef.jwt.token"))
+                .andExpect(jsonPath("$.token_type").value("Bearer"))
+                .andExpect(jsonPath("$.expires_in").value(28800));
+    }
+
+    @Test
     @DisplayName("POST /api/v1/auth/login - 401 Unauthorized on invalid credentials")
     void shouldReturn401WhenInvalidCredentials() throws Exception {
         LoginRequest request = new LoginRequest("user@example.com", "WrongPassword");
@@ -95,6 +111,25 @@ class AuthControllerLoginTest {
                 .andExpect(header().string("Content-Type", "application/problem+json"))
                 .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.title").value("Account Suspended"));
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/auth/login - 403 Forbidden when chef account is suspended conforming to RFC 9457 (T025, CHF-1.1.1)")
+    void shouldReturn403WhenChefAccountIsSuspended() throws Exception {
+        LoginRequest request = new LoginRequest("suspended.chef@comedorcentral.com", "ChefPass123");
+        when(authService.login(any(LoginRequest.class), anyString()))
+                .thenThrow(new AccountSuspendedException("The account has been suspended or is not authorized to operate."));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(header().string("Content-Type", "application/problem+json"))
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.title").value("Account Suspended"))
+                .andExpect(jsonPath("$.type").value("https://easyeat.com/errors/account-suspended"))
+                .andExpect(jsonPath("$.detail").value("The account has been suspended or is not authorized to operate."))
+                .andExpect(jsonPath("$.instance").value("/api/v1/auth/login"));
     }
 
     @Test

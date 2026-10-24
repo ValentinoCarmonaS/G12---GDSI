@@ -1,8 +1,9 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 -> 1.0.1
-- Modified principles: none (translated to English without semantic alterations)
-- Added sections: none
+- Version change: 1.1.0 -> 1.2.0
+- Modified principles: none
+- Added sections:
+  - Fundamental Principle XI: Continuous Upstream Synchronization Awareness
 - Removed sections: none
 - Templates requiring updates: none
 - Deferred items: none
@@ -121,6 +122,28 @@ Each principle includes its **Compliance** criteria (verifiable during a review 
 
 **Rationale**: prevent the structural quality of the project from degrading in exchange for short-term speed.
 
+### X. Full-Stack End-to-End Integrity (Vertical Slices)
+
+- A feature specification MUST NOT isolate frontend or backend delivery without specifying and implementing its counterpart (vertical slice).
+- The agent MUST NOT accept, specify, plan, or implement a user story or feature that exclusively targets only the frontend or only the backend without direct, explicit human authorization.
+- If an incoming feature request or draft specification attempts to implement a single layer in isolation, the agent MUST immediately halt execution and escalate the decision to the human user via the designated escalation mechanism (`grill-me`) to clarify the true end-to-end intent and contracts before any planning or implementation proceeds.
+- No automatic exceptions are permitted for setup, foundational, or infrastructure tasks; any single-tier work MUST be explicitly approved by the human user.
+
+**Compliance**: every approved specification defines both frontend and backend scope, contracts, and verification criteria, or includes an explicit, documented human authorization for single-tier execution.
+
+**Rationale**: prevent fragmented, non-functional silos and orphan user stories where frontend interfaces lack functional backend contracts or backend endpoints lack frontend consumer verification.
+
+### XI. Continuous Upstream Synchronization Awareness
+
+- At the invocation start of any command or skill in the Spec-Kit ecosystem (`/speckit-*`), the AI agent MUST proactively execute a fetch of the remote repository (`git fetch origin main`), inspecting the latest state of the main integration branch (`main`), regardless of whichever local active branch the user is currently working on.
+- The agent MUST compare the active local branch against `origin/main`. If it detects that the local branch is outdated (i.e., there are commits on `origin/main` that are not integrated into the current branch), the agent MUST immediately notify the user via a prominent, eye-catching alert message under the `grill-me` advisory format, indicating the number of commits drifted and an explicit staleness warning.
+- The agent MUST NOT automatically execute mutative or destructive integration commands (`git pull`, `git merge`, or `git rebase`); the decision, timing, and integration strategy belong strictly and exclusively to the human developer.
+- The purpose of this principle is to guarantee that the developer never operates in ignorance of progress on the main branch, preventing late divergence, rework, and major integration conflicts.
+
+**Compliance**: at the initialization cycle of any Spec-Kit skill, the execution of `git fetch origin main`, comparative drift verification, and (in case new commits are detected on `origin/main`) the visible, prominent delivery of the staleness alert to the user without automatic local branch mutations are recorded.
+
+**Rationale**: prevent the developer from building specifications, plans, tasks, or code upon an outdated baseline relative to the agreed state on `main`, alerting them in time without violating developer autonomy over the local working tree.
+
 ## Additional Constraints
 
 This section contains the mechanisms and decisions declared by the project. They are NOT universal principles: they may be modified without altering the Fundamental Principles, although they remain subject to the amendment procedure.
@@ -130,10 +153,14 @@ This section contains the mechanisms and decisions declared by the project. They
 
 ## Development Workflow and Quality Gates
 
+Pre-execution check for any Spec-Kit command or skill:
+
+- **Continuous upstream reference synchronization**: proactive execution of `git fetch origin main`, comparative drift verification, and emission of a prominent `grill-me` alert to the user whenever the active branch is behind `origin/main`.
+
 Minimum process prior to implementing a user story, in this order:
 
 1. defined constitution;
-2. functional specification;
+2. functional specification (including full-stack vertical slice verification or human escalation in case of single-tier requests);
 3. ambiguity resolution;
 4. technical planning, including the compliance verification with this constitution;
 5. specification quality checklist;
@@ -156,4 +183,4 @@ Atomic, traceable, and reversible delivery:
 - **Periodic compliance review**: MUST be performed in each feature planning cycle via the plan's Constitution Check, and at least once per quarter across the entire project, verifying that plans and reviews comply with the principles.
 - **Mandatory principles vs. project decisions**: a mandatory principle applies regardless of technology and domain, and resides in Fundamental Principles. Any decision depending on a specific technology, tool, or context resides in Additional Constraints or in the specification and plan artifacts.
 
-**Version**: 1.0.1 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-10-14
+**Version**: 1.2.0 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-10-24

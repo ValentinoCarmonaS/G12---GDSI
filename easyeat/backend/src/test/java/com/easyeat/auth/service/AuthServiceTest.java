@@ -5,6 +5,7 @@ import com.easyeat.auth.domain.UserRole;
 import com.easyeat.auth.domain.UserStatus;
 import com.easyeat.auth.dto.AuthTokenResponse;
 import com.easyeat.auth.dto.LoginRequest;
+import com.easyeat.auth.exception.AccountSuspendedException;
 import com.easyeat.auth.exception.InvalidCredentialsException;
 import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.auth.security.JwtService;
@@ -109,5 +110,46 @@ class AuthServiceTest {
         assertThat(user.getTokenVersion()).isEqualTo(1);
         verify(userRepository).save(user);
         verify(securityAuditLogger).logLoginSuccess(eq(email), eq("ENCARGADO"), eq("127.0.0.1"), eq(user.getId()));
+    }
+
+    @Test
+    @DisplayName("login - chef authentication emits structured audit log and verifies role CHEF (T024, CHF-1.1.1)")
+    void shouldEmitAuditLogOnChefLogin() {
+        String email = "carlos.chef@comedorcentral.com";
+        String password = "ChefPassword123";
+        User user = new User(email, "hashedChefPassword", UserRole.CHEF);
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.ACTIVE);
+        user.setTokenVersion(1);
+
+        when(rateLimitingService.isLoginLocked(email, "192.168.1.50")).thenReturn(false);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(password, "hashedChefPassword")).thenReturn(true);
+        when(jwtService.generateToken(user)).thenReturn("mock.chef.token");
+
+        AuthTokenResponse response = authService.login(new LoginRequest(email, password), "192.168.1.50");
+
+        assertThat(response.accessToken()).isEqualTo("mock.chef.token");
+        verify(securityAuditLogger).logLoginSuccess(eq(email), eq("CHEF"), eq("192.168.1.50"), eq(user.getId()));
+    }
+
+    @Test
+    @DisplayName("login - throws AccountSuspendedException and logs failure when chef account is suspended (T025, CHF-1.1.1)")
+    void shouldThrowAndLogWhenChefAccountIsSuspended() {
+        String email = "suspended.chef@comedorcentral.com";
+        String password = "ChefPassword123";
+        User user = new User(email, "hashedChefPassword", UserRole.CHEF);
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.SUSPENDED);
+
+        when(rateLimitingService.isLoginLocked(email, "192.168.1.50")).thenReturn(false);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(password, "hashedChefPassword")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest(email, password), "192.168.1.50"))
+                .isInstanceOf(AccountSuspendedException.class)
+                .hasMessageContaining("suspended");
+
+        verify(securityAuditLogger).logLoginFailure(eq(email), eq("192.168.1.50"), eq("ACCOUNT_SUSPENDED"));
     }
 }
