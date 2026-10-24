@@ -12,48 +12,67 @@ All design decisions resolved via grilling before any artifact was written.
 ## Summary
 
 Implement the centralized, stateless JWT authentication and credential recovery service for
-the EasyEat multi-tenant platform (Sprint 1). Covers comensal registration, unified
-role-based login, and email-based password reset with atomic session invalidation.
+the EasyEat multi-tenant platform (Sprint 1) with full End-to-End (E2E) delivery. Covers comensal registration, unified
+role-based login, and email-based password reset with atomic session invalidation, spanning both
+backend REST services and user-facing frontend React interfaces.
 
-The service is a **greenfield Spring Boot 3.3.4 backend** (Java 21, Maven) using:
-- BCrypt (cost 12) for password hashing
-- HMAC-SHA256 JWT tokens with `token_version` revocation for stateless session management
-- Caffeine-backed in-process rate limiting (per-email + per-IP)
-- PostgreSQL 16 with Flyway-managed schema migrations
-- RFC 9457 `ProblemDetail` error responses
+The architecture combines:
+1. **Spring Boot 3.3.4 backend** (Java 21, Maven):
+   - BCrypt (cost 12) for password hashing
+   - HMAC-SHA256 JWT tokens with `token_version` revocation for stateless session management
+   - Caffeine-backed in-process rate limiting (per-email + per-IP)
+   - PostgreSQL 16 with Flyway-managed schema migrations
+   - RFC 9457 `ProblemDetail` error responses
+2. **React 18.3 / Vite 5 frontend** (TypeScript 5.5, Tailwind CSS, React Router v6):
+   - Comensal registration view (`/register`) with real-time password policy validation
+   - Unified login navigation extensions (`/login`) with links to registration and recovery
+   - Password recovery request (`/forgot-password`) and tokenized password reset confirmation (`/reset-password`)
+   - Anti-enumeration timing and uniform message handling across all user forms
 
-All decisions grilled and resolved prior to Phase 0. See [research.md](./research.md).
+All decisions grilled and resolved prior to Phase 0 and updated during Backlog-US 2.0 reconciliation. See [research.md](./research.md).
 
 ---
 
 ## Technical Context
 
-**Language/Version**: Java 21 (LTS)
+**Language/Version**: Java 21 LTS (Backend), TypeScript 5.5+ / Node.js 20+ (Frontend)
 
 **Primary Dependencies**:
-- `spring-boot-starter-web` — REST controllers, embedded Tomcat
-- `spring-boot-starter-security` — Spring Security 6.3.x filter chain
-- `spring-boot-starter-data-jpa` — JPA/Hibernate + repositories
-- `spring-boot-starter-validation` — Bean Validation (Jakarta) for DTO constraints
-- `spring-boot-starter-mail` — `JavaMailSender` for transactional email
-- `io.jsonwebtoken:jjwt-api:0.12.6` + `jjwt-impl` + `jjwt-jackson` — JWT signing/parsing
-- `com.github.ben-manes.caffeine:caffeine` — in-memory rate-limit counters
+- **Backend**:
+  - `spring-boot-starter-web` — REST controllers, embedded Tomcat
+  - `spring-boot-starter-security` — Spring Security 6.3.x filter chain
+  - `spring-boot-starter-data-jpa` — JPA/Hibernate + repositories
+  - `spring-boot-starter-validation` — Bean Validation (Jakarta) for DTO constraints
+  - `spring-boot-starter-mail` — `JavaMailSender` for transactional email
+  - `io.jsonwebtoken:jjwt-api:0.12.6` + `jjwt-impl` + `jjwt-jackson` — JWT signing/parsing
+  - `com.github.ben-manes.caffeine:caffeine` — in-memory rate-limit counters
+- **Frontend**:
+  - `react: ^18.3.1` + `react-dom: ^18.3.1`
+  - `react-router-dom: ^6.26.2`
+  - `axios: ^1.7.7`
+  - `tailwindcss: ^3.4.13` + `autoprefixer: ^10.4.20` + `postcss: ^8.4.47`
+  - `lucide-react: ^0.446.0`
 
 **Storage**: PostgreSQL 16+ (primary relational store); Flyway 10.x (schema migrations)
 
 **Testing**:
-- JUnit 5 + Mockito (unit tests, `JavaMailSender` mocked)
-- Testcontainers + PostgreSQL container (integration tests — real DB, real migrations)
-- Spring Security Test — `MockMvc`, `@WithMockUser`, filter-level JWT validation
+- **Backend**:
+  - JUnit 5 + Mockito (unit tests, `JavaMailSender` mocked)
+  - Testcontainers + PostgreSQL container (integration tests — real DB, real migrations)
+  - Spring Security Test — `MockMvc`, `@WithMockUser`, filter-level JWT validation
+- **Frontend**:
+  - Vitest 2.x + `@testing-library/react` + `@testing-library/user-event`
+  - JSDOM environment, component isolation tests, mocked Axios client
 
-**Target Platform**: Linux/Docker container (production); local dev + Docker (development)
+**Target Platform**: Standard modern web browsers (desktop/mobile viewports); Linux/Docker container (backend production)
 
-**Project Type**: REST API / web-service (single deployable JAR)
+**Project Type**: Monorepo Web Application (`easyeat/backend` REST service + `easyeat/frontend` SPA client)
 
 **Performance Goals**:
 - Login p95 ≤ 300ms (BCrypt adds ~200–400ms intentionally — acceptable)
 - Registration p95 ≤ 500ms
 - Password reset request p95 ≤ 500ms (email dispatched asynchronously)
+- Client-side password complexity evaluation executes in < 10ms with zero layout lag
 
 **Constraints**:
 - BCrypt work factor 12 (non-negotiable; timing is the security property)
@@ -61,8 +80,9 @@ All decisions grilled and resolved prior to Phase 0. See [research.md](./researc
 - Passwords max 72 UTF-8 bytes (`@MaxBytes(72)` custom constraint) — BCrypt truncation prevention
 - Rate-limit check occurs BEFORE password verification (prevents timing oracle on lockout state)
 - Caffeine rate-limit state is per-process (acceptable for single-instance MVP)
+- Anti-enumeration: uniform messages and identical response shapes for registered vs non-registered emails
 
-**Scale/Scope**: MVP — 4 roles, single platform instance, no Redis, no SSO, no SMS
+**Scale/Scope**: MVP — 4 roles, single platform instance, End-to-End comensal registration and credential recovery
 
 ---
 
@@ -72,15 +92,15 @@ All decisions grilled and resolved prior to Phase 0. See [research.md](./researc
 
 | Principle | Pre-Design Status | Post-Design Status | Evidence |
 |---|---|---|---|
-| I. Spec as source of truth | ✅ PASS | ✅ PASS | Plan, data model, and contracts derive directly from `spec.md` FR-001..FR-017; no new behavior invented |
-| II. Spec before implementation | ✅ PASS | ✅ PASS | Workflow: spec.md → plan.md → (tasks.md) → implementation; no code written yet |
-| III. Layered verification | ✅ PASS | ✅ PASS | Unit (Mockito) + Integration (Testcontainers/PostgreSQL) + Security filter tests; edge cases (anti-enum, rate limit, token expiry, double-use) have explicit scenarios |
-| IV. Simple, cohesive design | ✅ PASS | ✅ PASS | Feature-based packages; no unnecessary abstractions; Repository pattern used only because Spring Data JPA requires it; Caffeine chosen over Resilience4j for simplicity |
-| V. Bounded scope | ✅ PASS | ✅ PASS | Social login, SMS, QR onboarding explicitly excluded (spec Assumptions); no unsolicited enhancements |
+| I. Spec as source of truth | ✅ PASS | ✅ PASS | Plan, data model, and contracts derive directly from `spec.md` FR-001..FR-024; both REST endpoints and frontend presentation interfaces are fully specified |
+| II. Spec before implementation | ✅ PASS | ✅ PASS | Workflow: spec.md → plan.md → tasks.md → implementation; no code written yet |
+| III. Layered verification | ✅ PASS | ✅ PASS | Backend Unit (Mockito) + Integration (Testcontainers) + Security filter tests; Frontend component isolation tests (Vitest + RTL) covering password complexity, anti-enumeration, and routing |
+| IV. Simple, cohesive design | ✅ PASS | ✅ PASS | Feature-based backend packages; lightweight modular React components using Tailwind CSS and existing Axios client |
+| V. Bounded scope | ✅ PASS | ✅ PASS | Social login, SMS, QR onboarding excluded; diner catalog restaurant selector deferred to Sprint 2 (`COM-1.5.1`) |
 | VI. Controlled technical debt | ✅ PASS | ✅ PASS | GreenMail, Redis, Retry-After header documented in `research.md` TD-001..TD-003 with priority and trigger |
 | VII. Traceability | ✅ PASS | ✅ PASS | Requirement traceability matrix in `data-model.md`; all contracts reference spec FR-xxx; decisions reference research.md D-xxx |
-| VIII. Evidence over assumption | ✅ PASS | ✅ PASS | All 12 design decisions resolved via `/grill-me` before any artifact was written |
-| IX. Engineering over convenience | ✅ PASS | ✅ PASS | Testcontainers chosen over H2 (fidelity); BCrypt cost 12 maintained (security); DUMMY_HASH path implemented (anti-enumeration) |
+| VIII. Evidence over assumption | ✅ PASS | ✅ PASS | All design decisions resolved via `/grill-me` before any artifact was written and reconciled with Backlog-US 2.0 |
+| IX. Engineering over convenience | ✅ PASS | ✅ PASS | Testcontainers chosen over H2 (fidelity); BCrypt cost 12 maintained (security); DUMMY_HASH path implemented (anti-enumeration); client-side validation paired with authoritative server checks |
 
 **GATE RESULT: ALL PASS — Phase 0 and Phase 1 complete**
 
@@ -160,16 +180,43 @@ easyeat/backend/
         │       └── AuthIntegrationTest.java          ← Testcontainers + real PostgreSQL + Flyway
         └── resources/
             └── application-test.yml                  ← Testcontainers JDBC URL + fixed JWT_SECRET
+
+### Source Code (repository root → easyeat/frontend/)
+
+```text
+easyeat/frontend/
+├── package.json
+├── vite.config.ts
+└── src/
+    ├── api/
+    │   └── authApi.ts                                ← register(), requestPasswordReset(), confirmPasswordReset()
+    ├── types/
+    │   └── auth.ts                                   ← RegisterCredentials, PasswordResetRequest, PasswordResetConfirm
+    ├── components/
+    │   └── auth/
+    │       ├── RegisterForm.tsx                      ← Comensal registration form with real-time complexity highlights
+    │       ├── ForgotPasswordForm.tsx                ← Password recovery request form with anti-enumeration message
+    │       ├── ResetPasswordForm.tsx                 ← New password input with token validation & policy check
+    │       └── LoginForm.tsx                         ← Updated with /register and /forgot-password links
+    ├── pages/
+    │   ├── RegisterPage.tsx                          ← Registration page wrapper + "Ya tengo una cuenta" link
+    │   ├── ForgotPasswordPage.tsx                    ← Recovery request page wrapper + cancel/back action
+    │   └── ResetPasswordPage.tsx                     ← Token extraction from URL query + confirmation wrapper
+    └── router/
+        └── AppRoutes.tsx                             ← Routes for /register, /forgot-password, /reset-password
+tests/
+└── components/
+    ├── RegisterForm.test.tsx                         ← Vitest + RTL component tests for registration
+    ├── ForgotPasswordForm.test.tsx                   ← Vitest + RTL tests for password recovery request
+    └── ResetPasswordForm.test.tsx                    ← Vitest + RTL tests for password reset confirmation
 ```
 
-**Structure Decision**: Single-project layout (Option 1) with feature-based package organization
-(`com.easyeat.auth.*`). No multi-module Maven setup needed for MVP. Backend lives at
-`easyeat/backend/` within the SDD monorepo alongside `specs/` and `EasyEat - Docs/`.
+**Structure Decision**: Monorepo layout containing both backend (`easyeat/backend/`) and frontend (`easyeat/frontend/`). Shared TypeScript interfaces mirror backend DTO contracts and OpenAPI specification.
 
 ---
 
 ## Complexity Tracking
 
 > No Constitution Check violations detected — section not applicable.
-> All introduced components (filter, rate limiter, JWT service, email service) are directly
-> mandated by spec requirements FR-005..FR-017 and have documented rationale in research.md.
+> All introduced components (filter, rate limiter, JWT service, email service, registration/recovery views) are directly
+> mandated by spec requirements FR-001..FR-024 and have documented rationale in research.md and spec clarifications.

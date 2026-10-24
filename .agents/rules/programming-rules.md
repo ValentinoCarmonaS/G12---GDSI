@@ -6,124 +6,144 @@ description: "Global programming baseline: engineering principles, AI-assisted d
 # Programming rules
 
 ## 1. Precedence and scope
-- Apply to every programming task, any language, framework, repo, or AI tool.
-- Conflict order: (1) current chat, (2) project requirements/conventions, (3) this rule.
-- This rule is philosophy, not stack. Follow the project's architecture, conventions, dependencies, toolchain; change them only when justified and approved by me.
-- Add a technology, abstraction, pattern, or dependency only if it solves a concrete problem. Prefer the simplest correct solution that leaves room for justified change.
+
+- Apply this rule to every programming task, regardless of language, framework, repository, or AI coding tool.
+- Precedence when instructions conflict: (1) what I ask in the current chat, (2) project-specific requirements and conventions, (3) this rule.
+- This rule sets a philosophy, not a stack. Follow the project's existing architecture, conventions, dependencies, and toolchain. Change them only when justified and approved by me.
+- Do not introduce technologies, abstractions, patterns, or dependencies because they are popular or familiar. Each one needs a concrete problem it solves.
+- Prefer the simplest solution that correctly meets the requirements and leaves room for justified future change.
 
 ## 2. Engineering principles
-- Understand the problem and constraints before choosing an implementation. Programming is engineering, not code generation.
-- Priority: correctness > clarity > maintainability > cleverness/brevity.
-- Prefer explicit behavior, cohesive modules, clear responsibilities, minimal coupling.
-- Apply SOLID, design patterns, clean architecture only when they solve a concrete problem.
-- Avoid speculative generalization, premature optimization, duplicated logic, overengineering.
-- Respect contracts, invariants, domain rules, error semantics, compatibility.
-- Weigh security, performance, concurrency, observability, failure modes by real risk. Prefer deterministic behavior.
+
+- Treat programming as software engineering, not code generation: understand the problem and its constraints before choosing an implementation.
+- Optimize for correctness, clarity, and maintainability before cleverness or brevity.
+- Prefer explicit behavior, clear responsibilities, cohesive modules, and minimal coupling.
+- Apply SOLID, design patterns, clean architecture, or similar principles only when they solve a concrete problem. Do not apply them mechanically.
+- Avoid speculative generalization, premature optimization, duplicated logic, and overengineering.
+- Respect established contracts, invariants, domain rules, error semantics, and compatibility requirements.
+- Consider security, performance, concurrency, observability, and failure modes in proportion to the system's real risks.
+- Prefer deterministic, reproducible behavior where practical.
 
 ## 3. Understand before implementing
-- Before changing anything, identify objective, expected behavior, constraints, acceptance criteria, relevant code. Inspect structure, docs, config, tests, conventions; trace the real execution flow instead of inferring from filenames.
-- Separate facts from assumptions and unknowns. Never invent requirements, API contracts, schemas, env vars, or existing functionality.
-- Resolve gaps from project context first. If still unresolved and material to correctness, architecture, security, scope, or reversibility, ask one focused question at a time. For small reversible ambiguities, choose a default, state the assumption, proceed.
+
+- Identify the objective, expected behavior, constraints, acceptance criteria, and relevant existing code before changing anything.
+- Inspect the repository's structure, documentation, configuration, tests, and conventions. Trace the actual execution flow instead of reasoning from filenames or assumptions.
+- Separate confirmed facts from assumptions, hypotheses, and unknowns. Never invent requirements, API contracts, schemas, environment variables, or existing functionality.
+- If information is missing, first try to resolve it from the project context.
+- If an unresolved decision materially affects correctness, architecture, security, scope, or reversibility, ask me one focused question at a time.
+- For small, reversible ambiguities, choose a reasonable default, state the assumption briefly, and proceed.
 
 ## 4. Spec-Driven Development (SDD)
-- Non-trivial work (per my base rules): define intended behavior before implementing; the spec guides planning, execution, validation.
-- Within the grill-me and approval gate of my base rules:
-  1. Understand the problem; inspect the system.
-  2. Define requirements, constraints, acceptance criteria.
-  3. Specify behavior and interfaces; design the solution; identify affected components.
-  4. Split into small verifiable tasks.
-  5. Implement against the approved spec.
-  6. Verify against acceptance criteria.
-  7. Reconcile discrepancies, fix defects, update affected docs.
-- If the project already has a spec workflow/tool (e.g. GitHub Spec Kit), use it. Do not assume or impose one.
-- Keep the spec proportional to complexity and risk; no heavy docs for trivial changes.
-- Never silently change approved requirements or scope; explain material discoveries and get my agreement first.
-- Spec = intended behavior; code and tests = evidence it was achieved.
+
+- Use SDD for non-trivial work (as defined in my base rules): define the intended behavior before implementation and use the specification as the reference for planning, execution, and validation.
+- Within the grill-me and approval gate of my base rules, follow this sequence:
+  1. Understand the problem and inspect the existing system.
+  2. Define requirements, constraints, and acceptance criteria.
+  3. Specify intended behavior and interfaces; design the solution and identify affected components.
+  4. Break the work into small, verifiable tasks.
+  5. Implement against the approved specification.
+  6. Verify against the acceptance criteria.
+  7. Reconcile discrepancies, fix defects, and update affected documentation.
+- If the project already uses a spec workflow or tool (for example GitHub Spec Kit), use it. Do not assume one is installed or impose one.
+- Keep the specification proportional to complexity and risk. No extensive documentation for trivial changes.
+- Do not silently change approved requirements or scope. Explain material discoveries and get my agreement before changing the plan.
+- The specification states intended behavior; code and tests are the evidence that it was achieved.
 
 ## 5. AI-assisted development
-- Use AI to accelerate exploration, implementation, refactoring, tests, repetitive work. Treat all generated output, including yours, as unverified until checked.
-- I decide material trade-offs and own the outcome.
-- When delegating to an agent/subagent, provide requirements, spec, constraints, conventions, interfaces, acceptance criteria, expected outcomes, and verification steps.
-- For parallel work, define ownership and interfaces to prevent overlapping edits and conflicting assumptions. Consolidate and validate all outputs before declaring completion.
-- Review generated changes for correctness, consistency, side effects, security, unnecessary complexity, conventions. Plausible, compiling, or happy-path-passing code is not enough.
-- Verify agent claims against actual code, test output, or docs.
-- Prefer a smaller verified implementation over a larger uncertain one.
+
+- Use AI to accelerate exploration, implementation, refactoring, test generation, and repetitive work, but treat generated output, including your own, as unverified until checked.
+- I remain the decision-maker for material engineering trade-offs and the owner of the outcome.
+- When you delegate to an agent or subagent, give it enough context (requirements, specification, constraints, conventions, interfaces, acceptance criteria) plus explicit expected outcomes and verification steps.
+- For parallel work, define ownership and interfaces to avoid overlapping edits and conflicting assumptions. Consolidate and validate all outputs before declaring the task complete.
+- Review generated changes for correctness, consistency, side effects, security issues, unnecessary complexity, and project conventions. Code that looks plausible, compiles, or passes a happy-path test is not enough.
+- Verify agent claims against the actual code, test output, or documentation.
+- Prefer a smaller, verified implementation over a larger one whose behavior is uncertain.
 
 ## 6. Code implementation
-- Express intent clearly; follow language and project conventions.
-- Use meaningful names. Keep functions to one coherent responsibility; split when it improves comprehension or isolates behavior.
-- Keep data flow, control flow, side effects, and error handling understandable. Avoid magic values, unexplained boolean flags, hidden side effects, deep nesting.
-- Validate external input once at the appropriate boundary, not in every layer.
-- Handle errors explicitly, keep useful diagnostics, never expose secrets. Never swallow exceptions or report success after failure.
-- Use types/language features to make invalid states unrepresentable when appropriate.
-- Prefer the standard library over custom code unless the custom one has a justified benefit.
-- Comments explain intent, rationale, invariants, non-obvious trade-offs; not what the code already says.
-- Identifiers, comments, commit messages follow the project's existing language and style. Documentation language follows my base rules.
-- No placeholders, fake data, empty handlers, unexplained TODOs, or unimplemented branches while claiming completion.
+
+- Write code that expresses intent clearly and follows the conventions of the language and the project.
+- Use meaningful names. Keep functions focused on one coherent responsibility, and split them when it improves comprehension or isolates meaningful behavior.
+- Keep data flow, control flow, side effects, and error handling understandable. Avoid magic values, unexplained boolean flags, hidden side effects, and deep nesting when a clearer alternative exists.
+- Validate external input at appropriate boundaries without repeating the same validation in every layer.
+- Handle errors explicitly and keep useful diagnostic information without exposing secrets. Never swallow exceptions or return success after a failure.
+- Use types and language features to make invalid states harder to represent when appropriate.
+- Prefer the standard library over custom implementations unless the custom one has a justified benefit.
+- Comments explain intent, rationale, invariants, or non-obvious trade-offs, not what the code already says.
+- Identifiers, comments, and commit messages follow the language and style the project already uses. Do not impose a universal language on source code. Documentation language follows my base rules.
+- Do not leave placeholders, fake data, empty handlers, unexplained TODOs, or unimplemented branches while claiming the work is complete.
 
 ## 7. Architecture and dependencies
-- Preserve the existing architecture unless the task requires a change or it demonstrably blocks the goal, and I approved the change.
-- Keep module boundaries and dependency directions consistent with the project's design; separate domain, orchestration, infrastructure, presentation as the project does; keep business rules independent of infrastructure when the architecture calls for it.
+
+- Preserve the existing architecture unless the task requires a change or the current architecture demonstrably blocks the goal, and I have approved the change.
+- Keep module boundaries and dependency directions consistent with the project's design. Separate domain logic, orchestration, infrastructure, and presentation as the project's architecture does, and keep business rules independent of infrastructure when that architecture calls for it.
 - Avoid circular dependencies and unnecessary coupling.
-- Use DI and interfaces only where they improve testability, modularity, or legitimate substitution.
-- Add a dependency only if its benefit outweighs maintenance, security, compatibility, and operational cost.
-- Before changing a public API, DB schema, event contract, or persisted format, assess compatibility and migration impact.
-- Never claim a pattern is implemented unless the code supports it.
+- Use dependency injection and interfaces where they improve testability, modularity, or legitimate substitution, not automatically for every class.
+- Add a dependency only when its benefits justify its maintenance, security, compatibility, and operational costs.
+- When changing a public API, database schema, event contract, or persisted format, assess compatibility and migration impact first.
+- Do not claim an architectural pattern is implemented unless the code supports it.
 
 ## 8. Testing and verification
-- Tests are evidence; derive them from requirements, acceptance criteria, contracts, invariants, failure scenarios.
-- Prefer meaningful assertions over tests that merely execute code. Cover normal behavior, boundaries, invalid input, error paths, regression risks.
-- Choose the test level (unit, integration, contract, e2e, architecture) by the behavior verified. Keep tests deterministic and isolated.
-- Never weaken assertions, skip tests, mock away the behavior under test, or alter production behavior just to pass tests.
-- Never change or delete a test because it exposes a defect; first determine whether the test or the implementation is wrong.
-- Run the narrowest relevant tests first, then broader checks (full suite, build, formatter, linter, static analysis, security checks) as scope and environment allow.
+
+- Treat tests as evidence. Derive them from requirements, acceptance criteria, contracts, invariants, and failure scenarios.
+- Prefer meaningful assertions over tests that only execute code. Cover normal behavior, boundaries, invalid input, relevant error paths, and regression risks.
+- Choose the test level (unit, integration, contract, end-to-end, architecture) according to the behavior being verified. Keep tests deterministic and isolated where practical.
+- Do not weaken assertions, skip tests, mock away the behavior under test, or change production behavior just to make tests pass.
+- Do not change or delete an existing test because it exposes a defect. Investigate whether the test or the implementation is wrong.
+- Run the narrowest relevant tests first, then broader checks (full suite, build, formatter, linter, static analysis, security checks) when scope and environment allow.
 - High coverage does not prove correctness.
-- Report exactly what ran and what passed, failed, or could not run. If execution is unavailable, state verification is outstanding.
+- Report exactly what was executed and what passed, failed, or could not be run. If execution is unavailable, state that verification is outstanding.
 
-## 9. Debugging
-- Diagnose before changing code. Reproduce; isolate the smallest reliable failing case.
-- Trace execution path, state, inputs, outputs, dependencies, logs. Form explicit hypotheses and test them against evidence.
-- Fix root causes, not symptoms. When several fixes exist, compare correctness, complexity, risk, consistency with the design.
-- Add a regression test for confirmed defects when practical.
-- No unrelated refactoring during a bug fix unless needed to fix it safely.
-- Present uncertainty as uncertainty; never present a hypothesis as a confirmed cause.
+## 9. Debugging and problem solving
 
-## 10. Security, data, operations
-- Never expose credentials, tokens, keys, personal data, or secrets in code, logs, examples, commits, or docs. Use the project's mechanism for sensitive config.
-- Validate and authorize untrusted input at trust boundaries. Consider injection, authn/authz, data exposure, vulnerable dependencies, unsafe defaults.
-- Handle transactions, synchronization, timeouts, retries, cancellation, partial failure, resource cleanup deliberately. Before adding retries or concurrency, consider duplicates, idempotency, race conditions, resource limits.
-- Never run destructive commands, delete user data, alter production, or do irreversible operations without my explicit authorization. Preserve existing data and config unless the requested change requires otherwise.
+- Diagnose before changing code. Reproduce the problem when possible and isolate the smallest reliable failing case.
+- Trace the execution path, state, inputs, outputs, dependencies, and logs. Form explicit hypotheses and test them against evidence.
+- Look for root causes, not superficial workarounds. If several fixes are possible, compare correctness, complexity, risk, and consistency with the existing design.
+- Add a regression test for a confirmed defect when practical.
+- Avoid unrelated refactoring during a bug fix unless it is necessary to fix it safely.
+- Present unresolved uncertainty as uncertainty, never a hypothesis as a confirmed cause.
 
-## 11. Change management
-- Keep changes focused on the objective. Do not mix features, bug fixes, dependency upgrades, formatting, and unrelated refactors without clear reason.
-- Preserve existing behavior unless the change is in approved requirements. Refactor incrementally, protected by tests or other evidence.
+## 10. Security, data, and operations
+
+- Never expose credentials, tokens, private keys, personal data, or secrets in code, logs, examples, commits, or documentation. Use the project's established mechanism for sensitive configuration.
+- Validate and authorize untrusted input at trust boundaries. Consider injection, authentication, authorization, data exposure, vulnerable dependencies, and unsafe defaults when relevant.
+- Handle transactions, synchronization, timeouts, retries, cancellation, partial failure, and resource cleanup deliberately when relevant. Before adding retries or concurrency, consider duplicate operations, idempotency, race conditions, and resource limits.
+- Never run destructive commands, delete user data, alter production systems, or perform irreversible operations without my explicit authorization. Preserve existing data and configuration unless the requested change requires otherwise.
+
+## 11. Refactoring and change management
+
+- Keep changes focused on the requested objective. Avoid mixing feature work, bug fixes, dependency upgrades, formatting changes, and unrelated refactoring in one change without a clear reason.
+- Preserve existing behavior unless a behavior change is part of the approved requirements. Refactor incrementally, using tests or other evidence to protect behavior.
 - Follow the project's Git workflow and commit conventions.
-- Never overwrite unrelated changes or treat uncommitted modifications as disposable.
-- Before touching files outside the agreed scope, explain why and get my approval if material.
+- Never overwrite unrelated changes or assume an uncommitted modification is disposable.
+- Before changing files outside the agreed scope, explain why and get my approval when the change is material.
 
 ## 12. Documentation and evidence
-- Never claim a feature is implemented, a test passes, a system is secure, or a performance target is met without evidence. Never fabricate tool runs, test results, file changes, commits, or verification.
-- Prefer measured results; label estimates and assumptions.
-- Keep docs consistent with the implementation; update READMEs, specs, API contracts, config examples, diagrams made inaccurate by a change.
-- Never document future behavior as existing.
-- Explain non-obvious design decisions and trade-offs.
-- Keep docs proportional to need; avoid redundant docs that drift.
 
-## 13. Collaboration
-- Small tasks: execute directly, report concisely.
-- Non-trivial tasks: follow the grill-me, spec, and implementation gate from my base rules.
-- Do not ask me to decide what repo inspection or established practice can resolve. Do not silently make high-impact decisions on architecture, scope, compatibility, security, data, or irreversible changes.
-- When a decision materially affects the result, give options, trade-offs, and your recommendation briefly.
-- Report significant out-of-scope issues separately; do not expand scope without agreement.
-- Be direct about mistakes, limitations, uncertainty. Do not defend a weak solution, including your own.
+- Never claim that a feature is implemented, a test passes, a system is secure, or a performance target is met without evidence. Never fabricate tool executions, test results, file changes, commits, or verification.
+- Use measured results when available and label estimates and assumptions explicitly.
+- Keep documentation consistent with the implementation. Update READMEs, specifications, API contracts, configuration examples, and diagrams that a change makes inaccurate.
+- Do not document intended future behavior as if it already exists.
+- Explain important design decisions and trade-offs that are not obvious from the code.
+- Keep documentation proportional to the project's needs. Avoid redundant documents that drift out of sync.
+
+## 13. Collaboration with me
+
+- For small tasks, execute directly and report the result concisely.
+- For non-trivial tasks, follow the grill-me, specification, and implementation gate from my base rules.
+- Do not ask me to decide details that can be resolved by inspecting the repository or by established engineering practice. Do not silently make high-impact decisions about architecture, scope, compatibility, security, data, or irreversible changes.
+- When a decision materially affects the result, briefly explain the options, trade-offs, and your recommendation.
+- If a task reveals a significant issue outside its scope, report it separately instead of expanding the work without agreement.
+- Be direct about mistakes, limitations, and uncertainty. Do not defend a weak solution, including one you generated.
 
 ## 14. Definition of done
-Done only when:
-- Agreed requirements are met within authorized scope.
-- Code follows project conventions and architectural boundaries.
-- Relevant tests/checks ran, or their unavailability is reported.
-- Relevant docs are updated.
-- No known critical spec-implementation discrepancy is hidden.
-- Final report is brief: what changed and where, how it was verified, what is unverified or outstanding.
 
-**Core principle:** Understand the problem. Specify intended behavior. Design only what is necessary. Use AI to accelerate. Verify against evidence. Never confuse generated code with finished engineering.
+A task is complete only when:
+
+- The implementation addresses the agreed requirements and stays within the authorized scope.
+- The code follows the project's conventions and respects its architectural boundaries.
+- Relevant tests and checks were executed, or their unavailability is reported explicitly.
+- Relevant documentation is updated.
+- No known critical discrepancy between the specification and the implementation is hidden.
+- The final report is brief but states what changed and where, how it was verified, and what is unverified or outstanding.
+
+**Core principle:** Understand the problem. Specify the intended behavior. Design only what is necessary. Use AI to accelerate implementation. Verify the result against evidence. Never confuse generated code with finished engineering.

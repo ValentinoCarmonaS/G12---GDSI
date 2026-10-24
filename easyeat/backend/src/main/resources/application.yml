@@ -33,4 +33,4 @@ app:
         duration-seconds: 60
     password-reset:
       token-validity-minutes: 15
-      base-url: ${APP_PASSWORD_RESET_BASE_URL:http://localhost:3000/auth/reset-password}
+      base-url: ${APP_PASSWORD_RESET_BASE_URL:http://localhost:3000/reset-password}
