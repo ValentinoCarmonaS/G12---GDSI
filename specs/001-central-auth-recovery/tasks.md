@@ -185,7 +185,7 @@
 ### Tests for Password Recovery (TDD - Write First)
 
 - [X] T057 [P] [US3] Write failing Vitest + RTL tests for `ForgotPasswordForm` in `easyeat/frontend/tests/components/ForgotPasswordForm.test.tsx` verifying: renders email input; validates format; submits to API; always displays uniform confirmation alert (anti-enumeration); cancel button invokes navigation to `/login`.
-- [ ] T058 [P] [US3] Write failing Vitest + RTL tests for `ResetPasswordForm` in `easyeat/frontend/tests/components/ResetPasswordForm.test.tsx` verifying: renders new password and confirmation inputs; validates complexity rules; validates password mismatch; handles expired/consumed token error; navigates to `/login` on success.
+- [X] T058 [P] [US3] Write failing Vitest + RTL tests for `ResetPasswordForm` in `easyeat/frontend/tests/components/ResetPasswordForm.test.tsx` verifying: renders new password and confirmation inputs; validates complexity rules; validates password mismatch; handles expired/consumed token error; navigates to `/login` on success.
 
 ### Implementation for Password Recovery
 
