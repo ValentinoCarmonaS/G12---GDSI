@@ -155,11 +155,11 @@
 
 **Goal**: Force newly registered staff members logging in for the first time to change their temporary credential before accessing operational workspaces.
 
-- [ ] T049 [P] [FR-003, FR-030] Inject `must_change_password` claim in backend `JwtService.java` and `AuthenticatedUserResponse.java` and adapt `AuthContext.tsx` to decode and expose it in user state
-- [ ] T050 [P] [FR-030] Write failing router and guard tests in `easyeat/frontend/tests/router/FirstLoginRouting.test.tsx` verifying redirection to `/first-login-password-change` when `mustChangePassword = true` and blocking operational routes
-- [ ] T051 [FR-030] Update `RoleRouteGuard.tsx` and `postAuthRouting.ts` to intercept `mustChangePassword` and enforce routing to `/first-login-password-change`
-- [ ] T052 [P] [FR-030] Write failing component tests for `FirstLoginPasswordPage` in `easyeat/frontend/tests/pages/FirstLoginPasswordPage.test.tsx`
-- [ ] T053 [FR-003, FR-030] Implement `FirstLoginPasswordPage.tsx` in `easyeat/frontend/src/pages/FirstLoginPasswordPage.tsx` with validation, complexity checks, and successful submission transitioning account to active
+- [x] T049 [P] [FR-003, FR-030] Inject `must_change_password` claim in backend `JwtService.java` and `AuthenticatedUserResponse.java` and adapt `AuthContext.tsx` to decode and expose it in user state
+- [x] T050 [P] [FR-030] Write failing router and guard tests in `easyeat/frontend/tests/router/FirstLoginRouting.test.tsx` verifying redirection to `/first-login-password-change` when `mustChangePassword = true` and blocking operational routes
+- [x] T051 [FR-030] Update `RoleRouteGuard.tsx` and `postAuthRouting.ts` to intercept `mustChangePassword` and enforce routing to `/first-login-password-change`
+- [x] T052 [P] [FR-030] Write failing component tests for `FirstLoginPasswordPage` in `easyeat/frontend/tests/pages/FirstLoginPasswordPage.test.tsx`
+- [x] T053 [FR-003, FR-030] Implement `FirstLoginPasswordPage.tsx` in `easyeat/frontend/src/pages/FirstLoginPasswordPage.tsx` with validation, complexity checks, and successful submission transitioning account to active
 
 ---
 
