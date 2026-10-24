@@ -112,7 +112,7 @@ public class AuthService {
         }
 
         // 4. Status validation
-        if (user.getStatus() != UserStatus.ACTIVE) {
+        if (user.getStatus() != UserStatus.ACTIVE && user.getStatus() != UserStatus.PENDING_FIRST_LOGIN) {
             securityAuditLogger.logLoginFailure(normalizedEmail, clientIp, "ACCOUNT_SUSPENDED");
             throw new AccountSuspendedException("The account has been suspended or is not authorized to operate.");
         }

@@ -152,4 +152,26 @@ class AuthServiceTest {
 
         verify(securityAuditLogger).logLoginFailure(eq(email), eq("192.168.1.50"), eq("ACCOUNT_SUSPENDED"));
     }
+
+    @Test
+    @DisplayName("login - allows login and issues token when account status is PENDING_FIRST_LOGIN (FR-003)")
+    void shouldAllowLoginWhenAccountStatusIsPendingFirstLogin() {
+        String email = "pending.chef@comedorcentral.com";
+        String password = "TempChefPassword123!";
+        User user = new User(email, "hashedTempPassword", UserRole.CHEF);
+        user.setId(UUID.randomUUID());
+        user.setStatus(UserStatus.PENDING_FIRST_LOGIN);
+        user.setMustChangePassword(true);
+        user.setTokenVersion(0);
+
+        when(rateLimitingService.isLoginLocked(email, "192.168.1.50")).thenReturn(false);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(password, "hashedTempPassword")).thenReturn(true);
+        when(jwtService.generateToken(user)).thenReturn("mock.pending.token");
+
+        AuthTokenResponse response = authService.login(new LoginRequest(email, password), "192.168.1.50");
+
+        assertThat(response.accessToken()).isEqualTo("mock.pending.token");
+        verify(securityAuditLogger).logLoginSuccess(eq(email), eq("CHEF"), eq("192.168.1.50"), eq(user.getId()));
+    }
 }
