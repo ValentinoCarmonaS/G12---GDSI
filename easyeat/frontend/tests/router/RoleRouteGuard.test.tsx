@@ -122,4 +122,112 @@ describe('RoleRouteGuard Component', () => {
 
     expect(screen.getByText('Counter Protected Workspace')).toBeInTheDocument();
   });
+
+  it('silently redirects ENCARGADO attempting to access /cocina to /mostrador with history replacement (T027, CHF-1.2.1)', () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      user: {
+        id: 'manager-1',
+        email: 'maria.encargada@laesquina.com',
+        role: 'ENCARGADO',
+        tenantId: 'tenant-1',
+        tokenVersion: 1,
+      },
+      token: 'mock-token',
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/cocina']}>
+        <Routes>
+          <Route path="/mostrador" element={<div><p>Counter Workspace</p><LocationWatcher /></div>} />
+          <Route
+            path="/cocina"
+            element={
+              <RoleRouteGuard allowedRoles={['CHEF']}>
+                <p>Chef Kitchen Workspace</p>
+              </RoleRouteGuard>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Counter Workspace')).toBeInTheDocument();
+    expect(screen.queryByText('Chef Kitchen Workspace')).not.toBeInTheDocument();
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/mostrador');
+  });
+
+  it('silently redirects COMENSAL attempting to access /cocina to /catalogo with history replacement (T027, CHF-1.2.1)', () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      user: {
+        id: 'diner-1',
+        email: 'juan.comensal@gmail.com',
+        role: 'COMENSAL',
+        tenantId: null,
+        tokenVersion: 1,
+      },
+      token: 'mock-token',
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/cocina']}>
+        <Routes>
+          <Route path="/catalogo" element={<div><p>Catalog Fallback View</p><LocationWatcher /></div>} />
+          <Route
+            path="/cocina"
+            element={
+              <RoleRouteGuard allowedRoles={['CHEF']}>
+                <p>Chef Kitchen Workspace</p>
+              </RoleRouteGuard>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Catalog Fallback View')).toBeInTheDocument();
+    expect(screen.queryByText('Chef Kitchen Workspace')).not.toBeInTheDocument();
+    expect(screen.getByTestId('current-path')).toHaveTextContent('/catalogo');
+  });
+
+  it('renders kitchen workspace child component when user has role CHEF (T027)', () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      user: {
+        id: 'chef-1',
+        email: 'carlos.chef@comedorcentral.com',
+        role: 'CHEF',
+        tenantId: 'tenant-1',
+        tokenVersion: 1,
+      },
+      token: 'mock-token',
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/cocina']}>
+        <Routes>
+          <Route
+            path="/cocina"
+            element={
+              <RoleRouteGuard allowedRoles={['CHEF']}>
+                <p>Chef Kitchen Workspace</p>
+              </RoleRouteGuard>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Chef Kitchen Workspace')).toBeInTheDocument();
+  });
 });
