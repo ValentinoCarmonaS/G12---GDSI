@@ -24,37 +24,58 @@ public class ProfileController {
 
     @GetMapping("/me")
     public ResponseEntity<ProfileResponse> getProfile(@AuthenticationPrincipal User user) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        ProfileResponse profile = profileService.getProfile(user);
+        return ResponseEntity.ok(profile);
     }
 
     @PutMapping("/personal-data")
     public ResponseEntity<ProfileResponse> updatePersonalData(
             @AuthenticationPrincipal User user,
             @Valid @RequestBody PersonalDataRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        ProfileResponse updated = profileService.updatePersonalData(user, request);
+        return ResponseEntity.ok(updated);
     }
 
     @PostMapping("/email-change/request")
     public ResponseEntity<EmailChangeInitiatedResponse> requestEmailChange(
             @AuthenticationPrincipal User user,
             @Valid @RequestBody EmailChangeRequestDto request) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        EmailChangeInitiatedResponse response = emailChangeService.requestEmailChange(user, request);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 
     @PostMapping("/email-change/resend")
     public ResponseEntity<EmailChangeInitiatedResponse> resendVerificationEmail(
             @AuthenticationPrincipal User user) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        EmailChangeInitiatedResponse response = emailChangeService.resendVerificationEmail(user);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 
     @DeleteMapping("/email-change/pending")
     public ResponseEntity<Void> cancelPendingEmailChange(@AuthenticationPrincipal User user) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        emailChangeService.cancelPendingEmailChange(user);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/email-change/confirm")
     public ResponseEntity<EmailConfirmedResponse> confirmEmailChange(
             @Valid @RequestBody EmailConfirmationRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        EmailConfirmedResponse response = emailChangeService.confirmEmailChange(request);
+        return ResponseEntity.ok(response);
     }
 }
