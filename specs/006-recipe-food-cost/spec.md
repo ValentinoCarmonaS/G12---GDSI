@@ -45,33 +45,34 @@ The Chef specifies the ingredients that compose a dish within their establishmen
 
 ---
 
-### User Story 2 — Automated Dynamic Food Cost Calculation & Audit (Priority: P1)
+### User Story 2 — Recipe Audit, Ingredients, and Base Food Cost (ADM-5.1.2) (Priority: P1)
 
-As a Financial Administrator, I view the real-time calculated raw material cost (Food Cost) per portion and its itemized breakdown for any dish with an assigned recipe, so that I can audit production costs and evaluate profitability.
+As a Financial Administrator, I read the ingredients that the Chef assigned to a dish and analyze their financial impact, so that I can understand the expected profitability and verify required allergen/dietary labels before advancing the dish in the workflow.
 
-The Financial Administrator accesses the cost audit information for a dish. The system dynamically computes the Food Cost by evaluating each ingredient in the recipe against its current unit acquisition cost stored in the establishment's inventory. The calculation automatically applies metric unit conversions (e.g., converting recipe grams to inventory purchase kilograms) without floating-point precision loss. The Administrator is presented with an itemized breakdown detailing each ingredient, portion quantity, measurement unit, unit cost, line-item subtotal, and the aggregated Food Cost per portion.
+The Financial Administrator opens a pending dish to evaluate its technical composition. The system displays the itemized list of required raw materials alongside the dietary restrictions and allergen tags derived from those ingredients, as well as the dynamic real-time Food Cost calculation per portion. The calculation automatically applies metric unit conversions (e.g., converting recipe grams to inventory purchase kilograms) without floating-point precision loss. The Administrator is presented with an itemized breakdown detailing each ingredient, portion quantity, measurement unit, unit cost, line-item subtotal, warning flags for unpriced items, and the aggregated Food Cost per portion.
 
-**Why this priority**: Precise cost auditing guarantees commercial viability. Providing dynamic, automated Food Cost calculations eliminates manual spreadsheet errors and equips administrators with the operational truth needed before setting retail prices (PVP) or approving menu publication.
+**Why this priority**: Precise cost and recipe auditing guarantees commercial and operational viability. Reading the exact ingredients and automated Food Cost eliminates manual errors and equips administrators with the operational truth needed before setting retail prices (PVP) or approving menu publication.
 
-**Independent Test**: Can be tested independently by taking a dish with an assigned recipe of known ingredient unit costs, requesting the cost audit endpoint, and asserting that the line items and total Food Cost match the exact mathematical sum of (quantity × unit cost) with proper unit conversions.
+**Independent Test**: Can be tested independently by taking a dish with an assigned recipe of known ingredient unit costs, requesting the cost audit endpoint as Administrator, and asserting that the returned data displays the itemized ingredients, required labels, and the exact mathematical sum of (quantity × unit cost) with proper unit conversions.
 
 **Acceptance Scenarios**:
 
-1. **Given** an authenticated Administrator and a dish with a persisted recipe composed of valued inventory ingredients, **When** the Administrator requests the cost audit for the dish, **Then** the system dynamically computes and returns the aggregated Food Cost alongside an itemized list showing ingredient name, required portion quantity, measurement unit, unit cost, and line subtotal.
-2. **Given** an ingredient whose recipe unit differs from its inventory purchase unit (e.g., 250 grams in recipe vs. \$4.00 per kilogram in inventory), **When** the system calculates the line cost, **Then** it applies standard metric unit conversion ($250\text{ g} \times \$0.004\text{/g} = \$1.00$) with exact decimal precision and zero fractional-cent drift.
-3. **Given** an ingredient in a recipe whose unit acquisition cost is subsequently updated in the inventory catalog, **When** the Administrator re-queries the cost audit of the dish, **Then** the system dynamically reflects the updated unit cost and recalculated total Food Cost immediately without requiring recipe re-submission.
-4. **Given** an authenticated Administrator attempting to query the cost audit of a dish belonging to a different tenant, **When** the request is evaluated, **Then** the system denies access and returns an authorization/not-found error, guaranteeing strict multi-tenant boundary isolation.
-5. **Given** a dish that has no ingredients assigned (empty recipe), **When** a cost audit is requested, **Then** the system returns an informative response stating that the dish lacks a defined recipe and cannot be audited for food cost.
-6. **Given** an authenticated Chef or non-admin user attempting to access the cost audit endpoint, **When** the request is received, **Then** the system denies access with an authorization error (HTTP 403 Forbidden), preserving financial confidentiality.
+1. **Given** an authenticated Administrator opening a pending dish with an assigned recipe, **When** they evaluate the recipe, **Then** the system displays the complete list of required ingredients and the derived allergen/dietary labels, alongside the dynamic Food Cost per portion.
+2. **Given** an authenticated Administrator and a dish with a persisted recipe composed of valued inventory ingredients, **When** the Administrator requests the cost audit for the dish, **Then** the system dynamically computes and returns the aggregated Food Cost alongside an itemized list showing ingredient name, required portion quantity, measurement unit, unit cost, line subtotal, and warning flags if any item is unpriced.
+3. **Given** an ingredient whose recipe unit differs from its inventory purchase unit (e.g., 250 grams in recipe vs. \$4.00 per kilogram in inventory), **When** the system calculates the line cost, **Then** it applies standard metric unit conversion ($250\text{ g} \times \$0.004\text{/g} = \$1.00$) with exact decimal precision and zero fractional-cent drift.
+4. **Given** an ingredient in a recipe whose unit acquisition cost is subsequently updated in the inventory catalog, **When** the Administrator re-queries the cost audit of the dish, **Then** the system dynamically reflects the updated unit cost and recalculated total Food Cost immediately without requiring recipe re-submission.
+5. **Given** an authenticated Administrator attempting to query the cost audit of a dish belonging to a different tenant, **When** the request is evaluated, **Then** the system denies access and returns an authorization/not-found error, guaranteeing strict multi-tenant boundary isolation.
+6. **Given** a dish that has no ingredients assigned (empty recipe), **When** a cost audit is requested, **Then** the system returns an informative response stating that the dish lacks a defined recipe and cannot be audited for food cost.
+7. **Given** an authenticated Chef or non-admin user attempting to access the cost audit endpoint, **When** the request is received, **Then** the system denies access with an authorization error (HTTP 403 Forbidden), preserving financial confidentiality.
 
 ---
 
 ### Edge Cases
 
 - **Zero-Cost or Unpriced Ingredients**: If an active ingredient in the recipe has an acquisition cost of 0.00 or undefined, the system must compute the line cost as 0.00, include an explicit audit advisory note ("Unpriced ingredient"), and allow the remaining lines to calculate normally without failing the audit request.
-- **Incompatible Unit Conversion**: If a recipe specifies an ingredient quantity in volume (e.g., milliliters) while the inventory tracks it exclusively in mass (e.g., kilograms) without a configured density factor, the system must reject the recipe assignment or flag the audit line as an incompatible unit conversion.
+- **Incompatible Unit Conversion**: If a recipe specifies an ingredient quantity in volume (e.g., milliliters) while the inventory tracks it exclusively in mass (e.g., kilograms) without a configured density factor, the system must reject the recipe assignment with HTTP 400 Bad Request.
 - **Fractional Cent Rounding**: When multiplying fractional ingredient quantities by unit costs (e.g., 3.5 grams at \$0.0175 per gram), sub-cent intermediate values must be computed with high precision (at least 4 decimal places) and rounded deterministically to 2 decimal places using standard half-up rounding for the final line subtotal and overall total.
-- **Recipe Modification on Locked/Active Dishes**: If a dish has transitioned to an "Active" or published state, the system must enforce state-machine rules preventing uncontrolled modification of its recipe without a dedicated revision cycle.
+- **Recipe Modification on Locked/Active Dishes**: If a dish has transitioned to an "Active" or published state, the system must enforce state-machine rules preventing uncontrolled modification of its recipe without a dedicated revision cycle (HTTP 409 Conflict).
 - **Discontinued Ingredient in Existing Recipe**: If an ingredient was previously assigned to a valid recipe and is subsequently marked as "Discontinued" in the inventory, existing historical cost audits must flag the ingredient as "Discontinued in Inventory" without crashing the audit view.
 
 ---
@@ -91,7 +92,7 @@ The Financial Administrator accesses the cost audit information for a dish. The 
 - **FR-008**: The system MUST enforce strict dimensional unit compatibility between recipe items and inventory units: mass units (g, kg) MUST only convert to mass units; volume units (ml, l) MUST only convert to volume units; and discrete units (u) MUST match exactly without cross-dimensional conversion. Any dimensional incompatibility MUST be rejected upon recipe submission (HTTP 400 Bad Request). Standard metric conversions (1 kg = 1000 g, 1 l = 1000 ml) MUST be applied without precision loss.
 - **FR-009**: The system MUST compute monetary cost values using exact decimal precision (fixed-point arithmetic), avoiding binary floating-point representation and precision drift.
 - **FR-010**: The system MUST dynamically reflect changes made to ingredient inventory unit costs upon subsequent cost audit queries without requiring manual re-calculation or caching stale prices.
-- **FR-011**: The system MUST restrict cost audit queries exclusively to the Administrator (ADMIN) role, returning HTTP 403 Forbidden to non-admin roles (including CHEF). The audit response MUST detail for each item: ingredient ID, ingredient name, recipe quantity, measurement unit, current unit cost, unit cost measurement unit, line subtotal, and total Food Cost. If any ingredient has zero or unpriced unit cost, the response MUST compute that line as 0.00, flag `has_unpriced_ingredients: true`, and list the affected ingredients in a warning notes section.
+- **FR-011**: The system MUST restrict cost audit queries exclusively to the Administrator (ADMIN) role, returning HTTP 403 Forbidden to non-admin roles (including CHEF). The audit response MUST detail for each item: ingredient ID, ingredient name, recipe quantity, measurement unit, current unit cost, unit cost measurement unit, line subtotal, total Food Cost, and the associated required dietary/allergen tags. If any ingredient has zero or unpriced unit cost, the response MUST compute that line as 0.00, flag `has_unpriced_ingredients: true`, and list the affected ingredients in a warning notes section.
 - **FR-012**: The system MUST reject cost audit requests for dishes that have no assigned recipe, indicating that the recipe is empty.
 
 ---
@@ -101,7 +102,7 @@ The Financial Administrator accesses the cost audit information for a dish. The 
 - **Dish (Plato)**: Represents the culinary menu item belonging to a specific tenant, possessing a title, category, operational lifecycle status, and an associated recipe.
 - **Ingredient (Materia Prima / Insumo)**: Represents a raw material tracked in the tenant's inventory with a name, purchase unit of measure, unit acquisition cost, and lifecycle status (Active/Discontinued).
 - **Recipe Item (Ítem de Receta / Detalle N:M)**: The relational link between a Dish and an Ingredient, specifying the exact quantity and unit of measure consumed per individual portion of the dish.
-- **Food Cost Audit Breakdown**: A dynamic projection representing the point-in-time calculation of all recipe items, their converted unit costs, line subtotals, and the aggregated production cost per portion.
+- **Food Cost Audit Breakdown**: A dynamic projection representing the point-in-time calculation of all recipe items, their converted unit costs, line subtotals, required dietary labels, and the aggregated production cost per portion.
 
 ---
 
