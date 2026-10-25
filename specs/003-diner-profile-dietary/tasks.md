@@ -128,7 +128,7 @@
 - [X] T056 [P] [US3] Implement `CatalogMasterToggle.tsx` in `easyeat/frontend/src/components/catalog/CatalogMasterToggle.tsx`
 - [X] T057 [P] [US3] Implement `DishCard.tsx` and `AllergenWarningBadge.tsx` in `easyeat/frontend/src/components/catalog/`
 - [X] T058 [P] [US3] Implement `EmptyCatalogDietaryState.tsx` in `easyeat/frontend/src/components/catalog/EmptyCatalogDietaryState.tsx` with one-click action to view full menu
-- [ ] T059 [P] [US3] Implement `CartDrawer.tsx` and `CartItemWithBadge.tsx` in `easyeat/frontend/src/components/cart/` displaying permanent visible warning badges without redundant blocking modal at checkout (FR-022)
+- [X] T059 [P] [US3] Implement `CartDrawer.tsx` and `CartItemWithBadge.tsx` in `easyeat/frontend/src/components/cart/` displaying permanent visible warning badges without redundant blocking modal at checkout (FR-022)
 - [ ] T060 [P] [US3] Implement `AddToCartRiskModal.tsx` in `easyeat/frontend/src/components/cart/AddToCartRiskModal.tsx` intercepting cart additions on conflicting dishes (FR-021)
 - [ ] T061 [US3] Update `CatalogPage.tsx` in `easyeat/frontend/src/pages/CatalogPage.tsx` mounted at `/catalogo` (supporting optional route param `:tenantId` and fallback resolution), integrating master toggle, empty state, dish grid with warning badges, cart drawer, and guest banner inviting login/register (FR-026)
 - [ ] T062 [US3] Update `AppRoutes.tsx` in `easyeat/frontend/src/router/AppRoutes.tsx` allowing unauthenticated guest access to `/catalogo/*` and canonical alias `/catalog/*`
