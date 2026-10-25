@@ -15,6 +15,8 @@ import { StaffManagementPage } from '../pages/StaffManagementPage';
 import { InventoryManagementPage } from '../pages/InventoryManagementPage';
 import { CatalogPage } from '../pages/CatalogPage';
 import { FirstLoginPasswordPage } from '../pages/FirstLoginPasswordPage';
+import { ProfilePage } from '../pages/ProfilePage';
+import { VerifyEmailPage } from '../pages/VerifyEmailPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -143,6 +145,24 @@ export const AppRoutes: React.FC = () => {
           </RoleRouteGuard>
         }
       />
+
+      {/* Public Email Verification Callback Gateway */}
+      <Route
+        path="/verificar-email"
+        element={<VerifyEmailPage />}
+      />
+      <Route path="/verify-email" element={<Navigate to="/verificar-email" replace />} />
+
+      {/* Role-Protected Diner Profile (COMENSAL) */}
+      <Route
+        path="/perfil"
+        element={
+          <RoleRouteGuard allowedRoles={['COMENSAL']}>
+            <ProfilePage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route path="/profile" element={<Navigate to="/perfil" replace />} />
 
       {/* Diner Home / Catalog Fallback View (COMENSAL + Staff Fallback) */}
       <Route
