@@ -59,7 +59,7 @@ export const CatalogView: React.FC = () => {
 
   return (
     <WorkspaceLayout
-      title="Catálogo del Comedor"
+      title="Catálogo de Productos"
       subtitle="Explorá nuestros platos y armá tu pedido"
     >
       <div className="space-y-6">

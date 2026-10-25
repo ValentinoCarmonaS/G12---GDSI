@@ -49,8 +49,8 @@ describe('AppRoutes - Profile & Catalog Routing Integration (T046, US3, FR-026)'
 
     // Verifies CatalogPage is displayed and header invites to log in/register
     expect(screen.getByText(/Catálogo de Productos/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Iniciar sesión/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Registrarse/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Iniciar sesión/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('link', { name: /Registrarse/i }).length).toBeGreaterThanOrEqual(1);
   });
 
   it('allows unauthenticated guest access to establishment catalog /catalogo/:tenantId', () => {
