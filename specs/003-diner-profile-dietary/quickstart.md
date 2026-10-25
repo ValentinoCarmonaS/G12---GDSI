@@ -223,9 +223,11 @@ Expected: **HTTP 200 OK**. Dishes evaluated server-side upfront:
 
 ---
 
-### Scenario 5 — Live Cart Dietary Re-evaluation & Checkout Consent
+### Scenario 5 — Live Cart Dietary Re-evaluation & Preventive Risk Assumption
 
 > Covers: FR-015, FR-021, FR-022 | Acceptance Scenarios 2.4, 3.5, 3.6
+
+When a diner adds a non-compliant dish to the cart (with master toggle OFF), the frontend triggers `AddToCartRiskModal.tsx` requiring explicit confirmation. Once accepted, items enter the cart flagged with inline warning badges. In the cart drawer and checkout review, warning indicators remain visible without requiring redundant blocking modals at checkout.
 
 **5a — Live evaluate cart dishes**
 

@@ -13,9 +13,9 @@
 Implement diner profile editing, dietary preference and allergen management, and their automatic application to establishment menu catalogs for the EasyEat multi-tenant platform (Sprint 1).
 
 Key capabilities delivered:
-- **Diner Personal Data Management (COM-1.4.1)**: First name, last name, phone number editing with strict format validation, independent from the existing `full_name` column in `users`. Asynchronous 24-hour verification token workflow for email changes with session revocation via `token_version`.
-- **Dietary Restrictions & Allergens Configuration (COM-1.4.3)**: Standardized platform taxonomy (Lifestyles: Celiac, Vegan, Vegetarian; Allergens: Dairy, Peanuts, Tree Nuts, Eggs, Fish, Shellfish, Soy, Wheat) with server-side persistence and live cart re-evaluation.
-- **Automated Catalog Filtering & Browsing (COM-4.2.1)**: Default injection of dietary profile filters using strict conjunction (AND logic), pre-computed compliance in backend (`is_compliant`, `conflicting_restrictions`), ephemeral session master toggle (ON/OFF) with 0ms perceived latency, empty state handling, public guest browsing with registration call-to-action (FR-026), and mandatory risk consent at checkout.
+- **Diner Personal Data Management (COM-1.4.1)**: First name, last name, phone number editing with strict alphabetic and phone format validations. Dedicated `first_name` and `last_name` columns in Flyway `V5` with automatic synchronization of `full_name = first_name.trim() + " " + last_name.trim()` on `users` to maintain complete backward compatibility with Specs 001, 002, and 004 (`AuthContext`, `WorkspaceLayout`, `/api/v1/auth/me`). Asynchronous 24-hour verification token workflow for email changes with enforced 60-second cooldown rate-limiting (HTTP 429 ProblemDetail and UI timer) and atomic session revocation via `token_version`.
+- **Dietary Restrictions & Allergens Configuration (COM-1.4.3)**: Standardized platform taxonomy (Lifestyles: Celiac, Vegan, Vegetarian; Allergens: Dairy, Peanuts, Tree Nuts, Eggs, Fish, Shellfish, Soy, Wheat) with atomic server-side persistence and live cart re-evaluation without optimistic local state.
+- **Automated Catalog Filtering & Browsing (COM-4.2.1)**: Default injection of dietary profile filters using strict conjunction (AND logic), pre-computed compliance in backend (`is_compliant`, `conflicting_restrictions`), ephemeral session master toggle (ON/OFF) with 0ms perceived latency, empty state handling, unauthenticated public guest browsing on `/catalogo/*` with registration call-to-action (FR-026), and single-point preventive risk confirmation on "Agregar al carrito" via `AddToCartRiskModal.tsx` (permanent warning badges in cart drawer and checkout summary without redundant blocking modals at checkout per FR-021, FR-022, SC-005).
 
 ---
 
@@ -24,8 +24,8 @@ Key capabilities delivered:
 | Baseline Iteration | Integration Points & Shared Contracts | Resolution in Feature 003 |
 |---|---|---|
 | **001 (`central-auth-recovery`)** | • `users` table baseline schema (`V1__create_users.sql`).<br>• JWT issuance with claims (`user_id`, `role`, `tenant_id`, `token_version`).<br>• Password recovery and BCrypt hashing conventions. | Inherits `users` table; extends it via Flyway migration `V5`. Uses `token_version` to invalidate sessions upon email change. |
-| **002 (`staff-auth-redirect-guards`)** | • Single active session enforcement in `JwtAuthenticationFilter` via `token_version`.<br>• `GET /api/v1/auth/me` session check.<br>• Frontend routing (`AppRoutes.tsx`, `RoleRouteGuard.tsx`, `WorkspaceLayout.tsx`).<br>• Role redirect to `/catalog` for `COMENSAL`. | • Increments `token_version` on email confirmation to trigger 002's filter rejection (HTTP 401).<br>• Adapts `SecurityConfig` and `AppRoutes.tsx` to permit unauthenticated guest browsing on `/catalog/*` (FR-026).<br>• Adds "Mi perfil" link in `WorkspaceLayout` for `COMENSAL`. |
-| **004 (`staff-mgmt-rbac-inventory`)** | • Added `V3__extend_users_staff.sql` (`full_name`, `must_change_password`, expanded role/status CHECKs).<br>• Added `V4__create_ingredients_and_stock_audit.sql`.<br>• Bounded-context repository pattern (`StaffUserRepository`).<br>• Multi-tenant scoping via `TenantContextFilter` & `TenantContextHolder`. | • Migration sequence numbered `V5__extend_users_profile_and_dietary.sql`.<br>• `first_name` and `last_name` kept independent from `full_name`.<br>• Creates `ProfileUserRepository` in `com.easyeat.profile.repository` following the 004 repository isolation pattern.<br>• Respects `tenant_id IS NULL` for diners while scoping catalog queries to establishment path `{tenantId}`. |
+| **002 (`staff-auth-redirect-guards`)** | • Single active session enforcement in `JwtAuthenticationFilter` via `token_version`.<br>• `GET /api/v1/auth/me` session check.<br>• Frontend routing (`AppRoutes.tsx`, `RoleRouteGuard.tsx`, `WorkspaceLayout.tsx`).<br>• Canonical Spanish URLs (`/catalogo`, `/mostrador`, `/cocina`, `/admin`). | • Increments `token_version` on email confirmation to trigger 002's filter rejection (HTTP 401).<br>• Adapts `SecurityConfig` and `AppRoutes.tsx` to permit unauthenticated guest browsing on `/catalogo/*` (FR-026).<br>• Follows canonical Spanish URLs: `/perfil` and `/verificar-email` with redirects from `/profile` and `/verify-email`.<br>• Protects `/perfil` with `RoleRouteGuard` exclusively for `COMENSAL`. |
+| **004 (`staff-mgmt-rbac-inventory`)** | • Merged into `main` (PR #113).<br>• Added `V3__extend_users_staff.sql` (`full_name`, `must_change_password`, expanded role/status CHECKs).<br>• Added `V4__create_ingredients_and_stock_audit.sql`.<br>• Subnavigation links in `WorkspaceLayout.tsx` for `CHEF` and `ADMINISTRADOR`.<br>• Bounded-context repository pattern (`StaffUserRepository`).<br>• Multi-tenant scoping via `TenantContextFilter` & `TenantContextHolder`. | • Migration sequence strictly numbered `V5__extend_users_profile_and_dietary.sql`.<br>• Synchronizes `full_name = first_name.trim() + " " + last_name.trim()` upon personal data updates.<br>• Creates `ProfileUserRepository` in `com.easyeat.profile.repository` following the 004 repository isolation pattern.<br>• Extends `WorkspaceLayout.tsx` top navigation bar with "Catálogo" (`/catalogo`) and "Mi perfil" (`/perfil`) links for `COMENSAL`.<br>• Respects `tenant_id IS NULL` for diners while scoping catalog queries to establishment path `{tenantId}`. |
 
 ---
 
@@ -89,9 +89,10 @@ Key capabilities delivered:
 | V. Bounded scope | ✅ PASS | ✅ PASS | Excludes avatar upload, demographic data, recipe ingredient links, payment gateways as stipulated in `spec.md`. |
 | VI. Controlled technical debt | ✅ PASS | ✅ PASS | Email resend rate-limiting handled with persisted timestamp in `users` table instead of premature Redis cluster setup. Migration versioning ordered sequentially (V5). |
 | VII. Traceability | ✅ PASS | ✅ PASS | Complete Traceability Matrix in `data-model.md` mapping every FR-xxx requirement to schema columns, DTOs, and endpoints. |
-| VIII. Evidence over assumption | ✅ PASS | ✅ PASS | All 12 key technical decisions resolved interactively via `/grill-me` and verified against the actual repository code from 001, 002, and 004. |
-| IX. Engineering over convenience | ✅ PASS | ✅ PASS | Real PostgreSQL Testcontainers chosen; SHA-256 token hashing; explicit risk consent enforced at checkout; session revocation via `token_version`. |
-| X. Technology-agnostic governance | ✅ PASS | ✅ PASS | Follows project's technology stack without introducing unapproved libraries or architectural deviations. |
+| VIII. Evidence over assumption | ✅ PASS | ✅ PASS | All key technical decisions resolved interactively via `/grill-me` and verified against active repository code from 001, 002, and 004. |
+| IX. Engineering over convenience | ✅ PASS | ✅ PASS | Real PostgreSQL Testcontainers chosen; SHA-256 token hashing; single-point risk confirmation on add-to-cart (FR-021, FR-022); session revocation via `token_version`. |
+| X. Full-Stack End-to-End Integrity | ✅ PASS | ✅ PASS | Feature delivers an integrated vertical slice covering both Spring Boot REST endpoints and React client interfaces, routing, and guards. |
+| XI. Upstream Synchronization Awareness | ✅ PASS | ✅ PASS | Proactive `git fetch origin main` executed; 45 commits of drift detected (including PR #113) and merged cleanly before planning finalization. |
 
 **GATE RESULT: ALL PASS**
 
@@ -110,7 +111,7 @@ specs/003-diner-profile-dietary/
 ├── contracts/
 │   └── openapi.yaml     ← Phase 1 output — OpenAPI 3.0.3 contract specification
 └── checklists/
-    └── requirements.md  ← Quality verification checklist
+    └── quality.md       ← Quality verification checklist
 ```
 
 ### Source Code Layout (`easyeat/`)
@@ -180,7 +181,7 @@ easyeat/
         │   └── catalogApi.ts
         ├── components/
         │   ├── common/
-        │   │   └── WorkspaceLayout.tsx (updated: "Mi perfil" link for COMENSAL)
+        │   │   └── WorkspaceLayout.tsx (updated: "Catálogo" and "Mi perfil" links for COMENSAL)
         │   ├── profile/
         │   │   ├── PersonalDataForm.tsx
         │   │   ├── PendingEmailBanner.tsx
@@ -193,7 +194,7 @@ easyeat/
         │   └── cart/
         │       ├── CartDrawer.tsx
         │       ├── CartItemWithBadge.tsx
-        │       └── CheckoutDietaryRiskModal.tsx
+        │       └── AddToCartRiskModal.tsx
         ├── context/
         │   ├── CatalogFilterContext.tsx
         │   └── CartContext.tsx
@@ -202,11 +203,11 @@ easyeat/
         │   ├── useCatalog.ts
         │   └── useCart.ts
         ├── pages/
-        │   ├── ProfilePage.tsx
-        │   ├── VerifyEmailPage.tsx
-        │   └── CatalogPage.tsx (updated with toggle, badges, guest banner)
+        │   ├── ProfilePage.tsx (mounted at /perfil)
+        │   ├── VerifyEmailPage.tsx (mounted at /verificar-email)
+        │   └── CatalogPage.tsx (mounted at /catalogo; guest CTA banner and toggle)
         ├── router/
-        │   └── AppRoutes.tsx (updated: public catalog browsing, /profile, /verify-email)
+        │   └── AppRoutes.tsx (updated: public /catalogo/*, role-guarded /perfil, /verificar-email, redirects)
         └── types/
             ├── profile.ts
             ├── catalog.ts

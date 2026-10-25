@@ -8,7 +8,7 @@
 
 ### 1. User (Extension)
 
-Represents an authenticated user in EasyEat. In this iteration, the table is extended with personal contact information, pending email verification state, and resend rate-limit tracking. Note that `full_name` already exists on the table from migration `V3__extend_users_staff.sql` (iteration 004); `first_name` and `last_name` operate independently for comensales.
+Represents an authenticated user in EasyEat. In this iteration, the table is extended with personal contact information, pending email verification state, and resend rate-limit tracking. Note that `full_name` already exists on the table from migration `V3__extend_users_staff.sql` (iteration 004); upon updating `first_name` and `last_name`, `full_name` is automatically synchronized (`first_name.trim() + " " + last_name.trim()`) to maintain complete consistency with Spec 001/002/004 models.
 
 **Table**: `users` (extended)
 
@@ -22,7 +22,7 @@ Represents an authenticated user in EasyEat. In this iteration, the table is ext
 | `pending_email` | `VARCHAR(255)` | NULLABLE | Proposed new email address pending verification |
 | `email_verification_token_hash` | `VARCHAR(64)` | NULLABLE, UNIQUE | SHA-256 hash of raw verification token |
 | `email_token_expires_at` | `TIMESTAMPTZ` | NULLABLE | Expiration deadline (created_at + 24 hours) |
-| `email_verification_last_sent_at` | `TIMESTAMPTZ` | NULLABLE | Timestamp of last email dispatch (for 60s cooldown) |
+| `email_verification_last_sent_at` | `TIMESTAMPTZ` | NULLABLE | Timestamp of last email dispatch (for 60s cooldown per FR-007) |
 | `token_version` | `INTEGER` | NOT NULL, DEFAULT 0 | Incremented on email confirmation to revoke active JWTs (001/002) |
 
 **CHECK Constraints**:
@@ -228,7 +228,7 @@ CREATE INDEX IF NOT EXISTS idx_ddr_dish ON dish_dietary_restrictions(dish_id);
 | FR-004 (Global Email Uniqueness) | `users` | `uq_users_email`, `idx_users_pending_email` | Service, DB UNIQUE |
 | FR-005 (Async 24h Token) | `users` | `email_verification_token_hash`, `email_token_expires_at` | Service, DB |
 | FR-006 (Old Email Active) | `users` | `email` preserved while `pending_email` is set | Service logic |
-| FR-007 (Pending Status in Profile) | `users` | `pending_email` populated | DTO `ProfileResponse` |
+| FR-007 (Pending Status & Cooldown) | `users` | `pending_email`, `email_verification_last_sent_at` | DTO `ProfileResponse`, Service (HTTP 429), UI Countdown |
 | FR-008 (Revocation on New Email) | `users` | Overwriting `pending_email` + new hash | Service `@Transactional` |
 | FR-009 (Session Revocation) | `users` | `token_version = token_version + 1` | Service `@Transactional` (001/002) |
 | FR-011 (Immutable Past Orders) | N/A (Orders) | Orders store denormalized customer snapshot | Order Service (out of scope) |
@@ -238,7 +238,8 @@ CREATE INDEX IF NOT EXISTS idx_ddr_dish ON dish_dietary_restrictions(dish_id);
 | FR-015 (Live Cart Re-evaluation) | N/A (In-memory) | `POST /api/v1/cart/evaluate-compliance` | `CatalogComplianceService` |
 | FR-017 / FR-018 (AND Logic Filtering) | `dish_dietary_restrictions` | In-memory evaluation of tags | `CatalogComplianceService` |
 | FR-019 / FR-020 (Catalog Master Toggle) | N/A (Frontend) | React Context / `useCatalog` hook | Frontend component |
-| FR-022 (Checkout Informed Risk) | Checkout DTO | `acceptedDietaryRisks: boolean` | Checkout Controller |
+| FR-021 (Preventive Add-to-Cart Modal) | N/A (Frontend) | `AddToCartRiskModal.tsx` | Frontend component |
+| FR-022 (Permanent Warnings in Cart & Checkout) | N/A (Frontend) | Permanent inline badges without redundant checkout modal | Frontend component / Cart Context |
 | FR-023 (Session-scoped Toggle Reset) | N/A (Frontend) | Component unmount / route listener | React lifecycle |
 | FR-026 (Unauthenticated Guest Browsing) | `dishes` | Anonymous catalog retrieval with guest banner | Controller / SecurityConfig / Frontend |
 | FR-027 (Dual Client-Server Validation) | All tables | Spring Bean Validation + PostgreSQL constraints | Layered Architecture |
