@@ -41,4 +41,21 @@ describe('authApi', () => {
     await authApi.me();
     expect(getSpy).toHaveBeenCalledWith('/auth/me');
   });
+
+  it('calls POST /auth/first-login-password-change (FR-003, FR-030)', async () => {
+    const payload = {
+      currentPassword: 'TempPassword123!',
+      newPassword: 'PermanentSecurePassword456!',
+      confirmNewPassword: 'PermanentSecurePassword456!',
+    };
+    const mockResponse = {
+      message: 'Password updated successfully. Account is now active.',
+    };
+
+    const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValueOnce({ data: mockResponse });
+    const result = await authApi.changeFirstLoginPassword(payload);
+
+    expect(postSpy).toHaveBeenCalledWith('/auth/first-login-password-change', payload);
+    expect(result).toEqual(mockResponse);
+  });
 });

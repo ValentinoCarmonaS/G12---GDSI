@@ -45,9 +45,10 @@ export const LoginPage: React.FC = () => {
 
     const claims = decodeClaims(data.access_token);
     const userRole = (claims?.role as Role) || 'COMENSAL';
+    const mustChangePassword = claims?.must_change_password ?? false;
 
     // Resolve post-auth destination: preserve authorized deep link or fallback to role default
-    const destination = resolvePostAuthRedirect(userRole, targetDeepLink);
+    const destination = resolvePostAuthRedirect(userRole, targetDeepLink, mustChangePassword);
     navigate(destination, { replace: true });
   };
 

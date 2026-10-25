@@ -59,16 +59,17 @@ The technical design reuses the architecture established in iteration 001 (`cent
 
 | Principle | Pre-Design Status | Post-Design Status | Evidence and Justification |
 |---|---|---|---|
-| **I. The Specification Is the Source of Truth** | ✅ PASS | ✅ PASS | The plan, data model, and OpenAPI contracts derive strictly from FR-001 through FR-027. No unsolicited features were added. |
+| **I. The Specification Is the Source of Truth** | ✅ PASS | ✅ PASS | The plan, data model, and OpenAPI contracts derive strictly from FR-001 through FR-032. No unsolicited features were added. |
 | **II. Specification Before Implementation** | ✅ PASS | ✅ PASS | Completed `spec.md`, clarifications, `research.md`, `data-model.md`, `contracts/openapi.yaml`, and `quickstart.md` prior to code generation. |
-| **III. Layered Verification Proportional to Risk** | ✅ PASS | ✅ PASS | Testing strategy defined with unit tests (Mockito), security slice tests (MockMvc), and real integration tests (Testcontainers with concurrency testing). |
-| **IV. Simple, Cohesive, and Justified Design** | ✅ PASS | ✅ PASS | Bounded context package structure (`com.easyeat.staff`, `com.easyeat.inventory`). Pessimistic locking justified to eliminate stock race conditions. |
-| **V. Bounded Scope** | ✅ PASS | ✅ PASS | Strictly bounded (no recipes N:M or payment gateways in this iteration; scheduled for Sprints 2 and 4). |
+| **III. Layered Verification Proportional to Risk** | ✅ PASS | ✅ PASS | Testing strategy defined with unit tests (Mockito), security slice tests (MockMvc), integration tests (Testcontainers), and frontend component/routing tests (Vitest + React Testing Library). |
+| **IV. Simple, Cohesive, and Justified Design** | ✅ PASS | ✅ PASS | Bounded context package structure (`com.easyeat.staff`, `com.easyeat.inventory`) and modular React views (`/admin/staff`, `/admin/inventory`, `/cocina/ingredientes`, `/first-login-password-change`). |
+| **V. Bounded Scope** | ✅ PASS | ✅ PASS | Strictly bounded to Sprint 1 deliverables (no recipes N:M or payment gateways in this iteration; scheduled for Sprints 2 and 4). |
 | **VI. Controlled Technical Debt** | ✅ PASS | ✅ PASS | All architectural decisions and trade-offs documented in `research.md`. |
-| **VII. Traceability, Consistency, and Documentation** | ✅ PASS | ✅ PASS | Exhaustive traceability matrix in `data-model.md` linking each functional requirement to entities and relational constraints. |
-| **VIII. Evidence Over Assumption and Human Escalation** | ✅ PASS | ✅ PASS | Executed interactive clarification session resolving 5 key domain ambiguities before technical design. |
-| **IX. Engineering Over Convenience** | ✅ PASS | ✅ PASS | Exact decimal precision (`BigDecimal` / `NUMERIC`), pessimistic locking in concurrency, and immutable audit logs instead of superficial shortcuts. |
-| **X. Technology-Agnostic Governance** | ✅ PASS | ✅ PASS | Architecture follows sound software engineering principles while maintaining stack continuity. |
+| **VII. Traceability, Consistency, and Documentation** | ✅ PASS | ✅ PASS | Exhaustive traceability matrix in `data-model.md` linking each functional requirement to entities, relational constraints, and frontend views. |
+| **VIII. Evidence Over Assumption and Human Escalation** | ✅ PASS | ✅ PASS | Executed interactive clarification sessions (2026-10-20, 2026-10-23, 2026-10-24) resolving domain, scope, and navigation ambiguities before technical design. |
+| **IX. Engineering Over Convenience** | ✅ PASS | ✅ PASS | Exact decimal precision (`BigDecimal` / `NUMERIC`), pessimistic locking in concurrency, and dedicated route guards for mandatory first login. |
+| **X. Full-Stack End-to-End Integrity (Vertical Slices)** | ✅ PASS | ✅ PASS | Mandates full vertical slice delivery: Spring Boot backend REST endpoints, JWT claim injection, and React UI presentation views for staff administration, mandatory password change, ingredient inventory, and chef catalog. |
+| **XI. Continuous Upstream Synchronization Awareness** | ✅ PASS | ✅ PASS | Active branch `feature/004/spec-reconciliation` synchronized with `origin/main` via `git merge`, incorporating all Spec 001 and 002 core libraries, layouts, and quality gates with zero regressions. |
 
 **GATE RESULT: ALL PASS**
 
@@ -162,7 +163,60 @@ easyeat/backend/
             └── application-test.yml
 ```
 
-**Structure Decision**: Modular domain-driven organization (`staff`, `inventory`, `auth`) within a single deployable backend application (`easyeat/backend/`), maximizing cohesion while simplifying observability and deployment.
+### Frontend Code (`easyeat/frontend/`)
+
+```text
+easyeat/frontend/
+├── src/
+│   ├── types/
+│   │   ├── staff.ts                      # Staff roles, statuses, and DTO interfaces
+│   │   └── inventory.ts                  # Categories, units of measure, statuses, ingredient DTOs, and audit entries
+│   ├── api/
+│   │   ├── staffApi.ts                   # /api/v1/admin/staff client methods
+│   │   ├── inventoryApi.ts               # /api/v1/admin/ingredients and /api/v1/chef/ingredients client methods
+│   │   └── authApi.ts                    # Extended with changeFirstLoginPassword
+│   ├── components/
+│   │   ├── staff/
+│   │   │   ├── StaffRosterTable.tsx       # Table of employees with status badges and edit actions
+│   │   │   ├── StaffFormModal.tsx         # Modal for employee registration and role editing
+│   │   │   └── TemporaryCredentialsModal.tsx # One-time modal displaying temporary password with copy button
+│   │   ├── inventory/
+│   │   │   ├── IngredientCatalogTable.tsx # Admin ingredient table with filters and status actions
+│   │   │   ├── IngredientFormModal.tsx    # Modal for creating and editing ingredients
+│   │   │   ├── StockAdjustmentModal.tsx   # Modal for Absolute and Relative stock adjustments with live validation
+│   │   │   └── StockAuditModal.tsx        # Modal displaying immutable audit log history
+│   │   └── chef/
+│   │       └── ChefIngredientTable.tsx    # Chef read-only catalog with search, filters, and IN_STOCK/OUT_OF_STOCK
+│   ├── pages/
+│   │   ├── FirstLoginPasswordPage.tsx    # Mandatory password change page (/first-login-password-change)
+│   │   ├── StaffManagementPage.tsx       # Admin staff management page (/admin/staff)
+│   │   ├── InventoryManagementPage.tsx   # Admin ingredient inventory page (/admin/inventory)
+│   │   └── ChefIngredientsPage.tsx       # Chef kitchen catalog page (/cocina/ingredientes)
+│   └── router/
+│       ├── AppRoutes.tsx                 # Route perimeter definitions for new paths
+│       ├── RoleRouteGuard.tsx            # Enforces role permissions and intercepts mustChangePassword
+│       └── postAuthRouting.ts            # Routes users with mustChangePassword to /first-login-password-change
+└── tests/
+    ├── api/
+    │   ├── staffApi.test.ts
+    │   └── inventoryApi.test.ts
+    ├── components/
+    │   ├── StaffRosterTable.test.tsx
+    │   ├── StaffFormModal.test.tsx
+    │   ├── TemporaryCredentialsModal.test.tsx
+    │   ├── IngredientCatalogTable.test.tsx
+    │   ├── StockAdjustmentModal.test.tsx
+    │   └── ChefIngredientTable.test.tsx
+    ├── pages/
+    │   ├── FirstLoginPasswordPage.test.tsx
+    │   ├── StaffManagementPage.test.tsx
+    │   ├── InventoryManagementPage.test.tsx
+    │   └── ChefIngredientsPage.test.tsx
+    └── router/
+        └── FirstLoginRouting.test.tsx
+```
+
+**Structure Decision**: Modular domain-driven organization across both backend (`staff`, `inventory`, `auth`) and frontend (`staff`, `inventory`, `chef`, `auth`), maintaining full vertical slice integrity per Constitution Principle X.
 
 ---
 

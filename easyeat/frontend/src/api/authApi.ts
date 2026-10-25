@@ -7,6 +7,8 @@ import {
   PasswordResetRequest,
   PasswordResetConfirm,
   PasswordResetResponse,
+  FirstLoginPasswordChangeRequest,
+  FirstLoginPasswordChangeResponse,
 } from '../types/auth';
 
 export const authApi = {
@@ -31,6 +33,17 @@ export const authApi = {
    */
   async confirmPasswordReset(data: PasswordResetConfirm): Promise<PasswordResetResponse> {
     const response = await apiClient.post<PasswordResetResponse>('/auth/password-reset/confirm', data);
+    return response.data;
+  },
+
+  /**
+   * Submits mandatory first login password change for staff accounts (ADM-3.1.1, FR-003, FR-030).
+   */
+  async changeFirstLoginPassword(data: FirstLoginPasswordChangeRequest): Promise<FirstLoginPasswordChangeResponse> {
+    const response = await apiClient.post<FirstLoginPasswordChangeResponse>(
+      '/auth/first-login-password-change',
+      data
+    );
     return response.data;
   },
 

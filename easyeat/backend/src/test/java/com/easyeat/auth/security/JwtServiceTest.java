@@ -37,6 +37,7 @@ class JwtServiceTest {
         assertEquals(UserRole.COMENSAL, jwtService.extractRole(token));
         assertNull(jwtService.extractTenantId(token));
         assertEquals(0, jwtService.extractTokenVersion(token));
+        assertEquals(Boolean.FALSE, jwtService.extractMustChangePassword(token));
         assertTrue(jwtService.validateToken(token));
     }
 
@@ -56,6 +57,22 @@ class JwtServiceTest {
         assertEquals(UserRole.CHEF, jwtService.extractRole(token));
         assertEquals(tenantId, jwtService.extractTenantId(token));
         assertEquals(2, jwtService.extractTokenVersion(token));
+        assertTrue(jwtService.validateToken(token));
+    }
+
+    @Test
+    @DisplayName("Should generate token with must_change_password=true when user status is PENDING_FIRST_LOGIN")
+    void shouldGenerateTokenWithMustChangePasswordTrue() {
+        User staff = new User("newstaff@restaurant.com", "hash", UserRole.CHEF, UUID.randomUUID());
+        staff.setId(UUID.randomUUID());
+        staff.setTokenVersion(1);
+        staff.setStatus(com.easyeat.auth.domain.UserStatus.PENDING_FIRST_LOGIN);
+
+        String token = jwtService.generateToken(staff);
+        assertNotNull(token);
+
+        assertEquals(Boolean.TRUE, jwtService.extractMustChangePassword(token));
+        assertEquals(1, jwtService.extractTokenVersion(token));
         assertTrue(jwtService.validateToken(token));
     }
 
