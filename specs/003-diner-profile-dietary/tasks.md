@@ -63,7 +63,7 @@
 - [X] T023 [P] [US1] Implement `PendingEmailBanner.tsx` in `easyeat/frontend/src/components/profile/PendingEmailBanner.tsx` displaying pending status badge, 60s reactive countdown timer, and cancel action
 - [X] T024 [US1] Implement `VerifyEmailPage.tsx` in `easyeat/frontend/src/pages/VerifyEmailPage.tsx` mounted at `/verificar-email` to handle email verification token URL callbacks and display success/expired messaging
 - [X] T025 [US1] Implement `ProfilePage.tsx` in `easyeat/frontend/src/pages/ProfilePage.tsx` mounted at `/perfil` assembling personal data form and email banner
-- [ ] T026 [US1] Update `WorkspaceLayout.tsx` in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` adding "Catálogo" (`/catalogo`) and "Mi perfil" (`/perfil`) navigation links for `COMENSAL` users, and ensuring that when `user` is null, "Cerrar sesión" is hidden and "Iniciar sesión" (`/login`) / "Registrarse" (`/register`) links are rendered for unauthenticated guests (FR-026)
+- [X] T026 [US1] Update `WorkspaceLayout.tsx` in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` adding "Catálogo" (`/catalogo`) and "Mi perfil" (`/perfil`) navigation links for `COMENSAL` users, and ensuring that when `user` is null, "Cerrar sesión" is hidden and "Iniciar sesión" (`/login`) / "Registrarse" (`/register`) links are rendered for unauthenticated guests (FR-026)
 - [ ] T027 [US1] Register `/perfil` (role-guarded for `COMENSAL`), `/verificar-email`, and redirects (`/profile` → `/perfil`, `/verify-email` → `/verificar-email`) in `easyeat/frontend/src/router/AppRoutes.tsx`
 
 **Checkpoint**: User Story 1 (MVP) fully functional and testable independently.
