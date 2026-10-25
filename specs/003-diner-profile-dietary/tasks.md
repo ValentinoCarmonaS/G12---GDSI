@@ -12,7 +12,7 @@
 **Purpose**: Establish package structure, exception hierarchies, and configuration stubs for profile and catalog modules within the existing Spring Boot backend.
 
 - [ ] T001 Initialize package structure for profile and catalog modules under `easyeat/backend/src/main/java/com/easyeat/profile/` and `easyeat/backend/src/main/java/com/easyeat/catalog/`
-- [ ] T002 [P] Configure email service properties and test stubs in `easyeat/backend/src/main/resources/application.yml` and `easyeat/backend/src/test/resources/application-test.yml`
+- [ ] T002 [P] Configure `EmailSender` interface and dev/test logging stubs (`LoggingEmailSender` under `@Profile("dev | test")` printing raw verification token URLs to console logs at `INFO`) in `easyeat/backend/src/main/resources/application.yml` and `application-test.yml`
 - [ ] T003 [P] Create domain exceptions (`EmailVerificationException`, `CooldownRateLimitException`, `DietaryTaxonomyException`, `DishNotFoundException`) in `easyeat/backend/src/main/java/com/easyeat/profile/exception/` and `easyeat/backend/src/main/java/com/easyeat/catalog/exception/`
 - [ ] T004 Update `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` mapping profile/catalog exceptions to RFC 9457 `ProblemDetail` with appropriate status codes (400, 404, 409, 422, 429)
 
@@ -25,7 +25,7 @@
 **⚠️ CRITICAL**: No user story implementation can proceed until this phase is complete and verified.
 
 - [ ] T005 [P] Create Flyway migration `easyeat/backend/src/main/resources/db/migration/V5__extend_users_profile_and_dietary.sql` defining user profile columns (`first_name`, `last_name`, `phone`, `pending_email`, `email_verification_token_hash`, `email_token_expires_at`, `email_verification_last_sent_at`), dietary taxonomy, join tables, dishes, and catalog constraints
-- [ ] T006 [P] Create repeatable dev seed migration `easyeat/backend/src/main/resources/db/dev/R__seed_dev_dishes_and_dietary.sql` populating sample establishment dishes with allergens and lifestyle tags for local testing
+- [ ] T006 [P] Create repeatable dev seed migration `easyeat/backend/src/main/resources/db/dev/R__seed_dev_dishes_and_dietary.sql` populating sample establishment dishes with allergens and lifestyle tags for tenant `a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11` (Admin establishment seed) for local testing
 - [ ] T007 Update `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` configuring `permitAll()` for `/api/v1/dietary-restrictions`, `/api/v1/profile/email-change/confirm`, and public catalog browsing `/api/v1/establishments/{tenantId}/dishes`
 - [ ] T008 [P] Update `User` entity in `easyeat/backend/src/main/java/com/easyeat/auth/domain/User.java` adding persistent fields for `first_name`, `last_name`, `phone`, `pending_email`, `email_verification_token_hash`, `email_token_expires_at`, and `email_verification_last_sent_at`
 - [ ] T009 Implement `ProfileUserRepository` in `easyeat/backend/src/main/java/com/easyeat/profile/repository/ProfileUserRepository.java` extending `JpaRepository<User, UUID>` with queries for token hash lookup and case-insensitive pending email uniqueness
@@ -54,7 +54,7 @@
 ### Implementation for User Story 1
 
 - [ ] T016 [P] [US1] Create Profile DTOs (`PersonalDataRequest`, `ProfileResponse`, `EmailChangeRequestDto`, `EmailChangeInitiatedResponse`, `EmailConfirmationRequest`, `EmailConfirmedResponse`) in `easyeat/backend/src/main/java/com/easyeat/profile/dto/`
-- [ ] T017 [US1] Implement `EmailChangeService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/EmailChangeService.java` handling token generation, SHA-256 hashing, async mail dispatch, 60s cooldown rate-limiting, and `token_version` increment
+- [ ] T017 [US1] Implement `EmailChangeService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/EmailChangeService.java` handling token generation, SHA-256 hashing, delegating dispatch to `EmailSender` interface (logged to console in dev/test per DIP), 60s cooldown rate-limiting, and `token_version` increment
 - [ ] T018 [US1] Implement `ProfileService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/ProfileService.java` managing diner contact updates, synchronizing `full_name = first_name.trim() + " " + last_name.trim()`, and retrieving profile state
 - [ ] T019 [US1] Implement `ProfileController` in `easyeat/backend/src/main/java/com/easyeat/profile/controller/ProfileController.java` exposing `/api/v1/profile/me`, `/api/v1/profile/personal-data`, and `/api/v1/profile/email-change/**`
 - [ ] T020 [P] [US1] Create frontend API client `profileApi.ts` in `easyeat/frontend/src/api/profileApi.ts` and TypeScript interfaces in `easyeat/frontend/src/types/profile.ts`
@@ -91,7 +91,7 @@
 - [ ] T035 [US2] Implement `DietaryRestrictionService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/DietaryRestrictionService.java` managing taxonomy querying and atomic preferences updates
 - [ ] T036 [US2] Implement `DietaryRestrictionController` in `easyeat/backend/src/main/java/com/easyeat/profile/controller/DietaryRestrictionController.java` exposing `GET /api/v1/dietary-restrictions` and `PUT /api/v1/profile/dietary-restrictions`
 - [ ] T037 [P] [US2] Implement `DietaryRestrictionsSelector.tsx` in `easyeat/frontend/src/components/profile/DietaryRestrictionsSelector.tsx` rendering Lifestyles and Allergens sections with advisory notification for in-flight kitchen orders
-- [ ] T038 [US2] Integrate `DietaryRestrictionsSelector.tsx` into `ProfilePage.tsx` in `easyeat/frontend/src/pages/ProfilePage.tsx`
+- [ ] T038 [US2] Integrate `DietaryRestrictionsSelector.tsx` into `ProfilePage.tsx` in `easyeat/frontend/src/pages/ProfilePage.tsx`, triggering proactive cart re-evaluation via `useCart().reEvaluateCompliance()` on successful save if cart has active items (FR-015)
 
 **Checkpoint**: User Stories 1 and 2 functional. Diner can manage contact data and dietary taxonomy preferences.
 
@@ -122,9 +122,9 @@
 - [ ] T050 [US3] Implement `CatalogComplianceService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/CatalogComplianceService.java` evaluating strict intersection conjunction and enriching dishes with `isCompliant` and `conflictingRestrictions`
 - [ ] T051 [US3] Implement `CatalogController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/CatalogController.java` exposing `GET /api/v1/establishments/{tenantId}/dishes`
 - [ ] T052 [US3] Implement `CartComplianceController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/CartComplianceController.java` exposing `POST /api/v1/cart/evaluate-compliance`
-- [ ] T053 [P] [US3] Create frontend API client `catalogApi.ts` in `easyeat/frontend/src/api/catalogApi.ts`, custom hook `useCatalog.ts` resolving `tenantId` from URL params (`/catalogo/:tenantId` or `?tenantId=...`) or `sessionStorage('activeTenantId')` with fallback to default dev seed tenant (`00000000-0000-0000-0000-000000000001`), and types in `catalog.ts` and `cart.ts`
+- [ ] T053 [P] [US3] Create frontend API client `catalogApi.ts` in `easyeat/frontend/src/api/catalogApi.ts`, custom hook `useCatalog.ts` resolving `tenantId` from URL params (`/catalogo/:tenantId` or `?tenantId=...`) or `sessionStorage('activeTenantId')` with fallback to default dev seed tenant (`a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`), and types in `catalog.ts` and `cart.ts`
 - [ ] T054 [P] [US3] Implement `CatalogFilterContext.tsx` in `easyeat/frontend/src/context/CatalogFilterContext.tsx` managing ephemeral master toggle state with automatic reset on reload or establishment change
-- [ ] T055 [P] [US3] Implement `CartContext.tsx` in `easyeat/frontend/src/context/CartContext.tsx` managing cart dishes, live compliance evaluation, and risk confirmation state
+- [ ] T055 [P] [US3] Implement `CartContext.tsx` in `easyeat/frontend/src/context/CartContext.tsx` managing cart dishes, exposing proactive `reEvaluateCompliance()` method, live compliance evaluation via `POST /api/v1/cart/evaluate-compliance`, and risk confirmation state
 - [ ] T056 [P] [US3] Implement `CatalogMasterToggle.tsx` in `easyeat/frontend/src/components/catalog/CatalogMasterToggle.tsx`
 - [ ] T057 [P] [US3] Implement `DishCard.tsx` and `AllergenWarningBadge.tsx` in `easyeat/frontend/src/components/catalog/`
 - [ ] T058 [P] [US3] Implement `EmptyCatalogDietaryState.tsx` in `easyeat/frontend/src/components/catalog/EmptyCatalogDietaryState.tsx` with one-click action to view full menu
