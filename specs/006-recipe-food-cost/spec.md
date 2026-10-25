@@ -4,20 +4,24 @@
 
 **Created**: 25/10/2026
 
-**Status**: Draft
+**Status**: Ready for Planning (Aligned with Spec 005)
 
 **Input**: User description: "Modelo de Recetas Many-to-Many y Motor de Food Cost del proyecto EasyEat. Sprint 2: Esquema de persistencia transaccional N:M para recetas, cálculo dinámico automatizado de costo de materia prima por porción (ADM-5.1.2) y endpoints de auditoría de costos en backend."
 
 ## Clarifications
 
-### Session 2026-10-25
+### Session 2026-10-25 (Initial Clarification)
 
-- Q: ¿Qué roles tienen autorización para consultar la auditoría de Food Cost y los costos de los insumos? (FR-011) → A: Exclusivo para Administrador (ADMIN). El Chef solo define ingredientes y cantidades en la receta técnica, sin acceso a los precios de compra de inventario ni a la auditoría de Food Cost financiero.
+- Q: ¿Qué roles tienen autorización para consultar la auditoría de Food Cost y los costos de los insumos? (FR-010) → A: Exclusivo para Administrador (ADMIN). El Chef solo define ingredientes y cantidades en la receta técnica, sin acceso a los precios de compra de inventario ni a la auditoría de Food Cost financiero.
 - Q: ¿Cómo debe responder el sistema si un ingrediente de la receta tiene costo de adquisición 0.00 o no cargado en inventario? (Edge Case) → A: Auditoría permisiva con advertencia. Calcula el total con costo 0.00 para ese insumo e incluye un flag explícito ("Unpriced ingredient"), permitiendo visualizar el costo parcial del plato.
-- Q: ¿Cómo debe validar el sistema la compatibilidad de unidades entre la receta y el inventario (masa, volumen y unidad discreta 'u')? (FR-008) → A: Validación dimensional estricta. Masa (g, kg) solo convierte con masa; volumen (ml, l) solo con volumen; y unidades discretas (u) requieren coincidencia exacta (u con u). Cualquier incompatibilidad dimensional rechaza el guardado de la receta (HTTP 400 Bad Request).
-- Q: ¿Cómo debe comportarse el sistema si el Chef intenta modificar la receta de un plato que ya se encuentra Activo/Publicado en el catálogo? (Edge Case / Invariante) → A: Bloqueo de modificación en platos activos. Si el plato está Activo/Publicado en catálogo, su receta no puede modificarse in-place (HTTP 409 Conflict). Requiere desactivarlo o pasarlo a revisión antes de editar insumos.
-- Q: ¿Qué estrategia de guardado y actualización debe emplear la API para la persistencia de recetas? (FR-002 / FR-006) → A: Reemplazo canónico completo (Full Replace idempotente). El Chef envía la lista completa de ingredientes del plato en un solo payload y el sistema sincroniza atómicamente la relación N:M en una sola transacción.
-- Q: ¿Cómo debe determinar el sistema las 'etiquetas requeridas' (alérgenos y restricciones dietarias) que visualiza el Administrador al auditar la receta? (ADM-5.1.2 / FR-011) → A: Derivación agregada automática. El sistema consolida automáticamente en la auditoría la unión de todas las etiquetas y alérgenos de los ingredientes que componen la receta (ej: si un ingrediente contiene Gluten o Lácteos, el plato lo expone en la auditoría).
+- Q: ¿Cómo debe comportarse el sistema si el Chef intenta modificar la receta de un plato que ya se encuentra fuera de borrador? (Edge Case / Invariante) → A: Bloqueo de modificación en platos no borradores. La receta solo se edita en estado DRAFT; una vez enviado a revisión (PENDING_PRICE) o publicado, queda bloqueada in-place (HTTP 409 Conflict).
+
+### Session 2026-10-25 (Spec 005 Reconciliation & Alignment)
+
+- Q: ¿Cómo debe integrarse la persistencia de recetas en la spec 006 respecto a lo definido en la spec 005? → A: Reutilizar directamente la tabla `dish_recipe_ingredients` y la entidad compuesta `DishRecipeIngredient` de la spec 005 en 3NF. El motor de Food Cost (ADM-5.1.2) opera sobre este esquema existente, eliminando duplicación de tablas.
+- Q: ¿En qué estados del plato puede el Administrador consultar la auditoría de costos (Food Cost)? (ADM-5.1.2) → A: Exclusivamente en estado `PENDING_PRICE`. La auditoría financiera solo se habilita cuando el Chef envía formalmente el plato a revisión del Administrador. Si el plato está en `DRAFT`, se rechaza con HTTP 409 Conflict.
+- Q: ¿Cómo debe manejarse la unidad de medida en la receta técnica para el cálculo del Food Cost? → A: Seguir el modelo 3NF de la 005: la cantidad en la receta se expresa en la unidad base de inventario del ingrediente (`unit_of_measure`), resolviendo el costo de forma directa (`quantity × unit_purchase_cost`) con precisión decimal exacta y sin desvíos.
+- Q: ¿Cómo debe exponer y auditar las etiquetas requeridas el endpoint de auditoría de costos? (ADM-5.1.2) → A: Solo lectura simple de los códigos de restricción del plato (`restrictionCodes` asociados en `dish_dietary_restrictions`), retornados en el payload de auditoría junto a la lista de insumos.
 
 ---
 
@@ -25,56 +29,45 @@
 
 ### User Story 1 — Technical Recipe Composition & Persistence (Priority: P1)
 
-As a Restaurant Chef, I associate a structured list of raw ingredients with specific quantities and measurement units to a dish so that the technical recipe is formally established and ready for production cost analysis.
+**CHF-2.2.2 Backend**: As a Restaurant Chef, I associate a structured list of raw ingredients with specific quantities to a dish so that the technical recipe is formally established in the system using the normalized `dish_recipe_ingredients` schema.
 
-The Chef specifies the ingredients that compose a dish within their establishment. For each item in the recipe, the Chef selects an existing active ingredient from the establishment's inventory, defines the exact quantity needed per portion, and indicates the applicable unit of measurement. The system validates that all selected ingredients belong to the chef's tenant, are in active status, and carry positive non-zero quantities. The entire recipe composition is saved atomically: either all recipe items persist successfully, or no change is applied. If a recipe already exists for the dish, the Chef can adjust quantities, add new ingredients, or remove items, updating the composition in an atomic transactional operation.
+The Chef specifies the ingredients that compose a dish within their establishment. For each item in the recipe, the Chef selects an existing active ingredient from the establishment's inventory and defines the exact per-portion quantity expressed in the ingredient's inventory unit of measure. The system validates that all selected ingredients belong to the chef's tenant, are in active status, and carry positive non-zero quantities ($> 0$). The recipe is saved atomically via full replacement: either all items persist successfully, or no change is applied. Recipe editing is strictly permitted while the dish remains in `DRAFT` status; once transitioned to `PENDING_PRICE` or published, recipe modifications are blocked.
 
-**Why this priority**: Recipe definition is the absolute operational prerequisite for menu items. Without a formal recipe composition, automated raw material cost calculations cannot take place, and subsequent pricing or approval workflows remain blocked.
+**Why this priority**: Recipe definition is the operational foundation linking culinary files to the inventory catalog. Without a persisted recipe, automated cost calculations cannot take place.
 
-**Independent Test**: Can be fully tested by creating a draft dish, linking multiple inventory ingredients with defined portion quantities, persisting the recipe, and verifying that the dish retrieves the exact itemized recipe composition while rejecting invalid, duplicate, or cross-tenant ingredients.
+**Independent Test**: Can be tested by creating a draft dish, saving multiple inventory ingredients with portion quantities, verifying persistence in `dish_recipe_ingredients`, and asserting that invalid quantities ($0$, negative), duplicate items, or cross-tenant ingredients are rejected.
 
 **Acceptance Scenarios**:
 
-1. **Given** an authenticated Chef in an establishment with active inventory ingredients, **When** they submit a valid recipe composition for a dish with multiple ingredients, positive quantities ($> 0$), and compatible units of measure, **Then** the system persists the Many-to-Many relationship atomically and associates the complete recipe with the dish.
-2. **Given** a Chef submitting a recipe composition, **When** the same ingredient is included more than once in the submission payload, **Then** the system rejects the operation with a validation error indicating that duplicate ingredients must be consolidated into a single line item.
-3. **Given** a Chef submitting a recipe composition, **When** any ingredient has a quantity less than or equal to zero ($quantity \le 0$) or an invalid numeric value, **Then** the system rejects the submission and highlights the invalid ingredient quantities.
-4. **Given** a dish with an existing persisted recipe, **When** the Chef updates quantities of existing items, adds a new ingredient, or removes an existing ingredient, **Then** the system updates the entire recipe atomically and preserves referential integrity.
+1. **Given** an authenticated Chef in an establishment with active inventory ingredients, **When** they submit a valid recipe for a draft dish with multiple ingredients and positive quantities ($> 0$), **Then** the system persists the Many-to-Many association atomically in `dish_recipe_ingredients` and links the complete recipe with the dish.
+2. **Given** a Chef submitting a recipe, **When** the same ingredient is included more than once in the submission payload, **Then** the system rejects the operation with a validation error indicating that duplicate ingredients must be consolidated into a single line item.
+3. **Given** a Chef submitting a recipe, **When** any ingredient has a quantity less than or equal to zero ($quantity \le 0$) or an invalid numeric value, **Then** the system rejects the submission with a validation error (HTTP 400 Bad Request).
+4. **Given** a dish in `DRAFT` status with an existing recipe, **When** the Chef updates quantities of existing items, adds a new ingredient, or removes an existing ingredient, **Then** the system updates the entire recipe atomically and preserves referential integrity.
 5. **Given** a Chef attempting to save a recipe, **When** any referenced ingredient has "Discontinued" status or belongs to a different establishment/tenant, **Then** the system rejects the transaction with an authorization/validation error and leaves the dish unchanged.
 6. **Given** a Chef attempting to submit a recipe with an empty list of ingredients, **When** the save request is sent, **Then** the system rejects the operation, requiring at least one valid ingredient to form a recipe.
-7. **Given** a Chef submitting a recipe, **When** an ingredient specifies a unit of measure dimensionally incompatible with the inventory purchase unit (e.g., mass 'g' vs. volume 'ml', or mass 'g' vs. discrete 'u'), **Then** the system rejects the submission with a validation error (HTTP 400 Bad Request) enforcing dimensional consistency.
-8. **Given** a dish that is in "Active" or published status in the catalog, **When** the Chef attempts to modify its recipe in-place, **Then** the system blocks the update with a state conflict error (HTTP 409 Conflict), requiring the dish to be transitioned out of active status before modifying its recipe composition.
+7. **Given** a dish that has already transitioned to `PENDING_PRICE` (submitted for review) or is published, **When** a user attempts to modify its recipe in-place, **Then** the system blocks the update with a state conflict error (HTTP 409 Conflict).
 
 ---
 
 ### User Story 2 — Recipe Audit, Ingredients, and Base Food Cost (ADM-5.1.2) (Priority: P1)
 
-As a Financial Administrator, I read the ingredients that the Chef assigned to a dish and analyze their financial impact, so that I can understand the expected profitability and verify required allergen/dietary labels before advancing the dish in the workflow.
+**ADM-5.1.2**: As a Financial Administrator, I open a pending dish submitted for review, read the ingredients that the Chef assigned, and analyze the calculated raw material cost (Food Cost) and declared dietary labels, so that I can evaluate profitability and operational compliance before assigning prices or approving publication.
 
-The Financial Administrator opens a pending dish to evaluate its technical composition. The system displays the itemized list of required raw materials alongside the dietary restrictions and allergen tags derived from those ingredients, as well as the dynamic real-time Food Cost calculation per portion. The calculation automatically applies metric unit conversions (e.g., converting recipe grams to inventory purchase kilograms) without floating-point precision loss. The Administrator is presented with an itemized breakdown detailing each ingredient, portion quantity, measurement unit, unit cost, line-item subtotal, warning flags for unpriced items, and the aggregated Food Cost per portion.
+The Financial Administrator accesses the cost audit endpoint for a dish that is currently in `PENDING_PRICE` status. The system dynamically computes the Food Cost by evaluating each ingredient in `dish_recipe_ingredients` against its current unit acquisition cost stored in `ingredients`. The calculation applies exact fixed-point arithmetic (`BigDecimal`, `RoundingMode.HALF_UP` to 2 decimal places) without floating-point precision loss. The Administrator receives an itemized breakdown detailing each ingredient, required portion quantity, inventory unit of measure, unit acquisition cost, line subtotal, warning flags for unpriced items, the aggregated total Food Cost per portion, and the declared dietary restrictions / allergen tags associated with the dish.
 
-**Why this priority**: Precise cost and recipe auditing guarantees commercial and operational viability. Reading the exact ingredients and automated Food Cost eliminates manual errors and equips administrators with the operational truth needed before setting retail prices (PVP) or approving menu publication.
+**Why this priority**: Precise cost auditing guarantees business profitability and compliance. Providing dynamic, automated Food Cost calculations eliminates manual spreadsheet errors and equips administrators with the financial truth needed before setting retail prices (PVP) or approving menu publication.
 
-**Independent Test**: Can be tested independently by taking a dish with an assigned recipe of known ingredient unit costs, requesting the cost audit endpoint as Administrator, and asserting that the returned data displays the itemized ingredients, required labels, and the exact mathematical sum of (quantity × unit cost) with proper unit conversions.
+**Independent Test**: Can be tested independently by opening a dish in `PENDING_PRICE` status with an assigned recipe, requesting the cost audit endpoint as Administrator, and asserting that the returned data displays the itemized ingredients, declared dietary tags, and the exact mathematical sum of (quantity × unit acquisition cost).
 
 **Acceptance Scenarios**:
 
-1. **Given** an authenticated Administrator opening a pending dish with an assigned recipe, **When** they evaluate the recipe, **Then** the system displays the complete list of required ingredients and the derived allergen/dietary labels, alongside the dynamic Food Cost per portion.
-2. **Given** an authenticated Administrator and a dish with a persisted recipe composed of valued inventory ingredients, **When** the Administrator requests the cost audit for the dish, **Then** the system dynamically computes and returns the aggregated Food Cost alongside an itemized list showing ingredient name, required portion quantity, measurement unit, unit cost, line subtotal, and warning flags if any item is unpriced.
-3. **Given** an ingredient whose recipe unit differs from its inventory purchase unit (e.g., 250 grams in recipe vs. \$4.00 per kilogram in inventory), **When** the system calculates the line cost, **Then** it applies standard metric unit conversion ($250\text{ g} \times \$0.004\text{/g} = \$1.00$) with exact decimal precision and zero fractional-cent drift.
-4. **Given** an ingredient in a recipe whose unit acquisition cost is subsequently updated in the inventory catalog, **When** the Administrator re-queries the cost audit of the dish, **Then** the system dynamically reflects the updated unit cost and recalculated total Food Cost immediately without requiring recipe re-submission.
-5. **Given** an authenticated Administrator attempting to query the cost audit of a dish belonging to a different tenant, **When** the request is evaluated, **Then** the system denies access and returns an authorization/not-found error, guaranteeing strict multi-tenant boundary isolation.
-6. **Given** a dish that has no ingredients assigned (empty recipe), **When** a cost audit is requested, **Then** the system returns an informative response stating that the dish lacks a defined recipe and cannot be audited for food cost.
+1. **Given** an authenticated Administrator and a dish in `PENDING_PRICE` status with a persisted recipe, **When** they request the cost audit for the dish, **Then** the system dynamically computes and returns the total Food Cost alongside an itemized list showing ingredient ID, name, portion quantity, unit of measure, unit acquisition cost, line subtotal, and the dish's declared dietary restriction codes.
+2. **Given** an authenticated Administrator requesting a cost audit for a dish that is still in `DRAFT` status (not yet submitted for review by the Chef), **When** the request is evaluated, **Then** the system rejects the request with HTTP 409 Conflict, indicating that dishes must be in `PENDING_PRICE` status to be audited.
+3. **Given** an ingredient in a recipe whose unit acquisition cost is subsequently updated in the inventory catalog, **When** the Administrator re-queries the cost audit of the dish, **Then** the system dynamically reflects the updated unit cost and recalculated total Food Cost immediately without requiring recipe re-submission.
+4. **Given** an active ingredient in the recipe that has an acquisition cost of 0.00 or unpriced in inventory, **When** the cost audit is computed, **Then** the system computes the line subtotal as 0.00, sets `has_unpriced_ingredients = true`, lists the affected ingredient in `warningNotes`, and calculates the remaining items normally.
+5. **Given** an authenticated Administrator attempting to query the cost audit of a dish belonging to a different tenant, **When** the request is evaluated, **Then** the system denies access and returns an authorization/not-found error (HTTP 403 / 404), guaranteeing strict multi-tenant boundary isolation.
+6. **Given** a dish that has no ingredients assigned (empty recipe), **When** a cost audit is requested, **Then** the system returns an informative error (HTTP 400 Bad Request) stating that the dish lacks a defined recipe.
 7. **Given** an authenticated Chef or non-admin user attempting to access the cost audit endpoint, **When** the request is received, **Then** the system denies access with an authorization error (HTTP 403 Forbidden), preserving financial confidentiality.
-
----
-
-### Edge Cases
-
-- **Zero-Cost or Unpriced Ingredients**: If an active ingredient in the recipe has an acquisition cost of 0.00 or undefined, the system must compute the line cost as 0.00, include an explicit audit advisory note ("Unpriced ingredient"), and allow the remaining lines to calculate normally without failing the audit request.
-- **Incompatible Unit Conversion**: If a recipe specifies an ingredient quantity in volume (e.g., milliliters) while the inventory tracks it exclusively in mass (e.g., kilograms) without a configured density factor, the system must reject the recipe assignment with HTTP 400 Bad Request.
-- **Fractional Cent Rounding**: When multiplying fractional ingredient quantities by unit costs (e.g., 3.5 grams at \$0.0175 per gram), sub-cent intermediate values must be computed with high precision (at least 4 decimal places) and rounded deterministically to 2 decimal places using standard half-up rounding for the final line subtotal and overall total.
-- **Recipe Modification on Locked/Active Dishes**: If a dish has transitioned to an "Active" or published state, the system must enforce state-machine rules preventing uncontrolled modification of its recipe without a dedicated revision cycle (HTTP 409 Conflict).
-- **Discontinued Ingredient in Existing Recipe**: If an ingredient was previously assigned to a valid recipe and is subsequently marked as "Discontinued" in the inventory, existing historical cost audits must flag the ingredient as "Discontinued in Inventory" without crashing the audit view.
 
 ---
 
@@ -82,28 +75,30 @@ The Financial Administrator opens a pending dish to evaluate its technical compo
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST enforce multi-tenant isolation on all recipe and cost operations: dishes and ingredients MUST belong to the same establishment tenant.
-- **FR-002**: The system MUST provide transactional, atomic persistence for dish recipes using a canonical full-replacement (idempotent PUT) strategy: the submission MUST include the complete list of ingredients for the portion, and the system MUST synchronize the Many-to-Many association in a single transaction (inserting new items, updating modified quantities, and deleting omitted items). Partial or non-atomic persistence of recipe items MUST NOT occur.
-- **FR-003**: The system MUST validate that every ingredient assigned to a recipe has a quantity strictly greater than zero ($quantity > 0$).
+- **FR-001**: The system MUST enforce multi-tenant isolation on all recipe and cost operations: dishes and ingredients MUST belong to the authenticated user's establishment tenant.
+- **FR-002**: The system MUST persist dish recipes in the normalized `dish_recipe_ingredients` table using a canonical full-replacement (idempotent PUT) strategy: the submission MUST include the complete list of ingredients for the portion, and the system MUST synchronize the Many-to-Many association in a single transaction.
+- **FR-003**: The system MUST validate that every ingredient assigned to a recipe has a quantity strictly greater than zero ($quantity > 0$). Discrete units (`U`) MUST use integer values; continuous units accept up to 4 decimal places.
 - **FR-004**: The system MUST reject duplicate ingredients within the same recipe payload, requiring a single consolidated line item per ingredient.
-- **FR-005**: The system MUST prevent assigning ingredients that are in "Discontinued" status at the time of recipe creation or update.
-- **FR-006**: The system MUST support updating existing recipes by replacing, adding, or removing ingredient lines atomically while preserving referential integrity, provided the dish is in an editable lifecycle state (e.g., Draft or In Review). If the dish is in "Active" (published) status, in-place recipe modifications MUST be blocked (HTTP 409 Conflict).
-- **FR-007**: The system MUST dynamically calculate the total Food Cost per portion for a dish as the sum of its ingredient line costs:
-  $$\text{Food Cost} = \sum_{i=1}^{n} (\text{quantity}_i \times \text{effective\_unit\_cost}_i)$$
-- **FR-008**: The system MUST enforce strict dimensional unit compatibility between recipe items and inventory units: mass units (g, kg) MUST only convert to mass units; volume units (ml, l) MUST only convert to volume units; and discrete units (u) MUST match exactly without cross-dimensional conversion. Any dimensional incompatibility MUST be rejected upon recipe submission (HTTP 400 Bad Request). Standard metric conversions (1 kg = 1000 g, 1 l = 1000 ml) MUST be applied without precision loss.
-- **FR-009**: The system MUST compute monetary cost values using exact decimal precision (fixed-point arithmetic), avoiding binary floating-point representation and precision drift.
-- **FR-010**: The system MUST dynamically reflect changes made to ingredient inventory unit costs upon subsequent cost audit queries without requiring manual re-calculation or caching stale prices.
-- **FR-011**: The system MUST restrict cost audit queries exclusively to the Administrator (ADMIN) role, returning HTTP 403 Forbidden to non-admin roles (including CHEF). The audit response MUST detail for each item: ingredient ID, ingredient name, recipe quantity, measurement unit, current unit cost, unit cost measurement unit, and line subtotal, alongside the aggregated total Food Cost and the consolidated required dietary/allergen tags automatically derived from the union of all recipe ingredients. If any ingredient has zero or unpriced unit cost, the response MUST compute that line as 0.00, flag `has_unpriced_ingredients: true`, and list the affected ingredients in a warning notes section.
-- **FR-012**: The system MUST reject cost audit requests for dishes that have no assigned recipe, indicating that the recipe is empty.
+- **FR-005**: The system MUST prevent assigning ingredients that are in "Discontinued" or "Archived" status at the time of recipe creation or update.
+- **FR-006**: The system MUST permit recipe creation and modification exclusively while the dish is in `DRAFT` status. In-place recipe modifications on dishes in `PENDING_PRICE` or published status MUST be blocked (HTTP 409 Conflict).
+- **FR-007**: The system MUST expose the cost audit endpoint `GET /api/v1/dishes/{dishId}/cost-audit` exclusively for dishes in `PENDING_PRICE` status. Requests for dishes in `DRAFT` status MUST be rejected with HTTP 409 Conflict.
+- **FR-008**: The system MUST dynamically calculate the total Food Cost per portion as the exact sum of its ingredient line costs:
+  $$\text{Food Cost} = \sum_{i=1}^{n} (\text{quantity}_i \times \text{unit\_purchase\_cost}_i)$$
+  using `java.math.BigDecimal` with `RoundingMode.HALF_UP` rounded to 2 decimal places for subtotals and the total, guaranteeing zero fractional-cent drift.
+- **FR-009**: The system MUST dynamically reflect changes made to ingredient inventory unit costs upon subsequent cost audit queries without requiring manual re-calculation or caching stale prices.
+- **FR-010**: The system MUST restrict cost audit queries exclusively to the Administrator (`ADMIN`) role, returning HTTP 403 Forbidden to non-admin roles (including `CHEF`).
+- **FR-011**: The cost audit response MUST include: dish ID, dish name, total Food Cost, `has_unpriced_ingredients` flag, `warningNotes` list, the list of declared dietary restriction codes (`dish_dietary_restrictions`), and an itemized breakdown of ingredients with portion quantity, unit of measure, unit acquisition cost, and line subtotal.
+- **FR-012**: If any ingredient in the recipe has zero or unpriced unit cost, the system MUST compute that line as 0.00, set `has_unpriced_ingredients = true`, and include a warning note specifying the affected ingredient name without aborting the audit.
+- **FR-013**: The system MUST reject cost audit requests for dishes that have no assigned recipe with HTTP 400 Bad Request.
 
 ---
 
 ### Key Entities
 
-- **Dish (Plato)**: Represents the culinary menu item belonging to a specific tenant, possessing a title, category, operational lifecycle status, and an associated recipe.
-- **Ingredient (Materia Prima / Insumo)**: Represents a raw material tracked in the tenant's inventory with a name, purchase unit of measure, unit acquisition cost, and lifecycle status (Active/Discontinued).
-- **Recipe Item (Ítem de Receta / Detalle N:M)**: The relational link between a Dish and an Ingredient, specifying the exact quantity and unit of measure consumed per individual portion of the dish.
-- **Food Cost Audit Breakdown**: A dynamic projection representing the point-in-time calculation of all recipe items, their converted unit costs, line subtotals, required dietary labels, and the aggregated production cost per portion.
+- **Dish (Plato)**: Culinary file entity authored by kitchen staff (`dishes`), holding identity, `category`, `status` (`DRAFT`, `PENDING_PRICE`), optional description, and photo.
+- **Ingredient (Materia Prima / Insumo)**: Raw inventory item (`ingredients`), holding name, category, unit of measure (`G`, `KG`, `ML`, `L`, `U`), unit purchase cost (`unit_purchase_cost`), and operational status (`ACTIVE`, `DISCONTINUED`).
+- **Dish Recipe Ingredient (Línea de Receta N:M)**: Normalized association (`dish_recipe_ingredients`) with composite primary key `(dish_id, ingredient_id)` and portion `quantity`. Unit of measure is resolved functionally from `Ingredient`.
+- **Food Cost Audit Breakdown**: Dynamic financial projection exposing itemized ingredient costs, declared dietary restriction tags, and the exact Food Cost per portion for dishes under administrative review.
 
 ---
 
@@ -112,17 +107,16 @@ The Financial Administrator opens a pending dish to evaluate its technical compo
 ### Measurable Outcomes
 
 - **SC-001**: 100% mathematical precision with zero fractional-cent drift between the sum of line-item costs and the reported total Food Cost across all currency amounts.
-- **SC-002**: Recipe persistence and update transactions complete execution in under 200 ms under normal operational loads.
-- **SC-003**: Dynamic cost audit queries execute and return the itemized breakdown in under 150 ms for recipes with up to 50 ingredients.
-- **SC-004**: Zero cross-tenant data leakage: 100% of unauthorized attempts to link ingredients or inspect costs across different tenants are rejected with strict access boundaries.
+- **SC-002**: Dynamic cost audit queries execute and return the itemized breakdown in under 100 ms for recipes with up to 50 ingredients.
+- **SC-003**: 100% of attempts by non-ADMIN users to access the cost audit endpoint are rejected with HTTP 403 Forbidden.
+- **SC-004**: 100% of attempts to audit dishes in `DRAFT` status are blocked with HTTP 409 Conflict.
 - **SC-005**: 100% of ingredient unit price updates in the inventory are reflected in subsequent dish cost audits on the immediate next request.
-- **SC-006**: 100% of non-ADMIN attempts to query the cost audit endpoint are rejected with HTTP 403 Forbidden.
+- **SC-006**: Zero cross-tenant data leakage: 100% of unauthorized attempts to link ingredients or inspect costs across different tenants are rejected with strict access boundaries.
 
 ---
 
 ## Assumptions
 
-- Ingredient costs are tracked in the establishment's primary operational currency as established in feature 004 (`004-staff-mgmt-rbac-inventory`).
-- Dishes are created with standard lifecycle statuses (e.g., Draft, Pending Review, Active, Inactive) before or concurrently with recipe attachment.
-- Compatible unit conversions are limited to standard metric mass (mg, g, kg) and volume (ml, l). Custom volumetric-to-mass conversions requiring density factors are out of scope unless density is explicitly configured.
-- Retail sales pricing (PVP), commercial margin assignment, and public menu visibility belong to subsequent feature iterations (`ADM-5.2.1`, `ADM-5.2.2`).
+- Database tables `dishes`, `dish_recipe_ingredients`, `dish_dietary_restrictions`, and `admin_notifications` are provisioned via Flyway migration `V6__chef_dish_management.sql` established in feature 005.
+- The dish lifecycle transitions from `DRAFT` to `PENDING_PRICE` via the review submission endpoint (`POST /api/v1/dishes/{id}/submit-review`) defined in feature 005.
+- Retail sales pricing (PVP) and commercial margin assignment (`ADM-5.2.1`) belong to subsequent feature iterations.

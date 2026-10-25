@@ -2,111 +2,85 @@
 
 **Feature**: `006-recipe-food-cost`  
 **Date**: 25/10/2026  
-**Status**: Approved
+**Status**: Approved (Reconciled with Spec 005)
 
-This document records the architectural investigations, trade-off evaluations, and design decisions informing the technical planning for the recipe persistence model and the automated raw material cost engine.
-
----
-
-## Decision 1: Relational Storage Model for Recipe Composition (N:M)
-
-### Context
-Dishes and ingredients share a Many-to-Many (N:M) relationship: a dish requires multiple ingredients in specific portion quantities, and an ingredient can be utilized across many dishes. We must store the portion quantity and recipe measurement unit while ensuring strict referential integrity and query efficiency for cost calculations.
-
-### Alternatives Evaluated
-1. **Normalized Relational Join Table (`recipe_items`)**: A dedicated relational entity with foreign keys to `dishes(id)` and `ingredients(id)`, carrying `quantity NUMERIC(12, 4)` and `unit_of_measure VARCHAR(20)`. Enforced by a unique constraint `UNIQUE (dish_id, ingredient_id)`.
-2. **Denormalized JSONB Column on `dishes`**: Storing an array of `{ingredient_id, quantity, unit}` directly in a JSONB attribute within `dishes`.
-3. **Dedicated Separate `recipes` Header + `recipe_items` Detail**: An intermediate `recipes` entity pointing to `dish_id`, allowing multi-version headers.
-
-### Decision
-**Option 1: Normalized Relational Join Table (`recipe_items`)**.
-
-### Rationale
-- Guarantees database-level foreign key referential integrity (`ON DELETE CASCADE` for dish, `ON DELETE RESTRICT` for ingredients), preventing orphaned or dangling ingredient references.
-- Enables high-performance relational joins with the `ingredients` table during cost calculation queries.
-- Adheres to clean architecture and aligns with existing Flyway migration patterns (`V4__create_ingredients_and_stock_audit.sql` and `V5__extend_users_profile_and_dietary.sql`).
-- Avoids the overhead of an extra `recipes` header entity since each dish currently maintains a single canonical active recipe.
+This document records the architectural investigations, trade-off evaluations, and design decisions informing the technical planning for the recipe persistence model and the automated raw material cost engine, aligned with the implementation baseline established in feature 005 (`005-chef-dish-management`).
 
 ---
 
-## Decision 2: Recipe Persistence Strategy — Idempotent Full-Replacement (PUT)
+## Decision 1: Direct Reuse of Spec 005 Normalized Recipe Table (`dish_recipe_ingredients`)
 
 ### Context
-When a Chef modifies a recipe, multiple items may change simultaneously (e.g., modifying portions, removing outdated ingredients, adding new seasonings). The operation must be atomic: partial updates are strictly prohibited.
+Feature 005 (`005-chef-dish-management`) specifies the dish technical file wizard, which includes step 2 for technical recipe ingredient composition (`CHF-2.2.2`). We investigated whether feature 006 should introduce a distinct join table (`recipe_items`) or build directly on `dish_recipe_ingredients`.
 
 ### Alternatives Evaluated
-1. **Canonical Full-Replacement (`PUT /api/v1/dishes/{dishId}/recipe`)**: The payload contains the complete desired state of ingredients for the dish. The backend synchronizes the collection in a single transaction (deleting removed items, updating modified quantities, inserting new items).
-2. **Granular REST Endpoints (`POST /items`, `DELETE /items/{id}`, `PATCH /items/{id}`)**: Item-by-item modifications.
-3. **Compound Delta Payload (`PATCH /recipe`)**: Payload specifying lists of `added`, `removed`, and `modified` items.
+1. **Reutilizar directamente `dish_recipe_ingredients` (Spec 005 3NF Baseline)**: Build the `FoodCostEngine` and `FoodCostAuditService` directly over the composite entity `DishRecipeIngredient` and table `dish_recipe_ingredients` defined in Flyway migration `V6__chef_dish_management.sql`.
+2. **Crear una tabla duplicada `recipe_items`**: Create a parallel table with an independent surrogate UUID key and a redundant `unit_of_measure` column.
 
 ### Decision
-**Option 1: Canonical Full-Replacement (`PUT /api/v1/dishes/{dishId}/recipe`)**.
+**Option 1: Reutilizar directamente `dish_recipe_ingredients`**.
 
 ### Rationale
-- Completely eliminates synchronization drift between the UI and database.
-- Guarantees 100% transactional atomicity: if any single ingredient fails validation (e.g., negative quantity, discontinued status, cross-tenant leak), the entire transaction rolls back cleanly.
-- Enforces state-machine invariant: if `dish.isActive == true`, the entire recipe update is rejected with `409 Conflict`, requiring explicit deactivation prior to editing.
+- Completely eliminates schema duplication and synchronization drift between the kitchen file management (005) and the administrative cost audit (006).
+- Follows third normal form (3NF): the unit of measure is functionally dependent on `ingredient_id` in the `ingredients` master catalog, avoiding data redundancy and multi-unit synchronization bugs.
+- Confirmed during the grill-me alignment session (2026-10-25).
 
 ---
 
-## Decision 3: Precision Arithmetic & Metric Unit Conversion Engine
+## Decision 2: State-Machine Gate for Cost Auditing (`PENDING_PRICE` Only)
 
 ### Context
-Food cost calculations involve multiplying fractional quantities (e.g., 2.5 grams) by unit costs of bulk purchase units (e.g., \$12.50 per kilogram). Binary floating-point arithmetic introduces rounding drift and non-deterministic cent loss, which violates financial accounting invariants.
+User Story 2 (`ADM-5.1.2`) states: *"Dado que el admin abre un plato pendiente, Cuando evalúa la receta, Entonces puede visualizar los insumos y etiquetas requeridas"*. We evaluated whether the cost audit endpoint should accept dishes in any lifecycle state or only those formally submitted for review.
 
 ### Alternatives Evaluated
-1. **`java.math.BigDecimal` with Strict Dimensional Typing**: Pure domain engine (`FoodCostEngine` / `UnitConversionService`) operating with fixed precision (`scale = 4` for intermediate unit costs, `scale = 2` for currency totals with `RoundingMode.HALF_UP`).
-2. **Double Precision (`double`)**: Standard 64-bit IEEE 754 floating point.
-3. **Integer Cents Representation**: Multiplying all figures by 100 or 10,000 to store integer units.
+1. **Exclusively in `PENDING_PRICE`**: The endpoint `GET /api/v1/dishes/{id}/cost-audit` validates `dish.status == 'PENDING_PRICE'`. If the dish is still in `DRAFT`, it responds with HTTP `409 Conflict`.
+2. **Permissive Audit in Any State (`DRAFT`, `PENDING_PRICE`, `ACTIVE`)**: Permitting cost audits on drafts before submission.
+3. **Only in `PENDING_PRICE` and `ACTIVE`**: Permitting audits once submitted and post-publication, but blocking drafts.
 
 ### Decision
-**Option 1: `java.math.BigDecimal` with Strict Dimensional Typing**.
+**Option 1: Exclusivamente en estado `PENDING_PRICE`**.
 
 ### Rationale
-- Existing entities (`Ingredient`, `Dish`) already standardize on `BigDecimal` and `NUMERIC(12, 4)` / `NUMERIC(10, 2)` across Spring Boot and PostgreSQL.
-- Eliminates floating-point inaccuracies when dividing by conversion factors (e.g., $1\text{ kg} = 1000\text{ g}$).
-- Dimensional rules strictly isolated:
-  - Mass (`G`, `KG`): 1 KG = 1000 G ($factor = 0.001$).
-  - Volume (`ML`, `L`): 1 L = 1000 ML ($factor = 0.001$).
-  - Discrete (`U`): 1 U = 1 U ($factor = 1.0$).
-  - Incompatible cross-dimensional combinations throw `IncompatibleUnitException` (HTTP 400).
+- Respects the domain lifecycle defined in Spec 005: while a dish is in `DRAFT`, kitchen staff may be actively adding or removing ingredients, making financial cost analysis premature and unstable.
+- The Chef explicitly marks completion and submits for review (`POST /submit-review`), guaranteeing that the recipe is finalized and ready for administrative audit.
+- Confirmed during the grill-me session (2026-10-25).
 
 ---
 
-## Decision 4: Role-Based Access Control and Financial Confidentiality
+## Decision 3: Precision Arithmetic & 3NF Formula
 
 ### Context
-In restaurant operations, inventory purchase costs from suppliers are commercially sensitive financial data. Chefs need to compose technical recipes but should not have unauthorized visibility into wholesale margins, supplier costs, or overall profitability.
+Food cost calculation must be deterministic, preventing fractional-cent drift in accounting while supporting continuous units (grams, milliliters) and discrete units (u).
 
 ### Alternatives Evaluated
-1. **Strict Separation of Concerns**: `CHEF` and `ADMIN` can manage technical recipes (`PUT /recipe`), but `GET /cost-audit` is exclusively restricted to `ADMIN`. Non-admin requests receive HTTP `403 Forbidden`.
-2. **Open Visibility**: Both `CHEF` and `ADMIN` can query the cost audit endpoint.
-3. **Masked Breakdown for Chef**: `CHEF` sees the total calculated Food Cost, but itemized unit purchase prices are redacted.
+1. **Direct Multiplication with `BigDecimal`**: Since quantities in `dish_recipe_ingredients` use the ingredient's native inventory unit of measure, the formula simplifies directly to:
+   $$\text{Line Subtotal} = \text{quantity} \times \text{unit\_purchase\_cost}$$
+   Each line subtotal is rounded to 2 decimal places using `RoundingMode.HALF_UP`, and the total Food Cost is the sum of rounded subtotals.
+2. **Dynamic Cross-Unit Conversion**: Permitting arbitrary unit choices per line item.
 
 ### Decision
-**Option 1: Strict Separation of Concerns (Exclusive `ADMIN` for Cost Audit)**.
+**Option 1: Direct Multiplication with `BigDecimal` (3NF Integration)**.
 
 ### Rationale
-- Confirmed during the clarification session (2026-10-25).
-- Follows the principle of least privilege and aligns with EasyEat's RBAC model.
-- Prevents leakage of supplier negotiation terms and commercial margins to operational kitchen staff.
+- Eliminates unnecessary conversion overhead and avoids dimensional mismatch bugs.
+- Guarantees exact monetary equality: $\text{Total Food Cost} = \sum \text{Line Subtotal}$ with zero penny drift.
+- Unpriced items (cost 0.00 or null) are calculated as 0.00 with `has_unpriced_ingredients = true` and an advisory note, allowing partial cost inspection without failure.
 
 ---
 
-## Decision 5: Automated Dietary and Allergen Label Aggregation
+## Decision 4: Exposure of Dietary and Allergen Labels
 
 ### Context
-User Story 2 (`ADM-5.1.2`) mandates that when the Financial Administrator evaluates a pending dish recipe, they can inspect both the raw material cost and the required dietary/allergen labels to assess business and regulatory impact.
+The Administrator must inspect the declared dietary and allergen tags alongside the food cost breakdown during recipe review.
 
 ### Alternatives Evaluated
-1. **Dynamic Set Union from Inventory**: The cost audit service queries the ingredients in the recipe and aggregates the distinct union of all dietary restrictions and allergen tags configured on those ingredients.
-2. **Static Dish Tags Only**: Reading only the existing `dish_dietary_restrictions` table on `Dish`.
-3. **Manual Verification Flag**: Requiring the Chef to manually check off tags during recipe creation.
+1. **Direct Reading of `dish_dietary_restrictions`**: Returning the list of `restrictionCodes` associated with the dish.
+2. **Dynamic Allergen Inference from Ingredients**: Deriving allergens dynamically by parsing ingredient taxonomy.
 
 ### Decision
-**Option 1: Dynamic Set Union from Inventory**.
+**Option 1: Direct Reading of `dish_dietary_restrictions`**.
 
 ### Rationale
-- Guarantees truth in advertising and consumer safety: if any ingredient contains an allergen (e.g., Gluten or Peanuts), the audit response highlights it automatically.
-- Aligns with the clarification agreement and allows the Administrator to contrast the dish's declared tags against the recipe's mandatory tags before approving publication.
-
+- Feature 005 already establishes the step for allergen selection (`CHF-2.2.3`), persisting validated codes into `dish_dietary_restrictions`.
+- Provides maximum simplicity and reliability, directly fulfilling the acceptance criterion: *"puede visualizar los insumos y etiquetas requeridas"*.
+- Confirmed during the grill-me session (2026-10-25).

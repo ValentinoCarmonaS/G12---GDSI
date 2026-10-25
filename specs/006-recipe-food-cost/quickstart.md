@@ -2,7 +2,7 @@
 
 **Feature**: `006-recipe-food-cost`  
 **Date**: 25/10/2026  
-**Audience**: Developers, QA Engineers, and Technical Evaluators
+**Audience**: Developers, QA Engineers, and Technical Evaluators (Aligned with Spec 005)
 
 This guide outlines runnable scenarios to verify the recipe persistence and automated food cost auditing capabilities against the running EasyEat backend service.
 
@@ -24,88 +24,74 @@ This guide outlines runnable scenarios to verify the recipe persistence and auto
 
 ## Scenario 1: Chef Persists a Technical Recipe (PUT /recipe)
 
-### 1.1 Valid Recipe Composition (Atomic Full Replacement)
+### 1.1 Valid Recipe Composition (Atomic Full Replacement in DRAFT)
 ```bash
-curl -X PUT http://localhost:8080/api/v1/dishes/{dishId}/recipe \
+curl -X PUT http://localhost:8080/api/v1/dishes/{draftDishId}/recipe \
   -H "Authorization: Bearer $CHEF_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "items": [
+    "ingredients": [
       {
         "ingredientId": "'"$INGREDIENT_FLOUR_ID"'",
-        "quantity": 250.0,
-        "unitOfMeasure": "G"
+        "quantity": 250.0
       },
       {
         "ingredientId": "'"$INGREDIENT_CHEESE_ID"'",
-        "quantity": 150.0,
-        "unitOfMeasure": "G"
+        "quantity": 150.0
       },
       {
         "ingredientId": "'"$INGREDIENT_EGG_ID"'",
-        "quantity": 2.0,
-        "unitOfMeasure": "U"
+        "quantity": 2.0
       }
     ]
   }'
 ```
-**Expected Response**: `200 OK` with JSON array reflecting the 3 saved items.
+**Expected Response**: `200 OK` with JSON array reflecting the 3 saved items linked in `dish_recipe_ingredients`.
 
-### 1.2 Incompatible Unit Rejection (Masa vs Volumen)
+### 1.2 Recipe Modification Blocked on Submitted Dish (Locking Invariant)
 ```bash
-curl -X PUT http://localhost:8080/api/v1/dishes/{dishId}/recipe \
+curl -X PUT http://localhost:8080/api/v1/dishes/{pendingPriceDishId}/recipe \
   -H "Authorization: Bearer $CHEF_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "items": [
+    "ingredients": [
       {
         "ingredientId": "'"$INGREDIENT_FLOUR_ID"'",
-        "quantity": 100.0,
-        "unitOfMeasure": "ML"
+        "quantity": 300.0
       }
     ]
   }'
 ```
-**Expected Response**: `400 Bad Request` with ProblemDetail stating dimensional incompatibility between `ML` and inventory unit `KG`.
-
-### 1.3 Active Dish Rejection (Locking Invariant)
-```bash
-curl -X PUT http://localhost:8080/api/v1/dishes/{ACTIVE_DISH_ID}/recipe \
-  -H "Authorization: Bearer $CHEF_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      {
-        "ingredientId": "'"$INGREDIENT_FLOUR_ID"'",
-        "quantity": 200.0,
-        "unitOfMeasure": "G"
-      }
-    ]
-  }'
-```
-**Expected Response**: `409 Conflict` with ProblemDetail indicating that active published dishes cannot have their recipes altered in-place.
+**Expected Response**: `409 Conflict` with ProblemDetail indicating that recipe editing is locked once the dish is submitted for review (`PENDING_PRICE`).
 
 ---
 
 ## Scenario 2: Financial Administrator Audits Food Cost & Labels (GET /cost-audit)
 
-### 2.1 Successful Audit Query by Administrator
+### 2.1 Audit Blocked on Draft Dish (State Gate)
 ```bash
-curl -X GET http://localhost:8080/api/v1/dishes/{dishId}/cost-audit \
+curl -X GET http://localhost:8080/api/v1/dishes/{draftDishId}/cost-audit \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+**Expected Response**: `409 Conflict` with ProblemDetail stating that dishes must be in `PENDING_PRICE` status to be audited.
+
+### 2.2 Successful Audit Query on Submitted Dish (PENDING_PRICE)
+```bash
+curl -X GET http://localhost:8080/api/v1/dishes/{pendingPriceDishId}/cost-audit \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 **Expected Response**: `200 OK` with:
 - `totalFoodCost`: Exact decimal sum with 2 decimal places.
-- `items`: Itemized lines showing ingredient names, portion amounts, converted purchase rates, and line subtotals.
-- `requiredDietaryRestrictions`: Union of dietary tags (e.g. `["GLUTEN", "LACTOSE"]`).
+- `items`: Itemized lines showing ingredient names, portion amounts, native units of measure, unit acquisition costs, and line subtotals.
+- `requiredDietaryRestrictions`: Declared dietary restriction codes (e.g. `["CELIAC", "DAIRY"]`).
 - `hasUnpricedIngredients`: `false`.
 
-### 2.2 Confidentiality Check (Chef Denied Access)
+### 2.3 Financial Confidentiality Check (Chef Denied Access)
 ```bash
-curl -X GET http://localhost:8080/api/v1/dishes/{dishId}/cost-audit \
+curl -X GET http://localhost:8080/api/v1/dishes/{pendingPriceDishId}/cost-audit \
   -H "Authorization: Bearer $CHEF_TOKEN"
 ```
-**Expected Response**: `403 Forbidden` (RBAC authorization barrier protects commercial supplier costs from kitchen staff).
+**Expected Response**: `403 Forbidden` (RBAC authorization barrier strictly protects commercial supplier costs from kitchen staff).
 
 ---
 
@@ -114,13 +100,12 @@ curl -X GET http://localhost:8080/api/v1/dishes/{dishId}/cost-audit \
 Run the narrow test slices and integration suite:
 
 ```bash
-# Unit tests for Food Cost Engine and metric conversions
-./mvnw test -Dtest=FoodCostEngineTest,UnitConversionServiceTest
+# Unit tests for Food Cost Engine and decimal arithmetic
+./mvnw test -Dtest=FoodCostEngineTest
 
 # Controller and Security slice tests
-./mvnw test -Dtest=DishRecipeControllerTest,AdminDishCostAuditControllerTest
+./mvnw test -Dtest=AdminDishCostAuditControllerTest
 
 # End-to-end database integration test with Testcontainers
-./mvnw test -Dtest=RecipePersistenceIntegrationTest
+./mvnw test -Dtest=DishCostAuditIntegrationTest
 ```
-

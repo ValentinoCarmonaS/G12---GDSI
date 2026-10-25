@@ -2,21 +2,27 @@ openapi: 3.0.3
 info:
   title: EasyEat - Recipe Management and Food Cost Audit API
   version: 1.0.0
-  description: API contracts for dish recipe persistence (Many-to-Many) and automated food cost auditing with dynamic allergen label aggregation (Sprint 2 - ADM-5.1.2, CHF-2.2.2).
+  description: API contracts for dish recipe persistence (Many-to-Many) and automated food cost auditing with declared dietary labels (Sprint 2 - ADM-5.1.2, CHF-2.2.2 Backend, aligned with Spec 005).
 servers:
   - url: /api/v1
     description: Production & Local Gateway
 
 paths:
-  /dishes/{dishId}/recipe:
+  /dishes/{id}/recipe:
     put:
-      summary: Set technical recipe composition (Full Replacement)
-      description: Replaces the entire recipe composition of a dish atomically. Requires CHEF or ADMIN role. Fails with 409 Conflict if the dish is currently published/active.
-      operationId: setDishRecipe
+      tags:
+        - Chef Dishes
+      summary: Upsert full dish recipe ingredient list (CHF-2.2.2 Backend)
+      description: |
+        Replaces or updates recipe ingredient lines atomically using normalized 3NF.
+        Every ingredient must exist, belong to establishment, and be in ACTIVE status.
+        Quantities must be strictly greater than zero (> 0).
+        Blocked if dish status is PENDING_PRICE or published.
+      operationId: updateDishRecipe
       security:
         - bearerAuth: []
       parameters:
-        - name: dishId
+        - name: id
           in: path
           required: true
           description: Unique identifier of the dish
@@ -28,16 +34,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SetRecipeRequest'
+              $ref: '#/components/schemas/RecipeUpdateRequest'
       responses:
         '200':
-          description: Recipe successfully persisted
+          description: Recipe updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RecipeDetailResponse'
+                $ref: '#/components/schemas/RecipeResponse'
         '400':
-          description: Validation error, empty list, or incompatible unit of measure
+          description: Validation error or duplicate ingredient
           content:
             application/problem+json:
               schema:
@@ -45,25 +51,36 @@ paths:
         '401':
           description: Unauthenticated
         '403':
-          description: Forbidden (insufficient privileges or cross-tenant access)
+          description: Forbidden (cross-tenant access)
         '404':
           description: Dish or ingredient not found
         '409':
-          description: Conflict (dish is in Active/published state and cannot be modified in-place)
+          description: Recipe editing blocked because dish status is PENDING_PRICE or published
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Inactive/Discontinued ingredient referenced
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
-  /dishes/{dishId}/cost-audit:
+  /dishes/{id}/cost-audit:
     get:
-      summary: Retrieve dynamic Food Cost audit and required labels
-      description: Computes real-time raw material production cost per portion and aggregates required dietary/allergen tags. Restricted exclusively to ADMINISTRADOR role.
+      tags:
+        - Admin Dish Cost Audit
+      summary: Retrieve dynamic Food Cost audit and declared dietary labels (ADM-5.1.2)
+      description: |
+        Computes real-time raw material production cost per portion and reads declared dietary restriction tags.
+        Restricted exclusively to ADMINISTRADOR role.
+        Dish must be in PENDING_PRICE status (submitted for review by the Chef).
       operationId: auditDishCost
       security:
         - bearerAuth: []
       parameters:
-        - name: dishId
+        - name: id
           in: path
           required: true
           description: Unique identifier of the dish
@@ -72,7 +89,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Itemized Food Cost audit and required labels breakdown
+          description: Itemized Food Cost audit and dietary labels breakdown
           content:
             application/json:
               schema:
@@ -86,9 +103,15 @@ paths:
         '401':
           description: Unauthenticated
         '403':
-          description: Forbidden (access restricted strictly to ADMIN)
+          description: Forbidden (access restricted strictly to ADMINISTRADOR)
         '404':
           description: Dish not found
+        '409':
+          description: Dish is not in PENDING_PRICE status (e.g. still in DRAFT)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
 
 components:
   securitySchemes:
@@ -103,12 +126,11 @@ components:
       enum: [G, KG, ML, L, U]
       example: G
 
-    RecipeItemRequest:
+    RecipeIngredientInput:
       type: object
       required:
         - ingredientId
         - quantity
-        - unitOfMeasure
       properties:
         ingredientId:
           type: string
@@ -119,32 +141,26 @@ components:
           format: decimal
           minimum: 0.0001
           example: 250.0
-        unitOfMeasure:
-          $ref: '#/components/schemas/UnitOfMeasure'
 
-    SetRecipeRequest:
+    RecipeUpdateRequest:
       type: object
       required:
-        - items
+        - ingredients
       properties:
-        items:
+        ingredients:
           type: array
           minItems: 1
           items:
-            $ref: '#/components/schemas/RecipeItemRequest'
+            $ref: '#/components/schemas/RecipeIngredientInput'
 
-    RecipeItemDetailResponse:
+    RecipeIngredientItem:
       type: object
       required:
-        - id
         - ingredientId
         - ingredientName
         - quantity
         - unitOfMeasure
       properties:
-        id:
-          type: string
-          format: uuid
         ingredientId:
           type: string
           format: uuid
@@ -158,23 +174,19 @@ components:
         unitOfMeasure:
           $ref: '#/components/schemas/UnitOfMeasure'
 
-    RecipeDetailResponse:
+    RecipeResponse:
       type: object
       required:
         - dishId
-        - items
-        - updatedAt
+        - ingredients
       properties:
         dishId:
           type: string
           format: uuid
-        items:
+        ingredients:
           type: array
           items:
-            $ref: '#/components/schemas/RecipeItemDetailResponse'
-        updatedAt:
-          type: string
-          format: date-time
+            $ref: '#/components/schemas/RecipeIngredientItem'
 
     RecipeItemAuditResponse:
       type: object
@@ -182,9 +194,8 @@ components:
         - ingredientId
         - ingredientName
         - recipeQuantity
-        - recipeUnit
+        - unitOfMeasure
         - unitPurchaseCost
-        - purchaseUnit
         - lineSubtotal
         - unpricedWarning
       properties:
@@ -198,14 +209,12 @@ components:
           type: number
           format: decimal
           example: 150.0
-        recipeUnit:
+        unitOfMeasure:
           $ref: '#/components/schemas/UnitOfMeasure'
         unitPurchaseCost:
           type: number
           format: decimal
           example: 1200.00
-        purchaseUnit:
-          $ref: '#/components/schemas/UnitOfMeasure'
         lineSubtotal:
           type: number
           format: decimal
@@ -247,7 +256,7 @@ components:
           type: array
           items:
             type: string
-          example: ["GLUTEN", "LACTOSE"]
+          example: ["CELIAC", "DAIRY"]
         items:
           type: array
           items:
@@ -263,26 +272,16 @@ components:
         type:
           type: string
           format: uri
-          example: https://api.easyeat.com/errors/invalid-recipe
+          example: https://api.easyeat.com/errors/invalid-state
         title:
           type: string
-          example: Invalid Recipe Composition
+          example: Invalid Dish State
         status:
           type: integer
-          example: 400
+          example: 409
         detail:
           type: string
-          example: Unit of measure 'ML' is dimensionally incompatible with inventory unit 'KG'.
+          example: Dish must be in PENDING_PRICE status to perform cost audit.
         instance:
           type: string
-          example: /api/v1/dishes/7d6c6e12-4f32-47d3-9f56-2e86bf30fa12/recipe
-        invalidParams:
-          type: array
-          items:
-            type: object
-            properties:
-              name:
-                type: string
-              reason:
-                type: string
-
+          example: /api/v1/dishes/7d6c6e12-4f32-47d3-9f56-2e86bf30fa12/cost-audit
