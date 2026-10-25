@@ -109,3 +109,4 @@ User Story 2 (`ADM-5.1.2`) mandates that when the Financial Administrator evalua
 ### Rationale
 - Guarantees truth in advertising and consumer safety: if any ingredient contains an allergen (e.g., Gluten or Peanuts), the audit response highlights it automatically.
 - Aligns with the clarification agreement and allows the Administrator to contrast the dish's declared tags against the recipe's mandatory tags before approving publication.
+

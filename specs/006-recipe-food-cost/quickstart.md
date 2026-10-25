@@ -123,3 +123,4 @@ Run the narrow test slices and integration suite:
 # End-to-end database integration test with Testcontainers
 ./mvnw test -Dtest=RecipePersistenceIntegrationTest
 ```
+

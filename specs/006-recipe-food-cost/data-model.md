@@ -190,3 +190,4 @@ public class RecipeItem {
 | **FR-010** (Real-time dynamic recalculation) | `FoodCostAuditService` | Recomputed on-the-fly from inventory table on each query | Always reflects fresh inventory prices |
 | **FR-011** (RBAC audit & label aggregation) | `AdminDishCostAuditController` | `@PreAuthorize("hasRole('ADMIN')")`, union of dietary labels | `403 Forbidden` for non-admin |
 | **FR-012** (Empty recipe rejection) | `RecipeItemRepository.findByDishId` | Throws `EmptyRecipeException` if no items found for dish | `400 Bad Request` |
+
