@@ -81,7 +81,7 @@
 - [X] T028 [P] [US2] Unit test `DietaryRestrictionServiceTest` in `easyeat/backend/src/test/java/com/easyeat/profile/service/DietaryRestrictionServiceTest.java` verifying taxonomy retrieval and atomic preferences replacement
 - [X] T029 [P] [US2] Web contract test `DietaryRestrictionControllerTest` in `easyeat/backend/src/test/java/com/easyeat/profile/controller/DietaryRestrictionControllerTest.java` verifying `GET /api/v1/dietary-restrictions` and `PUT /api/v1/profile/dietary-restrictions`
 - [X] T030 [P] [US2] Integration test `DietaryPreferencesIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/profile/integration/DietaryPreferencesIntegrationTest.java` verifying cascade persistence and rollback on invalid taxonomy code
-- [ ] T031 [P] [US2] Frontend component test `DietaryRestrictionsSelector.test.tsx` in `easyeat/frontend/tests/components/DietaryRestrictionsSelector.test.tsx` verifying grouping into Lifestyles and Allergens, multi-selection, and error alert on save failure (no optimistic state)
+- [X] T031 [P] [US2] Frontend component test `DietaryRestrictionsSelector.test.tsx` in `easyeat/frontend/tests/components/DietaryRestrictionsSelector.test.tsx` verifying grouping into Lifestyles and Allergens, multi-selection, and error alert on save failure (no optimistic state)
 
 ### Implementation for User Story 2
 
