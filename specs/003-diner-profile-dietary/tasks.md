@@ -38,6 +38,8 @@
 
 **Goal**: Allow authenticated diners to view and update personal contact data (`first_name`, `last_name`, `phone`) with automatic synchronization of `full_name`, and execute asynchronous email change verification with 60s cooldown (HTTP 429), single-use SHA-256 tokens, and active session revocation via `token_version`.
 
+> **Architectural Note (FR-011 / SC-004)**: Historical orders immutability is guaranteed by architectural design through entity decoupling (`User` modifications do not alter past order snapshots; the future `orders` table in Sprint 2/3 will store a denormalized customer snapshot rather than a mutable join). Direct regression test execution is deferred to the Checkout/Orders sprint.
+
 **Independent Test**: Navigate to `/perfil`, edit names and phone, verify validations, request email change, verify 60s cooldown on resend, confirm token from verification link at `/verificar-email`, and verify that previous JWT sessions are invalidated (HTTP 401).
 
 ### Tests for User Story 1 (TDD - Write First) ⚠️
@@ -61,7 +63,7 @@
 - [ ] T023 [P] [US1] Implement `PendingEmailBanner.tsx` in `easyeat/frontend/src/components/profile/PendingEmailBanner.tsx` displaying pending status badge, 60s reactive countdown timer, and cancel action
 - [ ] T024 [US1] Implement `VerifyEmailPage.tsx` in `easyeat/frontend/src/pages/VerifyEmailPage.tsx` mounted at `/verificar-email` to handle email verification token URL callbacks and display success/expired messaging
 - [ ] T025 [US1] Implement `ProfilePage.tsx` in `easyeat/frontend/src/pages/ProfilePage.tsx` mounted at `/perfil` assembling personal data form and email banner
-- [ ] T026 [US1] Update `WorkspaceLayout.tsx` in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` adding "Catálogo" (`/catalogo`) and "Mi perfil" (`/perfil`) navigation links for `COMENSAL` users
+- [ ] T026 [US1] Update `WorkspaceLayout.tsx` in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` adding "Catálogo" (`/catalogo`) and "Mi perfil" (`/perfil`) navigation links for `COMENSAL` users, and ensuring that when `user` is null, "Cerrar sesión" is hidden and "Iniciar sesión" (`/login`) / "Registrarse" (`/register`) links are rendered for unauthenticated guests (FR-026)
 - [ ] T027 [US1] Register `/perfil` (role-guarded for `COMENSAL`), `/verificar-email`, and redirects (`/profile` → `/perfil`, `/verify-email` → `/verificar-email`) in `easyeat/frontend/src/router/AppRoutes.tsx`
 
 **Checkpoint**: User Story 1 (MVP) fully functional and testable independently.
@@ -72,7 +74,7 @@
 
 **Goal**: Enable diners to configure their dietary lifestyle preferences and food allergies from a standardized platform taxonomy with atomic server persistence, live cart compliance re-evaluation, and advisory warnings for active kitchen orders.
 
-**Independent Test**: Open the dietary preferences section in `/perfil`, select lifestyles and allergens, verify immediate persistence, verify explicit error alerts on failure (no optimistic state), and confirm live re-evaluation of active cart dishes via `POST /api/v1/cart/evaluate-compliance`.
+**Independent Test**: Open the dietary preferences section in `/perfil`, select lifestyles and allergens, verify immediate persistence, and verify explicit error alerts on failure (0% optimistic state). Note: Live cart re-evaluation is tested as an end-to-end integration scenario in Phase 5 (US3).
 
 ### Tests for User Story 2 (TDD - Write First) ⚠️
 
@@ -120,7 +122,7 @@
 - [ ] T050 [US3] Implement `CatalogComplianceService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/CatalogComplianceService.java` evaluating strict intersection conjunction and enriching dishes with `isCompliant` and `conflictingRestrictions`
 - [ ] T051 [US3] Implement `CatalogController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/CatalogController.java` exposing `GET /api/v1/establishments/{tenantId}/dishes`
 - [ ] T052 [US3] Implement `CartComplianceController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/CartComplianceController.java` exposing `POST /api/v1/cart/evaluate-compliance`
-- [ ] T053 [P] [US3] Create frontend API client `catalogApi.ts` in `easyeat/frontend/src/api/catalogApi.ts` and types in `easyeat/frontend/src/types/catalog.ts` and `types/cart.ts`
+- [ ] T053 [P] [US3] Create frontend API client `catalogApi.ts` in `easyeat/frontend/src/api/catalogApi.ts`, custom hook `useCatalog.ts` resolving `tenantId` from URL params (`/catalogo/:tenantId` or `?tenantId=...`) or `sessionStorage('activeTenantId')` with fallback to default dev seed tenant (`00000000-0000-0000-0000-000000000001`), and types in `catalog.ts` and `cart.ts`
 - [ ] T054 [P] [US3] Implement `CatalogFilterContext.tsx` in `easyeat/frontend/src/context/CatalogFilterContext.tsx` managing ephemeral master toggle state with automatic reset on reload or establishment change
 - [ ] T055 [P] [US3] Implement `CartContext.tsx` in `easyeat/frontend/src/context/CartContext.tsx` managing cart dishes, live compliance evaluation, and risk confirmation state
 - [ ] T056 [P] [US3] Implement `CatalogMasterToggle.tsx` in `easyeat/frontend/src/components/catalog/CatalogMasterToggle.tsx`
@@ -128,7 +130,7 @@
 - [ ] T058 [P] [US3] Implement `EmptyCatalogDietaryState.tsx` in `easyeat/frontend/src/components/catalog/EmptyCatalogDietaryState.tsx` with one-click action to view full menu
 - [ ] T059 [P] [US3] Implement `CartDrawer.tsx` and `CartItemWithBadge.tsx` in `easyeat/frontend/src/components/cart/` displaying permanent visible warning badges without redundant blocking modal at checkout (FR-022)
 - [ ] T060 [P] [US3] Implement `AddToCartRiskModal.tsx` in `easyeat/frontend/src/components/cart/AddToCartRiskModal.tsx` intercepting cart additions on conflicting dishes (FR-021)
-- [ ] T061 [US3] Update `CatalogPage.tsx` in `easyeat/frontend/src/pages/CatalogPage.tsx` mounted at `/catalogo`, integrating master toggle, empty state, dish grid with warning badges, cart drawer, and guest banner inviting login/register (FR-026)
+- [ ] T061 [US3] Update `CatalogPage.tsx` in `easyeat/frontend/src/pages/CatalogPage.tsx` mounted at `/catalogo` (supporting optional route param `:tenantId` and fallback resolution), integrating master toggle, empty state, dish grid with warning badges, cart drawer, and guest banner inviting login/register (FR-026)
 - [ ] T062 [US3] Update `AppRoutes.tsx` in `easyeat/frontend/src/router/AppRoutes.tsx` allowing unauthenticated guest access to `/catalogo/*` and canonical alias `/catalog/*`
 
 **Checkpoint**: All user stories fully implemented and integrated.

@@ -524,31 +524,6 @@ components:
           items:
             type: string
 
-    CheckoutOrderPayloadContract:
-      type: object
-      description: Checkout order submission schema contract extension
-      required:
-        - items
-        - acceptedDietaryRisks
-      properties:
-        items:
-          type: array
-          items:
-            type: object
-            required:
-              - dishId
-              - quantity
-            properties:
-              dishId:
-                type: string
-                format: uuid
-              quantity:
-                type: integer
-                minimum: 1
-        acceptedDietaryRisks:
-          type: boolean
-          description: Mandatory acknowledgment flag; must be true when cart contains non-compliant items.
-
     ProblemDetail:
       type: object
       required:
