@@ -288,3 +288,10 @@ CREATE OR REPLACE RULE no_delete_stock_audit AS ON DELETE TO stock_audit_entries
 | **FR-023** (Category filter and text search) | `ingredients` (`category`, `LOWER(name)`) | Parameterized JPA query with `Pageable` |
 | **FR-024** (Cost hiding from Chef) | Projection `ChefIngredientResponseDto` | Dedicated DTO omitting purchase cost and audit trail |
 | **FR-025** (Exact decimal accounting precision) | `NUMERIC(12, 4)` / `BigDecimal` | Exact native numeric types avoiding binary float errors |
+| **FR-026** (Client-side real-time validation) | Form state in `StaffFormModal`, `IngredientFormModal` | Real-time field validation schemas before submit |
+| **FR-027** (Live delta & projected calculation) | Modal state in `StockAdjustmentModal` | Dynamic delta calculation and zero/negative blocking |
+| **FR-028** (Admin staff roster view) | React View `StaffManagementPage` (`/admin/staff`) | Protected route layout with `StaffRosterTable` |
+| **FR-029** (Single-use temporary credential modal)| React Component `TemporaryCredentialsModal` | One-time modal with clipboard copy button |
+| **FR-030** (Mandatory first-login password change)| React View `FirstLoginPasswordPage` (`/first-login-password-change`) | Guard interception on `must_change_password = true` |
+| **FR-031** (Admin ingredient inventory view) | React View `InventoryManagementPage` (`/admin/inventory`) | Protected route layout with `IngredientCatalogTable` |
+| **FR-032** (Chef read-only ingredient catalog) | React View `ChefIngredientsPage` (`/cocina/ingredientes`) | Paginated read-only table with cost suppression |

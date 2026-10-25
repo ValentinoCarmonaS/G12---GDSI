@@ -3,8 +3,8 @@ info:
   title: EasyEat Staff Authentication & Route Protection API
   version: 1.0.0
   description: >
-    Specification for unified authentication, session invalidation, and post-login
-    routing contracts supporting staff and diner personas.
+    Specification for unified authentication, session verification, session invalidation,
+    and post-login routing contracts supporting staff and diner personas.
 paths:
   /api/v1/auth/login:
     post:
@@ -26,6 +26,11 @@ paths:
       responses:
         '200':
           description: Successful authentication. Returns JWT and user context.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: "no-store"
           content:
             application/json:
               schema:
@@ -48,7 +53,7 @@ paths:
                 type: "about:blank"
                 title: "Unauthorized"
                 status: 401
-                detail: "Credenciales inválidas"
+                detail: "The provided email or password is incorrect."
                 instance: "/api/v1/auth/login"
         '403':
           description: Account is suspended or inactive.
@@ -60,14 +65,57 @@ paths:
                 type: "about:blank"
                 title: "Forbidden"
                 status: 403
-                detail: "La cuenta se encuentra inactiva o suspendida"
+                detail: "The account has been suspended or is not authorized to operate."
                 instance: "/api/v1/auth/login"
         '429':
-          description: Rate limit exceeded (temporary cooldown lockout).
+          description: Rate limit exceeded (temporary 15-minute cooldown lockout).
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "about:blank"
+                title: "Too Many Requests"
+                status: 429
+                detail: "Too many failed login attempts. Please try again in 15 minutes."
+                instance: "/api/v1/auth/login"
+
+  /api/v1/auth/me:
+    get:
+      summary: Current authenticated identity profile
+      description: >
+        Returns the profile of the current authenticated user by validating the bearer token
+        signature and ensuring the token_version matches the database. Used on mount to
+        detect concurrent session invalidations.
+      operationId: getCurrentUser
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Valid active session. Returns authenticated user summary.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: "no-store"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedUserResponse'
+        '401':
+          description: Unauthenticated, expired, or invalidated session token.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "about:blank"
+                title: "Unauthorized"
+                status: 401
+                detail: "Tu sesión ha expirado o ha sido invalidada"
+                instance: "/api/v1/auth/me"
 
   /api/v1/auth/logout:
     post:
@@ -75,7 +123,7 @@ paths:
       description: >
         Terminates the active session for the authenticated user by atomically
         incrementing token_version in the database, rendering the current token
-        and all previous tokens invalid.
+        and all previous tokens permanently invalid.
       operationId: logout
       tags:
         - Authentication
@@ -124,8 +172,8 @@ components:
         access_token:
           type: string
           description: |
-            Signed JWT (HS256) valid for 8 hours. Claims payload contains `sub` (userId UUID),
-            `email`, `role` (COMENSAL, ENCARGADO, CHEF, ADMINISTRADOR), `tenant_id` (UUID),
+            Signed JWT (HS256) valid for 8 hours (28800 seconds). Claims payload contains `sub` (userId UUID),
+            `email`, `role` (COMENSAL, ENCARGADO, CHEF, ADMINISTRADOR), `tenant_id` (UUID | null),
             `token_version` (integer), `iat`, and `exp`.
           example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         token_type:
@@ -134,8 +182,37 @@ components:
           example: "Bearer"
         expires_in:
           type: integer
-          description: Token lifetime in seconds. Always 28800 (8 hours).
+          description: Token lifetime in seconds. Exactly 28800 (8 hours).
           example: 28800
+
+    AuthenticatedUserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - role
+        - token_version
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        email:
+          type: string
+          format: email
+          example: "carlos.chef@comedorcentral.com"
+        role:
+          type: string
+          enum: [COMENSAL, ENCARGADO, CHEF, ADMINISTRADOR]
+          example: "CHEF"
+        tenant_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "8bb12c8a-2d4e-4f76-a0b2-9a0910f13341"
+        token_version:
+          type: integer
+          example: 3
 
     ProblemDetail:
       type: object

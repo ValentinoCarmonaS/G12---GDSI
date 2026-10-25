@@ -4,7 +4,7 @@
 
 **Created**: 17/10/2026
 
-**Status**: Draft
+**Status**: Ready for Implementation
 
 **Input**: User description: "Staff Management, RBAC, and Initial Ingredient Inventory — ADM-3.1.1, ADM-3.1.2, ADM-4.1.1, ADM-4.1.2, CHF-2.1.1"
 
@@ -17,6 +17,18 @@
 - Q: Can an Administrator reactivate an ingredient from "Discontinued" status back to "Active", or is the lifecycle transition strictly one-way until archival? (FR-014) → A: Allow explicit reactivation from "Discontinued" to "Active" by an Administrator, restoring it to the Chef's catalog.
 - Q: Do temporary staff credentials have an automatic time expiration before the first login? (FR-003) → A: No automatic time expiration; remains in "Pending First Login" status until the first login or until an Administrator re-issues the credential.
 - Q: Are manual stock adjustments allowed on ingredients that are in "Discontinued" status? (FR-014, FR-015) → A: Allow stock adjustments (both absolute and relative) on "Discontinued" ingredients to record spoilage, waste, or physical counts until stock reaches zero.
+
+### Session 2026-10-23 (Backlog-US 2.0 Reconciliation)
+
+- Q: What is the delivery scope of feature 004 regarding user interface views? → A: Full End-to-End delivery: the specification mandates both the backend REST services and the frontend React interfaces (Admin staff roster/creation with temporary credentials modal, first-login mandatory password change view, Admin ingredient catalog CRUD & stock adjustment modal, and Chef read-only ingredient catalog view).
+- Q: How do Backlog criteria mentioning future features (automatic stock deduction on orders in ADM-4.1.2, and recipe ingredient selection in CHF-2.1.1) map to this specification? → A: Explicit temporal decoupling: Sprint 1 delivers manual inventory adjustments, stock persistence, and catalog queries. Automatic order-based inventory deduction integrates in Sprint 4 (Order Processing), and chef recipe ingredient binding integrates in Sprint 2 (Recipe Management).
+
+### Session 2026-10-24 (SDD Reconciliation & Navigation Alignment)
+
+- Q: What navigation approach must be implemented for the mandatory first-login password change flow (FR-030)? → A: Dedicated route `/first-login-password-change` guarded against unauthenticated access and protecting operational workspaces. When a user has `must_change_password = true`, the system routes them to `/first-login-password-change` and prevents access to operational workspaces until the password change is confirmed.
+- Q: Where does the Chef access the read-only ingredient catalog (FR-032)? → A: Dedicated sub-route `/cocina/ingredientes` (with alias `/kds/ingredients`) with a navigation tab/link in `WorkspaceLayout` and from `KitchenWorkspacePage`.
+- Q: Where does the Administrator access the staff roster and ingredient inventory (FR-028, FR-031)? → A: Dedicated sub-routes `/admin/staff` and `/admin/inventory`, accessible from cards in `AdminWorkspacePage` and links in `WorkspaceLayout`.
+
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -178,6 +190,11 @@ The Chef accesses a dedicated paginated catalog showing all active ingredients r
 - **FR-025**: The system MUST store all monetary values (unit purchase cost) and physical quantities with exact decimal precision, avoiding binary floating-point rounding errors.
 - **FR-026**: The system MUST validate all input fields in real time on staff and ingredient forms, highlighting missing required fields and invalid formats before submission.
 - **FR-027**: The stock adjustment interface MUST display computed deltas (in Absolute mode) and projected totals (in Relative mode) in real time, and MUST block submission if the resulting stock would be negative.
+- **FR-028**: The system MUST provide an Administrative Staff Management view accessible at `/admin/staff` displaying the establishment's staff roster (name, email, role, status) with actions to create and edit staff members.
+- **FR-029**: Upon successful staff creation, the Administrative view MUST display a modal containing the generated temporary password with a single-click "Copiar credenciales" action, warning the Administrator that it cannot be retrieved again after closing.
+- **FR-030**: The system MUST provide a mandatory First Login Password Change view intercepted upon initial authentication of any account with `must_change_password = true`, blocking access to operational workspaces until a compliant new password is submitted and confirmed.
+- **FR-031**: The system MUST provide an Administrative Ingredient Inventory view accessible at `/admin/inventory` displaying all tenant ingredients with their lifecycle status, category, unit of measure, unit cost, and current stock, with controls for ingredient creation, editing, status change (decommission/reactivate), and opening the stock adjustment modal.
+- **FR-032**: The system MUST provide a dedicated Kitchen Ingredient Catalog view accessible to Chefs at `/kds/ingredients` (or kitchen workspace tab) displaying the paginated active ingredient list with category filters and text search, displaying stock availability indicators ("In Stock" / "Out of Stock") and excluding cost and audit details.
 
 ### Key Entities
 
@@ -198,7 +215,7 @@ The Chef accesses a dedicated paginated catalog showing all active ingredients r
 - **SC-006**: No stock adjustment ever results in a negative stock balance under any circumstances, including concurrent operations.
 - **SC-007**: A Chef can load the first page of the ingredient catalog and locate a specific ingredient by name search in under 10 seconds.
 - **SC-008**: The ingredient catalog correctly reflects stock status changes (Active with stock, Active out of stock, Discontinued hidden) within 5 seconds of the change occurring.
-- **SC-009**: 95% of Administrators successfully complete the staff registration flow on their first attempt without encountering a validation error they did not expect.
+- **SC-009**: [Post-Release Usability Metric] 95% of Administrators successfully complete the staff registration flow on their first attempt without encountering a validation error they did not expect (monitored via production telemetry/analytics, not gated by local automated test suites).
 
 ## Assumptions
 
@@ -208,7 +225,7 @@ The Chef accesses a dedicated paginated catalog showing all active ingredients r
 - Password hashing, JWT token management, and session lifecycle are handled by the existing authentication infrastructure and are not re-specified here.
 - The ingredient category set (Produce, Meat, Dairy, Dry Goods, Spices) is fixed for this iteration. Extensibility to custom categories is deferred to a future iteration.
 - The accepted units of measure (g, kg, ml, l, u) are fixed for this iteration. Unit conversion between compatible measures (e.g., g to kg) is out of scope.
-- This iteration does not include employee deactivation/dismissal workflows, automatic low-stock alerts, recipe management, automatic inventory deduction on orders, or supplier integrations. These are explicitly deferred per the scope boundaries stated in the feature description.
+- This iteration delivers foundational inventory tracking and manual stock adjustments. Automatic inventory deduction upon order placement (mentioned in ADM-4.1.2) is formally integrated in Sprint 4 (Order Processing), and the ingredient selector within recipe authoring (mentioned in CHF-2.1.1) is formally integrated in Sprint 2 (Recipe Management). Both backend REST services and frontend React presentation views for staff administration, inventory adjustments, and chef catalog browsing are fully in scope as end-to-end deliverables for this feature.
 - Real-time form validation refers to client-side validation providing immediate user feedback; server-side validation remains the authoritative enforcement layer.
 - The audit log is append-only and not exposed through any user-facing deletion or edit interface. Audit retention policies are not addressed in this iteration.
 - Temporary credentials for staff accounts do not automatically expire by time; they remain valid in "Pending First Login" status until the employee logs in and completes the mandatory password change, or until an Administrator manually updates the member's details or re-issues the credential.

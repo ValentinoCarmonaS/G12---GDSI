@@ -17,11 +17,11 @@ This document consolidates the technical research, architecture choices, and rat
 | D-005 | Security Principal & Context Resolution | `@AuthenticationPrincipal User user` via `JwtAuthenticationFilter` | O(1) direct injection of the authenticated domain `User` entity populated by the existing `JwtAuthenticationFilter` from 001/002, eliminating redundant database lookups or unnecessary custom principal types. |
 | D-006 | Session Revocation on Email Change | Increment `token_version` by 1 upon email confirmation | Aligns with 001 and 002 single-active-session and logout policy: immediately revokes all active JWT sessions across devices, enforcing re-login under the verified email address (FR-009). |
 | D-007 | Email Verification Token Security | SHA-256 hash storage with raw token dispatched via email | Raw cryptographic token is never stored in the database; prevents token compromise in case of read-only DB breach. |
-| D-008 | Checkout Dietary Risk Consent | Mandatory `acceptedDietaryRisks: boolean` in order payload | Ensures legally binding informed consent before order placement when cart contains incompatible dishes. |
-| D-009 | Diner Name Attributes Decoupling | Independent `first_name` and `last_name` columns in `users` table | Comensal personal data operates on discrete first and last name fields without overwriting or coupling to the `full_name` column introduced for staff in 004, preserving distinct domain semantics. |
-| D-010 | Public Catalog Access & Security Config | Configure `permitAll()` in `SecurityConfig` and remove strict guard in `AppRoutes.tsx` | Allows unauthenticated guests to browse restaurant catalogs freely (FR-026) with guest call-to-actions, while dynamically applying profile health filters when a valid JWT is present. Also opens `GET /api/v1/dietary-restrictions` and `POST /api/v1/profile/email-change/confirm`. |
+| D-008 | Preventive Add-to-Cart Dietary Risk Consent | Intercept non-compliant dishes upon clicking "Agregar al carrito" via `AddToCartRiskModal` | Single-point risk confirmation (FR-021, FR-022, SC-005). Once accepted, cart drawer and checkout display permanent visible warning badges without redundant blocking modals at checkout. |
+| D-009 | Diner Name Attributes & Full Name Synchronization | Independent `first_name` and `last_name` columns with automatic `full_name` sync | Enforces strict alphabetic validation on first and last name for comensales (COM-1.4.1), while keeping `full_name` synchronized on `users` for full consistency with Specs 001, 002, and 004 (`AuthContext`, `WorkspaceLayout`). |
+| D-010 | Public Catalog Access & Canonical Spanish Routing | Configure `permitAll()` in `SecurityConfig`, canonical Spanish routes in `AppRoutes.tsx` | Unauthenticated guests browse catalogs freely (FR-026) with guest CTA banner; comensales receive filtered catalogs. Routes follow Spec 002: canonical `/perfil` and `/verificar-email` with redirects from `/profile` and `/verify-email`. |
 | D-011 | Package & Repository Architecture | `ProfileUserRepository` in `com.easyeat.profile.repository` within monorepo layout | Follows the proven bounded-context pattern established by `StaffUserRepository` in 004, isolating profile-specific queries while targeting the existing `users` table under `easyeat/backend/`. |
-| D-012 | Diner Profile Navigation Entry Point | Dedicated "Mi perfil" action in `WorkspaceLayout` | Exposes a direct link to `/profile` in the top operational header when the authenticated user role is `COMENSAL`, alongside the role badge and logout action. |
+| D-012 | Diner Navigation in WorkspaceLayout | "Catálogo" and "Mi perfil" navigation links in `WorkspaceLayout` | Exposes `/catalogo` and `/perfil` in the top navigation bar when user role is `COMENSAL`, adhering to the navigation pattern introduced for `CHEF` and `ADMINISTRADOR` in 004. |
 
 ---
 
@@ -111,40 +111,43 @@ This document consolidates the technical research, architecture choices, and rat
 - **Mechanism**:
   - 32-byte secure random token generated (`SecureRandom`), base64url encoded.
   - Hashed via `MessageDigest.getInstance("SHA-256")` and stored in DB.
-  - Verification link sends the raw token: `/verify-email?token=<rawToken>`.
+  - Verification link sends the raw token: `/verificar-email?token=<rawToken>`.
   - Confirmation endpoint hashes the incoming token before querying `email_verification_token_hash`.
 
 ---
 
-### D-008: Checkout Dietary Risk Consent
+### D-008: Preventive Add-to-Cart Dietary Risk Consent (Single-Point Confirmation)
 
-- **Decision**: Enforce `acceptedDietaryRisks: boolean` in order checkout requests whenever non-compliant items exist in the cart.
+- **Decision**: Enforce single-point risk confirmation via `AddToCartRiskModal.tsx` upon clicking "Agregar al carrito" when a dish conflicts with active dietary restrictions (with master toggle OFF).
 - **Mechanism**:
-  - If cart evaluation reports non-compliant items, frontend presents a mandatory acknowledgment modal (`CheckoutDietaryRiskModal`).
-  - Order submission includes `acceptedDietaryRisks: true`. Backend verifies this flag and records the consent in the order snapshot.
+  - When the diner attempts to add a non-compliant dish to the cart, the frontend intercepts the action with `AddToCartRiskModal`, listing the conflicting allergens/lifestyles and requesting explicit risk assumption (FR-021).
+  - If canceled, cart state remains untouched (Scenario 3.5).
+  - If confirmed, the item is added to `CartContext` permanently flagged with warning indicators.
+  - In the cart drawer and checkout review, conflicting items prominently display their inline `<AllergenWarningBadge />` without presenting a redundant blocking modal or extra consent checkbox at checkout (FR-022, SC-005).
 
 ---
 
-### D-009: Diner Name Attributes Decoupling
+### D-009: Diner Name Attributes & Full Name Synchronization
 
-- **Decision**: Store `first_name` and `last_name` in separate columns in `users` table without modifying or synchronizing the `full_name` column introduced in 004.
+- **Decision**: Store `first_name` and `last_name` in separate columns in `users` table (Flyway `V5`), and automatically synchronize `full_name = first_name.trim() + " " + last_name.trim()` in `ProfileService`.
 - **Rationale**:
-  - Iteration 004 introduced `full_name` for staff administration (`ADM-3.1.1`).
-  - Comensal profile requirements (FR-001, FR-002) mandate individual validation for first name and last name (alphabetic and spaces only).
-  - Keeping them independent avoids side effects on existing staff logic and fulfills comensal domain requirements cleanly.
+  - Fulfills comensal profile requirements (FR-001, FR-002) with individual validation for first name and last name (alphabetic and spaces only).
+  - Simultaneously maintains complete consistency with `full_name` introduced for staff in 004 and consumed by `AuthContext`, `WorkspaceLayout`, and `/api/v1/auth/me`.
 
 ---
 
-### D-010: Public Catalog Browsing & Security Config
+### D-010: Public Catalog Browsing & Canonical Spanish Routing
 
-- **Decision**: Allow anonymous catalog browsing by configuring `permitAll()` for catalog read endpoints and adapting frontend routing.
+- **Decision**: Allow anonymous catalog browsing by configuring `permitAll()` for catalog read endpoints in `SecurityConfig.java`, and establish canonical Spanish routes in `AppRoutes.tsx`.
 - **Mechanism**:
   - In `SecurityConfig.java`:
     - Permit all for `GET /api/v1/establishments/{tenantId}/dishes`, `GET /api/v1/dietary-restrictions`, and `POST /api/v1/profile/email-change/confirm`.
     - Profile endpoints (`/api/v1/profile/**` except confirm) require authentication.
   - In `AppRoutes.tsx`:
-    - `/catalog/*` is no longer restricted strictly by `RoleRouteGuard`.
-    - Guests viewing `/catalog` receive unfiltered catalog data with a prominent banner prompting them to log in or register to enable health protections (FR-026).
+    - `/catalogo/*` is publicly accessible. Unauthenticated guests receive the full unfiltered menu with a prominent call-to-action banner inviting them to log in or register to enable health filters (FR-026). Authenticated comensales receive automated dietary filtering.
+    - `/perfil` is protected by `RoleRouteGuard` exclusively for `COMENSAL`.
+    - `/verificar-email` handles verification link callbacks.
+    - Canonical routes use Spanish URLs with redirection aliases: `/catalog/*` → `/catalogo`, `/profile/*` → `/perfil`, `/verify-email/*` → `/verificar-email`.
 
 ---
 
@@ -157,8 +160,8 @@ This document consolidates the technical research, architecture choices, and rat
 
 ---
 
-### D-012: Diner Profile Navigation Entry Point
+### D-012: Diner Navigation in WorkspaceLayout
 
-- **Decision**: Include a "Mi perfil" link in `WorkspaceLayout` top navigation bar for `COMENSAL` users.
+- **Decision**: Include "Catálogo" (`/catalogo`) and "Mi perfil" (`/perfil`) links in `WorkspaceLayout` top navigation bar for `COMENSAL` users.
 - **Mechanism**:
-  - In `WorkspaceLayout.tsx`, when `user.role === 'COMENSAL'`, render a navigation link pointing to `/profile` adjacent to the role badge and the logout button.
+  - In `WorkspaceLayout.tsx`, when `user.role === 'COMENSAL'`, render subnavigation links pointing to `/catalogo` and `/perfil`, mirroring the subnav structure implemented for `CHEF` and `ADMINISTRADOR`.

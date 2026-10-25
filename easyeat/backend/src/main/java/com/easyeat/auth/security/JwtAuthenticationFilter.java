@@ -77,9 +77,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             User user = userOpt.get();
 
-            if (user.getStatus() != UserStatus.ACTIVE) {
+            if (user.getStatus() != UserStatus.ACTIVE && user.getStatus() != UserStatus.PENDING_FIRST_LOGIN) {
                 sendProblemDetail(response, request.getRequestURI(), HttpStatus.FORBIDDEN, "Account Suspended", "La cuenta se encuentra inactiva o suspendida");
                 return;
+            }
+
+            if (user.getStatus() == UserStatus.PENDING_FIRST_LOGIN || Boolean.TRUE.equals(user.getMustChangePassword())) {
+                String uri = request.getRequestURI();
+                boolean isAllowedAuthEndpoint = uri.startsWith("/api/v1/auth/first-login-password-change")
+                        || uri.startsWith("/api/v1/auth/logout")
+                        || uri.startsWith("/api/v1/auth/me");
+                if (!isAllowedAuthEndpoint) {
+                    sendProblemDetail(response, request.getRequestURI(), HttpStatus.FORBIDDEN, "Forbidden", "Must complete mandatory password change before accessing platform functionality");
+                    return;
+                }
             }
 
             // Single active session verification: token_version must match persisted user version

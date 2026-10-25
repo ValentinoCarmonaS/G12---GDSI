@@ -2,6 +2,7 @@ package com.easyeat.auth.security;
 
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.domain.UserRole;
+import com.easyeat.auth.domain.UserStatus;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -46,6 +47,7 @@ public class JwtService {
                 .claim("user_id", user.getId().toString())
                 .claim("role", user.getRole().name())
                 .claim("token_version", user.getTokenVersion() == null ? 0 : user.getTokenVersion())
+                .claim("must_change_password", user.getStatus() == UserStatus.PENDING_FIRST_LOGIN)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
                 .signWith(key);
@@ -84,6 +86,10 @@ public class JwtService {
 
     public Integer extractTokenVersion(String token) {
         return extractAllClaims(token).get("token_version", Integer.class);
+    }
+
+    public Boolean extractMustChangePassword(String token) {
+        return extractAllClaims(token).get("must_change_password", Boolean.class);
     }
 
     public boolean validateToken(String token) {

@@ -1,6 +1,6 @@
 -- Seed migration for dev profile: Synthetic Tenant, Staff, and Comensal accounts
 -- Passwords:
---   - admin@easyeat.com: SecurePass123 (BCrypt cost 12: $2a$12$7k8mJ0x0yK4eB4L7N5wS3uQ9pX2aC5vB8nM1jL4oP7qR0tU3wY6eK)
+--   - admin@easyeat.com: SecurePass123 (BCrypt cost 12: $2a$12$YN9mdfv/oelL9EQiNRqem.J8cetkck1qL0kA4PRwT5ZdLVKN9e4W2)
 --   - All other accounts: Password123 (BCrypt cost 12: $2a$12$jX0y55Hlj7f32Cz8lrFyMO97TFGkjX/8gWFoa.TtWL422i8qaU9/C)
 
 -- 1. Synthetic Admin (from Spec 001)
@@ -17,14 +17,14 @@ INSERT INTO users (
 ) VALUES (
     'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22',
     'admin@easyeat.com',
-    '$2a$12$7k8mJ0x0yK4eB4L7N5wS3uQ9pX2aC5vB8nM1jL4oP7qR0tU3wY6eK',
+    '$2a$12$YN9mdfv/oelL9EQiNRqem.J8cetkck1qL0kA4PRwT5ZdLVKN9e4W2',
     'ADMINISTRADOR',
     'ACTIVE',
     'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     0,
     NOW(),
     NOW()
-) ON CONFLICT (email) DO NOTHING;
+) ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, updated_at = NOW();
 
 -- 2. Encargado (Counter Manager)
 INSERT INTO users (
