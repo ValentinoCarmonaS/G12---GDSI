@@ -29,6 +29,27 @@ public class User {
     @Column(name = "full_name", nullable = false, length = 255)
     private String fullName = "Unnamed User";
 
+    @Column(name = "first_name", length = 100)
+    private String firstName;
+
+    @Column(name = "last_name", length = 100)
+    private String lastName;
+
+    @Column(name = "phone", length = 20)
+    private String phone;
+
+    @Column(name = "pending_email", length = 255)
+    private String pendingEmail;
+
+    @Column(name = "email_verification_token_hash", length = 64)
+    private String emailVerificationTokenHash;
+
+    @Column(name = "email_token_expires_at")
+    private Instant emailTokenExpiresAt;
+
+    @Column(name = "email_verification_last_sent_at")
+    private Instant emailVerificationLastSentAt;
+
     @Column(name = "must_change_password", nullable = false)
     private Boolean mustChangePassword = false;
 
@@ -187,4 +208,61 @@ public class User {
     public void setMustChangePassword(Boolean mustChangePassword) {
         this.mustChangePassword = mustChangePassword;
     }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getPendingEmail() {
+        return pendingEmail;
+    }
+
+    public void setPendingEmail(String pendingEmail) {
+        this.pendingEmail = pendingEmail;
+    }
+
+    public String getEmailVerificationTokenHash() {
+        return emailVerificationTokenHash;
+    }
+
+    public void setEmailVerificationTokenHash(String emailVerificationTokenHash) {
+        this.emailVerificationTokenHash = emailVerificationTokenHash;
+    }
+
+    public Instant getEmailTokenExpiresAt() {
+        return emailTokenExpiresAt;
+    }
+
+    public void setEmailTokenExpiresAt(Instant emailTokenExpiresAt) {
+        this.emailTokenExpiresAt = emailTokenExpiresAt;
+    }
+
+    public Instant getEmailVerificationLastSentAt() {
+        return emailVerificationLastSentAt;
+    }
+
+    public void setEmailVerificationLastSentAt(Instant emailVerificationLastSentAt) {
+        this.emailVerificationLastSentAt = emailVerificationLastSentAt;
+    }
 }
+
