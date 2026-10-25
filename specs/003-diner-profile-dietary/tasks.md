@@ -118,7 +118,7 @@
 
 - [X] T047 [P] [US3] Create Catalog domain entities (`Dish`, `DishDietaryRestrictionId`) in `easyeat/backend/src/main/java/com/easyeat/catalog/domain/`
 - [X] T048 [P] [US3] Create Catalog & Cart DTOs (`EnrichedDishResponse`, `CartComplianceRequest`, `CartComplianceResponse`, `CartItemEvaluation`) in `easyeat/backend/src/main/java/com/easyeat/catalog/dto/`
-- [ ] T049 [US3] Implement `DishRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/DishRepository.java` fetching dishes and tags scoped by `tenant_id`
+- [X] T049 [US3] Implement `DishRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/DishRepository.java` fetching dishes and tags scoped by `tenant_id`
 - [ ] T050 [US3] Implement `CatalogComplianceService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/CatalogComplianceService.java` evaluating strict intersection conjunction and enriching dishes with `isCompliant` and `conflictingRestrictions`
 - [ ] T051 [US3] Implement `CatalogController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/CatalogController.java` exposing `GET /api/v1/establishments/{tenantId}/dishes`
 - [ ] T052 [US3] Implement `CartComplianceController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/CartComplianceController.java` exposing `POST /api/v1/cart/evaluate-compliance`
