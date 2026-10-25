@@ -24,7 +24,7 @@
 
 **⚠️ CRITICAL**: No user story implementation can proceed until this phase is complete and verified.
 
-- [ ] T005 [P] Create Flyway migration `easyeat/backend/src/main/resources/db/migration/V5__extend_users_profile_and_dietary.sql` defining user profile columns (`first_name`, `last_name`, `phone`, `pending_email`, `email_verification_token_hash`, `email_token_expires_at`, `email_verification_last_sent_at`), dietary taxonomy, join tables, dishes, and catalog constraints
+- [X] T005 [P] Create Flyway migration `easyeat/backend/src/main/resources/db/migration/V5__extend_users_profile_and_dietary.sql` defining user profile columns (`first_name`, `last_name`, `phone`, `pending_email`, `email_verification_token_hash`, `email_token_expires_at`, `email_verification_last_sent_at`), dietary taxonomy, join tables, dishes, and catalog constraints
 - [ ] T006 [P] Create repeatable dev seed migration `easyeat/backend/src/main/resources/db/dev/R__seed_dev_dishes_and_dietary.sql` populating sample establishment dishes with allergens and lifestyle tags for tenant `a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11` (Admin establishment seed) for local testing
 - [ ] T007 Update `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` configuring `permitAll()` for `/api/v1/dietary-restrictions`, `/api/v1/profile/email-change/confirm`, and public catalog browsing `/api/v1/establishments/{tenantId}/dishes`
 - [ ] T008 [P] Update `User` entity in `easyeat/backend/src/main/java/com/easyeat/auth/domain/User.java` adding persistent fields for `first_name`, `last_name`, `phone`, `pending_email`, `email_verification_token_hash`, `email_token_expires_at`, and `email_verification_last_sent_at`
