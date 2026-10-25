@@ -205,7 +205,7 @@
 
 ---
 
-## Phase 12: Infrastructure Refactor - Agnostic SMTP Delivery & Configurable Sender (Priority: P2) [US3 & US4]
+## Phase 12: Infrastructure Refactor - Agnostic SMTP Delivery & Configurable Sender (Priority: P2) [US3 & US4] — [GitHub Issue #120](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/120)
 
 **Goal**: Enable flexible outbound password reset email dispatch via agnostic SMTP environment variables with zero-configuration fallback to local Mailpit and hierarchical sender address resolution.
 
