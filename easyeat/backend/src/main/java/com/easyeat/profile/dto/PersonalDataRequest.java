@@ -4,6 +4,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Request payload for updating diner personal contact information.
+ * Enforces alphabetic names (rejects digits and symbols) and optional phone format boundaries.
+ */
 public record PersonalDataRequest(
         @NotBlank(message = "El nombre es obligatorio")
         @Size(min = 1, max = 100, message = "El nombre no debe superar los 100 caracteres")
