@@ -164,15 +164,8 @@ export const AppRoutes: React.FC = () => {
       />
       <Route path="/profile" element={<Navigate to="/perfil" replace />} />
 
-      {/* Diner Home / Catalog Fallback View (COMENSAL + Staff Fallback) */}
-      <Route
-        path="/catalogo/*"
-        element={
-          <RoleRouteGuard allowedRoles={['COMENSAL', 'ENCARGADO', 'CHEF', 'ADMINISTRADOR']}>
-            <CatalogPage />
-          </RoleRouteGuard>
-        }
-      />
+      {/* Diner Home / Catalog View (Public for guests and diners) */}
+      <Route path="/catalogo/*" element={<CatalogPage />} />
       <Route path="/catalog/*" element={<Navigate to="/catalogo" replace />} />
 
       {/* Root redirect: to workspace if authenticated, or login if unauthenticated */}
