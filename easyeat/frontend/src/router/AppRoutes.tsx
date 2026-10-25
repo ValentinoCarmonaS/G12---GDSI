@@ -9,8 +9,12 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { CounterWorkspacePage } from '../pages/CounterWorkspacePage';
 import { KitchenWorkspacePage } from '../pages/KitchenWorkspacePage';
+import { ChefIngredientsPage } from '../pages/ChefIngredientsPage';
 import { AdminWorkspacePage } from '../pages/AdminWorkspacePage';
+import { StaffManagementPage } from '../pages/StaffManagementPage';
+import { InventoryManagementPage } from '../pages/InventoryManagementPage';
 import { CatalogPage } from '../pages/CatalogPage';
+import { FirstLoginPasswordPage } from '../pages/FirstLoginPasswordPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -22,9 +26,26 @@ export const AppRoutes: React.FC = () => {
         path="/login"
         element={
           isAuthenticated && user ? (
-            <Navigate to={getRoleDefaultRoute(user.role)} replace />
+            <Navigate
+              to={user.mustChangePassword ? '/first-login-password-change' : getRoleDefaultRoute(user.role)}
+              replace
+            />
           ) : (
             <LoginPage />
+          )
+        }
+      />
+
+      {/* Mandatory First-Login Password Change Gateway */}
+      <Route
+        path="/first-login-password-change"
+        element={
+          !isAuthenticated || !user ? (
+            <Navigate to="/login" replace />
+          ) : !user.mustChangePassword ? (
+            <Navigate to={getRoleDefaultRoute(user.role)} replace />
+          ) : (
+            <FirstLoginPasswordPage />
           )
         }
       />
@@ -74,6 +95,16 @@ export const AppRoutes: React.FC = () => {
 
       {/* Role-Protected Kitchen Display System Workspace (CHEF) */}
       <Route
+        path="/cocina/ingredientes"
+        element={
+          <RoleRouteGuard allowedRoles={['CHEF']}>
+            <ChefIngredientsPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route path="/kds/ingredients" element={<Navigate to="/cocina/ingredientes" replace />} />
+
+      <Route
         path="/cocina/*"
         element={
           <RoleRouteGuard allowedRoles={['CHEF']}>
@@ -82,6 +113,26 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route path="/kds/*" element={<Navigate to="/cocina" replace />} />
+
+      {/* Role-Protected Staff Management (ADMINISTRADOR) */}
+      <Route
+        path="/admin/staff"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <StaffManagementPage />
+          </RoleRouteGuard>
+        }
+      />
+
+      {/* Role-Protected Inventory Management (ADMINISTRADOR) */}
+      <Route
+        path="/admin/inventory"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <InventoryManagementPage />
+          </RoleRouteGuard>
+        }
+      />
 
       {/* Role-Protected Back-Office Administration Panel (ADMINISTRADOR) */}
       <Route
@@ -109,7 +160,10 @@ export const AppRoutes: React.FC = () => {
         path="/"
         element={
           isAuthenticated && user ? (
-            <Navigate to={getRoleDefaultRoute(user.role)} replace />
+            <Navigate
+              to={user.mustChangePassword ? '/first-login-password-change' : getRoleDefaultRoute(user.role)}
+              replace
+            />
           ) : (
             <Navigate to="/login" replace />
           )

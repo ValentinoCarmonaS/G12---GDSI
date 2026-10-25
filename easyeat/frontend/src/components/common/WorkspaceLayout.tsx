@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 interface WorkspaceLayoutProps {
@@ -35,6 +36,44 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             <span className="font-extrabold text-xl text-gray-900 tracking-tight">EasyEat</span>
             <span className="text-gray-300">|</span>
             <span className="font-medium text-gray-700">{title}</span>
+            {user?.role === 'CHEF' && (
+              <nav className="ml-4 hidden sm:flex items-center space-x-2 text-xs">
+                <Link
+                  to="/cocina"
+                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-gray-700 font-medium"
+                >
+                  Comandas KDS
+                </Link>
+                <Link
+                  to="/cocina/ingredientes"
+                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-orange-700 font-semibold"
+                >
+                  Ingredientes
+                </Link>
+              </nav>
+            )}
+            {user?.role === 'ADMINISTRADOR' && (
+              <nav className="ml-4 hidden sm:flex items-center space-x-2 text-xs">
+                <Link
+                  to="/admin"
+                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-gray-700 font-medium"
+                >
+                  Panel
+                </Link>
+                <Link
+                  to="/admin/staff"
+                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-purple-700 font-semibold"
+                >
+                  Personal
+                </Link>
+                <Link
+                  to="/admin/inventory"
+                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-purple-700 font-semibold"
+                >
+                  Inventario
+                </Link>
+              </nav>
+            )}
           </div>
 
           <div className="flex items-center gap-4">

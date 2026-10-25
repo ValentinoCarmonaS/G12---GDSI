@@ -175,11 +175,21 @@ class StaffAndInventoryQuickstartIntegrationTest {
         StaffRegistrationResponse regResp = objectMapper.readValue(regResult.getResponse().getContentAsString(), StaffRegistrationResponse.class);
         String tempPassword = regResp.temporaryCredential();
 
-        // Attempt login before password change -> 403 Account Suspended
+        // 1. Login with Temporary Credential -> 200 OK with must_change_password: true (FR-003, Quickstart Scenario 2)
         LoginRequest initialLoginReq = new LoginRequest(staffEmail, tempPassword);
-        mockMvc.perform(post("/api/v1/auth/login")
+        MvcResult tempLoginResult = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(initialLoginReq)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode tempTokenNode = objectMapper.readTree(tempLoginResult.getResponse().getContentAsString());
+        String tempToken = tempTokenNode.has("access_token") ? tempTokenNode.get("access_token").asText() : tempTokenNode.get("token").asText();
+        assertThat(jwtService.extractMustChangePassword(tempToken)).isTrue();
+
+        // 2. Attempt operational endpoint with temporary token -> 403 Forbidden
+        mockMvc.perform(get("/api/v1/chef/ingredients")
+                        .header("Authorization", "Bearer " + tempToken))
                 .andExpect(status().isForbidden());
 
         // Perform first login password change

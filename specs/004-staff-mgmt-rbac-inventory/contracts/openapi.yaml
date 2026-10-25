@@ -432,6 +432,37 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /admin/ingredients/{id}/stock-audit:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get stock audit trail history for an ingredient (ADM-4.1.2, FR-019)
+      description: Returns the immutable audit history of adjustments applied to the ingredient ordered chronologically descending. Alias for GET /admin/ingredients/{id}/stock-adjustments.
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Stock
+      responses:
+        '200':
+          description: Stock audit history.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StockAuditEntryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   # =========================================================================
   # 5. KITCHEN INGREDIENT CATALOG (CHEF)
   # =========================================================================
