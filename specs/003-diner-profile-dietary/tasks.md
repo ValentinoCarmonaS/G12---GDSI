@@ -45,7 +45,7 @@
 ### Tests for User Story 1 (TDD - Write First) ⚠️
 
 - [X] T010 [P] [US1] Unit test `ProfileServiceTest` in `easyeat/backend/src/test/java/com/easyeat/profile/service/ProfileServiceTest.java` verifying personal data update, alphabetic name validations, phone format checks, and automatic `full_name` synchronization
-- [ ] T011 [P] [US1] Unit test `EmailChangeServiceTest` in `easyeat/backend/src/test/java/com/easyeat/profile/service/EmailChangeServiceTest.java` verifying token generation, 60s cooldown enforcement (HTTP 429 ProblemDetail), previous token revocation on re-request, and session revocation via `token_version`
+- [X] T011 [P] [US1] Unit test `EmailChangeServiceTest` in `easyeat/backend/src/test/java/com/easyeat/profile/service/EmailChangeServiceTest.java` verifying token generation, 60s cooldown enforcement (HTTP 429 ProblemDetail), previous token revocation on re-request, and session revocation via `token_version`
 - [ ] T012 [P] [US1] Web contract test `ProfileControllerTest` in `easyeat/backend/src/test/java/com/easyeat/profile/controller/ProfileControllerTest.java` verifying `GET /api/v1/profile/me`, `PUT /api/v1/profile/personal-data`, and email change endpoints
 - [ ] T013 [P] [US1] Integration test `EmailChangeIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/profile/integration/EmailChangeIntegrationTest.java` using Testcontainers to verify end-to-end token consumption, DB constraints, cooldown, and `token_version` session revocation
 - [ ] T014 [P] [US1] Frontend component test `PersonalDataForm.test.tsx` in `easyeat/frontend/tests/components/PersonalDataForm.test.tsx` verifying input validation, submission, and cancel reset
