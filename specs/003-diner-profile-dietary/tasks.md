@@ -107,7 +107,7 @@
 
 - [X] T039 [P] [US3] Unit test `CatalogComplianceServiceTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/CatalogComplianceServiceTest.java` verifying strict conjunction AND logic, lifestyle matching, allergen exclusions, and guest fallback
 - [X] T040 [P] [US3] Web contract test `CatalogControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/CatalogControllerTest.java` verifying `GET /api/v1/establishments/{tenantId}/dishes` for authenticated diner and guest
-- [ ] T041 [P] [US3] Web contract test `CartComplianceControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/CartComplianceControllerTest.java` verifying `POST /api/v1/cart/evaluate-compliance`
+- [X] T041 [P] [US3] Web contract test `CartComplianceControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/CartComplianceControllerTest.java` verifying `POST /api/v1/cart/evaluate-compliance`
 - [ ] T042 [P] [US3] Integration test `CatalogComplianceIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/integration/CatalogComplianceIntegrationTest.java` verifying repository queries and tenant isolation
 - [ ] T043 [P] [US3] Frontend component test `CatalogMasterToggle.test.tsx` in `easyeat/frontend/tests/components/CatalogMasterToggle.test.tsx` verifying toggle visibility (hidden for 0 restrictions), default ON state, and flip action
 - [ ] T044 [P] [US3] Frontend component test `AllergenWarningBadge.test.tsx` in `easyeat/frontend/tests/components/AllergenWarningBadge.test.tsx` verifying rendering of specific conflicting restriction names
