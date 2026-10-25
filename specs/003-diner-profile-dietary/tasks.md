@@ -111,7 +111,7 @@
 - [X] T042 [P] [US3] Integration test `CatalogComplianceIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/integration/CatalogComplianceIntegrationTest.java` verifying repository queries and tenant isolation
 - [X] T043 [P] [US3] Frontend component test `CatalogMasterToggle.test.tsx` in `easyeat/frontend/tests/components/CatalogMasterToggle.test.tsx` verifying toggle visibility (hidden for 0 restrictions), default ON state, and flip action
 - [X] T044 [P] [US3] Frontend component test `AllergenWarningBadge.test.tsx` in `easyeat/frontend/tests/components/AllergenWarningBadge.test.tsx` verifying rendering of specific conflicting restriction names
-- [ ] T045 [P] [US3] Frontend component test `AddToCartRiskModal.test.tsx` in `easyeat/frontend/tests/components/AddToCartRiskModal.test.tsx` verifying preventive modal interception on conflicting dishes, explicit risk confirmation, and cancel blocking cart insertion per FR-021
+- [X] T045 [P] [US3] Frontend component test `AddToCartRiskModal.test.tsx` in `easyeat/frontend/tests/components/AddToCartRiskModal.test.tsx` verifying preventive modal interception on conflicting dishes, explicit risk confirmation, and cancel blocking cart insertion per FR-021
 - [ ] T046 [P] [US3] Frontend router integration test `AppRoutesProfileCatalog.test.tsx` in `easyeat/frontend/tests/router/AppRoutesProfileCatalog.test.tsx` verifying public access to `/catalogo/*`, role guard protection on `/perfil`, and redirect aliases
 
 ### Implementation for User Story 3
