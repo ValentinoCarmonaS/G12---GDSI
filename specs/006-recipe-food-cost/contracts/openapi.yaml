@@ -1,0 +1,287 @@
+openapi: 3.0.3
+info:
+  title: EasyEat - Recipe Management and Food Cost Audit API
+  version: 1.0.0
+  description: API contracts for dish recipe persistence (Many-to-Many) and automated food cost auditing with dynamic allergen label aggregation (Sprint 2 - ADM-5.1.2, CHF-2.2.2).
+servers:
+  - url: /api/v1
+    description: Production & Local Gateway
+
+paths:
+  /dishes/{dishId}/recipe:
+    put:
+      summary: Set technical recipe composition (Full Replacement)
+      description: Replaces the entire recipe composition of a dish atomically. Requires CHEF or ADMIN role. Fails with 409 Conflict if the dish is currently published/active.
+      operationId: setDishRecipe
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: dishId
+          in: path
+          required: true
+          description: Unique identifier of the dish
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetRecipeRequest'
+      responses:
+        '200':
+          description: Recipe successfully persisted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeDetailResponse'
+        '400':
+          description: Validation error, empty list, or incompatible unit of measure
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden (insufficient privileges or cross-tenant access)
+        '404':
+          description: Dish or ingredient not found
+        '409':
+          description: Conflict (dish is in Active/published state and cannot be modified in-place)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /dishes/{dishId}/cost-audit:
+    get:
+      summary: Retrieve dynamic Food Cost audit and required labels
+      description: Computes real-time raw material production cost per portion and aggregates required dietary/allergen tags. Restricted exclusively to ADMINISTRADOR role.
+      operationId: auditDishCost
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: dishId
+          in: path
+          required: true
+          description: Unique identifier of the dish
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Itemized Food Cost audit and required labels breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodCostAuditResponse'
+        '400':
+          description: Dish has no assigned recipe
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden (access restricted strictly to ADMIN)
+        '404':
+          description: Dish not found
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UnitOfMeasure:
+      type: string
+      enum: [G, KG, ML, L, U]
+      example: G
+
+    RecipeItemRequest:
+      type: object
+      required:
+        - ingredientId
+        - quantity
+        - unitOfMeasure
+      properties:
+        ingredientId:
+          type: string
+          format: uuid
+          example: 7d6c6e12-4f32-47d3-9f56-2e86bf30fa12
+        quantity:
+          type: number
+          format: decimal
+          minimum: 0.0001
+          example: 250.0
+        unitOfMeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+
+    SetRecipeRequest:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RecipeItemRequest'
+
+    RecipeItemDetailResponse:
+      type: object
+      required:
+        - id
+        - ingredientId
+        - ingredientName
+        - quantity
+        - unitOfMeasure
+      properties:
+        id:
+          type: string
+          format: uuid
+        ingredientId:
+          type: string
+          format: uuid
+        ingredientName:
+          type: string
+          example: Harina 000
+        quantity:
+          type: number
+          format: decimal
+          example: 250.0
+        unitOfMeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+
+    RecipeDetailResponse:
+      type: object
+      required:
+        - dishId
+        - items
+        - updatedAt
+      properties:
+        dishId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeItemDetailResponse'
+        updatedAt:
+          type: string
+          format: date-time
+
+    RecipeItemAuditResponse:
+      type: object
+      required:
+        - ingredientId
+        - ingredientName
+        - recipeQuantity
+        - recipeUnit
+        - unitPurchaseCost
+        - purchaseUnit
+        - lineSubtotal
+        - unpricedWarning
+      properties:
+        ingredientId:
+          type: string
+          format: uuid
+        ingredientName:
+          type: string
+          example: Tomate Perita
+        recipeQuantity:
+          type: number
+          format: decimal
+          example: 150.0
+        recipeUnit:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        unitPurchaseCost:
+          type: number
+          format: decimal
+          example: 1200.00
+        purchaseUnit:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        lineSubtotal:
+          type: number
+          format: decimal
+          example: 180.00
+        unpricedWarning:
+          type: boolean
+          example: false
+
+    FoodCostAuditResponse:
+      type: object
+      required:
+        - dishId
+        - dishName
+        - totalFoodCost
+        - hasUnpricedIngredients
+        - warningNotes
+        - requiredDietaryRestrictions
+        - items
+      properties:
+        dishId:
+          type: string
+          format: uuid
+        dishName:
+          type: string
+          example: Pizza Margherita
+        totalFoodCost:
+          type: number
+          format: decimal
+          example: 850.50
+        hasUnpricedIngredients:
+          type: boolean
+          example: false
+        warningNotes:
+          type: array
+          items:
+            type: string
+          example: []
+        requiredDietaryRestrictions:
+          type: array
+          items:
+            type: string
+          example: ["GLUTEN", "LACTOSE"]
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeItemAuditResponse'
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://api.easyeat.com/errors/invalid-recipe
+        title:
+          type: string
+          example: Invalid Recipe Composition
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: Unit of measure 'ML' is dimensionally incompatible with inventory unit 'KG'.
+        instance:
+          type: string
+          example: /api/v1/dishes/7d6c6e12-4f32-47d3-9f56-2e86bf30fa12/recipe
+        invalidParams:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              reason:
+                type: string
