@@ -85,7 +85,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T032 [P] [US2] Create Dietary domain entities (`DietaryRestriction`, `DietaryCategory`, `UserDietaryRestrictionId`) in `easyeat/backend/src/main/java/com/easyeat/profile/domain/`
+- [X] T032 [P] [US2] Create Dietary domain entities (`DietaryRestriction`, `DietaryCategory`, `UserDietaryRestrictionId`) in `easyeat/backend/src/main/java/com/easyeat/profile/domain/`
 - [ ] T033 [P] [US2] Create Dietary DTOs (`DietaryRestrictionItemDto`, `DietaryPreferencesRequest`) in `easyeat/backend/src/main/java/com/easyeat/profile/dto/`
 - [ ] T034 [US2] Implement `DietaryRestrictionRepository` in `easyeat/backend/src/main/java/com/easyeat/profile/repository/DietaryRestrictionRepository.java`
 - [ ] T035 [US2] Implement `DietaryRestrictionService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/DietaryRestrictionService.java` managing taxonomy querying and atomic preferences updates
