@@ -13,7 +13,7 @@
 
 - [X] T001 Initialize package structure for profile and catalog modules under `easyeat/backend/src/main/java/com/easyeat/profile/` and `easyeat/backend/src/main/java/com/easyeat/catalog/`
 - [X] T002 [P] Configure `EmailSender` interface and dev/test logging stubs (`LoggingEmailSender` under `@Profile("dev | test")` printing raw verification token URLs to console logs at `INFO`) in `easyeat/backend/src/main/resources/application.yml` and `application-test.yml`
-- [ ] T003 [P] Create domain exceptions (`EmailVerificationException`, `CooldownRateLimitException`, `DietaryTaxonomyException`, `DishNotFoundException`) in `easyeat/backend/src/main/java/com/easyeat/profile/exception/` and `easyeat/backend/src/main/java/com/easyeat/catalog/exception/`
+- [X] T003 [P] Create domain exceptions (`EmailVerificationException`, `CooldownRateLimitException`, `DietaryTaxonomyException`, `DishNotFoundException`) in `easyeat/backend/src/main/java/com/easyeat/profile/exception/` and `easyeat/backend/src/main/java/com/easyeat/catalog/exception/`
 - [ ] T004 Update `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` mapping profile/catalog exceptions to RFC 9457 `ProblemDetail` with appropriate status codes (400, 404, 409, 422, 429)
 
 ---
