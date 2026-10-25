@@ -19,9 +19,13 @@ public class EmailService {
 
     public EmailService(
             @Autowired(required = false) JavaMailSender mailSender,
-            @Value("${spring.mail.username:noreply@easyeat.com}") String fromEmail) {
+            @Value("${app.mail.from:${spring.mail.username:noreply@easyeat.com}}") String fromEmail) {
         this.mailSender = mailSender;
-        this.fromEmail = fromEmail != null && !fromEmail.isBlank() ? fromEmail : "noreply@easyeat.com";
+        this.fromEmail = fromEmail != null && !fromEmail.isBlank() ? fromEmail.trim() : "noreply@easyeat.com";
+    }
+
+    public String getFromEmail() {
+        return fromEmail;
     }
 
     @Async
