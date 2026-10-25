@@ -1,24 +1,26 @@
-export interface CartItem {
-  dishId: string;
-  name: string;
-  price: number;
-  quantity: number;
-  isCompliant?: boolean;
-  conflictingRestrictions?: string[];
-}
+import { useContext } from 'react';
+import { CartContext, CartContextType } from '../context/CartContext';
+import { CartItem } from '../types/cart';
 
-export function useCart() {
-  // Minimal base hook for Phase 4; will be expanded with full CartContext and backend API in Phase 5 (T055)
-  const items: CartItem[] = [];
+export type { CartItem };
 
-  const reEvaluateCompliance = async () => {
-    // Proactive compliance re-evaluation stub; will query POST /api/v1/cart/evaluate-compliance in Phase 5
-  };
-
-  return {
-    items,
-    reEvaluateCompliance,
-  };
+export function useCart(): CartContextType {
+  const context = useContext(CartContext);
+  if (!context) {
+    // Graceful fallback for components mounted outside CartProvider
+    return {
+      items: [],
+      addItem: () => {},
+      removeItem: () => {},
+      updateQuantity: () => {},
+      clearCart: () => {},
+      reEvaluateCompliance: async () => {},
+      totalAmount: 0,
+      totalCount: 0,
+      hasConflictingItems: false,
+    };
+  }
+  return context;
 }
 
 export default useCart;

@@ -124,7 +124,7 @@
 - [X] T052 [US3] Implement `CartComplianceController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/CartComplianceController.java` exposing `POST /api/v1/cart/evaluate-compliance`
 - [X] T053 [P] [US3] Create frontend API client `catalogApi.ts` in `easyeat/frontend/src/api/catalogApi.ts`, custom hook `useCatalog.ts` resolving `tenantId` from URL params (`/catalogo/:tenantId` or `?tenantId=...`) or `sessionStorage('activeTenantId')` with fallback to default dev seed tenant (`a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`), and types in `catalog.ts` and `cart.ts`
 - [X] T054 [P] [US3] Implement `CatalogFilterContext.tsx` in `easyeat/frontend/src/context/CatalogFilterContext.tsx` managing ephemeral master toggle state with automatic reset on reload or establishment change
-- [ ] T055 [P] [US3] Implement `CartContext.tsx` in `easyeat/frontend/src/context/CartContext.tsx` managing cart dishes, exposing proactive `reEvaluateCompliance()` method, live compliance evaluation via `POST /api/v1/cart/evaluate-compliance`, and risk confirmation state
+- [X] T055 [P] [US3] Implement `CartContext.tsx` in `easyeat/frontend/src/context/CartContext.tsx` managing cart dishes, exposing proactive `reEvaluateCompliance()` method, live compliance evaluation via `POST /api/v1/cart/evaluate-compliance`, and risk confirmation state
 - [ ] T056 [P] [US3] Implement `CatalogMasterToggle.tsx` in `easyeat/frontend/src/components/catalog/CatalogMasterToggle.tsx`
 - [ ] T057 [P] [US3] Implement `DishCard.tsx` and `AllergenWarningBadge.tsx` in `easyeat/frontend/src/components/catalog/`
 - [ ] T058 [P] [US3] Implement `EmptyCatalogDietaryState.tsx` in `easyeat/frontend/src/components/catalog/EmptyCatalogDietaryState.tsx` with one-click action to view full menu
