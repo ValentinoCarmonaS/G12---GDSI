@@ -44,27 +44,27 @@
 
 ### Tests for User Story 1 (TDD - Write First) ⚠️
 
-- [ ] T010 [P] [US1] Unit test `ProfileServiceTest` in `easyeat/backend/src/test/java/com/easyeat/profile/service/ProfileServiceTest.java` verifying personal data update, alphabetic name validations, phone format checks, and automatic `full_name` synchronization
-- [ ] T011 [P] [US1] Unit test `EmailChangeServiceTest` in `easyeat/backend/src/test/java/com/easyeat/profile/service/EmailChangeServiceTest.java` verifying token generation, 60s cooldown enforcement (HTTP 429 ProblemDetail), previous token revocation on re-request, and session revocation via `token_version`
-- [ ] T012 [P] [US1] Web contract test `ProfileControllerTest` in `easyeat/backend/src/test/java/com/easyeat/profile/controller/ProfileControllerTest.java` verifying `GET /api/v1/profile/me`, `PUT /api/v1/profile/personal-data`, and email change endpoints
-- [ ] T013 [P] [US1] Integration test `EmailChangeIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/profile/integration/EmailChangeIntegrationTest.java` using Testcontainers to verify end-to-end token consumption, DB constraints, cooldown, and `token_version` session revocation
-- [ ] T014 [P] [US1] Frontend component test `PersonalDataForm.test.tsx` in `easyeat/frontend/tests/components/PersonalDataForm.test.tsx` verifying input validation, submission, and cancel reset
-- [ ] T015 [P] [US1] Frontend component test `PendingEmailBanner.test.tsx` in `easyeat/frontend/tests/components/PendingEmailBanner.test.tsx` verifying 60s resend cooldown timer and cancel request triggers
+- [X] T010 [P] [US1] Unit test `ProfileServiceTest` in `easyeat/backend/src/test/java/com/easyeat/profile/service/ProfileServiceTest.java` verifying personal data update, alphabetic name validations, phone format checks, and automatic `full_name` synchronization
+- [X] T011 [P] [US1] Unit test `EmailChangeServiceTest` in `easyeat/backend/src/test/java/com/easyeat/profile/service/EmailChangeServiceTest.java` verifying token generation, 60s cooldown enforcement (HTTP 429 ProblemDetail), previous token revocation on re-request, and session revocation via `token_version`
+- [X] T012 [P] [US1] Web contract test `ProfileControllerTest` in `easyeat/backend/src/test/java/com/easyeat/profile/controller/ProfileControllerTest.java` verifying `GET /api/v1/profile/me`, `PUT /api/v1/profile/personal-data`, and email change endpoints
+- [X] T013 [P] [US1] Integration test `EmailChangeIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/profile/integration/EmailChangeIntegrationTest.java` using Testcontainers to verify end-to-end token consumption, DB constraints, cooldown, and `token_version` session revocation
+- [X] T014 [P] [US1] Frontend component test `PersonalDataForm.test.tsx` in `easyeat/frontend/tests/components/PersonalDataForm.test.tsx` verifying input validation, submission, and cancel reset
+- [X] T015 [P] [US1] Frontend component test `PendingEmailBanner.test.tsx` in `easyeat/frontend/tests/components/PendingEmailBanner.test.tsx` verifying 60s resend cooldown timer and cancel request triggers
 
 ### Implementation for User Story 1
 
-- [ ] T016 [P] [US1] Create Profile DTOs (`PersonalDataRequest`, `ProfileResponse`, `EmailChangeRequestDto`, `EmailChangeInitiatedResponse`, `EmailConfirmationRequest`, `EmailConfirmedResponse`) in `easyeat/backend/src/main/java/com/easyeat/profile/dto/`
-- [ ] T017 [US1] Implement `EmailChangeService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/EmailChangeService.java` handling token generation, SHA-256 hashing, delegating dispatch to `EmailSender` interface (logged to console in dev/test per DIP), 60s cooldown rate-limiting, and `token_version` increment
-- [ ] T018 [US1] Implement `ProfileService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/ProfileService.java` managing diner contact updates, synchronizing `full_name = first_name.trim() + " " + last_name.trim()`, and retrieving profile state
-- [ ] T019 [US1] Implement `ProfileController` in `easyeat/backend/src/main/java/com/easyeat/profile/controller/ProfileController.java` exposing `/api/v1/profile/me`, `/api/v1/profile/personal-data`, and `/api/v1/profile/email-change/**`
-- [ ] T020 [P] [US1] Create frontend API client `profileApi.ts` in `easyeat/frontend/src/api/profileApi.ts` and TypeScript interfaces in `easyeat/frontend/src/types/profile.ts`
-- [ ] T021 [P] [US1] Implement custom hook `useProfile.ts` in `easyeat/frontend/src/hooks/useProfile.ts` for managing profile data fetching, mutation state, and email verification status
-- [ ] T022 [P] [US1] Implement `PersonalDataForm.tsx` in `easyeat/frontend/src/components/profile/PersonalDataForm.tsx` with alphabetic regex checks, optional phone syntax validation, and discard changes action
-- [ ] T023 [P] [US1] Implement `PendingEmailBanner.tsx` in `easyeat/frontend/src/components/profile/PendingEmailBanner.tsx` displaying pending status badge, 60s reactive countdown timer, and cancel action
-- [ ] T024 [US1] Implement `VerifyEmailPage.tsx` in `easyeat/frontend/src/pages/VerifyEmailPage.tsx` mounted at `/verificar-email` to handle email verification token URL callbacks and display success/expired messaging
-- [ ] T025 [US1] Implement `ProfilePage.tsx` in `easyeat/frontend/src/pages/ProfilePage.tsx` mounted at `/perfil` assembling personal data form and email banner
-- [ ] T026 [US1] Update `WorkspaceLayout.tsx` in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` adding "Catálogo" (`/catalogo`) and "Mi perfil" (`/perfil`) navigation links for `COMENSAL` users, and ensuring that when `user` is null, "Cerrar sesión" is hidden and "Iniciar sesión" (`/login`) / "Registrarse" (`/register`) links are rendered for unauthenticated guests (FR-026)
-- [ ] T027 [US1] Register `/perfil` (role-guarded for `COMENSAL`), `/verificar-email`, and redirects (`/profile` → `/perfil`, `/verify-email` → `/verificar-email`) in `easyeat/frontend/src/router/AppRoutes.tsx`
+- [X] T016 [P] [US1] Create Profile DTOs (`PersonalDataRequest`, `ProfileResponse`, `EmailChangeRequestDto`, `EmailChangeInitiatedResponse`, `EmailConfirmationRequest`, `EmailConfirmedResponse`) in `easyeat/backend/src/main/java/com/easyeat/profile/dto/`
+- [X] T017 [US1] Implement `EmailChangeService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/EmailChangeService.java` handling token generation, SHA-256 hashing, delegating dispatch to `EmailSender` interface (logged to console in dev/test per DIP), 60s cooldown rate-limiting, and `token_version` increment
+- [X] T018 [US1] Implement `ProfileService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/ProfileService.java` managing diner contact updates, synchronizing `full_name = first_name.trim() + " " + last_name.trim()`, and retrieving profile state
+- [X] T019 [US1] Implement `ProfileController` in `easyeat/backend/src/main/java/com/easyeat/profile/controller/ProfileController.java` exposing `/api/v1/profile/me`, `/api/v1/profile/personal-data`, and `/api/v1/profile/email-change/**`
+- [X] T020 [P] [US1] Create frontend API client `profileApi.ts` in `easyeat/frontend/src/api/profileApi.ts` and TypeScript interfaces in `easyeat/frontend/src/types/profile.ts`
+- [X] T021 [P] [US1] Implement custom hook `useProfile.ts` in `easyeat/frontend/src/hooks/useProfile.ts` for managing profile data fetching, mutation state, and email verification status
+- [X] T022 [P] [US1] Implement `PersonalDataForm.tsx` in `easyeat/frontend/src/components/profile/PersonalDataForm.tsx` with alphabetic regex checks, optional phone syntax validation, and discard changes action
+- [X] T023 [P] [US1] Implement `PendingEmailBanner.tsx` in `easyeat/frontend/src/components/profile/PendingEmailBanner.tsx` displaying pending status badge, 60s reactive countdown timer, and cancel action
+- [X] T024 [US1] Implement `VerifyEmailPage.tsx` in `easyeat/frontend/src/pages/VerifyEmailPage.tsx` mounted at `/verificar-email` to handle email verification token URL callbacks and display success/expired messaging
+- [X] T025 [US1] Implement `ProfilePage.tsx` in `easyeat/frontend/src/pages/ProfilePage.tsx` mounted at `/perfil` assembling personal data form and email banner
+- [X] T026 [US1] Update `WorkspaceLayout.tsx` in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` adding "Catálogo" (`/catalogo`) and "Mi perfil" (`/perfil`) navigation links for `COMENSAL` users, and ensuring that when `user` is null, "Cerrar sesión" is hidden and "Iniciar sesión" (`/login`) / "Registrarse" (`/register`) links are rendered for unauthenticated guests (FR-026)
+- [X] T027 [US1] Register `/perfil` (role-guarded for `COMENSAL`), `/verificar-email`, and redirects (`/profile` → `/perfil`, `/verify-email` → `/verificar-email`) in `easyeat/frontend/src/router/AppRoutes.tsx`
 
 **Checkpoint**: User Story 1 (MVP) fully functional and testable independently.
 
