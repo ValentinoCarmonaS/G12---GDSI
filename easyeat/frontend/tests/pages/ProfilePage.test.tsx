@@ -115,7 +115,7 @@ describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
     vi.spyOn(useCartModule, 'useCart').mockReturnValue({
       items: [{ dishId: 'dish-1', name: 'Plato Test', price: 1000, quantity: 1 }],
       reEvaluateCompliance: mockReEvaluate,
-    });
+    } as any);
 
     vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
     vi.spyOn(profileApi, 'updateDietaryRestrictions').mockResolvedValueOnce([

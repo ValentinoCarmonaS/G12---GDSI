@@ -105,33 +105,33 @@
 
 ### Tests for User Story 3 (TDD - Write First) ⚠️
 
-- [ ] T039 [P] [US3] Unit test `CatalogComplianceServiceTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/CatalogComplianceServiceTest.java` verifying strict conjunction AND logic, lifestyle matching, allergen exclusions, and guest fallback
-- [ ] T040 [P] [US3] Web contract test `CatalogControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/CatalogControllerTest.java` verifying `GET /api/v1/establishments/{tenantId}/dishes` for authenticated diner and guest
-- [ ] T041 [P] [US3] Web contract test `CartComplianceControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/CartComplianceControllerTest.java` verifying `POST /api/v1/cart/evaluate-compliance`
-- [ ] T042 [P] [US3] Integration test `CatalogComplianceIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/integration/CatalogComplianceIntegrationTest.java` verifying repository queries and tenant isolation
-- [ ] T043 [P] [US3] Frontend component test `CatalogMasterToggle.test.tsx` in `easyeat/frontend/tests/components/CatalogMasterToggle.test.tsx` verifying toggle visibility (hidden for 0 restrictions), default ON state, and flip action
-- [ ] T044 [P] [US3] Frontend component test `AllergenWarningBadge.test.tsx` in `easyeat/frontend/tests/components/AllergenWarningBadge.test.tsx` verifying rendering of specific conflicting restriction names
-- [ ] T045 [P] [US3] Frontend component test `AddToCartRiskModal.test.tsx` in `easyeat/frontend/tests/components/AddToCartRiskModal.test.tsx` verifying preventive modal interception on conflicting dishes, explicit risk confirmation, and cancel blocking cart insertion per FR-021
-- [ ] T046 [P] [US3] Frontend router integration test `AppRoutesProfileCatalog.test.tsx` in `easyeat/frontend/tests/router/AppRoutesProfileCatalog.test.tsx` verifying public access to `/catalogo/*`, role guard protection on `/perfil`, and redirect aliases
+- [X] T039 [P] [US3] Unit test `CatalogComplianceServiceTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/CatalogComplianceServiceTest.java` verifying strict conjunction AND logic, lifestyle matching, allergen exclusions, and guest fallback
+- [X] T040 [P] [US3] Web contract test `CatalogControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/CatalogControllerTest.java` verifying `GET /api/v1/establishments/{tenantId}/dishes` for authenticated diner and guest
+- [X] T041 [P] [US3] Web contract test `CartComplianceControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/CartComplianceControllerTest.java` verifying `POST /api/v1/cart/evaluate-compliance`
+- [X] T042 [P] [US3] Integration test `CatalogComplianceIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/integration/CatalogComplianceIntegrationTest.java` verifying repository queries and tenant isolation
+- [X] T043 [P] [US3] Frontend component test `CatalogMasterToggle.test.tsx` in `easyeat/frontend/tests/components/CatalogMasterToggle.test.tsx` verifying toggle visibility (hidden for 0 restrictions), default ON state, and flip action
+- [X] T044 [P] [US3] Frontend component test `AllergenWarningBadge.test.tsx` in `easyeat/frontend/tests/components/AllergenWarningBadge.test.tsx` verifying rendering of specific conflicting restriction names
+- [X] T045 [P] [US3] Frontend component test `AddToCartRiskModal.test.tsx` in `easyeat/frontend/tests/components/AddToCartRiskModal.test.tsx` verifying preventive modal interception on conflicting dishes, explicit risk confirmation, and cancel blocking cart insertion per FR-021
+- [X] T046 [P] [US3] Frontend router integration test `AppRoutesProfileCatalog.test.tsx` in `easyeat/frontend/tests/router/AppRoutesProfileCatalog.test.tsx` verifying public access to `/catalogo/*`, role guard protection on `/perfil`, and redirect aliases
 
 ### Implementation for User Story 3
 
-- [ ] T047 [P] [US3] Create Catalog domain entities (`Dish`, `DishDietaryRestrictionId`) in `easyeat/backend/src/main/java/com/easyeat/catalog/domain/`
-- [ ] T048 [P] [US3] Create Catalog & Cart DTOs (`EnrichedDishResponse`, `CartComplianceRequest`, `CartComplianceResponse`, `CartItemEvaluation`) in `easyeat/backend/src/main/java/com/easyeat/catalog/dto/`
-- [ ] T049 [US3] Implement `DishRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/DishRepository.java` fetching dishes and tags scoped by `tenant_id`
-- [ ] T050 [US3] Implement `CatalogComplianceService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/CatalogComplianceService.java` evaluating strict intersection conjunction and enriching dishes with `isCompliant` and `conflictingRestrictions`
-- [ ] T051 [US3] Implement `CatalogController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/CatalogController.java` exposing `GET /api/v1/establishments/{tenantId}/dishes`
-- [ ] T052 [US3] Implement `CartComplianceController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/CartComplianceController.java` exposing `POST /api/v1/cart/evaluate-compliance`
-- [ ] T053 [P] [US3] Create frontend API client `catalogApi.ts` in `easyeat/frontend/src/api/catalogApi.ts`, custom hook `useCatalog.ts` resolving `tenantId` from URL params (`/catalogo/:tenantId` or `?tenantId=...`) or `sessionStorage('activeTenantId')` with fallback to default dev seed tenant (`a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`), and types in `catalog.ts` and `cart.ts`
-- [ ] T054 [P] [US3] Implement `CatalogFilterContext.tsx` in `easyeat/frontend/src/context/CatalogFilterContext.tsx` managing ephemeral master toggle state with automatic reset on reload or establishment change
-- [ ] T055 [P] [US3] Implement `CartContext.tsx` in `easyeat/frontend/src/context/CartContext.tsx` managing cart dishes, exposing proactive `reEvaluateCompliance()` method, live compliance evaluation via `POST /api/v1/cart/evaluate-compliance`, and risk confirmation state
-- [ ] T056 [P] [US3] Implement `CatalogMasterToggle.tsx` in `easyeat/frontend/src/components/catalog/CatalogMasterToggle.tsx`
-- [ ] T057 [P] [US3] Implement `DishCard.tsx` and `AllergenWarningBadge.tsx` in `easyeat/frontend/src/components/catalog/`
-- [ ] T058 [P] [US3] Implement `EmptyCatalogDietaryState.tsx` in `easyeat/frontend/src/components/catalog/EmptyCatalogDietaryState.tsx` with one-click action to view full menu
-- [ ] T059 [P] [US3] Implement `CartDrawer.tsx` and `CartItemWithBadge.tsx` in `easyeat/frontend/src/components/cart/` displaying permanent visible warning badges without redundant blocking modal at checkout (FR-022)
-- [ ] T060 [P] [US3] Implement `AddToCartRiskModal.tsx` in `easyeat/frontend/src/components/cart/AddToCartRiskModal.tsx` intercepting cart additions on conflicting dishes (FR-021)
-- [ ] T061 [US3] Update `CatalogPage.tsx` in `easyeat/frontend/src/pages/CatalogPage.tsx` mounted at `/catalogo` (supporting optional route param `:tenantId` and fallback resolution), integrating master toggle, empty state, dish grid with warning badges, cart drawer, and guest banner inviting login/register (FR-026)
-- [ ] T062 [US3] Update `AppRoutes.tsx` in `easyeat/frontend/src/router/AppRoutes.tsx` allowing unauthenticated guest access to `/catalogo/*` and canonical alias `/catalog/*`
+- [X] T047 [P] [US3] Create Catalog domain entities (`Dish`, `DishDietaryRestrictionId`) in `easyeat/backend/src/main/java/com/easyeat/catalog/domain/`
+- [X] T048 [P] [US3] Create Catalog & Cart DTOs (`EnrichedDishResponse`, `CartComplianceRequest`, `CartComplianceResponse`, `CartItemEvaluation`) in `easyeat/backend/src/main/java/com/easyeat/catalog/dto/`
+- [X] T049 [US3] Implement `DishRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/DishRepository.java` fetching dishes and tags scoped by `tenant_id`
+- [X] T050 [US3] Implement `CatalogComplianceService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/CatalogComplianceService.java` evaluating strict intersection conjunction and enriching dishes with `isCompliant` and `conflictingRestrictions`
+- [X] T051 [US3] Implement `CatalogController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/CatalogController.java` exposing `GET /api/v1/establishments/{tenantId}/dishes`
+- [X] T052 [US3] Implement `CartComplianceController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/CartComplianceController.java` exposing `POST /api/v1/cart/evaluate-compliance`
+- [X] T053 [P] [US3] Create frontend API client `catalogApi.ts` in `easyeat/frontend/src/api/catalogApi.ts`, custom hook `useCatalog.ts` resolving `tenantId` from URL params (`/catalogo/:tenantId` or `?tenantId=...`) or `sessionStorage('activeTenantId')` with fallback to default dev seed tenant (`a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`), and types in `catalog.ts` and `cart.ts`
+- [X] T054 [P] [US3] Implement `CatalogFilterContext.tsx` in `easyeat/frontend/src/context/CatalogFilterContext.tsx` managing ephemeral master toggle state with automatic reset on reload or establishment change
+- [X] T055 [P] [US3] Implement `CartContext.tsx` in `easyeat/frontend/src/context/CartContext.tsx` managing cart dishes, exposing proactive `reEvaluateCompliance()` method, live compliance evaluation via `POST /api/v1/cart/evaluate-compliance`, and risk confirmation state
+- [X] T056 [P] [US3] Implement `CatalogMasterToggle.tsx` in `easyeat/frontend/src/components/catalog/CatalogMasterToggle.tsx`
+- [X] T057 [P] [US3] Implement `DishCard.tsx` and `AllergenWarningBadge.tsx` in `easyeat/frontend/src/components/catalog/`
+- [X] T058 [P] [US3] Implement `EmptyCatalogDietaryState.tsx` in `easyeat/frontend/src/components/catalog/EmptyCatalogDietaryState.tsx` with one-click action to view full menu
+- [X] T059 [P] [US3] Implement `CartDrawer.tsx` and `CartItemWithBadge.tsx` in `easyeat/frontend/src/components/cart/` displaying permanent visible warning badges without redundant blocking modal at checkout (FR-022)
+- [X] T060 [P] [US3] Implement `AddToCartRiskModal.tsx` in `easyeat/frontend/src/components/cart/AddToCartRiskModal.tsx` intercepting cart additions on conflicting dishes (FR-021)
+- [X] T061 [US3] Update `CatalogPage.tsx` in `easyeat/frontend/src/pages/CatalogPage.tsx` mounted at `/catalogo` (supporting optional route param `:tenantId` and fallback resolution), integrating master toggle, empty state, dish grid with warning badges, cart drawer, and guest banner inviting login/register (FR-026)
+- [X] T062 [US3] Update `AppRoutes.tsx` in `easyeat/frontend/src/router/AppRoutes.tsx` allowing unauthenticated guest access to `/catalogo/*` and canonical alias `/catalog/*`
 
 **Checkpoint**: All user stories fully implemented and integrated.
 
