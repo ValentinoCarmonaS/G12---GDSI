@@ -211,11 +211,11 @@
 
 ### Implementation and Verification for Infrastructure Refactor
 
-- [ ] T065 [P] [US3] Create reference environment template `easyeat/backend/.env.example` documenting default mock relay (Mailpit on `localhost:1025`) and authenticated external relay (Gmail with TLS/App Passwords) parameters conforming to FR-012d.
-- [ ] T066 [P] [US3] Update development configuration in `easyeat/backend/src/main/resources/application-dev.yml` mapping Spring Mail properties (`host`, `port`, `username`, `password`, `properties.mail.smtp.auth`, `properties.mail.smtp.starttls.enable`) and `app.mail.from` to standard environment variables with automatic non-breaking fallback to Mailpit (FR-012a, FR-012b).
-- [ ] T067 [US3] Refactor `EmailService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/EmailService.java` to inject `@Value("${app.mail.from:${spring.mail.username:noreply@easyeat.com}}")`, implementing hierarchical sender address resolution and logging masked dispatch metadata conforming to FR-012c.
-- [ ] T068 [P] [US3] Write unit tests in `easyeat/backend/src/test/java/com/easyeat/auth/service/EmailServiceTest.java` verifying hierarchical sender resolution under explicit `app.mail.from`, username fallback, and default fallback, plus message payload formatting with Mockito (FR-012a, FR-012c).
-- [ ] T069 [US3] Execute full backend test suite (`mvn test`) asserting zero regressions across `PasswordResetServiceTest`, `AuthControllerTest`, and security integration tests, and verify application context startup with `dev` profile.
+- [X] T065 [P] [US3] Create reference environment template `easyeat/backend/.env.example` documenting default mock relay (Mailpit on `localhost:1025`) and authenticated external relay (Gmail with TLS/App Passwords) parameters conforming to FR-012d.
+- [X] T066 [P] [US3] Update development configuration in `easyeat/backend/src/main/resources/application-dev.yml` mapping Spring Mail properties (`host`, `port`, `username`, `password`, `properties.mail.smtp.auth`, `properties.mail.smtp.starttls.enable`) and `app.mail.from` to standard environment variables with automatic non-breaking fallback to Mailpit (FR-012a, FR-012b).
+- [X] T067 [US3] Refactor `EmailService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/EmailService.java` to inject `@Value("${app.mail.from:${spring.mail.username:noreply@easyeat.com}}")`, implementing hierarchical sender address resolution and logging masked dispatch metadata conforming to FR-012c.
+- [X] T068 [P] [US3] Write unit tests in `easyeat/backend/src/test/java/com/easyeat/auth/service/EmailServiceTest.java` verifying hierarchical sender resolution under explicit `app.mail.from`, username fallback, and default fallback, plus message payload formatting with Mockito (FR-012a, FR-012c).
+- [X] T069 [US3] Execute full backend test suite (`mvn test`) asserting zero regressions across `PasswordResetServiceTest`, `AuthControllerTest`, and security integration tests, and verify application context startup with `dev` profile.
 
 ---
 
