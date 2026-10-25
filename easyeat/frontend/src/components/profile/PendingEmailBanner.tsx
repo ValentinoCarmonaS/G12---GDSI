@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Clock, AlertCircle } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 export interface PendingEmailBannerProps {
   pendingEmail: string;

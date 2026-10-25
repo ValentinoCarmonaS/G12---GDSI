@@ -32,6 +32,9 @@ class ProfileServiceTest {
     @Mock
     private ProfileUserRepository profileUserRepository;
 
+    @Mock
+    private DietaryRestrictionService dietaryRestrictionService;
+
     @InjectMocks
     private ProfileService profileService;
 

@@ -1,6 +1,7 @@
 package com.easyeat.profile.service;
 
 import com.easyeat.auth.domain.User;
+import com.easyeat.profile.dto.DietaryRestrictionItemDto;
 import com.easyeat.profile.dto.PersonalDataRequest;
 import com.easyeat.profile.dto.ProfileResponse;
 import com.easyeat.profile.repository.ProfileUserRepository;
@@ -20,15 +21,23 @@ public class ProfileService {
     private static final String PHONE_REGEX = "^\\+?[0-9 -]{8,20}$";
 
     private final ProfileUserRepository profileUserRepository;
+    private final DietaryRestrictionService dietaryRestrictionService;
 
-    public ProfileService(ProfileUserRepository profileUserRepository) {
+    public ProfileService(
+            ProfileUserRepository profileUserRepository,
+            DietaryRestrictionService dietaryRestrictionService
+    ) {
         this.profileUserRepository = profileUserRepository;
+        this.dietaryRestrictionService = dietaryRestrictionService;
     }
 
     @Transactional(readOnly = true)
     public ProfileResponse getProfile(User user) {
         User target = profileUserRepository.findById(user.getId()).orElse(user);
         boolean hasPending = target.getPendingEmail() != null && !target.getPendingEmail().isBlank();
+        List<DietaryRestrictionItemDto> dietaryRestrictions = dietaryRestrictionService != null
+                ? dietaryRestrictionService.getUserPreferences(target.getId())
+                : List.of();
 
         return new ProfileResponse(
                 target.getId(),
@@ -39,7 +48,7 @@ public class ProfileService {
                 target.getEmail(),
                 target.getPendingEmail(),
                 hasPending,
-                List.of()
+                dietaryRestrictions
         );
     }
 
@@ -61,6 +70,10 @@ public class ProfileService {
         log.info("Personal data updated for user ID: {}. full_name synchronized to: {}", target.getId(), target.getFullName());
 
         boolean hasPending = target.getPendingEmail() != null && !target.getPendingEmail().isBlank();
+        List<DietaryRestrictionItemDto> dietaryRestrictions = dietaryRestrictionService != null
+                ? dietaryRestrictionService.getUserPreferences(target.getId())
+                : List.of();
+
         return new ProfileResponse(
                 target.getId(),
                 target.getFirstName(),
@@ -70,7 +83,7 @@ public class ProfileService {
                 target.getEmail(),
                 target.getPendingEmail(),
                 hasPending,
-                List.of()
+                dietaryRestrictions
         );
     }
 

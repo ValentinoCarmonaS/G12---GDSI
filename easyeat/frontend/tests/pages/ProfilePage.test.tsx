@@ -4,10 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { profileApi } from '@/api/profileApi';
+import * as useCartModule from '@/hooks/useCart';
 import { AuthProvider } from '@/context/AuthContext';
-import type { ProfileResponse } from '@/types/profile';
+import type { ProfileResponse, DietaryRestrictionItem } from '@/types/profile';
 
-describe('ProfilePage (T025, COM-1.4.1)', () => {
+describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
   const mockProfile: ProfileResponse = {
     id: 'user-uuid-1',
     firstName: 'Valentino',
@@ -17,11 +18,18 @@ describe('ProfilePage (T025, COM-1.4.1)', () => {
     email: 'valentino@example.com',
     pendingEmail: null,
     emailVerificationPending: false,
-    dietaryRestrictions: [],
+    dietaryRestrictions: [{ code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' }],
   };
+
+  const mockTaxonomy: DietaryRestrictionItem[] = [
+    { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' },
+    { code: 'VEGAN', name: 'Vegano', category: 'DIETARY_LIFESTYLE' },
+    { code: 'PEANUTS', name: 'Maní', category: 'COMMON_ALLERGEN' },
+  ];
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.spyOn(profileApi, 'getDietaryTaxonomy').mockResolvedValue(mockTaxonomy);
   });
 
   const renderWithProviders = (ui: React.ReactElement) => {
@@ -76,5 +84,52 @@ describe('ProfilePage (T025, COM-1.4.1)', () => {
     await user.click(saveBtn);
 
     expect(await screen.findByText(/actualizado correctamente/i)).toBeInTheDocument();
+  });
+
+  it('renders DietaryRestrictionsSelector and updates dietary preferences (T038)', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
+    const updateSpy = vi.spyOn(profileApi, 'updateDietaryRestrictions').mockResolvedValueOnce([
+      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' },
+      { code: 'VEGAN', name: 'Vegano', category: 'DIETARY_LIFESTYLE' },
+    ]);
+
+    renderWithProviders(<ProfilePage />);
+
+    expect(await screen.findByText(/restricciones alimentarias y preferencias/i)).toBeInTheDocument();
+    const veganCheckbox = screen.getByLabelText(/vegano/i);
+    await user.click(veganCheckbox);
+
+    const saveDietaryBtn = screen.getByRole('button', { name: /guardar preferencias/i });
+    await user.click(saveDietaryBtn);
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith(['CELIAC', 'VEGAN']);
+    });
+    expect(await screen.findByText(/tus preferencias dietarias se han actualizado correctamente/i)).toBeInTheDocument();
+  });
+
+  it('triggers cart reEvaluateCompliance when cart has active items upon dietary save (FR-015, T038)', async () => {
+    const user = userEvent.setup();
+    const mockReEvaluate = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(useCartModule, 'useCart').mockReturnValue({
+      items: [{ dishId: 'dish-1', name: 'Plato Test', price: 1000, quantity: 1 }],
+      reEvaluateCompliance: mockReEvaluate,
+    });
+
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
+    vi.spyOn(profileApi, 'updateDietaryRestrictions').mockResolvedValueOnce([
+      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' },
+    ]);
+
+    renderWithProviders(<ProfilePage />);
+
+    await screen.findByText(/restricciones alimentarias y preferencias/i);
+    const saveDietaryBtn = screen.getByRole('button', { name: /guardar preferencias/i });
+    await user.click(saveDietaryBtn);
+
+    await waitFor(() => {
+      expect(mockReEvaluate).toHaveBeenCalledTimes(1);
+    });
   });
 });
