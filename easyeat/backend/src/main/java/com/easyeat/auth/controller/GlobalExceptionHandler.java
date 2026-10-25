@@ -30,10 +30,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import com.easyeat.catalog.exception.DishNotFoundException;
 import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.inventory.exception.NegativeStockException;
+import com.easyeat.profile.exception.CooldownRateLimitException;
+import com.easyeat.profile.exception.DietaryTaxonomyException;
+import com.easyeat.profile.exception.EmailVerificationException;
 import com.easyeat.staff.exception.OrphanedAdminException;
 import org.springframework.security.access.AccessDeniedException;
+
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
@@ -198,4 +203,44 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setInstance(URI.create(request.getRequestURI()));
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }
+
+    @ExceptionHandler(EmailVerificationException.class)
+    public ResponseEntity<ProblemDetail> handleEmailVerification(EmailVerificationException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-verification-token"));
+        problem.setTitle("Invalid Email Verification Token");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    @ExceptionHandler(CooldownRateLimitException.class)
+    public ResponseEntity<ProblemDetail> handleCooldownRateLimit(CooldownRateLimitException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/email-cooldown-active"));
+        problem.setTitle("Email Verification Cooldown Active");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("retryAfterSeconds", ex.getRetryAfterSeconds());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(problem);
+    }
+
+    @ExceptionHandler(DietaryTaxonomyException.class)
+    public ResponseEntity<ProblemDetail> handleDietaryTaxonomy(DietaryTaxonomyException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-dietary-taxonomy"));
+        problem.setTitle("Invalid Dietary Taxonomy");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    @ExceptionHandler(DishNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleDishNotFound(DishNotFoundException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/dish-not-found"));
+        problem.setTitle("Dish Not Found");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+    }
 }
+
