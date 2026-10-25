@@ -205,6 +205,20 @@
 
 ---
 
+## Phase 12: Infrastructure Refactor - Agnostic SMTP Delivery & Configurable Sender (Priority: P2) [US3 & US4]
+
+**Goal**: Enable flexible outbound password reset email dispatch via agnostic SMTP environment variables with zero-configuration fallback to local Mailpit and hierarchical sender address resolution.
+
+### Implementation and Verification for Infrastructure Refactor
+
+- [ ] T065 [P] [US3] Create reference environment template `easyeat/backend/.env.example` documenting default mock relay (Mailpit on `localhost:1025`) and authenticated external relay (Gmail with TLS/App Passwords) parameters conforming to FR-012d.
+- [ ] T066 [P] [US3] Update development configuration in `easyeat/backend/src/main/resources/application-dev.yml` mapping Spring Mail properties (`host`, `port`, `username`, `password`, `properties.mail.smtp.auth`, `properties.mail.smtp.starttls.enable`) and `app.mail.from` to standard environment variables with automatic non-breaking fallback to Mailpit (FR-012a, FR-012b).
+- [ ] T067 [US3] Refactor `EmailService.java` in `easyeat/backend/src/main/java/com/easyeat/auth/service/EmailService.java` to inject `@Value("${app.mail.from:${spring.mail.username:noreply@easyeat.com}}")`, implementing hierarchical sender address resolution and logging masked dispatch metadata conforming to FR-012c.
+- [ ] T068 [P] [US3] Write unit tests in `easyeat/backend/src/test/java/com/easyeat/auth/service/EmailServiceTest.java` verifying hierarchical sender resolution under explicit `app.mail.from`, username fallback, and default fallback, plus message payload formatting with Mockito (FR-012a, FR-012c).
+- [ ] T069 [US3] Execute full backend test suite (`mvn test`) asserting zero regressions across `PasswordResetServiceTest`, `AuthControllerTest`, and security integration tests, and verify application context startup with `dev` profile.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -231,19 +245,22 @@ Phase 9: Frontend Login Links [US2] (T055–T056)
 Phase 10: Frontend Password Recovery [US3/US4] (T057–T062)
        ↓
 Phase 11: Frontend Validation (T063–T064)
+       ↓
+Phase 12: Infrastructure Refactor (T065–T069)
 ```
 
 ### User Story Dependencies
 
 - **User Story 1 (P1)**: Backend in Phase 3 (`T014`–`T020`). Frontend registration in Phase 8 (`T049`–`T054`).
 - **User Story 2 (P1)**: Backend in Phase 4 (`T021`–`T031`). Frontend login navigation links in Phase 9 (`T055`–`T056`).
-- **User Story 3 & 4 (P2)**: Backend in Phase 5 & 6 (`T032`–`T044`). Frontend recovery and reset in Phase 10 (`T057`–`T062`).
+- **User Story 3 & 4 (P2)**: Backend in Phase 5 & 6 (`T032`–`T044`). Frontend recovery and reset in Phase 10 (`T057`–`T062`). Infrastructure Refactor in Phase 12 (`T065`–`T069`).
 
 ### Parallel Opportunities
 
 - `T049` (RegisterForm test) and `T050` (auth types) can be written in parallel.
 - `T057` (ForgotPasswordForm test) and `T058` (ResetPasswordForm test) can be written in parallel.
 - `T060` (ForgotPassword components) and `T061` (ResetPassword components) can be implemented in parallel once types are defined.
+- `T065` (.env.example) and `T066` (application-dev.yml) can be drafted in parallel.
 
 ---
 
@@ -260,11 +277,12 @@ Phase 11: Frontend Validation (T063–T064)
 - **Increment 7 (Frontend Login Links)**: Registration and recovery links in login view (`T055`–`T056`).
 - **Increment 8 (Frontend Password Recovery)**: Recovery request and reset confirmation views (`T057`–`T062`).
 - **Increment 9 (Verification)**: Full frontend test suite and production build check (`T063`–`T064`).
+- **Increment 10 (Infrastructure Refactor)**: Agnostic SMTP Delivery & Configurable Sender (`T065`–`T069`).
 
 ---
 
 ## Notes
 
-- All 64 tasks strictly follow `- [ ] [TaskID] [P?] [Story?] Description with exact file path`.
+- All 69 tasks strictly follow `- [ ] [TaskID] [P?] [Story?] Description with exact file path`.
 - Every User Story follows the TDD triad: write failing tests first → implement production code → verify with integration tests.
 - Zero plaintext credentials or raw tokens permitted in logs or responses.
