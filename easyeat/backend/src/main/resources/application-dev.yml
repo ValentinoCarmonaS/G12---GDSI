@@ -14,13 +14,17 @@ spring:
       - classpath:db/migration
       - classpath:db/dev
   mail:
-    host: localhost
-    port: 1025
-    username:
-    password:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
-          auth: false
+          auth: ${SPRING_MAIL_SMTP_AUTH:${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:false}}
           starttls:
-            enable: false
+            enable: ${SPRING_MAIL_STARTTLS_ENABLE:${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:false}}
+
+app:
+  mail:
+    from: ${APP_MAIL_FROM:${spring.mail.username:noreply@easyeat.com}}
