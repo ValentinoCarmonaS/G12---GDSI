@@ -1,5 +1,4 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { CatalogPage } from '../../src/pages/CatalogPage';
@@ -13,24 +12,24 @@ describe('CatalogPage Component', () => {
 
   const compliantDish: EnrichedDish = {
     id: 'dish-1',
+    tenantId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Arroz con Verduras',
     description: 'Arroz salteado con vegetales frescos',
     price: 1200,
-    active: true,
+    isActive: true,
     isCompliant: true,
     conflictingRestrictions: [],
-    dietaryRestrictions: ['VEGAN', 'CELIAC'],
   };
 
   const conflictingDish: EnrichedDish = {
     id: 'dish-2',
+    tenantId: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Milanesa con Puré',
     description: 'Milanesa con puré de papas',
     price: 2500,
-    active: true,
+    isActive: true,
     isCompliant: false,
     conflictingRestrictions: ['DAIRY', 'WHEAT'],
-    dietaryRestrictions: ['DAIRY', 'WHEAT'],
   };
 
   const allDishes: EnrichedDish[] = [compliantDish, conflictingDish];

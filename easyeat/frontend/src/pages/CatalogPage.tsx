@@ -184,7 +184,6 @@ export const CatalogView: React.FC = () => {
               </div>
             ) : displayedDishes.length === 0 ? (
               <EmptyCatalogDietaryState
-                activeRestrictionsCount={activeRestrictionsCount}
                 onViewFullMenu={() => setIsFilterActive(false)}
               />
             ) : (
