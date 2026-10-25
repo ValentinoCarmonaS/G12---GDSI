@@ -6,6 +6,7 @@ import type {
   EmailChangeInitiatedResponse,
   EmailConfirmationRequest,
   EmailConfirmedResponse,
+  DietaryRestrictionItem,
 } from '../types/profile';
 
 export const profileApi = {
@@ -53,6 +54,24 @@ export const profileApi = {
    */
   async confirmEmailChange(request: EmailConfirmationRequest): Promise<EmailConfirmedResponse> {
     const response = await apiClient.post<EmailConfirmedResponse>('/profile/email-change/confirm', request);
+    return response.data;
+  },
+
+  /**
+   * Retrieves the standardized platform dietary taxonomy.
+   */
+  async getDietaryTaxonomy(): Promise<DietaryRestrictionItem[]> {
+    const response = await apiClient.get<DietaryRestrictionItem[]>('/dietary-restrictions');
+    return response.data;
+  },
+
+  /**
+   * Atomically updates active dietary preferences configured on the diner profile.
+   */
+  async updateDietaryRestrictions(restrictionCodes: string[]): Promise<DietaryRestrictionItem[]> {
+    const response = await apiClient.put<DietaryRestrictionItem[]>('/profile/dietary-restrictions', {
+      restrictionCodes,
+    });
     return response.data;
   },
 };

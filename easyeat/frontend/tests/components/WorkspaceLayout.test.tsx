@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -20,6 +19,7 @@ describe('WorkspaceLayout (T026, FR-026, COM-1.4.1)', () => {
         email: 'comensal@easyeat.com',
         role: 'COMENSAL',
         tokenVersion: 1,
+        tenantId: null,
       },
       token: 'jwt-token',
       setToken: vi.fn(),

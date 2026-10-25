@@ -4,11 +4,14 @@ import type {
   ProfileResponse,
   PersonalDataRequest,
   EmailChangeInitiatedResponse,
+  DietaryRestrictionItem,
 } from '../types/profile';
 
 export function useProfile() {
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [taxonomy, setTaxonomy] = useState<DietaryRestrictionItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [taxonomyLoading, setTaxonomyLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
 
@@ -26,9 +29,22 @@ export function useProfile() {
     }
   }, []);
 
+  const fetchTaxonomy = useCallback(async () => {
+    setTaxonomyLoading(true);
+    try {
+      const data = await profileApi.getDietaryTaxonomy();
+      setTaxonomy(data);
+    } catch (err: any) {
+      console.error('Error al cargar taxonomía dietaria', err);
+    } finally {
+      setTaxonomyLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]);
+    fetchTaxonomy();
+  }, [fetchProfile, fetchTaxonomy]);
 
   useEffect(() => {
     if (cooldownSeconds <= 0) return;
@@ -46,6 +62,19 @@ export function useProfile() {
       return updated;
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Error al actualizar datos personales';
+      setError(msg);
+      throw err;
+    }
+  };
+
+  const updateDietaryRestrictions = async (restrictionCodes: string[]): Promise<DietaryRestrictionItem[]> => {
+    setError(null);
+    try {
+      const updated = await profileApi.updateDietaryRestrictions(restrictionCodes);
+      setProfile((prev) => (prev ? { ...prev, dietaryRestrictions: updated } : null));
+      return updated;
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || 'Error al actualizar preferencias dietarias';
       setError(msg);
       throw err;
     }
@@ -97,12 +126,16 @@ export function useProfile() {
 
   return {
     profile,
+    taxonomy,
     loading,
+    taxonomyLoading,
     error,
     cooldownSeconds,
     setCooldownSeconds,
     refreshProfile: fetchProfile,
+    refreshTaxonomy: fetchTaxonomy,
     updatePersonalData,
+    updateDietaryRestrictions,
     requestEmailChange,
     resendVerification,
     cancelEmailChange,

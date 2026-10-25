@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { DietaryRestrictionItem } from '../../types/profile';
-import { AlertCircle, AlertTriangle, Check, Loader2, Utensils, ShieldAlert } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Check, Loader2, Utensils } from 'lucide-react';
 
 export interface DietaryRestrictionsSelectorProps {
   availableTaxonomy: DietaryRestrictionItem[];

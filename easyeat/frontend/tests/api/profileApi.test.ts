@@ -8,9 +8,10 @@ import type {
   EmailChangeInitiatedResponse,
   EmailConfirmationRequest,
   EmailConfirmedResponse,
+  DietaryRestrictionItem,
 } from '@/types/profile';
 
-describe('profileApi (T020, COM-1.4.1)', () => {
+describe('profileApi (T020, COM-1.4.1 & COM-1.4.3)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -108,5 +109,32 @@ describe('profileApi (T020, COM-1.4.1)', () => {
 
     expect(postSpy).toHaveBeenCalledWith('/profile/email-change/confirm', request);
     expect(result).toEqual(mockResponse);
+  });
+
+  it('calls GET /dietary-restrictions and returns taxonomy list', async () => {
+    const mockTaxonomy: DietaryRestrictionItem[] = [
+      { code: 'CELIAC', name: 'Sin TACC', category: 'DIETARY_LIFESTYLE' },
+      { code: 'PEANUTS', name: 'Maní', category: 'COMMON_ALLERGEN' },
+    ];
+
+    const getSpy = vi.spyOn(apiClient, 'get').mockResolvedValueOnce({ data: mockTaxonomy });
+    const result = await profileApi.getDietaryTaxonomy();
+
+    expect(getSpy).toHaveBeenCalledWith('/dietary-restrictions');
+    expect(result).toEqual(mockTaxonomy);
+  });
+
+  it('calls PUT /profile/dietary-restrictions and returns updated restrictions', async () => {
+    const codes = ['CELIAC', 'PEANUTS'];
+    const mockUpdated: DietaryRestrictionItem[] = [
+      { code: 'CELIAC', name: 'Sin TACC', category: 'DIETARY_LIFESTYLE' },
+      { code: 'PEANUTS', name: 'Maní', category: 'COMMON_ALLERGEN' },
+    ];
+
+    const putSpy = vi.spyOn(apiClient, 'put').mockResolvedValueOnce({ data: mockUpdated });
+    const result = await profileApi.updateDietaryRestrictions(codes);
+
+    expect(putSpy).toHaveBeenCalledWith('/profile/dietary-restrictions', { restrictionCodes: codes });
+    expect(result).toEqual(mockUpdated);
   });
 });
