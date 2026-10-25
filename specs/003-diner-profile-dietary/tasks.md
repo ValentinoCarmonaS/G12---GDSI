@@ -90,7 +90,7 @@
 - [X] T034 [US2] Implement `DietaryRestrictionRepository` in `easyeat/backend/src/main/java/com/easyeat/profile/repository/DietaryRestrictionRepository.java`
 - [X] T035 [US2] Implement `DietaryRestrictionService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/DietaryRestrictionService.java` managing taxonomy querying and atomic preferences updates
 - [X] T036 [US2] Implement `DietaryRestrictionController` in `easyeat/backend/src/main/java/com/easyeat/profile/controller/DietaryRestrictionController.java` exposing `GET /api/v1/dietary-restrictions` and `PUT /api/v1/profile/dietary-restrictions`
-- [ ] T037 [P] [US2] Implement `DietaryRestrictionsSelector.tsx` in `easyeat/frontend/src/components/profile/DietaryRestrictionsSelector.tsx` rendering Lifestyles and Allergens sections with advisory notification for in-flight kitchen orders
+- [X] T037 [P] [US2] Implement `DietaryRestrictionsSelector.tsx` in `easyeat/frontend/src/components/profile/DietaryRestrictionsSelector.tsx` rendering Lifestyles and Allergens sections with advisory notification for in-flight kitchen orders
 - [ ] T038 [US2] Integrate `DietaryRestrictionsSelector.tsx` into `ProfilePage.tsx` in `easyeat/frontend/src/pages/ProfilePage.tsx`, triggering proactive cart re-evaluation via `useCart().reEvaluateCompliance()` on successful save if cart has active items (FR-015)
 
 **Checkpoint**: User Stories 1 and 2 functional. Diner can manage contact data and dietary taxonomy preferences.
