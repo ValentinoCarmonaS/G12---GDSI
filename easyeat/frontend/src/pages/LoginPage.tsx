@@ -30,8 +30,14 @@ export const LoginPage: React.FC = () => {
   const { setToken } = useAuth();
 
   const state = location.state as { from?: string; reason?: string } | undefined;
-  const stateReason = state?.reason;
+  const stateReason = state?.reason || sessionStorage.getItem('session_expired_reason');
   const targetDeepLink = state?.from;
+
+  React.useEffect(() => {
+    if (sessionStorage.getItem('session_expired_reason')) {
+      sessionStorage.removeItem('session_expired_reason');
+    }
+  }, []);
 
   const handleLogin = async (credentials: LoginCredentials) => {
     const data = await authApi.login(credentials);
@@ -39,9 +45,10 @@ export const LoginPage: React.FC = () => {
 
     const claims = decodeClaims(data.access_token);
     const userRole = (claims?.role as Role) || 'COMENSAL';
+    const mustChangePassword = claims?.must_change_password ?? false;
 
     // Resolve post-auth destination: preserve authorized deep link or fallback to role default
-    const destination = resolvePostAuthRedirect(userRole, targetDeepLink);
+    const destination = resolvePostAuthRedirect(userRole, targetDeepLink, mustChangePassword);
     navigate(destination, { replace: true });
   };
 

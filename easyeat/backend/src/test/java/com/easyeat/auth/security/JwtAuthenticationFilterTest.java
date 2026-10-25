@@ -179,4 +179,66 @@ class JwtAuthenticationFilterTest {
         assertThat(problem.get("status").asInt()).isEqualTo(403);
         assertThat(problem.get("title").asText()).isEqualTo("Account Suspended");
     }
+
+    @Test
+    @DisplayName("Should allow auth endpoint when user is in PENDING_FIRST_LOGIN status")
+    void shouldAllowAuthEndpointWhenUserInPendingFirstLoginStatus() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String token = "temp.jwt.token";
+
+        User user = new User("newbie@restaurant.com", "hash", UserRole.CHEF);
+        user.setId(userId);
+        user.setStatus(UserStatus.PENDING_FIRST_LOGIN);
+        user.setMustChangePassword(true);
+        user.setTokenVersion(1);
+
+        when(jwtService.validateToken(token)).thenReturn(true);
+        when(jwtService.extractUserId(token)).thenReturn(userId);
+        when(jwtService.extractRole(token)).thenReturn(UserRole.CHEF);
+        when(jwtService.extractTokenVersion(token)).thenReturn(1);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/auth/first-login-password-change");
+        request.addHeader("Authorization", "Bearer " + token);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("Should reject operational endpoint with HTTP 403 when user is in PENDING_FIRST_LOGIN status")
+    void shouldRejectOperationalEndpointWhenUserInPendingFirstLoginStatus() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String token = "temp.jwt.token";
+
+        User user = new User("newbie@restaurant.com", "hash", UserRole.CHEF);
+        user.setId(userId);
+        user.setStatus(UserStatus.PENDING_FIRST_LOGIN);
+        user.setMustChangePassword(true);
+        user.setTokenVersion(1);
+
+        when(jwtService.validateToken(token)).thenReturn(true);
+        when(jwtService.extractUserId(token)).thenReturn(userId);
+        when(jwtService.extractRole(token)).thenReturn(UserRole.CHEF);
+        when(jwtService.extractTokenVersion(token)).thenReturn(1);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/chef/ingredients");
+        request.addHeader("Authorization", "Bearer " + token);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        assertThat(response.getStatus()).isEqualTo(403);
+        JsonNode problem = objectMapper.readTree(response.getContentAsString());
+        assertThat(problem.get("detail").asText()).contains("Must complete mandatory password change");
+    }
 }

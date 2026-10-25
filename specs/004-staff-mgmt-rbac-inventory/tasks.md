@@ -129,7 +129,7 @@
 
 ---
 
-## Phase 7: Polish & End-to-End Validation
+## Phase 7: Polish & End-to-End Validation (Backend)
 
 **Purpose**: Validate end-to-end user journeys against quickstart scenarios, ensure build hygiene, and verify zero cross-tenant leakage.
 
@@ -139,35 +139,121 @@
 
 ---
 
+## Phase 8: Frontend Foundational Types, API Clients & Route Perimeter (#105)
+
+**Purpose**: Define TypeScript domain contracts and Axios API client modules connecting frontend interfaces to the existing backend services.
+
+- [x] T044 [P] [FR-001, FR-010, FR-011] Define Staff and Inventory TypeScript types and DTO interfaces in `easyeat/frontend/src/types/staff.ts` and `easyeat/frontend/src/types/inventory.ts`
+- [x] T045 [P] [FR-001, FR-004, FR-005, FR-028] Implement `staffApi.ts` client in `easyeat/frontend/src/api/staffApi.ts` for listing, creating, and updating staff members
+- [x] T046 [P] [FR-010, FR-012, FR-014, FR-015, FR-019, FR-021, FR-031, FR-032] Implement `inventoryApi.ts` client in `easyeat/frontend/src/api/inventoryApi.ts` for ingredient CRUD, lifecycle status updates, stock adjustments, audit history, and chef catalog queries
+- [x] T047 [P] [FR-003, FR-030] Extend `authApi.ts` in `easyeat/frontend/src/api/authApi.ts` with `changeFirstLoginPassword` method
+- [x] T048 [P] [FR-001, FR-010] Write unit tests for API clients in `easyeat/frontend/tests/api/staffApi.test.ts` and `easyeat/frontend/tests/api/inventoryApi.test.ts`
+
+---
+
+## Phase 9: Mandatory First-Login Password Change Flow (FR-003, FR-030) (#106)
+
+**Goal**: Force newly registered staff members logging in for the first time to change their temporary credential before accessing operational workspaces.
+
+- [x] T049 [P] [FR-003, FR-030] Inject `must_change_password` claim in backend `JwtService.java` and `AuthenticatedUserResponse.java` and adapt `AuthContext.tsx` to decode and expose it in user state
+- [x] T050 [P] [FR-030] Write failing router and guard tests in `easyeat/frontend/tests/router/FirstLoginRouting.test.tsx` verifying redirection to `/first-login-password-change` when `mustChangePassword = true` and blocking operational routes
+- [x] T051 [FR-030] Update `RoleRouteGuard.tsx` and `postAuthRouting.ts` to intercept `mustChangePassword` and enforce routing to `/first-login-password-change`
+- [x] T052 [P] [FR-030] Write failing component tests for `FirstLoginPasswordPage` in `easyeat/frontend/tests/pages/FirstLoginPasswordPage.test.tsx`
+- [x] T053 [FR-003, FR-030] Implement `FirstLoginPasswordPage.tsx` in `easyeat/frontend/src/pages/FirstLoginPasswordPage.tsx` with validation, complexity checks, and successful submission transitioning account to active
+
+---
+
+## Phase 10: Staff Member Registration & Profile Management UI (FR-001, FR-002, FR-028, FR-029) (#107)
+
+**Goal**: Provide Administrators with a staff management view displaying the establishment's staff roster, creating new staff with temporary credential modals, and editing roles with orphaned admin protection.
+
+- [x] T054 [P] [FR-003, FR-029] Write failing tests for `TemporaryCredentialsModal` in `easyeat/frontend/tests/components/TemporaryCredentialsModal.test.tsx`
+- [x] T055 [FR-003, FR-029] Implement `TemporaryCredentialsModal.tsx` in `easyeat/frontend/src/components/staff/TemporaryCredentialsModal.tsx` with single-click copy to clipboard and dismissal warning
+- [x] T056 [P] [FR-001, FR-002, FR-005, FR-026] Write failing tests for `StaffFormModal` in `easyeat/frontend/tests/components/StaffFormModal.test.tsx`
+- [x] T057 [FR-001, FR-002, FR-005, FR-006, FR-026] Implement `StaffFormModal.tsx` in `easyeat/frontend/src/components/staff/StaffFormModal.tsx` for creating and editing staff with real-time validation
+- [x] T058 [P] [FR-004, FR-028] Write failing tests for `StaffRosterTable` and `StaffManagementPage` in `easyeat/frontend/tests/pages/StaffManagementPage.test.tsx`
+- [x] T059 [FR-004, FR-028] Implement `StaffRosterTable.tsx` in `easyeat/frontend/src/components/staff/StaffRosterTable.tsx` and `StaffManagementPage.tsx` in `easyeat/frontend/src/pages/StaffManagementPage.tsx` mounted at `/admin/staff`
+
+---
+
+## Phase 11: Master Ingredient Catalog & Lifecycle Management UI (FR-010, FR-011, FR-014, FR-026, FR-031) (#108)
+
+**Goal**: Enable Administrators to manage ingredients in `/admin/inventory`, creating new ingredients, editing attributes (locking UOM if stock > 0), and updating lifecycle states (Active, Discontinued, Archived).
+
+- [x] T060 [P] [FR-010, FR-013, FR-026] Write failing tests for `IngredientFormModal` in `easyeat/frontend/tests/components/IngredientFormModal.test.tsx`
+- [x] T061 [FR-010, FR-011, FR-013, FR-026] Implement `IngredientFormModal.tsx` in `easyeat/frontend/src/components/inventory/IngredientFormModal.tsx` with locked unit-of-measure rules when stock > 0
+- [x] T062 [P] [FR-012, FR-014, FR-031] Write failing tests for `IngredientCatalogTable` and `InventoryManagementPage` in `easyeat/frontend/tests/pages/InventoryManagementPage.test.tsx`
+- [x] T063 [FR-012, FR-031] Implement `IngredientCatalogTable.tsx` in `easyeat/frontend/src/components/inventory/IngredientCatalogTable.tsx` and `InventoryManagementPage.tsx` in `easyeat/frontend/src/pages/InventoryManagementPage.tsx` mounted at `/admin/inventory`
+- [x] T064 [FR-014] Implement status transition actions (decommission to DISCONTINUED, reactivate to ACTIVE, archive to ARCHIVED locked if stock > 0)
+
+---
+
+## Phase 12: Manual Stock Adjustments & Immutable Audit Trail UI (FR-015, FR-016, FR-017, FR-018, FR-027, FR-031) (#109)
+
+**Goal**: Allow Administrators to execute Absolute and Relative stock adjustments with live validation and view the chronological, immutable audit trail.
+
+- [x] T065 [P] [FR-015, FR-016, FR-017, FR-018, FR-027] Write failing tests for `StockAdjustmentModal` in `easyeat/frontend/tests/components/StockAdjustmentModal.test.tsx` verifying Absolute/Relative modes, computed deltas, zero-delta block, and negative stock block
+- [x] T066 [FR-015, FR-016, FR-017, FR-018, FR-027] Implement `StockAdjustmentModal.tsx` in `easyeat/frontend/src/components/inventory/StockAdjustmentModal.tsx`
+- [x] T067 [P] [FR-019] Write failing tests for `StockAuditModal` in `easyeat/frontend/tests/components/StockAuditModal.test.tsx`
+- [x] T068 [FR-019] Implement `StockAuditModal.tsx` in `easyeat/frontend/src/components/inventory/StockAuditModal.tsx` displaying chronological append-only audit trail entries
+
+---
+
+## Phase 13: Chef Read-Only Kitchen Ingredient Catalog UI (FR-021, FR-022, FR-023, FR-032) (#110)
+
+**Goal**: Provide Chefs with a paginated, sorted kitchen catalog of active ingredients displaying stock availability (`IN_STOCK` / `OUT_OF_STOCK`), while strictly hiding unit purchase costs and audit logs.
+
+- [x] T069 [P] [FR-021, FR-022, FR-023, FR-024, FR-032] Write failing tests for `ChefIngredientTable` and `ChefIngredientsPage` in `easyeat/frontend/tests/pages/ChefIngredientsPage.test.tsx` asserting pagination (20/page), A-Z sort, category filters, cost suppression, and availability badges
+- [x] T070 [FR-021, FR-022, FR-023, FR-024, FR-032] Implement `ChefIngredientTable.tsx` in `easyeat/frontend/src/components/chef/ChefIngredientTable.tsx`
+- [x] T071 [FR-021, FR-032] Implement `ChefIngredientsPage.tsx` in `easyeat/frontend/src/pages/ChefIngredientsPage.tsx` mounted at `/cocina/ingredientes` (with alias `/kds/ingredients`)
+- [x] T072 [FR-032] Update `WorkspaceLayout.tsx` and `KitchenWorkspacePage.tsx` to provide accessible navigation to `/cocina/ingredientes`
+
+---
+
+## Phase 14: End-to-End Frontend Integration, Quality Gates & Regression Verification (#111)
+
+**Purpose**: Tie together all workspaces, verify complete test suite, and ensure production build hygiene.
+
+- [x] T073 [FR-028, FR-031] Update `AdminWorkspacePage.tsx` cards ("Personal Activo" and "Materias Primas") to link to `/admin/staff` and `/admin/inventory` displaying real counts
+- [x] T074 [FR-028, FR-030, FR-031, FR-032] Register all new routes (`/first-login-password-change`, `/admin/staff`, `/admin/inventory`, `/cocina/ingredientes`, `/kds/ingredients`) in `AppRoutes.tsx` with proper guards and test in `easyeat/frontend/tests/router/AppRoutes.test.tsx`
+- [x] T075 [P] [FR-028, FR-030, FR-031, FR-032] Verify full frontend test suite, typecheck, and production bundle build: `npx tsc --noEmit && npm test && npm run build`
+
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
 
 ```
-Phase 1: Setup
-    │
-    ▼
-Phase 2: Foundational (Flyway V3/V4, TenantContext, SecurityAudit) ──► BLOCKS all stories
-    │
-    ├────────────────────────────────────────┬────────────────────────────────────────┐
-    ▼                                        ▼                                        ▼
-Phase 3: US1 & US2 (Staff & RBAC) [P1]   Phase 4: US3 (Ingredient Catalog) [P2]   Phase 5: US4 (Stock & Concurrency) [P2]
-    │                                        │                                        │
-    └────────────────────────────────────────┴──────────────────┬─────────────────────┘
-                                                                ▼
-                                                     Phase 6: US5 (Chef Catalog) [P3]
-                                                                │
-                                                                ▼
-                                                     Phase 7: Polish & E2E Validation
+[Backend Slices]
+Phase 1: Setup ──► Phase 2: Foundational (DB/Tenant) ──► Phase 3, 4, 5, 6 ──► Phase 7: Backend Polish (Complete [x])
+                                                                                  │
+                                                                                  ▼
+[Frontend Slices]                                                          Phase 8: Frontend Types & API Clients
+                                                                                  │
+                                    ┌─────────────────────────────────────────────┼─────────────────────────────────────────────┐
+                                    ▼                                             ▼                                             ▼
+                     Phase 9: First-Login Password Change       Phase 10: Staff Management UI         Phase 11: Ingredient Catalog UI
+                                                                                                                        │
+                                                                                                                        ▼
+                                                                                                              Phase 12: Stock Adjustments & Audit
+                                                                                                                        │
+                                                                                                                        ▼
+                                                                                                              Phase 13: Chef Catalog UI
+                                                                                                                        │
+                                                                                  ┌─────────────────────────────────────┘
+                                                                                  ▼
+                                                                     Phase 14: E2E Integration & Quality Gates
 ```
 
-- **Setup (Phase 1)**: Can start immediately.
-- **Foundational (Phase 2)**: Depends on Phase 1; must be fully verified before any User Story starts.
-- **User Story 1 & 2 (Phase 3)**: Depends on Phase 2. Delivers the core MVP.
-- **User Story 3 (Phase 4)**: Depends on Phase 2. Can execute in parallel with Phase 3 on the data layer.
-- **User Story 4 (Phase 5)**: Depends on Phase 4 (`Ingredient` entity and repository must exist).
-- **User Story 5 (Phase 6)**: Depends on Phase 4 and Phase 5 (`Ingredient` catalog and stock calculations must exist).
-- **Polish (Phase 7)**: Depends on all User Stories being complete.
+- **Backend (Phases 1-7)**: Complete and verified with unit, slice, and integration tests.
+- **Frontend Types & Clients (Phase 8)**: Prerequisite for all frontend phases.
+- **First-Login Flow (Phase 9)**: Unblocks authenticated staff accounts.
+- **Staff Management (Phase 10)**: Provides admin controls to create staff accounts.
+- **Ingredient Catalog & Stock (Phases 11 & 12)**: Provides master data and adjustments for inventory.
+- **Chef Catalog (Phase 13)**: Depends on active ingredient data model from Phase 11.
+- **Integration & Polish (Phase 14)**: Connects all views into `AppRoutes` and `WorkspaceLayout`, verifying full test suite and build.
 
 ---
 

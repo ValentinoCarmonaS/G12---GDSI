@@ -1,7 +1,52 @@
 import { apiClient } from './apiClient';
-import { LoginCredentials, LoginResponse } from '../types/auth';
+import {
+  LoginCredentials,
+  LoginResponse,
+  RegisterCredentials,
+  RegisterResponse,
+  PasswordResetRequest,
+  PasswordResetConfirm,
+  PasswordResetResponse,
+  FirstLoginPasswordChangeRequest,
+  FirstLoginPasswordChangeResponse,
+} from '../types/auth';
 
 export const authApi = {
+  /**
+   * Dispatches comensal registration request to the backend.
+   */
+  async register(credentials: RegisterCredentials): Promise<RegisterResponse> {
+    const response = await apiClient.post<RegisterResponse>('/auth/register', credentials);
+    return response.data;
+  },
+
+  /**
+   * Requests a password reset link sent to the user's email.
+   */
+  async requestPasswordReset(data: PasswordResetRequest): Promise<PasswordResetResponse> {
+    const response = await apiClient.post<PasswordResetResponse>('/auth/password-reset/request', data);
+    return response.data;
+  },
+
+  /**
+   * Confirms password reset with token and new password.
+   */
+  async confirmPasswordReset(data: PasswordResetConfirm): Promise<PasswordResetResponse> {
+    const response = await apiClient.post<PasswordResetResponse>('/auth/password-reset/confirm', data);
+    return response.data;
+  },
+
+  /**
+   * Submits mandatory first login password change for staff accounts (ADM-3.1.1, FR-003, FR-030).
+   */
+  async changeFirstLoginPassword(data: FirstLoginPasswordChangeRequest): Promise<FirstLoginPasswordChangeResponse> {
+    const response = await apiClient.post<FirstLoginPasswordChangeResponse>(
+      '/auth/first-login-password-change',
+      data
+    );
+    return response.data;
+  },
+
   /**
    * Dispatches login authentication request to the backend.
    */
