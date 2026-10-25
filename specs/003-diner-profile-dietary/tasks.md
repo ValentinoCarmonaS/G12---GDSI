@@ -116,7 +116,7 @@
 
 ### Implementation for User Story 3
 
-- [ ] T047 [P] [US3] Create Catalog domain entities (`Dish`, `DishDietaryRestrictionId`) in `easyeat/backend/src/main/java/com/easyeat/catalog/domain/`
+- [X] T047 [P] [US3] Create Catalog domain entities (`Dish`, `DishDietaryRestrictionId`) in `easyeat/backend/src/main/java/com/easyeat/catalog/domain/`
 - [ ] T048 [P] [US3] Create Catalog & Cart DTOs (`EnrichedDishResponse`, `CartComplianceRequest`, `CartComplianceResponse`, `CartItemEvaluation`) in `easyeat/backend/src/main/java/com/easyeat/catalog/dto/`
 - [ ] T049 [US3] Implement `DishRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/DishRepository.java` fetching dishes and tags scoped by `tenant_id`
 - [ ] T050 [US3] Implement `CatalogComplianceService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/CatalogComplianceService.java` evaluating strict intersection conjunction and enriching dishes with `isCompliant` and `conflictingRestrictions`
