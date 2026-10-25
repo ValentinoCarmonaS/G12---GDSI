@@ -49,7 +49,7 @@
 - [X] T012 [P] [US1] Web contract test `ProfileControllerTest` in `easyeat/backend/src/test/java/com/easyeat/profile/controller/ProfileControllerTest.java` verifying `GET /api/v1/profile/me`, `PUT /api/v1/profile/personal-data`, and email change endpoints
 - [X] T013 [P] [US1] Integration test `EmailChangeIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/profile/integration/EmailChangeIntegrationTest.java` using Testcontainers to verify end-to-end token consumption, DB constraints, cooldown, and `token_version` session revocation
 - [X] T014 [P] [US1] Frontend component test `PersonalDataForm.test.tsx` in `easyeat/frontend/tests/components/PersonalDataForm.test.tsx` verifying input validation, submission, and cancel reset
-- [ ] T015 [P] [US1] Frontend component test `PendingEmailBanner.test.tsx` in `easyeat/frontend/tests/components/PendingEmailBanner.test.tsx` verifying 60s resend cooldown timer and cancel request triggers
+- [X] T015 [P] [US1] Frontend component test `PendingEmailBanner.test.tsx` in `easyeat/frontend/tests/components/PendingEmailBanner.test.tsx` verifying 60s resend cooldown timer and cancel request triggers
 
 ### Implementation for User Story 1
 
