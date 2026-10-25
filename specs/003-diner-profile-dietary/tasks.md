@@ -126,7 +126,7 @@
 - [X] T054 [P] [US3] Implement `CatalogFilterContext.tsx` in `easyeat/frontend/src/context/CatalogFilterContext.tsx` managing ephemeral master toggle state with automatic reset on reload or establishment change
 - [X] T055 [P] [US3] Implement `CartContext.tsx` in `easyeat/frontend/src/context/CartContext.tsx` managing cart dishes, exposing proactive `reEvaluateCompliance()` method, live compliance evaluation via `POST /api/v1/cart/evaluate-compliance`, and risk confirmation state
 - [X] T056 [P] [US3] Implement `CatalogMasterToggle.tsx` in `easyeat/frontend/src/components/catalog/CatalogMasterToggle.tsx`
-- [ ] T057 [P] [US3] Implement `DishCard.tsx` and `AllergenWarningBadge.tsx` in `easyeat/frontend/src/components/catalog/`
+- [X] T057 [P] [US3] Implement `DishCard.tsx` and `AllergenWarningBadge.tsx` in `easyeat/frontend/src/components/catalog/`
 - [ ] T058 [P] [US3] Implement `EmptyCatalogDietaryState.tsx` in `easyeat/frontend/src/components/catalog/EmptyCatalogDietaryState.tsx` with one-click action to view full menu
 - [ ] T059 [P] [US3] Implement `CartDrawer.tsx` and `CartItemWithBadge.tsx` in `easyeat/frontend/src/components/cart/` displaying permanent visible warning badges without redundant blocking modal at checkout (FR-022)
 - [ ] T060 [P] [US3] Implement `AddToCartRiskModal.tsx` in `easyeat/frontend/src/components/cart/AddToCartRiskModal.tsx` intercepting cart additions on conflicting dishes (FR-021)
