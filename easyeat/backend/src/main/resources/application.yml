@@ -34,3 +34,8 @@ app:
     password-reset:
       token-validity-minutes: 15
       base-url: ${APP_PASSWORD_RESET_BASE_URL:http://localhost:3000/reset-password}
+    email-verification:
+      token-validity-hours: 24
+      cooldown-seconds: 60
+      base-url: ${APP_EMAIL_VERIFICATION_BASE_URL:http://localhost:3000/verificar-email}
+
