@@ -122,8 +122,9 @@ class EmailChangeIntegrationTest {
                 .isInstanceOf(CooldownRateLimitException.class);
 
         // Simulate 65 seconds passed
+        diner = profileUserRepository.findById(diner.getId()).orElseThrow();
         diner.setEmailVerificationLastSentAt(Instant.now().minus(65, ChronoUnit.SECONDS));
-        profileUserRepository.save(diner);
+        diner = profileUserRepository.save(diner);
 
         // Resend now succeeds
         EmailChangeInitiatedResponse resend = emailChangeService.resendVerificationEmail(diner);

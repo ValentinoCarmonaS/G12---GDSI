@@ -54,7 +54,7 @@
 ### Implementation for User Story 1
 
 - [X] T016 [P] [US1] Create Profile DTOs (`PersonalDataRequest`, `ProfileResponse`, `EmailChangeRequestDto`, `EmailChangeInitiatedResponse`, `EmailConfirmationRequest`, `EmailConfirmedResponse`) in `easyeat/backend/src/main/java/com/easyeat/profile/dto/`
-- [ ] T017 [US1] Implement `EmailChangeService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/EmailChangeService.java` handling token generation, SHA-256 hashing, delegating dispatch to `EmailSender` interface (logged to console in dev/test per DIP), 60s cooldown rate-limiting, and `token_version` increment
+- [X] T017 [US1] Implement `EmailChangeService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/EmailChangeService.java` handling token generation, SHA-256 hashing, delegating dispatch to `EmailSender` interface (logged to console in dev/test per DIP), 60s cooldown rate-limiting, and `token_version` increment
 - [ ] T018 [US1] Implement `ProfileService` in `easyeat/backend/src/main/java/com/easyeat/profile/service/ProfileService.java` managing diner contact updates, synchronizing `full_name = first_name.trim() + " " + last_name.trim()`, and retrieving profile state
 - [ ] T019 [US1] Implement `ProfileController` in `easyeat/backend/src/main/java/com/easyeat/profile/controller/ProfileController.java` exposing `/api/v1/profile/me`, `/api/v1/profile/personal-data`, and `/api/v1/profile/email-change/**`
 - [ ] T020 [P] [US1] Create frontend API client `profileApi.ts` in `easyeat/frontend/src/api/profileApi.ts` and TypeScript interfaces in `easyeat/frontend/src/types/profile.ts`
