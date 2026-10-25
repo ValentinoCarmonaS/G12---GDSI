@@ -59,7 +59,7 @@
 - [X] T019 [US1] Implement `ProfileController` in `easyeat/backend/src/main/java/com/easyeat/profile/controller/ProfileController.java` exposing `/api/v1/profile/me`, `/api/v1/profile/personal-data`, and `/api/v1/profile/email-change/**`
 - [X] T020 [P] [US1] Create frontend API client `profileApi.ts` in `easyeat/frontend/src/api/profileApi.ts` and TypeScript interfaces in `easyeat/frontend/src/types/profile.ts`
 - [X] T021 [P] [US1] Implement custom hook `useProfile.ts` in `easyeat/frontend/src/hooks/useProfile.ts` for managing profile data fetching, mutation state, and email verification status
-- [ ] T022 [P] [US1] Implement `PersonalDataForm.tsx` in `easyeat/frontend/src/components/profile/PersonalDataForm.tsx` with alphabetic regex checks, optional phone syntax validation, and discard changes action
+- [X] T022 [P] [US1] Implement `PersonalDataForm.tsx` in `easyeat/frontend/src/components/profile/PersonalDataForm.tsx` with alphabetic regex checks, optional phone syntax validation, and discard changes action
 - [ ] T023 [P] [US1] Implement `PendingEmailBanner.tsx` in `easyeat/frontend/src/components/profile/PendingEmailBanner.tsx` displaying pending status badge, 60s reactive countdown timer, and cancel action
 - [ ] T024 [US1] Implement `VerifyEmailPage.tsx` in `easyeat/frontend/src/pages/VerifyEmailPage.tsx` mounted at `/verificar-email` to handle email verification token URL callbacks and display success/expired messaging
 - [ ] T025 [US1] Implement `ProfilePage.tsx` in `easyeat/frontend/src/pages/ProfilePage.tsx` mounted at `/perfil` assembling personal data form and email banner
