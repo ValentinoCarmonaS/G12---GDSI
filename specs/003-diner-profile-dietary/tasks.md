@@ -144,7 +144,7 @@
 - [X] T063 [P] Execute quickstart validation scenarios from `specs/003-diner-profile-dietary/quickstart.md`
 - [X] T064 [P] Verify OpenAPI 3.0 contract adherence against `specs/003-diner-profile-dietary/contracts/openapi.yaml` via MockMvc test
 - [X] T065 Run full backend test suite (`mvn clean test` under `easyeat/backend`) verifying zero regressions across modules 001, 002, 004, and 003
-- [ ] T066 Run frontend type and lint checks (`npm run lint` / `npx tsc --noEmit` under `easyeat/frontend`) and test suite (`npm run test`)
+- [X] T066 Run frontend type and lint checks (`npm run lint` / `npx tsc --noEmit` under `easyeat/frontend`) and test suite (`npm run test`)
 
 ---
 
