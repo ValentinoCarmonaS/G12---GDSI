@@ -25,8 +25,8 @@
 
 - [x] CHK008 - Are the closed taxonomy entries for dietary lifestyles (Celiac, Vegan, Vegetarian) and common allergens (Dairy, Peanuts, Tree Nuts, Eggs, Fish, Shellfish, Soy, Wheat) exhaustively enumerated? [Completeness, Spec §FR-012, User Story 2]
 - [x] CHK009 - Is the asynchronous email change workflow fully specified, including pending badge display, resend action, cancellation action, and target email replacement? [Completeness, Spec §FR-005, §FR-007, §FR-008]
-- [x] CHK010 - Are requirements defined for displaying inline warning badges on conflicting dishes when the master toggle is switched to OFF without preventing addition to cart? [Completeness, Spec §FR-020, §FR-021]
-- [x] CHK011 - Is the mandatory checkout risk acknowledgment step explicitly specified when the cart contains one or more non-compliant dishes prior to payment processing? [Completeness, Spec §FR-022, Clarifications]
+- [x] CHK010 - Are requirements defined for displaying inline warning badges on conflicting dishes when the master toggle is switched to OFF and intercepting cart addition with an immediate preventive risk-assumption modal? [Completeness, Spec §FR-020, §FR-021, User Story 3]
+- [x] CHK011 - Are requirements defined for single-point risk confirmation, ensuring that conflicting cart items retain permanent visual warning badges in the cart drawer and checkout summary without requiring a redundant blocking modal at checkout? [Completeness, Spec §FR-022, Clarifications Session 2026-10-24]
 - [x] CHK012 - Are requirements defined for real-time live cart re-evaluation when dietary preferences are updated in the diner profile? [Completeness, Spec §FR-015, User Story 2]
 - [x] CHK013 - Is the immutability of submitted in-flight kitchen orders explicitly stated, preventing profile updates from altering active kitchen KDS tickets? [Completeness, Spec §FR-016, Clarifications]
 - [x] CHK014 - Are public catalog browsing requirements defined for unauthenticated guests, including calls-to-action inviting sign-in or registration to activate health filters? [Completeness, Spec §FR-026, User Story 3]
@@ -65,9 +65,19 @@
 
 ---
 
+## 6. Clarification & Hardening Audit (Session 2026-10-24)
+
+- [x] CHK032 - Is the email verification resend action explicitly bounded by a 60-second cooldown timer on the client and enforced via HTTP 429 Too Many Requests on the backend? [Clarity, Spec §FR-007]
+- [x] CHK033 - Is the scope boundary explicitly stated regarding kitchen recipe substitution, ensuring catalog filtering evaluates dish allergens dynamically without altering kitchen KDS tickets or recipe structures? [Completeness, Spec §Assumptions]
+- [x] CHK034 - Does the spec mandate that dismissing or canceling the Add-to-Cart allergen preventive modal strictly aborts cart insertion without mutating cart state? [Edge Cases, Spec §Scenario 3.5]
+- [x] CHK035 - Is database backward compatibility guaranteed so that updating diner `first_name` and `last_name` keeps any legacy `full_name` synchronized across shared models? [Consistency, Spec §Assumptions]
+
+---
+
 ## Notes
 
 - Mark items `[x]` only after reviewer evaluation confirms the requirement-quality criterion is satisfied in the specification.
 - Leave items unchecked when they still require clarification, correction, or reviewer evaluation.
 - `/speckit-tasks` and `/speckit-implement` read this checklist state as a quality gate and must not modify markers.
-- Items are numbered sequentially (CHK001 through CHK031) for cross-artifact traceability.
+- Items are numbered sequentially (CHK001 through CHK035) for cross-artifact traceability.
+
