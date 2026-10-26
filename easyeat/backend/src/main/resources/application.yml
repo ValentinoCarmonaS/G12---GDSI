@@ -38,4 +38,6 @@ app:
       token-validity-hours: 24
       cooldown-seconds: 60
       base-url: ${APP_EMAIL_VERIFICATION_BASE_URL:http://localhost:3000/verificar-email}
+    mail:
+      from: ${APP_MAIL_FROM:${spring.mail.username:noreply@easyeat.com}}
 
