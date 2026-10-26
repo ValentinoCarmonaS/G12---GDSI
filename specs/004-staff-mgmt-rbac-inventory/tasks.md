@@ -239,7 +239,7 @@
 
 ### Frontend Implementation & Tests (TDD)
 
-- [ ] T081 [P] [FR-014, FR-015a, FR-015b] Update TypeScript interfaces in `easyeat/frontend/src/types/inventory.ts` (`IngredientBatch`, `StockAdjustmentAction = 'ADD' | 'SUBTRACT'`, `IngredientStatus = 'ACTIVE' | 'DISCONTINUED'`) and update client methods in `easyeat/frontend/src/api/inventoryApi.ts` adding `getBatches(id)`.
+- [x] T081 [P] [FR-014, FR-015a, FR-015b] Update TypeScript interfaces in `easyeat/frontend/src/types/inventory.ts` (`IngredientBatch`, `StockAdjustmentAction = 'ADD' | 'SUBTRACT'`, `IngredientStatus = 'ACTIVE' | 'DISCONTINUED'`) and update client methods in `easyeat/frontend/src/api/inventoryApi.ts` adding `getBatches(id)`.
 - [ ] T082 [P] [FR-014, FR-015a, FR-015b] Update component tests in `easyeat/frontend/tests/components/StockAdjustmentModal.test.tsx` and `easyeat/frontend/tests/components/IngredientCatalogTable.test.tsx` asserting "Agregar stock" with purchase cost, "Restar stock" with batch selection and financial loss, and "Desactivar" / "Reactivar" buttons without "Archivar".
 - [ ] T083 [FR-014, FR-015a, FR-015b] Refactor `StockAdjustmentModal.tsx` in `easyeat/frontend/src/components/inventory/StockAdjustmentModal.tsx` providing "Agregar stock" and "Restar stock" tabs with batch selector and computed loss, and refactor `IngredientCatalogTable.tsx` removing archive/desarchive actions in favor of single toggle "Desactivar" / "Reactivar".
 
