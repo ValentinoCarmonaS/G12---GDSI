@@ -235,7 +235,7 @@
 
 - [x] T078 [P] [FR-014, FR-015a, FR-015b] Write unit tests in `easyeat/backend/src/test/java/com/easyeat/inventory/service/StockAdjustmentServiceTest.java` and `IngredientServiceTest.java` covering batch creation on addition, lot deduction and financial loss on subtraction, rejection on insufficient batch balance, and reversible Active/Discontinued transitions.
 - [x] T079 [FR-014, FR-015a, FR-015b, FR-015c] Refactor `StockAdjustmentService.java` in `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockAdjustmentService.java` to implement batch creation on `ADD` and lot deduction with financial loss calculation on `SUBTRACT`, and refactor `IngredientService.java` removing archive restrictions.
-- [ ] T080 [FR-015b] Add endpoint `GET /api/v1/admin/ingredients/{id}/batches` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/StockAdjustmentController.java` returning active batches with remaining balance, and update web contract tests in `StockAdjustmentControllerTest.java`.
+- [x] T080 [FR-015b] Add endpoint `GET /api/v1/admin/ingredients/{id}/batches` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/StockAdjustmentController.java` returning active batches with remaining balance, and update web contract tests in `StockAdjustmentControllerTest.java`.
 
 ### Frontend Implementation & Tests (TDD)
 
