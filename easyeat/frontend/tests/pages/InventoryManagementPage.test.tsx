@@ -166,7 +166,7 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
 
     await screen.findByText('Harina 000');
 
-    const discontinueButtons = screen.getAllByRole('button', { name: /discontinuar/i });
+    const discontinueButtons = screen.getAllByRole('button', { name: /desactivar|discontinuar/i });
     await user.click(discontinueButtons[0]);
 
     await waitFor(() => {
@@ -204,8 +204,8 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
 
     await screen.findByText('Leche Entera');
 
-    const reactivateButton = screen.getByRole('button', { name: /reactivar/i });
-    await user.click(reactivateButton);
+    const reactivateButtons = screen.getAllByRole('button', { name: /reactivar/i });
+    await user.click(reactivateButtons[1]);
 
     await waitFor(() => {
       expect(inventoryApi.updateStatus).toHaveBeenCalledWith('ing-3', 'ACTIVE');
