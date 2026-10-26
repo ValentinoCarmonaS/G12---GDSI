@@ -16,6 +16,7 @@
 - Q: ¿Cómo debe presentarse la disponibilidad de stock al comensal en el catálogo? (FR-013, FR-014) → A: La disponibilidad se presenta de forma estrictamente binaria (plato a color con controles habilitados vs. plato atenuado en escala de grises con badge "Agotado" / "Out of Stock"). No se exponen conteos numéricos de porciones ni cantidades de stock de cocina por razones de confidencialidad comercial y simplicidad de interfaz.
 - Q: ¿Cómo se gestiona el cambio de establecimiento si no hay carrito en este sprint? (FR-006) → A: Al no existir carrito de compras en esta especificación ni en este sprint, cambiar de establecimiento simplemente descarga los datos del catálogo y stock del establecimiento anterior y carga limpiamente el catálogo del nuevo establecimiento seleccionado, sin necesidad de confirmaciones ni limpieza de carrito.
 - Q: ¿Debe soportarse el acceso directo al catálogo mediante URL o escaneo de código QR (/catalogo/:tenantId)? (FR-004) → A: El acceso directo por enlace externo o escaneo de código QR corresponde a una historia de usuario independiente y queda explícitamente FUERA DE ALCANCE para esta especificación. En esta iteración, el acceso al catálogo se origina exclusivamente a través del flujo de descubrimiento y selección en la barra central de búsqueda (COM-1.5.1).
+- Q: ¿El comensal puede explorar catálogos de forma pública o debe estar autenticado? → A: El acceso no es público; el comensal debe estar obligatoriamente registrado e iniciar sesión con rol DINER para usar el buscador y ver los catálogos.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -23,7 +24,7 @@
 
 **COM-1.5.1**: As a Diner, I search for a restaurant by typing into a central search bar, so that I can discover available establishments and select one to explore its live menu.
 
-The Diner accesses the establishment discovery screen and begins typing into a central search bar. Once at least 3 valid characters are entered (after trimming whitespace), the system presents an autocomplete dropdown of matching establishments. Matching is case-insensitive and diacritic-insensitive (e.g., "cafe" matches "Café Central"). Each autocomplete result displays the establishment's name. Selecting an active and open establishment redirects the Diner to that establishment's live catalog. Selecting an establishment that has been paused or disabled by an administrator presents a full-page blocking notice indicating temporary closure and preventing menu access, with an action to return to search. Selecting a different establishment cleanly replaces the current context with the newly chosen establishment's catalog and inventory data.
+The authenticated Diner (with role DINER) accesses the establishment discovery screen and begins typing into a central search bar. Once at least 3 valid characters are entered (after trimming whitespace), the system presents an autocomplete dropdown of matching establishments. Matching is case-insensitive and diacritic-insensitive (e.g., "cafe" matches "Café Central"). Each autocomplete result displays the establishment's name. Selecting an active and open establishment redirects the Diner to that establishment's live catalog. Selecting an establishment that has been paused or disabled by an administrator presents a full-page blocking notice indicating temporary closure and preventing menu access, with an action to return to search. Selecting a different establishment cleanly replaces the current context with the newly chosen establishment's catalog and inventory data.
 
 **Why this priority**: Establishment selection is the entry point for every subsequent user story. Without selecting an establishment, the Diner cannot browse a catalog, see stock availability, or search for dishes.
 
@@ -39,6 +40,7 @@ The Diner accesses the establishment discovery screen and begins typing into a c
 6. **Given** a Diner typing a query that matches zero establishments, **When** the search evaluates, **Then** the system displays an informative message ("No establishments found. Try modifying your search terms.") without error screens.
 7. **Given** a Diner typing a query consisting exclusively of whitespace or special characters, **When** the input is evaluated, **Then** the system ignores the query without triggering autocomplete or altering the screen state.
 8. **Given** a Diner currently browsing Establishment A's catalog, **When** they navigate back to search and select Establishment B, **Then** the system cleanly unloads Establishment A's data and loads Establishment B's catalog scoped exclusively to Establishment B's tenant.
+9. **Given** an unauthenticated client, **When** they attempt to access the establishment discovery screen or invoke the search autocomplete endpoint, **Then** the backend rejects the request with HTTP 401 Unauthorized, zero establishment data is exposed, and the frontend redirects the client to the login screen.
 
 ---
 
@@ -46,7 +48,7 @@ The Diner accesses the establishment discovery screen and begins typing into a c
 
 **COM-4.1.1**: As a Diner, I browse the menu of the selected establishment organized into gastronomic categories with high-resolution photos, names, and current prices, so that I can explore the restaurant's offering and identify dishes I want.
 
-After selecting an active establishment, the Diner views the catalog organized by gastronomic categories (Entradas, Platos principales, Postres, Bebidas, Ensaladas). Each dish card displays its name, price, optional description, and optional high-resolution photo. A sticky category navigation bar allows smooth jumping directly to any section. Categories that contain zero active dishes (all dishes decommissioned) are automatically hidden from the view and the category bar. If a high-resolution image fails to load, the interface displays a lightweight default placeholder immediately so that dish names, descriptions, and prices remain fully legible. When the establishment is outside its scheduled operating hours, the catalog is presented in a read-only mode: Diners can freely browse categories, photos, and prices, but all dish selection controls are disabled, accompanied by an informational banner indicating the restaurant's next opening schedule.
+After selecting an active establishment, the authenticated Diner views the catalog organized by gastronomic categories (Entradas, Platos principales, Postres, Bebidas, Ensaladas). Each dish card displays its name, price, optional description, and optional high-resolution photo. A sticky category navigation bar allows smooth jumping directly to any section. Categories that contain zero active dishes (all dishes decommissioned) are automatically hidden from the view and the category bar. If a high-resolution image fails to load, the interface displays a lightweight default placeholder immediately so that dish names, descriptions, and prices remain fully legible. When the establishment is outside its scheduled operating hours, the catalog is presented in a read-only mode: Diners can freely browse categories, photos, and prices, but all dish selection controls are disabled, accompanied by an informational banner indicating the restaurant's next opening schedule.
 
 **Why this priority**: The catalog is the core value proposition for Diners. Without it, there is no menu to browse, no prices to see, and no stock availability to evaluate.
 
@@ -61,6 +63,7 @@ After selecting an active establishment, the Diner views the catalog organized b
 5. **Given** a slow network connection, **When** a dish's high-resolution image fails to load within a reasonable time, **Then** the interface immediately displays a lightweight placeholder image without breaking layout, and the dish name, description, and price remain fully visible and legible.
 6. **Given** an establishment currently outside its scheduled operating hours, **When** a Diner views its catalog, **Then** the catalog renders in read-only mode with an informational banner displayed indicating the restaurant's opening schedule, and clicking any dish card opens the detail modal displaying the outside-hours notice.
 7. **Given** an establishment within its operating hours and an available dish, **When** a Diner views its catalog, **Then** the dish card is displayed in full color indicating available status, and clicking the card opens an informational dish detail modal showing high-resolution photo, description, price, and recipe ingredients.
+8. **Given** an unauthenticated client, **When** they attempt to load or view an establishment's catalog, **Then** the request is rejected with HTTP 401 Unauthorized, zero catalog or dish data is exposed, and the frontend redirects the client to the login screen.
 
 ---
 
@@ -122,6 +125,8 @@ The Diner uses a search bar within the catalog to filter the currently loaded me
 - **Browsing outside operating hours**: Catalog visible in read-only mode; selection controls disabled; informational banner displayed.
 - **Dish with no recipe (zero ingredients)**: Treated as unavailable since preparability cannot be determined.
 - **Concurrent stock depletion**: If a dish's last available portion is consumed while a Diner is viewing it, the dish transitions to greyed-out with "Out of Stock" badge on the next real-time update.
+- **Unauthenticated client accessing discovery or catalog**: The backend rejects the request with HTTP 401 Unauthorized; the frontend intercepts the response and redirects the user to `/login` with zero establishment, category, dish, or stock data exposed.
+- **Session token expiration during active browsing**: If the Diner's session token expires while exploring a catalog or during real-time updates, subsequent requests immediately return 401 Unauthorized, terminating the view and redirecting to `/login`.
 
 ---
 
@@ -155,6 +160,7 @@ The Diner uses a search bar within the catalog to filter the currently loaded me
 - **FR-024**: Clearing the search input MUST immediately restore the complete catalog view without page reloads.
 - **FR-025**: Search queries consisting exclusively of whitespace or invalid special characters MUST be ignored without altering the current catalog state.
 - **FR-026**: Every catalog query, autocomplete result, category list, dish list, and stock evaluation MUST be strictly scoped to the tenant ID of the selected establishment. Zero cross-tenant data exposure is permitted.
+- **FR-027**: The system MUST require user authentication with the DINER (COMENSAL) role for all establishment discovery and catalog viewing operations. Unauthenticated access attempts MUST be rejected with HTTP 401 Unauthorized, with zero data exposure to unauthenticated clients. In the frontend, unauthenticated clients MUST be redirected to the login screen.
 
 ### Key Entities
 
@@ -180,6 +186,7 @@ The Diner uses a search bar within the catalog to filter the currently loaded me
 - **SC-008**: A Diner attempting to access a paused or disabled establishment is always blocked from viewing the catalog, with a clear informational notice displayed.
 - **SC-009**: Image loading failures never block the display of dish names, prices, or descriptions. Placeholder images are displayed within 1 second of detecting a load failure.
 - **SC-010**: Browsing outside operating hours presents the catalog in read-only mode with 100% of selection controls disabled.
+- **SC-011**: 100% of unauthenticated access attempts to establishment discovery and catalog endpoints result in an HTTP 401 Unauthorized status, with zero establishment, category, dish, or stock data exposure to unauthenticated clients.
 
 ---
 
@@ -190,7 +197,7 @@ The Diner uses a search bar within the catalog to filter the currently loaded me
 - The dish entity, its gastronomic category (fixed list from spec 005), recipe composition (dish_recipe_ingredients from specs 005/006), and dietary restriction labels are fully operational from prior iterations.
 - A dish lifecycle state representing "published and visible to Diners" (e.g., ACTIVE or PUBLISHED) is defined by a prior spec that extends the state machine beyond DRAFT and PENDING_PRICE. This spec consumes that terminal state as a prerequisite. Dishes not in this published state are never visible to Diners.
 - Operating hours data for establishments is available as a configuration attribute. If the operating hours model does not yet exist, this spec assumes it will be introduced as part of the planning phase or as a lightweight data extension. The administrative UI for configuring operating hours is out of scope.
-- Authentication infrastructure (specs 001/002) and multi-tenant isolation mechanisms (spec 004) are fully operational. The Diner role does not require authentication to browse catalogs in this iteration (public access).
+- Authentication infrastructure (specs 001/002) and multi-tenant isolation mechanisms are fully operational. The Diner MUST be authenticated with the DINER role (JWT) to search establishments and browse live catalogs; unauthenticated attempts are rejected with 401 Unauthorized and redirected to login in the frontend.
 - Photo storage and retrieval for dish images are handled by existing infrastructure from spec 005. This spec only specifies Diner-facing display behavior and fallback on load failure.
 - The real-time stock update mechanism (how changes are pushed or pulled to the Diner's view) is a planning-phase decision. This spec requires that stock changes are reflected without manual page refresh, but does not prescribe a specific technology (polling, SSE, WebSocket, etc.).
 - Shopping cart (`CartContext`, `useCart`, `CartDrawer`), order creation, payment, and checkout workflows are explicitly OUT OF SCOPE for this specification and for this sprint. No shopping cart exists in this iteration; this feature is strictly limited to establishment discovery, categorized menu browsing, and real-time stock-based availability exploration.
