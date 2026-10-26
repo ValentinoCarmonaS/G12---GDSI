@@ -453,14 +453,14 @@ class StaffAndInventoryQuickstartIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.newStock").value(0.0000));
 
-        // 3. Archive permanently when stock is 0
-        IngredientStatusUpdateRequest archiveReq = new IngredientStatusUpdateRequest(IngredientStatus.ARCHIVED);
+        // 3. Reactivate to ACTIVE
+        IngredientStatusUpdateRequest reactivateReq = new IngredientStatusUpdateRequest(IngredientStatus.ACTIVE);
         mockMvc.perform(patch("/api/v1/admin/ingredients/{id}/status", ingredientId)
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(archiveReq)))
+                        .content(objectMapper.writeValueAsString(reactivateReq)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("ARCHIVED"));
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
     @Test

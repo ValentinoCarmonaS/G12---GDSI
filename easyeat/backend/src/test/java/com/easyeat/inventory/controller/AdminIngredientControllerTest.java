@@ -321,13 +321,13 @@ class AdminIngredientControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    @DisplayName("PATCH /api/v1/admin/ingredients/{id}/status - 409 Conflict on invalid archive with positive stock")
-    void updateIngredientStatus_invalidArchiveConflict() throws Exception {
+    @DisplayName("PATCH /api/v1/admin/ingredients/{id}/status - 409 Conflict on invalid lifecycle transition")
+    void updateIngredientStatus_invalidTransitionConflict() throws Exception {
         UUID id = UUID.randomUUID();
-        IngredientStatusUpdateRequest request = new IngredientStatusUpdateRequest(IngredientStatus.ARCHIVED);
+        IngredientStatusUpdateRequest request = new IngredientStatusUpdateRequest(IngredientStatus.DISCONTINUED);
 
         when(ingredientService.updateIngredientStatus(eq(id), any(IngredientStatusUpdateRequest.class)))
-                .thenThrow(new InvalidLifecycleTransitionException("Cannot archive ingredient with physical stock"));
+                .thenThrow(new InvalidLifecycleTransitionException("Invalid lifecycle transition"));
 
         mockMvc.perform(patch("/api/v1/admin/ingredients/{id}/status", id)
                         .contentType(MediaType.APPLICATION_JSON)

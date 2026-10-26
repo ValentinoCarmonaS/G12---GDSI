@@ -258,55 +258,21 @@ class IngredientServiceTest {
     }
 
     @Test
-    @DisplayName("updateIngredientStatus - transition to ARCHIVED is rejected when stock > 0")
-    void updateStatus_archived_rejectedWhenStockPositive() {
+    @DisplayName("updateIngredientStatus - ACTIVE to DISCONTINUED allowed at any time")
+    void updateStatus_activeToDiscontinued_allowed() {
         UUID id = UUID.randomUUID();
         Ingredient ingredient = new Ingredient(tenantId, "Beef Ribs", IngredientCategory.MEAT, UnitOfMeasure.KG, new BigDecimal("8500.0000"));
         ingredient.setId(id);
-        ingredient.setStatus(IngredientStatus.DISCONTINUED);
+        ingredient.setStatus(IngredientStatus.ACTIVE);
         ingredient.setCurrentStock(new BigDecimal("4.2500"));
-
-        when(ingredientRepository.findByIdAndTenantId(id, tenantId)).thenReturn(Optional.of(ingredient));
-
-        assertThatThrownBy(() -> ingredientService.updateIngredientStatus(id, new IngredientStatusUpdateRequest(IngredientStatus.ARCHIVED)))
-                .isInstanceOf(InvalidLifecycleTransitionException.class)
-                .hasMessageContaining("physical stock greater than zero");
-
-        verify(ingredientRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("updateIngredientStatus - transition to ARCHIVED is permitted when stock == 0")
-    void updateStatus_archived_permittedWhenStockZero() {
-        UUID id = UUID.randomUUID();
-        Ingredient ingredient = new Ingredient(tenantId, "Beef Ribs", IngredientCategory.MEAT, UnitOfMeasure.KG, new BigDecimal("8500.0000"));
-        ingredient.setId(id);
-        ingredient.setStatus(IngredientStatus.DISCONTINUED);
-        ingredient.setCurrentStock(BigDecimal.ZERO);
 
         when(ingredientRepository.findByIdAndTenantId(id, tenantId)).thenReturn(Optional.of(ingredient));
         when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        AdminIngredientDetailResponse response = ingredientService.updateIngredientStatus(id, new IngredientStatusUpdateRequest(IngredientStatus.ARCHIVED));
+        AdminIngredientDetailResponse response = ingredientService.updateIngredientStatus(id, new IngredientStatusUpdateRequest(IngredientStatus.DISCONTINUED));
 
-        assertThat(response.status()).isEqualTo(IngredientStatus.ARCHIVED);
-    }
-
-    @Test
-    @DisplayName("updateIngredientStatus - transition from ARCHIVED is blocked")
-    void updateStatus_fromArchived_throwsException() {
-        UUID id = UUID.randomUUID();
-        Ingredient ingredient = new Ingredient(tenantId, "Old Salmon", IngredientCategory.MEAT, UnitOfMeasure.KG, new BigDecimal("5000.0000"));
-        ingredient.setId(id);
-        ingredient.setStatus(IngredientStatus.ARCHIVED);
-        ingredient.setCurrentStock(BigDecimal.ZERO);
-
-        when(ingredientRepository.findByIdAndTenantId(id, tenantId)).thenReturn(Optional.of(ingredient));
-
-        assertThatThrownBy(() -> ingredientService.updateIngredientStatus(id, new IngredientStatusUpdateRequest(IngredientStatus.ACTIVE)))
-                .isInstanceOf(InvalidLifecycleTransitionException.class);
-
-        verify(ingredientRepository, never()).save(any());
+        assertThat(response.status()).isEqualTo(IngredientStatus.DISCONTINUED);
+        verify(ingredientRepository).save(ingredient);
     }
 
     @Test
@@ -325,36 +291,19 @@ class IngredientServiceTest {
     }
 
     @Test
-    @DisplayName("deleteIngredient - succeeds and archives when stock == 0")
-    void deleteIngredient_successWhenStockZero() {
-        UUID id = UUID.randomUUID();
-        Ingredient ingredient = new Ingredient(tenantId, "Flour", IngredientCategory.DRY_GOODS, UnitOfMeasure.KG, new BigDecimal("200.0000"));
-        ingredient.setId(id);
-        ingredient.setCurrentStock(BigDecimal.ZERO);
-
-        when(ingredientRepository.findByIdAndTenantId(id, tenantId)).thenReturn(Optional.of(ingredient));
-        when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        ingredientService.deleteIngredient(id);
-
-        assertThat(ingredient.getStatus()).isEqualTo(IngredientStatus.ARCHIVED);
-        verify(ingredientRepository).save(ingredient);
-    }
-
-    @Test
-    @DisplayName("deleteIngredient - throws InvalidLifecycleTransitionException when stock > 0")
-    void deleteIngredient_throwsWhenStockPositive() {
+    @DisplayName("deleteIngredient - succeeds and transitions status to DISCONTINUED")
+    void deleteIngredient_transitionsToDiscontinued() {
         UUID id = UUID.randomUUID();
         Ingredient ingredient = new Ingredient(tenantId, "Flour", IngredientCategory.DRY_GOODS, UnitOfMeasure.KG, new BigDecimal("200.0000"));
         ingredient.setId(id);
         ingredient.setCurrentStock(new BigDecimal("5.0000"));
 
         when(ingredientRepository.findByIdAndTenantId(id, tenantId)).thenReturn(Optional.of(ingredient));
+        when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> ingredientService.deleteIngredient(id))
-                .isInstanceOf(InvalidLifecycleTransitionException.class)
-                .hasMessageContaining("physical stock greater than zero");
+        ingredientService.deleteIngredient(id);
 
-        verify(ingredientRepository, never()).save(any());
+        assertThat(ingredient.getStatus()).isEqualTo(IngredientStatus.DISCONTINUED);
+        verify(ingredientRepository).save(ingredient);
     }
 }

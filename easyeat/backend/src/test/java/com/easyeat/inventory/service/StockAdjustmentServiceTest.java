@@ -9,6 +9,8 @@ import com.easyeat.inventory.entity.StockAuditEntry;
 import com.easyeat.inventory.exception.InvalidLifecycleTransitionException;
 import com.easyeat.inventory.exception.NegativeStockException;
 import com.easyeat.inventory.exception.ZeroDeltaAdjustmentException;
+import com.easyeat.inventory.entity.IngredientBatch;
+import com.easyeat.inventory.repository.IngredientBatchRepository;
 import com.easyeat.inventory.repository.IngredientRepository;
 import com.easyeat.inventory.repository.StockAuditEntryRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -42,6 +44,9 @@ class StockAdjustmentServiceTest {
 
     @Mock
     private StockAuditEntryRepository stockAuditEntryRepository;
+
+    @Mock
+    private IngredientBatchRepository ingredientBatchRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -293,26 +298,241 @@ class StockAdjustmentServiceTest {
     }
 
     @Test
-    @DisplayName("adjustStock - adjustment on ARCHIVED ingredient throws InvalidLifecycleTransitionException")
-    void adjustStock_archivedBlocked() {
+    @DisplayName("adjustStock - ADD action creates IngredientBatch and increments global stock")
+    void adjustStock_addAction_createsBatchAndIncreasesStock() {
         UUID ingredientId = UUID.randomUUID();
-        Ingredient ingredient = new Ingredient(tenantId, "Old Salmon", IngredientCategory.MEAT, UnitOfMeasure.KG, new BigDecimal("5000.0000"));
+        Ingredient ingredient = new Ingredient(tenantId, "Apple", IngredientCategory.PRODUCE, UnitOfMeasure.KG, new BigDecimal("2000.0000"));
         ingredient.setId(ingredientId);
-        ingredient.setStatus(IngredientStatus.ARCHIVED);
         ingredient.setCurrentStock(BigDecimal.ZERO);
 
         StockAdjustmentRequest request = new StockAdjustmentRequest(
-                StockAdjustmentMode.ABSOLUTE,
+                StockAdjustmentAction.ADD,
+                null,
                 new BigDecimal("5.0000"),
-                "Attempt to revive stock on archived item"
+                null,
+                new BigDecimal("2000.0000"),
+                null,
+                "Purchase of Batch A"
+        );
+
+        when(ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)).thenReturn(Optional.of(ingredient));
+        when(ingredientBatchRepository.save(any(IngredientBatch.class))).thenAnswer(inv -> {
+            IngredientBatch b = inv.getArgument(0);
+            b.setId(UUID.randomUUID());
+            return b;
+        });
+        when(stockAuditEntryRepository.save(any(StockAuditEntry.class))).thenAnswer(inv -> {
+            StockAuditEntry e = inv.getArgument(0);
+            e.setId(UUID.randomUUID());
+            return e;
+        });
+        when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StockAdjustmentResponse response = stockAdjustmentService.adjustStock(ingredientId, request);
+
+        assertThat(response.newStock()).isEqualByComparingTo(new BigDecimal("5.0000"));
+        assertThat(response.netDelta()).isEqualByComparingTo(new BigDecimal("5.0000"));
+        assertThat(ingredient.getCurrentStock()).isEqualByComparingTo(new BigDecimal("5.0000"));
+
+        ArgumentCaptor<IngredientBatch> batchCaptor = ArgumentCaptor.forClass(IngredientBatch.class);
+        verify(ingredientBatchRepository).save(batchCaptor.capture());
+        IngredientBatch savedBatch = batchCaptor.getValue();
+        assertThat(savedBatch.getInitialQuantity()).isEqualByComparingTo(new BigDecimal("5.0000"));
+        assertThat(savedBatch.getRemainingQuantity()).isEqualByComparingTo(new BigDecimal("5.0000"));
+        assertThat(savedBatch.getUnitCost()).isEqualByComparingTo(new BigDecimal("2000.0000"));
+    }
+
+    @Test
+    @DisplayName("adjustStock - ADD action missing unitCost throws IllegalArgumentException")
+    void adjustStock_addAction_missingUnitCostThrows() {
+        UUID ingredientId = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Apple", IngredientCategory.PRODUCE, UnitOfMeasure.KG, new BigDecimal("2000.0000"));
+        ingredient.setId(ingredientId);
+
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.ADD,
+                null,
+                new BigDecimal("5.0000"),
+                null,
+                null,
+                null,
+                "Purchase without cost"
         );
 
         when(ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)).thenReturn(Optional.of(ingredient));
 
         assertThatThrownBy(() -> stockAdjustmentService.adjustStock(ingredientId, request))
-                .isInstanceOf(InvalidLifecycleTransitionException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unit purchase cost is required");
+    }
+
+    @Test
+    @DisplayName("adjustStock - SUBTRACT action deducts from batch and calculates exact financial loss")
+    void adjustStock_subtractAction_deductsFromBatchAndCalculatesLoss() {
+        UUID ingredientId = UUID.randomUUID();
+        UUID batchId = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Apple", IngredientCategory.PRODUCE, UnitOfMeasure.KG, new BigDecimal("2000.0000"));
+        ingredient.setId(ingredientId);
+        ingredient.setCurrentStock(new BigDecimal("10.0000"));
+
+        IngredientBatch batchA = new IngredientBatch(tenantId, ingredientId, new BigDecimal("5.0000"), new BigDecimal("2000.0000"));
+        batchA.setId(batchId);
+        batchA.setRemainingQuantity(new BigDecimal("5.0000"));
+
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.SUBTRACT,
+                null,
+                new BigDecimal("2.0000"),
+                null,
+                null,
+                batchId,
+                "Shrinkage of 2 kg"
+        );
+
+        when(ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)).thenReturn(Optional.of(ingredient));
+        when(ingredientBatchRepository.findByIdAndTenantIdForUpdate(batchId, tenantId)).thenReturn(Optional.of(batchA));
+        when(stockAuditEntryRepository.save(any(StockAuditEntry.class))).thenAnswer(inv -> {
+            StockAuditEntry e = inv.getArgument(0);
+            e.setId(UUID.randomUUID());
+            return e;
+        });
+        when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StockAdjustmentResponse response = stockAdjustmentService.adjustStock(ingredientId, request);
+
+        assertThat(response.newStock()).isEqualByComparingTo(new BigDecimal("8.0000"));
+        assertThat(response.netDelta()).isEqualByComparingTo(new BigDecimal("-2.0000"));
+        assertThat(batchA.getRemainingQuantity()).isEqualByComparingTo(new BigDecimal("3.0000"));
+
+        ArgumentCaptor<StockAuditEntry> auditCaptor = ArgumentCaptor.forClass(StockAuditEntry.class);
+        verify(stockAuditEntryRepository).save(auditCaptor.capture());
+        StockAuditEntry entry = auditCaptor.getValue();
+        assertThat(entry.getBatchId()).isEqualTo(batchId);
+        assertThat(entry.getUnitCost()).isEqualByComparingTo(new BigDecimal("2000.0000"));
+        assertThat(entry.getFinancialLoss()).isEqualByComparingTo(new BigDecimal("4000.0000"));
+    }
+
+    @Test
+    @DisplayName("adjustStock - SUBTRACT action with quantity exceeding batch balance throws NegativeStockException")
+    void adjustStock_subtractAction_exceedingBatchBalanceThrows() {
+        UUID ingredientId = UUID.randomUUID();
+        UUID batchId = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Apple", IngredientCategory.PRODUCE, UnitOfMeasure.KG, new BigDecimal("2000.0000"));
+        ingredient.setId(ingredientId);
+        ingredient.setCurrentStock(new BigDecimal("10.0000"));
+
+        IngredientBatch batchA = new IngredientBatch(tenantId, ingredientId, new BigDecimal("5.0000"), new BigDecimal("2000.0000"));
+        batchA.setId(batchId);
+        batchA.setRemainingQuantity(new BigDecimal("3.0000"));
+
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.SUBTRACT,
+                null,
+                new BigDecimal("4.0000"),
+                null,
+                null,
+                batchId,
+                "Shrinkage of 4 kg"
+        );
+
+        when(ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)).thenReturn(Optional.of(ingredient));
+        when(ingredientBatchRepository.findByIdAndTenantIdForUpdate(batchId, tenantId)).thenReturn(Optional.of(batchA));
+
+        assertThatThrownBy(() -> stockAdjustmentService.adjustStock(ingredientId, request))
+                .isInstanceOf(NegativeStockException.class)
+                .hasMessageContaining("exceeds available batch balance");
+    }
+
+    @Test
+    @DisplayName("adjustStock - SUBTRACT action missing batchId throws IllegalArgumentException")
+    void adjustStock_subtractAction_missingBatchIdThrows() {
+        UUID ingredientId = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Apple", IngredientCategory.PRODUCE, UnitOfMeasure.KG, new BigDecimal("2000.0000"));
+        ingredient.setId(ingredientId);
+        ingredient.setCurrentStock(new BigDecimal("10.0000"));
+
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.SUBTRACT,
+                null,
+                new BigDecimal("2.0000"),
+                null,
+                null,
+                null,
+                "Shrinkage without batch"
+        );
+
+        when(ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)).thenReturn(Optional.of(ingredient));
+
+        assertThatThrownBy(() -> stockAdjustmentService.adjustStock(ingredientId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Batch ID is required");
+    }
+
+    @Test
+    @DisplayName("adjustStock - ADD action on DISCONTINUED ingredient throws InvalidLifecycleTransitionException")
+    void adjustStock_discontinuedAdditionBlocked() {
+        UUID ingredientId = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Old Salmon", IngredientCategory.MEAT, UnitOfMeasure.KG, new BigDecimal("5000.0000"));
+        ingredient.setId(ingredientId);
+        ingredient.setStatus(IngredientStatus.DISCONTINUED);
+        ingredient.setCurrentStock(BigDecimal.ZERO);
+
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.ADD,
+                null,
+                new BigDecimal("5.0000"),
+                null,
+                new BigDecimal("5000.0000"),
+                null,
+                "Attempt to add stock to discontinued item"
+        );
+
+        when(ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)).thenReturn(Optional.of(ingredient));
+
+        assertThatThrownBy(() -> stockAdjustmentService.adjustStock(ingredientId, request))
+                .isInstanceOf(InvalidLifecycleTransitionException.class)
+                .hasMessageContaining("DISCONTINUED");
 
         verify(stockAuditEntryRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("adjustStock - SUBTRACT action on DISCONTINUED ingredient is permitted")
+    void adjustStock_discontinuedSubtractionAllowed() {
+        UUID ingredientId = UUID.randomUUID();
+        UUID batchId = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Old Salmon", IngredientCategory.MEAT, UnitOfMeasure.KG, new BigDecimal("5000.0000"));
+        ingredient.setId(ingredientId);
+        ingredient.setStatus(IngredientStatus.DISCONTINUED);
+        ingredient.setCurrentStock(new BigDecimal("5.0000"));
+
+        IngredientBatch batch = new IngredientBatch(tenantId, ingredientId, new BigDecimal("5.0000"), new BigDecimal("5000.0000"));
+        batch.setId(batchId);
+        batch.setRemainingQuantity(new BigDecimal("5.0000"));
+
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.SUBTRACT,
+                null,
+                new BigDecimal("2.0000"),
+                null,
+                null,
+                batchId,
+                "Write-off of discontinued stock"
+        );
+
+        when(ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)).thenReturn(Optional.of(ingredient));
+        when(ingredientBatchRepository.findByIdAndTenantIdForUpdate(batchId, tenantId)).thenReturn(Optional.of(batch));
+        when(stockAuditEntryRepository.save(any(StockAuditEntry.class))).thenAnswer(inv -> {
+            StockAuditEntry e = inv.getArgument(0);
+            e.setId(UUID.randomUUID());
+            return e;
+        });
+        when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StockAdjustmentResponse response = stockAdjustmentService.adjustStock(ingredientId, request);
+
+        assertThat(response.newStock()).isEqualByComparingTo(new BigDecimal("3.0000"));
+        assertThat(ingredient.getCurrentStock()).isEqualByComparingTo(new BigDecimal("3.0000"));
     }
 
     @Test
