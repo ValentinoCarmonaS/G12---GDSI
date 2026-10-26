@@ -119,7 +119,7 @@ Represents a raw material in a restaurant's kitchen catalog. Ingredients belong 
 | `category` | `VARCHAR(50)` | NOT NULL | Category: `'Produce'`, `'Meat'`, `'Dairy'`, `'Dry Goods'`, `'Spices'`. |
 | `unit_of_measure` | `VARCHAR(20)` | NOT NULL | Accepted unit of measure: `'g'`, `'kg'`, `'ml'`, `'l'`, `'u'`. |
 | `unit_purchase_cost` | `NUMERIC(12, 4)` | NOT NULL | Unit purchase cost (exact decimal, `>= 0.0000`). |
-| `status` | `VARCHAR(50)` | NOT NULL, DEFAULT `'ACTIVE'` | Lifecycle: `'ACTIVE'`, `'DISCONTINUED'`, `'ARCHIVED'`. |
+| `status` | `VARCHAR(50)` | NOT NULL, DEFAULT `'ACTIVE'` | Lifecycle: `'ACTIVE'`, `'DISCONTINUED'`. |
 | `current_stock` | `NUMERIC(12, 4)` | NOT NULL, DEFAULT `0.0000` | Physical stock balance (invariant: `>= 0.0000`). |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Registration timestamp. |
 | `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Timestamp of last detail or stock modification. |

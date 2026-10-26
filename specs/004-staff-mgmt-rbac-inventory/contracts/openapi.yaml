@@ -320,10 +320,9 @@ paths:
     patch:
       summary: Transition ingredient lifecycle status (ADM-4.1.1, FR-014)
       description: |
-        Transitions ingredient status:
-        - ACTIVE -> DISCONTINUED (if stock > 0)
-        - DISCONTINUED -> ACTIVE (explicit reactivation)
-        - DISCONTINUED/ACTIVE -> ARCHIVED (strictly permitted only when stock == 0)
+        Transitions ingredient status between ACTIVE and DISCONTINUED:
+        - ACTIVE -> DISCONTINUED (removes from Chef catalog and blocks new stock additions)
+        - DISCONTINUED -> ACTIVE (explicit reactivation, restoring to Chef catalog)
       security:
         - BearerAuth: []
       tags:
@@ -375,8 +374,8 @@ paths:
     post:
       summary: Apply manual stock adjustment (ADM-4.1.2)
       description: |
-        Applies a physical inventory adjustment in ABSOLUTE mode (sets counted physical stock) or RELATIVE mode (positive/negative delta).
-        Enforces non-negative stock invariant, mandatory justification, and pessimistic locking during concurrent requests.
+        Applies a stock adjustment by creating a new cost-bearing batch (action = ADD) or imputing shrinkage/waste to an existing batch (action = SUBTRACT) with financial loss calculation.
+        Enforces non-negative stock invariant, batch balance limits, mandatory justification, and pessimistic locking during concurrent requests.
       security:
         - BearerAuth: []
       tags:
