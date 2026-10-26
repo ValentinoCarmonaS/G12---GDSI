@@ -306,4 +306,27 @@ class IngredientServiceTest {
         assertThat(ingredient.getStatus()).isEqualTo(IngredientStatus.DISCONTINUED);
         verify(ingredientRepository).save(ingredient);
     }
+
+    @Test
+    @DisplayName("createIngredient - without unitPurchaseCost defaults to zero")
+    void createIngredient_withoutUnitPurchaseCost_defaultsToZero() {
+        CreateIngredientRequest request = new CreateIngredientRequest(
+                "Fresh Basil",
+                IngredientCategory.PRODUCE,
+                UnitOfMeasure.G
+        );
+
+        when(ingredientRepository.existsByTenantIdAndNameIgnoreCase(tenantId, "Fresh Basil")).thenReturn(false);
+        when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(invocation -> {
+            Ingredient saved = invocation.getArgument(0);
+            saved.setId(UUID.randomUUID());
+            return saved;
+        });
+
+        AdminIngredientDetailResponse response = ingredientService.createIngredient(request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.name()).isEqualTo("Fresh Basil");
+        assertThat(response.unitPurchaseCost()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
 }

@@ -32,12 +32,14 @@ public class IngredientService {
             throw new DuplicateIngredientNameException("An ingredient with name '" + trimmedName + "' already exists in this tenant.");
         }
 
+        BigDecimal cost = request.unitPurchaseCost() != null ? request.unitPurchaseCost() : BigDecimal.ZERO;
+
         Ingredient ingredient = new Ingredient(
                 tenantId,
                 trimmedName,
                 request.category(),
                 request.unitOfMeasure(),
-                request.unitPurchaseCost()
+                cost
         );
         Ingredient saved = ingredientRepository.save(ingredient);
         return toResponse(saved);
@@ -80,7 +82,9 @@ public class IngredientService {
 
         ingredient.setName(trimmedName);
         ingredient.setCategory(request.category());
-        ingredient.setUnitPurchaseCost(request.unitPurchaseCost());
+        if (request.unitPurchaseCost() != null) {
+            ingredient.setUnitPurchaseCost(request.unitPurchaseCost());
+        }
 
         Ingredient updated = ingredientRepository.save(ingredient);
         return toResponse(updated);
