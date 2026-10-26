@@ -220,7 +220,7 @@
 
 ---
 
-## Phase 15: Inventory Refactor - Batches, Financial Shrinkage & Lifecycle Simplification (Priority: P2)
+## Phase 15: Inventory Refactor - Batches, Financial Shrinkage & Lifecycle Simplification (Priority: P2) (#125)
 
 **Goal**: Refactor manual stock adjustments to record purchases as distinct cost-bearing batches, impute shrinkage/waste to specific lots with exact financial loss calculation, and simplify ingredient lifecycle to a reversible Active/Discontinued model.
 
