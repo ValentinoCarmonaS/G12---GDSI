@@ -81,7 +81,7 @@ The Financial Administrator accesses the cost audit endpoint for a dish that is 
 - **FR-004**: The system MUST reject duplicate ingredients within the same recipe payload, requiring a single consolidated line item per ingredient.
 - **FR-005**: The system MUST prevent assigning ingredients that are in "Discontinued" or "Archived" status at the time of recipe creation or update.
 - **FR-006**: The system MUST permit recipe creation and modification exclusively while the dish is in `DRAFT` status. In-place recipe modifications on dishes in `PENDING_PRICE` or published status MUST be blocked (HTTP 409 Conflict).
-- **FR-007**: The system MUST expose the cost audit endpoint `GET /api/v1/dishes/{dishId}/cost-audit` exclusively for dishes in `PENDING_PRICE` status. Requests for dishes in `DRAFT` status MUST be rejected with HTTP 409 Conflict.
+- **FR-007**: The system MUST expose the cost audit endpoint `GET /api/v1/dishes/{id}/cost-audit` exclusively for dishes in `PENDING_PRICE` status. Requests for dishes in `DRAFT` status MUST be rejected with HTTP 409 Conflict.
 - **FR-008**: The system MUST dynamically calculate the total Food Cost per portion as the exact sum of its ingredient line costs:
   $$\text{Food Cost} = \sum_{i=1}^{n} (\text{quantity}_i \times \text{unit\_purchase\_cost}_i)$$
   using `java.math.BigDecimal` with `RoundingMode.HALF_UP` rounded to 2 decimal places for subtotals and the total, guaranteeing zero fractional-cent drift.

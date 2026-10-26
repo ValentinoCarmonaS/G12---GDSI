@@ -2,17 +2,19 @@
 
 **Branch**: `006-recipe-food-cost` | **Date**: 25/10/2026 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `specs/006-recipe-food-cost/spec.md`, backlog activity (ADM-5.1.2, CHF-2.2.2 Backend), clarification agreements from 2026-10-25, and schema established in `specs/005-chef-dish-management/`.
+**Input**: Feature specification from `specs/006-recipe-food-cost/spec.md`, backlog activity (ADM-5.1.2), clarification agreements from 2026-10-25, and architecture established in `specs/005-chef-dish-management/`.
 
 ---
 
 ## Executive Summary
 
-This feature delivers the backend domain capabilities for technical dish recipe persistence (`CHF-2.2.2 Backend`) and the automated raw material cost engine (`ADM-5.1.2`) for the EasyEat multi-tenant platform.
+This feature delivers the backend domain engine and administrative REST endpoint for the automated raw material cost calculation (`ADM-5.1.2`) for the EasyEat multi-tenant platform.
 
-The design **reuses directly** the `dish_recipe_ingredients` table and the composite `DishRecipeIngredient` entity introduced by feature 005 (`specs/005-chef-dish-management/`), which already exists via Flyway migration `V6__chef_dish_management.sql`. No new relational table is introduced in this feature. Feature 006 adds the application-layer services and REST endpoints on top of the existing 3NF schema: an atomic full-replacement recipe persistence service (idempotent `PUT`), a pure domain Food Cost computation engine (`FoodCostEngine`) using direct BigDecimal multiplication without unit conversion, and a financial cost audit endpoint (`GET /cost-audit`) gated exclusively to dishes in `PENDING_PRICE` status and to `ADMIN` role.
+Following architectural reconciliation with feature 005 (`specs/005-chef-dish-management/`):
+- The recipe persistence model (`dish_recipe_ingredients`), composite entity `DishRecipeIngredient`, composite identifier `DishRecipeIngredientId`, repository `DishRecipeIngredientRepository`, and recipe upsert endpoint `PUT /api/v1/dishes/{id}/recipe` (`CHF-2.2.2`) are established and owned by feature 005 via Flyway migration `V6__chef_dish_management.sql`.
+- Feature 006 focuses strictly on financial cost computation and auditing: a pure domain calculation component (`FoodCostEngine`) applying direct fixed-point multiplication (`BigDecimal`), and a secure audit service and controller (`FoodCostAuditService`, `AdminDishCostAuditController`) exposing `GET /api/v1/dishes/{id}/cost-audit` restricted to `ADMIN` role and gated strictly to dishes in `PENDING_PRICE` status.
 
-The implementation follows the conventions established in iterations 001 through 005: **Java 21**, **Spring Boot 3.3.4**, **PostgreSQL 16** with **Flyway** (no new migration in this feature), exact arithmetic via `java.math.BigDecimal`, RFC 9457 `ProblemDetail` errors, and layered testing with **JUnit 5**, **Mockito**, **MockMvc**, and **Testcontainers**.
+The implementation adheres to the project baseline: **Java 21**, **Spring Boot 3.3.4**, **PostgreSQL 16**, exact arithmetic via `java.math.BigDecimal` (`RoundingMode.HALF_UP`), RFC 9457 `ProblemDetail` errors, and layered testing with **JUnit 5**, **Mockito**, **MockMvc**, and **Testcontainers**.
 
 ---
 
@@ -27,32 +29,30 @@ The implementation follows the conventions established in iterations 001 through
 
 **Storage & Persistence**:
 - PostgreSQL 16 with native `UUID`, `TIMESTAMPTZ`, and `NUMERIC(12, 4)`.
-- **No new Flyway migration in this feature.** The `dish_recipe_ingredients` table is already created by `V6__chef_dish_management.sql` from feature 005.
-- `dish_dietary_restrictions` table (also from V6) is read-only from this feature's perspective.
+- **No new Flyway migration in this feature.** Relational tables `dishes`, `dish_recipe_ingredients`, and `dish_dietary_restrictions` are provisioned by `V6__chef_dish_management.sql` (feature 005).
 
 **Numeric Precision**:
 - `java.math.BigDecimal` with `RoundingMode.HALF_UP`.
-- Scale 4 for raw quantities and unit costs (`NUMERIC(12, 4)`).
-- Scale 2 for line subtotals and total Food Cost (monetary output).
-- Food Cost formula: `lineSubtotal = quantity × unitPurchaseCost`. No cross-unit conversion.
+- Scale 4 for quantities and inventory unit costs (`NUMERIC(12, 4)`).
+- Scale 2 for line subtotals and total Food Cost output.
+- Direct formula: $\text{lineSubtotal} = \text{quantity} \times \text{unit\_purchase\_cost}$. No unit conversion required (3NF inventory alignment).
 
 **Testing Strategy**:
 - JUnit 5 and AssertJ for pure domain unit tests (`FoodCostEngineTest`).
-- Spring Security Test (`MockMvc`, `@WithMockUser`) for RBAC and controller slice validation.
-- Testcontainers running PostgreSQL 16 for database integration and transactional full-replace integrity tests (`DishCostAuditIntegrationTest`).
+- Spring Security Test (`MockMvc`, `@WithMockUser`) for RBAC and controller slice verification (`AdminDishCostAuditControllerTest`).
+- Testcontainers running PostgreSQL 16 for database integration tests (`DishCostAuditIntegrationTest`).
 
 **Target Platform**: Linux containers / Docker (production); local JVM execution for development.  
-**Project Type**: Web service / REST API (modular backend within monorepo).
+**Project Type**: Modular backend REST API (`easyeat/backend`).
 
 **Performance Goals**:
-- Recipe save/update transaction: p95 latency ≤ 150 ms.
-- Cost audit query with label aggregation and itemized breakdown: p95 latency ≤ 100 ms.
+- Cost audit query with itemized breakdown and dietary tag aggregation: p95 latency $\le 100$ ms.
 
 **Domain & Security Constraints**:
-- Multi-tenant isolation: dishes and recipe ingredients must share identical `tenant_id`.
-- RBAC: `PUT /dishes/{id}/recipe` allowed for `CHEF` and `ADMIN`; `GET /dishes/{id}/cost-audit` exclusively restricted to `ADMIN` (HTTP 403 for non-admin).
-- State-machine gate: recipe modification blocked with `409 Conflict` if `dish.status != 'DRAFT'`. Cost audit blocked with `409 Conflict` if `dish.status != 'PENDING_PRICE'`.
-- Zero floating-point drift: all monetary computations use `BigDecimal` with `HALF_UP` to 2 decimal places.
+- Multi-tenant isolation: dish and all associated ingredients must match the authenticated user's `tenant_id`.
+- RBAC: `GET /api/v1/dishes/{id}/cost-audit` restricted strictly to `ADMIN` role (HTTP 403 Forbidden for `CHEF` and unauthorized users).
+- State-machine gate: cost audit rejected with `409 Conflict` if `dish.status != 'PENDING_PRICE'` (drafts cannot be audited).
+- Zero fractional-cent drift: monetary sums computed via fixed-point `BigDecimal` with `RoundingMode.HALF_UP`.
 
 ---
 
@@ -62,17 +62,17 @@ The implementation follows the conventions established in iterations 001 through
 
 | Principle | Pre-Design Status | Post-Design Status | Evidence and Justification |
 |---|---|---|---|
-| **I. The Specification Is the Source of Truth** | ✅ PASS | ✅ PASS | Design derives strictly from FR-001 through FR-013 in `spec.md`. No unsolicited features added. All decisions reconciled with spec 005 schema in session 2026-10-25. |
-| **II. Specification Before Implementation** | ✅ PASS | ✅ PASS | Completed `spec.md`, `research.md`, `data-model.md`, `contracts/openapi.yaml`, and `quickstart.md` prior to code implementation. All artifacts aligned with spec 005. |
-| **III. Layered Verification Proportional to Risk** | ✅ PASS | ✅ PASS | Layered test strategy covering exact Food Cost math, zero cent drift, RBAC security filters, and Testcontainers database integration. |
-| **IV. Simple, Cohesive, and Justified Design** | ✅ PASS | ✅ PASS | No new table introduced. Services integrated in `com.easyeat.dish` package alongside spec 005 code. Direct multiplication formula (no unit conversion layer). |
-| **V. Bounded Scope** | ✅ PASS | ✅ PASS | Bounded to Sprint 2 backend deliverables (CHF-2.2.2 Backend, ADM-5.1.2). No image upload (CHF-2.2.1), PVP pricing (ADM-5.2.1), or catalog publication (ADM-5.2.2) included. |
-| **VI. Controlled Technical Debt** | ✅ PASS | ✅ PASS | All architectural decisions and rejected alternatives recorded in `research.md`. D1: no duplicate table. D3: direct multiplication (no cross-unit conversion). |
-| **VII. Traceability, Consistency, and Documentation** | ✅ PASS | ✅ PASS | Complete traceability matrix in `data-model.md` mapping FR-001 to FR-013 directly to schema, entities, and API endpoints. All documents aligned. |
-| **VIII. Evidence Over Assumption and Human Escalation** | ✅ PASS | ✅ PASS | Two interactive clarification sessions (2026-10-25): initial clarification + spec 005 reconciliation. All decisions in `research.md`. |
-| **IX. Engineering Over Convenience** | ✅ PASS | ✅ PASS | Exact decimal precision with `BigDecimal`, full-replacement transactional atomicity, strict RBAC and state-machine gate enforcement. |
-| **X. Full-Stack End-to-End Integrity** | ✅ PASS | ✅ PASS | Satisfies complete backend scope for Sprint 2 activity. OpenAPI contracts in `contracts/openapi.yaml` prepared for frontend integration. |
-| **XI. Continuous Upstream Synchronization Awareness** | ✅ PASS | ✅ PASS | Branch merged from `develop/sprint-2` (which includes spec 005). All prior migrations V1–V6 are present before this feature's code executes. |
+| **I. The Specification Is the Source of Truth** | ✅ PASS | ✅ PASS | Design derives strictly from FR-001 through FR-013 in `spec.md`. Reconciled with spec 005 schema. |
+| **II. Specification Before Implementation** | ✅ PASS | ✅ PASS | Specification, data model, contracts, and research completed prior to code execution. |
+| **III. Layered Verification Proportional to Risk** | ✅ PASS | ✅ PASS | Multi-tier test strategy: domain unit tests for BigDecimal calculations, MockMvc slice tests for RBAC/state gate, and Testcontainers integration tests. |
+| **IV. Simple, Cohesive, and Justified Design** | ✅ PASS | ✅ PASS | Eliminates duplicate tables and controllers. Reuses spec 005 entities and concentrates new logic in cohesive cost domain components under `com.easyeat.dish`. |
+| **V. Bounded Scope** | ✅ PASS | ✅ PASS | Scope strictly limited to ADM-5.1.2 (Food Cost auditing). PVP retail pricing (ADM-5.2.1) and catalog publication (ADM-5.2.2) remain deferred. |
+| **VI. Controlled Technical Debt** | ✅ PASS | ✅ PASS | Design trade-offs documented in `research.md`. No redundant schemas or dead abstraction layers. |
+| **VII. Traceability, Consistency, and Documentation** | ✅ PASS | ✅ PASS | Full traceability across requirements, data model, and API contracts. Path parameters aligned to `{id}` matching spec 005 conventions. |
+| **VIII. Evidence Over Assumption and Human Escalation** | ✅ PASS | ✅ PASS | Clarifications resolved through interactive review sessions (grill-me) and cross-spec comparative analysis. |
+| **IX. Engineering Over Convenience** | ✅ PASS | ✅ PASS | Exact arithmetic, robust multi-tenant boundaries, and explicit state machine enforcement at the service layer. |
+| **X. Full-Stack End-to-End Integrity** | ✅ PASS | ✅ PASS | Delivers the scheduled backend cost audit capability for Sprint 2 with OpenAPI contracts prepared for frontend consumption. |
+| **XI. Continuous Upstream Synchronization Awareness** | ✅ PASS | ✅ PASS | Branch aligned with `develop/sprint-2`, incorporating all baseline migrations (V1 through V6). |
 
 **GATE RESULT: ALL PASS**
 
@@ -95,7 +95,7 @@ specs/006-recipe-food-cost/
 
 ### Source Code (`easyeat/backend/`)
 
-Feature 006 integrates entirely within the existing `com.easyeat.dish` package established by spec 005. No new top-level package is created.
+Feature 006 integrates into the existing `com.easyeat.dish` package without creating redundant packages:
 
 ```text
 easyeat/backend/
@@ -105,79 +105,67 @@ easyeat/backend/
     │   ├── java/com/easyeat/
     │   │   └── dish/
     │   │       ├── domain/
-    │   │       │   └── DishRecipeIngredient.java       # Reused from spec 005 (composite PK entity)
+    │   │       │   ├── Dish.java                           # REUSED from spec 005
+    │   │       │   ├── DishStatus.java                     # REUSED from spec 005 (DRAFT, PENDING_PRICE)
+    │   │       │   ├── DishRecipeIngredient.java           # REUSED from spec 005
+    │   │       │   └── DishRecipeIngredientId.java         # REUSED from spec 005 (Composite PK)
     │   │       ├── repository/
-    │   │       │   └── DishRecipeIngredientRepository.java  # Reused or extended from spec 005
+    │   │       │   ├── DishRepository.java                 # REUSED from spec 005
+    │   │       │   └── DishRecipeIngredientRepository.java # REUSED from spec 005
     │   │       ├── service/
-    │   │       │   ├── FoodCostEngine.java             # NEW: pure stateless BigDecimal calculator
-    │   │       │   └── FoodCostAuditService.java       # NEW: orchestrates query + engine + RBAC checks
+    │   │       │   ├── FoodCostEngine.java                 # NEW: Stateless BigDecimal cost calculator
+    │   │       │   └── FoodCostAuditService.java           # NEW: Orchestrates retrieval, validation, and audit assembly
     │   │       ├── controller/
     │   │       │   └── AdminDishCostAuditController.java   # NEW: GET /dishes/{id}/cost-audit (ADMIN only)
-    │   │       └── dto/
-    │   │           ├── RecipeUpdateRequest.java        # Reused from spec 005 (PUT /dishes/{id}/recipe)
-    │   │           ├── RecipeIngredientRequest.java    # Reused from spec 005
-    │   │           ├── FoodCostAuditResponse.java      # NEW: top-level audit response
-    │   │           └── RecipeItemAuditResponse.java    # NEW: per-ingredient line item
+    │   │       ├── dto/
+    │   │       │   ├── RecipeUpdateRequest.java            # REUSED from spec 005
+    │   │       │   ├── FoodCostAuditResponse.java          # NEW: Complete cost audit response
+    │   │       │   └── RecipeItemAuditResponse.java        # NEW: Breakdown line item response
+    │   │       └── exception/
+    │   │           ├── DishLockedException.java            # REUSED from spec 005 (maps to 409)
+    │   │           └── EmptyRecipeException.java           # NEW: Maps to 400 when recipe has no ingredients
     │   └── resources/
     │       └── db/migration/
-    │           └── (no new migration; V6__chef_dish_management.sql from spec 005 covers all tables)
+    │           └── (V6__chef_dish_management.sql from spec 005 already provisions required tables)
     └── test/
         └── java/com/easyeat/dish/
             ├── service/
-            │   └── FoodCostEngineTest.java             # Unit tests: math precision, zero-price flag
+            │   └── FoodCostEngineTest.java                 # Unit tests: arithmetic precision, zero cost handling
             ├── controller/
-            │   └── AdminDishCostAuditControllerTest.java  # MockMvc: RBAC, state gate, response shape
+            │   └── AdminDishCostAuditControllerTest.java   # MockMvc slice tests: RBAC, 409 gate, DTO validation
             └── integration/
-                └── DishCostAuditIntegrationTest.java   # Testcontainers: full flow with real DB
+                └── DishCostAuditIntegrationTest.java       # Testcontainers: full database flow & price change reflection
 ```
-
-**Classes removed from previous plan version**:
-- ~~`RecipeItem.java`~~ → replaced by `DishRecipeIngredient.java` (spec 005)
-- ~~`RecipeItemRepository.java`~~ → replaced by `DishRecipeIngredientRepository.java` (spec 005)
-- ~~`UnitConversionService.java`~~ → eliminated (3NF model; formula is direct multiplication)
-- ~~`IncompatibleUnitException.java`~~ → eliminated (no cross-unit conversion)
-- ~~`ActiveDishModificationException.java`~~ → already defined in spec 005 as `DishLockedException`
-- ~~`V6__create_recipe_items.sql`~~ → eliminated; spec 005 migration `V6__chef_dish_management.sql` is the source of truth
 
 ---
 
 ## API Surface
 
-Defined in full in [`contracts/openapi.yaml`](./contracts/openapi.yaml). Summary:
+Detailed specification in [`contracts/openapi.yaml`](./contracts/openapi.yaml). Path parameter naming is standardized to `{id}` matching spec 005 conventions:
 
-| Method | Path | Role | State Gate | Description |
-|---|---|---|---|---|
-| `PUT` | `/api/v1/dishes/{dishId}/recipe` | `CHEF`, `ADMIN` | `DRAFT` only | Full-replacement recipe assignment |
-| `GET` | `/api/v1/dishes/{dishId}/cost-audit` | `ADMIN` only | `PENDING_PRICE` only | Itemized Food Cost audit |
+| Method | Path | Owner Spec | Role | State Gate | Description |
+|---|---|---|---|---|---|
+| `PUT` | `/api/v1/dishes/{id}/recipe` | Spec 005 (`CHF-2.2.2`) | `CHEF`, `ADMIN` | `DRAFT` only | Replaced atomically via `DishController` |
+| `GET` | `/api/v1/dishes/{id}/cost-audit` | Spec 006 (`ADM-5.1.2`) | `ADMIN` only | `PENDING_PRICE` only | Itemized Food Cost and dietary audit breakdown |
 
-**`PUT /api/v1/dishes/{dishId}/recipe`** — Request body:
+**`GET /api/v1/dishes/{id}/cost-audit`** — Response body (`200 OK`):
 ```json
 {
-  "ingredients": [
-    { "ingredientId": "<uuid>", "quantity": 0.250 },
-    { "ingredientId": "<uuid>", "quantity": 2 }
-  ]
-}
-```
-- `unitOfMeasure` is **not** a request field; it is resolved via 3NF JOIN from `ingredients.unit_of_measure`.
-
-**`GET /api/v1/dishes/{dishId}/cost-audit`** — Response body (200 OK):
-```json
-{
-  "dishId": "<uuid>",
+  "dishId": "a1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01",
   "dishName": "Milanesa a la Napolitana",
-  "totalFoodCost": "4.73",
+  "totalFoodCost": 4.73,
   "hasUnpricedIngredients": false,
   "warningNotes": [],
-  "dietaryRestrictionCodes": ["GLUTEN_FREE", "LACTOSE_FREE"],
+  "requiredDietaryRestrictions": ["GLUTEN_FREE", "LACTOSE_FREE"],
   "items": [
     {
-      "ingredientId": "<uuid>",
+      "ingredientId": "b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a02",
       "ingredientName": "Peceto",
-      "quantity": "0.2500",
+      "recipeQuantity": 0.2500,
       "unitOfMeasure": "KG",
-      "unitPurchaseCost": "18.90",
-      "lineSubtotal": "4.73"
+      "unitPurchaseCost": 18.90,
+      "lineSubtotal": 4.73,
+      "unpricedWarning": false
     }
   ]
 }
@@ -187,38 +175,42 @@ Defined in full in [`contracts/openapi.yaml`](./contracts/openapi.yaml). Summary
 
 ## Implementation Phases
 
-### Phase 0 — Research & Schema Alignment *(completed)*
+### Phase 0 — Research & Alignment *(Completed)*
+- [x] Inspect spec 005 schema (`V6__chef_dish_management.sql`), entities, and contracts.
+- [x] Confirm reuse of `dish_recipe_ingredients`, `DishRecipeIngredient`, and `DishRecipeIngredientId`.
+- [x] Resolve path parameter standard `{id}` across contracts.
+- [x] Record architectural decisions in `research.md`.
 
-- [x] Read spec 005 schema (`V6__chef_dish_management.sql`, `DishRecipeIngredient`, `DishStatus`).
-- [x] Confirm reuse of `dish_recipe_ingredients` (no duplicate table).
-- [x] Confirm `PENDING_PRICE` gate for cost audit.
-- [x] Confirm 3NF formula (direct multiplication, no unit conversion).
-- [x] Confirm dietary tags from `dish_dietary_restrictions` (read-only, no derivation from ingredients).
-- [x] Document decisions in `research.md`.
+### Phase 1 — Specification & Interface Design *(Completed)*
+- [x] Specification `spec.md` updated and verified.
+- [x] Data model `data-model.md` aligned with 3NF direct calculation formula.
+- [x] OpenAPI contract `contracts/openapi.yaml` harmonized with `{id}` parameter.
+- [x] Runnable verification scenarios in `quickstart.md`.
+- [x] Technical implementation plan `plan.md` reconciled (this document).
 
-### Phase 1 — Specification & Interface Design *(completed)*
+### Phase 2 — Application Services *(Pending)*
+1. **`FoodCostEngine.java`**: Pure component computing line subtotals and total cost using `BigDecimal` (`HALF_UP`, scale 2). Handles unpriced ingredients (`unitPurchaseCost == 0` or null) by raising `hasUnpricedIngredients = true` and logging warnings.
+2. **`EmptyRecipeException.java`**: Custom domain exception mapped to HTTP 400 in `GlobalExceptionHandler`.
+3. **DTOs (`FoodCostAuditResponse`, `RecipeItemAuditResponse`)**: Immutable record or Lombok representations conforming to OpenAPI schema.
+4. **`FoodCostAuditService.java`**:
+   - Enforce tenant isolation (`dish.tenantId == user.tenantId`).
+   - Validate state machine gate: throw `DishLockedException` (HTTP 409) if `dish.status != PENDING_PRICE`.
+   - Query recipe items via `DishRecipeIngredientRepository` joined with `Ingredient`.
+   - Validate non-empty recipe (throw `EmptyRecipeException` if empty).
+   - Execute calculation via `FoodCostEngine`.
+   - Collect declared dietary restrictions from `dish_dietary_restrictions`.
+   - Return structured audit response.
+5. **`AdminDishCostAuditController.java`**:
+   - Expose `GET /api/v1/dishes/{id}/cost-audit`.
+   - Enforce `@PreAuthorize("hasRole('ADMIN')")`.
 
-- [x] `spec.md` rewritten and aligned with spec 005.
-- [x] `data-model.md` with ERD, JPA entity, formula, and traceability matrix.
-- [x] `contracts/openapi.yaml` with `PUT /recipe` and `GET /cost-audit` operations.
-- [x] `quickstart.md` with acceptance scenarios (DRAFT → 409, PENDING_PRICE → 200, CHEF → 403).
-- [x] `plan.md` rewritten (this file).
-
-### Phase 2 — Application Services *(pending)*
-
-1. **`FoodCostEngine.java`**: Stateless service receiving a list of `(BigDecimal quantity, BigDecimal unitPurchaseCost)` pairs and returning exact BigDecimal totals. Handles zero-cost items by flagging `hasUnpricedIngredients = true`.
-2. **`FoodCostAuditService.java`**: Transactional read service. Loads `dish` by `(dishId, tenantId)`, asserts `status == PENDING_PRICE`, loads `dish_recipe_ingredients` with JOIN to `ingredients`, calls `FoodCostEngine`, loads `dish_dietary_restrictions`, and assembles `FoodCostAuditResponse`.
-3. **`AdminDishCostAuditController.java`**: REST controller. `@PreAuthorize("hasRole('ADMIN')")`. Maps `GET /api/v1/dishes/{dishId}/cost-audit` to `FoodCostAuditService`. Handles `ProblemDetail` for 409, 403, 404, 400.
-4. **`FoodCostAuditResponse.java`** and **`RecipeItemAuditResponse.java`**: Immutable DTOs (record classes or Lombok `@Value`).
-
-### Phase 3 — Tests *(pending)*
-
-1. **`FoodCostEngineTest`** (unit): Exact math, zero-price flagging, multi-item precision with `BigDecimal` assertions.
-2. **`AdminDishCostAuditControllerTest`** (MockMvc slice): RBAC (ADMIN pass, CHEF/anon 403), `DRAFT` → 409, `PENDING_PRICE` → 200, empty recipe → 400.
-3. **`DishCostAuditIntegrationTest`** (Testcontainers): Full flow against PostgreSQL 16 — insert dish + ingredients + recipe items, transition to `PENDING_PRICE`, GET cost-audit, assert itemized response and math precision.
+### Phase 3 — Tests *(Pending)*
+1. **`FoodCostEngineTest`**: Unit testing decimal rounding, zero fractional-cent drift, and unpriced ingredient flags.
+2. **`AdminDishCostAuditControllerTest`**: MockMvc controller slice testing RBAC authorization (ADMIN allow, CHEF 403, unauthenticated 401), state gate (DRAFT 409, PENDING_PRICE 200), and empty recipe (400).
+3. **`DishCostAuditIntegrationTest`**: End-to-end Testcontainers integration validating dynamic recalculation upon inventory price updates and tenant boundary enforcement.
 
 ---
 
 ## Complexity Tracking
 
-*No constitutional violations identified. Design reuses the existing schema, authentication filters, and exception handling from spec 005 without introducing unnecessary abstractions. The removal of `UnitConversionService` and the separate `recipe_items` table reduces overall complexity relative to the previous plan version.*
+*No constitutional violations identified. Reusing spec 005 persistence models and controller infrastructure avoids redundant tables, duplicated endpoints, and unnecessary translation layers.*
