@@ -27,3 +27,4 @@ public interface IngredientBatchRepository extends JpaRepository<IngredientBatch
     List<IngredientBatch> findByTenantIdAndIngredientIdAndRemainingQuantityGreaterThanOrderByCreatedAtAsc(
             UUID tenantId, UUID ingredientId, BigDecimal minQuantity);
 }
+

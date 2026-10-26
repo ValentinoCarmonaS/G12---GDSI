@@ -33,3 +33,4 @@ UPDATE ingredients SET status = 'DISCONTINUED' WHERE status = 'ARCHIVED';
 ALTER TABLE ingredients DROP CONSTRAINT IF EXISTS chk_ingredient_status;
 ALTER TABLE ingredients ADD CONSTRAINT chk_ingredient_status 
     CHECK (status IN ('ACTIVE', 'DISCONTINUED'));
+

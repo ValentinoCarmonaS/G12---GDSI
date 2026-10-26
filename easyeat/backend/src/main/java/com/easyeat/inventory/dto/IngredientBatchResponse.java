@@ -12,3 +12,4 @@ public record IngredientBatchResponse(
         BigDecimal unitCost,
         Instant createdAt
 ) {}
+

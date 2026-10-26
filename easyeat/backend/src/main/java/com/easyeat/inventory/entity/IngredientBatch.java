@@ -115,3 +115,4 @@ public class IngredientBatch {
         this.createdAt = createdAt;
     }
 }
+
