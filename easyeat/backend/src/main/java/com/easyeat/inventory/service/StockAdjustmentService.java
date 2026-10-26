@@ -5,10 +5,12 @@ import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.inventory.dto.*;
 import com.easyeat.inventory.entity.Ingredient;
+import com.easyeat.inventory.entity.IngredientBatch;
 import com.easyeat.inventory.entity.StockAuditEntry;
 import com.easyeat.inventory.exception.InvalidLifecycleTransitionException;
 import com.easyeat.inventory.exception.NegativeStockException;
 import com.easyeat.inventory.exception.ZeroDeltaAdjustmentException;
+import com.easyeat.inventory.repository.IngredientBatchRepository;
 import com.easyeat.inventory.repository.IngredientRepository;
 import com.easyeat.inventory.repository.StockAuditEntryRepository;
 import org.springframework.security.core.Authentication;
@@ -24,13 +26,16 @@ import java.util.*;
 public class StockAdjustmentService {
 
     private final IngredientRepository ingredientRepository;
+    private final IngredientBatchRepository ingredientBatchRepository;
     private final StockAuditEntryRepository stockAuditEntryRepository;
     private final UserRepository userRepository;
 
     public StockAdjustmentService(IngredientRepository ingredientRepository,
+                                  IngredientBatchRepository ingredientBatchRepository,
                                   StockAuditEntryRepository stockAuditEntryRepository,
                                   UserRepository userRepository) {
         this.ingredientRepository = ingredientRepository;
+        this.ingredientBatchRepository = ingredientBatchRepository;
         this.stockAuditEntryRepository = stockAuditEntryRepository;
         this.userRepository = userRepository;
     }
@@ -42,12 +47,15 @@ public class StockAdjustmentService {
         Ingredient ingredient = ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)
                 .orElseThrow(() -> new NoSuchElementException("Ingredient not found: " + ingredientId));
 
-        if (ingredient.getStatus() == IngredientStatus.DISCONTINUED && request.resolveAction() == StockAdjustmentAction.ADD) {
+        StockAdjustmentAction action = request.resolveAction();
+        BigDecimal rawQuantity = request.resolveQuantity();
+
+        if (ingredient.getStatus() == IngredientStatus.DISCONTINUED && action == StockAdjustmentAction.ADD) {
             throw new InvalidLifecycleTransitionException("Stock additions are not permitted on DISCONTINUED ingredients.");
         }
 
-        if (ingredient.getUnitOfMeasure() == UnitOfMeasure.U) {
-            if (request.value().remainder(BigDecimal.ONE).compareTo(BigDecimal.ZERO) != 0) {
+        if (rawQuantity != null && ingredient.getUnitOfMeasure() == UnitOfMeasure.U) {
+            if (rawQuantity.remainder(BigDecimal.ONE).compareTo(BigDecimal.ZERO) != 0) {
                 throw new IllegalArgumentException("Discrete unit 'u' accepts only whole integer quantities.");
             }
         }
@@ -58,8 +66,65 @@ public class StockAdjustmentService {
 
         BigDecimal newStock;
         BigDecimal netDelta;
+        UUID batchId = null;
+        BigDecimal unitCost = null;
+        BigDecimal financialLoss = null;
+        StockAdjustmentMode auditMode;
 
-        if (request.mode() == StockAdjustmentMode.ABSOLUTE) {
+        if (request.action() != null) {
+            if (rawQuantity == null || rawQuantity.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Quantity must be greater than zero.");
+            }
+            BigDecimal quantity = rawQuantity.setScale(4, RoundingMode.HALF_UP);
+
+            if (request.action() == StockAdjustmentAction.ADD) {
+                auditMode = StockAdjustmentMode.ADD;
+                if (request.unitCost() == null || request.unitCost().compareTo(BigDecimal.ZERO) < 0) {
+                    throw new IllegalArgumentException("Unit purchase cost is required for stock additions and must be non-negative.");
+                }
+                unitCost = request.unitCost().setScale(4, RoundingMode.HALF_UP);
+
+                IngredientBatch batch = new IngredientBatch(tenantId, ingredientId, quantity, unitCost);
+                IngredientBatch savedBatch = ingredientBatchRepository.save(batch);
+                batchId = savedBatch.getId();
+
+                netDelta = quantity;
+                newStock = previousStock.add(netDelta);
+            } else if (request.action() == StockAdjustmentAction.SUBTRACT) {
+                auditMode = StockAdjustmentMode.SUBTRACT;
+                if (request.batchId() == null) {
+                    throw new IllegalArgumentException("Batch ID is required for stock subtractions.");
+                }
+                final UUID targetBatchId = request.batchId();
+                batchId = targetBatchId;
+
+                IngredientBatch batch = ingredientBatchRepository.findByIdAndTenantIdForUpdate(targetBatchId, tenantId)
+                        .orElseThrow(() -> new NoSuchElementException("Batch not found: " + targetBatchId));
+
+                if (!batch.getIngredientId().equals(ingredientId)) {
+                    throw new IllegalArgumentException("Target batch does not belong to ingredient: " + ingredientId);
+                }
+
+                if (batch.getRemainingQuantity().compareTo(quantity) < 0) {
+                    throw new NegativeStockException("Subtracted quantity (" + quantity + ") exceeds available batch balance (" + batch.getRemainingQuantity() + ").");
+                }
+
+                netDelta = quantity.negate();
+                newStock = previousStock.add(netDelta);
+                if (newStock.compareTo(BigDecimal.ZERO) < 0) {
+                    throw new NegativeStockException(previousStock, netDelta, newStock);
+                }
+
+                batch.setRemainingQuantity(batch.getRemainingQuantity().subtract(quantity));
+                ingredientBatchRepository.save(batch);
+
+                unitCost = batch.getUnitCost();
+                financialLoss = quantity.multiply(unitCost).setScale(4, RoundingMode.HALF_UP);
+            } else {
+                throw new IllegalArgumentException("Unsupported action: " + request.action());
+            }
+        } else if (request.mode() == StockAdjustmentMode.ABSOLUTE) {
+            auditMode = StockAdjustmentMode.ABSOLUTE;
             newStock = request.value().setScale(4, RoundingMode.HALF_UP);
             if (newStock.compareTo(BigDecimal.ZERO) < 0) {
                 throw new NegativeStockException(previousStock, newStock.subtract(previousStock), newStock);
@@ -68,7 +133,16 @@ public class StockAdjustmentService {
             if (netDelta.compareTo(BigDecimal.ZERO) == 0) {
                 throw new ZeroDeltaAdjustmentException(ingredientId);
             }
+            if (netDelta.compareTo(BigDecimal.ZERO) > 0) {
+                unitCost = request.unitCost() != null ? request.unitCost().setScale(4, RoundingMode.HALF_UP) : ingredient.getUnitPurchaseCost();
+                IngredientBatch batch = new IngredientBatch(tenantId, ingredientId, netDelta, unitCost);
+                IngredientBatch savedBatch = ingredientBatchRepository.save(batch);
+                if (savedBatch != null) {
+                    batchId = savedBatch.getId();
+                }
+            }
         } else if (request.mode() == StockAdjustmentMode.RELATIVE) {
+            auditMode = StockAdjustmentMode.RELATIVE;
             netDelta = request.value().setScale(4, RoundingMode.HALF_UP);
             if (netDelta.compareTo(BigDecimal.ZERO) == 0) {
                 throw new ZeroDeltaAdjustmentException(ingredientId);
@@ -76,6 +150,14 @@ public class StockAdjustmentService {
             newStock = previousStock.add(netDelta);
             if (newStock.compareTo(BigDecimal.ZERO) < 0) {
                 throw new NegativeStockException(previousStock, netDelta, newStock);
+            }
+            if (netDelta.compareTo(BigDecimal.ZERO) > 0) {
+                unitCost = request.unitCost() != null ? request.unitCost().setScale(4, RoundingMode.HALF_UP) : ingredient.getUnitPurchaseCost();
+                IngredientBatch batch = new IngredientBatch(tenantId, ingredientId, netDelta, unitCost);
+                IngredientBatch savedBatch = ingredientBatchRepository.save(batch);
+                if (savedBatch != null) {
+                    batchId = savedBatch.getId();
+                }
             }
         } else {
             throw new IllegalArgumentException("Unsupported adjustment mode: " + request.mode());
@@ -90,11 +172,14 @@ public class StockAdjustmentService {
                 tenantId,
                 ingredientId,
                 currentUserId,
-                request.mode(),
+                auditMode,
                 previousStock,
                 newStock,
                 netDelta,
-                request.justification().trim()
+                request.justification().trim(),
+                batchId,
+                unitCost,
+                financialLoss
         );
         auditEntry = stockAuditEntryRepository.save(auditEntry);
 
@@ -105,9 +190,32 @@ public class StockAdjustmentService {
                 previousStock,
                 newStock,
                 netDelta,
+                batchId,
+                unitCost,
+                financialLoss,
                 auditEntry.getId(),
                 auditEntry.getCreatedAt()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<IngredientBatchResponse> getActiveBatches(UUID ingredientId) {
+        UUID tenantId = TenantContextHolder.getRequiredTenantId();
+        List<IngredientBatch> batches = ingredientBatchRepository
+                .findByTenantIdAndIngredientIdAndRemainingQuantityGreaterThanOrderByCreatedAtAsc(
+                        tenantId, ingredientId, BigDecimal.ZERO
+                );
+
+        return batches.stream()
+                .map(b -> new IngredientBatchResponse(
+                        b.getId(),
+                        b.getIngredientId(),
+                        b.getInitialQuantity(),
+                        b.getRemainingQuantity(),
+                        b.getUnitCost(),
+                        b.getCreatedAt()
+                ))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -134,6 +242,9 @@ public class StockAdjustmentService {
                     entry.getPreviousStock(),
                     entry.getNewStock(),
                     entry.getNetDelta(),
+                    entry.getBatchId(),
+                    entry.getUnitCost(),
+                    entry.getFinancialLoss(),
                     entry.getJustification(),
                     entry.getCreatedAt()
             );
