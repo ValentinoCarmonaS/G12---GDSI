@@ -1,0 +1,290 @@
+openapi: 3.0.3
+info:
+  title: EasyEat Diner Real-Time Catalog & Multi-Tenant Discovery API
+  description: >
+    Specification for diner establishment discovery, live categorized catalog exploration,
+    and real-time stock-aware dish availability synchronization.
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+    description: EasyEat Backend API Gateway
+
+security:
+  - BearerAuth: []
+
+paths:
+  /establishments/search:
+    get:
+      summary: Search active establishments by name autocomplete
+      description: >
+        Returns autocomplete results matching query string (case-insensitive and diacritic-insensitive).
+        Requires at least 3 non-whitespace characters. Scoped strictly to active establishments.
+      operationId: searchEstablishments
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search term (minimum 3 non-whitespace characters)
+          schema:
+            type: string
+            minLength: 3
+            example: cafe
+      responses:
+        '200':
+          description: List of matching active establishments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EstablishmentSummaryResponse'
+        '400':
+          description: Query string too short or invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthenticated client - zero data exposure
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /establishments/{tenantId}/catalog:
+    get:
+      summary: Retrieve live categorized menu catalog for selected establishment
+      description: >
+        Loads the live catalog organized by gastronomic category, including operating status,
+        dish prices, photos, and dynamic stock availability.
+      operationId: getEstablishmentCatalog
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: Unique identifier of the establishment
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Categorized live catalog successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogResponse'
+        '401':
+          description: Unauthenticated client - zero data exposure
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '403':
+          description: Establishment is paused or disabled (triggers blocking notice)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Establishment not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /establishments/{tenantId}/catalog/availability:
+    get:
+      summary: Lightweight conditional polling for real-time dish availability
+      description: >
+        Returns a binary availability dictionary mapping dishId to availability status.
+        Supports HTTP ETag / If-None-Match for minimal latency and bandwidth (< 3s SLA).
+      operationId: getCatalogAvailability
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: Unique identifier of the establishment
+          schema:
+            type: string
+            format: uuid
+        - name: If-None-Match
+          in: header
+          required: false
+          description: Previous ETag hash of ingredient inventory
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Availability state updated since last request
+          headers:
+            ETag:
+              description: Opaque entity tag representing current inventory version
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityMapResponse'
+        '304':
+          description: Not Modified. Ingredient stock has not changed. Zero payload.
+        '401':
+          description: Unauthenticated client
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Establishment not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    EstablishmentSummaryResponse:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        name:
+          type: string
+          example: Café Central
+
+    EstablishmentDetail:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - isOpen
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED, DISABLED]
+        isOpen:
+          type: boolean
+        nextOpeningSchedule:
+          type: string
+          nullable: true
+          example: Abre hoy a las 11:00
+
+    DishCatalogItem:
+      type: object
+      required:
+        - id
+        - name
+        - category
+        - price
+        - isAvailable
+        - recipeIngredients
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Hamburguesa Clásica
+        description:
+          type: string
+          nullable: true
+          example: Medallón de carne con queso cheddar y papas fritas
+        category:
+          type: string
+          enum: [Entradas, Platos principales, Postres, Bebidas, Ensaladas]
+        price:
+          type: number
+          format: double
+          example: 8500.00
+        photoUrl:
+          type: string
+          nullable: true
+          example: https://cdn.easyeat.com/dishes/hamburguesa.webp
+        isAvailable:
+          type: boolean
+          description: Binary availability computed dynamically from recipe ingredient stock
+          example: true
+        recipeIngredients:
+          type: array
+          description: List of ingredient names in the recipe for search and detail modal
+          items:
+            type: string
+          example: [Carne molida, Pan de papa, Queso cheddar]
+
+    CategoryGroup:
+      type: object
+      required:
+        - category
+        - dishes
+      properties:
+        category:
+          type: string
+          example: Platos principales
+        dishes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DishCatalogItem'
+
+    CatalogResponse:
+      type: object
+      required:
+        - establishment
+        - categories
+      properties:
+        establishment:
+          $ref: '#/components/schemas/EstablishmentDetail'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryGroup'
+
+    AvailabilityMapResponse:
+      type: object
+      required:
+        - availability
+      properties:
+        availability:
+          type: object
+          additionalProperties:
+            type: boolean
+          example:
+            "3fa85f64-5717-4562-b3fc-2c963f66afa6": true
+            "8ab97c12-3214-4a21-9df1-8e901f44bcd2": false
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
