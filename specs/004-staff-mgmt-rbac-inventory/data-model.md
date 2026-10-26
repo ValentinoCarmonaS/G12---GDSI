@@ -31,30 +31,30 @@ The data model extends the foundational authentication and multi-tenant schema b
 │ tenant_id (FK) : UUID                │                 │ tenant_id (FK) : UUID                │
 │ email : VARCHAR(255) [UNIQUE]        │                 │ ingredient_id (FK) : UUID ────────┐  │
 │ full_name : VARCHAR(255)             │                 │ user_id (FK) : UUID               │  │
-│ password_hash : VARCHAR(255)         │                 │ adjustment_mode : VARCHAR(20)     │  │
-│ role : VARCHAR(50)                   │                 │ previous_stock : NUMERIC(12,4)    │  │
-│ status : VARCHAR(50)                 │                 │ new_stock : NUMERIC(12,4)         │  │
-│ must_change_password : BOOLEAN       │                 │ net_delta : NUMERIC(12,4)         │  │
-│ token_version : INTEGER              │                 │ justification : TEXT              │  │
-│ created_at : TIMESTAMPTZ             │                 │ created_at : TIMESTAMPTZ          │  │
-│ updated_at : TIMESTAMPTZ             │                 └───────────────────────────────────┘  │
-└──────────────────────────────────────┘                                                        │
-                   │ 1                                                                          │
-                   │                                                                            │
-                   │ N                                                                          │
-┌──────────────────▼───────────────────┐                                                        │
-│             ingredients              │◄───────────────────────────────────────────────────────┘
-├──────────────────────────────────────┤
-│ id (PK) : UUID                       │
-│ tenant_id (FK) : UUID                │
-│ name : VARCHAR(255)                  │
-│ category : VARCHAR(50)               │
-│ unit_of_measure : VARCHAR(20)        │
-│ unit_purchase_cost : NUMERIC(12,4)   │
-│ status : VARCHAR(50)                 │
-│ current_stock : NUMERIC(12,4)        │
-│ created_at : TIMESTAMPTZ             │
-│ updated_at : TIMESTAMPTZ             │
+│ password_hash : VARCHAR(255)         │                 │ batch_id (FK, NULL) : UUID ───┐   │  │
+│ role : VARCHAR(50)                   │                 │ adjustment_mode : VARCHAR(20) │   │  │
+│ status : VARCHAR(50)                 │                 │ previous_stock : NUMERIC(12,4)│   │  │
+│ must_change_password : BOOLEAN       │                 │ new_stock : NUMERIC(12,4)     │   │  │
+│ token_version : INTEGER              │                 │ net_delta : NUMERIC(12,4)     │   │  │
+│ created_at : TIMESTAMPTZ             │                 │ unit_cost : NUMERIC(12,4)     │   │  │
+│ updated_at : TIMESTAMPTZ             │                 │ financial_loss : NUMERIC(12,4)│   │  │
+└──────────────────────────────────────┘                 │ justification : TEXT          │   │  │
+                   │ 1                                   │ created_at : TIMESTAMPTZ      │   │  │
+                   │                                     └───────────────────────────────┘   │  │
+                   │ N                                                                       │  │
+┌──────────────────▼───────────────────┐       1       N ┌──────────────────────────────────────┐  │  │
+│             ingredients              │◄────────────────┤          ingredient_batches          │  │  │
+├──────────────────────────────────────┤                 ├──────────────────────────────────────┤  │  │
+│ id (PK) : UUID                       │                 │ id (PK) : UUID                       │◄─┘  │
+│ tenant_id (FK) : UUID                │                 │ tenant_id (FK) : UUID                │     │
+│ name : VARCHAR(255)                  │                 │ ingredient_id (FK) : UUID            │     │
+│ category : VARCHAR(50)               │                 │ initial_quantity : NUMERIC(12,4)     │     │
+│ unit_of_measure : VARCHAR(20)        │                 │ remaining_quantity : NUMERIC(12,4)   │     │
+│ unit_purchase_cost : NUMERIC(12,4)   │                 │ unit_cost : NUMERIC(12,4)            │     │
+│ status : VARCHAR(50)                 │                 │ created_at : TIMESTAMPTZ             │     │
+│ current_stock : NUMERIC(12,4)        │◄────────────────┴──────────────────────────────────────┘     │
+│ created_at : TIMESTAMPTZ             │                                                              │
+│ updated_at : TIMESTAMPTZ             │◄─────────────────────────────────────────────────────────────┘
 └──────────────────────────────────────┘
 ```
 
@@ -130,7 +130,7 @@ Represents a raw material in a restaurant's kitchen catalog. Ingredients belong 
 - `chk_ingredient_stock_non_negative`: `CHECK (current_stock >= 0)` (Database-level enforcement of the non-negative stock invariant).
 - `chk_ingredient_category`: `CHECK (category IN ('Produce', 'Meat', 'Dairy', 'Dry Goods', 'Spices'))`.
 - `chk_ingredient_unit`: `CHECK (unit_of_measure IN ('g', 'kg', 'ml', 'l', 'u'))`.
-- `chk_ingredient_status`: `CHECK (status IN ('ACTIVE', 'DISCONTINUED', 'ARCHIVED'))`.
+- `chk_ingredient_status`: `CHECK (status IN ('ACTIVE', 'DISCONTINUED'))` (Simplified reversible lifecycle).
 - `idx_ingredient_chef_catalog`: `CREATE INDEX idx_ingredient_chef_catalog ON ingredients (tenant_id, status, name)` (Composite index for Chef paginated queries O(log n)).
 
 **Ingredient Lifecycle State Machine**:
@@ -138,27 +138,46 @@ Represents a raw material in a restaurant's kitchen catalog. Ingredients belong 
             [Created by Admin]
                      │
                      ▼
-                  ACTIVE  (Visible to Chef and Admin; accepts adjustments)
+                  ACTIVE  (Visible to Chef and Admin; accepts additions and subtractions)
                   │    ▲
-(Discontinue with │    │ (Explicit reactivation by Admin)
- stock > 0)       ▼    │
-               DISCONTINUED (Hidden from Chef; visible to Admin; accepts adjustments)
-                  │
-                  │ (Permanent archive; requires stock == 0)
-                  ▼
-               ARCHIVED (Immutable; excluded from all operational views)
+(Discontinue)     │    │ (Explicit reactivation by Admin)
+                  ▼    │
+               DISCONTINUED (Hidden from Chef; visible to Admin; accepts subtractions only)
 ```
 
 **Transition Rules**:
-1. `ACTIVE` → `DISCONTINUED`: Allowed when `current_stock > 0`.
-2. `ACTIVE` → `ARCHIVED`: Allowed strictly when `current_stock == 0`.
-3. `DISCONTINUED` → `ACTIVE`: Allowed at any time by an Administrator.
-4. `DISCONTINUED` → `ARCHIVED`: Allowed strictly when `current_stock == 0`.
-5. Unit of Measure Modification: Blocked if stock records exist or if `current_stock != 0` (FR-013).
+1. `ACTIVE` → `DISCONTINUED`: Allowed at any time by an Administrator (hides from Chef, blocks new stock additions).
+2. `DISCONTINUED` → `ACTIVE`: Allowed at any time by an Administrator (restores to Chef, unblocks stock additions).
+3. Unit of Measure Modification: Blocked if stock records exist or if `current_stock != 0` (FR-013).
 
 ---
 
-### 2.3. Entity `StockAuditEntry` (Immutable Stock Audit Trail)
+### 2.3. Entity `IngredientBatch` (Stock Batches / Lotes de Compra)
+
+Represents an individual physical shipment or lot of an ingredient, preserving its specific acquisition cost and tracking its remaining balance.
+
+**Table**: `ingredient_batches`
+
+| Column | SQL Type | Modifiers | Description & Constraints |
+|---|---|---|---|
+| `id` | `UUID` | PK, NOT NULL, DEFAULT `gen_random_uuid()` | Unique batch identifier. |
+| `tenant_id` | `UUID` | NOT NULL | Establishment owning the batch (multi-tenant boundary). |
+| `ingredient_id` | `UUID` | NOT NULL, FK → `ingredients(id)` | Parent ingredient. |
+| `initial_quantity` | `NUMERIC(12, 4)` | NOT NULL | Quantity received at batch creation (`> 0`). |
+| `remaining_quantity` | `NUMERIC(12, 4)` | NOT NULL | Current remaining unconsumed balance (`>= 0`, `<= initial_quantity`). |
+| `unit_cost` | `NUMERIC(12, 4)` | NOT NULL | Unit acquisition price for this specific shipment (`>= 0`). |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Timestamp when the shipment/lot was received and recorded. |
+
+**Integrity Constraints and Indexes**:
+- `chk_batch_initial_qty`: `CHECK (initial_quantity > 0)`.
+- `chk_batch_remaining_qty`: `CHECK (remaining_quantity >= 0)`.
+- `chk_batch_remaining_le_initial`: `CHECK (remaining_quantity <= initial_quantity)`.
+- `chk_batch_unit_cost`: `CHECK (unit_cost >= 0)`.
+- `idx_ingredient_batches_active`: `CREATE INDEX idx_ingredient_batches_active ON ingredient_batches (tenant_id, ingredient_id, remaining_quantity, created_at ASC)` (Optimized for active lot selection and FIFO recipe consumption).
+
+---
+
+### 2.4. Entity `StockAuditEntry` (Immutable Stock Audit Trail)
 
 Represents every manual physical stock adjustment performed on an ingredient. This table is strictly **append-only**.
 
@@ -170,24 +189,65 @@ Represents every manual physical stock adjustment performed on an ingredient. Th
 | `tenant_id` | `UUID` | NOT NULL | Establishment where the adjustment occurred. |
 | `ingredient_id` | `UUID` | NOT NULL, FK → `ingredients(id)` | Targeted ingredient. |
 | `user_id` | `UUID` | NOT NULL, FK → `users(id)` | Administrator who executed the adjustment. |
-| `adjustment_mode` | `VARCHAR(20)` | NOT NULL | Mode: `'ABSOLUTE'` or `'RELATIVE'`. |
-| `previous_stock` | `NUMERIC(12, 4)` | NOT NULL | Stock immediately prior to the adjustment (`>= 0`). |
-| `new_stock` | `NUMERIC(12, 4)` | NOT NULL | Resulting stock after applying the adjustment (`>= 0`). |
+| `batch_id` | `UUID` | NULL, FK → `ingredient_batches(id)` | Associated batch for lot creation or subtraction. |
+| `adjustment_mode` | `VARCHAR(20)` | NOT NULL | Mode: `'ADD'` or `'SUBTRACT'` (or legacy `'RELATIVE'`). |
+| `previous_stock` | `NUMERIC(12, 4)` | NOT NULL | Global stock immediately prior to the adjustment (`>= 0`). |
+| `new_stock` | `NUMERIC(12, 4)` | NOT NULL | Resulting global stock after applying the adjustment (`>= 0`). |
 | `net_delta` | `NUMERIC(12, 4)` | NOT NULL | Algebraic difference (`new_stock - previous_stock`, `<> 0`). |
+| `unit_cost` | `NUMERIC(12, 4)` | NULL | Unit cost applied to the operation (`>= 0`). |
+| `financial_loss` | `NUMERIC(12, 4)` | NULL | Exact financial loss for subtractions (`abs(net_delta) * unit_cost`). |
 | `justification` | `TEXT` | NOT NULL | Mandatory justification note entered by the Administrator. |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Timestamp when the adjustment was committed. |
 
 **Integrity Constraints and Indexes**:
-- `chk_audit_mode`: `CHECK (adjustment_mode IN ('ABSOLUTE', 'RELATIVE'))`.
+- `chk_audit_mode`: `CHECK (adjustment_mode IN ('ADD', 'SUBTRACT', 'ABSOLUTE', 'RELATIVE'))`.
 - `chk_audit_previous_stock`: `CHECK (previous_stock >= 0)`.
 - `chk_audit_new_stock`: `CHECK (new_stock >= 0)`.
 - `chk_audit_nonzero_delta`: `CHECK (net_delta <> 0)` (Rejects zero-delta non-operations).
+- `chk_audit_financial_loss`: `CHECK (financial_loss IS NULL OR financial_loss >= 0)`.
 - `chk_audit_justification_nonempty`: `CHECK (LENGTH(TRIM(justification)) > 0)`.
 - `idx_stock_audit_ingredient_history`: `CREATE INDEX idx_stock_audit_ingredient_history ON stock_audit_entries (tenant_id, ingredient_id, created_at DESC)`.
 
 ---
 
 ## 3. Database Migration Scripts (Flyway)
+
+### `V6__create_ingredient_batches_and_refactor_lifecycle.sql`
+```sql
+-- 1. Create ingredient_batches table
+CREATE TABLE ingredient_batches (
+    id                 UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id          UUID           NOT NULL,
+    ingredient_id      UUID           NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    initial_quantity   NUMERIC(12, 4) NOT NULL,
+    remaining_quantity NUMERIC(12, 4) NOT NULL,
+    unit_cost          NUMERIC(12, 4) NOT NULL,
+    created_at         TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_batch_initial_qty           CHECK (initial_quantity > 0),
+    CONSTRAINT chk_batch_remaining_qty         CHECK (remaining_quantity >= 0),
+    CONSTRAINT chk_batch_remaining_le_initial CHECK (remaining_quantity <= initial_quantity),
+    CONSTRAINT chk_batch_unit_cost             CHECK (unit_cost >= 0)
+);
+
+CREATE INDEX idx_ingredient_batches_active 
+    ON ingredient_batches (tenant_id, ingredient_id, remaining_quantity, created_at ASC);
+
+-- 2. Extend stock_audit_entries with batch and financial tracking
+ALTER TABLE stock_audit_entries
+    ADD COLUMN IF NOT EXISTS batch_id UUID REFERENCES ingredient_batches(id),
+    ADD COLUMN IF NOT EXISTS unit_cost NUMERIC(12, 4),
+    ADD COLUMN IF NOT EXISTS financial_loss NUMERIC(12, 4);
+
+-- Update audit mode check constraint
+ALTER TABLE stock_audit_entries DROP CONSTRAINT IF EXISTS chk_audit_mode;
+ALTER TABLE stock_audit_entries ADD CONSTRAINT chk_audit_mode 
+    CHECK (adjustment_mode IN ('ADD', 'SUBTRACT', 'ABSOLUTE', 'RELATIVE'));
+
+-- 3. Refactor ingredients lifecycle constraint (remove ARCHIVED)
+ALTER TABLE ingredients DROP CONSTRAINT IF EXISTS chk_ingredient_status;
+ALTER TABLE ingredients ADD CONSTRAINT chk_ingredient_status 
+    CHECK (status IN ('ACTIVE', 'DISCONTINUED'));
+```
 
 ### `V3__extend_users_staff.sql`
 ```sql
