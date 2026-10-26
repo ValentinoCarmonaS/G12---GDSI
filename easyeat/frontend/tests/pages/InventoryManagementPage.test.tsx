@@ -42,7 +42,7 @@ const mockIngredients: AdminIngredientDetailResponse[] = [
     category: 'Dairy',
     unitOfMeasure: 'l',
     unitPurchaseCost: 90.0,
-    status: 'ARCHIVED',
+    status: 'DISCONTINUED',
     currentStock: 0,
     createdAt: '2026-10-24T12:00:00Z',
     updatedAt: '2026-10-24T12:00:00Z',
@@ -174,7 +174,7 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
     });
   });
 
-  it('disables archive action for ingredients with currentStock > 0 (FR-014)', async () => {
+  it('does not display any archivar buttons in the catalog (FR-014)', async () => {
     vi.mocked(inventoryApi.listIngredients).mockResolvedValueOnce(mockIngredients);
 
     render(
@@ -185,18 +185,15 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
 
     await screen.findByText('Harina 000');
 
-    // Harina 000 has 40.0 stock, so its archive button must be disabled
-    const archiveButtons = screen.getAllByRole('button', { name: /archivar/i });
-    expect(archiveButtons[0]).toBeDisabled();
-    expect(archiveButtons[0]).toHaveAttribute('title', expect.stringMatching(/no se puede archivar con stock/i));
+    expect(screen.queryByRole('button', { name: /archivar/i })).not.toBeInTheDocument();
   });
 
-  it('allows archive action for ingredient with currentStock == 0', async () => {
+  it('allows reactivation of a DISCONTINUED ingredient back to ACTIVE (FR-014)', async () => {
     const user = userEvent.setup();
     vi.mocked(inventoryApi.listIngredients).mockResolvedValue(mockIngredients);
     vi.mocked(inventoryApi.updateStatus).mockResolvedValueOnce({
-      ...mockIngredients[1],
-      status: 'ARCHIVED',
+      ...mockIngredients[2],
+      status: 'ACTIVE',
     });
 
     render(
@@ -205,15 +202,13 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
       </MemoryRouter>
     );
 
-    await screen.findByText('Tomates Perita');
+    await screen.findByText('Leche Entera');
 
-    const archiveButtons = screen.getAllByRole('button', { name: /archivar/i });
-    // Tomates Perita is second row and has 0 stock
-    expect(archiveButtons[1]).not.toBeDisabled();
-    await user.click(archiveButtons[1]);
+    const reactivateButton = screen.getByRole('button', { name: /reactivar/i });
+    await user.click(reactivateButton);
 
     await waitFor(() => {
-      expect(inventoryApi.updateStatus).toHaveBeenCalledWith('ing-2', 'ARCHIVED');
+      expect(inventoryApi.updateStatus).toHaveBeenCalledWith('ing-3', 'ACTIVE');
     });
   });
 });
