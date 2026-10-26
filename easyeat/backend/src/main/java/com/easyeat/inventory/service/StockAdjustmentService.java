@@ -47,11 +47,20 @@ public class StockAdjustmentService {
         Ingredient ingredient = ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)
                 .orElseThrow(() -> new NoSuchElementException("Ingredient not found: " + ingredientId));
 
+        BigDecimal previousStock = ingredient.getCurrentStock() != null
+                ? ingredient.getCurrentStock().setScale(4, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
+
         StockAdjustmentAction action = request.resolveAction();
         BigDecimal rawQuantity = request.resolveQuantity();
 
-        if (ingredient.getStatus() == IngredientStatus.DISCONTINUED && action == StockAdjustmentAction.ADD) {
-            throw new InvalidLifecycleTransitionException("Stock additions are not permitted on DISCONTINUED ingredients.");
+        if (ingredient.getStatus() == IngredientStatus.DISCONTINUED) {
+            if (action == StockAdjustmentAction.ADD) {
+                throw new InvalidLifecycleTransitionException("Stock additions are not permitted on DISCONTINUED ingredients.");
+            }
+            if (request.mode() == StockAdjustmentMode.ABSOLUTE && request.value() != null && request.value().compareTo(previousStock) > 0) {
+                throw new InvalidLifecycleTransitionException("Stock additions are not permitted on DISCONTINUED ingredients.");
+            }
         }
 
         if (rawQuantity != null && ingredient.getUnitOfMeasure() == UnitOfMeasure.U) {
@@ -59,10 +68,6 @@ public class StockAdjustmentService {
                 throw new IllegalArgumentException("Discrete unit 'u' accepts only whole integer quantities.");
             }
         }
-
-        BigDecimal previousStock = ingredient.getCurrentStock() != null
-                ? ingredient.getCurrentStock().setScale(4, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
 
         BigDecimal newStock;
         BigDecimal netDelta;

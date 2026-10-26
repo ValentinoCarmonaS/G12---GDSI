@@ -245,7 +245,7 @@
 
 ### Full Verification & Regression Gate
 
-- [ ] T084 [P] [FR-014, FR-015a, FR-015b] Execute full backend regression test suite (`mvn test`) and frontend test suite (`npm test && npm run build`) verifying zero regressions across staff, inventory, chef catalog, and dietary features.
+- [x] T084 [P] [FR-014, FR-015a, FR-015b] Execute full backend regression test suite (`mvn test`) and frontend test suite (`npm test && npm run build`) verifying zero regressions across staff, inventory, chef catalog, and dietary features.
 
 
 ---

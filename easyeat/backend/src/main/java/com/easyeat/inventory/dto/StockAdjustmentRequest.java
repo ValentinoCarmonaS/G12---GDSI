@@ -36,10 +36,10 @@ public record StockAdjustmentRequest(
                         : StockAdjustmentAction.ADD;
             }
             if (mode == StockAdjustmentMode.ABSOLUTE) {
-                return StockAdjustmentAction.ADD;
+                return null;
             }
         }
-        return StockAdjustmentAction.ADD;
+        return null;
     }
 
     public BigDecimal resolveQuantity() {
