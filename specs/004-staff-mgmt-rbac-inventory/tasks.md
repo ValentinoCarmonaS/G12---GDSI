@@ -247,6 +247,13 @@
 
 - [x] T084 [P] [FR-014, FR-015a, FR-015b] Execute full backend regression test suite (`mvn test`) and frontend test suite (`npm test && npm run build`) verifying zero regressions across staff, inventory, chef catalog, and dietary features.
 
+### Polish & UX Refinements (Batch Cost Decoupling & Audit Visibility)
+
+- [x] T085 [P] [FR-010, FR-012, FR-031] Update `spec.md` and `openapi.yaml` to decouple purchase cost from master ingredient creation/editing and specify financial loss columns in stock audit.
+- [ ] T086 [P] [FR-010, FR-012] Backend: Make `unitPurchaseCost` optional in `CreateIngredientRequest.java` and `UpdateIngredientRequest.java`, defaulting to 0 on creation in `IngredientService.java`.
+- [ ] T087 [P] [FR-010, FR-015a, FR-015b, FR-031] Frontend: Remove `unitPurchaseCost` from `IngredientFormModal.tsx` (creation and edition), remove `Costo Referencia` column from `IngredientCatalogTable.tsx`, and add `Costo Unit.` and `Pérdida ($)` columns to `StockAuditModal.tsx`.
+- [ ] T088 [P] [FR-010, FR-015a, FR-015b] Update component tests (`IngredientFormModal.test.tsx`, `IngredientCatalogTable.test.tsx`, `StockAuditModal.test.tsx`) and verify full regression test suites (`mvn test` and `npm test && npm run build`).
+
 
 ---
 

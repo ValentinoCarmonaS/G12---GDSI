@@ -726,7 +726,6 @@ components:
         - name
         - category
         - unitOfMeasure
-        - unitPurchaseCost
       properties:
         name:
           type: string
@@ -749,7 +748,6 @@ components:
         - name
         - category
         - unitOfMeasure
-        - unitPurchaseCost
       properties:
         name:
           type: string
