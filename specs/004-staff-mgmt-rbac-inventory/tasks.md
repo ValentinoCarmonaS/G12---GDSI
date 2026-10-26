@@ -228,7 +228,7 @@
 
 ### Database & Domain Model Foundation
 
-- [ ] T076 [P] [FR-014, FR-015a, FR-015b] Create Flyway migration script `easyeat/backend/src/main/resources/db/migration/V6__create_ingredient_batches_and_refactor_lifecycle.sql` creating `ingredient_batches` table, adding `batch_id`, `unit_cost`, and `financial_loss` to `stock_audit_entries`, and removing `ARCHIVED` from `ingredients.status`.
+- [x] T076 [P] [FR-014, FR-015a, FR-015b] Create Flyway migration script `easyeat/backend/src/main/resources/db/migration/V6__create_ingredient_batches_and_refactor_lifecycle.sql` creating `ingredient_batches` table, adding `batch_id`, `unit_cost`, and `financial_loss` to `stock_audit_entries`, and removing `ARCHIVED` from `ingredients.status`.
 - [ ] T077 [P] [FR-014, FR-015a] Implement `IngredientBatch.java` in `easyeat/backend/src/main/java/com/easyeat/inventory/entity/IngredientBatch.java`, create `IngredientBatchRepository.java` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientBatchRepository.java`, update `StockAuditEntry.java`, and update `IngredientStatus.java` removing `ARCHIVED`.
 
 ### Backend Implementation & Tests (TDD)
