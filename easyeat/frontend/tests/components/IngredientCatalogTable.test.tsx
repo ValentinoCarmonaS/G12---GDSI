@@ -52,6 +52,7 @@ describe('IngredientCatalogTable Component (FR-014, FR-031)', () => {
     expect(screen.getByText('Levadura Fresca')).toBeInTheDocument();
     expect(screen.getAllByText('Activo').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Desactivado').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText(/costo referencia/i)).not.toBeInTheDocument();
   });
 
   it('renders Desactivar for ACTIVE ingredient and Reactivar for DISCONTINUED ingredient without Archivar', async () => {

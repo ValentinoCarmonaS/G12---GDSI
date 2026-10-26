@@ -98,19 +98,21 @@ export const StockAuditModal: React.FC<StockAuditModalProps> = ({
                 <th scope="col" className="px-4 py-3">Stock Ant.</th>
                 <th scope="col" className="px-4 py-3">Variación Neta</th>
                 <th scope="col" className="px-4 py-3">Nuevo Stock</th>
+                <th scope="col" className="px-4 py-3">Costo Unit.</th>
+                <th scope="col" className="px-4 py-3">Pérdida ($)</th>
                 <th scope="col" className="px-4 py-3">Justificación</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                     Cargando pista de auditoría...
                   </td>
                 </tr>
               ) : auditEntries.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                     No se registran movimientos de stock para este ingrediente.
                   </td>
                 </tr>
@@ -135,6 +137,8 @@ export const StockAuditModal: React.FC<StockAuditModalProps> = ({
                           className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${
                             entry.adjustmentMode === 'ABSOLUTE'
                               ? 'bg-purple-50 text-purple-700 border-purple-200'
+                              : entry.adjustmentMode === 'SUBTRACT'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
                               : 'bg-blue-50 text-blue-700 border-blue-200'
                           }`}
                         >
@@ -151,6 +155,16 @@ export const StockAuditModal: React.FC<StockAuditModalProps> = ({
                       </td>
                       <td className="px-4 py-3 font-mono font-bold text-gray-900 whitespace-nowrap">
                         {entry.newStock} {unit}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-gray-600 whitespace-nowrap">
+                        {entry.unitCost != null ? `$${entry.unitCost.toFixed(2)}` : '-'}
+                      </td>
+                      <td className="px-4 py-3 font-mono whitespace-nowrap">
+                        {entry.financialLoss != null && entry.financialLoss > 0 ? (
+                          <span className="text-red-600 font-bold">-${entry.financialLoss.toFixed(2)}</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-gray-700">
                         {entry.justification}

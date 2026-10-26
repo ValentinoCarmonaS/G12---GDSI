@@ -23,14 +23,14 @@ export interface CreateIngredientRequest {
   name: string;
   category: IngredientCategory;
   unitOfMeasure: UnitOfMeasure;
-  unitPurchaseCost: number;
+  unitPurchaseCost?: number;
 }
 
 export interface UpdateIngredientRequest {
   name: string;
   category: IngredientCategory;
   unitOfMeasure: UnitOfMeasure;
-  unitPurchaseCost: number;
+  unitPurchaseCost?: number;
 }
 
 export interface AdminIngredientDetailResponse {

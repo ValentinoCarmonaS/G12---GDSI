@@ -121,7 +121,6 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
                 <th scope="col" className="px-6 py-3">Ingrediente</th>
                 <th scope="col" className="px-6 py-3">Categoría</th>
                 <th scope="col" className="px-6 py-3">Unidad</th>
-                <th scope="col" className="px-6 py-3">Costo Referencia</th>
                 <th scope="col" className="px-6 py-3">Stock Actual</th>
                 <th scope="col" className="px-6 py-3">Estado</th>
                 <th scope="col" className="px-6 py-3 text-right">Acciones</th>
@@ -130,13 +129,13 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
             <tbody className="divide-y divide-gray-100 bg-white">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                     Cargando catálogo maestro...
                   </td>
                 </tr>
               ) : filteredIngredients.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                     No se encontraron materias primas en el catálogo.
                   </td>
                 </tr>
@@ -154,9 +153,6 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
                       </td>
                       <td className="px-6 py-4 font-mono text-gray-600 whitespace-nowrap text-xs">
                         {item.unitOfMeasure}
-                      </td>
-                      <td className="px-6 py-4 font-mono font-medium text-gray-900 whitespace-nowrap">
-                        ${item.unitPurchaseCost.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
