@@ -42,8 +42,8 @@ public class StockAdjustmentService {
         Ingredient ingredient = ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)
                 .orElseThrow(() -> new NoSuchElementException("Ingredient not found: " + ingredientId));
 
-        if (ingredient.getStatus() == IngredientStatus.ARCHIVED) {
-            throw new InvalidLifecycleTransitionException("Stock adjustment is not permitted on ARCHIVED ingredients.");
+        if (ingredient.getStatus() == IngredientStatus.DISCONTINUED && request.resolveAction() == StockAdjustmentAction.ADD) {
+            throw new InvalidLifecycleTransitionException("Stock additions are not permitted on DISCONTINUED ingredients.");
         }
 
         if (ingredient.getUnitOfMeasure() == UnitOfMeasure.U) {
