@@ -19,6 +19,10 @@
 - Q: What is the delivery scope of feature 001 regarding frontend presentation vs backend services? → A: Full End-to-End (E2E) delivery. The specification mandates both backend REST endpoints and frontend user interfaces (Comensal registration, password recovery request/confirm, and login navigation links) to satisfy the user-verifiable acceptance criteria of Backlog-US 2.0.
 - Q: How is the comensal post-login redirect to "su establecimiento por defecto" (COM-1.2.1) handled in Sprint 1? → A: Comensales are routed to the general `/catalog` view. Dynamic restaurant selection and local preference persistence are formally deferred to Sprint 2 (`COM-1.5.1`).
 
+### Session 2026-10-25 (Infrastructure Refactor - Agnostic SMTP Delivery)
+
+- Q: How should the platform support outbound password recovery emails to real recipients in development and operational environments? → A: Through provider-agnostic Spring Mail environment variables (`SPRING_MAIL_*`) with automatic non-breaking fallback to the local Mailpit mock relay (`localhost:1025`), hierarchical sender address resolution (`app.mail.from` → `spring.mail.username` → `noreply@easyeat.com`), and an environment template (`easyeat/backend/.env.example`). No secrets or credentials permitted in git-tracked files.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Comensal Registration with Email and Password (Priority: P1)
@@ -85,6 +89,8 @@ So that I can securely regain access to my account without administrative interv
 6. **Given** a comensal navigating to a valid reset link, **When** they enter and confirm a new password that complies with the complexity policy, **Then** the system updates the stored cryptographic hash, invalidates the token, revokes all previously issued active sessions for that account, and redirects to login.
 7. **Given** a reset link that has already been successfully used once, **When** a user clicks or submits it again, **Then** the system rejects the token as already consumed.
 8. **Given** a comensal who has initiated the password recovery flow on the recovery request view, **When** they decide not to proceed and click "Cancelar" or "Volver al inicio de sesión", **Then** the system aborts the recovery process without dispatching emails and navigates the user back to the login screen.
+9. **Given** backend environment variables configured with external SMTP parameters (`SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`), **When** a password reset request is processed, **Then** the system establishes an authenticated, TLS-encrypted connection with the configured relay, sends the transactional email with the resolved sender, and does not leak credentials or sensitive tokens in logs.
+10. **Given** backend execution in local development without explicit SMTP environment variables, **When** a recovery request is processed, **Then** the system transparently defaults to the local mock SMTP service (Mailpit on `localhost:1025`) without failing startup or throwing configuration exceptions.
 
 ---
 
@@ -130,6 +136,10 @@ So that I never permanently lose access to managing my restaurant business and t
 - **FR-010**: The system MUST allow users to request a password reset by providing their registered email address.
 - **FR-011**: The system MUST generate a cryptographically random, single-use password reset token with a strict 15-minute expiration window upon receiving a valid recovery request.
 - **FR-012**: The system MUST send a transactional password recovery email containing the secure reset link only if the email belongs to an active, valid account, while presenting a uniform confirmation message to the client regardless of email existence.
+  - **FR-012a**: The system MUST support agnostic SMTP transport configuration via standard environment variables (`SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH`, `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE`), allowing outbound dispatch to arbitrary SMTP relays (such as Gmail, Brevo, SendGrid, or Mailpit) without application code modifications.
+  - **FR-012b**: In the absence of explicit SMTP environment variables, the system MUST default non-breakingly to the local mock SMTP service (Mailpit on `localhost:1025`, plaintext, unauthenticated) to preserve zero-configuration local development and deterministic automated test execution.
+  - **FR-012c**: The system MUST support configurable sender address resolution (`From` header) resolved hierarchically via `app.mail.from` with fallback to `spring.mail.username` and ultimate fallback to `noreply@easyeat.com`, satisfying provider-level anti-spoofing constraints while permitting customized display addresses.
+  - **FR-012d**: The system MUST provide a reference environment configuration template (`easyeat/backend/.env.example`) documenting connection parameters for local mock testing (Mailpit) and real authenticated relays (Gmail App Passwords), without committing sensitive secrets or credentials to version control.
 - **FR-013**: The system MUST enforce a rate-limiting cooldown period between consecutive password reset requests for the same email address or IP to prevent email flooding.
 - **FR-014**: The system MUST validate that a password reset token is authentic, unconsumed, and unexpired before presenting the password update interface or accepting a new password.
 - **FR-015**: Upon successful password reset, the system MUST mark the reset token as consumed, update the stored password hash, and immediately invalidate all previously issued active session tokens for that account.

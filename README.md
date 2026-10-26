@@ -25,7 +25,9 @@ docker compose up -d
 
 ### 2. Backend (Spring Boot)
 
-En una terminal, iniciar el servicio backend activando el perfil `dev` para ejecutar las migraciones de Flyway y la carga de datos de prueba:
+#### Configuración por defecto (Mailpit local)
+
+Por defecto, el backend está preconfigurado para conectarse a PostgreSQL en `localhost:5432` y despachar correos transaccionales a Mailpit en `localhost:1025` con remitente `noreply@easyeat.com`, sin requerir variables de entorno adicionales:
 
 ```bash
 cd easyeat/backend
@@ -33,6 +35,23 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 El backend estará disponible en `http://localhost:8080`.
+
+#### Configuración personalizada o relay externo
+
+Para utilizar un servidor SMTP real (como Gmail con Contraseña de Aplicación) o servicios dedicados (Brevo, SendGrid), consultar las variables disponibles en `easyeat/backend/.env.example` y exportarlas en la sesión de terminal antes de iniciar la aplicación:
+
+```bash
+export SPRING_MAIL_HOST=smtp.gmail.com
+export SPRING_MAIL_PORT=587
+export SPRING_MAIL_USERNAME="tu_correo@gmail.com"
+export SPRING_MAIL_PASSWORD="tu_app_password"
+export SPRING_MAIL_SMTP_AUTH=true
+export SPRING_MAIL_STARTTLS_ENABLE=true
+export APP_MAIL_FROM="tu_correo@gmail.com"
+
+cd easyeat/backend
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
 
 ### 3. Frontend (React + Vite)
 
