@@ -57,6 +57,7 @@ class V7MigrationAndSeedDevTest {
                 "status",
                 "allergens_confirmed",
                 "created_by",
+                "submitted_at",
                 "price",
                 "name"
         );
@@ -121,6 +122,7 @@ class V7MigrationAndSeedDevTest {
         assertThat(indexes).contains(
                 "uq_dishes_tenant_lower_trimmed_name",
                 "idx_dishes_chef_list",
+                "idx_dishes_review_inbox_pending",
                 "idx_recipe_ingredients_lookup",
                 "idx_admin_notifications_tenant_read"
         );
@@ -202,5 +204,20 @@ class V7MigrationAndSeedDevTest {
                 "INSERT INTO dish_recipe_ingredients (dish_id, ingredient_id, quantity) VALUES (?, ?, -5.5)",
                 dishId, ingredientId
         )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    @DisplayName("CHECK constraint chk_dishes_status should allow PUBLISHED status in dishes")
+    void verifyStatusCheckConstraintAllowsPublished() {
+        UUID tenantId = UUID.randomUUID();
+        UUID dishId = UUID.randomUUID();
+
+        int rows = jdbcTemplate.update(
+                "INSERT INTO dishes (id, tenant_id, name, category, status, allergens_confirmed, is_active, submitted_at) " +
+                        "VALUES (?, ?, ?, 'Entradas', 'PUBLISHED', true, true, NOW())",
+                dishId, tenantId, "Plato Publicado Test"
+        );
+
+        assertThat(rows).isEqualTo(1);
     }
 }

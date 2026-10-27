@@ -177,5 +177,22 @@ class DishEntityTest {
         Column createdByColumn = createdByField.getAnnotation(Column.class);
         assertThat(createdByColumn).isNotNull();
         assertThat(createdByColumn.name()).isEqualTo("created_by");
+
+        // submitted_at field: nullable = true (R-005-1 cross-feature upstream requirement for 007)
+        Field submittedAtField = Dish.class.getDeclaredField("submittedAt");
+        Column submittedAtColumn = submittedAtField.getAnnotation(Column.class);
+        assertThat(submittedAtColumn).isNotNull();
+        assertThat(submittedAtColumn.name()).isEqualTo("submitted_at");
+    }
+
+    @Test
+    @DisplayName("submittedAt getter and setter should operate correctly and default to null")
+    void submittedAt_getterAndSetter() {
+        Dish dish = new Dish();
+        assertThat(dish.getSubmittedAt()).isNull();
+
+        Instant now = Instant.now();
+        dish.setSubmittedAt(now);
+        assertThat(dish.getSubmittedAt()).isEqualTo(now);
     }
 }
