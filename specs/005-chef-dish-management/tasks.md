@@ -37,7 +37,7 @@
 - [X] T014 [P] Create repository interfaces `DishPhotoRepository`, `DishRecipeIngredientRepository`, and `AdminNotificationRepository` in `easyeat/backend/src/main/java/com/easyeat/dish/repository/` and `easyeat/backend/src/main/java/com/easyeat/notification/repository/`
 - [X] T015 Update `DishRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/DishRepository.java` adding tenant-scoped paginated queries and case-insensitive trimmed name uniqueness check (`existsByTenantIdAndNameLowerTrimmed`)
 - [X] T016 Update `SecurityConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` configuring role boundaries (`/api/v1/dishes/**` requires `CHEF`, `/api/v1/admin/notifications/**` requires `ADMINISTRADOR`)
-- [ ] T017 Integration test `V7MigrationAndSeedDevTest` in `easyeat/backend/src/test/java/com/easyeat/dish/migration/V7MigrationAndSeedDevTest.java` running against Testcontainers PostgreSQL to verify V7 schema migration and seed compatibility
+- [X] T017 Integration test `V7MigrationAndSeedDevTest` in `easyeat/backend/src/test/java/com/easyeat/dish/migration/V7MigrationAndSeedDevTest.java` running against Testcontainers PostgreSQL to verify V7 schema migration and seed compatibility
 
 **Checkpoint**: Foundational database schema, entity mappings, and security boundaries verified.
 
