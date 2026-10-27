@@ -218,6 +218,42 @@
 - [x] T074 [FR-028, FR-030, FR-031, FR-032] Register all new routes (`/first-login-password-change`, `/admin/staff`, `/admin/inventory`, `/cocina/ingredientes`, `/kds/ingredients`) in `AppRoutes.tsx` with proper guards and test in `easyeat/frontend/tests/router/AppRoutes.test.tsx`
 - [x] T075 [P] [FR-028, FR-030, FR-031, FR-032] Verify full frontend test suite, typecheck, and production bundle build: `npx tsc --noEmit && npm test && npm run build`
 
+---
+
+## Phase 15: Inventory Refactor - Batches, Financial Shrinkage & Lifecycle Simplification (Priority: P2) (#125)
+
+**Goal**: Refactor manual stock adjustments to record purchases as distinct cost-bearing batches, impute shrinkage/waste to specific lots with exact financial loss calculation, and simplify ingredient lifecycle to a reversible Active/Discontinued model.
+
+**Independent Test**: Perform an "Agregar stock" operation creating Lot A ($2.000/kg) and Lot B ($1.000/kg), execute a "Restar stock" operation deducting 2 kg from Lot A, assert that Lot A balance decrements to 3 kg and an audit record records $4.000 financial loss, and verify that Discontinue/Reactivate operates reversibly without archive blockers.
+
+### Database & Domain Model Foundation
+
+- [x] T076 [P] [FR-014, FR-015a, FR-015b] Create Flyway migration script `easyeat/backend/src/main/resources/db/migration/V6__create_ingredient_batches_and_refactor_lifecycle.sql` creating `ingredient_batches` table, adding `batch_id`, `unit_cost`, and `financial_loss` to `stock_audit_entries`, and removing `ARCHIVED` from `ingredients.status`.
+- [x] T077 [P] [FR-014, FR-015a] Implement `IngredientBatch.java` in `easyeat/backend/src/main/java/com/easyeat/inventory/entity/IngredientBatch.java`, create `IngredientBatchRepository.java` in `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientBatchRepository.java`, update `StockAuditEntry.java`, and update `IngredientStatus.java` removing `ARCHIVED`.
+
+### Backend Implementation & Tests (TDD)
+
+- [x] T078 [P] [FR-014, FR-015a, FR-015b] Write unit tests in `easyeat/backend/src/test/java/com/easyeat/inventory/service/StockAdjustmentServiceTest.java` and `IngredientServiceTest.java` covering batch creation on addition, lot deduction and financial loss on subtraction, rejection on insufficient batch balance, and reversible Active/Discontinued transitions.
+- [x] T079 [FR-014, FR-015a, FR-015b, FR-015c] Refactor `StockAdjustmentService.java` in `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockAdjustmentService.java` to implement batch creation on `ADD` and lot deduction with financial loss calculation on `SUBTRACT`, and refactor `IngredientService.java` removing archive restrictions.
+- [x] T080 [FR-015b] Add endpoint `GET /api/v1/admin/ingredients/{id}/batches` in `easyeat/backend/src/main/java/com/easyeat/inventory/controller/StockAdjustmentController.java` returning active batches with remaining balance, and update web contract tests in `StockAdjustmentControllerTest.java`.
+
+### Frontend Implementation & Tests (TDD)
+
+- [x] T081 [P] [FR-014, FR-015a, FR-015b] Update TypeScript interfaces in `easyeat/frontend/src/types/inventory.ts` (`IngredientBatch`, `StockAdjustmentAction = 'ADD' | 'SUBTRACT'`, `IngredientStatus = 'ACTIVE' | 'DISCONTINUED'`) and update client methods in `easyeat/frontend/src/api/inventoryApi.ts` adding `getBatches(id)`.
+- [x] T082 [P] [FR-014, FR-015a, FR-015b] Update component tests in `easyeat/frontend/tests/components/StockAdjustmentModal.test.tsx` and `easyeat/frontend/tests/components/IngredientCatalogTable.test.tsx` asserting "Agregar stock" with purchase cost, "Restar stock" with batch selection and financial loss, and "Desactivar" / "Reactivar" buttons without "Archivar".
+- [x] T083 [FR-014, FR-015a, FR-015b] Refactor `StockAdjustmentModal.tsx` in `easyeat/frontend/src/components/inventory/StockAdjustmentModal.tsx` providing "Agregar stock" and "Restar stock" tabs with batch selector and computed loss, and refactor `IngredientCatalogTable.tsx` removing archive/desarchive actions in favor of single toggle "Desactivar" / "Reactivar".
+
+### Full Verification & Regression Gate
+
+- [x] T084 [P] [FR-014, FR-015a, FR-015b] Execute full backend regression test suite (`mvn test`) and frontend test suite (`npm test && npm run build`) verifying zero regressions across staff, inventory, chef catalog, and dietary features.
+
+### Polish & UX Refinements (Batch Cost Decoupling & Audit Visibility)
+
+- [x] T085 [P] [FR-010, FR-012, FR-031] Update `spec.md` and `openapi.yaml` to decouple purchase cost from master ingredient creation/editing and specify financial loss columns in stock audit.
+- [x] T086 [P] [FR-010, FR-012] Backend: Make `unitPurchaseCost` optional in `CreateIngredientRequest.java` and `UpdateIngredientRequest.java`, defaulting to 0 on creation in `IngredientService.java`.
+- [x] T087 [P] [FR-010, FR-015a, FR-015b, FR-031] Frontend: Remove `unitPurchaseCost` from `IngredientFormModal.tsx` (creation and edition), remove `Costo Referencia` column from `IngredientCatalogTable.tsx`, and add `Costo Unit.` and `Pérdida ($)` columns to `StockAuditModal.tsx`.
+- [x] T088 [P] [FR-010, FR-015a, FR-015b] Update component tests (`IngredientFormModal.test.tsx`, `IngredientCatalogTable.test.tsx`, `StockAuditModal.test.tsx`) and verify full regression test suites (`mvn test` and `npm test && npm run build`).
+
 
 ---
 
@@ -245,6 +281,9 @@ Phase 1: Setup ──► Phase 2: Foundational (DB/Tenant) ──► Phase 3, 4,
                                                                                   ┌─────────────────────────────────────┘
                                                                                   ▼
                                                                      Phase 14: E2E Integration & Quality Gates
+                                                                                  │
+                                                                                  ▼
+                                                                     Phase 15: Inventory Refactor (T076–T084)
 ```
 
 - **Backend (Phases 1-7)**: Complete and verified with unit, slice, and integration tests.

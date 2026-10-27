@@ -41,7 +41,7 @@ describe('IngredientFormModal Component (FR-010, FR-011, FR-013, FR-026)', () =>
     expect(uomSelect).toBeInTheDocument();
     expect(uomSelect).not.toBeDisabled();
 
-    expect(screen.getByLabelText(/costo unitario/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/costo unitario/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /guardar ingrediente/i })).toBeInTheDocument();
   });
 
@@ -134,7 +134,6 @@ describe('IngredientFormModal Component (FR-010, FR-011, FR-013, FR-026)', () =>
     await user.type(screen.getByLabelText(/nombre del ingrediente/i), 'Tomates Perita');
     await user.selectOptions(screen.getByLabelText(/categoría/i), 'Produce');
     await user.selectOptions(screen.getByLabelText(/unidad de medida/i), 'kg');
-    await user.type(screen.getByLabelText(/costo unitario/i), '250.75');
 
     await user.click(screen.getByRole('button', { name: /guardar ingrediente/i }));
 
@@ -142,7 +141,6 @@ describe('IngredientFormModal Component (FR-010, FR-011, FR-013, FR-026)', () =>
       name: 'Tomates Perita',
       category: 'Produce',
       unitOfMeasure: 'kg',
-      unitPurchaseCost: 250.75,
     });
   });
 });

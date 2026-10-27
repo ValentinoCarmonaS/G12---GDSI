@@ -320,10 +320,9 @@ paths:
     patch:
       summary: Transition ingredient lifecycle status (ADM-4.1.1, FR-014)
       description: |
-        Transitions ingredient status:
-        - ACTIVE -> DISCONTINUED (if stock > 0)
-        - DISCONTINUED -> ACTIVE (explicit reactivation)
-        - DISCONTINUED/ACTIVE -> ARCHIVED (strictly permitted only when stock == 0)
+        Transitions ingredient status between ACTIVE and DISCONTINUED:
+        - ACTIVE -> DISCONTINUED (removes from Chef catalog and blocks new stock additions)
+        - DISCONTINUED -> ACTIVE (explicit reactivation, restoring to Chef catalog)
       security:
         - BearerAuth: []
       tags:
@@ -375,8 +374,8 @@ paths:
     post:
       summary: Apply manual stock adjustment (ADM-4.1.2)
       description: |
-        Applies a physical inventory adjustment in ABSOLUTE mode (sets counted physical stock) or RELATIVE mode (positive/negative delta).
-        Enforces non-negative stock invariant, mandatory justification, and pessimistic locking during concurrent requests.
+        Applies a stock adjustment by creating a new cost-bearing batch (action = ADD) or imputing shrinkage/waste to an existing batch (action = SUBTRACT) with financial loss calculation.
+        Enforces non-negative stock invariant, batch balance limits, mandatory justification, and pessimistic locking during concurrent requests.
       security:
         - BearerAuth: []
       tags:
@@ -456,6 +455,37 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/StockAuditEntryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/ingredients/{id}/batches:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: List active stock batches for an ingredient (ADM-4.1.3, FR-015b)
+      description: Returns active batches with remaining quantity > 0 ordered chronologically ascending by creation date.
+      security:
+        - BearerAuth: []
+      tags:
+        - Admin - Stock
+      responses:
+        '200':
+          description: List of active ingredient batches.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IngredientBatchResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -551,13 +581,40 @@ components:
 
     IngredientStatus:
       type: string
-      enum: [ACTIVE, DISCONTINUED, ARCHIVED]
+      enum: [ACTIVE, DISCONTINUED]
       example: ACTIVE
+
+    StockAdjustmentAction:
+      type: string
+      enum: [ADD, SUBTRACT]
+      example: ADD
 
     StockAdjustmentMode:
       type: string
-      enum: [ABSOLUTE, RELATIVE]
-      example: RELATIVE
+      enum: [ADD, SUBTRACT, ABSOLUTE, RELATIVE]
+      example: ADD
+
+    IngredientBatchResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ingredientId:
+          type: string
+          format: uuid
+        initialQuantity:
+          type: number
+          example: 5.0000
+        remainingQuantity:
+          type: number
+          example: 3.0000
+        unitCost:
+          type: number
+          example: 2000.0000
+        createdAt:
+          type: string
+          format: date-time
 
     StockAvailabilityStatus:
       type: string
@@ -669,7 +726,6 @@ components:
         - name
         - category
         - unitOfMeasure
-        - unitPurchaseCost
       properties:
         name:
           type: string
@@ -692,7 +748,6 @@ components:
         - name
         - category
         - unitOfMeasure
-        - unitPurchaseCost
       properties:
         name:
           type: string
@@ -739,18 +794,24 @@ components:
     StockAdjustmentRequest:
       type: object
       required:
-        - mode
-        - value
+        - action
+        - quantity
         - justification
       properties:
-        mode:
-          $ref: '#/components/schemas/StockAdjustmentMode'
-        value:
+        action:
+          $ref: '#/components/schemas/StockAdjustmentAction'
+        quantity:
           type: number
-          description: |
-            In ABSOLUTE mode: Total counted physical inventory (must be >= 0).
-            In RELATIVE mode: Net delta to add or subtract (cannot be 0).
-          example: 15.5000
+          description: Physical quantity to add or subtract (must be > 0).
+          example: 5.0000
+        unitCost:
+          type: number
+          description: Unit purchase cost. Required when action is ADD.
+          example: 2000.0000
+        batchId:
+          type: string
+          format: uuid
+          description: Target batch to subtract from. Required when action is SUBTRACT.
         justification:
           type: string
           minLength: 5
@@ -773,6 +834,13 @@ components:
           type: number
         netDelta:
           type: number
+        batchId:
+          type: string
+          format: uuid
+        unitCost:
+          type: number
+        financialLoss:
+          type: number
         auditEntryId:
           type: string
           format: uuid
@@ -794,6 +862,9 @@ components:
           format: uuid
         adminName:
           type: string
+        batchId:
+          type: string
+          format: uuid
         adjustmentMode:
           $ref: '#/components/schemas/StockAdjustmentMode'
         previousStock:
@@ -801,6 +872,10 @@ components:
         newStock:
           type: number
         netDelta:
+          type: number
+        unitCost:
+          type: number
+        financialLoss:
           type: number
         justification:
           type: string
