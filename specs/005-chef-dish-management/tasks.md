@@ -27,7 +27,7 @@
 
 **⚠️ CRITICAL**: No user story implementation can proceed until this phase is complete and verified.
 
-- [ ] T007 [P] Create Flyway migration script `V7__chef_dish_management.sql` in `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql` (evolving `dishes` to make price nullable, adding category, status, allergens_confirmed, created_by, unique index, creating `dish_photos`, `dish_recipe_ingredients`, and `admin_notifications` tables)
+- [X] T007 [P] Create Flyway migration script `V7__chef_dish_management.sql` in `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql` (evolving `dishes` to make price nullable, adding category, status, allergens_confirmed, created_by, unique index, creating `dish_photos`, `dish_recipe_ingredients`, and `admin_notifications` tables)
 - [ ] T008 [P] Update dev seed script `R__seed_dev_dishes_and_dietary.sql` in `easyeat/backend/src/main/resources/db/dev/R__seed_dev_dishes_and_dietary.sql` populating categories, `allergens_confirmed = true`, `created_by = admin`, and `status = 'PENDING_PRICE'` for the 5 existing seed dishes
 - [ ] T009 [P] Create domain enums `DishCategory` and `DishStatus` in `easyeat/backend/src/main/java/com/easyeat/dish/domain/DishCategory.java` and `easyeat/backend/src/main/java/com/easyeat/dish/domain/DishStatus.java`
 - [ ] T010 [P] Update `Dish` entity in `easyeat/backend/src/main/java/com/easyeat/catalog/domain/Dish.java` mapping new columns `category`, `status`, `allergens_confirmed`, `created_by`, and making `price` nullable
