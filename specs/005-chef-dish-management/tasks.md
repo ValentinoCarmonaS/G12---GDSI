@@ -12,7 +12,7 @@
 
 **Purpose**: Set up test fixtures, declare custom domain exceptions, map RFC 7807 ProblemDetail responses, and establish shared frontend TypeScript types.
 
-- [ ] T001 [P] Create base test support fixtures and builders for dishes and tenant in `easyeat/backend/src/test/java/com/easyeat/dish/DishTestFixtures.java`
+- [X] T001 [P] Create base test support fixtures and builders for dishes and tenant in `easyeat/backend/src/test/java/com/easyeat/dish/DishTestFixtures.java`
 - [ ] T002 [P] Create base web test support class with security helpers in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishControllerTestBase.java`
 - [ ] T003 [P] Create frontend API mock handlers and server setup for dishes in `easyeat/frontend/tests/mocks/dishHandlers.ts`
 - [ ] T004 [P] Create domain exceptions (`DishNotFoundException`, `DishLockedException`, `DuplicateDishNameException`, `IncompleteDishException`, `InvalidIngredientException`, `InvalidQuantityException`, `PhotoStorageException`) in `easyeat/backend/src/main/java/com/easyeat/dish/exception/`
