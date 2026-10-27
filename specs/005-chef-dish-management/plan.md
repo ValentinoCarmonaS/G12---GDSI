@@ -11,7 +11,7 @@
 This technical plan details the full-stack end-to-end implementation (vertical slice) of the culinary technical file creation, recipe composition (Bill of Materials), allergen labeling, and submission workflow for restaurant Chefs.
 
 ### Technical approach
-- **Persistence and relational model**: Flyway migration `V6__chef_dish_management.sql` evolving the existing `dishes` table (making `price` optional, adding closed category, `DRAFT`/`PENDING_PRICE` status, confirmed allergen flag, creator reference, and whitespace-trimmed case-insensitive name uniqueness per tenant). Relational 3NF storage for recipe lines (`dish_recipe_ingredients` without unit redundancy) and PostgreSQL binary table `dish_photos` (`BYTEA`) for photos up to 5 MB. Administrative alerts in `admin_notifications`.
+- **Persistence and relational model**: Flyway migration `V7__chef_dish_management.sql` evolving the existing `dishes` table (making `price` optional, adding closed category, `DRAFT`/`PENDING_PRICE` status, confirmed allergen flag, creator reference, and whitespace-trimmed case-insensitive name uniqueness per tenant). Relational 3NF storage for recipe lines (`dish_recipe_ingredients` without unit redundancy) and PostgreSQL binary table `dish_photos` (`BYTEA`) for photos up to 5 MB. Administrative alerts in `admin_notifications`.
 - **API and contracts**: Versioned RESTful interface under `/api/v1` (`/api/v1/dishes`, `/api/v1/admin/notifications`) matching OpenAPI 3.0 contracts in `contracts/dishes.yaml` and `contracts/admin-notifications.yaml`, standardized error handling via `ProblemDetail` (RFC 7807), and tenant isolation via `TenantContextFilter`.
 - **Security and immutability**: Strict backend transactional gate evaluating all 4 completeness conditions before transitioning to `PENDING_PRICE`. Absolute locking of any mutation or deletion on dishes in `PENDING_PRICE` status (returning `409 Conflict`).
 - **Frontend**: Kitchen interface (`/cocina/platos`) with paginated list (20 items/page, sorted by `updated_at DESC`, status filters), guided sequential 4-step wizard/Stepper (Identity, Recipe/BOM, Allergens, Review/Submit), real-time validation, and read-only view locking while under review.
@@ -24,7 +24,7 @@ This technical plan details the full-stack end-to-end implementation (vertical s
   4. `Bowl Vegano Proteico`
   5. `Salmón Grillado con Espárragos`
 - **Conflict diagnosis**: These dishes have mandatory `price` and lack `category`, `status`, `allergens_confirmed`, and `created_by`. Leaving `price NOT NULL` in `dishes` breaks technical file creation by the Chef. In turn, test `DevSeedDishesMigrationTest` requires the presence of these 5 dishes.
-- **Agreed resolution**: Modify `dishes` to make `price` nullable in migration V6, and adapt `R__seed_dev_dishes_and_dietary.sql` by assigning valid categories (`'Ensaladas'` and `'Platos principales'`), `status = 'PENDING_PRICE'`, `allergens_confirmed = true`, and `created_by = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'`. This preserves the validity of preceding diner catalog tests without destructively modifying data.
+- **Agreed resolution**: Modify `dishes` to make `price` nullable in migration V7, and adapt `R__seed_dev_dishes_and_dietary.sql` by assigning valid categories (`'Ensaladas'` and `'Platos principales'`), `status = 'PENDING_PRICE'`, `allergens_confirmed = true`, and `created_by = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'`. This preserves the validity of preceding diner catalog tests without destructively modifying data.
 
 ---
 
@@ -74,7 +74,7 @@ This technical plan details the full-stack end-to-end implementation (vertical s
 | **VII. Traceability, Consistency, and Documentation** | PASS | Bidirectional links maintained between `spec.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`, and `plan.md`. |
 | **VIII. Evidence Over Assumption and Human Escalation** | PASS | Each design branch was inspected in the codebase and critical decisions were resolved interactively via `ask_question`. |
 | **IX. Engineering Over Convenience** | PASS | State machine, unit validation (discrete vs continuous), and backend immutability modeled with rigorous tests rather than shortcuts. |
-| **X. Full-Stack End-to-End Integrity (Vertical Slices)** | PASS | Plan covers database (Flyway V6), backend business logic (Spring Boot), OpenAPI contracts, and frontend user experience (React / Stepper) in a coordinated slice. |
+| **X. Full-Stack End-to-End Integrity (Vertical Slices)** | PASS | Plan covers database (Flyway V7), backend business logic (Spring Boot), OpenAPI contracts, and frontend user experience (React / Stepper) in a coordinated slice. |
 | **XI. Continuous Upstream Synchronization Awareness** | PASS | `git fetch origin main` executed, confirming 0/0 drift against remote integration branch before commencing design. |
 
 ---
@@ -103,16 +103,19 @@ specs/005-chef-dish-management/
 easyeat/
 ├── backend/
 │   ├── src/main/java/com/easyeat/
+│   │   ├── catalog/
+│   │   │   ├── domain/
+│   │   │   │   └── Dish.java                        # Existing Dish entity (evolved with status, category, etc.)
+│   │   │   └── repository/
+│   │   │       └── DishRepository.java              # Existing repository (extended with tenant isolation and uniqueness queries)
 │   │   ├── dish/
 │   │   │   ├── domain/
-│   │   │   │   ├── Dish.java                        # Dish entity (evolved with status, category, etc.)
 │   │   │   │   ├── DishCategory.java                # Enum: Entradas, Platos principales, etc.
 │   │   │   │   ├── DishStatus.java                  # Enum: DRAFT, PENDING_PRICE
 │   │   │   │   ├── DishPhoto.java                   # Entity: binary image storage (BYTEA)
 │   │   │   │   ├── DishRecipeIngredient.java        # Compound entity (dish_id, ingredient_id, quantity)
 │   │   │   │   └── DishRecipeIngredientId.java      # Composite PK
 │   │   │   ├── repository/
-│   │   │   │   ├── DishRepository.java              # CRUD, tenant isolation, name uniqueness queries
 │   │   │   │   ├── DishPhotoRepository.java         # Photo binary queries
 │   │   │   │   └── DishRecipeIngredientRepository.java # BOM queries
 │   │   │   ├── service/
@@ -138,7 +141,7 @@ easyeat/
 │   ├── src/main/resources/
 │   │   └── db/
 │   │       ├── migration/
-│   │       │   └── V6__chef_dish_management.sql     # Flyway migration DDL
+│   │       │   └── V7__chef_dish_management.sql     # Flyway migration DDL
 │   │       └── dev/
 │   │           └── R__seed_dev_dishes_and_dietary.sql # Adapted dev seed data
 │   └── src/test/java/com/easyeat/
@@ -189,7 +192,7 @@ easyeat/
 ## Detailed Implementation Phases
 
 ### Phase 1: Persistence and database migration
-1. **Creation of `V6__chef_dish_management.sql`**:
+1. **Creation of `V7__chef_dish_management.sql`**:
    - `ALTER TABLE dishes`: Make `price` optional, shorten `name` to 100 characters, add `category` with `CHECK` constraint, `status` with `CHECK ('DRAFT', 'PENDING_PRICE')`, `allergens_confirmed BOOLEAN DEFAULT FALSE`, `created_by UUID REFERENCES users(id)`.
    - `CREATE UNIQUE INDEX uq_dishes_tenant_lower_trimmed_name ON dishes (tenant_id, LOWER(TRIM(name)));`
    - Creation of `dish_photos` table with `BYTEA` column and MIME type / size constraints (<= 5 MB).
@@ -197,11 +200,11 @@ easyeat/
    - Creation of `admin_notifications` table with index on `(tenant_id, is_read, created_at DESC)`.
 2. **Update of `R__seed_dev_dishes_and_dietary.sql`**:
    - Update 5 existing dishes with valid categories, `status = 'PENDING_PRICE'`, `allergens_confirmed = true`, and `created_by = admin synthetic user`.
-3. **Regression validation**: Execute `FlywayMigrationV5Test` and `DevSeedDishesMigrationTest` to verify that preceding migrations and seed continue running without failure.
+3. **Regression validation**: Execute `FlywayMigrationV5Test`, `V7MigrationAndSeedDevTest`, and `DevSeedDishesMigrationTest` to verify that preceding migrations and seed continue running without failure.
 
 ### Phase 2: Backend — Domain model, repositories, and services
 1. **JPA Entities**:
-   - Update `Dish.java` with new fields (`category`, `status`, `allergensConfirmed`, `createdBy`, `isCompleteForReview`).
+   - Update `Dish.java` in `com.easyeat.catalog.domain` with new fields (`category`, `status`, `allergensConfirmed`, `createdBy`). Completeness conditions are evaluated by `DishService`.
    - Create `DishPhoto.java`, `DishRecipeIngredient.java` with `DishRecipeIngredientId.java`, and `AdminNotification.java`.
 2. **Spring Data Repositories**:
    - `DishRepository`: Query methods by tenant and status with pagination (`Pageable`), existence check by trimmed case-insensitive name (`existsByTenantIdAndNameLowerTrimmed`).

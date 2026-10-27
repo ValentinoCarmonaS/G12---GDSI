@@ -10,7 +10,7 @@ This guide describes the end-to-end verifiable scenarios demonstrating the corre
 
 ### 1.1. Database and preceding supplies
 1. Active PostgreSQL instance or Testcontainers container available for automated execution.
-2. Flyway migrations applied up to `V6__chef_dish_management.sql`.
+2. Flyway migrations applied up to `V7__chef_dish_management.sql`.
 3. Development seed data applied (`R__seed_dev_users.sql`, `R__seed_dev_dishes_and_dietary.sql`).
 4. At least one authenticated Chef user (`chef@easyeat.com`) and one Administrator (`admin@easyeat.com`) in tenant `a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`.
 5. At least one ingredient in `'ACTIVE'` status in the `ingredients` table (provided by iteration 004).
