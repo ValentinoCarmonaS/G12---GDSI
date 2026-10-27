@@ -11,7 +11,7 @@ export const ROLE_ALLOWED_PREFIXES: Record<Role, string[]> = {
   ENCARGADO: ['/mostrador', '/counter'],
   CHEF: ['/cocina', '/kds'],
   ADMINISTRADOR: ['/admin'],
-  COMENSAL: ['/catalogo', '/catalog'],
+  COMENSAL: ['/catalogo', '/catalog', '/perfil', '/profile'],
 };
 
 /**

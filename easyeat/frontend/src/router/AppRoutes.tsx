@@ -15,6 +15,8 @@ import { StaffManagementPage } from '../pages/StaffManagementPage';
 import { InventoryManagementPage } from '../pages/InventoryManagementPage';
 import { CatalogPage } from '../pages/CatalogPage';
 import { FirstLoginPasswordPage } from '../pages/FirstLoginPasswordPage';
+import { ProfilePage } from '../pages/ProfilePage';
+import { VerifyEmailPage } from '../pages/VerifyEmailPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -144,15 +146,26 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
-      {/* Diner Home / Catalog Fallback View (COMENSAL + Staff Fallback) */}
+      {/* Public Email Verification Callback Gateway */}
       <Route
-        path="/catalogo/*"
+        path="/verificar-email"
+        element={<VerifyEmailPage />}
+      />
+      <Route path="/verify-email" element={<Navigate to="/verificar-email" replace />} />
+
+      {/* Role-Protected Diner Profile (COMENSAL) */}
+      <Route
+        path="/perfil"
         element={
-          <RoleRouteGuard allowedRoles={['COMENSAL', 'ENCARGADO', 'CHEF', 'ADMINISTRADOR']}>
-            <CatalogPage />
+          <RoleRouteGuard allowedRoles={['COMENSAL']}>
+            <ProfilePage />
           </RoleRouteGuard>
         }
       />
+      <Route path="/profile" element={<Navigate to="/perfil" replace />} />
+
+      {/* Diner Home / Catalog View (Public for guests and diners) */}
+      <Route path="/catalogo/*" element={<CatalogPage />} />
       <Route path="/catalog/*" element={<Navigate to="/catalogo" replace />} />
 
       {/* Root redirect: to workspace if authenticated, or login if unauthenticated */}

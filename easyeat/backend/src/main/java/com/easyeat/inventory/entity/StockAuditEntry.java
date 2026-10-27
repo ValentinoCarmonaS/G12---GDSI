@@ -38,6 +38,15 @@ public class StockAuditEntry {
     @Column(name = "net_delta", nullable = false, precision = 12, scale = 4)
     private BigDecimal netDelta;
 
+    @Column(name = "batch_id")
+    private UUID batchId;
+
+    @Column(name = "unit_cost", precision = 12, scale = 4)
+    private BigDecimal unitCost;
+
+    @Column(name = "financial_loss", precision = 12, scale = 4)
+    private BigDecimal financialLoss;
+
     @Column(name = "justification", nullable = false, columnDefinition = "TEXT")
     private String justification;
 
@@ -59,6 +68,15 @@ public class StockAuditEntry {
         this.createdAt = Instant.now();
     }
 
+    public StockAuditEntry(UUID tenantId, UUID ingredientId, UUID userId, StockAdjustmentMode adjustmentMode,
+                           BigDecimal previousStock, BigDecimal newStock, BigDecimal netDelta, String justification,
+                           UUID batchId, BigDecimal unitCost, BigDecimal financialLoss) {
+        this(tenantId, ingredientId, userId, adjustmentMode, previousStock, newStock, netDelta, justification);
+        this.batchId = batchId;
+        this.unitCost = unitCost != null ? unitCost.setScale(4, RoundingMode.HALF_UP) : null;
+        this.financialLoss = financialLoss != null ? financialLoss.setScale(4, RoundingMode.HALF_UP) : null;
+    }
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -72,6 +90,12 @@ public class StockAuditEntry {
         }
         if (netDelta != null) {
             netDelta = netDelta.setScale(4, RoundingMode.HALF_UP);
+        }
+        if (unitCost != null) {
+            unitCost = unitCost.setScale(4, RoundingMode.HALF_UP);
+        }
+        if (financialLoss != null) {
+            financialLoss = financialLoss.setScale(4, RoundingMode.HALF_UP);
         }
     }
 
@@ -137,6 +161,30 @@ public class StockAuditEntry {
 
     public void setNetDelta(BigDecimal netDelta) {
         this.netDelta = netDelta != null ? netDelta.setScale(4, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(4);
+    }
+
+    public UUID getBatchId() {
+        return batchId;
+    }
+
+    public void setBatchId(UUID batchId) {
+        this.batchId = batchId;
+    }
+
+    public BigDecimal getUnitCost() {
+        return unitCost;
+    }
+
+    public void setUnitCost(BigDecimal unitCost) {
+        this.unitCost = unitCost != null ? unitCost.setScale(4, RoundingMode.HALF_UP) : null;
+    }
+
+    public BigDecimal getFinancialLoss() {
+        return financialLoss;
+    }
+
+    public void setFinancialLoss(BigDecimal financialLoss) {
+        this.financialLoss = financialLoss != null ? financialLoss.setScale(4, RoundingMode.HALF_UP) : null;
     }
 
     public String getJustification() {

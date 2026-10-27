@@ -18,7 +18,10 @@ public record CreateIngredientRequest(
         @NotNull(message = "Unit of measure is required")
         UnitOfMeasure unitOfMeasure,
 
-        @NotNull(message = "Unit purchase cost is required")
         @DecimalMin(value = "0.0000", message = "Unit purchase cost must be non-negative")
         BigDecimal unitPurchaseCost
-) {}
+) {
+    public CreateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure) {
+        this(name, category, unitOfMeasure, null);
+    }
+}

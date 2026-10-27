@@ -9,20 +9,19 @@ export interface IngredientCatalogTableProps {
   onEdit: (ingredient: AdminIngredientDetailResponse) => void;
   onAdjustStock?: (ingredient: AdminIngredientDetailResponse) => void;
   onViewAudit?: (ingredient: AdminIngredientDetailResponse) => void;
-  onStatusChange: (id: string, newStatus: IngredientStatus) => Promise<void>;
+  onStatusTransition?: (id: string, newStatus: IngredientStatus) => Promise<void>;
+  onStatusChange?: (id: string, newStatus: IngredientStatus) => Promise<void>;
   isLoading?: boolean;
 }
 
 const STATUS_LABELS: Record<IngredientStatus, string> = {
   ACTIVE: 'Activo',
-  DISCONTINUED: 'Discontinuado',
-  ARCHIVED: 'Archivado',
+  DISCONTINUED: 'Desactivado',
 };
 
 const STATUS_BADGE_CLASSES: Record<IngredientStatus, string> = {
   ACTIVE: 'bg-green-100 text-green-800 border-green-200',
   DISCONTINUED: 'bg-orange-100 text-orange-800 border-orange-200',
-  ARCHIVED: 'bg-gray-100 text-gray-700 border-gray-200',
 };
 
 export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
@@ -30,6 +29,7 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
   onEdit,
   onAdjustStock,
   onViewAudit,
+  onStatusTransition,
   onStatusChange,
   isLoading = false,
 }) => {
@@ -50,7 +50,11 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
   const handleStatusTransition = async (id: string, nextStatus: IngredientStatus) => {
     setTransitioningId(id);
     try {
-      await onStatusChange(id, nextStatus);
+      if (onStatusTransition) {
+        await onStatusTransition(id, nextStatus);
+      } else if (onStatusChange) {
+        await onStatusChange(id, nextStatus);
+      }
     } finally {
       setTransitioningId(null);
     }
@@ -102,8 +106,7 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
             >
               <option value="ALL">Todos</option>
               <option value="ACTIVE">Activo</option>
-              <option value="DISCONTINUED">Discontinuado</option>
-              <option value="ARCHIVED">Archivado</option>
+              <option value="DISCONTINUED">Desactivado</option>
             </select>
           </div>
         </div>
@@ -118,7 +121,6 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
                 <th scope="col" className="px-6 py-3">Ingrediente</th>
                 <th scope="col" className="px-6 py-3">Categoría</th>
                 <th scope="col" className="px-6 py-3">Unidad</th>
-                <th scope="col" className="px-6 py-3">Costo Unitario</th>
                 <th scope="col" className="px-6 py-3">Stock Actual</th>
                 <th scope="col" className="px-6 py-3">Estado</th>
                 <th scope="col" className="px-6 py-3 text-right">Acciones</th>
@@ -127,19 +129,18 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
             <tbody className="divide-y divide-gray-100 bg-white">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                     Cargando catálogo maestro...
                   </td>
                 </tr>
               ) : filteredIngredients.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                     No se encontraron materias primas en el catálogo.
                   </td>
                 </tr>
               ) : (
                 filteredIngredients.map((item) => {
-                  const isPositiveStock = item.currentStock > 0;
                   const isTransitioning = transitioningId === item.id;
 
                   return (
@@ -152,9 +153,6 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
                       </td>
                       <td className="px-6 py-4 font-mono text-gray-600 whitespace-nowrap text-xs">
                         {item.unitOfMeasure}
-                      </td>
-                      <td className="px-6 py-4 font-mono font-medium text-gray-900 whitespace-nowrap">
-                        ${item.unitPurchaseCost.toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
@@ -184,7 +182,7 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
                           Editar
                         </button>
 
-                        {onAdjustStock && item.status !== 'ARCHIVED' && (
+                        {onAdjustStock && (
                           <button
                             type="button"
                             onClick={() => onAdjustStock(item)}
@@ -206,68 +204,17 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
                           </button>
                         )}
 
-                        {/* Lifecycle Transition Actions (FR-014) */}
-                        {item.status === 'ACTIVE' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleStatusTransition(item.id, 'DISCONTINUED')}
-                              disabled={isTransitioning}
-                              className="text-orange-600 hover:text-orange-900 font-medium text-xs px-2 py-1 rounded border border-orange-200 hover:bg-orange-50 transition-colors"
-                            >
-                              Discontinuar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleStatusTransition(item.id, 'ARCHIVED')}
-                              disabled={isTransitioning || isPositiveStock}
-                              title={
-                                isPositiveStock
-                                  ? 'No se puede archivar con stock mayor a cero'
-                                  : 'Archivar ingrediente'
-                              }
-                              className={`font-medium text-xs px-2 py-1 rounded border transition-colors ${
-                                isPositiveStock
-                                  ? 'text-gray-300 border-gray-200 cursor-not-allowed bg-gray-50'
-                                  : 'text-gray-600 hover:text-gray-900 border-gray-300 hover:bg-gray-100'
-                              }`}
-                            >
-                              Archivar
-                            </button>
-                          </>
-                        )}
-
-                        {item.status === 'DISCONTINUED' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleStatusTransition(item.id, 'ACTIVE')}
-                              disabled={isTransitioning}
-                              className="text-green-600 hover:text-green-900 font-medium text-xs px-2 py-1 rounded border border-green-200 hover:bg-green-50 transition-colors"
-                            >
-                              Reactivar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleStatusTransition(item.id, 'ARCHIVED')}
-                              disabled={isTransitioning || isPositiveStock}
-                              title={
-                                isPositiveStock
-                                  ? 'No se puede archivar con stock mayor a cero'
-                                  : 'Archivar ingrediente'
-                              }
-                              className={`font-medium text-xs px-2 py-1 rounded border transition-colors ${
-                                isPositiveStock
-                                  ? 'text-gray-300 border-gray-200 cursor-not-allowed bg-gray-50'
-                                  : 'text-gray-600 hover:text-gray-900 border-gray-300 hover:bg-gray-100'
-                              }`}
-                            >
-                              Archivar
-                            </button>
-                          </>
-                        )}
-
-                        {item.status === 'ARCHIVED' && (
+                        {/* Lifecycle Transition Actions (FR-014: Active <-> Discontinued) */}
+                        {item.status === 'ACTIVE' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleStatusTransition(item.id, 'DISCONTINUED')}
+                            disabled={isTransitioning}
+                            className="text-orange-600 hover:text-orange-900 font-medium text-xs px-2 py-1 rounded border border-orange-200 hover:bg-orange-50 transition-colors"
+                          >
+                            Desactivar
+                          </button>
+                        ) : (
                           <button
                             type="button"
                             onClick={() => handleStatusTransition(item.id, 'ACTIVE')}
@@ -291,4 +238,3 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
 };
 
 export default IngredientCatalogTable;
-

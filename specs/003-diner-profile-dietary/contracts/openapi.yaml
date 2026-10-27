@@ -1,0 +1,578 @@
+openapi: 3.0.3
+info:
+  title: EasyEat - Diner Profile Management & Dietary Restrictions API
+  version: 1.0.0
+  description: >
+    API contracts for diner personal data editing (COM-1.4.1), dietary restrictions and allergen configuration (COM-1.4.3),
+    automated catalog compliance filtering, and cart dietary risk evaluation (COM-4.2.1).
+servers:
+  - url: /api/v1
+    description: EasyEat REST API v1
+tags:
+  - name: Profile
+    description: Diner personal contact data and email verification workflow
+  - name: Dietary
+    description: Dietary restrictions and allergen preferences configuration
+  - name: Catalog
+    description: Establishment menu catalog with dietary compliance enrichment
+  - name: Cart
+    description: Cart item compliance evaluation and checkout risk verification
+
+paths:
+  /profile/me:
+    get:
+      tags:
+        - Profile
+      summary: Get current authenticated diner profile
+      description: Returns personal details, active email, pending email verification status, and configured dietary restrictions.
+      operationId: getDinerProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Diner profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /profile/personal-data:
+    put:
+      tags:
+        - Profile
+      summary: Update diner personal details
+      description: Updates first name, last name, and optional phone number. Validates alphabetic format and phone syntax.
+      operationId: updatePersonalData
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalDataRequest'
+      responses:
+        '200':
+          description: Personal data updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /profile/email-change/request:
+    post:
+      tags:
+        - Profile
+      summary: Request email address change
+      description: Initiates asynchronous email verification. Dispatches a 24h verification link to the proposed new email.
+      operationId: requestEmailChange
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailChangeRequestDto'
+      responses:
+        '202':
+          description: Email change initiated; verification email queued for dispatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailChangeInitiatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Proposed email is already registered to another account
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /profile/email-change/pending:
+    delete:
+      tags:
+        - Profile
+      summary: Cancel active pending email change
+      description: Revokes the pending verification token and restores profile email state.
+      operationId: cancelPendingEmailChange
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Pending email change canceled successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No pending email change found for user
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /profile/email-change/resend:
+    post:
+      tags:
+        - Profile
+      summary: Resend verification email
+      description: Resends the verification link for the active pending email change, subject to a 60-second cooldown rate limit.
+      operationId: resendEmailVerification
+      security:
+        - BearerAuth: []
+      responses:
+        '202':
+          description: Verification link redispatched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailChangeInitiatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No pending email change to resend
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          description: Resend rate limit exceeded (cooldown active)
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Remaining cooldown seconds
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /profile/email-change/confirm:
+    post:
+      tags:
+        - Profile
+      summary: Confirm email address change
+      description: Validates cryptographic token, promotes pending email to primary address, and invalidates active JWT sessions via token_version.
+      operationId: confirmEmailChange
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailConfirmationRequest'
+      responses:
+        '200':
+          description: Email verified successfully; old sessions invalidated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailConfirmedResponse'
+        '400':
+          description: Token is invalid, expired, or already consumed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /dietary-restrictions:
+    get:
+      tags:
+        - Dietary
+      summary: List standardized platform dietary taxonomy
+      description: Returns available dietary lifestyles and common food allergens.
+      operationId: getDietaryTaxonomy
+      responses:
+        '200':
+          description: Taxonomy retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DietaryRestrictionItem'
+
+  /profile/dietary-restrictions:
+    put:
+      tags:
+        - Dietary
+      summary: Update diner dietary restrictions
+      description: Atomically updates active dietary lifestyle preferences and allergens configured on the profile.
+      operationId: updateDietaryPreferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DietaryPreferencesRequest'
+      responses:
+        '200':
+          description: Dietary preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DietaryRestrictionItem'
+        '400':
+          description: One or more provided restriction codes do not exist in platform taxonomy
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /establishments/{tenantId}/dishes:
+    get:
+      tags:
+        - Catalog
+      summary: Get establishment menu catalog with dietary compliance
+      description: Returns dishes for the specified establishment. For authenticated diners, each dish is enriched with dietary compliance flags based on strict intersection.
+      operationId: getEstablishmentDishes
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique identifier of the restaurant establishment
+      responses:
+        '200':
+          description: Catalog retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EnrichedDishResponse'
+        '404':
+          description: Establishment not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /cart/evaluate-compliance:
+    post:
+      tags:
+        - Cart
+      summary: Evaluate dietary compliance for cart items
+      description: Evaluates compliance for a list of dish IDs against the authenticated diner's active restrictions. Used for live cart re-evaluation upon profile changes.
+      operationId: evaluateCartCompliance
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartComplianceRequest'
+      responses:
+        '200':
+          description: Cart compliance evaluation evaluated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartComplianceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ProfileResponse:
+      type: object
+      required:
+        - id
+        - email
+        - dietaryRestrictions
+      properties:
+        id:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+          nullable: true
+          example: Valentino
+        lastName:
+          type: string
+          nullable: true
+          example: Carmona
+        phone:
+          type: string
+          nullable: true
+          example: "+5491123456789"
+        email:
+          type: string
+          format: email
+          example: valentino@example.com
+        pendingEmail:
+          type: string
+          format: email
+          nullable: true
+          example: valentino.new@example.com
+        dietaryRestrictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DietaryRestrictionItem'
+
+    PersonalDataRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '^[A-Za-zÁÉÍÓÚáéíóúÑñüÜ ]+$'
+          example: Valentino
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '^[A-Za-zÁÉÍÓÚáéíóúÑñüÜ ]+$'
+          example: Carmona
+        phone:
+          type: string
+          nullable: true
+          pattern: '^\+?[0-9 -]{8,20}$'
+          example: "+5491123456789"
+
+    EmailChangeRequestDto:
+      type: object
+      required:
+        - newEmail
+      properties:
+        newEmail:
+          type: string
+          format: email
+          example: valentino.new@example.com
+
+    EmailChangeInitiatedResponse:
+      type: object
+      required:
+        - message
+        - pendingEmail
+        - expiresAt
+      properties:
+        message:
+          type: string
+          example: "Verification email sent to new address."
+        pendingEmail:
+          type: string
+          format: email
+          example: valentino.new@example.com
+        expiresAt:
+          type: string
+          format: date-time
+
+    EmailConfirmationRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Raw cryptographic verification token
+          example: "a8f7c9e0d1b2c3d4e5f6a7b8c9d0e1f2"
+
+    EmailConfirmedResponse:
+      type: object
+      required:
+        - message
+        - activeEmail
+      properties:
+        message:
+          type: string
+          example: "Email successfully verified and updated."
+        activeEmail:
+          type: string
+          format: email
+          example: valentino.new@example.com
+
+    DietaryRestrictionItem:
+      type: object
+      required:
+        - code
+        - name
+        - category
+      properties:
+        code:
+          type: string
+          example: "CELIAC"
+        name:
+          type: string
+          example: "Sin TACC / Celíaco"
+        category:
+          type: string
+          enum: [DIETARY_LIFESTYLE, COMMON_ALLERGEN]
+          example: "DIETARY_LIFESTYLE"
+        description:
+          type: string
+          nullable: true
+          example: "Excluye trigo, avena, cebada y centeno."
+
+    DietaryPreferencesRequest:
+      type: object
+      required:
+        - restrictionCodes
+      properties:
+        restrictionCodes:
+          type: array
+          items:
+            type: string
+          example: ["CELIAC", "PEANUTS"]
+
+    EnrichedDishResponse:
+      type: object
+      required:
+        - id
+        - tenantId
+        - name
+        - price
+        - isCompliant
+        - conflictingRestrictions
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Ensalada Mediterránea"
+        description:
+          type: string
+          nullable: true
+          example: "Mix de hojas verdes, tomates cherry, aceitunas y aderezo de oliva."
+        price:
+          type: number
+          format: double
+          example: 8500.00
+        isActive:
+          type: boolean
+          example: true
+        isCompliant:
+          type: boolean
+          description: True if dish complies with all active diner restrictions (strict conjunction); true by default for unauthenticated guests.
+          example: false
+        conflictingRestrictions:
+          type: array
+          description: List of restriction codes violated by the dish. Empty if dish is compliant.
+          items:
+            type: string
+          example: ["DAIRY"]
+
+    CartComplianceRequest:
+      type: object
+      required:
+        - dishIds
+      properties:
+        dishIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    CartComplianceResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItemEvaluation'
+
+    CartItemEvaluation:
+      type: object
+      required:
+        - dishId
+        - isCompliant
+        - conflictingRestrictions
+      properties:
+        dishId:
+          type: string
+          format: uuid
+        isCompliant:
+          type: boolean
+        conflictingRestrictions:
+          type: array
+          items:
+            type: string
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "https://easyeat.com/errors/validation-failed"
+        title:
+          type: string
+          example: "Bad Request"
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: "First name must contain only alphabetic characters."
+        instance:
+          type: string
+          example: "/api/v1/profile/personal-data"
+        invalidParams:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              reason:
+                type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request syntax or malformed parameters (RFC 9457)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Unauthorized:
+      description: Missing, invalid, or expired JWT token (RFC 9457)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    UnprocessableEntity:
+      description: Validation constraint violation (RFC 9457)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'

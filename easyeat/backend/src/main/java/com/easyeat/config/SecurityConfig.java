@@ -68,7 +68,11 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/password-reset/**",
-                                "/api/v1/auth/first-login-password-change"
+                                "/api/v1/auth/first-login-password-change",
+                                "/api/v1/dietary-restrictions",
+                                "/api/v1/profile/email-change/confirm",
+                                "/api/v1/establishments/*/dishes",
+                                "/api/v1/establishments/{tenantId}/dishes"
                         ).permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMINISTRADOR", "ADMIN")

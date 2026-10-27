@@ -34,6 +34,27 @@ vi.mock('@/api/inventoryApi', () => ({
   },
 }));
 
+vi.mock('@/api/profileApi', () => ({
+  profileApi: {
+    getProfile: vi.fn().mockResolvedValue({
+      id: 'diner-1',
+      email: 'comensal@easyeat.com',
+      firstName: 'Mateo',
+      lastName: 'Gómez',
+      phone: '+54 11 4444-5555',
+      role: 'COMENSAL',
+      emailChangePending: false,
+      pendingEmail: null,
+      emailVerificationLastSentAt: null,
+      cooldownSecondsRemaining: 0,
+    }),
+    updatePersonalData: vi.fn(),
+    requestEmailChange: vi.fn(),
+    cancelEmailChange: vi.fn(),
+    confirmEmailChange: vi.fn(),
+  },
+}));
+
 describe('AppRoutes - Counter Workspace Routing (T021, ENC-1.2.1)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -610,6 +631,141 @@ describe('AppRoutes - Feature 004 Routes & RBAC Perimeter (T074, FR-028, FR-030,
       );
 
       expect(await screen.findByText(/mostrador y despacho/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('/perfil and /verificar-email perimeters (T027, COM-1.4.1)', () => {
+    it('renders ProfilePage when authenticated COMENSAL visits /perfil', async () => {
+      vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+        isAuthenticated: true,
+        user: {
+          id: 'diner-1',
+          email: 'comensal@easyeat.com',
+          role: 'COMENSAL',
+          tokenVersion: 1,
+          tenantId: null,
+        },
+        token: 'diner-jwt',
+        setToken: vi.fn(),
+        clearAuth: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/perfil']}>
+          <AppRoutes />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByRole('heading', { name: /mi perfil/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /guardar cambios/i })).toBeInTheDocument();
+    });
+
+    it('redirects /profile alias to /perfil for COMENSAL', async () => {
+      vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+        isAuthenticated: true,
+        user: {
+          id: 'diner-1',
+          email: 'comensal@easyeat.com',
+          role: 'COMENSAL',
+          tokenVersion: 1,
+          tenantId: null,
+        },
+        token: 'diner-jwt',
+        setToken: vi.fn(),
+        clearAuth: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/profile']}>
+          <AppRoutes />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByRole('heading', { name: /mi perfil/i })).toBeInTheDocument();
+    });
+
+    it('blocks non-COMENSAL (e.g. CHEF) from /perfil and redirects to /cocina', async () => {
+      vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+        isAuthenticated: true,
+        user: {
+          id: 'chef-1',
+          email: 'chef@easyeat.com',
+          role: 'CHEF',
+          tenantId: 'tenant-123',
+          tokenVersion: 1,
+        },
+        token: 'chef-jwt',
+        setToken: vi.fn(),
+        clearAuth: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/perfil']}>
+          <AppRoutes />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText(/comandas kds/i)).toBeInTheDocument();
+    });
+
+    it('redirects unauthenticated visitor from /perfil to /login', async () => {
+      vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+        isAuthenticated: false,
+        user: null,
+        token: null,
+        setToken: vi.fn(),
+        clearAuth: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/perfil']}>
+          <AppRoutes />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByRole('button', { name: /ingresar/i })).toBeInTheDocument();
+    });
+
+    it('renders VerifyEmailPage on public /verificar-email route', async () => {
+      vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+        isAuthenticated: false,
+        user: null,
+        token: null,
+        setToken: vi.fn(),
+        clearAuth: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/verificar-email']}>
+          <AppRoutes />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText(/verificación de correo electrónico/i)).toBeInTheDocument();
+    });
+
+    it('redirects /verify-email alias to /verificar-email', async () => {
+      vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+        isAuthenticated: false,
+        user: null,
+        token: null,
+        setToken: vi.fn(),
+        clearAuth: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      render(
+        <MemoryRouter initialEntries={['/verify-email']}>
+          <AppRoutes />
+        </MemoryRouter>
+      );
+
+      expect(await screen.findByText(/verificación de correo electrónico/i)).toBeInTheDocument();
     });
   });
 });

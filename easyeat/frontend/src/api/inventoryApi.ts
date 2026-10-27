@@ -4,6 +4,7 @@ import type {
   CreateIngredientRequest,
   UpdateIngredientRequest,
   IngredientStatus,
+  IngredientBatch,
   StockAdjustmentRequest,
   StockAdjustmentResponse,
   StockAuditEntryResponse,
@@ -40,7 +41,7 @@ export const inventoryApi = {
   },
 
   /**
-   * Transitions ingredient lifecycle status (ACTIVE, DISCONTINUED, ARCHIVED).
+   * Transitions ingredient lifecycle status (ACTIVE, DISCONTINUED).
    */
   async updateStatus(id: string, targetStatus: IngredientStatus): Promise<AdminIngredientDetailResponse> {
     const response = await apiClient.patch<AdminIngredientDetailResponse>(`/admin/ingredients/${id}/status`, {
@@ -50,7 +51,15 @@ export const inventoryApi = {
   },
 
   /**
-   * Applies an Absolute or Relative stock adjustment with mandatory justification note.
+   * Retrieves active batches with available stock (> 0) for an ingredient.
+   */
+  async getBatches(id: string): Promise<IngredientBatch[]> {
+    const response = await apiClient.get<IngredientBatch[]>(`/admin/ingredients/${id}/batches`);
+    return response.data;
+  },
+
+  /**
+   * Applies an Add or Subtract stock adjustment with mandatory justification note.
    */
   async adjustStock(id: string, request: StockAdjustmentRequest): Promise<StockAdjustmentResponse> {
     const response = await apiClient.post<StockAdjustmentResponse>(
@@ -78,4 +87,3 @@ export const inventoryApi = {
     return response.data;
   },
 };
-
