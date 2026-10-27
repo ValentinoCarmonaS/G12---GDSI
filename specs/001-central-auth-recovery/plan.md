@@ -126,6 +126,7 @@ specs/001-central-auth-recovery/
 ```text
 easyeat/backend/
 ├── pom.xml
+├── .env.example                                      ← reference template for SMTP and local environment variables
 └── src/
     ├── main/
     │   ├── java/com/easyeat/
@@ -172,6 +173,7 @@ easyeat/backend/
         │   │   │   └── AuthControllerTest.java       ← MockMvc unit tests, Spring Security Test
         │   │   ├── service/
         │   │   │   ├── AuthServiceTest.java          ← Mockito unit tests
+        │   │   │   ├── EmailServiceTest.java         ← Mockito unit tests, sender resolution and message format
         │   │   │   └── PasswordResetServiceTest.java ← Mockito unit tests, @Transactional verify
         │   │   └── security/
         │   │       ├── JwtServiceTest.java           ← token generation, validation, expiry, tamper
@@ -212,6 +214,47 @@ tests/
 ```
 
 **Structure Decision**: Monorepo layout containing both backend (`easyeat/backend/`) and frontend (`easyeat/frontend/`). Shared TypeScript interfaces mirror backend DTO contracts and OpenAPI specification.
+
+---
+
+## Infrastructure Refactor: Agnostic SMTP Delivery & Configurable Sender (FR-012a–d)
+
+### 1. Architectural Intent
+
+Enable seamless outbound email dispatch across varied operational environments (local development, developer testing, continuous integration, and production deployment) without modifying application code or committing sensitive credentials to git.
+
+### 2. Configuration & Parameter Mapping
+
+In `easyeat/backend/src/main/resources/application-dev.yml`, Spring Mail properties are bound to standard environment variables with zero-configuration fallback to the local Mailpit Docker container:
+
+| Spring Property | Environment Variable | Default Fallback (Mailpit) | Real Relay Example (Gmail) |
+|---|---|---|---|
+| `spring.mail.host` | `SPRING_MAIL_HOST` | `localhost` | `smtp.gmail.com` |
+| `spring.mail.port` | `SPRING_MAIL_PORT` | `1025` | `587` |
+| `spring.mail.username` | `SPRING_MAIL_USERNAME` | *(empty string)* | `user@gmail.com` |
+| `spring.mail.password` | `SPRING_MAIL_PASSWORD` | *(empty string)* | `16-char app password` |
+| `spring.mail.properties.mail.smtp.auth` | `SPRING_MAIL_SMTP_AUTH` | `false` | `true` |
+| `spring.mail.properties.mail.smtp.starttls.enable` | `SPRING_MAIL_STARTTLS_ENABLE` | `false` | `true` |
+| `app.mail.from` | `APP_MAIL_FROM` | `${spring.mail.username:noreply@easyeat.com}` | `EasyEat Support <support@easyeat.com>` |
+
+### 3. Hierarchical Sender Address Resolution
+
+`EmailService.java` resolves its sender address (`From` header) according to the following precedence hierarchy:
+1. Explicit custom sender defined in `app.mail.from` (or `APP_MAIL_FROM` environment variable).
+2. Authenticated relay account defined in `spring.mail.username` (or `SPRING_MAIL_USERNAME`), fulfilling strict relay anti-spoofing policies (e.g., Google SMTP).
+3. Hardcoded fallback `noreply@easyeat.com` when neither property is present or non-blank.
+
+### 4. Reference Environment Template (`.env.example`)
+
+A documented reference file `easyeat/backend/.env.example` is placed in the backend module root. It contains commented profiles for:
+- **Profile A (Default Mock - Mailpit)**: Requires no additional environment variables; connects to Docker Mailpit on `localhost:1025`.
+- **Profile B (Real Relay - Gmail)**: Configures TLS on port 587 with instructions for generating Google App Passwords.
+
+### 5. Testing & Verification Strategy
+
+- **Zero Network Externalities in CI**: Unit tests in `EmailServiceTest.java` mock `JavaMailSender` via Mockito. No outbound sockets or external network dependencies are introduced to build steps.
+- **In-Memory Property Binding Tests**: Validate that `EmailService` resolves `fromEmail` accurately under all fallback tiers (custom `app.mail.from`, `spring.mail.username`, and `noreply@easyeat.com`).
+- **Regression Safety**: Execute `mvn test` across all backend test suites to verify that `PasswordResetServiceTest`, `AuthControllerTest`, and integration tests continue to pass 100%.
 
 ---
 

@@ -38,10 +38,12 @@ const mockAuditEntries: StockAuditEntryResponse[] = [
     ingredientId: 'ing-201',
     userId: 'user-admin-1',
     adminName: 'Administrador Principal',
-    adjustmentMode: 'RELATIVE',
+    adjustmentMode: 'SUBTRACT',
     previousStock: 50.0,
     newStock: 35.0,
     netDelta: -15.0,
+    unitCost: 1200.0,
+    financialLoss: 18000.0,
     justification: 'Merma por descarte de grasa y hueso',
     createdAt: '2026-10-24T12:00:00Z',
   },
@@ -88,6 +90,10 @@ describe('StockAuditModal Component (FR-019)', () => {
     expect(screen.getByText('Merma por descarte de grasa y hueso')).toBeInTheDocument();
     expect(screen.getByText('+50 kg')).toBeInTheDocument();
     expect(screen.getByText('-15 kg')).toBeInTheDocument();
+    expect(screen.getByText('Costo Unit.')).toBeInTheDocument();
+    expect(screen.getByText('Pérdida ($)')).toBeInTheDocument();
+    expect(screen.getByText('$1200.00')).toBeInTheDocument();
+    expect(screen.getByText('-$18000.00')).toBeInTheDocument();
   });
 
   it('displays empty state message when no audit entries exist', async () => {

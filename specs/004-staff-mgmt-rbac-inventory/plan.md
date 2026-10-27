@@ -231,3 +231,38 @@ easyeat/frontend/
 | Immutable `stock_audit_entries` table | Explicit requirement for forensic accounting and untampered inventory trail (FR-019). | Storing only balance in `ingredients`: loses user identity, delta, timestamp, and justification mandated by FR-018. |
 | Tenant filter & context (`ThreadLocal`) | Guarantees queries never expose or alter data from another restaurant establishment. | Manual `tenant_id` parameters in every controller: prone to human error and cross-tenant data leaks. |
 | Dedicated Chef projection DTO | Protects sensitive commercial data (unit purchase costs) per principle of least privilege. | Reusing Administrator DTO: leaks internal financial costs to kitchen clients. |
+
+---
+
+## Inventory Refactor: Batches, Financial Shrinkage & Lifecycle Simplification (Phase 15)
+
+### Architecture and Design Strategy
+
+1. **Persistence & Batch Tracking (`IngredientBatch`)**:
+   - Every stock addition (`ADD`) creates an `ingredient_batches` row storing `initial_quantity`, `remaining_quantity`, `unit_cost`, and acquisition timestamp `created_at`.
+   - The global stock on `Ingredient.current_stock` is maintained as the sum of remaining quantities across active batches.
+   - When recording a subtraction (`SUBTRACT`), the Administrator selects an active batch. The system verifies `remaining_quantity >= subtracted_quantity`, decrements the batch balance, computes `financial_loss = quantity * unit_cost`, and records both batch ID and monetary loss in `StockAuditEntry`.
+   - Pessimistic locking (`SELECT ... FOR UPDATE`) is applied to both the `Ingredient` and the selected `IngredientBatch` within the transaction to prevent concurrent race conditions.
+
+2. **Lifecycle Simplification**:
+   - The terminal `ARCHIVED` status is removed from the database CHECK constraint, backend domain entities, and frontend UI.
+   - The lifecycle is strictly binary and reversible: `ACTIVE` ↔ `DISCONTINUED`.
+   - Discontinuing an ingredient excludes it from the Chef catalog and blocks new stock additions, but permits stock write-offs. Reactivating immediately restores it to active status.
+
+3. **Database Migration (`V6__create_ingredient_batches_and_refactor_lifecycle.sql`)**:
+   - DDL creates `ingredient_batches` table with foreign key to `ingredients(id)`.
+   - Extends `stock_audit_entries` with `batch_id`, `unit_cost`, and `financial_loss`.
+   - Updates `ingredients` status constraint: `CHECK (status IN ('ACTIVE', 'DISCONTINUED'))`.
+
+4. **Component Impact Analysis**:
+   - **Backend**:
+     - `com.easyeat.inventory.entity.IngredientBatch`: JPA entity with constraints.
+     - `com.easyeat.inventory.repository.IngredientBatchRepository`: query methods with `LockModeType.PESSIMISTIC_WRITE`.
+     - `com.easyeat.inventory.service.StockAdjustmentService`: methods for `ADD` (batch creation) and `SUBTRACT` (batch deduction + financial loss).
+     - `com.easyeat.inventory.controller.StockAdjustmentController`: endpoint `GET /api/v1/admin/ingredients/{id}/batches` and updated adjustment handler.
+     - `com.easyeat.inventory.service.IngredientService`: unrestricted status transitions between `ACTIVE` and `DISCONTINUED`.
+   - **Frontend**:
+     - `easyeat/frontend/src/types/inventory.ts`: `IngredientBatch`, `StockAdjustmentAction = 'ADD' | 'SUBTRACT'`, `IngredientStatus = 'ACTIVE' | 'DISCONTINUED'`.
+     - `easyeat/frontend/src/api/inventoryApi.ts`: `getBatches(id)` method.
+     - `easyeat/frontend/src/components/inventory/StockAdjustmentModal.tsx`: separate tabs for "Agregar stock" and "Restar stock (merma)" with batch selector and computed loss.
+     - `easyeat/frontend/src/components/inventory/IngredientCatalogTable.tsx`: replace "Archivar" / "Desarchivar" with "Desactivar" / "Reactivar".

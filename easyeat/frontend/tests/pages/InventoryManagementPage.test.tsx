@@ -42,7 +42,7 @@ const mockIngredients: AdminIngredientDetailResponse[] = [
     category: 'Dairy',
     unitOfMeasure: 'l',
     unitPurchaseCost: 90.0,
-    status: 'ARCHIVED',
+    status: 'DISCONTINUED',
     currentStock: 0,
     createdAt: '2026-10-24T12:00:00Z',
     updatedAt: '2026-10-24T12:00:00Z',
@@ -82,7 +82,8 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
     expect(await screen.findByText('Harina 000')).toBeInTheDocument();
     expect(screen.getByText('Tomates Perita')).toBeInTheDocument();
     expect(screen.getByText('Leche Entera')).toBeInTheDocument();
-    expect(screen.getByText('$150.00')).toBeInTheDocument();
+    expect(screen.getByText('40 kg')).toBeInTheDocument();
+    expect(screen.queryByText(/costo referencia/i)).not.toBeInTheDocument();
   });
 
   it('filters ingredients by name search query', async () => {
@@ -136,7 +137,6 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
     await user.type(screen.getByLabelText(/nombre del ingrediente/i), 'Queso Mozzarella');
     await user.selectOptions(screen.getByLabelText(/^categoría$/i), 'Dairy');
     await user.selectOptions(screen.getByLabelText(/unidad de medida/i), 'kg');
-    await user.type(screen.getByLabelText(/costo unitario/i), '800');
 
     await user.click(screen.getByRole('button', { name: /guardar ingrediente/i }));
 
@@ -145,7 +145,6 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
         name: 'Queso Mozzarella',
         category: 'Dairy',
         unitOfMeasure: 'kg',
-        unitPurchaseCost: 800,
       });
     });
   });
@@ -166,7 +165,7 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
 
     await screen.findByText('Harina 000');
 
-    const discontinueButtons = screen.getAllByRole('button', { name: /discontinuar/i });
+    const discontinueButtons = screen.getAllByRole('button', { name: /desactivar|discontinuar/i });
     await user.click(discontinueButtons[0]);
 
     await waitFor(() => {
@@ -174,7 +173,7 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
     });
   });
 
-  it('disables archive action for ingredients with currentStock > 0 (FR-014)', async () => {
+  it('does not display any archivar buttons in the catalog (FR-014)', async () => {
     vi.mocked(inventoryApi.listIngredients).mockResolvedValueOnce(mockIngredients);
 
     render(
@@ -185,18 +184,15 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
 
     await screen.findByText('Harina 000');
 
-    // Harina 000 has 40.0 stock, so its archive button must be disabled
-    const archiveButtons = screen.getAllByRole('button', { name: /archivar/i });
-    expect(archiveButtons[0]).toBeDisabled();
-    expect(archiveButtons[0]).toHaveAttribute('title', expect.stringMatching(/no se puede archivar con stock/i));
+    expect(screen.queryByRole('button', { name: /archivar/i })).not.toBeInTheDocument();
   });
 
-  it('allows archive action for ingredient with currentStock == 0', async () => {
+  it('allows reactivation of a DISCONTINUED ingredient back to ACTIVE (FR-014)', async () => {
     const user = userEvent.setup();
     vi.mocked(inventoryApi.listIngredients).mockResolvedValue(mockIngredients);
     vi.mocked(inventoryApi.updateStatus).mockResolvedValueOnce({
-      ...mockIngredients[1],
-      status: 'ARCHIVED',
+      ...mockIngredients[2],
+      status: 'ACTIVE',
     });
 
     render(
@@ -205,15 +201,13 @@ describe('InventoryManagementPage Component (FR-010, FR-012, FR-014, FR-031)', (
       </MemoryRouter>
     );
 
-    await screen.findByText('Tomates Perita');
+    await screen.findByText('Leche Entera');
 
-    const archiveButtons = screen.getAllByRole('button', { name: /archivar/i });
-    // Tomates Perita is second row and has 0 stock
-    expect(archiveButtons[1]).not.toBeDisabled();
-    await user.click(archiveButtons[1]);
+    const reactivateButtons = screen.getAllByRole('button', { name: /reactivar/i });
+    await user.click(reactivateButtons[1]);
 
     await waitFor(() => {
-      expect(inventoryApi.updateStatus).toHaveBeenCalledWith('ing-2', 'ARCHIVED');
+      expect(inventoryApi.updateStatus).toHaveBeenCalledWith('ing-3', 'ACTIVE');
     });
   });
 });

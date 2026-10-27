@@ -41,12 +41,10 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
   const [name, setName] = useState('');
   const [category, setCategory] = useState<IngredientCategory>('Produce');
   const [unitOfMeasure, setUnitOfMeasure] = useState<UnitOfMeasure>('kg');
-  const [unitPurchaseCost, setUnitPurchaseCost] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<{
     name?: string;
     category?: string;
     unitOfMeasure?: string;
-    unitPurchaseCost?: string;
   }>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -60,12 +58,10 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
       setName(initialData.name || '');
       setCategory(initialData.category || 'Produce');
       setUnitOfMeasure(initialData.unitOfMeasure || 'kg');
-      setUnitPurchaseCost(initialData.unitPurchaseCost != null ? String(initialData.unitPurchaseCost) : '');
     } else {
       setName('');
       setCategory('Produce');
       setUnitOfMeasure('kg');
-      setUnitPurchaseCost('');
     }
     setFieldErrors({});
     setGeneralError(null);
@@ -78,7 +74,6 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
       name?: string;
       category?: string;
       unitOfMeasure?: string;
-      unitPurchaseCost?: string;
     } = {};
 
     if (!name.trim()) {
@@ -93,11 +88,6 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
 
     if (!unitOfMeasure) {
       errors.unitOfMeasure = 'La unidad de medida es obligatoria';
-    }
-
-    const costNum = parseFloat(unitPurchaseCost);
-    if (!unitPurchaseCost || isNaN(costNum) || costNum <= 0) {
-      errors.unitPurchaseCost = 'El costo unitario debe ser un número positivo mayor a 0';
     }
 
     setFieldErrors(errors);
@@ -117,7 +107,6 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
         name: name.trim(),
         category,
         unitOfMeasure,
-        unitPurchaseCost: parseFloat(unitPurchaseCost),
       });
       onClose();
     } catch (err: unknown) {
@@ -241,33 +230,6 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
               <p className="mt-1 text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
                 🔒 No se puede cambiar la unidad de medida mientras haya stock positivo registrado.
               </p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="ingredient-cost" className="block text-sm font-medium text-gray-700 mb-1">
-              Costo unitario de compra ($)
-            </label>
-            <input
-              id="ingredient-cost"
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={unitPurchaseCost}
-              onChange={(e) => {
-                setUnitPurchaseCost(e.target.value);
-                if (fieldErrors.unitPurchaseCost) setFieldErrors((prev) => ({ ...prev, unitPurchaseCost: undefined }));
-              }}
-              placeholder="0.00"
-              disabled={submitting || isLoading}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
-                fieldErrors.unitPurchaseCost
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-              }`}
-            />
-            {fieldErrors.unitPurchaseCost && (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.unitPurchaseCost}</p>
             )}
           </div>
 

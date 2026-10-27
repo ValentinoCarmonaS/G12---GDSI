@@ -2,24 +2,35 @@ export type IngredientCategory = 'Produce' | 'Meat' | 'Dairy' | 'Dry Goods' | 'S
 
 export type UnitOfMeasure = 'g' | 'kg' | 'ml' | 'l' | 'u';
 
-export type IngredientStatus = 'ACTIVE' | 'DISCONTINUED' | 'ARCHIVED';
+export type IngredientStatus = 'ACTIVE' | 'DISCONTINUED';
 
 export type StockAvailabilityStatus = 'In Stock' | 'Out of Stock';
 
-export type StockAdjustmentMode = 'ABSOLUTE' | 'RELATIVE';
+export type StockAdjustmentAction = 'ADD' | 'SUBTRACT';
+
+export type StockAdjustmentMode = 'ADD' | 'SUBTRACT' | 'ABSOLUTE' | 'RELATIVE';
+
+export interface IngredientBatch {
+  id: string;
+  ingredientId: string;
+  initialQuantity: number;
+  remainingQuantity: number;
+  unitCost: number;
+  createdAt: string;
+}
 
 export interface CreateIngredientRequest {
   name: string;
   category: IngredientCategory;
   unitOfMeasure: UnitOfMeasure;
-  unitPurchaseCost: number;
+  unitPurchaseCost?: number;
 }
 
 export interface UpdateIngredientRequest {
   name: string;
   category: IngredientCategory;
   unitOfMeasure: UnitOfMeasure;
-  unitPurchaseCost: number;
+  unitPurchaseCost?: number;
 }
 
 export interface AdminIngredientDetailResponse {
@@ -40,8 +51,12 @@ export interface IngredientStatusUpdateRequest {
 }
 
 export interface StockAdjustmentRequest {
-  mode: StockAdjustmentMode;
-  value: number;
+  action?: StockAdjustmentAction;
+  mode?: StockAdjustmentMode;
+  quantity?: number;
+  value?: number;
+  unitCost?: number;
+  batchId?: string;
   justification: string;
 }
 
@@ -52,6 +67,9 @@ export interface StockAdjustmentResponse {
   previousStock: number;
   newStock: number;
   netDelta: number;
+  batchId?: string;
+  unitCost?: number;
+  financialLoss?: number;
   auditEntryId: string;
   adjustedAt: string;
 }
@@ -61,10 +79,13 @@ export interface StockAuditEntryResponse {
   ingredientId: string;
   userId: string;
   adminName: string;
-  adjustmentMode: StockAdjustmentMode;
+  adjustmentMode: StockAdjustmentMode | StockAdjustmentAction;
   previousStock: number;
   newStock: number;
   netDelta: number;
+  batchId?: string;
+  unitCost?: number;
+  financialLoss?: number;
   justification: string;
   createdAt: string;
 }
@@ -98,4 +119,3 @@ export interface ChefCatalogParams {
   page?: number;
   size?: number;
 }
-

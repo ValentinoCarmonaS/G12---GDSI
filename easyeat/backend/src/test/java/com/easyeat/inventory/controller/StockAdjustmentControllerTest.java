@@ -199,6 +199,123 @@ class StockAdjustmentControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("GET /api/v1/admin/ingredients/{id}/batches - 200 OK returning active batches")
+    void getActiveBatches_adminRole_success() throws Exception {
+        UUID ingredientId = UUID.randomUUID();
+        UUID batchId = UUID.randomUUID();
+        IngredientBatchResponse batch = new IngredientBatchResponse(
+                batchId,
+                ingredientId,
+                new BigDecimal("5.0000"),
+                new BigDecimal("3.0000"),
+                new BigDecimal("2000.0000"),
+                Instant.now()
+        );
+
+        when(stockAdjustmentService.getActiveBatches(ingredientId)).thenReturn(List.of(batch));
+
+        mockMvc.perform(get("/api/v1/admin/ingredients/{id}/batches", ingredientId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(batchId.toString()))
+                .andExpect(jsonPath("$[0].ingredientId").value(ingredientId.toString()))
+                .andExpect(jsonPath("$[0].remainingQuantity").value(3.0))
+                .andExpect(jsonPath("$[0].unitCost").value(2000.0));
+    }
+
+    @Test
+    @WithMockUser(roles = "CHEF")
+    @DisplayName("GET /api/v1/admin/ingredients/{id}/batches - 403 Forbidden for CHEF")
+    void getActiveBatches_chefRole_forbidden() throws Exception {
+        UUID ingredientId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/v1/admin/ingredients/{id}/batches", ingredientId))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("POST /api/v1/admin/ingredients/{id}/stock-adjustments - 200 OK for ADD with unitCost")
+    void adjustStock_addAction_success() throws Exception {
+        UUID ingredientId = UUID.randomUUID();
+        UUID batchId = UUID.randomUUID();
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.ADD,
+                null,
+                new BigDecimal("5.0000"),
+                null,
+                new BigDecimal("2000.0000"),
+                null,
+                "Restock Delivery #101"
+        );
+
+        StockAdjustmentResponse response = new StockAdjustmentResponse(
+                ingredientId,
+                "Apple",
+                UnitOfMeasure.KG,
+                BigDecimal.ZERO,
+                new BigDecimal("5.0000"),
+                new BigDecimal("5.0000"),
+                batchId,
+                new BigDecimal("2000.0000"),
+                null,
+                UUID.randomUUID(),
+                Instant.now()
+        );
+
+        when(stockAdjustmentService.adjustStock(eq(ingredientId), any(StockAdjustmentRequest.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/admin/ingredients/{id}/stock-adjustments", ingredientId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.newStock").value(5.0))
+                .andExpect(jsonPath("$.batchId").value(batchId.toString()));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("POST /api/v1/admin/ingredients/{id}/stock-adjustments - 200 OK for SUBTRACT with batchId and financialLoss")
+    void adjustStock_subtractAction_success() throws Exception {
+        UUID ingredientId = UUID.randomUUID();
+        UUID batchId = UUID.randomUUID();
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.SUBTRACT,
+                null,
+                new BigDecimal("2.0000"),
+                null,
+                null,
+                batchId,
+                "Waste write-off"
+        );
+
+        StockAdjustmentResponse response = new StockAdjustmentResponse(
+                ingredientId,
+                "Apple",
+                UnitOfMeasure.KG,
+                new BigDecimal("5.0000"),
+                new BigDecimal("3.0000"),
+                new BigDecimal("-2.0000"),
+                batchId,
+                new BigDecimal("2000.0000"),
+                new BigDecimal("4000.0000"),
+                UUID.randomUUID(),
+                Instant.now()
+        );
+
+        when(stockAdjustmentService.adjustStock(eq(ingredientId), any(StockAdjustmentRequest.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/admin/ingredients/{id}/stock-adjustments", ingredientId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.newStock").value(3.0))
+                .andExpect(jsonPath("$.financialLoss").value(4000.0));
+    }
+
+    @Test
     @WithMockUser(roles = "CHEF")
     @DisplayName("GET /api/v1/admin/ingredients/{id}/stock-audit - 403 Forbidden for CHEF")
     void getAuditHistory_chefRole_forbidden() throws Exception {

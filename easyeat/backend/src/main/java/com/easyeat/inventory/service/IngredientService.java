@@ -32,12 +32,14 @@ public class IngredientService {
             throw new DuplicateIngredientNameException("An ingredient with name '" + trimmedName + "' already exists in this tenant.");
         }
 
+        BigDecimal cost = request.unitPurchaseCost() != null ? request.unitPurchaseCost() : BigDecimal.ZERO;
+
         Ingredient ingredient = new Ingredient(
                 tenantId,
                 trimmedName,
                 request.category(),
                 request.unitOfMeasure(),
-                request.unitPurchaseCost()
+                cost
         );
         Ingredient saved = ingredientRepository.save(ingredient);
         return toResponse(saved);
@@ -80,7 +82,9 @@ public class IngredientService {
 
         ingredient.setName(trimmedName);
         ingredient.setCategory(request.category());
-        ingredient.setUnitPurchaseCost(request.unitPurchaseCost());
+        if (request.unitPurchaseCost() != null) {
+            ingredient.setUnitPurchaseCost(request.unitPurchaseCost());
+        }
 
         Ingredient updated = ingredientRepository.save(ingredient);
         return toResponse(updated);
@@ -91,20 +95,7 @@ public class IngredientService {
         Ingredient ingredient = ingredientRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new NoSuchElementException("Ingredient not found with id: " + id));
 
-        IngredientStatus currentStatus = ingredient.getStatus();
         IngredientStatus targetStatus = request.targetStatus();
-
-        if (currentStatus == IngredientStatus.ARCHIVED) {
-            throw new InvalidLifecycleTransitionException("Cannot transition ingredient from ARCHIVED status.");
-        }
-
-        if (targetStatus == IngredientStatus.ARCHIVED) {
-            if (ingredient.getCurrentStock() != null && ingredient.getCurrentStock().compareTo(BigDecimal.ZERO) > 0) {
-                throw new InvalidLifecycleTransitionException(
-                        "Cannot archive ingredient with physical stock greater than zero: " + ingredient.getCurrentStock());
-            }
-        }
-
         ingredient.setStatus(targetStatus);
         Ingredient updated = ingredientRepository.save(ingredient);
         return toResponse(updated);
@@ -115,12 +106,7 @@ public class IngredientService {
         Ingredient ingredient = ingredientRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new NoSuchElementException("Ingredient not found with id: " + id));
 
-        if (ingredient.getCurrentStock() != null && ingredient.getCurrentStock().compareTo(BigDecimal.ZERO) > 0) {
-            throw new InvalidLifecycleTransitionException(
-                    "Cannot archive ingredient with physical stock greater than zero: " + ingredient.getCurrentStock());
-        }
-
-        ingredient.setStatus(IngredientStatus.ARCHIVED);
+        ingredient.setStatus(IngredientStatus.DISCONTINUED);
         ingredientRepository.save(ingredient);
     }
 
