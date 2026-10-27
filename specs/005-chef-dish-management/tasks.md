@@ -14,7 +14,7 @@
 
 - [X] T001 [P] Create base test support fixtures and builders for dishes and tenant in `easyeat/backend/src/test/java/com/easyeat/dish/DishTestFixtures.java`
 - [X] T002 [P] Create base web test support class with security helpers in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishControllerTestBase.java`
-- [ ] T003 [P] Create frontend API mock handlers and server setup for dishes in `easyeat/frontend/tests/mocks/dishHandlers.ts`
+- [X] T003 [P] Create frontend API mock handlers and server setup for dishes in `easyeat/frontend/tests/mocks/dishHandlers.ts`
 - [X] T004 [P] Create domain exceptions (`DishNotFoundException`, `DishLockedException`, `DuplicateDishNameException`, `IncompleteDishException`, `InvalidIngredientException`, `InvalidQuantityException`, `PhotoStorageException`) in `easyeat/backend/src/main/java/com/easyeat/dish/exception/`
 - [X] T005 Update `GlobalExceptionHandler.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` mapping custom dish exceptions to RFC 7807/9457 `ProblemDetail` responses with status codes 400, 404, 409, and 422
 - [X] T006 [P] Create shared TypeScript interfaces and enums for dishes, recipe lines, and notifications in `easyeat/frontend/src/types/dish.ts` and `easyeat/frontend/src/types/notification.ts`
