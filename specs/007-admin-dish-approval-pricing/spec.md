@@ -1,0 +1,229 @@
+# Feature Specification: Administrative Back-Office for Dish Audit, Retail Pricing (PVP) and Catalog Approval
+
+**Feature Branch**: `007-admin-dish-approval-pricing`
+
+**Created**: 25/10/2026
+
+**Status**: Draft
+
+**Input**: User description: "Administrative Back-Office for Dish Audit, Retail Pricing (PVP) and Catalog Approval (Back-Office de Auditoría, Fijación de PVP y Aprobación) del proyecto EasyEat. Sprint 2: Bandeja administrativa de platos pendientes de aprobación (ADM-5.1.1), fijación de margen comercial y precio de venta (ADM-5.2.1), publicación en catálogo activo (ADM-5.2.2) y rechazo con feedback al chef (ADM-5.2.3)."
+
+## Clarifications
+
+### Session 2026-10-25 (Grill-Me & Pre-flight Alignment)
+
+- Q: ¿Cuál es el alcance arquitectónico de la especificación (Principio X)? → A: Vertical slice completo (Full-stack). Cubre tanto la lógica transaccional de backend (bandeja, fijación de precios, compuertas de transición, auditoría, permisos) como la interfaz de usuario del Administrador en el Back-Office (bandeja segmentada, panel de costeo y precio, modal de confirmación de aprobación, diálogo de rechazo obligatorio).
+- Q: ¿Cómo interactúa el cálculo entre margen comercial y precio de venta al público (PVP)? (ADM-5.2.1) → A: Cálculo bidireccional y reactivo. El Administrador puede ingresar un margen objetivo para derivar el PVP, o ingresar un PVP para derivar el margen comercial resultante. Ambos valores se mantienen sincronizados y visibles junto al Food Cost.
+- Q: ¿Qué convención matemática de margen comercial adopta el sistema? (Invariante) → A: Margen sobre precio de venta (*Food Cost Percentage / Margin on Sales*):
+  $$\text{margin\_pct} = \frac{\text{retail\_price} - \text{food\_cost}}{\text{retail\_price}} \times 100$$
+  $$\text{retail\_price} = \frac{\text{food\_cost}}{1 - (\text{margin\_pct} / 100)}$$
+  Permite derivación reversible y consistente con la industria gastronómica.
+- Q: ¿Qué tolerancia de redondeo se define para el round-trip margen $\leftrightarrow$ PVP? → A: Tolerancia máxima de $\pm 0.01$ puntos porcentuales. Al redondear el PVP a 2 decimales y re-derivar el margen, la variación admisible no supera 0.01%.
+- Q: ¿Cómo se articula el ciclo de vida del plato con respecto a la spec 005 (Ficha Técnica del Plato)? → A: La spec 007 consume directamente la entidad y el estado introducidos por spec 005. El Chef transiciona de `DRAFT` a `PENDING_PRICE` al enviar a revisión. La spec 007 introduce las transiciones terminales de esa revisión:
+  - `PENDING_PRICE` $\rightarrow$ `PUBLISHED` (Aprobación explícita con PVP fijado, receta no vacía y alérgenos confirmados).
+  - `PENDING_PRICE` $\rightarrow$ `DRAFT` (Rechazo con comentario obligatorio, desbloqueando la edición al Chef).
+  - Reprecio en estado `PUBLISHED` (actualiza el PVP sin alterar el estado de publicación ni la receta).
+- Q: ¿Qué restricciones aplican a la longitud y formato del comentario de rechazo? (ADM-5.2.3) → A: Texto obligatorio con longitud mínima de 10 caracteres y máxima de 1000 caracteres. Textos vacíos o compuestos únicamente por espacios en blanco son rechazados.
+- Q: ¿Cómo se resuelve la concurrencia entre dos Administradores actuando en simultáneo sobre el mismo plato? (Edge Case) → A: Control de concurrencia optimista (*first-decision-wins*). El primer Administrador que confirma una decisión terminal o cambio de precio persiste exitosamente; el segundo recibe un error de conflicto de estado informando que el plato ya fue modificado.
+- Q: ¿Qué sucede si la cuenta del Chef autor es desactivada mientras el plato está en revisión? (Edge Case) → A: El plato permanece en su estado actual (`PENDING_PRICE` o `PUBLISHED`). El Administrador puede auditarlo, fijarle precio, aprobarlo o rechazarlo sin bloqueos, ya que la desactivación del personal es un evento administrativo que no invalida el artefacto culinario del establecimiento.
+- Q: ¿Cómo se estructura la paginación y orden de la bandeja administrativa? (ADM-5.1.1) → A: Paginación de 20 platos por página con controles de navegación. La pestaña "Pendientes" se ordena por orden de llegada (FIFO: fecha de envío más antigua primero) para priorizar las solicitudes más postergadas.
+
+---
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 — Administrative Inbox of Dishes Pending Review (ADM-5.1.1) (Priority: P1)
+
+**ADM-5.1.1**: Como administrador, quiero ver una bandeja de entrada con todos los platos nuevos que el Chef me mandó a revisar, para no perder el rastro de la nueva oferta que hay que lanzar al público.
+
+The Administrator accesses the Back-Office Dish Review module of their establishment. The interface presents a segmented inbox with three distinct views: "Pendientes" (dishes in `PENDING_PRICE` awaiting review), "Publicados" (dishes currently in `PUBLISHED` status), and "Historial / Rechazados" (dishes returned to draft or review history). The pending view prominently displays the total count of dishes awaiting decision, lists items ordered FIFO (oldest submission first), and paginates results at 20 dishes per page. Each list item summarizes essential identity without requiring opening: dish name, category, submitting Chef, submission timestamp, and an indicator distinguishing initial submissions from resubmissions following a previous rejection. When no dishes are pending, an informative empty state is displayed. Opening any pending entry transitions the Administrator into the detailed audit and pricing view, which renders the itemized recipe composition and dynamic Food Cost audit delivered by `specs/006-recipe-food-cost` (ADM-5.1.2), including declared dietary tags and any unpriced ingredient flags.
+
+**Why this priority**: The review inbox is the single operational entry point for catalog governance. Without it, the Administrator cannot discover or access submitted culinary files, blocking all subsequent pricing and approval workflows.
+
+**Independent Test**: Can be tested by submitting several dish drafts from kitchen accounts, navigating to the Admin Back-Office inbox, verifying segmented views, asserting correct FIFO ordering and counts, and opening a pending dish to verify that the technical composition and cost audit are displayed accurately.
+
+**Acceptance Scenarios**:
+
+1. **Given** dishes in `PENDING_PRICE` status submitted by Chefs in the Administrator's establishment, **When** the Administrator opens the Review Inbox, **Then** the "Pendientes" view lists those dishes ordered by submission timestamp ascending (FIFO), paginated at 20 items per page, and displays the badge with the total pending count.
+2. **Given** a dish submitted for the first time versus a dish resubmitted after a past rejection, **When** rendered in the pending inbox, **Then** the list card clearly identifies whether it is an initial submission or a resubmission with previous review cycles.
+3. **Given** an establishment with zero dishes in `PENDING_PRICE` status, **When** the Administrator views the "Pendientes" tab, **Then** the system renders a friendly, clear empty state indicating that there are no pending reviews, without throwing errors or blank views.
+4. **Given** an Administrator selecting a pending dish from the inbox, **When** the detail panel loads, **Then** the system presents the dish's identity (name, category, description, photo if present), declared dietary/allergen labels, and the itemized Food Cost audit (ingredients, portions, inventory units, acquisition costs, line subtotals, aggregated Food Cost per portion, and unpriced ingredient flags) as provided by spec 006.
+5. **Given** an Administrator navigating between inbox tabs, **When** they select "Publicados", **Then** the view lists all active catalog dishes belonging to the establishment, and when selecting "Historial / Rechazados", it lists dishes that underwent past review cycles.
+6. **Given** an authenticated Chef or non-admin staff member, **When** they attempt to access the Administrative Review Inbox, **Then** access is denied with an authorization error (HTTP 403 Forbidden).
+7. **Given** an Administrator authenticated in Establishment A, **When** they access the inbox, **Then** dishes belonging to Establishment B are strictly excluded from the list and counts.
+
+---
+
+### User Story 2 — Commercial Margin Setting and Retail Price (PVP) Assignment (ADM-5.2.1) (Priority: P1)
+
+**ADM-5.2.1**: Como administrador, quiero ingresarle un precio de venta al público (PVP) al plato antes de publicarlo, para asegurar el margen de ganancia de la empresa.
+
+Within the dish review panel, the Administrator defines the commercial terms for a dish before publication. The interface provides a bidirectional pricing calculator bound to the current Food Cost per portion: the Administrator can type a target commercial margin percentage ($\text{margin\_pct}$) to calculate the recommended retail price (PVP), or directly type a retail price to calculate the resulting commercial margin. Both fields update reactively and display the monetary breakdown alongside the Food Cost. All calculations apply exact fixed-point decimal arithmetic rounded half-up to two decimal places. When saved, the retail price is persisted on the dish, creating an immutable price audit trail recording actor, timestamp, previous price (if any), new price, and prevailing Food Cost. The Administrator can also reprice dishes that are already in `PUBLISHED` status, updating the catalog price without altering recipe ingredients or disrupting catalog visibility. If the Administrator enters a price lower than the Food Cost (negative margin), the system permits the entry but displays an explicit prominent advisory warning before saving.
+
+**Why this priority**: Establishing retail pricing directly enforces the business's commercial sustainability and profitability. Without retail price assignment, the publication gate blocks menu exposure to diners.
+
+**Independent Test**: Can be tested independently on a pending or published dish by inputting a target margin and verifying the computed PVP, inputting a PVP and verifying the derived margin, saving the price, and asserting that the price is persisted and an immutable audit log entry is recorded with exact decimal precision.
+
+**Acceptance Scenarios**:
+
+1. **Given** a dish in review with a known Food Cost (e.g., \$4.00), **When** the Administrator inputs a target margin of 60.00%, **Then** the system computes and displays a retail price of \$10.00 ($4.00 / (1 - 0.60)$) with exact two-decimal precision.
+2. **Given** a dish in review with a known Food Cost (e.g., \$3.50), **When** the Administrator inputs a retail price of \$14.00, **Then** the system computes and displays a commercial margin of 75.00% ($((14.00 - 3.50) / 14.00) \times 100$).
+3. **Given** a calculated retail price, **When** re-deriving the margin from that stored two-decimal price, **Then** the re-derived margin matches the original target margin within $\pm 0.01$ percentage points.
+4. **Given** a dish under review, **When** the Administrator saves a valid positive retail price ($> 0$), **Then** the price is persisted against the dish, an immutable price history record is created, and the dish remains in `PENDING_PRICE` until explicit approval.
+5. **Given** a dish already in `PUBLISHED` status, **When** the Administrator submits an updated retail price, **Then** the new retail price is updated on the dish, the previous and new values are recorded in the price audit trail, and the dish remains published in the catalog with its recipe untouched.
+6. **Given** an Administrator entering a retail price less than the dish's current Food Cost (yielding $\text{margin\_pct} < 0$), **When** they attempt to save, **Then** the system displays an explicit warning stating that the price represents a commercial loss, requiring explicit confirmation before persisting.
+7. **Given** an Administrator entering a retail price of zero, negative, non-numeric, or with more than two decimal places, **When** the save is submitted, **Then** the system rejects the operation with a validation error (HTTP 400 Bad Request).
+8. **Given** an Administrator entering a target margin greater than or equal to 100.00% or less than or equal to -500.00%, **When** entered, **Then** the system blocks the calculation and displays an input boundary advisory.
+9. **Given** a dish whose ingredients have zero acquisition cost ($Food Cost = \$0.00$ due to unpriced ingredients), **When** margin-to-price derivation is attempted, **Then** the system prompts the Administrator to enter the retail price directly and flags the unpriced ingredient advisory.
+
+---
+
+### User Story 3 — Active Catalog Publication and Approval Gate (ADM-5.2.2) (Priority: P1)
+
+**ADM-5.2.2**: Como administrador, quiero tocar un botón para "Aprobar" el plato, para que impacte inmediatamente en el catálogo visible de los comensales.
+
+The Administrator reviews a complete dish in the Back-Office and triggers the "Aprobar y Publicar" action. The system executes a publication gate evaluating three mandatory conditions: (1) a valid retail price ($PVP > 0$) is persisted; (2) the technical recipe has at least one active ingredient line; and (3) allergen and dietary labels are confirmed and resolved. If all conditions are met, the dish transitions atomically from `PENDING_PRICE` to `PUBLISHED`, becoming immediately eligible for diner catalog queries. If any precondition fails, the transition is halted, the dish remains in `PENDING_PRICE`, and the system displays a specific, actionable error message for each unmet condition. If the dish carries unpriced ingredients or a negative commercial margin, the system displays an informational confirmation modal detailing the advisory, but allows the Administrator to confirm publication. Approval is idempotent: attempting to approve a dish that is already `PUBLISHED` results in a no-op success without duplicating catalog entries. Attempting to approve a dish that is in `DRAFT` status fails with a state conflict (HTTP 409 Conflict).
+
+**Why this priority**: This is the terminal delivery gate of the culinary workflow. It guarantees that no food item reaches diner visibility without an authorized, vetted commercial decision and verified allergen safety.
+
+**Independent Test**: Can be tested by taking a dish in `PENDING_PRICE` with price, recipe, and allergens satisfied, tapping "Aprobar", verifying status changes to `PUBLISHED`, and asserting that a diner query recognizes the dish as available. Further tested by attempting to approve without a price, with an empty recipe, or from `DRAFT`, verifying immediate rejection.
+
+**Acceptance Scenarios**:
+
+1. **Given** a dish in `PENDING_PRICE` with a valid retail price, at least one active recipe ingredient, and confirmed dietary tags, **When** the Administrator clicks "Aprobar", **Then** the system transitions the status to `PUBLISHED`, records an approval audit entry, and removes the dish from the pending review inbox.
+2. **Given** a dish in `PENDING_PRICE` that has no retail price assigned ($PVP = \text{null}$ or $0.00$), **When** approval is attempted, **Then** the transition is blocked and an error message informs the Administrator that a retail price must be set prior to approval.
+3. **Given** a dish in `PENDING_PRICE` whose recipe became empty or whose ingredients were all discontinued, **When** approval is attempted, **Then** the transition is blocked with an error requiring at least one active recipe ingredient.
+4. **Given** a dish in `PENDING_PRICE` whose allergen section was never confirmed by kitchen staff, **When** approval is attempted, **Then** the transition is blocked with an error requiring resolved allergen disclosures.
+5. **Given** a dish with unpriced ingredients or a negative commercial margin, **When** the Administrator clicks "Aprobar", **Then** the system presents a confirmation dialog highlighting the advisory (partial food cost or negative margin) and requires an explicit second confirmation to proceed with publication.
+6. **Given** a dish that is currently in `DRAFT` status (not submitted by the Chef), **When** an Administrator attempts to approve it via API or UI, **Then** the system rejects the operation with a state conflict error (HTTP 409 Conflict).
+7. **Given** an Administrator approving an already `PUBLISHED` dish, **When** the action is processed, **Then** the system returns success idempotently without creating duplicate catalog records or corrupting the audit history.
+8. **Given** two Administrators acting simultaneously on the same pending dish (one approving, one rejecting), **When** both requests arrive, **Then** the first processed request succeeds and the second request fails with a state conflict error (HTTP 409 Conflict) due to optimistic locking.
+
+---
+
+### User Story 4 — Rejection with Traceable Feedback to Chef (ADM-5.2.3) (Priority: P2)
+
+**ADM-5.2.3**: Como administrador, quiero rechazar un plato devolviéndolo al Chef con un comentario de texto, para pedirle correcciones (ej: "Ingrediente muy caro, cambialo por otro").
+
+When a dish submitted for review does not meet operational, culinary, or financial criteria, the Administrator selects "Rechazar / Devolver a cocina". The system opens a rejection dialog requiring a mandatory text explanation. The system validates that the comment contains between 10 and 1000 characters and is not composed solely of whitespace. Upon confirmation, the dish transitions atomically from `PENDING_PRICE` back to `DRAFT` status, disappears from the Administrator's pending inbox, and unlocks full editability for the Chef in the kitchen workspace. The rejection event is permanently persisted in the dish's review history, capturing the acting Administrator, timestamp, rejection reason, and sequential review cycle number. When the Chef logs into the kitchen workspace, they can view the rejection feedback for their draft. Under no circumstances does the Chef receive access to acquisition costs, Food Cost calculations, or commercial margins through the rejection feedback channel. Rejecting an already `PUBLISHED` dish is forbidden (HTTP 409 Conflict).
+
+**Why this priority**: Rejection provides the feedback loop necessary for continuous culinary refinement. It allows commercial corrections without destroying the Chef's drafting work, ensuring collaborative governance between kitchen and management.
+
+**Independent Test**: Can be tested by opening a dish in `PENDING_PRICE`, submitting a valid rejection comment, asserting the status changes back to `DRAFT`, verifying the pending inbox excludes it, checking that the Chef can read the feedback note on the draft, and verifying that food costs remain hidden from the Chef.
+
+**Acceptance Scenarios**:
+
+1. **Given** a dish in `PENDING_PRICE`, **When** the Administrator enters a rejection comment of 25 characters and confirms, **Then** the dish status transitions to `DRAFT`, a review history entry is persisted with cycle number, actor, timestamp, and comment, and the dish is removed from the pending inbox.
+2. **Given** a dish transitioned back to `DRAFT` via rejection, **When** a Chef of the establishment opens the draft, **Then** the draft is fully editable and displays the Administrator's rejection feedback in a dedicated advisory banner.
+3. **Given** an Administrator attempting to reject a dish without entering a comment or entering only whitespace, **When** rejection is submitted, **Then** the system rejects the action, keeps the dish in `PENDING_PRICE`, and requires a comment of at least 10 characters.
+4. **Given** an Administrator submitting a rejection comment exceeding 1000 characters, **When** validated, **Then** the system prevents submission and indicates the character limit violation.
+5. **Given** a dish that has undergone multiple rejection and resubmission cycles, **When** the review history is queried by the Administrator, **Then** all past cycles are retrieved in chronological order, showing each rejection note, timestamp, and responsible Administrator.
+6. **Given** a Chef viewing the rejection feedback on their draft, **When** the view renders, **Then** only the text feedback, timestamp, and reviewer name are displayed; no unit acquisition costs, total Food Cost, or target margins are visible.
+7. **Given** a dish that is in `PUBLISHED` status, **When** an Administrator attempts to invoke the rejection action, **Then** the system rejects the operation with HTTP 409 Conflict, as unpublishing a published dish is out of scope.
+
+---
+
+### Edge Cases
+
+- **Approving a dish with no retail price set**: The publication gate aborts the transition and returns an actionable error stating that retail price ($PVP$) is mandatory before approval.
+- **Retail price of zero, negative, non-numeric, or with $>2$ decimal places**: Validation rejects the payload with HTTP 400 Bad Request, enforcing positive two-decimal fixed-point currency values.
+- **Target margin boundaries ($\le 0\%$, $100\%$, or $> 100\%$)**: Target margins $\ge 100\%$ produce mathematically undefined prices ($division\ by\ zero$ or negative prices); the calculator blocks derivation with an error indicator. Target margin of $0\%$ sets $PVP = Food Cost$. Margins $< 0\%$ trigger the negative margin warning dialog.
+- **Retail price below Food Cost (negative margin)**: Permitted commercial decision (loss leader), but triggers an explicit warning modal in the Back-Office requiring confirmation before saving the price or publishing.
+- **Food cost of \$0.00 due to unpriced ingredients**: When all ingredients lack inventory acquisition prices, Food Cost is calculated as \$0.00 with `has_unpriced_ingredients = true`. Direct price entry is required; margin-to-price derivation is disabled with an informational message.
+- **Unpriced ingredient advisory from spec 006**: Dishes carrying the `has_unpriced_ingredients = true` flag display an amber warning badge during audit and require acknowledgment during publication confirmation.
+- **Recipe emptied or ingredients discontinued during review**: If an ingredient is discontinued in inventory after Chef submission, the publication gate re-evaluates recipe validity at approval time and blocks publication if no active ingredients remain or if discontinued items compromise the recipe.
+- **Ingredient acquisition costs change after publication**: Modifying inventory purchase costs dynamically updates the consultable Food Cost and recalculates the prevailing margin in real time without mutating the stored retail price.
+- **Chef attempts to edit dish while in review**: Dishes in `PENDING_PRICE` status are strictly locked against Chef edits per spec 005 (HTTP 409 Conflict); the Chef cannot alter ingredients or labels while under Administrator review.
+- **Concurrent Administrators acting on the same dish**: Governed by optimistic locking (`version` field). If Admin 1 approves and Admin 2 simultaneously rejects, the first transaction commits and the second fails with HTTP 409 Conflict.
+- **Rejection comment boundary conditions**: Comments $< 10$ characters, $> 1000$ characters, or consisting purely of whitespace/tabs/newlines are rejected. HTML/script tags are sanitized and treated as literal text.
+- **Repeated rejection and resubmission cycles**: The system increments the `cycle_number` monotonically ($1, 2, 3 \dots$) and appends immutable audit records, preserving full historical dialogue across multiple review rounds.
+- **Approving an already published dish**: Evaluates idempotently, returning HTTP 200 OK without re-triggering notifications or corrupting audit trails.
+- **Rejecting an already published dish**: Rejected with HTTP 409 Conflict; catalog withdrawal is out of scope for this iteration.
+- **Requesting inbox page beyond total pages**: Returns an empty data list with accurate pagination metadata (current page, total elements, total pages) without throwing exceptions.
+- **Cross-tenant access attempts**: An Administrator attempting to query, audit, price, approve, or reject dishes from another establishment receives HTTP 403 Forbidden or HTTP 404 Not Found without disclosing target data.
+- **Author Chef account deactivated**: If the Chef who authored the draft is deactivated in staff management, the dish remains in `PENDING_PRICE` or `PUBLISHED` and the Administrator can continue auditing, pricing, approving, or rejecting it normally.
+
+---
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001**: The system MUST enforce strict multi-tenant isolation and role-based access control: all review inbox, cost audit, pricing, approval, and rejection operations MUST be restricted exclusively to authenticated users with the Administrator (`ADMIN`) role within their own establishment. Non-admin roles (including `CHEF` and `COUNTER`) and cross-tenant requests MUST be rejected (HTTP 403 Forbidden).
+- **FR-002**: The system MUST provide an Administrative Review Inbox segmented into three distinct views:
+  1. "Pendientes": dishes belonging to the establishment in `PENDING_PRICE` status;
+  2. "Publicados": dishes belonging to the establishment in `PUBLISHED` status;
+  3. "Historial / Rechazados": dishes that have undergone rejection review cycles or historical reviews.
+- **FR-003**: The "Pendientes" inbox view MUST display the total count badge of dishes awaiting decision, order items in FIFO sequence (submission timestamp ascending, oldest first), and paginate results with a default page size of 20 items per page with navigation controls.
+- **FR-004**: Each dish entry in the review inbox list MUST display: dish ID, name, category, author Chef name, submission timestamp, current review status, and an indicator distinguishing initial submissions from resubmissions following a past rejection.
+- **FR-005**: If no dishes match the criteria of an inbox view, the system MUST render an informative empty state instead of a blank page or error.
+- **FR-006**: Opening an inbox entry MUST present the complete culinary file and the itemized Food Cost audit delivered by `specs/006-recipe-food-cost` (ADM-5.1.2): ingredient names, portion quantities, inventory units, unit acquisition costs, line subtotals, aggregated Food Cost per portion, declared dietary/allergen restriction codes, and `has_unpriced_ingredients` warning flags.
+- **FR-007**: The system MUST provide bidirectional reactive pricing calculation between commercial margin percentage and retail price ($PVP$):
+  $$\text{margin\_pct} = \frac{\text{retail\_price} - \text{food\_cost}}{\text{retail\_price}} \times 100$$
+  $$\text{retail\_price} = \frac{\text{food\_cost}}{1 - (\text{margin\_pct} / 100)}$$
+  Entering a target margin MUST derive the retail price, and entering a retail price MUST derive the commercial margin.
+- **FR-008**: All retail price and Food Cost calculations MUST use exact fixed-point decimal arithmetic (`java.math.BigDecimal` with `RoundingMode.HALF_UP` rounded to 2 decimal places). Deriving a retail price from a margin and immediately re-deriving the margin from that rounded price MUST yield the original margin within a tolerance of $\pm 0.01$ percentage points.
+- **FR-009**: The system MUST persist the assigned retail price ($PVP$) on the dish. Saving a retail price MUST be permitted on dishes in `PENDING_PRICE` status as well as on dishes already in `PUBLISHED` status.
+- **FR-010**: Every modification to a dish's retail price MUST record an immutable entry in the price history audit log capturing: dish reference, acting Administrator, timestamp, previous price, new price, and the current Food Cost at the time of change.
+- **FR-011**: Repricing a dish in `PUBLISHED` status MUST update its catalog sale price immediately without altering its `PUBLISHED` status, without modifying its recipe composition, and without removing it from active diner menus.
+- **FR-012**: The system MUST recompute displayed commercial margins dynamically upon consultation using the current Food Cost derived from up-to-date inventory acquisition costs. A persisted retail price MUST NOT freeze or cache the commercial margin.
+- **FR-013**: The system MUST validate that any persisted retail price is strictly greater than zero ($PVP > 0$) and has at most two decimal places. Prices $\le 0$, non-numeric, or with excess precision MUST be rejected with HTTP 400 Bad Request.
+- **FR-014**: If the Administrator inputs a retail price below the current Food Cost (yielding a negative margin), the system MUST permit the value but MUST require confirmation through an explicit warning modal before persisting.
+- **FR-015**: The system MUST enforce the Publication Gate invariant upon triggering the approval action ("Aprobar"). Publication MUST be blocked unless ALL of the following hold at the moment of evaluation:
+  1. A valid retail price is set on the dish ($PVP > 0$);
+  2. The dish has an active recipe with at least one active ingredient line ($recipe\_items \ge 1$);
+  3. The dish's allergen section has been confirmed and resolved.
+  Failure of any condition MUST block the transition with an actionable error identifying the specific missing condition.
+- **FR-016**: When all publication gate conditions are satisfied, the approval action MUST transition the dish status atomically from `PENDING_PRICE` to `PUBLISHED`, making it eligible for diner catalog visibility without intermediate steps.
+- **FR-017**: If a dish undergoing approval carries unpriced ingredients (`has_unpriced_ingredients = true`) or a negative commercial margin, the system MUST require an explicit acknowledgment from the Administrator in a confirmation dialog prior to executing the transition.
+- **FR-018**: Approval MUST be idempotent: attempting to approve a dish that is already in `PUBLISHED` status MUST return success (HTTP 200 OK) without creating duplicate catalog records or corrupting audit trails.
+- **FR-019**: Attempting to approve or reject a dish that is in `DRAFT` status MUST be rejected with a state conflict error (HTTP 409 Conflict).
+- **FR-020**: The rejection action ("Rechazar") MUST transition the dish status atomically from `PENDING_PRICE` to `DRAFT`, unlock full editability of the draft for kitchen staff, and remove the dish from the pending review inbox.
+- **FR-021**: Rejection MUST require a mandatory textual feedback comment with a minimum length of 10 characters and a maximum length of 1000 characters. Comments that are empty, null, or composed entirely of whitespace MUST be rejected with HTTP 400 Bad Request, leaving the dish in `PENDING_PRICE`.
+- **FR-022**: Every rejection event MUST be persisted in an immutable dish review history audit trail, recording: dish reference, acting Administrator, timestamp, rejection reason, and sequential review cycle number (`cycle_number`, incremented from 1).
+- **FR-023**: The system MUST allow Chefs to consult the rejection feedback and history for dishes belonging to their establishment. Rejection feedback surfaces MUST strictly omit unit acquisition costs, Food Cost subtotals, target margins, and retail pricing history to preserve financial confidentiality.
+- **FR-024**: Rejecting a dish that is in `PUBLISHED` status MUST be blocked with a state conflict error (HTTP 409 Conflict). Catalog unpublishing or discontinuation is outside the scope of this feature.
+- **FR-025**: The system MUST enforce optimistic concurrency control on dish approval, rejection, and pricing operations using an entity version attribute. If two administrators attempt conflicting operations simultaneously, the first committed operation succeeds and subsequent operations fail with HTTP 409 Conflict.
+- **FR-026**: Deactivation of a Chef's staff account MUST NOT invalidate, block, or delete dishes in `PENDING_PRICE` or `PUBLISHED` status authored by that Chef. Administrators MUST retain full authority to audit, price, approve, or reject such dishes.
+
+---
+
+### Key Entities
+
+- **Dish (Plato / Ficha Técnica)**: Represents the culinary menu item authored by kitchen staff (`dishes`), holding identity, `category`, `status`, optional description, optional photo reference, allergen confirmation flag, and retail price (`retail_price` / $PVP$, numeric 10,2). Extended in this specification with `version` for optimistic locking and `published_at` timestamp.
+- **DishStatus (Extended State Machine)**:
+  - `DRAFT` (Borrador): Initial state authored by Chef (spec 005). Chef can edit and delete.
+  - `PENDING_PRICE` (Pendiente de Precio / En Revisión): Submission state (spec 005). Locked to Chef edits. Awaiting Administrator audit, pricing, and decision.
+  - `PUBLISHED` (Publicado): Approved state introduced by spec 007. Visible to diners in catalog. Recipe locked; retail price re-editable by Administrator with audit.
+- **DishReviewHistory (Historial de Revisiones / Auditoría de Decisiones)**: Immutable record of an administrative review event (`dish_review_history`). Attributes: unique identifier, dish reference, review cycle number (`cycle_number`), acting Administrator identifier, event type (`REJECTED`, `APPROVED`), mandatory feedback comment (for rejections), and creation timestamp.
+- **DishPriceHistory (Historial de Precios / Auditoría de PVP)**: Immutable audit trace of retail price changes (`dish_price_history`). Attributes: unique identifier, dish reference, acting Administrator identifier, previous price, new price, prevailing Food Cost snapshot, and creation timestamp.
+
+---
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: 100% of dishes visible to diners in the active catalog carry an explicit Administrator approval record, a positive retail price ($PVP > 0$), a non-empty active recipe, and resolved allergen tags. Zero dishes reach diner visibility without passing the publication gate.
+- **SC-002**: Zero fractional-cent drift between derived retail prices and re-derived commercial margins, adhering to a round-trip tolerance within $\pm 0.01$ percentage points.
+- **SC-003**: 100% of review inbox, cost audit, pricing, approval, and rejection requests initiated by non-Administrator roles or across establishment boundaries are denied (HTTP 403 Forbidden).
+- **SC-004**: 100% of dish rejections record an immutable review history entry containing a non-empty feedback note (10 to 1000 characters), valid Administrator attribution, and an incremented cycle number.
+- **SC-005**: 100% of historical review cycles and price changes remain reconstructible and consultable in chronological order for auditability.
+- **SC-006**: The Administrator perceives the review inbox and the detailed dish audit/pricing panel load within 2 seconds under standard broadband operating conditions.
+- **SC-007**: At least 95% of dishes awaiting review receive a definitive terminal decision (published or returned to kitchen) in a single continuous pass without requiring the Administrator to consult external artifacts or spreadsheets.
+- **SC-008**: 100% of retail price modifications (whether on pending or already published dishes) generate an immutable audit log entry capturing actor, previous price, new price, and timestamp.
+
+---
+
+## Assumptions
+
+- **Precondition — Spec 005 (Chef Dish Management)**: Assumes dishes arrive in `PENDING_PRICE` status via the Chef's "Send for Review" action with basic identity, allergen confirmation flag, and locked against Chef editing. Spec 007 consumes this state machine and extends it to `PUBLISHED` upon approval or back to `DRAFT` upon rejection.
+- **Precondition — Spec 006 (Recipe Food Cost Engine)**: Assumes dynamic Food Cost calculation and itemized cost audits are provided by the engine defined in `specs/006-recipe-food-cost` (ADM-5.1.2) via `dish_recipe_ingredients` and inventory acquisition costs. Spec 007 consumes the cost audit and does not re-specify or duplicate the calculation logic.
+- **Precondition — Spec 004 (Staff Management & RBAC)**: Assumes establishment multi-tenancy and the `ADMIN` role are enforced by the platform authentication and authorization infrastructure established in `specs/004-staff-mgmt-rbac-inventory` and `specs/002-staff-auth-redirect-guards`.
+- **Precondition — Spec 003 (Diner Profile & Dietary Restrictions)**: Assumes diner-facing catalog filters rely on the dietary and allergen codes confirmed during dish authoring. Spec 007 enforces that these labels are confirmed prior to publication.
+- **Scope Boundary — Internal Chef Alert (CHF-2.2.4)**: The notification alerting the Administrator when a Chef submits a dish belongs to spec 005. Spec 007 guarantees consultability via the review inbox and badge counter.
+- **Scope Boundary — Catalog Unpublishing / Pause**: Disabling or pausing a published dish by the Chef (CHF-2.2.5) belongs to Sprint 3. Administrative withdrawal or unpublishing is out of scope for this iteration; rejection applies strictly to dishes in `PENDING_PRICE`.
+- **Scope Boundary — Commercial Promotions**: Dynamic discounts, happy hour pricing, and "Plato del Día" (ADM-5.3.1, ADM-5.3.2) belong to subsequent activities and are not modeled here.
+- **Scope Boundary — Taxation & Multi-Currency**: All monetary operations assume the establishment's single operating currency without VAT or tax breakdown. Multi-currency and tax configurations are out of scope.
+- **Zero [NEEDS CLARIFICATION] Markers**: All operational, mathematical, and architectural decisions have been resolved via codebase analysis, spec alignment, and the grill-me interview.
+
