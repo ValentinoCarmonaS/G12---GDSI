@@ -35,5 +35,5 @@
 - Mandatory authentication with DINER role verified and covered by FR-027 and SC-011 (401 Unauthorized, zero data exposure to unauthenticated clients).
 - Shopping cart, ordering, and direct QR/deep-link access are explicitly out of scope for this spec.
 - Operating hours model noted as assumption: if not yet modeled, planning phase will address it as a lightweight data extension.
-- Dish ACTIVE/PUBLISHED state documented as dependency on prior specs (005/006/007).
+- Dish PUBLISHED state documented as dependency on prior specs (005/006/007).
 - Real-time update mechanism intentionally left to planning phase (polling vs SSE vs WebSocket).

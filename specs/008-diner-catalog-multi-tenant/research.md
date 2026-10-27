@@ -46,8 +46,10 @@ Implement a lightweight conditional polling mechanism on `GET /api/v1/establishm
 
 ### Decision
 Compute dish availability dynamically on the backend using the formula:
-$$\text{Available}(d) \iff \text{Status}(d) = \text{ACTIVE} \land \text{IsOpen}(e) \land \forall (i, q) \in \text{Recipe}(d): \text{Stock}(i) \ge q$$
-- If a dish has zero recipe lines, it is automatically marked as unavailable (`false`) per FR-019.
+$$\text{Available}(d) \iff \text{Status}(d) = \text{PUBLISHED} \land \text{IsActive}(d) \land \text{IsOpen}(e) \land \forall (i, q) \in \text{Recipe}(d): \text{Stock}(i) \ge q$$
+- The dish lifecycle state `PUBLISHED` is consumed from spec 007; dishes in `DRAFT` or `PENDING_PRICE` are completely excluded.
+- Retail price is sourced from `retail_price` (PVP assigned in spec 007) with fallback to `price` for legacy records.
+- If a dish has zero recipe lines in `dish_recipe_ingredients` (owned by spec 005), it is automatically marked as unavailable (`false`) per FR-019.
 - The calculation executes as an efficient projection join between `dishes`, `dish_recipe_ingredients`, and `ingredients`.
 - Internal kitchen ingredient stock quantities and numeric portion counts are strictly omitted from the diner response; only a binary boolean flag is exposed per dish (FR-014).
 
@@ -80,32 +82,43 @@ The establishment state and formatted schedule notice (e.g., `"Abre hoy a las 11
 
 ---
 
-## 5. Security & Mandatory Authentication Architecture
+## 5. Security & Endpoint Evolution Architecture
 
 ### Decision
-Enforce authentication with `ROLE_COMENSAL` (or `ROLE_DINER`) on all establishment discovery and catalog viewing endpoints (`/api/v1/establishments/**`).
-- Update Spring Security `SecurityConfig.java` to remove `permitAll()` on `/api/v1/establishments/*/dishes` and require `.hasRole("COMENSAL")`.
-- Configure `SecurityFilterChain` exception handling to return HTTP 401 with standard `ProblemDetail` (RFC 7807) for unauthenticated access attempts, with zero data exposure (FR-027, SC-011).
-- In the frontend, protect `/descubrimiento` and `/catalogo` routes using `RoleRouteGuard allowedRoles={['COMENSAL']}`, redirecting unauthenticated users to `/login`.
+1. **Mandatory Diner Authentication**:
+   - Enforce authentication with `ROLE_COMENSAL` on establishment discovery (`/api/v1/establishments/search`), the full categorized catalog (`/api/v1/establishments/{tenantId}/catalog`), and real-time availability polling (`/api/v1/establishments/{tenantId}/catalog/availability`).
+   - Unauthenticated requests return HTTP 401 with standard `ProblemDetail` (RFC 7807) and zero data exposure (FR-027, SC-011).
+   - In the frontend, protect `/descubrimiento` and `/catalogo` routes using `RoleRouteGuard allowedRoles={['COMENSAL']}`, redirecting unauthenticated users to `/login`.
+2. **Backward Compatibility with Spec 003**:
+   - `DinerCatalogService` consolidates catalog assembly and reuses `CatalogComplianceService` to evaluate dietary lifestyle codes and allergen conflicts (`isCompliant`, `conflictingRestrictions`) on each dish.
+   - The legacy endpoint `GET /api/v1/establishments/{tenantId}/dishes` is preserved with `@Deprecated`, delegating internally to the consolidated service so that prior integration tests for spec 003 continue to pass without regression.
 
 ### Rationale
 - **Specification Compliance**: Fully aligns with approved spec clarifications and FR-027 / SC-011.
 - **Data Protection**: Zero establishment, category, dish, recipe, or inventory data is leaked to anonymous clients.
-
-### Alternatives Considered
-- **Guest / Public Browsing**: Rejected by human stakeholder in clarification session; authentication is mandatory.
+- **Non-destructive Evolution**: Prevents regressions in existing spec 003 tests while introducing the rich, categorized, stock-aware catalog API.
 
 ---
 
-## 6. Database Migration Strategy (`V7__create_establishments_and_dish_catalog.sql`)
+## 6. Database Migration Strategy (`V7__create_establishments.sql`)
 
 ### Decision
-Implement Flyway migration `V7__create_establishments_and_dish_catalog.sql` following immediately after `V5__extend_users_profile_and_dietary.sql`:
-1. Create `establishments` table with UUID primary key, name, status, operating hours, and timezone.
-2. Extend existing `dishes` table with `category` (closed enum check), `photo_url`, and `status` (`DRAFT`, `PENDING_PRICE`, `ACTIVE`, `DECOMMISSIONED`).
-3. Create `dish_recipe_ingredients` table `(dish_id, ingredient_id, quantity)` in 3NF referencing `dishes(id)` and `ingredients(id)`.
-4. Index foreign keys and search columns (`idx_establishments_active_name`, `idx_dishes_tenant_catalog`, `idx_dri_dish`, `idx_dri_ingredient`).
+Implement Flyway migration `V7__create_establishments.sql` (renumbered to the next sequential integer if higher migrations are present upon merge):
+1. Create `establishments` table with UUID primary key (`id`), commercial `name`, `status` (`'ACTIVE'`, `'PAUSED'`, `'DISABLED'`), `opening_time`, `closing_time`, and `timezone`.
+2. Create index on `(status, LOWER(name))` for fast diacritic-insensitive autocomplete queries.
+3. Seed default active and paused establishments for local development and automated integration tests.
+4. Spec 008 explicitly **does not** touch `dishes` (owned by specs 005 and 007) and **does not** create `dish_recipe_ingredients` (owned by spec 005).
 
 ### Rationale
-- **Version Cleanliness**: `V7` respects the planned `V6__chef_dish_management.sql` from spec 005 and leaves `V8` open for subsequent iterations.
-- **3NF Relational Integrity**: Connects existing inventory supplies from migration `V4` to dishes from migration `V5` without redundant data.
+- **Single Ownership Principle**: Tables and columns are owned by the feature that introduces them. Spec 008 avoids duplicate DDL that would conflict with spec 005's technical file migration or spec 007's PVP migration.
+- **Decoupled Delivery**: Spec 008's database migration can run independently without depending on culinary table DDL.
+
+---
+
+## 7. Culinary Asset Consumption (Photos, Recipes, PVP)
+
+### Decision
+- **Photos**: Served via `GET /api/v1/dishes/{dishId}/photo` (byte stream from `dish_photos` table per spec 005). The catalog DTO provides the photo URL or null; frontend uses the lightweight SVG placeholder fallback if absent or upon load error.
+- **Recipe Ingredients**: Looked up from `dish_recipe_ingredients` (spec 005) joined with `ingredients` (spec 004). Exposed as a list of ingredient names in `DishCatalogItem.recipeIngredients` for detail modal display and in-menu search.
+- **Retail Price**: Mapped from `dishes.retail_price` (spec 007), falling back to legacy `dishes.price` if null.
+

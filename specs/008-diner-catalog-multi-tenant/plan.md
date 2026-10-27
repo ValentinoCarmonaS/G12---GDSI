@@ -52,12 +52,12 @@ Shopping cart, checkout, order creation, and direct QR/deep-link access are expl
 | **III. Layered Verification Proportional to Risk** | **PASS** | Comprehensive testing strategy defined in `quickstart.md`: unit tests for availability calculation, MockMvc security and contract tests (401 on unauthenticated, 403 on paused), Testcontainers integration tests for multi-tenant isolation and stock updates, Vitest component tests for autocomplete, sticky nav, detail modal, and search. |
 | **IV. Simple, Cohesive, and Justified Design** | **PASS** | Applied lightweight conditional polling with standard HTTP ETags (`304 Not Modified`) rather than complex stateful WebSockets. Third normal form (3NF) relational schema for recipe lines. No unnecessary abstractions. |
 | **V. Bounded Scope** | **PASS** | Confined strictly to establishment discovery, live categorized menu browsing, and real-time stock-based availability. Shopping cart and checkout are completely omitted in compliance with user agreements. |
-| **VI. Controlled Technical Debt** | **PASS** | Clean Flyway migration `V7__create_establishments_and_dish_catalog.sql` sequential after `V5`, avoiding collisions with planned `V6` from spec 005. |
+| **VI. Controlled Technical Debt** | **PASS** | Clean Flyway migration `V7__create_establishments.sql` (renumbered sequentially upon integration), creating exclusively `establishments` and seed data without touching culinary tables owned by 005/007. |
 | **VII. Traceability & Documentation** | **PASS** | Explicit bidirectional traceability between requirements, data model entities, OpenAPI endpoints, and quickstart scenarios. |
-| **VIII. Evidence Over Assumption & Escalation** | **PASS** | All key architectural questions (navigation structure, real-time polling payload, timezone evaluation, migration numbering) interviewed and resolved via human escalation (`grill-me`). |
+| **VIII. Evidence Over Assumption & Escalation** | **PASS** | All key architectural questions (status machine alignment, PVP retail price, dish photo consumption, dietary compliance, migration scope) interviewed and agreed in grill-me session. |
 | **IX. Engineering Over Convenience** | **PASS** | Strict RFC 7807 ProblemDetail for security errors, robust diacritic normalization, timezone-aware server-side operating hours evaluation. |
 | **X. Full-Stack End-to-End Integrity (Vertical Slices)** | **PASS** | Delivers complete vertical slice: database DDL (`V7`), JPA entities and repositories, REST controllers and security configuration, and React frontend pages (`/descubrimiento`, `/catalogo`), components, hooks, and route guards. |
-| **XI. Continuous Upstream Synchronization Awareness** | **PASS** | Upstream check executed (`git fetch origin main`), detected 12 commits behind `origin/main`, and prominent advisory delivered to user. |
+| **XI. Continuous Upstream Synchronization Awareness** | **PASS** | Synchronized with `develop/sprint-2`, fully coordinated with specs 003, 004, 005, 006, and 007. |
 
 ---
 
@@ -67,7 +67,7 @@ Shopping cart, checkout, order creation, and direct QR/deep-link access are expl
 
 ```text
 specs/008-diner-catalog-multi-tenant/
-├── spec.md              # Functional specification
+├── spec.md              # Functional specification (aligned with specs 005, 006 & 007)
 ├── checklists/
 │   └── requirements.md  # Specification quality checklist
 ├── plan.md              # This technical implementation plan
@@ -92,39 +92,33 @@ easyeat/
 │   │   │   │   │   │   ├── EstablishmentDiscoveryController.java  # GET /api/v1/establishments/search
 │   │   │   │   │   │   └── DinerCatalogController.java            # GET /api/v1/establishments/{id}/catalog & availability
 │   │   │   │   │   ├── domain/
-│   │   │   │   │   │   ├── Establishment.java                     # Entity for restaurant & operating hours
+│   │   │   │   │   │   ├── Establishment.java                     # Entity for restaurant & operating hours (owned by 008)
 │   │   │   │   │   │   ├── EstablishmentStatus.java               # Enum: ACTIVE, PAUSED, DISABLED
-│   │   │   │   │   │   ├── Dish.java                              # Extended with category, photoUrl, status
-│   │   │   │   │   │   ├── DishStatus.java                        # Enum: DRAFT, PENDING_PRICE, ACTIVE, DECOMMISSIONED
-│   │   │   │   │   │   ├── GastronomicCategory.java               # Enum: Entradas, Platos principales, Postres, Bebidas, Ensaladas
-│   │   │   │   │   │   ├── DishRecipeIngredient.java              # 3NF join entity (dish_id, ingredient_id, quantity)
-│   │   │   │   │   │   └── DishRecipeIngredientId.java            # Composite PK
+│   │   │   │   │   │   └── GastronomicCategory.java               # Closed categories (spec 005)
 │   │   │   │   │   ├── dto/
 │   │   │   │   │   │   ├── EstablishmentSummaryResponse.java      # Autocomplete result DTO
 │   │   │   │   │   │   ├── DinerCatalogResponse.java              # Full categorized menu DTO
-│   │   │   │   │   │   ├── DishCatalogItemDto.java                # Dish card item DTO with availability flag
+│   │   │   │   │   │   ├── DishCatalogItemDto.java                # Dish card item DTO with availability & dietary flags
 │   │   │   │   │   │   ├── CategoryGroupDto.java                  # Category section DTO
 │   │   │   │   │   │   └── AvailabilityMapResponse.java           # Map of dishId to boolean with ETag
 │   │   │   │   │   ├── repository/
-│   │   │   │   │   │   ├── EstablishmentRepository.java           # JPA repo with unaccent/ILIKE search
-│   │   │   │   │   │   ├── DishRepository.java                    # Extended for active dishes and category filtering
-│   │   │   │   │   │   └── DishRecipeIngredientRepository.java    # Recipe lines lookup
+│   │   │   │   │   │   └── EstablishmentRepository.java           # JPA repo with unaccent/ILIKE search
 │   │   │   │   │   └── service/
 │   │   │   │   │       ├── EstablishmentDiscoveryService.java     # Autocomplete business logic
-│   │   │   │   │       ├── DinerCatalogService.java               # Menu assembly and read-only schedule checks
+│   │   │   │   │       ├── DinerCatalogService.java               # Menu assembly, schedule checks & dietary compliance
 │   │   │   │   │       └── DishAvailabilityEngine.java            # Dynamic stock evaluation & ETag hashing
 │   │   │   │   └── config/
 │   │   │   │       └── SecurityConfig.java                        # Updated for /api/v1/establishments/** hasRole('COMENSAL')
 │   │   │   └── resources/
 │   │   │       └── db/migration/
-│   │   │           └── V7__create_establishments_and_dish_catalog.sql # Flyway DDL
+│   │   │           └── V7__create_establishments.sql                  # Flyway DDL (establishments & seeds)
 │   │   └── test/java/com/easyeat/catalog/
 │   │       ├── controller/
 │   │       │   ├── EstablishmentDiscoveryControllerTest.java     # Autocomplete MockMvc tests
 │   │       │   └── DinerCatalogControllerTest.java                # Catalog & Availability MockMvc tests
 │   │       ├── service/
 │   │       │   ├── DishAvailabilityEngineTest.java                # Unit tests for stock formula & edge cases
-│   │       │   └── DinerCatalogServiceTest.java                   # Category grouping, decommissioned hiding
+│   │       │   └── DinerCatalogServiceTest.java                   # Category grouping, status filtering & compliance
 │   │       └── integration/
 │   │           └── DinerCatalogIntegrationTest.java               # Full vertical slice with Testcontainers
 │   └── pom.xml

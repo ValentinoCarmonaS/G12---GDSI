@@ -23,25 +23,31 @@ Represents a physical restaurant location with its operational status and operat
 | `created_at` | TIMESTAMPTZ | No | Timestamp of creation (`NOW()`). Immutable. |
 | `updated_at` | TIMESTAMPTZ | No | Timestamp of last modification (`NOW()`). |
 
-### 1.2. Dish (`Dish`)
-Represents a culinary item available in the establishment's menu.
+### 1.2. Dish (`Dish` - Consumed from Spec 005 / Spec 007 / Migration V5)
+Represents a culinary item available in the establishment's menu. Owned by spec 005 and extended by spec 007; consumed by spec 008 for catalog rendering.
 
 | Attribute | Data Type | Nullable | Constraints & Rules |
 |---|---|---|---|
 | `id` | UUID | No | Primary key (`gen_random_uuid()`). |
 | `tenant_id` | UUID | No | References `establishments(id)`. Strict multi-tenant isolation. |
-| `name` | VARCHAR(150) | No | Dish name. Matching target for in-catalog search. |
-| `category` | VARCHAR(50) | No | Closed gastronomic category: `'Entradas'`, `'Platos principales'`, `'Postres'`, `'Bebidas'`, `'Ensaladas'`. |
+| `name` | VARCHAR(100) | No | Dish name (spec 005). Matching target for in-catalog search. |
+| `category` | VARCHAR(50) | No | Closed gastronomic category: `'Entradas'`, `'Platos principales'`, `'Postres'`, `'Bebidas'`, `'Ensaladas'` (spec 005). |
 | `description` | TEXT | Yes | Diner-facing culinary description. |
-| `price` | NUMERIC(10, 2) | No | Unit sales price in ARS. Must be `>= 0`. |
-| `photo_url` | VARCHAR(500) | Yes | URL to high-resolution dish image. Fallback to placeholder if missing or failed load. |
-| `status` | VARCHAR(50) | No | Lifecycle status: `'DRAFT'`, `'PENDING_PRICE'`, `'ACTIVE'`, `'DECOMMISSIONED'`. Only `'ACTIVE'` dishes are visible to diners. |
-| `is_active` | BOOLEAN | No | Backward-compatible boolean flag. Maintained as `TRUE` when `status = 'ACTIVE'`. |
+| `retail_price` | NUMERIC(10, 2) | Yes | Authoritative retail sale price (PVP) assigned by Administrator upon approval (spec 007). Fallback to `price` if null. |
+| `price` | NUMERIC(10, 2) | Yes | Legacy sale price from spec 003. |
+| `status` | VARCHAR(50) | No | Lifecycle status: `'DRAFT'`, `'PENDING_PRICE'`, `'PUBLISHED'`. Only `'PUBLISHED'` dishes (with `is_active = true`) are visible to diners. |
+| `is_active` | BOOLEAN | No | Active flag. Maintained as `TRUE` when `status = 'PUBLISHED'`. |
+| `allergens_confirmed` | BOOLEAN | No | Confirmed by Chef in spec 005; publication gate prerequisite in spec 007. |
 | `created_at` | TIMESTAMPTZ | No | Creation timestamp. |
 | `updated_at` | TIMESTAMPTZ | No | Last update timestamp. |
 
-### 1.3. Recipe Ingredient Line (`DishRecipeIngredient`)
-Composite entity in 3NF linking a dish to an inventory supply item with required per-portion quantity.
+### 1.3. Dish Photo (`DishPhoto` - Consumed from Spec 005)
+Stores binary image payload and metadata in the `dish_photos` table (`dish_id`, `data`, `content_type`, `file_name`).
+- Diners consume photos via `GET /api/v1/dishes/{dishId}/photo`.
+- If a dish has no photo or its load fails, the frontend immediately renders the lightweight placeholder fallback.
+
+### 1.4. Recipe Ingredient Line (`DishRecipeIngredient` - Consumed from Spec 005)
+Composite entity in 3NF linking a dish to an inventory supply item with required per-portion quantity. Table `dish_recipe_ingredients` is owned by spec 005; read by spec 008 to compute stock availability.
 
 | Attribute | Data Type | Nullable | Constraints & Rules |
 |---|---|---|---|
@@ -51,17 +57,10 @@ Composite entity in 3NF linking a dish to an inventory supply item with required
 | `created_at` | TIMESTAMPTZ | No | Timestamp when ingredient was added to recipe. |
 | `updated_at` | TIMESTAMPTZ | No | Timestamp when quantity was updated. |
 
-### 1.4. Ingredient (`Ingredient` - Reused from Spec 004 / Migration V4)
+### 1.5. Ingredient (`Ingredient` - Consumed from Spec 004 / Migration V4 & V6)
 Raw inventory supply item tracking kitchen stock.
-
-| Attribute | Data Type | Nullable | Constraints & Rules |
-|---|---|---|---|
-| `id` | UUID | No | Primary key. |
-| `tenant_id` | UUID | No | Establishment identifier. |
-| `name` | VARCHAR(255) | No | Ingredient name (e.g., `'Harina 000'`, `'Carne de res'`). Included in dish recipe search. |
-| `current_stock` | NUMERIC(12, 4) | No | Authoritative stock level. Must be `>= 0`. Updated by kitchen operations. |
-| `unit_of_measure` | VARCHAR(20) | No | `'g'`, `'kg'`, `'ml'`, `'l'`, `'u'`. |
-| `status` | VARCHAR(50) | No | `'ACTIVE'`, `'DISCONTINUED'`, `'ARCHIVED'`. |
+- `ingredients.current_stock` is the authoritative kitchen inventory quantity evaluated against recipe lines.
+- `ingredients.updated_at` serves as the basis for real-time stock ETag hashing.
 
 ---
 
@@ -71,9 +70,10 @@ Raw inventory supply item tracking kitchen stock.
 erDiagram
     establishments ||--o{ dishes : "offers (1..*)"
     establishments ||--o{ ingredients : "stocks (1..*)"
-    dishes ||--o{ dish_recipe_ingredients : "composed of (0..*)"
+    dishes ||--o| dish_photos : "has photo (0..1, spec 005)"
+    dishes ||--o{ dish_recipe_ingredients : "composed of (0..*, spec 005)"
     ingredients ||--o{ dish_recipe_ingredients : "used in recipes"
-    dishes ||--o{ dish_dietary_restrictions : "tagged with (0..*)"
+    dishes ||--o{ dish_dietary_restrictions : "tagged with (0..*, spec 003)"
 
     establishments {
         uuid id PK
@@ -89,15 +89,24 @@ erDiagram
     dishes {
         uuid id PK
         uuid tenant_id FK
-        varchar_150 name
+        varchar_100 name
         varchar_50 category "Entradas, Platos principales, Postres, Bebidas, Ensaladas"
         text description
-        numeric_10_2 price
-        varchar_500 photo_url
-        varchar_50 status "DRAFT, PENDING_PRICE, ACTIVE, DECOMMISSIONED"
+        numeric_10_2 retail_price "PVP from spec 007"
+        numeric_10_2 price "Legacy"
+        varchar_50 status "DRAFT, PENDING_PRICE, PUBLISHED"
         boolean is_active
+        boolean allergens_confirmed
         timestamptz created_at
         timestamptz updated_at
+    }
+
+    dish_photos {
+        uuid dish_id PK, FK
+        varchar_255 file_name
+        varchar_50 content_type
+        bigint file_size
+        bytea data
     }
 
     dish_recipe_ingredients {
@@ -123,7 +132,10 @@ erDiagram
 
 ---
 
-## 3. Relational DDL Specification (`V7__create_establishments_and_dish_catalog.sql`)
+## 3. Relational DDL Specification (`V7__create_establishments.sql`)
+
+> [!NOTE]
+> Spec 008 owns **only** the `establishments` table and its seed data. It does **not** alter `dishes` (owned by specs 005 and 007) and does **not** create `dish_recipe_ingredients` (owned by spec 005).
 
 ```sql
 -- 1. Create establishments table
@@ -142,43 +154,13 @@ CREATE TABLE IF NOT EXISTS establishments (
 CREATE INDEX IF NOT EXISTS idx_establishments_search
     ON establishments(status, LOWER(name));
 
--- 2. Extend dishes table with category, photo_url, and lifecycle status
-ALTER TABLE dishes
-    ADD COLUMN IF NOT EXISTS category  VARCHAR(50)  NOT NULL DEFAULT 'Platos principales',
-    ADD COLUMN IF NOT EXISTS photo_url VARCHAR(500),
-    ADD COLUMN IF NOT EXISTS status    VARCHAR(50)  NOT NULL DEFAULT 'ACTIVE';
-
-ALTER TABLE dishes
-    ADD CONSTRAINT chk_dishes_category
-        CHECK (category IN ('Entradas', 'Platos principales', 'Postres', 'Bebidas', 'Ensaladas')),
-    ADD CONSTRAINT chk_dishes_status
-        CHECK (status IN ('DRAFT', 'PENDING_PRICE', 'ACTIVE', 'DECOMMISSIONED'));
-
-CREATE INDEX IF NOT EXISTS idx_dishes_diner_catalog
-    ON dishes(tenant_id, status, category);
-
--- 3. Create dish_recipe_ingredients join table in 3NF
-CREATE TABLE IF NOT EXISTS dish_recipe_ingredients (
-    dish_id       UUID           NOT NULL,
-    ingredient_id UUID           NOT NULL,
-    quantity      NUMERIC(12, 4) NOT NULL,
-    created_at    TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
-    updated_at    TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
-    CONSTRAINT pk_dish_recipe_ingredients
-        PRIMARY KEY (dish_id, ingredient_id),
-    CONSTRAINT fk_dri_dish
-        FOREIGN KEY (dish_id) REFERENCES dishes(id) ON DELETE CASCADE,
-    CONSTRAINT fk_dri_ingredient
-        FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE RESTRICT,
-    CONSTRAINT chk_dri_quantity_positive
-        CHECK (quantity > 0)
-);
-
-CREATE INDEX IF NOT EXISTS idx_dri_dish_id
-    ON dish_recipe_ingredients(dish_id);
-
-CREATE INDEX IF NOT EXISTS idx_dri_ingredient_id
-    ON dish_recipe_ingredients(ingredient_id);
+-- 2. Seed development establishments
+INSERT INTO establishments (id, name, status, opening_time, closing_time, timezone)
+VALUES
+    ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Café Central Palermo', 'ACTIVE', '08:00:00', '23:30:00', 'America/Argentina/Buenos_Aires'),
+    ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'Trattoria Bella Vista', 'ACTIVE', '11:30:00', '23:00:00', 'America/Argentina/Buenos_Aires'),
+    ('c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'Bistró San Telmo', 'PAUSED', '12:00:00', '22:00:00', 'America/Argentina/Buenos_Aires')
+ON CONFLICT (id) DO NOTHING;
 ```
 
 ---
@@ -194,19 +176,25 @@ CREATE INDEX IF NOT EXISTS idx_dri_ingredient_id
    - Paused or disabled establishments can be selected by direct ID only to display a full-page blocking notice without menu data exposure.
 
 3. **Dish Visibility Invariant (FR-009, FR-015, SC-005, SC-006)**:
-   - A dish is included in the catalog if and only if `dish.status = 'ACTIVE'`. Dishes in `DRAFT`, `PENDING_PRICE`, or `DECOMMISSIONED` are completely omitted.
-   - A category is included in the catalog and navigation bar if and only if it contains at least one dish with `status = 'ACTIVE'`.
+   - A dish is included in the catalog if and only if `dish.status = 'PUBLISHED' AND dish.is_active = true`. Dishes in `DRAFT` or `PENDING_PRICE` are completely omitted.
+   - A category is included in the catalog and navigation bar if and only if it contains at least one dish with `status = 'PUBLISHED' AND is_active = true`.
+   - Catalog price displays `retail_price` (PVP from spec 007) with fallback to `price` for legacy rows.
 
 4. **Dynamic Stock Availability Formula (FR-013, FR-014, FR-019, SC-003, SC-004)**:
    - A dish has `isAvailable = true` if and only if:
-     1. `dish.status == 'ACTIVE'`
+     1. `dish.status == 'PUBLISHED' && dish.is_active == true`
      2. `establishment.status == 'ACTIVE'` and current server time in establishment's timezone is within `[opening_time, closing_time)`.
-     3. The dish has at least one recipe line (`count(recipeLines) > 0`).
+     3. The dish has at least one recipe line in `dish_recipe_ingredients` (`count(recipeLines) > 0`).
      4. For every recipe line: `ingredient.current_stock >= line.quantity`.
    - If any required ingredient has `current_stock < line.quantity`, `isAvailable = false`.
    - If a dish has zero recipe lines, `isAvailable = false`.
    - Availability is strictly binary; internal numeric counts are never revealed to diners.
 
-5. **Real-time Stock Invalidation & ETag Generation (FR-016)**:
-   - The ETag for `GET /api/v1/establishments/{tenantId}/catalog/availability` is computed as a SHA-256 hash over the sorted tuples of `(ingredient.id, ingredient.current_stock, ingredient.updated_at)` for the tenant.
+5. **Dietary Compliance Integration (Spec 003)**:
+   - Each `DishCatalogItem` in the catalog response is evaluated against the authenticated diner's active dietary restrictions (from spec 003).
+   - If the diner has active restrictions, `isCompliant` and `conflictingRestrictions` are populated; otherwise `isCompliant = true` and `conflictingRestrictions = []`.
+
+6. **Real-time Stock Invalidation & ETag Generation (FR-016)**:
+   - The ETag for `GET /api/v1/establishments/{tenantId}/catalog/availability` is computed based on `MAX(updated_at)` or a SHA-256 hash over `(ingredient.id, ingredient.current_stock, ingredient.updated_at)` for the tenant.
    - When no ingredient stock changes, the ETag remains identical and Spring responds with `304 Not Modified`.
+

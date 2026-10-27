@@ -195,6 +195,8 @@ components:
         - price
         - isAvailable
         - recipeIngredients
+        - isCompliant
+        - conflictingRestrictions
       properties:
         id:
           type: string
@@ -212,15 +214,27 @@ components:
         price:
           type: number
           format: double
+          description: Retail sale price (PVP) assigned by Administrator (spec 007)
           example: 8500.00
         photoUrl:
           type: string
           nullable: true
-          example: https://cdn.easyeat.com/dishes/hamburguesa.webp
+          description: Relative endpoint path to dish photo (/api/v1/dishes/{dishId}/photo, spec 005) or null
+          example: /api/v1/dishes/3fa85f64-5717-4562-b3fc-2c963f66afa6/photo
         isAvailable:
           type: boolean
           description: Binary availability computed dynamically from recipe ingredient stock
           example: true
+        isCompliant:
+          type: boolean
+          description: Whether dish complies with authenticated diner dietary restrictions (spec 003)
+          example: true
+        conflictingRestrictions:
+          type: array
+          description: List of conflicting dietary restriction or allergen codes (spec 003)
+          items:
+            type: string
+          example: [LACTOSE]
         recipeIngredients:
           type: array
           description: List of ingredient names in the recipe for search and detail modal

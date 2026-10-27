@@ -12,7 +12,7 @@
 ## 1. Prerequisites and Setup
 
 1. **Docker Environment**: PostgreSQL 16 container running and accessible, or active testcontainers runtime.
-2. **Database Migrations**: Flyway executed up to `V7__create_establishments_and_dish_catalog.sql`.
+2. **Database Migrations**: Flyway executed up to `V7__create_establishments.sql`.
 3. **Authentication**: Active JWT token with `COMENSAL` role obtained via `/api/v1/auth/login`.
 4. **Backend**: Spring Boot 3.3.4 running on port 8080 (`./mvnw spring-boot:run` or tests).
 5. **Frontend**: Vite development server running on port 5173 (`npm run dev` in `easyeat/frontend`).
@@ -33,6 +33,7 @@
   - Multi-tenant context is set to the selected establishment ID.
   - Browser navigates to `/catalogo`.
   - Menu loads categorized under Entradas, Platos principales, Postres, Bebidas, Ensaladas.
+  - Dishes display retail price (PVP from spec 007), dietary restriction badges (spec 003), and photos served from `/api/v1/dishes/{dishId}/photo` (spec 005) with placeholder fallback.
   - Sticky category navigation bar allows smooth scrolling between sections.
   - 100% of data is scoped strictly to selected establishment (zero cross-tenant leakage).
 
@@ -53,10 +54,10 @@
 - **Action**: Kitchen updates `"Queso Mozzarella"` stock to 0.
 - **Expected Outcome**: Within `<= 3 seconds`, both Dish A and Dish B simultaneously transition to greyed-out with `"Agotado"` badges across their respective categories.
 
-### Scenario 6: Decommissioned Dish and Empty Category Hiding (FR-009, FR-015, SC-005, SC-006)
-- **Initial State**: Category `"Bebidas"` has two dishes: one with `status = 'DECOMMISSIONED'` and one with `status = 'ACTIVE'`.
-- **Expected Outcome**: Only the active dish is rendered; the decommissioned dish is completely absent.
-- **Action**: Mark the remaining active dish as `DECOMMISSIONED`.
+### Scenario 6: Non-Published Dish and Empty Category Hiding (FR-009, FR-015, SC-005, SC-006)
+- **Initial State**: Category `"Bebidas"` has two dishes: one in `DRAFT` status and one in `PUBLISHED` status.
+- **Expected Outcome**: Only the `PUBLISHED` dish is rendered; the `DRAFT` dish is completely absent.
+- **Action**: The remaining dish in `"Bebidas"` transitions to `DRAFT` (or has not been approved yet).
 - **Expected Outcome**: The entire `"Bebidas"` category heading and its entry in the sticky navigation bar disappear from the catalog view.
 
 ### Scenario 7: In-Catalog Real-Time Search (FR-020, FR-021, FR-022, FR-024, SC-007)
