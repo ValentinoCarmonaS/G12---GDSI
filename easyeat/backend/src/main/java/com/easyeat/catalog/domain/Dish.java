@@ -42,6 +42,9 @@ public class Dish {
     @Column(name = "created_by")
     private UUID createdBy;
 
+    @Column(name = "submitted_at")
+    private Instant submittedAt;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
@@ -159,6 +162,14 @@ public class Dish {
 
     public void setCreatedBy(UUID createdBy) {
         this.createdBy = createdBy;
+    }
+
+    public Instant getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public void setSubmittedAt(Instant submittedAt) {
+        this.submittedAt = submittedAt;
     }
 
     public Boolean getIsActive() {

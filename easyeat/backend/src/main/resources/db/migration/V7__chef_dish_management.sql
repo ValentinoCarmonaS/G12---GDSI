@@ -9,14 +9,15 @@ ALTER TABLE dishes
     ADD COLUMN IF NOT EXISTS category VARCHAR(50),
     ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'DRAFT',
     ADD COLUMN IF NOT EXISTS allergens_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
-    ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id);
+    ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id),
+    ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMPTZ;
 
 -- Restricciones CHECK para dishes
 ALTER TABLE dishes
     ADD CONSTRAINT chk_dishes_category
         CHECK (category IS NULL OR category IN ('Entradas', 'Platos principales', 'Postres', 'Bebidas', 'Ensaladas')),
     ADD CONSTRAINT chk_dishes_status
-        CHECK (status IN ('DRAFT', 'PENDING_PRICE')),
+        CHECK (status IN ('DRAFT', 'PENDING_PRICE', 'PUBLISHED')),
     ADD CONSTRAINT chk_dishes_name_length
         CHECK (LENGTH(TRIM(name)) > 0 AND LENGTH(name) <= 100);
 
@@ -27,6 +28,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_dishes_tenant_lower_trimmed_name
 -- Indice para listado y ordenamiento del Chef
 CREATE INDEX IF NOT EXISTS idx_dishes_chef_list
     ON dishes (tenant_id, status, updated_at DESC);
+
+-- Indice para bandeja de revision FIFO del Administrador (FR-003 / R-005-1)
+CREATE INDEX IF NOT EXISTS idx_dishes_review_inbox_pending
+    ON dishes (tenant_id, status, submitted_at);
 
 -- 2. Tabla para almacenamiento de fotos en base de datos (PostgreSQL BYTEA)
 CREATE TABLE IF NOT EXISTS dish_photos (
