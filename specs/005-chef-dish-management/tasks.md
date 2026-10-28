@@ -70,7 +70,7 @@
 - [X] T031 [P] [US1] Implement `DishStatusBadge.tsx` in `easyeat/frontend/src/components/dish/DishStatusBadge.tsx` displaying visual status badges for `Draft` and `Pending Price`
 - [X] T032 [P] [US1] Implement `BasicIdentityStep.tsx` in `easyeat/frontend/src/components/dish/BasicIdentityStep.tsx` with name trimming, category selector, description counter, and photo dropzone with preview/delete
 - [X] T033 [US1] Implement `ChefDishesPage.tsx` in `easyeat/frontend/src/pages/ChefDishesPage.tsx` with 20 items/page pagination, status filter ("All", "Draft", "Pending Price"), and new dish creation action
-- [ ] T034 [US1] Configure route definitions `/cocina/platos`, `/cocina/platos/nuevo`, `/cocina/platos/:id` in `easyeat/frontend/src/router/AppRoutes.tsx` and add dish management navigation card in `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
+- [X] T034 [US1] Configure route definitions `/cocina/platos`, `/cocina/platos/nuevo`, `/cocina/platos/:id` in `easyeat/frontend/src/router/AppRoutes.tsx` and add dish management navigation card in `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
 
 **Checkpoint**: User Story 1 (MVP) fully functional and testable independently.
 
