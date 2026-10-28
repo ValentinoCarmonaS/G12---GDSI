@@ -24,15 +24,21 @@
 | V6 | `V6__create_ingredient_batches_and_refactor_lifecycle.sql` | 004 | PR #126 |
 | V7 | `V7__chef_dish_management.sql` | 005 | PR #160 |
 
+Spec 006 (`006-recipe-food-cost`, PR #170, merged 2026-10-28) added **no** migration: its recipe model reuses `dish_recipe_ingredients` from 005's `V7`. A feature that needs no schema change takes no version, and that is worth recording so nobody looks for a missing `V8` from it.
+
 Repeatable migrations carry no version and are re-applied whenever their content changes: `db/dev/R__seed_dev_users.sql`, `db/dev/R__seed_dev_dishes_and_dietary.sql`.
 
 ## In flight — claimed but not yet merged
 
 | Version | Spec | Status |
 |---|---|---|
-| V8 | **unclaimed** | the next free number as of 2026-10-28 |
+| V8 | **008 and 007, contested** | `V8__create_establishments.sql` is written on `008-diner-catalog-multi-tenant` (PRs #168, #169, merged into that feature branch only). Spec 007 takes the same number for `V8__admin_dish_approval_pricing.sql`, because rule 2 yields it against the integration branch and rule 4 makes 008's claim a courtesy. **Whichever merges to `develop/sprint-2` first keeps `V8`; the other renames its file to `V9` and updates this table.** |
 
-Spec 007 deliberately holds no claim: its `plan.md` and `data-model.md` instruct the implementer to take the next free version confirmed against the migration directory, and its migration test is named `AdminPricingMigrationTest` so no renumbering can invalidate it. Spec 008's planning documents still name `V7`, which spec 005 has taken; that is recorded as a note to 008 in `specs/007-admin-dish-approval-pricing/research.md §3.7`.
+**Why 007 does not simply yield `V9`.** It would not help 008 and would cost something. With `outOfOrder` disabled, a `V8` merged *after* an applied `V9` sits below the highest applied version and is rejected on every database not recreated — so 008 would have to renumber to `V10` rather than `V9`, and `V8` would be left as a permanent gap. Deferring a number only helps when the deferrer merges second, which nobody can promise in advance. The rule is merge order, and it is the same rule for both.
+
+The two files are independent in content, so renumbering either is a rename plus a row here: 007's alters `dishes` and creates the two audit tables; 008's creates `establishments` and, verified on its branch, does **not** touch `dishes.status` or `chk_dishes_status`, despite `008/data-model.md` planning to redefine that constraint. If 008 ever writes that redefinition it collides with spec 007's `PUBLISHED`, which is a design conflict rather than a numbering one — recorded in `specs/007-admin-dish-approval-pricing/research.md §3.7`.
+
+Spec 007's migration test is named `AdminPricingMigrationTest`, with no version in the name, so a renumbering cannot invalidate it (rule 5).
 
 ## Operational note
 
