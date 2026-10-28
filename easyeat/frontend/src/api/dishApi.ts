@@ -90,6 +90,14 @@ export const dishApi = {
     const response = await apiClient.get<import('@/types/dish').RecipeResponse>(`/dishes/${id}/recipe`);
     return response.data;
   },
+
+  /**
+   * Retrieves food cost audit and declared dietary labels for an admin evaluating a dish in PENDING_PRICE.
+   */
+  async getFoodCostAudit(id: string): Promise<import('@/types/dish').FoodCostAuditResponse> {
+    const response = await apiClient.get<import('@/types/dish').FoodCostAuditResponse>(`/dishes/${id}/cost-audit`);
+    return response.data;
+  },
 };
 
 export default dishApi;
