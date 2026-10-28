@@ -70,6 +70,14 @@ class DishAllergenAcceptanceTest {
     void setUp() {
         TenantContextHolder.setTenantId(tenantId);
 
+        jdbcTemplate.update("""
+                INSERT INTO users (id, email, password_hash, role, status, tenant_id, token_version, created_at, updated_at)
+                VALUES (?, 'chef.allergen.acceptance@easyeat.com', '$2a$12$YN9mdfv/oelL9EQiNRqem.J8cetkck1qL0kA4PRwT5ZdLVKN9e4W2', 'CHEF', 'ACTIVE', ?, 0, NOW(), NOW())
+                ON CONFLICT (id) DO NOTHING
+                """, chefId, tenantId);
+
+        dishRepository.deleteAll();
+
         Dish dish = new Dish();
         dish.setTenantId(tenantId);
         dish.setName("Gazpacho Andaluz " + UUID.randomUUID().toString().substring(0, 8));
@@ -85,6 +93,7 @@ class DishAllergenAcceptanceTest {
 
     @AfterEach
     void tearDown() {
+        dishRepository.deleteAll();
         TenantContextHolder.clear();
     }
 
