@@ -31,7 +31,7 @@
 - [x] T008 [P] Create `Establishment` JPA entity in `easyeat/backend/src/main/java/com/easyeat/catalog/domain/Establishment.java`
 - [ ] T009 [P] Create `EstablishmentRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/EstablishmentRepository.java` with autocomplete unaccent/ILIKE search queries
 - [ ] T010 Update `SecurityConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` configuring role boundaries: `/api/v1/establishments/search`, `/api/v1/establishments/*/catalog`, and `/api/v1/establishments/*/catalog/availability` require `hasRole('COMENSAL')`
-- [ ] T011 Integration test `V8EstablishmentsMigrationTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/migration/V8EstablishmentsMigrationTest.java` running against Testcontainers PostgreSQL verifying V8 schema migration and seed data
+- [x] T011 Integration test `V8EstablishmentsMigrationTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/migration/V8EstablishmentsMigrationTest.java` running against Testcontainers PostgreSQL verifying V8 schema migration and seed data
 
 **Checkpoint**: Foundational database schema, entity mappings, and security boundaries verified.
 
