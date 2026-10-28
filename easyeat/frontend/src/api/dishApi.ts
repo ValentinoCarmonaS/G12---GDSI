@@ -5,6 +5,8 @@ import type {
   DishDetailResponse,
   DishPageResponse,
   PhotoUploadResponse,
+  DishAllergensUpdateRequest,
+  DishAllergensResponse,
 } from '@/types/dish';
 
 export const dishApi = {
@@ -90,6 +92,15 @@ export const dishApi = {
     const response = await apiClient.get<import('@/types/dish').RecipeResponse>(`/dishes/${id}/recipe`);
     return response.data;
   },
+
+  /**
+   * Updates dish dietary restrictions and allergen confirmation state (CHF-2.2.3).
+   */
+  async updateDishAllergens(id: string, data: DishAllergensUpdateRequest): Promise<DishAllergensResponse> {
+    const response = await apiClient.put<DishAllergensResponse>(`/dishes/${id}/allergens`, data);
+    return response.data;
+  },
 };
 
 export default dishApi;
+
