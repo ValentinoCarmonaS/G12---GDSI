@@ -110,5 +110,12 @@ public class DishController {
         com.easyeat.dish.dto.AllergenResponse response = dishService.updateAllergens(id, request);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{id}/submit-review")
+    @PreAuthorize("hasRole('CHEF')")
+    public ResponseEntity<DishDetailResponse> submitDishForReview(@PathVariable UUID id) {
+        DishDetailResponse response = dishService.submitForReview(id);
+        return ResponseEntity.ok(response);
+    }
 }
 
