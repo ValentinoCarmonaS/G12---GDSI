@@ -29,7 +29,23 @@
 
 **✅ GATE PASSES as of 2026-10-28.** Measured on this branch at `e934713`, fast-forwarded to `develop/sprint-2` and 0 behind / 0 ahead. Specs 005 (PR #160) and 006 (PR #170) are both integrated: `V7` applies, `com.easyeat.dish` exists, and `FoodCostEngine` / `FoodCostAuditService` are present. `R-004-1` and `R-006-1` were answered in writing on issue #146 and verified against the merged code; `R-005-4` is withdrawn in favour of a conditional `UPDATE`; `R-005-3` is settled by a recorded amendment to D1. **One task in this phase remains to be executed** — `T005`, adding `PUBLISHED` to the enum under that amendment. The rule stands: no task from T009 onward starts until every task in this phase passes.
 
-- [ ] T001 Verify spec 005's migration `V7__chef_dish_management.sql` is present in `easyeat/backend/src/main/resources/db/migration/` and applies cleanly, and record the outcome against R-005-0
+- [x] T001 Verify spec 005's migration `V7__chef_dish_management.sql` is present in `easyeat/backend/src/main/resources/db/migration/` and applies cleanly, and record the outcome against R-005-0 — **VERIFIED 2026-10-28, R-005-0 satisfied**
+
+  Presence: the file is in `db/migration/`, landed on the integration branch via PR #160.
+
+  "Applies cleanly" was proved by **execution, not inspection**. Neither `mvn` nor a Maven wrapper is available in this environment, so spec 005's `V7MigrationAndSeedDevTest` could not be run; instead the seven versioned migrations were applied in order against a throwaway `postgres:16` container with `psql -v ON_ERROR_STOP=1`:
+
+  ```
+  OK   V1__create_users.sql
+  OK   V2__create_password_reset_tokens.sql
+  OK   V3__extend_users_staff.sql
+  OK   V4__create_ingredients_and_stock_audit.sql
+  OK   V5__extend_users_profile_and_dietary.sql
+  OK   V6__create_ingredient_batches_and_refactor_lifecycle.sql
+  OK   V7__chef_dish_management.sql
+  ```
+
+  This is a stronger result than the task asked for: it confirms `V7` applies on top of the exact `V1`–`V6` sequence this feature's `V8` will extend, not merely that it parses.
 - [ ] T002 [P] **SATISFIED 2026-10-28.** Verify the upstream dish domain exists: `DishStatus`, `DishCategory` and the auxiliary entities in `com.easyeat.dish.domain`, and `DishRepository`. **Note the correction**: there is no `com.easyeat.dish.domain.Dish` and none is coming — spec 005 added its five columns to the pre-existing `com.easyeat.catalog.domain.Dish`, which is the single `@Entity` over `dishes`. Assert that entity carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at` in `easyeat/backend/src/main/java/com/easyeat/dish/`, and record the outcome against R-005-0
 - [ ] T003 [P] Verify the `dishes` table carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at`, and that the index `idx_dishes_review_inbox_pending (tenant_id, status, submitted_at)` exists, by inspecting `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql`; record against R-005-0 and R-005-1
 - [ ] T004 [P] Verify the tables `dish_recipe_ingredients` and `dish_photos` exist in `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql`, and record the outcome against R-005-0
