@@ -83,7 +83,7 @@
 - [x] T028 [US2] Update `DishRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/DishRepository.java` adding query for dishes with `tenantId`, `status = PUBLISHED`, and `isActive = true`
 - [x] T029 [US2] Implement `DinerCatalogService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/DinerCatalogService.java` assembling categorized menu, checking timezone schedule, and integrating dietary compliance via `CatalogComplianceService`
 - [x] T030 [US2] Implement `DinerCatalogController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/DinerCatalogController.java`
-- [ ] T031 [P] [US2] Implement frontend API client method `getEstablishmentCatalog` in `easyeat/frontend/src/api/dinerCatalogApi.ts`
+- [x] T031 [P] [US2] Implement frontend API client method `getEstablishmentCatalog` in `easyeat/frontend/src/api/dinerCatalogApi.ts`
 - [ ] T032 [P] [US2] Create `StickyCategoryNav.tsx` in `easyeat/frontend/src/components/catalog/StickyCategoryNav.tsx` with smooth scrolling and active indicator
 - [ ] T033 [P] [US2] Refactor `DishCard.tsx` in `easyeat/frontend/src/components/catalog/DishCard.tsx` displaying name, price, dietary flags, photo with lightweight SVG placeholder fallback, and full color vs greyscale styling
 - [ ] T034 [P] [US2] Create `DishDetailModal.tsx` in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx` showing enlarged photo, recipe ingredients, and outside-hours state notice
