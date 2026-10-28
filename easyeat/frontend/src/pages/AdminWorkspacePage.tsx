@@ -113,9 +113,20 @@ export const AdminWorkspacePage: React.FC = () => {
                   <h4 className="text-sm font-semibold text-gray-900">{notif.title}</h4>
                   <p className="text-xs text-gray-600 mt-0.5">{notif.message}</p>
                 </div>
-                <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-medium">
-                  Pendiente
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-medium">
+                    Pendiente
+                  </span>
+                  {notif.dishId && (
+                    <Link
+                      to={`/admin/dishes/${notif.dishId}/cost-audit`}
+                      className="px-3 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded font-medium transition-colors"
+                      data-testid={`audit-dish-btn-${notif.dishId}`}
+                    >
+                      Auditar Costo
+                    </Link>
+                  )}
+                </div>
               </div>
             ))}
           </div>

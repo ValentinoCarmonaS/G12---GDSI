@@ -18,6 +18,7 @@ import { InventoryManagementPage } from '../pages/InventoryManagementPage';
 import { CatalogPage } from '../pages/CatalogPage';
 import { FirstLoginPasswordPage } from '../pages/FirstLoginPasswordPage';
 import { ProfilePage } from '../pages/ProfilePage';
+import { DishCostAuditPage } from '../pages/DishCostAuditPage';
 import { VerifyEmailPage } from '../pages/VerifyEmailPage';
 
 export const AppRoutes: React.FC = () => {
@@ -165,6 +166,14 @@ export const AppRoutes: React.FC = () => {
       />
 
       {/* Role-Protected Back-Office Administration Panel (ADMINISTRADOR) */}
+      <Route
+        path="/admin/dishes/:id/cost-audit"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <DishCostAuditPage />
+          </RoleRouteGuard>
+        }
+      />
       <Route
         path="/admin/*"
         element={
