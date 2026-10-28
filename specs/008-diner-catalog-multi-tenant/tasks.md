@@ -57,7 +57,7 @@
 - [x] T018 [P] [US1] Create `TenantContext.tsx` and hook `useTenant.ts` in `easyeat/frontend/src/context/TenantContext.tsx` and `easyeat/frontend/src/hooks/useTenant.ts` managing active establishment state and session storage
 - [x] T019 [P] [US1] Create `EstablishmentSwitchModal.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentSwitchModal.tsx` displaying the interactive confirmation dialog alerting diners before emptying their active cart upon tenant switch (COM-1.5.1 CA 5 / FR-029)
 - [x] T020 [US1] Create `EstablishmentSearchBar.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentSearchBar.tsx` with debounced search, autocomplete dropdown, and cart switch interceptor
-- [ ] T021 [P] [US1] Create `EstablishmentBlockingNotice.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentBlockingNotice.tsx` rendering full-screen blocking screen for paused/disabled venues
+- [x] T021 [P] [US1] Create `EstablishmentBlockingNotice.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentBlockingNotice.tsx` rendering full-screen blocking screen for paused/disabled venues
 - [ ] T022 [US1] Create `EstablishmentDiscoveryPage.tsx` in `easyeat/frontend/src/pages/EstablishmentDiscoveryPage.tsx`
 - [ ] T023 [US1] Update `AppRoutes.tsx` and `postAuthRouting.ts` registering `/descubrimiento` route protected by `RoleRouteGuard allowedRoles={['COMENSAL']}` and routing diners with no active tenant to discovery
 
