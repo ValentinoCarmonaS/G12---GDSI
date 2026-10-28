@@ -56,7 +56,7 @@
 - [X] T020 [P] [US1] Web contract test `DishControllerBasicTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishControllerBasicTest.java` verifying `POST /api/v1/dishes`, `GET /api/v1/dishes`, `GET /api/v1/dishes/{id}`, `PUT /api/v1/dishes/{id}`, and `DELETE /api/v1/dishes/{id}` against OpenAPI schema
 - [X] T021 [P] [US1] Web contract test `DishPhotoControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishPhotoControllerTest.java` verifying `POST /api/v1/dishes/{id}/photo`, `GET /api/v1/dishes/{id}/photo`, and `DELETE /api/v1/dishes/{id}/photo`
 - [X] T022 [P] [US1] Behavioral acceptance test `DishBasicAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishBasicAcceptanceTest.java` covering User Story 1 acceptance scenarios using JUnit 5 and Testcontainers
-- [ ] T023 [P] [US1] Frontend component test `BasicIdentityStep.test.tsx` in `easyeat/frontend/tests/components/dish/BasicIdentityStep.test.tsx` verifying form inputs, live validation, character counter, and photo upload/removal preview
+- [X] T023 [P] [US1] Frontend component test `BasicIdentityStep.test.tsx` in `easyeat/frontend/tests/components/dish/BasicIdentityStep.test.tsx` verifying form inputs, live validation, character counter, and photo upload/removal preview
 - [ ] T024 [P] [US1] Frontend page test `ChefDishesPage.test.tsx` in `easyeat/frontend/tests/pages/ChefDishesPage.test.tsx` verifying paginated table rendering (20 items/page), sorting by `updated_at DESC`, and status filter dropdown
 - [ ] T025 [P] [US1] Frontend user journey integration test `us1_basic_identity.test.tsx` in `easyeat/frontend/tests/integration/us1_basic_identity.test.tsx` verifying draft creation, photo upload, and listing flow using Vitest
 
