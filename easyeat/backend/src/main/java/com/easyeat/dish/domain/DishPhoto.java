@@ -21,8 +21,8 @@ public class DishPhoto {
     @Column(name = "file_size", nullable = false)
     private Long fileSize;
 
-    @Lob
-    @Column(name = "data", nullable = false, columnDefinition = "BYTEA")
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.VARBINARY)
+    @Column(name = "data", nullable = false)
     private byte[] data;
 
     @Column(name = "created_at", nullable = false, updatable = false)

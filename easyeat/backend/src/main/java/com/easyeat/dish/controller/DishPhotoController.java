@@ -1,7 +1,9 @@
 package com.easyeat.dish.controller;
 
+import com.easyeat.dish.domain.DishPhoto;
 import com.easyeat.dish.dto.PhotoUploadResponse;
 import com.easyeat.dish.service.DishPhotoService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -25,17 +27,24 @@ public class DishPhotoController {
             @PathVariable UUID id,
             @RequestParam("file") MultipartFile file
     ) {
-        throw new UnsupportedOperationException("T029 pending implementation");
+        PhotoUploadResponse response = dishPhotoService.uploadPhoto(id, file);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
     public ResponseEntity<byte[]> getDishPhoto(@PathVariable UUID id) {
-        throw new UnsupportedOperationException("T029 pending implementation");
+        DishPhoto photo = dishPhotoService.getPhoto(id);
+        String contentType = photo.getContentType() != null ? photo.getContentType() : "image/jpeg";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, contentType)
+                .header(HttpHeaders.CACHE_CONTROL, "private, max-age=86400")
+                .body(photo.getData());
     }
 
     @DeleteMapping
     @PreAuthorize("hasRole('CHEF')")
     public ResponseEntity<Void> deleteDishPhoto(@PathVariable UUID id) {
-        throw new UnsupportedOperationException("T029 pending implementation");
+        dishPhotoService.deletePhoto(id);
+        return ResponseEntity.noContent().build();
     }
 }

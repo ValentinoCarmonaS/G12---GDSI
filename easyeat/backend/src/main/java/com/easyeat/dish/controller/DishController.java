@@ -1,5 +1,6 @@
 package com.easyeat.dish.controller;
 
+import com.easyeat.auth.domain.User;
 import com.easyeat.dish.dto.CreateDishRequest;
 import com.easyeat.dish.dto.DishDetailResponse;
 import com.easyeat.dish.dto.DishPageResponse;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -26,8 +28,16 @@ public class DishController {
 
     @PostMapping
     @PreAuthorize("hasRole('CHEF')")
-    public ResponseEntity<DishDetailResponse> createDishDraft(@Valid @RequestBody CreateDishRequest request) {
-        throw new UnsupportedOperationException("T029 pending implementation");
+    public ResponseEntity<DishDetailResponse> createDishDraft(
+            @Valid @RequestBody CreateDishRequest request,
+            @AuthenticationPrincipal Object principal
+    ) {
+        UUID chefId = null;
+        if (principal instanceof User user) {
+            chefId = user.getId();
+        }
+        DishDetailResponse created = dishService.createDraft(request, chefId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @GetMapping
@@ -36,13 +46,15 @@ public class DishController {
             @RequestParam(required = false, defaultValue = "ALL") String status,
             Pageable pageable
     ) {
-        throw new UnsupportedOperationException("T029 pending implementation");
+        DishPageResponse response = dishService.listDishes(status, pageable);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('CHEF')")
     public ResponseEntity<DishDetailResponse> getDishById(@PathVariable UUID id) {
-        throw new UnsupportedOperationException("T029 pending implementation");
+        DishDetailResponse response = dishService.getDishById(id);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
@@ -51,12 +63,14 @@ public class DishController {
             @PathVariable UUID id,
             @Valid @RequestBody UpdateDishRequest request
     ) {
-        throw new UnsupportedOperationException("T029 pending implementation");
+        DishDetailResponse response = dishService.updateBasicInfo(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('CHEF')")
     public ResponseEntity<Void> deleteDishDraft(@PathVariable UUID id) {
-        throw new UnsupportedOperationException("T029 pending implementation");
+        dishService.deleteDraft(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -70,12 +70,20 @@ class DishBasicAcceptanceTest {
     @Autowired
     private DishPhotoRepository dishPhotoRepository;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     private final UUID tenantId = DishTestFixtures.DEFAULT_TENANT_ID;
     private final UUID chefId = DishTestFixtures.DEFAULT_CHEF_ID;
 
     @BeforeEach
     void setUp() {
         TenantContextHolder.setTenantId(tenantId);
+        jdbcTemplate.update("""
+                INSERT INTO users (id, email, password_hash, role, status, tenant_id, token_version, created_at, updated_at)
+                VALUES (?, 'chef.acceptance@easyeat.com', '$2a$12$YN9mdfv/oelL9EQiNRqem.J8cetkck1qL0kA4PRwT5ZdLVKN9e4W2', 'CHEF', 'ACTIVE', ?, 0, NOW(), NOW())
+                ON CONFLICT (id) DO NOTHING
+                """, chefId, tenantId);
     }
 
     @AfterEach
