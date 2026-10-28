@@ -81,7 +81,7 @@
 
 - [x] T027 [P] [US2] Implement catalog DTOs (`DinerCatalogResponse`, `DishCatalogItemDto`, `CategoryGroupDto`, `EstablishmentDetailDto`) in `easyeat/backend/src/main/java/com/easyeat/catalog/dto/`
 - [x] T028 [US2] Update `DishRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/DishRepository.java` adding query for dishes with `tenantId`, `status = PUBLISHED`, and `isActive = true`
-- [ ] T029 [US2] Implement `DinerCatalogService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/DinerCatalogService.java` assembling categorized menu, checking timezone schedule, and integrating dietary compliance via `CatalogComplianceService`
+- [x] T029 [US2] Implement `DinerCatalogService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/DinerCatalogService.java` assembling categorized menu, checking timezone schedule, and integrating dietary compliance via `CatalogComplianceService`
 - [ ] T030 [US2] Implement `DinerCatalogController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/DinerCatalogController.java`
 - [ ] T031 [P] [US2] Implement frontend API client method `getEstablishmentCatalog` in `easyeat/frontend/src/api/dinerCatalogApi.ts`
 - [ ] T032 [P] [US2] Create `StickyCategoryNav.tsx` in `easyeat/frontend/src/components/catalog/StickyCategoryNav.tsx` with smooth scrolling and active indicator
