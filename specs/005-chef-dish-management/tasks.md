@@ -169,7 +169,7 @@
 - [X] T073 [P] Execute full backend regression test suite via `mvn clean test` in `easyeat/backend` verifying zero test failures
 - [X] T074 [P] Execute full frontend test suite via `npm run test` in `easyeat/frontend` verifying linting, type checks, and zero test failures
 - [X] T075 Execute end-to-end quickstart validation scenarios from `specs/005-chef-dish-management/quickstart.md`
-- [ ] T076 Run `speckit-analyze` consistency analysis verifying cross-artifact alignment across `spec.md`, `plan.md`, and `tasks.md`
+- [X] T076 Run `speckit-analyze` consistency analysis verifying cross-artifact alignment across `spec.md`, `plan.md`, and `tasks.md`
 
 ---
 
