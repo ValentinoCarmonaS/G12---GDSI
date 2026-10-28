@@ -145,7 +145,7 @@
 - [X] T061 [P] [US4] Behavioral acceptance test `DishSubmissionAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishSubmissionAcceptanceTest.java` covering User Story 4 acceptance scenarios using JUnit 5 and Testcontainers
 - [X] T062 [P] [US4] Frontend component test `ReviewSubmitStep.test.tsx` in `easyeat/frontend/tests/components/dish/ReviewSubmitStep.test.tsx` verifying completeness checklist indicators, reactive enable/disable of "Send for Review", and submission confirmation
 - [X] T063 [P] [US4] Frontend component test `AdminNotificationBell.test.tsx` in `easyeat/frontend/tests/components/notification/AdminNotificationBell.test.tsx` verifying unread alert badge, notifications dropdown, and mark-as-read click trigger
-- [ ] T064 [P] [US4] Frontend user journey integration test `us4_review_submission.test.tsx` in `easyeat/frontend/tests/integration/us4_review_submission.test.tsx` verifying end-to-end submission, lock enforcement, and admin alert flow using Vitest
+- [X] T064 [P] [US4] Frontend user journey integration test `us4_review_submission.test.tsx` in `easyeat/frontend/tests/integration/us4_review_submission.test.tsx` verifying end-to-end submission, lock enforcement, and admin alert flow using Vitest
 
 ### Implementation for User Story 4
 
