@@ -132,7 +132,7 @@
 
 - [x] T046 [P] [US4] Create `CatalogSearchFilter.tsx` in `easyeat/frontend/src/components/catalog/CatalogSearchFilter.tsx` with search input and clear button
 - [x] T047 [US4] Integrate in-catalog search filter in `CatalogPage.tsx`, combining text matching across dish name and `recipeIngredients` with active category filters
-- [ ] T048 [US4] Add empty search state view in `CatalogPage.tsx` with no-results message and spelling check suggestion prompt
+- [x] T048 [US4] Add empty search state view in `CatalogPage.tsx` with no-results message and spelling check suggestion prompt
 
 **Checkpoint**: User Story 4 fully functional and verified.
 

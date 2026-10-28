@@ -232,8 +232,7 @@ describe('CatalogPage Component Tests (T026, US2, COM-4.1.1, FR-007, FR-008, FR-
       });
     });
 
-    // Will be activated in T048
-    it.skip('displays empty search state with spelling suggestion when no dishes match (CA 6, FR-024, T048)', async () => {
+    it('displays empty search state with spelling suggestion when no dishes match (CA 6, FR-024, T048)', async () => {
       vi.spyOn(dinerCatalogApi, 'getEstablishmentCatalog').mockResolvedValueOnce(mockCatalogData);
       renderComponent();
 
