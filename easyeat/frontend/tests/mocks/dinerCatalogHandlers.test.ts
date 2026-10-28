@@ -85,6 +85,9 @@ describe('dinerCatalogHandlers Mock Fixtures and Setup (T002)', () => {
 
     expect(customAvailability.availability['dish-123']).toBe(false);
     expect(customAvailability.availability['dish-456']).toBe(true);
+    expect(mockAvailabilityMap.availability[MOCK_DISH_ID_1]).toBe(true);
+    const customCatalog = createMockCatalogResponse({ categories: [] });
+    expect(customCatalog.categories).toHaveLength(0);
   });
 
   it('sets up API mock handlers and correctly simulates search, catalog, and availability', async () => {
