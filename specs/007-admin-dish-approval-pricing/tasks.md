@@ -46,7 +46,19 @@
   ```
 
   This is a stronger result than the task asked for: it confirms `V7` applies on top of the exact `V1`–`V6` sequence this feature's `V8` will extend, not merely that it parses.
-- [ ] T002 [P] **SATISFIED 2026-10-28.** Verify the upstream dish domain exists: `DishStatus`, `DishCategory` and the auxiliary entities in `com.easyeat.dish.domain`, and `DishRepository`. **Note the correction**: there is no `com.easyeat.dish.domain.Dish` and none is coming — spec 005 added its five columns to the pre-existing `com.easyeat.catalog.domain.Dish`, which is the single `@Entity` over `dishes`. Assert that entity carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at` in `easyeat/backend/src/main/java/com/easyeat/dish/`, and record the outcome against R-005-0
+- [x] T002 [P] **SATISFIED 2026-10-28.** Verify the upstream dish domain exists: `DishStatus`, `DishCategory` and the auxiliary entities in `com.easyeat.dish.domain`, and `DishRepository`. **Note the correction**: there is no `com.easyeat.dish.domain.Dish` and none is coming — spec 005 added its five columns to the pre-existing `com.easyeat.catalog.domain.Dish`, which is the single `@Entity` over `dishes`. Assert that entity carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at` in `easyeat/backend/src/main/java/com/easyeat/dish/`, and record the outcome against R-005-0
+
+  **VERIFIED 2026-10-28 on the working branch.** `com.easyeat.dish.domain` holds `DishStatus`, `DishCategory`, `DishCategoryConverter`, `DishPhoto`, `DishRecipeIngredient` and `DishRecipeIngredientId` — and **no `Dish`**, confirming the correction above. `grep -rln '@Table(name = "dishes")'` returns exactly one file, `catalog/domain/Dish.java`, so there is a single entity over the table. That entity carries all five upstream columns:
+
+  ```
+  Dish.java:26  @Column(name = "category", length = 50)
+  Dish.java:36  @Column(name = "status", nullable = false, length = 50)
+  Dish.java:39  @Column(name = "allergens_confirmed", nullable = false)
+  Dish.java:42  @Column(name = "created_by")
+  Dish.java:45  @Column(name = "submitted_at")
+  ```
+
+  `DishRepository` is at `catalog/repository/DishRepository.java`, beside the entity rather than in `dish/`, which is where this feature's inbox queries will go. `dish/repository/` holds `DishPhotoRepository` and `DishRecipeIngredientRepository`.
 - [ ] T003 [P] Verify the `dishes` table carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at`, and that the index `idx_dishes_review_inbox_pending (tenant_id, status, submitted_at)` exists, by inspecting `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql`; record against R-005-0 and R-005-1
 - [ ] T004 [P] Verify the tables `dish_recipe_ingredients` and `dish_photos` exist in `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql`, and record the outcome against R-005-0
 - [ ] T005 **UNBLOCKED 2026-10-28 — execute under the recorded D1 amendment.** Add the `PUBLISHED` constant to `easyeat/backend/src/main/java/com/easyeat/dish/domain/DishStatus.java`, which declares only `DRAFT` and `PENDING_PRICE` while the database has admitted `PUBLISHED` since 005's `V7`. The authority is the amendment recorded in `plan.md` §R-005-3 and Complexity Tracking, which declares that enum **jointly owned** by specs 005 and 007. **Add the constant and nothing else**: do not reorder, rename or remove the existing ones — the enum is persisted by name through `@Enumerated(EnumType.STRING)`, so any of those is a data migration — do not touch any other class in `com.easyeat.dish.domain`, which stays 005-owned under D1 unchanged, and do not create a competing status enum in this feature. Update `DishEnumsTest` to assert the three constants. **R-005-4 is withdrawn and no longer part of this task**: no `@Version` is added anywhere, so T024 is no longer blocked.
