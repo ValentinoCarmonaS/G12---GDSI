@@ -25,14 +25,14 @@ describe('AllergenStep Component (T050, CHF-2.2.3, FR-013, FR-014, FR-015)', () 
     expect(screen.getByText(/Alérgenos Comunes/i)).toBeInTheDocument();
 
     // Dietary lifestyle items
-    expect(screen.getByText(/Vegano/i)).toBeInTheDocument();
-    expect(screen.getByText(/Vegetariano/i)).toBeInTheDocument();
-    expect(screen.getByText(/Celíaco/i)).toBeInTheDocument();
+    expect(screen.getByText('Vegano')).toBeInTheDocument();
+    expect(screen.getByText('Vegetariano')).toBeInTheDocument();
+    expect(screen.getByText('Celíaco')).toBeInTheDocument();
 
     // Common allergens items
-    expect(screen.getByText(/Lácteos/i)).toBeInTheDocument();
-    expect(screen.getByText(/Maní/i)).toBeInTheDocument();
-    expect(screen.getByText(/Huevos/i)).toBeInTheDocument();
+    expect(screen.getByText('Lácteos')).toBeInTheDocument();
+    expect(screen.getByText('Maní')).toBeInTheDocument();
+    expect(screen.getByText('Huevos')).toBeInTheDocument();
   });
 
   it('allows multi-selection of lifestyles and allergens, reflecting selection state', async () => {
