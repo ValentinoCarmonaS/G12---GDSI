@@ -3,6 +3,7 @@ package com.easyeat.catalog.domain;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 @Entity
@@ -126,5 +127,31 @@ public class Establishment {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public boolean isOpen(LocalTime now) {
+        if (status != EstablishmentStatus.ACTIVE) {
+            return false;
+        }
+        if (openingTime == null || closingTime == null) {
+            return false;
+        }
+        if (openingTime.isBefore(closingTime)) {
+            return !now.isBefore(openingTime) && now.isBefore(closingTime);
+        } else if (openingTime.isAfter(closingTime)) {
+            return !now.isBefore(openingTime) || now.isBefore(closingTime);
+        } else {
+            return true;
+        }
+    }
+
+    public boolean isOpen() {
+        ZoneId zoneId;
+        try {
+            zoneId = ZoneId.of(timezone != null ? timezone : "America/Argentina/Buenos_Aires");
+        } catch (Exception e) {
+            zoneId = ZoneId.of("America/Argentina/Buenos_Aires");
+        }
+        return isOpen(LocalTime.now(zoneId));
     }
 }

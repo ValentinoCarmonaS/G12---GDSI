@@ -45,7 +45,7 @@
 
 ### Tests for User Story 1 (TDD & Behavioral Acceptance - Write First) ⚠️
 
-- [ ] T012 [P] [US1] Unit test `EstablishmentDiscoveryServiceTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/EstablishmentDiscoveryServiceTest.java` validating `>= 3` character threshold, diacritic stripping, case folding, and inactive establishment exclusion
+- [x] T012 [P] [US1] Unit test `EstablishmentDiscoveryServiceTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/EstablishmentDiscoveryServiceTest.java` validating `>= 3` character threshold, diacritic stripping, case folding, and inactive establishment exclusion
 - [ ] T013 [P] [US1] Web contract test `EstablishmentDiscoveryControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/EstablishmentDiscoveryControllerTest.java` verifying `GET /api/v1/establishments/search?q={query}` against OpenAPI schema and HTTP 401 unauthenticated guard
 - [ ] T014 [P] [US1] Frontend component test `EstablishmentSearchBar.test.tsx` in `easyeat/frontend/src/test/catalog/EstablishmentSearchBar.test.tsx` verifying autocomplete dropdown, 300 ms debounce, cart clear warning dialog, and empty states
 
