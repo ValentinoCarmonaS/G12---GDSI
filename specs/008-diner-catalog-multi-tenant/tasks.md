@@ -86,7 +86,7 @@
 - [x] T031 [P] [US2] Implement frontend API client method `getEstablishmentCatalog` in `easyeat/frontend/src/api/dinerCatalogApi.ts`
 - [x] T032 [P] [US2] Create `StickyCategoryNav.tsx` in `easyeat/frontend/src/components/catalog/StickyCategoryNav.tsx` with smooth scrolling and active indicator
 - [x] T033 [P] [US2] Refactor `DishCard.tsx` in `easyeat/frontend/src/components/catalog/DishCard.tsx` displaying name, price, dietary flags, photo with lightweight SVG placeholder fallback, and full color vs greyscale styling
-- [ ] T034 [P] [US2] Create `DishDetailModal.tsx` in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx` showing enlarged photo, recipe ingredients, and outside-hours state notice
+- [x] T034 [P] [US2] Create `DishDetailModal.tsx` in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx` showing enlarged photo, recipe ingredients, and outside-hours state notice
 - [ ] T035 [P] [US2] Create `OperatingHoursBanner.tsx` in `easyeat/frontend/src/components/catalog/OperatingHoursBanner.tsx` displaying schedule notice and read-only banner
 - [ ] T036 [US2] Refactor `CatalogPage.tsx` in `easyeat/frontend/src/pages/CatalogPage.tsx` to render the categorized catalog, sticky navigation, and handle missing tenant redirection
 
