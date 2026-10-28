@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.config.Customizer;
@@ -74,7 +75,10 @@ public class SecurityConfig {
                                 "/api/v1/establishments/*/dishes",
                                 "/api/v1/establishments/{tenantId}/dishes"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/dishes/*/photo").permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
+                        .requestMatchers("/api/v1/dishes/**").hasRole("CHEF")
+                        .requestMatchers("/api/v1/admin/notifications/**").hasAnyRole("ADMINISTRADOR", "ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMINISTRADOR", "ADMIN")
                         .anyRequest().authenticated()
                 )
@@ -83,7 +87,7 @@ public class SecurityConfig {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/problem+json;charset=UTF-8");
                             ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                                    HttpStatus.UNAUTHORIZED,
+                                     HttpStatus.UNAUTHORIZED,
                                     "Se requiere autenticación o la sesión ha expirado"
                             );
                             problem.setType(URI.create("about:blank"));
