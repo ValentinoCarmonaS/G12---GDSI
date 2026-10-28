@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IngredientSelectorModal } from './IngredientSelectorModal';
 import type { RecipeIngredientItem } from '@/types/dish';
-import type { ChefIngredientItemResponse, UnitOfMeasure } from '@/types/inventory';
+import type { ChefIngredientItemResponse } from '@/types/inventory';
 
 export interface RecipeBOMStepProps {
   dishId?: string;
@@ -13,7 +13,6 @@ export interface RecipeBOMStepProps {
 }
 
 export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
-  dishId,
   initialRecipe = [],
   onSaveRecipe,
   onRemoveIngredient,
@@ -53,7 +52,7 @@ export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
     }
 
     setDuplicateWarning(null);
-    const defaultQty = selected.unitOfMeasure === 'u' ? 1 : 100;
+    const defaultQty = 1;
     const newItem: RecipeIngredientItem = {
       ingredientId: selected.id,
       ingredientName: selected.name,

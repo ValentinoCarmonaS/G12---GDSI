@@ -52,7 +52,7 @@ describe('User Story 2 User Journey Integration Test (T040, CHF-2.2.2)', () => {
         name: 'Arroz Carnaroli',
         category: 'Dry Goods',
         unitOfMeasure: 'g',
-        stockStatus: 'IN_STOCK',
+        stockStatus: 'In Stock',
         currentStock: 5000,
       },
     ],
@@ -60,7 +60,7 @@ describe('User Story 2 User Journey Integration Test (T040, CHF-2.2.2)', () => {
     size: 20,
     totalElements: 1,
     totalPages: 1,
-    last: true,
+    hasNext: false,
   };
 
   beforeEach(() => {
@@ -70,6 +70,15 @@ describe('User Story 2 User Journey Integration Test (T040, CHF-2.2.2)', () => {
     vi.mocked(dishApi.updateRecipe).mockResolvedValue({
       dishId: mockDishDetail.id,
       ingredients: [
+        {
+          ingredientId: 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
+          ingredientName: 'Arroz Carnaroli',
+          quantity: 200.0,
+          unitOfMeasure: 'g',
+          isIngredientActive: true,
+        },
+      ],
+      recipe: [
         {
           ingredientId: 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
           ingredientName: 'Arroz Carnaroli',

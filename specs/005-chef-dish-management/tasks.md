@@ -98,7 +98,7 @@
 - [X] T043 [US2] Add recipe endpoints `PUT /api/v1/dishes/{id}/recipe` and `DELETE /api/v1/dishes/{id}/recipe/ingredients/{ingredientId}` to `DishController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/DishController.java`
 - [X] T044 [P] [US2] Implement `IngredientSelectorModal.tsx` in `easyeat/frontend/src/components/dish/IngredientSelectorModal.tsx` querying Chef active ingredients catalog (20/page, A-Z) with category and text filters
 - [X] T045 [P] [US2] Implement `RecipeBOMStep.tsx` in `easyeat/frontend/src/components/dish/RecipeBOMStep.tsx` with recipe ingredients table, unit display, input masks (integer/decimal), duplicate warning banner, and delete actions
-- [ ] T046 [US2] Integrate `RecipeBOMStep.tsx` and `IngredientSelectorModal.tsx` into `ChefDishEditorPage.tsx` in `easyeat/frontend/src/pages/ChefDishEditorPage.tsx`
+- [X] T046 [US2] Integrate `RecipeBOMStep.tsx` and `IngredientSelectorModal.tsx` into `ChefDishEditorPage.tsx` in `easyeat/frontend/src/pages/ChefDishEditorPage.tsx`
 
 **Checkpoint**: User Stories 1 and 2 fully functional. Dishes can be authored with full BOM recipes.
 

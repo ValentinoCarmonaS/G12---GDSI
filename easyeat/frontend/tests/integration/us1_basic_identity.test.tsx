@@ -8,7 +8,6 @@ import { dishApi } from '@/api/dishApi';
 import {
   MOCK_DISH_ID_1,
   mockDishDraftDetail,
-  mockDishDraftSummary,
   createMockDishPage,
   createMockPhotoUploadResponse,
 } from '../mocks/dishHandlers';

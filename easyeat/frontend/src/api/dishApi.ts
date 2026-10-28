@@ -67,6 +67,29 @@ export const dishApi = {
   async deletePhoto(id: string): Promise<void> {
     await apiClient.delete(`/dishes/${id}/photo`);
   },
+
+  /**
+   * Updates dish Bill of Materials recipe lines.
+   */
+  async updateRecipe(id: string, data: import('@/types/dish').RecipeUpdateRequest): Promise<import('@/types/dish').RecipeResponse> {
+    const response = await apiClient.put<import('@/types/dish').RecipeResponse>(`/dishes/${id}/recipe`, data);
+    return response.data;
+  },
+
+  /**
+   * Removes a specific ingredient line from the dish recipe.
+   */
+  async removeRecipeIngredient(id: string, ingredientId: string): Promise<void> {
+    await apiClient.delete(`/dishes/${id}/recipe/ingredients/${ingredientId}`);
+  },
+
+  /**
+   * Retrieves the current recipe Bill of Materials for the dish.
+   */
+  async getRecipe(id: string): Promise<import('@/types/dish').RecipeResponse> {
+    const response = await apiClient.get<import('@/types/dish').RecipeResponse>(`/dishes/${id}/recipe`);
+    return response.data;
+  },
 };
 
 export default dishApi;

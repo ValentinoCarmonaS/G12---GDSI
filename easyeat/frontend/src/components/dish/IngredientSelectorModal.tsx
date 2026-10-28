@@ -51,7 +51,7 @@ export const IngredientSelectorModal: React.FC<IngredientSelectorModalProps> = (
           setLoading(false);
         }
       })
-      .catch((err) => {
+      .catch(() => {
         if (isMounted) {
           setError('Error al cargar el catálogo de ingredientes.');
           setLoading(false);

@@ -22,6 +22,7 @@ describe('BasicIdentityStep Component (T023, CHF-2.2.1)', () => {
     expect(screen.getByText(/0\/500/)).toBeInTheDocument();
 
     const categorySelect = screen.getByLabelText(/categoría/i);
+    expect(categorySelect).toBeInTheDocument();
     DISH_CATEGORIES.forEach((category) => {
       expect(screen.getByRole('option', { name: category })).toBeInTheDocument();
     });
