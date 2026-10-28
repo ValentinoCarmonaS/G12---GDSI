@@ -68,7 +68,7 @@
 - [X] T029 [US1] Implement `DishController` basic endpoints and `DishPhotoController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/` guarded with `@PreAuthorize("hasRole('CHEF')")`
 - [X] T030 [P] [US1] Implement frontend API client `dishApi.ts` in `easyeat/frontend/src/api/dishApi.ts` with methods for draft CRUD, photo upload/retrieval/deletion, and paginated listing
 - [X] T031 [P] [US1] Implement `DishStatusBadge.tsx` in `easyeat/frontend/src/components/dish/DishStatusBadge.tsx` displaying visual status badges for `Draft` and `Pending Price`
-- [ ] T032 [P] [US1] Implement `BasicIdentityStep.tsx` in `easyeat/frontend/src/components/dish/BasicIdentityStep.tsx` with name trimming, category selector, description counter, and photo dropzone with preview/delete
+- [X] T032 [P] [US1] Implement `BasicIdentityStep.tsx` in `easyeat/frontend/src/components/dish/BasicIdentityStep.tsx` with name trimming, category selector, description counter, and photo dropzone with preview/delete
 - [ ] T033 [US1] Implement `ChefDishesPage.tsx` in `easyeat/frontend/src/pages/ChefDishesPage.tsx` with 20 items/page pagination, status filter ("All", "Draft", "Pending Price"), and new dish creation action
 - [ ] T034 [US1] Configure route definitions `/cocina/platos`, `/cocina/platos/nuevo`, `/cocina/platos/:id` in `easyeat/frontend/src/router/AppRoutes.tsx` and add dish management navigation card in `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
 
