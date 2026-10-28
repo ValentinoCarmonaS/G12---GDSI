@@ -27,6 +27,9 @@ import com.easyeat.dish.dto.RecipeResponse;
 import com.easyeat.dish.dto.RecipeUpdateRequest;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
 import com.easyeat.inventory.repository.IngredientRepository;
+import com.easyeat.dish.dto.AllergenResponse;
+import com.easyeat.dish.dto.AllergenUpdateRequest;
+import com.easyeat.profile.repository.DietaryRestrictionRepository;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -37,16 +40,32 @@ public class DishService {
     private final DishPhotoRepository dishPhotoRepository;
     private final DishRecipeIngredientRepository dishRecipeIngredientRepository;
     private final IngredientRepository ingredientRepository;
+    private final DietaryRestrictionRepository dietaryRestrictionRepository;
+
+    public DishService(
+            DishRepository dishRepository,
+            DishPhotoRepository dishPhotoRepository,
+            DishRecipeIngredientRepository dishRecipeIngredientRepository,
+            IngredientRepository ingredientRepository,
+            DietaryRestrictionRepository dietaryRestrictionRepository) {
+        this.dishRepository = dishRepository;
+        this.dishPhotoRepository = dishPhotoRepository;
+        this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
+        this.ingredientRepository = ingredientRepository;
+        this.dietaryRestrictionRepository = dietaryRestrictionRepository;
+    }
 
     public DishService(
             DishRepository dishRepository,
             DishPhotoRepository dishPhotoRepository,
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository) {
-        this.dishRepository = dishRepository;
-        this.dishPhotoRepository = dishPhotoRepository;
-        this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
-        this.ingredientRepository = ingredientRepository;
+        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, null);
+    }
+
+    @Transactional
+    public AllergenResponse updateAllergens(UUID dishId, AllergenUpdateRequest request) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Transactional
