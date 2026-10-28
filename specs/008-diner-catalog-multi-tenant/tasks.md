@@ -104,7 +104,7 @@
 
 - [x] T037 [P] [US3] Unit test `DishAvailabilityEngineTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/DishAvailabilityEngineTest.java` (pure in-memory test covering decimal boundaries, fractional shortfalls, negative stock handling, empty recipe guard, inactive ingredients, shared ingredient N:M matrix, and simultaneous invalidation)
 - [x] T038 [P] [US3] Web contract test `DinerAvailabilityControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/DinerAvailabilityControllerTest.java` verifying `GET /api/v1/establishments/{tenantId}/catalog/availability` with ETag and `304 Not Modified`
-- [ ] T039 [P] [US3] Integration test `MultiTenantCatalogIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/integration/MultiTenantCatalogIntegrationTest.java` verifying homonymous dishes and ingredients between Tenant A and Tenant B, cross-tenant isolation, and 401/403/404 codes with PostgreSQL Testcontainers
+- [x] T039 [P] [US3] Integration test `MultiTenantCatalogIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/integration/MultiTenantCatalogIntegrationTest.java` verifying homonymous dishes and ingredients between Tenant A and Tenant B, cross-tenant isolation, and 401/403/404 codes with PostgreSQL Testcontainers
 - [ ] T040 [P] [US3] Frontend hook test `useRealtimeAvailability.test.ts` in `easyeat/frontend/src/test/catalog/useRealtimeAvailability.test.ts` verifying polling interval, 304 handling, visibilitychange pause/resume, and network error resilience
 
 ### Implementation for User Story 3
