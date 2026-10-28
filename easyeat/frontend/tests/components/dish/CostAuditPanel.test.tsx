@@ -71,3 +71,4 @@ describe('CostAuditPanel Component (ADM-5.1.2)', () => {
     expect(screen.getByText('Sin costo')).toBeInTheDocument();
   });
 });
+

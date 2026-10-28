@@ -14,3 +14,4 @@ public record RecipeItemAuditResponse(
         BigDecimal lineSubtotal,
         boolean unpricedWarning
 ) {}
+

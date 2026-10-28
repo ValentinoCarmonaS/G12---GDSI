@@ -13,3 +13,4 @@ public record FoodCostAuditResponse(
         List<String> requiredDietaryRestrictions,
         List<RecipeItemAuditResponse> items
 ) {}
+

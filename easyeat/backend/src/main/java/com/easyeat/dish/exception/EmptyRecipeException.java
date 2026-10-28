@@ -15,3 +15,4 @@ public class EmptyRecipeException extends RuntimeException {
         return dishId;
     }
 }
+
