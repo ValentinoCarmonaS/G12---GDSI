@@ -21,7 +21,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return null;
     }
   });
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading] = useState<boolean>(false);
 
   useEffect(() => {
     try {
