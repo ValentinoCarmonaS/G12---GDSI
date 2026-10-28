@@ -1,5 +1,7 @@
 package com.easyeat.catalog.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +15,13 @@ public class DishCatalogItemDto {
     private String category;
     private BigDecimal price;
     private String photoUrl;
+
+    @JsonProperty("isAvailable")
     private Boolean isAvailable;
+
+    @JsonProperty("isCompliant")
     private Boolean isCompliant;
+
     private List<String> conflictingRestrictions = new ArrayList<>();
     private List<String> recipeIngredients = new ArrayList<>();
 

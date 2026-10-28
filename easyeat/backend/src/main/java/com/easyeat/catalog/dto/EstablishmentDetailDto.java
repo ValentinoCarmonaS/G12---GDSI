@@ -1,6 +1,7 @@
 package com.easyeat.catalog.dto;
 
 import com.easyeat.catalog.domain.EstablishmentStatus;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.UUID;
 
@@ -9,6 +10,8 @@ public class EstablishmentDetailDto {
     private UUID id;
     private String name;
     private EstablishmentStatus status;
+
+    @JsonProperty("isOpen")
     private Boolean isOpen;
     private String nextOpeningSchedule;
 
