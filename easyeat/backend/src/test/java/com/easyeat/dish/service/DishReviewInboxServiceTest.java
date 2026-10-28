@@ -7,6 +7,7 @@ import com.easyeat.catalog.domain.Dish;
 import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.dish.domain.DishCategory;
 import com.easyeat.dish.domain.DishStatus;
+import com.easyeat.dish.dto.DishRejectionCount;
 import com.easyeat.dish.dto.DishReviewInboxItemResponse;
 import com.easyeat.dish.dto.DishReviewInboxPageResponse;
 import com.easyeat.dish.dto.InboxTab;
@@ -26,7 +27,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -86,32 +86,21 @@ class DishReviewInboxServiceTest {
 
     private static Dish dish(String name, DishStatus status, Instant submittedAt, UUID author) {
         Dish d = new Dish();
-        setField(d, "id", UUID.randomUUID());
-        setField(d, "tenantId", TENANT);
-        setField(d, "name", name);
-        setField(d, "category", DishCategory.PLATOS_PRINCIPALES);
-        setField(d, "status", status);
-        setField(d, "submittedAt", submittedAt);
-        setField(d, "createdBy", author);
+        d.setId(UUID.randomUUID());
+        d.setTenantId(TENANT);
+        d.setName(name);
+        d.setCategory(DishCategory.PLATOS_PRINCIPALES);
+        d.setStatus(status);
+        d.setSubmittedAt(submittedAt);
+        d.setCreatedBy(author);
         return d;
     }
 
-    /** The entity exposes no setter for id or tenantId, so the fixture reflects. */
-    private static void setField(Object target, String name, Object value) {
-        try {
-            Field f = target.getClass().getDeclaredField(name);
-            f.setAccessible(true);
-            f.set(target, value);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("fixture could not set " + name, e);
-        }
-    }
-
-    private static User user(String fullName, UserStatus status) {
+    private static User user(UUID id, String fullName, UserStatus status) {
         User u = new User();
-        setField(u, "id", UUID.randomUUID());
-        setField(u, "fullName", fullName);
-        setField(u, "status", status);
+        u.setId(id);
+        u.setFullName(fullName);
+        u.setStatus(status);
         return u;
     }
 
@@ -272,7 +261,7 @@ class DishReviewInboxServiceTest {
             when(inboxRepository.findPendingInbox(eq(TENANT), any()))
                     .thenReturn(pageOf(List.of(d), PageRequest.of(0, 20), 1));
             when(reviewHistoryRepository.countRejectionsByDishIds(eq(TENANT), anyList()))
-                    .thenReturn(List.of(new Object[]{d.getId(), 2L}));
+                    .thenReturn(List.of(new DishRejectionCount(d.getId(), 2L)));
 
             DishReviewInboxItemResponse item =
                     service.getInbox(InboxTab.PENDING, 0, 20).items().getFirst();
@@ -310,8 +299,7 @@ class DishReviewInboxServiceTest {
         void suspendedAuthor() {
             UUID authorId = UUID.randomUUID();
             Dish d = dish("Tarta", DishStatus.PENDING_PRICE, Instant.now(), authorId);
-            User suspended = user("Camila Duarte", UserStatus.SUSPENDED);
-            setField(suspended, "id", authorId);
+            User suspended = user(authorId, "Camila Duarte", UserStatus.SUSPENDED);
 
             when(inboxRepository.findPendingInbox(eq(TENANT), any()))
                     .thenReturn(pageOf(List.of(d), PageRequest.of(0, 20), 1));
@@ -331,8 +319,7 @@ class DishReviewInboxServiceTest {
         void activeAuthor() {
             UUID authorId = UUID.randomUUID();
             Dish d = dish("Tarta", DishStatus.PENDING_PRICE, Instant.now(), authorId);
-            User active = user("Camila Duarte", UserStatus.ACTIVE);
-            setField(active, "id", authorId);
+            User active = user(authorId, "Camila Duarte", UserStatus.ACTIVE);
 
             when(inboxRepository.findPendingInbox(eq(TENANT), any()))
                     .thenReturn(pageOf(List.of(d), PageRequest.of(0, 20), 1));
