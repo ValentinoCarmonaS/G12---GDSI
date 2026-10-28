@@ -39,7 +39,7 @@ derives, because ±0.01 pp is not achievable for low prices.
 
 **Project Type**: Full-stack web application in a monorepo (`easyeat/backend`, `easyeat/frontend`) — vertical slice per Principle X
 
-**Performance Goals**: inbox and audit panel perceived within 2 s on standard broadband (SC-006); the resubmission indicator resolved in 2 queries per page regardless of page size (no N+1)
+**Performance Goals**: p95 of 2 s for the inbox (request to list rendered) and for the audit panel (request to itemized Food Cost rendered), with 20 pending dishes on a 20 Mbps connection at 50 ms round-trip latency (SC-006, restated measurably 2026-10-28); the resubmission indicator resolved in 2 queries per page regardless of page size (no N+1)
 
 **Constraints**: exact decimal arithmetic for every monetary and margin value (scale 2 money, scale 4 quantities/unit costs, `HALF_UP`); no financial datum reachable through any Chef-facing payload (FR-023); strict tenant isolation on every query; one `@RestControllerAdvice` in the backend — extend `com.easyeat.auth.controller.GlobalExceptionHandler`, never add a competing advice
 
@@ -56,6 +56,15 @@ from upstream is a numbered requirement below.
 ## Constitution Check
 
 *GATE: evaluated before Phase 0 and re-evaluated after Phase 1 design.*
+
+**As of 2026-10-28.** Every verdict below was assessed against the state of this feature's documents on that date, and each one is revalidated when the document that supports it changes — not once per feature. A reader who finds a row stale should re-measure rather than trust it; the upstream-synchronization row is the standing example of a verdict that expired within 24 hours of being recorded.
+
+Four verdicts were re-assessed on that date and the reason each still holds has changed:
+
+- **I** and **X** held only conditionally until `FR-027` to `FR-033` brought the interface behaviour and the diner-visibility condition into the specification. Before that, 28 frontend tasks implemented behaviour whose only source was this plan — a Principle I inversion. Re-check if interface behaviour is ever added to this plan without a matching requirement.
+- **IV** and **VI** rested on decision **D3**, two JPA mappings over `dishes`. D3 is withdrawn: spec 005 consolidated onto one entity, so the structural guard `@Immutable` would have given is now a review-enforced invariant, registered as debt. Re-check if a write path is ever added to `catalog/repository/DishRepository`.
+- **VII** rested on an FR-to-task mapping that was inferential; 64 tasks now name the requirement they serve. Re-check if tasks are added without that annotation.
+- **VIII** gained a fourth open escalation, **R-005-4**, when `@Version` turned out to land on a shared entity. The verdict holds because the decision is escalated rather than absorbed; it would fail if any of the four open upstream decisions were resolved unilaterally inside this feature.
 
 | Principle | Pre-design | Post-design | Evidence |
 |---|---|---|---|
@@ -514,7 +523,7 @@ spec 005's branch is integrated into `develop/sprint-2` so that `V7` applies and
 `com.easyeat.catalog.domain.Dish` carries the five upstream columns, `DishStatus` and
 `dish_recipe_ingredients` are on the working branch;
 `DishStatus` admits `PUBLISHED` under an agreed owner (R-005-3); the cost engine is reachable; and the
-free migration version is confirmed against `db/migration/` rather than assumed.
+free migration version is confirmed against `db/migration/` and against the project registry at [`.specify/memory/migrations.md`](../../.specify/memory/migrations.md) rather than assumed.
 
 **Phase 1 — Persistence.** Deliverables: this feature's migration, the two audit entities and their
 append-only repositories, the three columns and `@Version` added to the single `catalog.domain.Dish`
