@@ -462,7 +462,13 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
 - [x] T051 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxList.tsx` — FIFO list with distinct empty, loading (skeleton) and error states — **Serves**: FR-028, FR-029
 - [x] T052 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxRow.tsx` — name, category, author, `submittedAt`, status and the "Inicial" / "Reenvío (ciclo N)" marker — **Serves**: FR-004, FR-027
 - [x] T053 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/InboxPagination.tsx` — 20-per-page controls — **Serves**: FR-003
-- [ ] T054 [US1] Write `easyeat/frontend/tests/components/dishreview/DishAuditPanel.test.tsx` covering identity, dietary labels, the itemized cost breakdown and the unpriced-ingredient advisory — **Serves**: FR-006
+- [x] T054 [US1] Write `easyeat/frontend/tests/components/dishreview/DishAuditPanel.test.tsx` covering identity, dietary labels, the itemized cost breakdown and the unpriced-ingredient advisory — **Serves**: FR-006
+
+  **DONE 2026-10-28**, RED observed: the panel and the breakdown table do not resolve.
+
+  **Two assertions guard against a plausible-looking mistake.** A Food Cost of `0,00` must render as a **figure**, not as a dash: zero is a real cost — a recipe whose every ingredient is unpriced — and a dash would make it indistinguishable from "not computed". And the panel-level unpriced warning must say the total is **incomplete**, not that it is wrong, because the Administrator is about to make a decision about money and those are different claims.
+
+  **An outstanding acknowledgement is asserted not to be rendered as a gate condition.** FR-017 makes it an additional precondition and never a failure, so a panel that listed it among the unmet conditions would tell the Administrator a publishable dish is blocked.
 - [ ] T055 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/FoodCostBreakdownTable.tsx` — line items, subtotals and total per portion — **Serves**: FR-006
 - [ ] T056 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/UnpricedIngredientBadge.tsx` — amber advisory — **Serves**: FR-006
 - [ ] T057 [US1] Implement `easyeat/frontend/src/components/dishreview/DishAuditPanel.tsx` composing identity, labels and the cost breakdown — **Serves**: FR-006
