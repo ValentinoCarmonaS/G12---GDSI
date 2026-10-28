@@ -9,6 +9,7 @@ describe('ReviewSubmitStep Component (T062, CHF-2.2.4, FR-016, FR-017, FR-022)',
 
   const mockCompleteDish: DishDetailResponse = {
     id: 'd1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
+    tenantId: 't1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
     name: 'Risotto de Hongos',
     category: 'Platos principales',
     description: 'Arroz con hongos portobello',
@@ -25,16 +26,29 @@ describe('ReviewSubmitStep Component (T062, CHF-2.2.4, FR-016, FR-017, FR-022)',
         isIngredientActive: true,
       },
     ],
+    isCompleteForReview: true,
+    missingConditions: [],
+    createdById: 'u1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
+    createdAt: '2026-10-28T01:00:00Z',
+    updatedAt: '2026-10-28T01:00:00Z',
   };
 
   const mockIncompleteDish: DishDetailResponse = {
     id: 'd1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
+    tenantId: 't1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
     name: 'Risotto de Hongos',
     category: 'Platos principales',
+    description: 'Arroz con hongos portobello',
+    photoUrl: null,
     status: 'DRAFT',
     allergensConfirmed: false,
     restrictionCodes: [],
     recipe: [],
+    isCompleteForReview: false,
+    missingConditions: ['BOM_EMPTY', 'ALLERGENS_UNCONFIRMED'],
+    createdById: 'u1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
+    createdAt: '2026-10-28T01:00:00Z',
+    updatedAt: '2026-10-28T01:00:00Z',
   };
 
   beforeEach(() => {

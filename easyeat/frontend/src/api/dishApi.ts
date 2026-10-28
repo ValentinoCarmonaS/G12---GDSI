@@ -100,6 +100,15 @@ export const dishApi = {
     const response = await apiClient.put<DishAllergensResponse>(`/dishes/${id}/allergens`, data);
     return response.data;
   },
+
+  /**
+   * Submits a dish for administrator review (CHF-2.2.4).
+   * Atomically transitions status to PENDING_PRICE and locks the dish against chef mutations.
+   */
+  async submitForReview(id: string): Promise<DishDetailResponse> {
+    const response = await apiClient.post<DishDetailResponse>(`/dishes/${id}/submit-review`);
+    return response.data;
+  },
 };
 
 export default dishApi;

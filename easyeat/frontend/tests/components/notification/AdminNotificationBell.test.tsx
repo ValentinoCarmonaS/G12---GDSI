@@ -6,7 +6,6 @@ import type { AdminNotificationResponse } from '@/types/notification';
 
 describe('AdminNotificationBell Component (T063, CHF-2.2.4)', () => {
   const mockOnMarkAsRead = vi.fn();
-  const mockOnRefresh = vi.fn();
 
   const mockNotifications: AdminNotificationResponse[] = [
     {
