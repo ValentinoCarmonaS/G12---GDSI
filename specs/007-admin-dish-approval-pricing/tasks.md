@@ -433,7 +433,13 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
   **DONE 2026-10-28**, T045 green at 10 of 10.
 
   **Thin by intent, and the class says so**: it shapes requests, unwraps bodies, and does nothing else — no retries, no caching, no defaulting of error responses. Each of those would hide a server failure behind something that looks like data.
-- [ ] T047 [US1] Write `easyeat/frontend/tests/hooks/useDishReviewInbox.test.ts` covering tab and page state, counts, and reconciliation after a stale decision — **Serves**: FR-003, FR-032
+- [x] T047 [US1] Write `easyeat/frontend/tests/hooks/useDishReviewInbox.test.ts` covering tab and page state, counts, and reconciliation after a stale decision — **Serves**: FR-003, FR-032
+
+  **DONE 2026-10-28**, RED observed: the hook module does not resolve.
+
+  **FR-032's reconciliation clause drove four cases, and one of them is the interesting one.** The requirement says a dish that has received a terminal decision must be removed *and the view reconciled*, so removing the row is not enough: the counts and pagination must stop describing it. The sharp case is removing the **last row of a page** — the Administrator would otherwise be stranded on an empty page 1 with no way forward — so the hook is required to step back to page 0.
+
+  Three more cases pin behaviour a naive hook gets wrong: switching to the tab **already active** must not throw the Administrator back to page 0; the list must **keep its previous items while a refetch is in flight**, because blanking on every refresh loses their place; and a 403 is **not retryable** while a transport error is, since offering "retry" for a permission failure is a lie.
 - [ ] T048 [US1] Implement `easyeat/frontend/src/hooks/useDishReviewInbox.ts` — **Serves**: FR-003, FR-032
 - [ ] T049 [US1] Write `easyeat/frontend/tests/components/dishreview/ReviewInbox.test.tsx` covering tab switching, FIFO rendering, pagination, the pending badge, the initial-versus-resubmission marker and a distinct empty state per tab — **Serves**: FR-002, FR-003, FR-004, FR-028, FR-029
 - [ ] T050 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxTabs.tsx` — three tabs plus the pending badge — **Serves**: FR-002, FR-003
