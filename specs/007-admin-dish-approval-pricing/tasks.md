@@ -440,7 +440,15 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
   **FR-032's reconciliation clause drove four cases, and one of them is the interesting one.** The requirement says a dish that has received a terminal decision must be removed *and the view reconciled*, so removing the row is not enough: the counts and pagination must stop describing it. The sharp case is removing the **last row of a page** — the Administrator would otherwise be stranded on an empty page 1 with no way forward — so the hook is required to step back to page 0.
 
   Three more cases pin behaviour a naive hook gets wrong: switching to the tab **already active** must not throw the Administrator back to page 0; the list must **keep its previous items while a refetch is in flight**, because blanking on every refresh loses their place; and a 403 is **not retryable** while a transport error is, since offering "retry" for a permission failure is a lie.
-- [ ] T048 [US1] Implement `easyeat/frontend/src/hooks/useDishReviewInbox.ts` — **Serves**: FR-003, FR-032
+- [x] T048 [US1] Implement `easyeat/frontend/src/hooks/useDishReviewInbox.ts` — **Serves**: FR-003, FR-032
+
+  **DONE 2026-10-28**, T047 green at 14 of 14 — after the test caught a real bug.
+
+  **The bug.** `reconcileAfterStaleDecision` computed "was that the last row on the page?" *inside* a `setItems` updater and read the flag on the next line. React does not run an updater synchronously, so the flag was always `false` and the step-back never happened: the Administrator would have been stranded on an empty page. Now computed from the rendered state, with the reason recorded in the code so the mistake is not reintroduced.
+
+  **Errors are modelled by what can be done about them**, not as strings: a `kind` plus a `retryable` flag, so the interface does not have to guess whether to offer a retry. A 403 is not retryable; a transport failure is.
+
+  A request sequence guard drops the response of an abandoned tab, so a slow `PENDING` reply cannot overwrite the `HISTORY` view the Administrator has already switched to.
 - [ ] T049 [US1] Write `easyeat/frontend/tests/components/dishreview/ReviewInbox.test.tsx` covering tab switching, FIFO rendering, pagination, the pending badge, the initial-versus-resubmission marker and a distinct empty state per tab — **Serves**: FR-002, FR-003, FR-004, FR-028, FR-029
 - [ ] T050 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxTabs.tsx` — three tabs plus the pending badge — **Serves**: FR-002, FR-003
 - [ ] T051 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxList.tsx` — FIFO list with distinct empty, loading (skeleton) and error states — **Serves**: FR-028, FR-029
