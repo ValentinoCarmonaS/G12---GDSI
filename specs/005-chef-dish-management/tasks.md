@@ -58,7 +58,7 @@
 - [X] T022 [P] [US1] Behavioral acceptance test `DishBasicAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishBasicAcceptanceTest.java` covering User Story 1 acceptance scenarios using JUnit 5 and Testcontainers
 - [X] T023 [P] [US1] Frontend component test `BasicIdentityStep.test.tsx` in `easyeat/frontend/tests/components/dish/BasicIdentityStep.test.tsx` verifying form inputs, live validation, character counter, and photo upload/removal preview
 - [X] T024 [P] [US1] Frontend page test `ChefDishesPage.test.tsx` in `easyeat/frontend/tests/pages/ChefDishesPage.test.tsx` verifying paginated table rendering (20 items/page), sorting by `updated_at DESC`, and status filter dropdown
-- [ ] T025 [P] [US1] Frontend user journey integration test `us1_basic_identity.test.tsx` in `easyeat/frontend/tests/integration/us1_basic_identity.test.tsx` verifying draft creation, photo upload, and listing flow using Vitest
+- [X] T025 [P] [US1] Frontend user journey integration test `us1_basic_identity.test.tsx` in `easyeat/frontend/tests/integration/us1_basic_identity.test.tsx` verifying draft creation, photo upload, and listing flow using Vitest
 
 ### Implementation for User Story 1
 
