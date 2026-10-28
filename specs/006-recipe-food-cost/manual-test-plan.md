@@ -27,101 +27,70 @@
 
 ## 2. Casos de Prueba Manuales
 
-### Caso 1: Persistencia de Receta Técnica como Chef (Happy Path)
-- **Rol requerido**: `CHEF`
-- **Precondición**: Tener un plato creado en estado `DRAFT` y conocer IDs de insumos activos de inventario.
-- **Acción**:
-  Ejecutar la petición para asociar insumos a la receta:
-  ```bash
-  curl -X PUT http://localhost:8080/api/v1/dishes/{DRAFT_DISH_ID}/recipe \
-    -H "Authorization: Bearer $CHEF_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '{
-      "ingredients": [
-        { "ingredientId": "'"$INGREDIENT_1_ID"'", "quantity": 0.25 },
-        { "ingredientId": "'"$INGREDIENT_2_ID"'", "quantity": 150.0 }
-      ]
-    }'
-  ```
-- **Resultado esperado**:
-  - Código HTTP `200 OK`.
-  - El cuerpo retorna la lista con las 2 líneas persistidas.
-  - En la base de datos, la tabla `dish_recipe_ingredients` contiene las 2 filas asociadas al `dish_id`.
+### Caso 1: Persistencia de Receta Técnica en la UI de Cocina (Chef)
+- **Rol requerido**: `CHEF` (`carlos.cocina@laesquina.com` o usuario Chef del tenant).
+- **Flujo Visual en Frontend**:
+  1. Ingresá a la app y logueate con credenciales de Chef.
+  2. Navegá a **Cocina** (`/cocina/platos`) y creá un plato nuevo o seleccioná un borrador (`DRAFT`).
+  3. En la pestaña o paso **Receta**, abrí el modal **Seleccionar Insumo** (`IngredientSelectorModal`).
+  4. Seleccioná materias primas del catálogo maestro (ej. Harina, Queso) y definí sus cantidades por porción.
+  5. Hacé clic en **Guardar Receta**.
+- **Resultado esperado en UI**:
+  - La tabla de insumos de la receta se actualiza inmediatamente mostrando los insumos agregados y sus cantidades.
+  - No permite agregar insumos duplicados (muestra alerta).
+  - No permite cantidades $\le 0$.
+  - La receta persiste en el backend de forma atómica (`PUT /api/v1/dishes/{id}/recipe`).
 
 ---
 
-### Caso 2: Rechazo de Cantidad Inválida y Duplicados
-- **Rol requerido**: `CHEF`
-- **Acción A (Cantidad <= 0)**:
-  Enviar `quantity: 0` o valor negativo en uno de los insumos.
-  - **Resultado esperado**: HTTP `400 Bad Request` con título `Invalid Recipe Ingredient Quantity`.
-- **Acción B (Insumo duplicado)**:
-  Enviar el mismo `ingredientId` dos veces en la misma solicitud.
-  - **Resultado esperado**: HTTP `400 Bad Request` indicando duplicado.
+### Caso 2: Auditoría Financiera de Food Cost en la UI de Administración (Stakeholder / Admin)
+- **Rol requerido**: `ADMINISTRADOR` / `ADMIN` (`admin@laesquina.com`).
+- **Precondición**: El Chef completó la ficha técnica y la receta del plato, y lo envió a revisión (estado `PENDING_PRICE`).
+- **Flujo Visual en Frontend**:
+  1. Cerrá sesión e iniciá sesión con usuario Administrador.
+  2. Navegá a la URL de auditoría del plato:  
+     `http://localhost:5173/admin/dishes/{id_del_plato}/cost-audit`
+- **Resultado esperado en UI**:
+  - Se visualiza el componente **Auditoría Financiera de Costos (Food Cost)** (`CostAuditPanel`).
+  - Muestra el nombre del plato, la tabla completa con cada insumo, cantidad por porción, unidad de medida, costo de compra unitario de inventario y subtotal.
+  - En el pie de la tabla destaca en verde el **Costo Total de Materia Prima (Food Cost)** calculado de forma exacta (con 2 decimales).
+  - En la sección inferior aparecen las **Etiquetas Dietarias Declaradas** (ej. `CELIAC`, `DAIRY`) asociadas al plato.
+  - Dispone de un botón **Actualizar Costos** para refrescar los datos en tiempo real si hubo cambios en los precios de los insumos.
 
 ---
 
-### Caso 3: Bloqueo de Modificación de Receta Fuera de Borrador (Locking Invariant)
-- **Rol requerido**: `CHEF`
-- **Precondición**: Un plato que ya fue enviado a revisión y se encuentra en estado `PENDING_PRICE` o publicado.
-- **Acción**:
-  Intentar ejecutar `PUT /api/v1/dishes/{PENDING_DISH_ID}/recipe`.
-- **Resultado esperado**:
-  - Código HTTP `409 Conflict`.
-  - El cuerpo ProblemDetail indica que el plato está bloqueado en estado `PENDING_PRICE`.
+### Caso 3: Advertencia Visual de Insumos sin Costo de Compra
+- **Rol requerido**: `ADMINISTRADOR`
+- **Precondición**: Un plato en `PENDING_PRICE` tiene en su receta algún insumo que en el inventario tiene costo `0.00` o no tiene precio asignado.
+- **Flujo Visual en Frontend**:
+  1. Abrí la auditoría del plato en `/admin/dishes/{id}/cost-audit`.
+- **Resultado esperado en UI**:
+  - Aparece un banner de advertencia destacado en amarillo:  
+    *“Advertencia de Insumos sin Precio: Uno o más insumos no tienen costo de adquisición cargado en inventario. El costo calculado es parcial.”*
+  - Se listan los nombres específicos de los insumos sin precio.
+  - En la fila del insumo se visualiza una insignia tipo badge: `Sin costo`.
+  - La auditoría no se rompe: permite al stakeholder ver el costo parcial acumulado.
 
 ---
 
-### Caso 4: Intento de Auditoría en Plato en Borrador (State Gate)
-- **Rol requerido**: `ADMIN`
-- **Precondición**: Plato en estado `DRAFT` con o sin receta.
-- **Acción**:
-  Consultar el endpoint de auditoría financiera:
-  ```bash
-  curl -X GET http://localhost:8080/api/v1/dishes/{DRAFT_DISH_ID}/cost-audit \
-    -H "Authorization: Bearer $ADMIN_TOKEN"
-  ```
-- **Resultado esperado**:
-  - Código HTTP `409 Conflict`.
-  - El detalle especifica que el plato requiere estar en estado `PENDING_PRICE` para ser auditado.
+### Caso 4: Bloqueo de Auditoría si el Plato está en Borrador (State Gate)
+- **Rol requerido**: `ADMINISTRADOR`
+- **Precondición**: Un plato que aún se encuentra en estado `DRAFT` (el Chef aún no lo envió a revisión).
+- **Flujo Visual en Frontend**:
+  1. Intentá ingresar a `/admin/dishes/{draft_id}/cost-audit`.
+- **Resultado esperado en UI**:
+  - La pantalla no muestra datos financieros incorrectos.
+  - Aparece un panel de aviso en rojo:  
+    *“No se pudo realizar la auditoría: El plato debe estar en estado PENDING_PRICE (enviado a revisión) para auditar sus costos.”*
 
 ---
 
-### Caso 5: Auditoría Exitosa de Costo con Etiquetas Dietarias (Happy Path ADM-5.1.2)
-- **Rol requerido**: `ADMIN`
-- **Precondición**: Plato en estado `PENDING_PRICE` con receta técnica asignada e insumos con costos de adquisición cargados en inventario.
-- **Acción**:
-  ```bash
-  curl -X GET http://localhost:8080/api/v1/dishes/{PENDING_DISH_ID}/cost-audit \
-    -H "Authorization: Bearer $ADMIN_TOKEN"
-  ```
-- **Resultado esperado**:
-  - Código HTTP `200 OK`.
-  - `totalFoodCost` calculado exactamente como la suma de cada `(quantity * unitPurchaseCost)` redondeado a 2 decimales (`HALF_UP`).
-  - `hasUnpricedIngredients` es `false` y `warningNotes` está vacío.
-  - `requiredDietaryRestrictions` incluye los códigos declarados del plato (ej. `["CELIAC"]`).
-  - Lista `items` con desglose detallado de cada insumo.
+### Caso 5: Protección de Confidencialidad ante Usuarios no Administradores
+- **Rol**: `CHEF` o `ENCARGADO`
+- **Flujo Visual en Frontend**:
+  1. Estando logueado como Chef o Encargado, intentá navegar a `/admin/dishes/{id}/cost-audit`.
+- **Resultado esperado en UI**:
+  - El sistema activa el `RoleRouteGuard` y bloquea inmediatamente el acceso, redirigiendo al espacio correspondiente (`/cocina` o `/mostrador`).
+  - Si intentara acceder directo a la API, el backend responde `403 Forbidden`.
+  - Se garantiza que el personal de cocina no tiene visibilidad de los costos de compra ni de los márgenes financieros.
 
----
-
-### Caso 6: Detección de Insumos sin Costo de Adquisición (Unpriced Warning)
-- **Rol requerido**: `ADMIN`
-- **Precondición**: Plato en estado `PENDING_PRICE` cuya receta contiene al menos un insumo con costo unitario de compra `0.00` o no asignado en inventario.
-- **Acción**:
-  Ejecutar `GET /api/v1/dishes/{PENDING_DISH_ID}/cost-audit`.
-- **Resultado esperado**:
-  - Código HTTP `200 OK` (no falla la auditoría).
-  - La bandera `hasUnpricedIngredients` es `true`.
-  - `warningNotes` contiene la advertencia con el nombre del insumo sin precio.
-  - En la lista `items`, el insumo tiene `unpricedWarning: true` y subtotal `0.00`.
-  - En el frontend, el componente `CostAuditPanel` muestra el banner amarillo de advertencia.
-
----
-
-### Caso 7: Barrera de Confidencialidad Financiera (Seguridad RBAC)
-- **Rol requerido**: `CHEF` o usuario sin rol `ADMIN`
-- **Acción**:
-  El Chef intenta acceder a `GET /api/v1/dishes/{PENDING_DISH_ID}/cost-audit`.
-- **Resultado esperado**:
-  - Código HTTP `403 Forbidden`.
-  - Se protege la confidencialidad de los costos comerciales de proveedores frente al personal de cocina.
