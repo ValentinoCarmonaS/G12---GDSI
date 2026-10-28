@@ -276,7 +276,11 @@ The calculator receives the Food Cost as a parameter, so it does not depend on w
   Same inheritance check as T018, for the same reason. Beyond the shape, the suite pins the three invariants the schema also enforces, so each failure arrives as an argument error at the call site rather than as a driver-level constraint violation: a `NULL` previous price is **legitimate** on a first pricing and not missing data (FR-010); a new price of zero or below is refused; and a Food Cost snapshot of `0.00` is accepted while a negative one is not, because `0.00` is what a recipe whose every ingredient is unpriced actually costs.
 
   It also asserts **scale 2 on all three monetary fields**, which is the downstream half of T007's finding: spec 006 rounds each line subtotal to scale 2, so this feature stores the Food Cost without rounding it a second time.
-- [ ] T022 [P] Create the immutable `DishPriceHistory` entity in `easyeat/backend/src/main/java/com/easyeat/dish/domain/DishPriceHistory.java` with no setters and no `@PreUpdate`, per `data-model.md §2`
+- [x] T022 [P] Create the immutable `DishPriceHistory` entity in `easyeat/backend/src/main/java/com/easyeat/dish/domain/DishPriceHistory.java` with no setters and no `@PreUpdate`, per `data-model.md §2` — **DONE 2026-10-28**
+
+  Same three immutability mechanisms as T019. **The snapshot is the reason the row exists**: it is what lets the margin of a past decision be reconstructed after the inventory has moved, which FR-012's recomputed margin cannot do by design.
+
+  One judgement recorded in the code rather than left implicit: `atMoneyScale` normalises to scale 2 with `HALF_UP`, but **no rounding occurs in practice** — spec 006 rounds each line subtotal and the calculator produces prices at scale 2, so every value arriving here is already there. A value with more decimals would be an upstream defect, and normalising keeps the stored column honest instead of letting the driver truncate it silently.
 - [ ] T023 Create `DishPriceHistoryRepository` in `easyeat/backend/src/main/java/com/easyeat/dish/repository/DishPriceHistoryRepository.java` exposing save and queries only
 
 ### Entity fields and the immutable catalog mapping
