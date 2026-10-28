@@ -181,7 +181,7 @@ class DishReviewInboxServiceTest {
         void fifoBySubmittedAt() {
             service.getInbox(InboxTab.PENDING, 0, 20);
 
-            Pageable requested = captureInboxPageable();
+            Pageable requested = capturePendingPageable();
             assertThat(requested.getSort().getOrderFor("submittedAt"))
                     .as("FR-003 orders oldest first by submission timestamp")
                     .isNotNull()
@@ -193,7 +193,7 @@ class DishReviewInboxServiceTest {
         void noCreatedAtFallback() {
             service.getInbox(InboxTab.PENDING, 0, 20);
 
-            Pageable requested = captureInboxPageable();
+            Pageable requested = capturePendingPageable();
             assertThat(requested.getSort().getOrderFor("createdAt"))
                     .as("plan.md R-005-1: the degraded created_at ordering is withdrawn and NOT "
                             + "authorised. submitted_at is written by spec 005 on every transition")
@@ -222,16 +222,21 @@ class DishReviewInboxServiceTest {
         void publishedNewestFirst() {
             service.getInbox(InboxTab.PUBLISHED, 0, 20);
 
-            Pageable requested = captureInboxPageable();
+            Pageable requested = capturePublishedPageable();
             assertThat(requested.getSort().getOrderFor("publishedAt"))
                     .isNotNull()
                     .satisfies(order -> assertThat(order.isDescending()).isTrue());
         }
 
-        private Pageable captureInboxPageable() {
+        private Pageable capturePendingPageable() {
             var captor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
-            Mockito.verify(inboxRepository, Mockito.atLeastOnce())
-                    .findPendingInbox(any(), captor.capture());
+            Mockito.verify(inboxRepository).findPendingInbox(any(), captor.capture());
+            return captor.getValue();
+        }
+
+        private Pageable capturePublishedPageable() {
+            var captor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
+            Mockito.verify(inboxRepository).findPublishedInbox(any(), captor.capture());
             return captor.getValue();
         }
     }
