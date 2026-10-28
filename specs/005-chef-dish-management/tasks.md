@@ -151,7 +151,7 @@
 
 - [X] T065 [P] [US4] Create Notification DTOs (`NotificationResponse`, `NotificationPageResponse`) in `easyeat/backend/src/main/java/com/easyeat/notification/dto/` matching OpenAPI contract
 - [X] T066 [US4] Implement `submitForReview` in `DishService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` with `@Transactional` pessimistic locking, completeness condition evaluation, status transition to `PENDING_PRICE`, immutability check interceptor, and notification dispatch
-- [ ] T067 [US4] Implement `AdminNotificationService` in `easyeat/backend/src/main/java/com/easyeat/notification/service/AdminNotificationService.java` managing notification persistence, tenant retrieval with `unreadOnly` filter, and mark-as-read updates
+- [X] T067 [US4] Implement `AdminNotificationService` in `easyeat/backend/src/main/java/com/easyeat/notification/service/AdminNotificationService.java` managing notification persistence, tenant retrieval with `unreadOnly` filter, and mark-as-read updates
 - [ ] T068 [US4] Add submission endpoint `POST /api/v1/dishes/{id}/submit-review` to `DishController` and implement `AdminNotificationController` in `easyeat/backend/src/main/java/com/easyeat/notification/controller/AdminNotificationController.java` guarded with `@PreAuthorize("hasRole('ADMINISTRADOR')")`
 - [ ] T069 [P] [US4] Implement `adminNotificationApi.ts` in `easyeat/frontend/src/api/adminNotificationApi.ts` with methods for querying notifications and marking them as read
 - [ ] T070 [P] [US4] Implement `ReviewSubmitStep.tsx` in `easyeat/frontend/src/components/dish/ReviewSubmitStep.tsx` displaying section completeness checklist, validation feedback, and "Send for Review" action
