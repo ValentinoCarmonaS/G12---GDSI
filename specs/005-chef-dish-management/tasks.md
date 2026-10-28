@@ -51,26 +51,26 @@
 
 ### Tests for User Story 1 (TDD & Behavioral Acceptance - Write First) ⚠️
 
-- [ ] T018 [P] [US1] Unit test `DishBasicServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishBasicServiceTest.java` validating name whitespace trimming, tenant uniqueness constraint, closed category validation, draft deletion, and character limits (100 name, 500 description)
-- [ ] T019 [P] [US1] Unit test `DishPhotoServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishPhotoServiceTest.java` validating MIME types (JPEG, PNG, WebP), 5 MB file size limit rejection, and photo deletion in draft status
-- [ ] T020 [P] [US1] Web contract test `DishControllerBasicTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishControllerBasicTest.java` verifying `POST /api/v1/dishes`, `GET /api/v1/dishes`, `GET /api/v1/dishes/{id}`, `PUT /api/v1/dishes/{id}`, and `DELETE /api/v1/dishes/{id}` against OpenAPI schema
-- [ ] T021 [P] [US1] Web contract test `DishPhotoControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishPhotoControllerTest.java` verifying `POST /api/v1/dishes/{id}/photo`, `GET /api/v1/dishes/{id}/photo`, and `DELETE /api/v1/dishes/{id}/photo`
-- [ ] T022 [P] [US1] Behavioral acceptance test `DishBasicAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishBasicAcceptanceTest.java` covering User Story 1 acceptance scenarios using JUnit 5 and Testcontainers
-- [ ] T023 [P] [US1] Frontend component test `BasicIdentityStep.test.tsx` in `easyeat/frontend/tests/components/dish/BasicIdentityStep.test.tsx` verifying form inputs, live validation, character counter, and photo upload/removal preview
-- [ ] T024 [P] [US1] Frontend page test `ChefDishesPage.test.tsx` in `easyeat/frontend/tests/pages/ChefDishesPage.test.tsx` verifying paginated table rendering (20 items/page), sorting by `updated_at DESC`, and status filter dropdown
-- [ ] T025 [P] [US1] Frontend user journey integration test `us1_basic_identity.test.tsx` in `easyeat/frontend/tests/integration/us1_basic_identity.test.tsx` verifying draft creation, photo upload, and listing flow using Vitest
+- [X] T018 [P] [US1] Unit test `DishBasicServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishBasicServiceTest.java` validating name whitespace trimming, tenant uniqueness constraint, closed category validation, draft deletion, and character limits (100 name, 500 description)
+- [X] T019 [P] [US1] Unit test `DishPhotoServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishPhotoServiceTest.java` validating MIME types (JPEG, PNG, WebP), 5 MB file size limit rejection, and photo deletion in draft status
+- [X] T020 [P] [US1] Web contract test `DishControllerBasicTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishControllerBasicTest.java` verifying `POST /api/v1/dishes`, `GET /api/v1/dishes`, `GET /api/v1/dishes/{id}`, `PUT /api/v1/dishes/{id}`, and `DELETE /api/v1/dishes/{id}` against OpenAPI schema
+- [X] T021 [P] [US1] Web contract test `DishPhotoControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishPhotoControllerTest.java` verifying `POST /api/v1/dishes/{id}/photo`, `GET /api/v1/dishes/{id}/photo`, and `DELETE /api/v1/dishes/{id}/photo`
+- [X] T022 [P] [US1] Behavioral acceptance test `DishBasicAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishBasicAcceptanceTest.java` covering User Story 1 acceptance scenarios using JUnit 5 and Testcontainers
+- [X] T023 [P] [US1] Frontend component test `BasicIdentityStep.test.tsx` in `easyeat/frontend/tests/components/dish/BasicIdentityStep.test.tsx` verifying form inputs, live validation, character counter, and photo upload/removal preview
+- [X] T024 [P] [US1] Frontend page test `ChefDishesPage.test.tsx` in `easyeat/frontend/tests/pages/ChefDishesPage.test.tsx` verifying paginated table rendering (20 items/page), sorting by `updated_at DESC`, and status filter dropdown
+- [X] T025 [P] [US1] Frontend user journey integration test `us1_basic_identity.test.tsx` in `easyeat/frontend/tests/integration/us1_basic_identity.test.tsx` verifying draft creation, photo upload, and listing flow using Vitest
 
 ### Implementation for User Story 1
 
-- [ ] T026 [P] [US1] Create basic dish DTOs (`CreateDishRequest`, `UpdateDishRequest`, `DishSummaryResponse`, `DishDetailResponse`, `DishPageResponse`, `PhotoUploadResponse`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
-- [ ] T027 [US1] Implement `DishPhotoService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishPhotoService.java` handling binary image validation (MIME, 5 MB limit), persistence in `dish_photos`, byte streaming, and deletion
-- [ ] T028 [US1] Implement core `DishService` basic identity methods in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` for creating drafts, updating basic info, deleting drafts, fetching details, and paginating establishment dishes
-- [ ] T029 [US1] Implement `DishController` basic endpoints and `DishPhotoController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/` guarded with `@PreAuthorize("hasRole('CHEF')")`
-- [ ] T030 [P] [US1] Implement frontend API client `dishApi.ts` in `easyeat/frontend/src/api/dishApi.ts` with methods for draft CRUD, photo upload/retrieval/deletion, and paginated listing
-- [ ] T031 [P] [US1] Implement `DishStatusBadge.tsx` in `easyeat/frontend/src/components/dish/DishStatusBadge.tsx` displaying visual status badges for `Draft` and `Pending Price`
-- [ ] T032 [P] [US1] Implement `BasicIdentityStep.tsx` in `easyeat/frontend/src/components/dish/BasicIdentityStep.tsx` with name trimming, category selector, description counter, and photo dropzone with preview/delete
-- [ ] T033 [US1] Implement `ChefDishesPage.tsx` in `easyeat/frontend/src/pages/ChefDishesPage.tsx` with 20 items/page pagination, status filter ("All", "Draft", "Pending Price"), and new dish creation action
-- [ ] T034 [US1] Configure route definitions `/cocina/platos`, `/cocina/platos/nuevo`, `/cocina/platos/:id` in `easyeat/frontend/src/router/AppRoutes.tsx` and add dish management navigation card in `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
+- [X] T026 [P] [US1] Create basic dish DTOs (`CreateDishRequest`, `UpdateDishRequest`, `DishSummaryResponse`, `DishDetailResponse`, `DishPageResponse`, `PhotoUploadResponse`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
+- [X] T027 [US1] Implement `DishPhotoService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishPhotoService.java` handling binary image validation (MIME, 5 MB limit), persistence in `dish_photos`, byte streaming, and deletion
+- [X] T028 [US1] Implement core `DishService` basic identity methods in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` for creating drafts, updating basic info, deleting drafts, fetching details, and paginating establishment dishes
+- [X] T029 [US1] Implement `DishController` basic endpoints and `DishPhotoController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/` guarded with `@PreAuthorize("hasRole('CHEF')")`
+- [X] T030 [P] [US1] Implement frontend API client `dishApi.ts` in `easyeat/frontend/src/api/dishApi.ts` with methods for draft CRUD, photo upload/retrieval/deletion, and paginated listing
+- [X] T031 [P] [US1] Implement `DishStatusBadge.tsx` in `easyeat/frontend/src/components/dish/DishStatusBadge.tsx` displaying visual status badges for `Draft` and `Pending Price`
+- [X] T032 [P] [US1] Implement `BasicIdentityStep.tsx` in `easyeat/frontend/src/components/dish/BasicIdentityStep.tsx` with name trimming, category selector, description counter, and photo dropzone with preview/delete
+- [X] T033 [US1] Implement `ChefDishesPage.tsx` in `easyeat/frontend/src/pages/ChefDishesPage.tsx` with 20 items/page pagination, status filter ("All", "Draft", "Pending Price"), and new dish creation action
+- [X] T034 [US1] Configure route definitions `/cocina/platos`, `/cocina/platos/nuevo`, `/cocina/platos/:id` in `easyeat/frontend/src/router/AppRoutes.tsx` and add dish management navigation card in `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
 
 **Checkpoint**: User Story 1 (MVP) fully functional and testable independently.
 
