@@ -472,7 +472,13 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
 - [x] T055 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/FoodCostBreakdownTable.tsx` — line items, subtotals and total per portion — **Serves**: FR-006
 - [x] T056 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/UnpricedIngredientBadge.tsx` — amber advisory — **Serves**: FR-006
 - [x] T057 [US1] Implement `easyeat/frontend/src/components/dishreview/DishAuditPanel.tsx` composing identity, labels and the cost breakdown — **Serves**: FR-006
-- [ ] T058 [US1] Write `easyeat/frontend/tests/pages/AdminDishReviewPage.test.tsx` covering the inbox-to-detail transition, the rendering of each backend error, and the information sufficiency SC-007 now requires: the detail view presents the culinary file, the itemized Food Cost audit, the prevailing margin, the state of each publication gate condition and the prior review cycles, with no additional navigation — **Serves**: FR-002, FR-032, SC-007
+- [x] T058 [US1] Write `easyeat/frontend/tests/pages/AdminDishReviewPage.test.tsx` covering the inbox-to-detail transition, the rendering of each backend error, and the information sufficiency SC-007 now requires: the detail view presents the culinary file, the itemized Food Cost audit, the prevailing margin, the state of each publication gate condition and the prior review cycles, with no additional navigation — **Serves**: FR-002, FR-032, SC-007
+
+  **DONE 2026-10-28**, RED observed: the page module does not resolve.
+
+  **Two cases pin behaviour that a working-looking page gets wrong.** Switching tabs must **clear the open detail**, because that dish belonged to the previous view and leaving it up invites a decision made from the wrong list. And a detail failure must **remove the previous panel** rather than leave it beside the error — otherwise the Administrator decides about a dish they are no longer looking at, which is the worst outcome on this screen.
+
+  **SC-007 is asserted as information sufficiency**, which is how it was rewritten: the five blocks must all be present — identity, declared labels, the itemized cost, the gate status and the author attribution — rather than measuring whether the Administrator decided faster.
 - [ ] T059 [US1] Implement `easyeat/frontend/src/pages/AdminDishReviewPage.tsx` — `/admin/dishes`, inbox plus detail panel — **Serves**: FR-002, FR-006
 - [ ] T060 [US1] Write `easyeat/frontend/tests/router/adminDishReviewRoute.test.tsx` asserting `/admin/dishes` resolves before the `/admin/*` catch-all and is role-guarded — **Serves**: FR-001
 - [ ] T061 [US1] Register the route in `easyeat/frontend/src/router/AppRoutes.tsx` **before** the `/admin/*` catch-all, matching how `/admin/staff` and `/admin/inventory` are declared — **Serves**: FR-001
