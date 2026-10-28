@@ -55,7 +55,7 @@
 - [x] T016 [US1] Implement `EstablishmentDiscoveryController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/EstablishmentDiscoveryController.java`
 - [x] T017 [P] [US1] Implement frontend API client method `searchEstablishments` in `easyeat/frontend/src/api/dinerCatalogApi.ts`
 - [x] T018 [P] [US1] Create `TenantContext.tsx` and hook `useTenant.ts` in `easyeat/frontend/src/context/TenantContext.tsx` and `easyeat/frontend/src/hooks/useTenant.ts` managing active establishment state and session storage
-- [ ] T019 [P] [US1] Create `EstablishmentSwitchModal.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentSwitchModal.tsx` displaying the interactive confirmation dialog alerting diners before emptying their active cart upon tenant switch (COM-1.5.1 CA 5 / FR-029)
+- [x] T019 [P] [US1] Create `EstablishmentSwitchModal.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentSwitchModal.tsx` displaying the interactive confirmation dialog alerting diners before emptying their active cart upon tenant switch (COM-1.5.1 CA 5 / FR-029)
 - [ ] T020 [US1] Create `EstablishmentSearchBar.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentSearchBar.tsx` with debounced search, autocomplete dropdown, and cart switch interceptor
 - [ ] T021 [P] [US1] Create `EstablishmentBlockingNotice.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentBlockingNotice.tsx` rendering full-screen blocking screen for paused/disabled venues
 - [ ] T022 [US1] Create `EstablishmentDiscoveryPage.tsx` in `easyeat/frontend/src/pages/EstablishmentDiscoveryPage.tsx`
