@@ -10,7 +10,9 @@ Scope of ownership: this feature owns `dishes.retail_price`, `dishes.version`, `
 
 ## 1. Entities
 
-### 1.1. `Dish` — extended, not redefined (`com.easyeat.dish.domain.Dish`, spec 005)
+### 1.1. `Dish` — extended, not redefined (`com.easyeat.catalog.domain.Dish`)
+
+**Revised 2026-10-28, after spec 005 merged (PR #160).** This section previously named `com.easyeat.dish.domain.Dish` as the entity to extend. **That class does not exist.** Spec 005 did not introduce a second entity: it added `category`, `status`, `allergens_confirmed`, `created_by` and `submitted_at` to the pre-existing `com.easyeat.catalog.domain.Dish` (spec 003), importing `DishStatus` from `com.easyeat.dish.domain`. There is exactly **one** JPA entity over `dishes`, it lives in `catalog.domain`, and four classes write to it: `DishService`, `DishPhotoService`, `CatalogComplianceService` and `DishRepository`. Decision **D3** is withdrawn — see §1.2.
 
 Columns added by **this** feature:
 
@@ -22,11 +24,20 @@ Columns added by **this** feature:
 
 Columns **consumed** from upstream (never created here): `status`, `category`, `allergens_confirmed`, `created_by`, `submitted_at` (all delivered by 005's `V7`; `submitted_at` added by issue #137 / PR #138, closing **R-005-1**); `name`, `description`, `tenant_id`, `is_active`, `created_at`, `updated_at`, `price` (V5, spec 003).
 
-Fields added to the entity class (ordinary incremental work on a class, permitted by D1): `retailPrice`, `version` (`@Version`), `publishedAt`.
+Fields added to the entity class (ordinary incremental work on an existing class, permitted by D1): `retailPrice`, `version` (`@Version`), `publishedAt`. They are added to `com.easyeat.catalog.domain.Dish`, which already carries no `@Version`, no `retail_price` and no `published_at`.
 
-### 1.2. `catalog.domain.Dish` — demoted to read-only (D3)
+### 1.2. D3 withdrawn — one entity, guarded by review instead of by `@Immutable`
 
-The second JPA mapping over `dishes` (spec 003) is annotated `@org.hibernate.annotations.Immutable` and keeps serving diner reads. Verified today: no write path exists through it — `DishRepository` declares only `findByTenantIdAndIsActiveTrue` and `findByIdIn`, and `CatalogComplianceService` only reads. The annotation is what **structurally** prevents a future write from bypassing `@Version`: Hibernate ignores dirty state on an `@Immutable` entity instead of silently issuing an `UPDATE` without the version predicate. `com.easyeat.dish.domain.Dish` is the single writable owner of the table.
+**Superseded 2026-10-28.** D3 called for two JPA mappings over `dishes`: a writable `dish.domain.Dish` holding `@Version`, and the catalog mapping demoted to `@org.hibernate.annotations.Immutable` so that no future write could bypass optimistic locking. Spec 005 took a different route and the code is now merged, so the premise is gone.
+
+**Why the original plan is not merely inconvenient but impossible**: `@Immutable` cannot be applied to `catalog.domain.Dish`, because it is the **only** entity over `dishes` and spec 005 already writes through it (`DishService` sets `submitted_at` on the submit transition). Annotating it would break spec 005's own feature, not just this one.
+
+**Revised decision**: this feature adds `@Version` to the single entity and accepts that optimistic locking is now a property shared by every writer of `dishes`. The structural guarantee `@Immutable` would have given is replaced by two weaker but real ones:
+
+- `@Version` on the shared entity means **every** write path through it carries the version predicate, including spec 003's and spec 005's. That is strictly safer than the two-entity split, where only the back-office path was guarded.
+- The diner read path stays read-only by construction: `DishRepository` declares only `findByTenantIdAndIsActiveTrue` and `findByIdIn`, and `CatalogComplianceService` only reads. This is now a **review-enforced** invariant rather than a compiler-enforced one, and the loss of that enforcement is registered as debt in `plan.md` Complexity Tracking.
+
+**Consequence for other writers**: adding `@Version` to a shared entity changes failure behaviour for spec 003 and spec 005 as well — a concurrent write that previously overwrote silently now raises a conflict. That is the correct behaviour, but it is a change to code this feature does not own, so it requires the same acknowledgement as any D1 boundary crossing (see `R-005-4` in `plan.md`).
 
 ### 1.3. `DishReviewHistory` (`dish_review_history`) — immutable administrative decisions
 
