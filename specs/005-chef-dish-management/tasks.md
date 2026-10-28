@@ -139,7 +139,7 @@
 ### Tests for User Story 4 (TDD & Behavioral Acceptance - Write First) ⚠️
 
 - [X] T057 [P] [US4] Unit test `DishSubmissionServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishSubmissionServiceTest.java` validating completeness gate (name, category, >=1 recipe line with quantity > 0, all ingredients Active, allergens confirmed), atomic transition to `PENDING_PRICE`, notification generation, and strict edit/delete rejection on locked dishes
-- [ ] T058 [P] [US4] Unit test `AdminNotificationServiceTest` in `easyeat/backend/src/test/java/com/easyeat/notification/service/AdminNotificationServiceTest.java` validating notification creation, tenant-scoped unread queries, and mark-as-read updates
+- [X] T058 [P] [US4] Unit test `AdminNotificationServiceTest` in `easyeat/backend/src/test/java/com/easyeat/notification/service/AdminNotificationServiceTest.java` validating notification creation, tenant-scoped unread queries, and mark-as-read updates
 - [ ] T059 [P] [US4] Web contract test `DishSubmissionControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishSubmissionControllerTest.java` verifying `POST /api/v1/dishes/{id}/submit-review` against OpenAPI schema
 - [ ] T060 [P] [US4] Web contract test `AdminNotificationControllerTest` in `easyeat/backend/src/test/java/com/easyeat/notification/controller/AdminNotificationControllerTest.java` verifying `GET /api/v1/admin/notifications` and `PATCH /api/v1/admin/notifications/{id}/read`
 - [ ] T061 [P] [US4] Behavioral acceptance test `DishSubmissionAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishSubmissionAcceptanceTest.java` covering User Story 4 acceptance scenarios using JUnit 5 and Testcontainers
