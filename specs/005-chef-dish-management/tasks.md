@@ -96,7 +96,7 @@
 - [X] T041 [P] [US2] Create Recipe DTOs (`RecipeUpdateRequest`, `RecipeResponse`, `RecipeIngredientItem`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
 - [X] T042 [US2] Implement recipe management logic in `DishService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` (upserting recipe lines, joining `unit_of_measure` dynamically in 3NF from `ingredients`, validating positive quantities and discrete vs continuous precision, and removing recipe lines)
 - [X] T043 [US2] Add recipe endpoints `PUT /api/v1/dishes/{id}/recipe` and `DELETE /api/v1/dishes/{id}/recipe/ingredients/{ingredientId}` to `DishController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/DishController.java`
-- [ ] T044 [P] [US2] Implement `IngredientSelectorModal.tsx` in `easyeat/frontend/src/components/dish/IngredientSelectorModal.tsx` querying Chef active ingredients catalog (20/page, A-Z) with category and text filters
+- [X] T044 [P] [US2] Implement `IngredientSelectorModal.tsx` in `easyeat/frontend/src/components/dish/IngredientSelectorModal.tsx` querying Chef active ingredients catalog (20/page, A-Z) with category and text filters
 - [ ] T045 [P] [US2] Implement `RecipeBOMStep.tsx` in `easyeat/frontend/src/components/dish/RecipeBOMStep.tsx` with recipe ingredients table, unit display, input masks (integer/decimal), duplicate warning banner, and delete actions
 - [ ] T046 [US2] Integrate `RecipeBOMStep.tsx` and `IngredientSelectorModal.tsx` into `ChefDishEditorPage.tsx` in `easyeat/frontend/src/pages/ChefDishEditorPage.tsx`
 
