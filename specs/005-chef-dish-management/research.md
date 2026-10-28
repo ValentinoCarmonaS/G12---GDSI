@@ -26,7 +26,7 @@ Functional specification 005 introduces a lifecycle where:
 4. The 5 existing seed dishes lack `category`, `status`, `allergens_confirmed`, and `created_by`.
 
 ### Decision
-- Modify the existing `dishes` schema via Flyway migration `V6__chef_dish_management.sql`:
+- Modify the existing `dishes` schema via Flyway migration `V7__chef_dish_management.sql`:
   - `ALTER TABLE dishes ALTER COLUMN price DROP NOT NULL;`
   - `ALTER TABLE dishes ADD COLUMN IF NOT EXISTS category VARCHAR(50);`
   - `ALTER TABLE dishes ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'DRAFT';`
