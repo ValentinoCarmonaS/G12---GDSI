@@ -22,6 +22,7 @@ public class EstablishmentDiscoveryController {
 
     @GetMapping("/search")
     public ResponseEntity<List<EstablishmentSummaryResponse>> searchEstablishments(@RequestParam("q") String query) {
-        throw new UnsupportedOperationException("TDD RED: controller not implemented yet");
+        List<EstablishmentSummaryResponse> results = discoveryService.searchEstablishments(query);
+        return ResponseEntity.ok(results);
     }
 }
