@@ -112,7 +112,7 @@
 - [x] T041 [US3] Implement `DishAvailabilityEngine` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/DishAvailabilityEngine.java` calculating binary availability `{ [dishId]: boolean }` and generating stable ETag hashes (SHA-256) from the availability map
 - [x] T042 [US3] Add availability endpoint `GET /api/v1/establishments/{tenantId}/catalog/availability` to `DinerCatalogController.java` with conditional ETag validation and `304 Not Modified`
 - [x] T043 [P] [US3] Implement frontend hook `useRealtimeAvailability.ts` in `easyeat/frontend/src/hooks/useRealtimeAvailability.ts` with 2.5s conditional polling, ETag caching, graceful network degradation (3-failure banner), and Page Visibility API pausing
-- [ ] T044 [US3] Integrate availability hook into `CatalogPage.tsx` smoothly toggling greyscale classes and "Agotado" badges on affected dish cards without layout shift or image reloading
+- [x] T044 [US3] Integrate availability hook into `CatalogPage.tsx` smoothly toggling greyscale classes and "Agotado" badges on affected dish cards without layout shift or image reloading
 
 **Checkpoint**: User Story 3 fully functional and verified against <= 3s real-time SLA.
 

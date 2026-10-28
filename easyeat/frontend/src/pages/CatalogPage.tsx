@@ -8,6 +8,7 @@ import { TenantContext, TenantProvider } from '../context/TenantContext';
 import { CatalogFilterContext, CatalogFilterProvider, useCatalogFilter } from '../context/CatalogFilterContext';
 import { CartProvider } from '../context/CartContext';
 import { useCart } from '../hooks/useCart';
+import { useRealtimeAvailability } from '../hooks/useRealtimeAvailability';
 import { dinerCatalogApi } from '../api/dinerCatalogApi';
 import type { CatalogResponse, DishCatalogItem } from '../types/dinerCatalog';
 import type { EnrichedDish } from '../types/catalog';
@@ -39,6 +40,12 @@ export const CatalogView: React.FC = () => {
   const [dishToConfirm, setDishToConfirm] = useState<EnrichedDish | null>(null);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
+
+  // Real-time stock-based dish availability polling (COM-4.1.2, FR-016)
+  const { availability, isConnectionLost } = useRealtimeAvailability({
+    tenantId: tenant?.id,
+    enabled: Boolean(tenant?.id),
+  });
 
   const activeRestrictionsCount = useMemo(() => {
     if (!isAuthenticated || !profile?.dietaryRestrictions) return 0;
@@ -101,7 +108,12 @@ export const CatalogView: React.FC = () => {
   }, [catalogHook.dishes, isFilterActive, isAuthenticated, activeRestrictionsCount]);
 
   const handleAddToCart = (dish: DishCatalogItem | EnrichedDish) => {
-    if (isReadOnly || ('isAvailable' in dish && dish.isAvailable === false)) return;
+    const isAvailable =
+      'isAvailable' in dish
+        ? (availability[dish.id] !== undefined ? availability[dish.id] : dish.isAvailable !== false)
+        : dish.isActive !== false;
+
+    if (isReadOnly || !isAvailable) return;
 
     if (isAuthenticated && activeRestrictionsCount > 0 && dish.isCompliant === false) {
       setDishToConfirm(dish as EnrichedDish);
@@ -269,6 +281,19 @@ export const CatalogView: React.FC = () => {
         {/* Categorized Catalog Content (Spec 008) */}
         {!isLoading && !error && catalogData && (
           <>
+            {/* Kitchen Connection Lost Warning Banner (COM-4.1.2 Edge Case, FR-019) */}
+            {isConnectionLost && (
+              <div
+                data-testid="kitchen-connection-warning"
+                className="bg-amber-50 border border-amber-300 text-amber-900 px-4 py-3 rounded-2xl flex items-center gap-3 text-xs sm:text-sm font-medium shadow-2xs"
+              >
+                <svg className="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>Sin conexión con la cocina - reintentando...</span>
+              </div>
+            )}
+
             {/* Sticky Category Navigation Bar (FR-008) */}
             {categories.length > 0 && (
               <StickyCategoryNav
@@ -314,7 +339,11 @@ export const CatalogView: React.FC = () => {
                       {group.dishes.map((dish) => (
                         <DishCard
                           key={dish.id}
-                          dish={dish}
+                          dish={{
+                            ...dish,
+                            isAvailable:
+                              availability[dish.id] !== undefined ? availability[dish.id] : dish.isAvailable,
+                          }}
                           isReadOnly={isReadOnly}
                           onSelectDish={setSelectedDish}
                           onAddToCart={handleAddToCart}
@@ -351,7 +380,17 @@ export const CatalogView: React.FC = () => {
 
       {/* Informational Dish Detail Modal (FR-007, FR-012, FR-014) */}
       <DishDetailModal
-        dish={selectedDish}
+        dish={
+          selectedDish
+            ? {
+                ...selectedDish,
+                isAvailable:
+                  availability[selectedDish.id] !== undefined
+                    ? availability[selectedDish.id]
+                    : selectedDish.isAvailable,
+              }
+            : null
+        }
         isOpen={!!selectedDish}
         onClose={() => setSelectedDish(null)}
         isReadOnly={isReadOnly}
