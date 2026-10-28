@@ -33,7 +33,7 @@
 
   Presence: the file is in `db/migration/`, landed on the integration branch via PR #160.
 
-  "Applies cleanly" was proved by **execution, not inspection**. Neither `mvn` nor a Maven wrapper is available in this environment, so spec 005's `V7MigrationAndSeedDevTest` could not be run; instead the seven versioned migrations were applied in order against a throwaway `postgres:16` container with `psql -v ON_ERROR_STOP=1`:
+  "Applies cleanly" was proved by **execution, not inspection**: the seven versioned migrations were applied in order against a throwaway `postgres:16` container with `psql -v ON_ERROR_STOP=1`:
 
   ```
   OK   V1__create_users.sql
@@ -46,6 +46,8 @@
   ```
 
   This is a stronger result than the task asked for: it confirms `V7` applies on top of the exact `V1`–`V6` sequence this feature's `V8` will extend, not merely that it parses.
+
+  **Correction, same day.** This record originally said no Maven was available and offered that as the reason for applying the migrations by hand instead of running spec 005's `V7MigrationAndSeedDevTest`. **That was wrong**: Maven 3.9.9 is on disk at `~/.m2/wrapper/dists/`, merely absent from `PATH`, and it runs the project once it is allowed to fetch the missing surefire plugin. The result above stands on its own evidence and is arguably the better check — it exercises the exact `V1`–`V7` sequence rather than one test's fixture — but the stated reason was false and is withdrawn.
 - [x] T002 [P] **SATISFIED 2026-10-28.** Verify the upstream dish domain exists: `DishStatus`, `DishCategory` and the auxiliary entities in `com.easyeat.dish.domain`, and `DishRepository`. **Note the correction**: there is no `com.easyeat.dish.domain.Dish` and none is coming — spec 005 added its five columns to the pre-existing `com.easyeat.catalog.domain.Dish`, which is the single `@Entity` over `dishes`. Assert that entity carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at` in `easyeat/backend/src/main/java/com/easyeat/dish/`, and record the outcome against R-005-0
 
   **VERIFIED 2026-10-28 on the working branch.** `com.easyeat.dish.domain` holds `DishStatus`, `DishCategory`, `DishCategoryConverter`, `DishPhoto`, `DishRecipeIngredient` and `DishRecipeIngredientId` — and **no `Dish`**, confirming the correction above. `grep -rln '@Table(name = "dishes")'` returns exactly one file, `catalog/domain/Dish.java`, so there is a single entity over the table. That entity carries all five upstream columns:
@@ -95,7 +97,13 @@
   **Recorded while here, as the negative half of the gate**: none of the objects this feature *owns* exists yet, which is the state T014's migration assumes. `information_schema` returns `0` columns named `retail_price`, `published_at` or `version` on `dishes`, and `0` tables named `dish_review_history` or `dish_price_history`. If any of them had already existed, T014 would have been writing against a schema it did not expect.
 - [x] T005 **DONE 2026-10-28 under the recorded D1 amendment.** Add the `PUBLISHED` constant to `easyeat/backend/src/main/java/com/easyeat/dish/domain/DishStatus.java`, which declares only `DRAFT` and `PENDING_PRICE` while the database has admitted `PUBLISHED` since 005's `V7`. The authority is the amendment recorded in `plan.md` §R-005-3 and Complexity Tracking, which declares that enum **jointly owned** by specs 005 and 007. **Add the constant and nothing else**: do not reorder, rename or remove the existing ones — the enum is persisted by name through `@Enumerated(EnumType.STRING)`, so any of those is a data migration — do not touch any other class in `com.easyeat.dish.domain`, which stays 005-owned under D1 unchanged, and do not create a competing status enum in this feature. Update `DishEnumsTest` to assert the three constants. **R-005-4 is withdrawn and no longer part of this task**: no `@Version` is added anywhere, so T024 is no longer blocked.
 
-  **Executed TDD, both steps proved.** Maven is unavailable in this environment, so the suite was compiled and run directly with `javac` and the JUnit 5.12.2 platform from the local repository.
+  **Executed TDD, both steps proved.** The red and green steps were first run with `javac` and the JUnit 5.12.2 platform assembled by hand from the local repository, and then **re-confirmed with the project's own Maven build**:
+
+  ```
+  Tests run: 30, Failures: 0, Errors: 0, Skipped: 0 — com.easyeat.dish.domain.DishEnumsTest
+  ```
+
+  **Correction, same day**: this record originally said Maven was unavailable and gave that as the reason for the hand-assembled run. Maven 3.9.9 is on disk at `~/.m2/wrapper/dists/`, simply not on `PATH`. The two runs agree, so the measurement was right and the explanation was not.
 
   | Step | Result |
   |---|---|
@@ -197,7 +205,7 @@ The calculator receives the Food Cost as a parameter, so it does not depend on w
 ### Migration and dev seed
 
 - [ ] T013 Write `AdminPricingMigrationTest` in `easyeat/backend/src/test/java/com/easyeat/dish/migration/AdminPricingMigrationTest.java` against Testcontainers PostgreSQL 16, asserting the migration applies on top of every migration already present, that the `retail_price` backfill copies only strictly positive prices and leaves `NULL`/`0.00` unpriced, and that the new constraints and indexes exist. **Keep the name version-free** so an upstream renumbering cannot invalidate it
-- [ ] T014 Create the feature migration at `easyeat/backend/src/main/resources/db/migration/<version from T008>__admin_dish_approval_pricing.sql` per `data-model.md §3`: `dishes.retail_price`, `dishes.version`, `dishes.published_at`, the `retail_price` backfill, the `dish_review_history` and `dish_price_history` tables, their indexes, and `idx_dishes_review_inbox_published`. **Do not declare `idx_dishes_review_inbox_pending`** (owned by spec 005's `V7`) and **do not drop or replace `chk_dishes_status`** (owned by spec 005, already widened)
+- [ ] T014 Create the feature migration at `easyeat/backend/src/main/resources/db/migration/<version from T008>__admin_dish_approval_pricing.sql` per `data-model.md §3`: `dishes.retail_price`, `dishes.published_at`, the `retail_price` backfill, the `dish_review_history` and `dish_price_history` tables, their indexes, and `idx_dishes_review_inbox_published`. **Do not declare `idx_dishes_review_inbox_pending`** (owned by spec 005's `V7`), **do not drop or replace `chk_dishes_status`** (owned by spec 005, already widened), and **do not add a `version` column** — R-005-4 is withdrawn and FR-025 is enforced by the conditional `UPDATE`s of T067 and T076, so a version column would be dead weight on a table three specs write through. This task's column list previously named one; that was a leftover from the withdrawn design and is corrected
 - [ ] T015 **Depends on T005 (R-005-3).** Update the dev seed `easyeat/backend/src/main/resources/db/dev/R__seed_dev_dishes_and_dietary.sql` per `research.md §3.6` (D5): the five seeded dishes land `status = 'PUBLISHED'`, `is_active = TRUE`, `allergens_confirmed = TRUE`, `retail_price` backfilled from `price`, `version = 0`, `published_at = NOW()`, plus one synthetic `APPROVED` review row each marked `[SEED SINTÉTICO]`
 - [ ] T016 **Depends on T005 (R-005-3).** Extend `DevSeedDishesMigrationTest` in `easyeat/backend/src/test/java/com/easyeat/profile/migration/DevSeedDishesMigrationTest.java` with the new assertions, leaving every existing assertion unchanged
 
