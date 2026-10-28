@@ -81,20 +81,46 @@ Per D1 this feature owns none of specs 005/006's objects. Requirements are numbe
 its owner, why this feature cannot proceed without it, and the degraded behaviour if it never
 arrives. Each is mirrored as a decision entry in [research.md](./research.md).
 
-### R-005-0 — The dish domain and migration `V7` (blanket precondition) — **DELIVERED, AWAITING INTEGRATION**
+### R-005-0 — The dish domain and migration `V7` (blanket precondition) — **SATISFIED 2026-10-28**
 
 **Object**: `V7__chef_dish_management.sql` (`dishes.status`, `category`, `allergens_confirmed`,
-`created_by`, `dish_recipe_ingredients`, `dish_photos`), `com.easyeat.dish.domain.Dish`,
-`DishStatus`, `DishRepository`, and the `DRAFT → PENDING_PRICE` submit transition.
+`created_by`, `submitted_at`, `dish_recipe_ingredients`, `dish_photos`), the dish status and category
+enums in `com.easyeat.dish.domain`, the `Dish` entity extended with those columns, `DishRepository`,
+and the `DRAFT → PENDING_PRICE` submit transition.
 **Owner**: spec 005. **Why blocking**: this feature's entire surface reads `status`, `category`,
 `allergens_confirmed` and `created_by`, and its whole purpose is to decide dishes that arrive in
 `PENDING_PRICE`. **Degraded behaviour if never delivered**: none is possible — the feature cannot be
 implemented at all. Creating these objects here is forbidden by D1 and would produce a second owner
 of `dishes`.
-**Status (2026-10-27)**: delivered on `origin/005-chef-dish-management`. `com.easyeat.dish.domain`
-exists with `DishStatus`, `DishCategory`, `DishPhoto` and `DishRecipeIngredient`; the migration and
-the three new tables are present. Remaining blocker is the integration of that branch into
-`develop/sprint-2`, not the work itself.
+**Status (2026-10-28)**: **satisfied on `develop/sprint-2`** via PR #160. `V7` is present with all
+five columns and the `idx_dishes_review_inbox_pending` index; `dish_recipe_ingredients` and
+`dish_photos` exist; `com.easyeat.dish.domain` holds `DishStatus`, `DishCategory`, `DishPhoto`,
+`DishRecipeIngredient` and their converters; and `DishService` assigns `submitted_at` on the submit
+transition, which also closes the residual verification dependency of R-005-1.
+
+**Correction to this requirement's object.** It previously named `com.easyeat.dish.domain.Dish` as a
+deliverable. **No such class exists and none is coming.** Spec 005 added the five columns to the
+pre-existing `com.easyeat.catalog.domain.Dish` instead of introducing a second entity. There is one
+entity over `dishes`, in `catalog.domain`, written by `DishService`, `DishPhotoService`,
+`CatalogComplianceService` and `DishRepository`. This invalidates decision **D3** and reshapes
+**R-006-2**; both are revised below, and **R-005-4** records the consequence this feature cannot
+decide alone.
+
+### R-005-4 — Agreement to place `@Version` on the shared `Dish` entity
+
+**Object**: `@Version` on `com.easyeat.catalog.domain.Dish`, the single JPA entity over `dishes`.
+**Owner**: shared. The entity belongs to spec 003 and spec 005 writes through it; this feature needs
+optimistic locking on it for FR-025.
+**Why it needs agreement**: adding `@Version` to a shared entity changes failure behaviour for
+**every** writer, not only for this feature. A concurrent write that previously overwrote silently
+will now raise a conflict in spec 003's catalog path and in spec 005's submit path. That is the
+correct behaviour and it is strictly safer than the two-entity split D3 proposed — under D3 only the
+back-office path was guarded — but it is a behavioural change to code this feature does not own, so
+it is a D1 boundary crossing and needs the same explicit acknowledgement as R-005-3.
+**Degraded behaviour**: none acceptable. Without `@Version` on that entity, FR-025 cannot be
+satisfied at all, and the alternative — a second entity — is the one spec 005 has already foreclosed.
+**What to ask**: confirmation from the owners of specs 003 and 005 that a version conflict is an
+acceptable outcome on their write paths, plus agreement on how each surfaces it.
 
 ### R-005-1 — `dishes.submitted_at` — **RESOLVED IN SCHEMA**
 
@@ -177,13 +203,16 @@ of the audit DTO (one debt item). The cost **calculation** is never duplicated u
 
 ### R-006-2 — Recipe association targets the writable dish entity
 
-**Object**: `DishRecipeIngredient`'s `@ManyToOne` must reference `com.easyeat.dish.domain.Dish`, not
-`com.easyeat.catalog.domain.Dish` as `006/data-model.md:108,132` currently writes.
-**Owner**: spec 006. **Why blocking**: D3 makes the catalog mapping `@Immutable`; leaving 006's
-association pointed at it entangles the read-only mapping with a writable aggregate.
-**Degraded behaviour**: functional reads still work, but the project keeps two entities with
-overlapping responsibilities — the exact confusion D3 exists to remove. Non-blocking, correctness-
-preserving, must be fixed before 006 merges.
+**WITHDRAWN 2026-10-28.** This requirement asked spec 006 to point `DishRecipeIngredient`'s
+`@ManyToOne` at `com.easyeat.dish.domain.Dish` rather than at the catalog entity, because D3 was
+going to make the catalog mapping `@Immutable`. Two things removed the basis for it:
+
+- D3 is withdrawn (see R-005-0 and `data-model.md §1.2`): there is one entity and it is the catalog
+  one, so the association was never pointed at the wrong class.
+- The class as merged carries no `@ManyToOne` to `Dish` at all. `DishRecipeIngredient` uses an
+  `@EmbeddedId` (`DishRecipeIngredientId`), so there is no association to redirect.
+
+No action is required from spec 006 on this point, and nothing is degraded by closing it.
 
 ## Project Structure
 
@@ -204,10 +233,10 @@ specs/007-admin-dish-approval-pricing/
 ### Backend (`easyeat/backend/src/main/java/com/easyeat/`)
 
 ```text
-dish/                                           # package created by spec 005
+dish/                                           # package created by spec 005 (enums and auxiliary
+                                                #   entities only — the Dish entity lives in catalog/)
 ├── domain/
-│   ├── Dish.java                               # MODIFIED (005-owned class): + retailPrice, + @Version version, + publishedAt
-│   ├── DishStatus.java                         # MODIFIED (005-owned enum): + PUBLISHED
+│   ├── DishStatus.java                         # MODIFIED (005-owned enum): + PUBLISHED (R-005-3, pending)
 │   ├── DishReviewHistory.java                  # NEW: immutable review event, no setters, no @PreUpdate
 │   ├── DishPriceHistory.java                   # NEW: immutable price change
 │   └── ReviewEventType.java                    # NEW: APPROVED, REJECTED
@@ -230,7 +259,8 @@ dish/                                           # package created by spec 005
                                                 #      PublicationGate, AcknowledgementRequired,
                                                 #      InvalidRetailPrice, InvalidRejectionComment
 auth/controller/GlobalExceptionHandler.java     # MODIFIED: + 7 handlers incl. ObjectOptimisticLockingFailureException -> 409
-catalog/domain/Dish.java                        # MODIFIED: @Immutable (D3) + read-only status & retailPrice fields
+catalog/domain/Dish.java                        # MODIFIED: the single entity over `dishes`. + retailPrice, + @Version version,
+                                                #   + publishedAt. NOT @Immutable — D3 withdrawn, spec 005 writes through it
 catalog/repository/DishRepository.java          # MODIFIED: visibility predicate is_active = true AND status = 'PUBLISHED'
 catalog/service/CatalogComplianceService.java   # MODIFIED: reads retail_price (D2); JSON field name `price` preserved
 catalog/dto/EnrichedDishResponse.java           # REUSED unchanged - wire contract intact for specs 003/008
@@ -481,12 +511,14 @@ view. Observable behaviour only — no assertions on React internals.
 **Phase 0 — Upstream readiness gate.** Deliverables: a recorded verification that R-005-0, R-005-1,
 R-005-3 and R-006-1 are satisfied, and an explicit decision on each open item otherwise. Exit criteria:
 spec 005's branch is integrated into `develop/sprint-2` so that `V7` applies and
-`com.easyeat.dish.domain.Dish`/`DishStatus` and `dish_recipe_ingredients` are on the working branch;
+`com.easyeat.catalog.domain.Dish` carries the five upstream columns, `DishStatus` and
+`dish_recipe_ingredients` are on the working branch;
 `DishStatus` admits `PUBLISHED` under an agreed owner (R-005-3); the cost engine is reachable; and the
 free migration version is confirmed against `db/migration/` rather than assumed.
 
 **Phase 1 — Persistence.** Deliverables: this feature's migration, the two audit entities and their
-append-only repositories, the three columns added to 005's `Dish`, `@Immutable` on the catalog mapping,
+append-only repositories, the three columns and `@Version` added to the single `catalog.domain.Dish`
+entity (R-005-4),
 the dev seed update. Exit criteria: `AdminPricingMigrationTest` and the updated
 `DevSeedDishesMigrationTest` pass; spec 003's catalog tests still pass.
 
@@ -519,7 +551,8 @@ and types, plus the Chef feedback banner. Exit criteria: the Vitest suites pass 
 | Violation / debt | Why needed | Simpler alternative rejected because |
 |---|---|---|
 | Extending 005's `com.easyeat.dish.domain.DishStatus` with `PUBLISHED` from this feature — a D1 exception **pending human decision** (R-005-3) | The database now admits `PUBLISHED` but the enum does not, so the approval transition has no value to assign; spec 005 has asked this feature to make the change | Having 005 add the constant is cheaper and respects D1 literally, and remains the preferred path; vendoring a second status enum into this feature would create two sources of truth for the dish lifecycle |
-| Two JPA entities over `dishes` (writable `dish.domain.Dish`, `@Immutable` `catalog.domain.Dish`) | Spec 003's diner read path exists and works; rewriting it onto the new aggregate is unrequested scope (Principle V) | One shared entity cannot be both version-locked for writers and inert for diner reads; `@Immutable` is what structurally stops a future write from bypassing `@Version` |
+| `@Version` added to the **shared** `catalog.domain.Dish` instead of to a back-office-only entity, so optimistic-locking failures now reach spec 003's and spec 005's write paths (**R-005-4**, pending acknowledgement) | Spec 005 merged the five new columns onto the existing catalog entity rather than creating a second one, so no back-office-only entity exists to carry `@Version` | The two-entity split of the withdrawn D3 is no longer available: `@Immutable` on the catalog entity would break spec 005's own submit path, which writes `submitted_at` through it |
+| Loss of the structural guard D3 provided: the diner read path stays read-only by **review** rather than by `@Immutable` | There is one entity and it must remain writable, so the annotation that made a bypass impossible cannot be applied | Re-introducing a second mapping would duplicate the aggregate spec 005 just consolidated, and would reopen exactly the two-owner confusion D1 exists to prevent. **Owner of the risk**: any future change that adds a write path through `catalog/repository/DishRepository` must carry the version predicate; today that repository declares only `findByTenantIdAndIsActiveTrue` and `findByIdIn` |
 | Deprecated `dishes.price` kept alongside `retail_price` | Dropping it would break spec 003's tests and the dev seed inside this feature's scope | Reusing `price` as the PVP cannot express "not yet priced" (`NOT NULL`) and contradicts the spec's Key Entities. **Owner of removal**: the Sprint 3 catalog-lifecycle feature (CHF-2.2.5) |
 | Duplicated audit-DTO assembly if R-006-1 is refused | FR-011/FR-012 need the Food Cost for published dishes, which 006's gated service cannot provide | Duplicating the *calculation* is forbidden (006 owns it); calling 006's HTTP endpoint from the server would be in-process HTTP |
 | Validation status 400 instead of the codebase's bean-validation 422 for price and comment | FR-013 and FR-021 state 400 explicitly, and the specification is the source of truth (Principle I) | Amending the spec to 422 would be cheaper and is recorded as the runner-up in [research.md §3.4](./research.md); a second `@RestControllerAdvice` to rewrite the status is not acceptable |

@@ -51,7 +51,9 @@ Two things remain true: that branch is **not integrated into `develop/sprint-2`*
 
 ### (a) Sequencing — what the implementation phase must verify first
 
-**Decision**: implementation opens with a non-negotiable *Upstream Readiness Gate* executed before the first line of production code, asserting: (1) 005's migration (`V7__chef_dish_management.sql`) is present on the integration branch and applies; (2) `com.easyeat.dish.domain.Dish` + `DishStatus` exist and `dishes` carries `status`, `category`, `allergens_confirmed`, `created_by`; (3) `dish_recipe_ingredients` exists; (4) `FoodCostEngine` and `FoodCostAuditService` exist in `com.easyeat.dish.service`; (5) `dishes.submitted_at` exists and `idx_dishes_review_inbox_pending` is present (R-005-1, satisfied in schema 2026-10-27 — no fallback remains authorised); (6) `DishStatus` admits `PUBLISHED` under an agreed owner (R-005-3); (7) 006's cost computation is reachable without a `PENDING_PRICE` gate (R-006-1) — if not, the fallback of point (e) applies.
+**Decision**: implementation opens with a non-negotiable *Upstream Readiness Gate* executed before the first line of production code, asserting: (1) 005's migration (`V7__chef_dish_management.sql`) is present on the integration branch and applies; (2) `DishStatus` and `DishCategory` exist in `com.easyeat.dish.domain`, and the single `Dish` entity — `com.easyeat.catalog.domain.Dish`, not a back-office-only one; see §3.11 — carries `status`, `category`, `allergens_confirmed` and `created_by`; (3) `dish_recipe_ingredients` exists; (4) `FoodCostEngine` and `FoodCostAuditService` exist in `com.easyeat.dish.service`; (5) `dishes.submitted_at` exists, `idx_dishes_review_inbox_pending` is present, and the submit transition assigns the timestamp (R-005-1, fully satisfied 2026-10-28 — no fallback remains authorised); (6) `DishStatus` admits `PUBLISHED` under an agreed owner (R-005-3); (7) the owners of specs 003 and 005 have acknowledged `@Version` on the shared entity (R-005-4); (8) a single authoritative per-unit acquisition cost has been named (R-004-1); (9) 006's cost computation is reachable without a `PENDING_PRICE` gate (R-006-1) — if not, the fallback of point (e) applies.
+
+**Status 2026-10-28**: checks (1) to (5) pass on `develop/sprint-2` after PR #160. Checks (6), (7), (8) and (9) remain open and are the only things standing between this plan and its first line of production code.
 **Rationale**: makes the dependency a mechanical check with a recorded outcome instead of a surprise discovered mid-implementation, and forces each fallback to be a conscious, logged decision.
 **Alternatives considered**: starting implementation against stubs of 005's objects (rejected: creates a second, competing dish domain, exactly what D1 forbids); waiting idle for 005 to merge (rejected: design work does not need to wait, only coding does).
 
@@ -143,9 +145,16 @@ FR-001 restricts access to role `ADMIN` and names `COUNTER` among the rejected r
 `008/data-model.md:38,149-155` declares the published state as **`'ACTIVE'`** and redefines `chk_dishes_status CHECK (status IN ('DRAFT','PENDING_PRICE','ACTIVE','DECOMMISSIONED'))` in its own migration (claimed as `V7`, which must move to `V8` now that spec 005 has taken `V7` — see §2(b)), and `008/data-model.md:36` has its catalog read `price`. Spec 007 uses `'PUBLISHED'` and, per D2, `retail_price`.
 **Resolution — decidable from 008's own text, no escalation needed**: `008/spec.md:168,198` explicitly defers naming to the upstream feature — *"A dish lifecycle state representing 'published and visible to Diners' (e.g., ACTIVE or PUBLISHED) is defined by a prior spec that extends the state machine… This spec consumes that terminal state as a prerequisite."* Spec 007 is that prior spec, so **`PUBLISHED` stands** and 008's `data-model.md` carries the amendment: use `PUBLISHED`, do not redefine `chk_dishes_status` (it belongs to 005 per R-005-2), read `retail_price`, and adopt the D4 predicate. Recorded as a note to 008. The two migrations remain disjoint otherwise (008 owns `establishments`, `photo_url`); only the status domain and the price column overlap.
 
-### 3.8. Spec 006 maps its recipe to the wrong `Dish` entity
+### 3.8. Spec 006 maps its recipe to the wrong `Dish` entity — **WITHDRAWN 2026-10-28**
 
-`006/data-model.md:108,132` has `DishRecipeIngredient` associate `com.easyeat.catalog.domain.Dish`. Under D3 the catalog entity becomes read-only and the writable owner is `com.easyeat.dish.domain.Dish`. **Amendment to 006**: the association must target `com.easyeat.dish.domain.Dish`. Left as a note; this feature does not edit 006's artifacts.
+The original finding read: *"`006/data-model.md:108,132` has `DishRecipeIngredient` associate `com.easyeat.catalog.domain.Dish`. Under D3 the catalog entity becomes read-only and the writable owner is `com.easyeat.dish.domain.Dish`. Amendment to 006: the association must target `com.easyeat.dish.domain.Dish`."*
+
+Both halves of that reasoning are gone:
+
+- **D3 is withdrawn** (§3.11 below). There is one entity over `dishes` and it is the catalog one, so there was never a wrong class to point at.
+- **The class as merged has no such association.** `com.easyeat.dish.domain.DishRecipeIngredient` uses an `@EmbeddedId` (`DishRecipeIngredientId`) and declares no `@ManyToOne` to `Dish`, so there is nothing to redirect.
+
+No amendment to spec 006 is required on this point. `R-006-2` in [plan.md](./plan.md#upstream-requirements) is withdrawn accordingly.
 
 ### 3.9. Approved dishes must be made visible: `is_active` at publication
 
@@ -165,13 +174,25 @@ Spec 004's inventory refactor landed on the integration branch after this plan w
 
 **Knock-on for this feature's own schema**: `dish_price_history.food_cost_snapshot` is `NUMERIC(10,2)` while every cost column above is scale 4, so whatever rule is chosen must also state where the reduction to scale 2 occurs.
 
+### 3.11. D3 withdrawn: spec 005 consolidated the entity instead of splitting it (discovered 2026-10-28)
+
+**What changed.** Spec 005 merged into `develop/sprint-2` through PR #160, together with its phase 6 and 7 branches. The readiness gate of this feature now passes on four of its eight checks: `V7__chef_dish_management.sql` is present with `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at` plus `idx_dishes_review_inbox_pending`; `dish_recipe_ingredients` and `dish_photos` exist; and `DishService` assigns `submitted_at` on the submit transition, which closes the residual verification dependency of R-005-1.
+
+**What was not delivered, and will not be.** `com.easyeat.dish.domain.Dish` does not exist. Spec 005 added its five columns to the pre-existing `com.easyeat.catalog.domain.Dish` and imports `DishStatus` from `com.easyeat.dish.domain`. The `dish/domain/` package holds enums and auxiliary entities — `DishCategory`, `DishCategoryConverter`, `DishPhoto`, `DishRecipeIngredient`, `DishRecipeIngredientId`, `DishStatus` — but no `Dish` entity. There is exactly one `@Entity` over `dishes`, and four classes write through it: `DishService`, `DishPhotoService`, `CatalogComplianceService` and `DishRepository`. Verified on `origin/develop/sprint-2`, where that entity carries no `@Version`, no `@Immutable`, no `retail_price` and no `published_at`.
+
+**Why this is not a defect in spec 005.** Consolidating onto one aggregate is a defensible design: it avoids two mappings over one table, which is the very confusion D1 exists to prevent. The defect was in this plan's assumption, which treated a second entity as a deliverable rather than as a request.
+
+**Revised decision**: this feature adds `retailPrice`, `publishedAt` and `@Version` to `catalog.domain.Dish`. D3's `@Immutable` guard is abandoned, because applying it to the only writable entity would break spec 005's own submit path. The structural guarantee is replaced by a review-enforced one, registered as debt in `plan.md` Complexity Tracking, and the behavioural consequence for the other writers is escalated as **R-005-4** rather than absorbed silently.
+
+**Alternatives considered**: asking spec 005 to extract a writable entity now that its spec is merged and closed (rejected: it is a refactor of another feature's delivered code, for a guarantee we can obtain more cheaply, and Principle V forbids unsolicited refactoring); keeping two mappings by adding our own (rejected: duplicates the aggregate 005 just consolidated and reopens the two-owner problem); forgoing `@Version` (rejected outright: FR-025 cannot be satisfied without it).
+
 ---
 
 ## 4. Notes on the closed decisions D1–D6 (record only, not re-opened)
 
 - **D1 (hard precondition)** — Alternative: vendoring 005's objects into this feature's migration. Rejected: two owners of `dishes.status` guarantees a merge conflict and a double `V6`.
 - **D2 (`retail_price` is new)** — Alternative: reuse `price`. Rejected: `NOT NULL` cannot express "unpriced", and the spec names `retail_price`.
-- **D3 (entity ownership)** — Alternative: a single entity shared by catalog and back-office. Rejected: one mapping cannot be both read-only for diners and version-locked for writers; `@Immutable` on the catalog mapping is what structurally prevents a future write from bypassing `@Version`. Verified today: no write path exists through `catalog.domain.Dish` (`DishRepository` exposes only `findByTenantIdAndIsActiveTrue`, `findByIdIn`, and `CatalogComplianceService` only reads).
+- **D3 (entity ownership)** — **WITHDRAWN 2026-10-28; the rejected alternative is now the only one available.** D3 originally rejected "a single entity shared by catalog and back-office" on the grounds that one mapping cannot be both read-only for diners and version-locked for writers. Spec 005 merged (PR #160) having added its five columns to `catalog.domain.Dish` rather than creating `dish.domain.Dish`, and `DishService` now writes `submitted_at` through that entity. So the single shared entity is what exists, `@Immutable` on it would break spec 005's submit path, and this feature adds `@Version` to the shared entity instead — see §3.11 and `R-005-4`. The guarantee lost is structural enforcement; the guarantee gained is that **every** writer of `dishes` now carries the version predicate, not only the back-office one.
 - **D4 (visibility predicate)** — Alternative: `status` alone. Rejected: Sprint 3 needs an orthogonal pause flag.
 - **D5 (dev seed published)** — Alternative: leave the seed in `PENDING_PRICE` and relax 003's tests. Rejected: weakening green tests to accommodate a seed is backwards.
 - **D6 (English artifacts)** — Alternative: Spanish. Rejected: 005 and 006 are English; Spanish stays in UI copy and quoted backlog text.
