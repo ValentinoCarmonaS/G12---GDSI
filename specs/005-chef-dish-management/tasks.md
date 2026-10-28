@@ -154,7 +154,7 @@
 - [X] T067 [US4] Implement `AdminNotificationService` in `easyeat/backend/src/main/java/com/easyeat/notification/service/AdminNotificationService.java` managing notification persistence, tenant retrieval with `unreadOnly` filter, and mark-as-read updates
 - [X] T068 [US4] Add submission endpoint `POST /api/v1/dishes/{id}/submit-review` to `DishController` and implement `AdminNotificationController` in `easyeat/backend/src/main/java/com/easyeat/notification/controller/AdminNotificationController.java` guarded with `@PreAuthorize("hasRole('ADMINISTRADOR')")`
 - [X] T069 [P] [US4] Implement `adminNotificationApi.ts` in `easyeat/frontend/src/api/adminNotificationApi.ts` with methods for querying notifications and marking them as read
-- [ ] T070 [P] [US4] Implement `ReviewSubmitStep.tsx` in `easyeat/frontend/src/components/dish/ReviewSubmitStep.tsx` displaying section completeness checklist, validation feedback, and "Send for Review" action
+- [X] T070 [P] [US4] Implement `ReviewSubmitStep.tsx` in `easyeat/frontend/src/components/dish/ReviewSubmitStep.tsx` displaying section completeness checklist, validation feedback, and "Send for Review" action
 - [ ] T071 [US4] Implement `DishStepper.tsx` in `easyeat/frontend/src/components/dish/DishStepper.tsx` coordinating the 4 sequential steps with disabled read-only view when status is `PENDING_PRICE`
 - [ ] T072 [US4] Implement `AdminNotificationBell.tsx` in `easyeat/frontend/src/components/notification/AdminNotificationBell.tsx` and integrate it into `easyeat/frontend/src/pages/AdminWorkspacePage.tsx` displaying unread count badge and notification items
 
