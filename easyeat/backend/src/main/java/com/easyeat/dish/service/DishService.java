@@ -40,6 +40,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import com.easyeat.notification.repository.AdminNotificationRepository;
 
 @Service
 public class DishService {
@@ -50,18 +51,31 @@ public class DishService {
     private final IngredientRepository ingredientRepository;
     private final DietaryRestrictionRepository dietaryRestrictionRepository;
 
+    private final AdminNotificationRepository adminNotificationRepository;
+
     @Autowired
     public DishService(
             DishRepository dishRepository,
             DishPhotoRepository dishPhotoRepository,
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository,
-            DietaryRestrictionRepository dietaryRestrictionRepository) {
+            DietaryRestrictionRepository dietaryRestrictionRepository,
+            AdminNotificationRepository adminNotificationRepository) {
         this.dishRepository = dishRepository;
         this.dishPhotoRepository = dishPhotoRepository;
         this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
         this.ingredientRepository = ingredientRepository;
         this.dietaryRestrictionRepository = dietaryRestrictionRepository;
+        this.adminNotificationRepository = adminNotificationRepository;
+    }
+
+    public DishService(
+            DishRepository dishRepository,
+            DishPhotoRepository dishPhotoRepository,
+            DishRecipeIngredientRepository dishRecipeIngredientRepository,
+            IngredientRepository ingredientRepository,
+            DietaryRestrictionRepository dietaryRestrictionRepository) {
+        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, dietaryRestrictionRepository, null);
     }
 
     public DishService(
@@ -69,7 +83,12 @@ public class DishService {
             DishPhotoRepository dishPhotoRepository,
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository) {
-        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, null);
+        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, null, null);
+    }
+
+    @Transactional
+    public DishDetailResponse submitForReview(UUID dishId) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Transactional
