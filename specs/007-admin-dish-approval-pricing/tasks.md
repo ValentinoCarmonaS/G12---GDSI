@@ -428,7 +428,11 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
   **DONE 2026-10-28**, RED observed: `Failed to resolve import "../../src/api/dishReviewApi"`.
 
   Three cases beyond request shaping. The identifier is asserted to be **URL-encoded**, so a malformed value cannot alter the path — `../../auth/users` must not become a traversal. Errors are asserted to **propagate** rather than collapse into a default value, because an inbox that silently renders empty on a 403 tells the Administrator there is nothing to review. And the client is asserted **not to retry**, since a silent retry would double a read the server may audit.
-- [ ] T046 [US1] Implement `easyeat/frontend/src/api/dishReviewApi.ts` as a typed client over the shared `apiClient` — **Serves**: shared infrastructure for all four stories; no single requirement
+- [x] T046 [US1] Implement `easyeat/frontend/src/api/dishReviewApi.ts` as a typed client over the shared `apiClient` — **Serves**: shared infrastructure for all four stories; no single requirement
+
+  **DONE 2026-10-28**, T045 green at 10 of 10.
+
+  **Thin by intent, and the class says so**: it shapes requests, unwraps bodies, and does nothing else — no retries, no caching, no defaulting of error responses. Each of those would hide a server failure behind something that looks like data.
 - [ ] T047 [US1] Write `easyeat/frontend/tests/hooks/useDishReviewInbox.test.ts` covering tab and page state, counts, and reconciliation after a stale decision — **Serves**: FR-003, FR-032
 - [ ] T048 [US1] Implement `easyeat/frontend/src/hooks/useDishReviewInbox.ts` — **Serves**: FR-003, FR-032
 - [ ] T049 [US1] Write `easyeat/frontend/tests/components/dishreview/ReviewInbox.test.tsx` covering tab switching, FIFO rendering, pagination, the pending badge, the initial-versus-resubmission marker and a distinct empty state per tab — **Serves**: FR-002, FR-003, FR-004, FR-028, FR-029
