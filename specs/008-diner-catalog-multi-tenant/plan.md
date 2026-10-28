@@ -1,6 +1,6 @@
 # Implementation Plan: Diner Real-Time Catalog & Multi-Tenant Establishment Discovery
 
-**Branch**: `008-diner-catalog-multi-tenant` | **Date**: 26/10/2026 | **Spec**: [spec.md](file:///c:/Users/seeba/OneDrive/Documentos/FIUBA/git/G12---GDSI/specs/008-diner-catalog-multi-tenant/spec.md)
+**Branch**: `008-diner-catalog-multi-tenant` | **Date**: 28/10/2026 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/008-diner-catalog-multi-tenant/spec.md`
 
@@ -12,7 +12,7 @@ Deliver the complete full-stack diner experience for discovering restaurant esta
 
 Dishes display high-resolution photos (with automatic placeholder fallback), names, descriptions, prices, and recipe ingredients in an informational detail modal. Dish availability is computed dynamically from kitchen inventory (`CurrentStock >= RecipeQuantity`). When stock changes, dependent dishes update in real time within a maximum SLA of 3 seconds using lightweight conditional polling with HTTP ETags (`304 Not Modified`), smoothly toggling greyscale styling and `"Agotado"` badges without page reloads or visual flicker. Browsing outside operating hours presents the menu in read-only mode with an opening schedule banner. Unauthenticated access attempts are strictly rejected with HTTP 401 Unauthorized and redirected to login, exposing zero restaurant or catalog data.
 
-Shopping cart, checkout, order creation, and direct QR/deep-link access are explicitly out of scope.
+Shopping cart creation, checkout, payment processing, and direct QR/deep-link access are out of scope for Sprint 2. However, switching active establishments when items exist in the diner's in-memory cart triggers a confirmation dialog that empties the cart upon confirmation (COM-1.5.1 CA 5), integrating cleanly with the existing frontend `CartContext` from spec 003.
 
 ---
 
@@ -47,16 +47,16 @@ Shopping cart, checkout, order creation, and direct QR/deep-link access are expl
 
 | Principle | Status | Evidence / Justification |
 |---|---|---|
-| **I. The Specification Is the Source of Truth** | **PASS** | Implementation design faithfully reflects all 27 Functional Requirements (FR-001 to FR-027) and 11 Success Criteria (SC-001 to SC-011) of `spec.md`. Cart, checkout, and deep-linking are strictly excluded. |
+| **I. The Specification Is the Source of Truth** | **PASS** | Implementation design faithfully reflects all 29 Functional Requirements (FR-001 to FR-029) and 11 Success Criteria (SC-001 to SC-011) of `spec.md`. General cart management, checkout, and deep-linking are strictly excluded. |
 | **II. Specification Before Implementation** | **PASS** | Specification completed and approved; technical planning artifacts (`research.md`, `data-model.md`, `contracts/openapi.yaml`, `quickstart.md`, `plan.md`) generated prior to any code implementation or task execution. |
-| **III. Layered Verification Proportional to Risk** | **PASS** | Comprehensive testing strategy defined in `quickstart.md`: unit tests for availability calculation, MockMvc security and contract tests (401 on unauthenticated, 403 on paused), Testcontainers integration tests for multi-tenant isolation and stock updates, Vitest component tests for autocomplete, sticky nav, detail modal, and search. |
+| **III. Layered Verification Proportional to Risk** | **PASS** | Three-tier testing strategy in `quickstart.md`: (1) Tier 1 pure in-memory unit tests (`DishAvailabilityServiceTest`) covering decimal boundaries (`BigDecimal`), exact limits, fractional shortfalls, negative stock anomalies, empty recipes, and shared N:M ingredients (< 50 ms); (2) Tier 2 integration tests with singleton PostgreSQL Testcontainers (`MultiTenantCatalogIntegrationTest`) validating strict tenant isolation with homonymous entities and security error codes (401, 403, 404); (3) Tier 3 static frontend component tests in Vitest (`DishCard.test.tsx`, `CatalogPage.test.tsx`) for available vs out-of-stock rendering without timers. |
 | **IV. Simple, Cohesive, and Justified Design** | **PASS** | Applied lightweight conditional polling with standard HTTP ETags (`304 Not Modified`) rather than complex stateful WebSockets. Third normal form (3NF) relational schema for recipe lines. No unnecessary abstractions. |
 | **V. Bounded Scope** | **PASS** | Confined strictly to establishment discovery, live categorized menu browsing, and real-time stock-based availability. Shopping cart and checkout are completely omitted in compliance with user agreements. |
-| **VI. Controlled Technical Debt** | **PASS** | Clean Flyway migration `V7__create_establishments.sql` (renumbered sequentially upon integration), creating exclusively `establishments` and seed data without touching culinary tables owned by 005/007. |
+| **VI. Controlled Technical Debt** | **PASS** | Clean Flyway migration `V8__create_establishments.sql` (sequentially following `V7__chef_dish_management.sql`), creating exclusively `establishments` and seed data without touching culinary tables owned by 005/007. |
 | **VII. Traceability & Documentation** | **PASS** | Explicit bidirectional traceability between requirements, data model entities, OpenAPI endpoints, and quickstart scenarios. |
 | **VIII. Evidence Over Assumption & Escalation** | **PASS** | All key architectural questions (status machine alignment, PVP retail price, dish photo consumption, dietary compliance, migration scope) interviewed and agreed in grill-me session. |
 | **IX. Engineering Over Convenience** | **PASS** | Strict RFC 7807 ProblemDetail for security errors, robust diacritic normalization, timezone-aware server-side operating hours evaluation. |
-| **X. Full-Stack End-to-End Integrity (Vertical Slices)** | **PASS** | Delivers complete vertical slice: database DDL (`V7`), JPA entities and repositories, REST controllers and security configuration, and React frontend pages (`/descubrimiento`, `/catalogo`), components, hooks, and route guards. |
+| **X. Full-Stack End-to-End Integrity (Vertical Slices)** | **PASS** | Delivers complete vertical slice: database DDL (`V8`), JPA entities and repositories, REST controllers and security configuration, and React frontend pages (`/descubrimiento`, `/catalogo`), components, hooks, and route guards. |
 | **XI. Continuous Upstream Synchronization Awareness** | **PASS** | Synchronized with `develop/sprint-2`, fully coordinated with specs 003, 004, 005, 006, and 007. |
 
 ---
@@ -94,7 +94,7 @@ easyeat/
 │   │   │   │   │   ├── domain/
 │   │   │   │   │   │   ├── Establishment.java                     # Entity for restaurant & operating hours (owned by 008)
 │   │   │   │   │   │   ├── EstablishmentStatus.java               # Enum: ACTIVE, PAUSED, DISABLED
-│   │   │   │   │   │   └── GastronomicCategory.java               # Closed categories (spec 005)
+│   │   │   │   │   │   # Reuses com.easyeat.dish.domain.DishCategory (spec 005)
 │   │   │   │   │   ├── dto/
 │   │   │   │   │   │   ├── EstablishmentSummaryResponse.java      # Autocomplete result DTO
 │   │   │   │   │   │   ├── DinerCatalogResponse.java              # Full categorized menu DTO
@@ -111,7 +111,7 @@ easyeat/
 │   │   │   │       └── SecurityConfig.java                        # Updated for /api/v1/establishments/** hasRole('COMENSAL')
 │   │   │   └── resources/
 │   │   │       └── db/migration/
-│   │   │           └── V7__create_establishments.sql                  # Flyway DDL (establishments & seeds)
+│   │   │           └── V8__create_establishments.sql                  # Flyway DDL (establishments & seeds)
 │   │   └── test/java/com/easyeat/catalog/
 │   │       ├── controller/
 │   │       │   ├── EstablishmentDiscoveryControllerTest.java     # Autocomplete MockMvc tests
@@ -131,6 +131,7 @@ easyeat/
     │   │   └── catalog/
     │   │       ├── EstablishmentSearchBar.tsx                     # Autocomplete search bar (>= 3 chars, debounce)
     │   │       ├── EstablishmentBlockingNotice.tsx                # Full-page blocking screen for paused restaurants
+│       │       ├── EstablishmentSwitchModal.tsx                   # Confirmation modal to clear cart when switching tenant (COM-1.5.1 CA 5)
     │   │       ├── StickyCategoryNav.tsx                          # Smooth-scrolling category navigation bar
     │   │       ├── DishCard.tsx                                   # Dish card (color/greyscale, Agotado badge, image fallback)
     │   │       ├── DishDetailModal.tsx                            # Informational modal (photo, recipe ingredients, state)
@@ -141,7 +142,7 @@ easyeat/
     │   ├── hooks/
     │   │   ├── useEstablishmentSearch.ts                          # Hook for autocomplete queries
     │   │   ├── useDinerCatalog.ts                                 # Hook for catalog loading and category navigation
-    │   │   └── useRealtimeAvailability.ts                         # Hook for 2.5s conditional polling with ETag
+    │   │   └── useRealtimeAvailability.ts                         # Hook for 2.5s conditional polling with ETag and Page Visibility API
     │   ├── pages/
     │   │   ├── EstablishmentDiscoveryPage.tsx                     # Dedicated /descubrimiento route
     │   │   └── CatalogPage.tsx                                    # Refactored for discovery redirect & stock availability

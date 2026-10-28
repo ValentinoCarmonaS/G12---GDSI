@@ -3,14 +3,14 @@
 **Feature Branch**: `008-diner-catalog-multi-tenant`  
 **Date**: 26/10/2026  
 **Status**: Completed  
-**Spec Reference**: [spec.md](file:///c:/Users/seeba/OneDrive/Documentos/FIUBA/git/G12---GDSI/specs/008-diner-catalog-multi-tenant/spec.md)
+**Spec Reference**: [spec.md](./spec.md)
 
 ---
 
 ## 1. Establishment Discovery and Autocomplete Engine
 
 ### Decision
-Implement `GET /api/v1/establishments/search?q={query}` in Spring Boot using Spring Data JPA repository with a PostgreSQL `ILIKE` pattern and normalized diacritic stripping (via SQL `unaccent` or application-level normalization), enforcing `trimmed.length() >= 3` and filtering strictly by `status = 'ACTIVE'`. In the frontend, implement an autocomplete input in a dedicated `/descubrimiento` route with a 300 ms debounce.
+Implement `GET /api/v1/establishments/search?q={query}` in Spring Boot using Spring Data JPA repository with PostgreSQL native `unaccent` (enabled in Flyway V8 via `CREATE EXTENSION IF NOT EXISTS unaccent`) and a functional index on `(status, unaccent(LOWER(name)))`, enforcing `trimmed.length() >= 3` and filtering strictly by `status = 'ACTIVE'`. In the frontend, implement an autocomplete input in a dedicated `/descubrimiento` route with a 300 ms debounce.
 
 ### Rationale
 - **Performance**: Establishment lookup with `>= 3` characters and a 300 ms debounce limits unnecessary database queries while diners type.
@@ -27,11 +27,11 @@ Implement `GET /api/v1/establishments/search?q={query}` in Spring Boot using Spr
 
 ### Decision
 Implement a lightweight conditional polling mechanism on `GET /api/v1/establishments/{tenantId}/catalog/availability` with standard HTTP `ETag` / `If-None-Match` caching, polled by the frontend every 2.5 seconds.
-- If ingredient stock in kitchen has not changed, backend returns `304 Not Modified` with zero response body bytes.
-- If ingredient stock changed, backend computes binary dish availability map `{ [dishId: string]: boolean }` and returns `200 OK` with a new `ETag`.
+- If no dish crosses an availability boundary, backend returns `304 Not Modified` with zero response body bytes (ETag computed via SHA-256 hash of `{ [dishId]: boolean }`).
+- If any dish availability state changes, backend returns `200 OK` with the updated map and new ETag.
 - The frontend updates the in-memory state of only the affected dish cards (greyscale class and "Agotado" badge), preventing visual flickers, scroll resets, or image re-downloads.
 
-### Rationale
+- **Page Visibility Optimization**: Polling is paused when document.hidden is true using the Page Visibility API, and immediately re-triggered on visibilitychange. This prevents unnecessary background requests while preserving the <= 3s SLA upon returning to the tab.
 - **Strict SLA Compliance**: A 2.5-second polling interval guarantees that stock depletions or replenishments are reflected on the diner screen within `<= 3` seconds (FR-016, SC-003, SC-004).
 - **Resource Efficiency**: When stock is stable (99% of requests), the `304 Not Modified` response consumes negligible network bandwidth and CPU cycles.
 - **Stateless & Scalable**: Works seamlessly across multiple load-balanced backend instances without sticky sessions or distributed WebSocket connection state.
@@ -46,7 +46,7 @@ Implement a lightweight conditional polling mechanism on `GET /api/v1/establishm
 
 ### Decision
 Compute dish availability dynamically on the backend using the formula:
-$$\text{Available}(d) \iff \text{Status}(d) = \text{PUBLISHED} \land \text{IsActive}(d) \land \text{IsOpen}(e) \land \forall (i, q) \in \text{Recipe}(d): \text{Stock}(i) \ge q$$
+$$\text{Available}(d) \iff \text{Status}(d) = \text{PUBLISHED} \land \text{IsActive}(d) \land \forall (i, q) \in \text{Recipe}(d): \text{Stock}(i) \ge q$$
 - The dish lifecycle state `PUBLISHED` is consumed from spec 007; dishes in `DRAFT` or `PENDING_PRICE` are completely excluded.
 - Retail price is sourced from `retail_price` (PVP assigned in spec 007) with fallback to `price` for legacy records.
 - If a dish has zero recipe lines in `dish_recipe_ingredients` (owned by spec 005), it is automatically marked as unavailable (`false`) per FR-019.
@@ -100,10 +100,10 @@ The establishment state and formatted schedule notice (e.g., `"Abre hoy a las 11
 
 ---
 
-## 6. Database Migration Strategy (`V7__create_establishments.sql`)
+## 6. Database Migration Strategy (`V8__create_establishments.sql`)
 
 ### Decision
-Implement Flyway migration `V7__create_establishments.sql` (renumbered to the next sequential integer if higher migrations are present upon merge):
+Implement Flyway migration `V8__create_establishments.sql` (renumbered to the next sequential integer if higher migrations are present upon merge):
 1. Create `establishments` table with UUID primary key (`id`), commercial `name`, `status` (`'ACTIVE'`, `'PAUSED'`, `'DISABLED'`), `opening_time`, `closing_time`, and `timezone`.
 2. Create index on `(status, LOWER(name))` for fast diacritic-insensitive autocomplete queries.
 3. Seed default active and paused establishments for local development and automated integration tests.

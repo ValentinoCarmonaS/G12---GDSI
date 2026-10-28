@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { adminNotificationApi } from '../../api/adminNotificationApi';
+import { AdminNotificationBell } from '../notification/AdminNotificationBell';
+import type { AdminNotificationResponse } from '../../types/notification';
 
 interface WorkspaceLayoutProps {
   title: string;
@@ -22,6 +25,33 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 }) => {
   const { user, logout } = useAuth();
   const roleColor = user?.role ? ROLE_BADGE_COLORS[user.role] || 'bg-gray-100 text-gray-800' : 'bg-gray-100 text-gray-800';
+
+  const [notifications, setNotifications] = useState<AdminNotificationResponse[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  const fetchNotifications = useCallback(async () => {
+    if (user?.role !== 'ADMINISTRADOR') return;
+    try {
+      const data = await adminNotificationApi.listNotifications({ page: 0, size: 20 });
+      setNotifications(data.content || []);
+      setUnreadCount(data.unreadCount || 0);
+    } catch {
+      // Ignored for non-admin or unauthenticated
+    }
+  }, [user?.role]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await adminNotificationApi.markAsRead(notificationId);
+      await fetchNotifications();
+    } catch {
+      // Ignore
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -113,6 +143,15 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   )}
 
                   <span className="text-sm text-gray-600 hidden md:inline">{user.email}</span>
+
+                  {user.role === 'ADMINISTRADOR' && (
+                    <AdminNotificationBell
+                      notifications={notifications}
+                      unreadCount={unreadCount}
+                      onMarkAsRead={handleMarkAsRead}
+                      onRefresh={fetchNotifications}
+                    />
+                  )}
                 </div>
 
                 <button

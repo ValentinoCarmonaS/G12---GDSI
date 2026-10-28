@@ -191,11 +191,11 @@ stateDiagram-v2
 
 ---
 
-## 4. Flyway migration design (`V6__chef_dish_management.sql`)
+## 4. Flyway migration design (`V7__chef_dish_management.sql`)
 
 ```sql
 -- ====================================================================
--- EasyEat V6: Chef Dish Management - Schema Evolution and BOM Model
+-- EasyEat V7: Chef Dish Management - Schema Evolution and BOM Model
 -- ====================================================================
 
 -- 1. Modificar tabla dishes existente

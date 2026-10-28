@@ -150,7 +150,7 @@ The Chef views a draft and taps "Send for Review". The system evaluates all comp
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST allow a Chef to create a new dish technical file (draft) by providing a name (mandatory, up to 100 characters, unique within the tenant after whitespace trimming), a category (mandatory, from the fixed list), and an optional description (up to 500 characters). Values exceeding these lengths MUST be rejected by form validation.
+- **FR-001**: The system MUST allow a Chef to create a new dish technical file (draft) by providing a name (mandatory, up to 100 characters, unique within the tenant as enforced in FR-002), a category (mandatory, from the fixed list), and an optional description (up to 500 characters). Values exceeding these lengths MUST be rejected by form validation.
 - **FR-002**: The system MUST enforce dish name uniqueness within the same establishment across all dish statuses. Names MUST be trimmed of leading and trailing whitespace before validation and storage.
 - **FR-003**: The fixed dish category list for this iteration MUST be: Entradas, Platos principales, Postres, Bebidas, Ensaladas.
 - **FR-004**: The system MUST allow the Chef to upload a single optional photo per dish in JPEG, PNG, or WebP format, with a maximum size of 5 MB. Files exceeding the limit or in unsupported formats MUST be rejected with a descriptive error. The existing photo is retained on rejection. While the dish is in "Draft" status, the system MUST also allow the Chef to explicitly remove an existing photo, leaving the dish without an associated photo.

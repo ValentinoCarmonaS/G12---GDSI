@@ -3,7 +3,7 @@
 **Feature Branch**: `008-diner-catalog-multi-tenant`  
 **Date**: 26/10/2026  
 **Status**: Completed  
-**Spec Reference**: [spec.md](file:///c:/Users/seeba/OneDrive/Documentos/FIUBA/git/G12---GDSI/specs/008-diner-catalog-multi-tenant/spec.md)
+**Spec Reference**: [spec.md](./spec.md)
 
 ---
 
@@ -132,12 +132,15 @@ erDiagram
 
 ---
 
-## 3. Relational DDL Specification (`V7__create_establishments.sql`)
+## 3. Relational DDL Specification (`V8__create_establishments.sql`)
 
 > [!NOTE]
 > Spec 008 owns **only** the `establishments` table and its seed data. It does **not** alter `dishes` (owned by specs 005 and 007) and does **not** create `dish_recipe_ingredients` (owned by spec 005).
 
 ```sql
+-- 0. Enable unaccent extension for diacritic-insensitive search
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
 -- 1. Create establishments table
 CREATE TABLE IF NOT EXISTS establishments (
     id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -152,7 +155,7 @@ CREATE TABLE IF NOT EXISTS establishments (
 );
 
 CREATE INDEX IF NOT EXISTS idx_establishments_search
-    ON establishments(status, LOWER(name));
+    ON establishments(status, unaccent(LOWER(name)));
 
 -- 2. Seed development establishments
 INSERT INTO establishments (id, name, status, opening_time, closing_time, timezone)
@@ -183,18 +186,19 @@ ON CONFLICT (id) DO NOTHING;
 4. **Dynamic Stock Availability Formula (FR-013, FR-014, FR-019, SC-003, SC-004)**:
    - A dish has `isAvailable = true` if and only if:
      1. `dish.status == 'PUBLISHED' && dish.is_active == true`
-     2. `establishment.status == 'ACTIVE'` and current server time in establishment's timezone is within `[opening_time, closing_time)`.
-     3. The dish has at least one recipe line in `dish_recipe_ingredients` (`count(recipeLines) > 0`).
-     4. For every recipe line: `ingredient.current_stock >= line.quantity`.
+
+     2. The dish has at least one recipe line in `dish_recipe_ingredients` (`count(recipeLines) > 0`).
+     3. For every recipe line: `ingredient.current_stock >= line.quantity`.
    - If any required ingredient has `current_stock < line.quantity`, `isAvailable = false`.
    - If a dish has zero recipe lines, `isAvailable = false`.
-   - Availability is strictly binary; internal numeric counts are never revealed to diners.
+   - Availability is strictly culinary stock availability. Establishment operating schedule (`isOpen`) is evaluated separately on `EstablishmentDetail` and governs read-only catalog mode (FR-012), never marking dishes as out-of-stock ("Agotado") solely due to business hours schedule.
+   - Availability presentation is strictly binary; internal numeric counts and raw stock levels are never revealed to diners.
 
 5. **Dietary Compliance Integration (Spec 003)**:
    - Each `DishCatalogItem` in the catalog response is evaluated against the authenticated diner's active dietary restrictions (from spec 003).
    - If the diner has active restrictions, `isCompliant` and `conflictingRestrictions` are populated; otherwise `isCompliant = true` and `conflictingRestrictions = []`.
 
 6. **Real-time Stock Invalidation & ETag Generation (FR-016)**:
-   - The ETag for `GET /api/v1/establishments/{tenantId}/catalog/availability` is computed based on `MAX(updated_at)` or a SHA-256 hash over `(ingredient.id, ingredient.current_stock, ingredient.updated_at)` for the tenant.
-   - When no ingredient stock changes, the ETag remains identical and Spring responds with `304 Not Modified`.
+   - The ETag for `GET /api/v1/establishments/{tenantId}/catalog/availability` is computed as a deterministic SHA-256 hash of the serialized availability payload `{ [dishId]: boolean }`.
+   - When no dish crosses an availability boundary, the ETag remains identical and Spring responds with `304 Not Modified`, avoiding unnecessary client re-renders.
 

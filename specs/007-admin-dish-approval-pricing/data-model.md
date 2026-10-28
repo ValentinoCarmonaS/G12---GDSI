@@ -20,7 +20,7 @@ Columns added by **this** feature:
 | `version` | `BIGINT` | No | Optimistic-locking token, `DEFAULT 0`, incremented by Hibernate `@Version`. First use of optimistic locking in the project (FR-025). |
 | `published_at` | `TIMESTAMPTZ` | Yes | Set on the `PENDING_PRICE → PUBLISHED` transition. `NULL` for every dish never approved. Never cleared by this feature (unpublishing is Sprint 3). |
 
-Columns **consumed** from upstream (never created here): `status`, `category`, `allergens_confirmed`, `created_by` (005's `V6`); `submitted_at` (**R-005-1**); `name`, `description`, `tenant_id`, `is_active`, `created_at`, `updated_at`, `price` (V5, spec 003).
+Columns **consumed** from upstream (never created here): `status`, `category`, `allergens_confirmed`, `created_by`, `submitted_at` (all delivered by 005's `V7`; `submitted_at` added by issue #137 / PR #138, closing **R-005-1**); `name`, `description`, `tenant_id`, `is_active`, `created_at`, `updated_at`, `price` (V5, spec 003).
 
 Fields added to the entity class (ordinary incremental work on a class, permitted by D1): `retailPrice`, `version` (`@Version`), `publishedAt`.
 
@@ -128,16 +128,16 @@ stateDiagram-v2
 
 ## 3. Flyway migration owned by this feature
 
-**File**: `easyeat/backend/src/main/resources/db/migration/V8__admin_dish_approval_pricing.sql`
-**Version rationale and renumbering rule**: see [research.md §2(b)](./research.md) — `V6` is reserved by spec 005, `V7` by spec 008.
-**Applies on top of**: `V1..V5` (present) + 005's `V6` + 008's `V7` when they land.
+**File**: `easyeat/backend/src/main/resources/db/migration/V9__admin_dish_approval_pricing.sql`
+**Version rationale and renumbering rule**: see [research.md §2(b)](./research.md). The version is **not reserved in advance** — it is the next free sequential number confirmed against `db/migration/` when the file is authored. Queue as of 2026-10-27: `V6` inventory batches (on `main`), `V7` spec 005 (on `005-chef-dish-management`), `V8` claimed by spec 008 → `V9` here.
+**Applies on top of**: `V1..V7` (`V1..V6` on `main`, `V7` pending integration from spec 005) plus `V8` once spec 008 lands.
 
 ```sql
 -- ====================================================================
--- EasyEat V8: Administrative Back-Office - PVP, Approval and Audit
+-- EasyEat: Administrative Back-Office - PVP, Approval and Audit
 -- Owns: dishes.retail_price / version / published_at, dish_review_history,
 --       dish_price_history, inbox indexes, retail_price backfill.
--- Owns NOTHING of V6 (spec 005) or V7 (spec 008).
+-- Owns NOTHING of spec 005's or spec 008's migrations.
 -- ====================================================================
 
 -- 1. Columns owned by this feature
@@ -213,18 +213,17 @@ CREATE TABLE IF NOT EXISTS dish_price_history (
 CREATE INDEX IF NOT EXISTS idx_dph_dish_created
     ON dish_price_history (dish_id, created_at DESC);
 
--- 6. Indexes for the segmented inbox.
---    FIFO ordering column depends on R-005-1: submitted_at when provided,
---    created_at under the degraded fallback (research.md 2(c)).
-CREATE INDEX IF NOT EXISTS idx_dishes_review_inbox_pending
-    ON dishes (tenant_id, status, submitted_at);
+-- 6. Index for the published tab. The FIFO pending index
+--    idx_dishes_review_inbox_pending (tenant_id, status, submitted_at)
+--    is created by spec 005's V7 (issue #137) and is consumed here, not
+--    re-declared: two owners of one index object would violate D1.
 CREATE INDEX IF NOT EXISTS idx_dishes_review_inbox_published
     ON dishes (tenant_id, status, published_at DESC);
 ```
 
 ### 3.1. Index justification
 
-`idx_dishes_tenant (tenant_id, is_active)` (V5) and `idx_dishes_chef_list (tenant_id, status, updated_at DESC)` (005's V6) serve neither the FIFO pending query nor the published tab's chronology. Two composite indexes are added, one per ordering, because a single index cannot serve both sort directions on different columns. The history tab needs no new index: it is an `EXISTS` over `dish_review_history` resolved by `uq_drh_dish_cycle`.
+`idx_dishes_tenant (tenant_id, is_active)` (V5) and `idx_dishes_chef_list (tenant_id, status, updated_at DESC)` (005's `V7`) serve neither the FIFO pending query nor the published tab's chronology. Two composite indexes are needed, one per ordering, because a single index cannot serve both sort directions on different columns. **Only one of them is owned here**: `idx_dishes_review_inbox_pending (tenant_id, status, submitted_at)` is created by 005's `V7` (issue #137) and consumed as-is; this feature adds `idx_dishes_review_inbox_published` alone. The history tab needs no new index: it is an `EXISTS` over `dish_review_history` resolved by `uq_drh_dish_cycle`.
 
 ### 3.2. `cycle_number` without a race
 
