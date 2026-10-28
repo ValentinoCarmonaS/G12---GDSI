@@ -112,11 +112,11 @@
 
 ### Tests for User Story 3 (TDD & Behavioral Acceptance - Write First) ⚠️
 
-- [ ] T047 [P] [US3] Unit test `DishAllergenServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishAllergenServiceTest.java` verifying taxonomy code mapping against `dietary_restrictions`, zero-label confirmed validity, explicit `allergens_confirmed` persistence, and edit rejection when not in `DRAFT`
-- [ ] T048 [P] [US3] Web contract test `DishAllergenControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishAllergenControllerTest.java` verifying `PUT /api/v1/dishes/{id}/allergens` against OpenAPI schema
-- [ ] T049 [P] [US3] Behavioral acceptance test `DishAllergenAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishAllergenAcceptanceTest.java` covering User Story 3 acceptance scenarios using JUnit 5 and Testcontainers
-- [ ] T050 [P] [US3] Frontend component test `AllergenStep.test.tsx` in `easyeat/frontend/tests/components/dish/AllergenStep.test.tsx` verifying grouping into Dietary Lifestyles and Common Allergens, multi-selection, and explicit confirmation toggle behavior
-- [ ] T051 [P] [US3] Frontend user journey integration test `us3_allergen_labeling.test.tsx` in `easyeat/frontend/tests/integration/us3_allergen_labeling.test.tsx` verifying allergen labeling and explicit confirmation flow using Vitest
+- [X] T047 [P] [US3] Unit test `DishAllergenServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishAllergenServiceTest.java` verifying taxonomy code mapping against `dietary_restrictions`, zero-label confirmed validity, explicit `allergens_confirmed` persistence, and edit rejection when not in `DRAFT`
+- [X] T048 [P] [US3] Web contract test `DishAllergenControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishAllergenControllerTest.java` verifying `PUT /api/v1/dishes/{id}/allergens` against OpenAPI schema
+- [X] T049 [P] [US3] Behavioral acceptance test `DishAllergenAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishAllergenAcceptanceTest.java` covering User Story 3 acceptance scenarios using JUnit 5 and Testcontainers
+- [X] T050 [P] [US3] Frontend component test `AllergenStep.test.tsx` in `easyeat/frontend/tests/components/dish/AllergenStep.test.tsx` verifying grouping into Dietary Lifestyles and Common Allergens, multi-selection, and explicit confirmation toggle behavior
+- [X] T051 [P] [US3] Frontend user journey integration test `us3_allergen_labeling.test.tsx` in `easyeat/frontend/tests/integration/us3_allergen_labeling.test.tsx` verifying allergen labeling and explicit confirmation flow using Vitest
 
 ### Implementation for User Story 3
 
