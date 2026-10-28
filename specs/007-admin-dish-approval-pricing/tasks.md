@@ -281,7 +281,11 @@ The calculator receives the Food Cost as a parameter, so it does not depend on w
   Same three immutability mechanisms as T019. **The snapshot is the reason the row exists**: it is what lets the margin of a past decision be reconstructed after the inventory has moved, which FR-012's recomputed margin cannot do by design.
 
   One judgement recorded in the code rather than left implicit: `atMoneyScale` normalises to scale 2 with `HALF_UP`, but **no rounding occurs in practice** — spec 006 rounds each line subtotal and the calculator produces prices at scale 2, so every value arriving here is already there. A value with more decimals would be an upstream defect, and normalising keeps the stored column honest instead of letting the driver truncate it silently.
-- [ ] T023 Create `DishPriceHistoryRepository` in `easyeat/backend/src/main/java/com/easyeat/dish/repository/DishPriceHistoryRepository.java` exposing save and queries only
+- [x] T023 Create `DishPriceHistoryRepository` in `easyeat/backend/src/main/java/com/easyeat/dish/repository/DishPriceHistoryRepository.java` exposing save and queries only — **DONE 2026-10-28**, T021 green at 12 of 12 (27 with T018)
+
+  Four methods: `save`, the ascending timeline for SC-005, `findFirstByDishIdAndTenantIdOrderByCreatedAtDesc` to read the price a repricing replaces, and the reprice count for the detail view.
+
+  **The descending finder reads the audit trail, not the dish**, and the distinction is written into its Javadoc because it is easy to confuse: the authoritative current price is `dishes.retail_price` per FR-012, while this answers the narrower question of what the last recorded change said. Empty is FR-010's first-pricing case, which is why `previous_price` is nullable.
 
 ### Entity fields and the immutable catalog mapping
 
