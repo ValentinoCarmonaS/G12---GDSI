@@ -108,3 +108,4 @@ describe('dinerCatalogHandlers Mock Fixtures and Setup (T002)', () => {
     expect(availability.availability[MOCK_DISH_ID_1]).toBe(true);
   });
 });
+

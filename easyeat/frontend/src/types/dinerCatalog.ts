@@ -67,3 +67,4 @@ export interface CatalogResponse {
 export interface AvailabilityMap {
   availability: Record<string, boolean>;
 }
+

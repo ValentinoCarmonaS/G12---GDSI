@@ -119,3 +119,4 @@ class CatalogTestFixturesTest {
         assertThat(ingredient.getStatus()).isEqualTo(IngredientStatus.ACTIVE);
     }
 }
+

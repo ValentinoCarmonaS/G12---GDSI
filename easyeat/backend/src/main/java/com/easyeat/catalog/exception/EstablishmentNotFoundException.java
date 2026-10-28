@@ -20,3 +20,4 @@ public class EstablishmentNotFoundException extends RuntimeException {
         return establishmentId;
     }
 }
+

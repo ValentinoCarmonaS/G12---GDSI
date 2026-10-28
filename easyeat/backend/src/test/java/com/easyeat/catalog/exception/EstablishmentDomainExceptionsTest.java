@@ -40,3 +40,4 @@ class EstablishmentDomainExceptionsTest {
         assertThat(exCustom.getMessage()).isEqualTo("Establecimiento pausado temporalmente");
     }
 }
+

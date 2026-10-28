@@ -27,3 +27,4 @@ public class EstablishmentInactiveException extends RuntimeException {
         return currentStatus;
     }
 }
+

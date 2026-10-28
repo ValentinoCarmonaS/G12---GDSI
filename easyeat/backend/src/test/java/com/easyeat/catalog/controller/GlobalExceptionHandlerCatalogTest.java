@@ -67,3 +67,4 @@ class GlobalExceptionHandlerCatalogTest {
         assertThat(body.getProperties()).containsEntry("currentStatus", "PAUSED");
     }
 }
+

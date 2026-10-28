@@ -113,3 +113,4 @@ describe('Diner Catalog Types and Type Guards (T005)', () => {
     expect(map.availability['d1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01']).toBe(false);
   });
 });
+
