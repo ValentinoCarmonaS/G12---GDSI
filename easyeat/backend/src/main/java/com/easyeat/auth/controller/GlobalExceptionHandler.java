@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import com.easyeat.catalog.exception.DishNotFoundException;
+import com.easyeat.dish.exception.*;
 import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.inventory.exception.NegativeStockException;
 import com.easyeat.profile.exception.CooldownRateLimitException;
@@ -240,7 +241,91 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setType(URI.create("https://easyeat.com/errors/dish-not-found"));
         problem.setTitle("Dish Not Found");
         problem.setInstance(URI.create(request.getRequestURI()));
+        if (ex instanceof com.easyeat.dish.exception.DishNotFoundException dishEx && dishEx.getDishId() != null) {
+            problem.setProperty("dishId", dishEx.getDishId().toString());
+        }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+    }
+
+    @ExceptionHandler(DishLockedException.class)
+    public ResponseEntity<ProblemDetail> handleDishLocked(DishLockedException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/dish-locked"));
+        problem.setTitle("Dish Locked");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        if (ex.getDishId() != null) {
+            problem.setProperty("dishId", ex.getDishId().toString());
+        }
+        if (ex.getCurrentStatus() != null) {
+            problem.setProperty("currentStatus", ex.getCurrentStatus());
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    @ExceptionHandler(DuplicateDishNameException.class)
+    public ResponseEntity<ProblemDetail> handleDuplicateDishName(DuplicateDishNameException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/dish-name-duplicate"));
+        problem.setTitle("Duplicate Dish Name");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        if (ex.getDishName() != null) {
+            problem.setProperty("dishName", ex.getDishName());
+        }
+        if (ex.getTenantId() != null) {
+            problem.setProperty("tenantId", ex.getTenantId().toString());
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    @ExceptionHandler(IncompleteDishException.class)
+    public ResponseEntity<ProblemDetail> handleIncompleteDish(IncompleteDishException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/dish-incomplete"));
+        problem.setTitle("Incomplete Dish Technical File");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        if (ex.getDishId() != null) {
+            problem.setProperty("dishId", ex.getDishId().toString());
+        }
+        if (ex.getMissingConditions() != null) {
+            problem.setProperty("missingConditions", ex.getMissingConditions());
+        }
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem);
+    }
+
+    @ExceptionHandler(InvalidIngredientException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidIngredient(InvalidIngredientException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-ingredient"));
+        problem.setTitle("Invalid Recipe Ingredient");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        if (ex.getIngredientId() != null) {
+            problem.setProperty("ingredientId", ex.getIngredientId().toString());
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    @ExceptionHandler(InvalidQuantityException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidQuantity(InvalidQuantityException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-quantity"));
+        problem.setTitle("Invalid Recipe Quantity");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        if (ex.getQuantity() != null) {
+            problem.setProperty("quantity", ex.getQuantity());
+        }
+        if (ex.getUnitOfMeasure() != null) {
+            problem.setProperty("unitOfMeasure", ex.getUnitOfMeasure());
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    @ExceptionHandler(PhotoStorageException.class)
+    public ResponseEntity<ProblemDetail> handlePhotoStorage(PhotoStorageException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/photo-storage-error"));
+        problem.setTitle("Photo Storage Error");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
 }
 
