@@ -100,4 +100,15 @@ public class DishController {
         com.easyeat.dish.dto.RecipeResponse response = dishService.getRecipe(id);
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/{id}/allergens")
+    @PreAuthorize("hasRole('CHEF')")
+    public ResponseEntity<com.easyeat.dish.dto.AllergenResponse> updateDishAllergens(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.easyeat.dish.dto.AllergenUpdateRequest request
+    ) {
+        com.easyeat.dish.dto.AllergenResponse response = dishService.updateAllergens(id, request);
+        return ResponseEntity.ok(response);
+    }
 }
+
