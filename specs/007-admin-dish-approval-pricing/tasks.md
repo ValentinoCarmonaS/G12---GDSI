@@ -29,16 +29,161 @@
 
 **✅ GATE PASSES as of 2026-10-28.** Measured on this branch at `e934713`, fast-forwarded to `develop/sprint-2` and 0 behind / 0 ahead. Specs 005 (PR #160) and 006 (PR #170) are both integrated: `V7` applies, `com.easyeat.dish` exists, and `FoodCostEngine` / `FoodCostAuditService` are present. `R-004-1` and `R-006-1` were answered in writing on issue #146 and verified against the merged code; `R-005-4` is withdrawn in favour of a conditional `UPDATE`; `R-005-3` is settled by a recorded amendment to D1. **One task in this phase remains to be executed** — `T005`, adding `PUBLISHED` to the enum under that amendment. The rule stands: no task from T009 onward starts until every task in this phase passes.
 
-- [ ] T001 Verify spec 005's migration `V7__chef_dish_management.sql` is present in `easyeat/backend/src/main/resources/db/migration/` and applies cleanly, and record the outcome against R-005-0
-- [ ] T002 [P] **SATISFIED 2026-10-28.** Verify the upstream dish domain exists: `DishStatus`, `DishCategory` and the auxiliary entities in `com.easyeat.dish.domain`, and `DishRepository`. **Note the correction**: there is no `com.easyeat.dish.domain.Dish` and none is coming — spec 005 added its five columns to the pre-existing `com.easyeat.catalog.domain.Dish`, which is the single `@Entity` over `dishes`. Assert that entity carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at` in `easyeat/backend/src/main/java/com/easyeat/dish/`, and record the outcome against R-005-0
-- [ ] T003 [P] Verify the `dishes` table carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at`, and that the index `idx_dishes_review_inbox_pending (tenant_id, status, submitted_at)` exists, by inspecting `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql`; record against R-005-0 and R-005-1
-- [ ] T004 [P] Verify the tables `dish_recipe_ingredients` and `dish_photos` exist in `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql`, and record the outcome against R-005-0
-- [ ] T005 **UNBLOCKED 2026-10-28 — execute under the recorded D1 amendment.** Add the `PUBLISHED` constant to `easyeat/backend/src/main/java/com/easyeat/dish/domain/DishStatus.java`, which declares only `DRAFT` and `PENDING_PRICE` while the database has admitted `PUBLISHED` since 005's `V7`. The authority is the amendment recorded in `plan.md` §R-005-3 and Complexity Tracking, which declares that enum **jointly owned** by specs 005 and 007. **Add the constant and nothing else**: do not reorder, rename or remove the existing ones — the enum is persisted by name through `@Enumerated(EnumType.STRING)`, so any of those is a data migration — do not touch any other class in `com.easyeat.dish.domain`, which stays 005-owned under D1 unchanged, and do not create a competing status enum in this feature. Update `DishEnumsTest` to assert the three constants. **R-005-4 is withdrawn and no longer part of this task**: no `@Version` is added anywhere, so T024 is no longer blocked.
-- [ ] T006 **SATISFIED 2026-10-28 — record the outcome and move on.** Spec 006's owner moved the status gate to the controller (issue #146) and spec 006 is integrated via PR #170. Verify and record: `easyeat/backend/src/main/java/com/easyeat/dish/service/FoodCostAuditService.java` holds **zero** references to `DishStatus` or `PENDING_PRICE` and both `auditDishCost(Dish)` and `auditDishCost(UUID)` compute for any lifecycle state; the `PENDING_PRICE` restriction lives in `AdminDishCostAuditController` and raises `DishLockedException`. **The degraded path is withdrawn, not activated** — this feature injects `FoodCostAuditService` directly. Record two consequences found while verifying, both of which shape later tasks: `auditDishCost` raises `EmptyRecipeException` rather than returning a zero cost (T042a), and `RecipeItemAuditResponse` does not carry the ingredient's `IngredientStatus`, which FR-015 condition 2 needs (T076a)
-- [ ] T007 **SATISFIED 2026-10-28 — record the rule, do not re-decide it.** The authoritative per-unit acquisition cost was named in writing by spec 006's owner on issue #146 and confirmed in merged code: **`ingredients.unit_purchase_cost`**, the master catalogue figure, never `ingredient_batches.unit_cost` and never `stock_audit_entries.unit_cost`. "Unpriced" means that column is `NULL` or `<= 0`, in which case the line contributes `$0.00` and the computation continues with `has_unpriced_ingredients` set. Scale 4 becomes scale 2 at **each line subtotal** (`HALF_UP`), and the total is the sum of already-rounded subtotals — so the Food Cost arrives at scale 2 and **this feature rounds it nowhere**. Verify against `FoodCostEngine` lines 39, 48 and 53 and record the outcome. T042, T067 and T071 are thereby unblocked
-- [ ] T008 Determine this feature's Flyway version by listing `easyeat/backend/src/main/resources/db/migration/` and taking the lowest free sequential integer strictly greater than every migration present; record the chosen number for T014 and add its row to `.specify/memory/migrations.md` in the same commit as T014. **Confirmed 2026-10-28: the directory holds `V1`–`V7`, so the number is `V8`.** Spec 008 has written `V8__create_establishments.sql` on its own feature branch but has merged nothing to the integration branch, and by registry rule 4 a claim in flight reserves nothing — whichever merges first keeps the number. **Do not yield `V9` out of courtesy**: with `outOfOrder` disabled a later `V8` below an applied `V9` is rejected outright, so 008 would have to renumber anyway and a gap would be left for nothing. Re-confirm against the directory at the moment T014 authors the file, because the answer changes if 008 merges first
+- [x] T001 Verify spec 005's migration `V7__chef_dish_management.sql` is present in `easyeat/backend/src/main/resources/db/migration/` and applies cleanly, and record the outcome against R-005-0 — **VERIFIED 2026-10-28, R-005-0 satisfied**
 
-**Checkpoint**: readiness recorded and the gate passes. Nothing in this phase waits on another spec's owner any longer; T005 is this feature's own work under the recorded D1 amendment.
+  Presence: the file is in `db/migration/`, landed on the integration branch via PR #160.
+
+  "Applies cleanly" was proved by **execution, not inspection**: the seven versioned migrations were applied in order against a throwaway `postgres:16` container with `psql -v ON_ERROR_STOP=1`:
+
+  ```
+  OK   V1__create_users.sql
+  OK   V2__create_password_reset_tokens.sql
+  OK   V3__extend_users_staff.sql
+  OK   V4__create_ingredients_and_stock_audit.sql
+  OK   V5__extend_users_profile_and_dietary.sql
+  OK   V6__create_ingredient_batches_and_refactor_lifecycle.sql
+  OK   V7__chef_dish_management.sql
+  ```
+
+  This is a stronger result than the task asked for: it confirms `V7` applies on top of the exact `V1`–`V6` sequence this feature's `V8` will extend, not merely that it parses.
+
+  **Correction, same day.** This record originally said no Maven was available and offered that as the reason for applying the migrations by hand instead of running spec 005's `V7MigrationAndSeedDevTest`. **That was wrong**: Maven 3.9.9 is on disk at `~/.m2/wrapper/dists/`, merely absent from `PATH`, and it runs the project once it is allowed to fetch the missing surefire plugin. The result above stands on its own evidence and is arguably the better check — it exercises the exact `V1`–`V7` sequence rather than one test's fixture — but the stated reason was false and is withdrawn.
+- [x] T002 [P] **SATISFIED 2026-10-28.** Verify the upstream dish domain exists: `DishStatus`, `DishCategory` and the auxiliary entities in `com.easyeat.dish.domain`, and `DishRepository`. **Note the correction**: there is no `com.easyeat.dish.domain.Dish` and none is coming — spec 005 added its five columns to the pre-existing `com.easyeat.catalog.domain.Dish`, which is the single `@Entity` over `dishes`. Assert that entity carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at` in `easyeat/backend/src/main/java/com/easyeat/dish/`, and record the outcome against R-005-0
+
+  **VERIFIED 2026-10-28 on the working branch.** `com.easyeat.dish.domain` holds `DishStatus`, `DishCategory`, `DishCategoryConverter`, `DishPhoto`, `DishRecipeIngredient` and `DishRecipeIngredientId` — and **no `Dish`**, confirming the correction above. `grep -rln '@Table(name = "dishes")'` returns exactly one file, `catalog/domain/Dish.java`, so there is a single entity over the table. That entity carries all five upstream columns:
+
+  ```
+  Dish.java:26  @Column(name = "category", length = 50)
+  Dish.java:36  @Column(name = "status", nullable = false, length = 50)
+  Dish.java:39  @Column(name = "allergens_confirmed", nullable = false)
+  Dish.java:42  @Column(name = "created_by")
+  Dish.java:45  @Column(name = "submitted_at")
+  ```
+
+  `DishRepository` is at `catalog/repository/DishRepository.java`, beside the entity rather than in `dish/`, which is where this feature's inbox queries will go. `dish/repository/` holds `DishPhotoRepository` and `DishRecipeIngredientRepository`.
+- [x] T003 [P] Verify the `dishes` table carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at`, and that the index `idx_dishes_review_inbox_pending (tenant_id, status, submitted_at)` exists, by inspecting `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql`; record against R-005-0 and R-005-1 — **VERIFIED 2026-10-28, R-005-0 and R-005-1 satisfied**
+
+  Verified against the **live schema** produced by T001's run, not against the migration text, so the result reflects what the database actually holds:
+
+  ```
+  allergens_confirmed | boolean                  | NOT NULL
+  category            | character varying        | NULL
+  created_by          | uuid                     | NULL
+  status              | character varying        | NOT NULL
+  submitted_at        | timestamp with time zone | NULL
+  ```
+
+  The FIFO index exists exactly as FR-003 needs it, column order included:
+
+  ```sql
+  CREATE INDEX idx_dishes_review_inbox_pending
+      ON public.dishes USING btree (tenant_id, status, submitted_at)
+  ```
+
+  **Two findings beyond what the task asked.** First, `chk_dishes_status` was read back from `pg_constraint` and admits `'DRAFT'`, `'PENDING_PRICE'` and `'PUBLISHED'`, closing R-005-2 against the running database rather than against the migration source. Second, that was confirmed behaviourally: an `INSERT` of `status = 'PUBLISHED'` **succeeds**, and an `INSERT` of `status = 'ACTIVE'` is **rejected** by the constraint. The second half matters beyond this task — spec 008's `data-model.md` plans to redefine this constraint around `'ACTIVE'`, and the database as it stands refuses that value, so the cross-spec conflict recorded in `research.md §3.7` is live rather than theoretical.
+
+  This is also the precise proof of T005's premise: the database admits a value the application enum cannot yet express.
+- [x] T004 [P] Verify the tables `dish_recipe_ingredients` and `dish_photos` exist in `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql`, and record the outcome against R-005-0 — **VERIFIED 2026-10-28, R-005-0 satisfied**
+
+  Both tables are present in the live schema built by T001:
+
+  ```
+  dish_photos
+  dish_recipe_ingredients
+  ```
+
+  `dish_recipe_ingredients` is the table FR-006 and FR-015 condition 2 read through spec 006's audit service and through this feature's own gate query (T076a). `dish_photos` is read by the detail view.
+
+  **Recorded while here, as the negative half of the gate**: none of the objects this feature *owns* exists yet, which is the state T014's migration assumes. `information_schema` returns `0` columns named `retail_price`, `published_at` or `version` on `dishes`, and `0` tables named `dish_review_history` or `dish_price_history`. If any of them had already existed, T014 would have been writing against a schema it did not expect.
+- [x] T005 **DONE 2026-10-28 under the recorded D1 amendment.** Add the `PUBLISHED` constant to `easyeat/backend/src/main/java/com/easyeat/dish/domain/DishStatus.java`, which declares only `DRAFT` and `PENDING_PRICE` while the database has admitted `PUBLISHED` since 005's `V7`. The authority is the amendment recorded in `plan.md` §R-005-3 and Complexity Tracking, which declares that enum **jointly owned** by specs 005 and 007. **Add the constant and nothing else**: do not reorder, rename or remove the existing ones — the enum is persisted by name through `@Enumerated(EnumType.STRING)`, so any of those is a data migration — do not touch any other class in `com.easyeat.dish.domain`, which stays 005-owned under D1 unchanged, and do not create a competing status enum in this feature. Update `DishEnumsTest` to assert the three constants. **R-005-4 is withdrawn and no longer part of this task**: no `@Version` is added anywhere, so T024 is no longer blocked.
+
+  **Executed TDD, both steps proved.** The red and green steps were first run with `javac` and the JUnit 5.12.2 platform assembled by hand from the local repository, and then **re-confirmed with the project's own Maven build**:
+
+  ```
+  Tests run: 30, Failures: 0, Errors: 0, Skipped: 0 — com.easyeat.dish.domain.DishEnumsTest
+  ```
+
+  **Correction, same day**: this record originally said Maven was unavailable and gave that as the reason for the hand-assembled run. Maven 3.9.9 is on disk at `~/.m2/wrapper/dists/`, simply not on `PATH`. The two runs agree, so the measurement was right and the explanation was not.
+
+  | Step | Result |
+  |---|---|
+  | Baseline, before any change | **29 of 29 passing** — the old assertion `containsExactly(DRAFT, PENDING_PRICE)` was green, so it actively asserted a two-value enum |
+  | RED, test first | **Compilation fails**: four `cannot find symbol: variable PUBLISHED` at `DishEnumsTest` lines 124, 129, 149, 150 |
+  | GREEN, after the constant | **30 of 30 passing** |
+
+  Three assertions were added or widened rather than one, because the enum is persisted by name: `values()` and `valueOf`, a new test pinning the constant **names** against the `chk_dishes_status` domain, and Jackson round-tripping. The name test exists because a rename would silently stop matching the database CHECK and nothing else in the suite would catch it.
+
+  **Regression check (Principle VII).** Adding a constant to an enum is only safe if nothing enumerates it exhaustively. Verified across the whole backend: zero `switch` on `DishStatus`, zero `ordinal()`, zero `EnumSet`/`Set.of`/`List.of` over it, and the only `values()` calls are the two in this test. The 84 other references name `DRAFT` or `PENDING_PRICE` explicitly.
+
+  **Noted while verifying**: spec 005's own `V7MigrationAndSeedDevTest:210` already carries a test named *"CHECK constraint chk_dishes_status should allow PUBLISHED status in dishes"*. Spec 005 therefore tested that the database admits the value **and never added the constant that would let the application express it** — which is precisely the gap R-005-3 recorded, now visible in 005's own suite.
+
+  **FINDING — a dependent artifact nothing owns.** The frontend carries its own status domain, and it is now narrower than the backend's:
+
+  ```ts
+  // easyeat/frontend/src/types/dish.ts:23
+  export type DishStatus = 'DRAFT' | 'PENDING_PRICE';
+  export function isDishStatus(val: unknown): val is DishStatus {
+    return val === 'DRAFT' || val === 'PENDING_PRICE';   // false for 'PUBLISHED'
+  }
+  ```
+
+  And `components/dish/DishStatusBadge.tsx:34` falls back to `'DRAFT'` for any status it does not recognise, so a published dish would render as *"Borrador"* rather than failing visibly. **No task in this breakdown covers either file** — T044 creates a *new* `types/dishReview.ts` and does not touch the existing union.
+
+  **This is latent, not live, and that is what fixes the ordering**: nothing can set `PUBLISHED` until T076 exists, so no user can see the mislabel today. It becomes a real defect the moment US3 lands. Recorded as **T079a** in US3 rather than fixed here, because Principle V forbids changes no task backs and the files belong to spec 005's surface.
+- [x] T006 **SATISFIED 2026-10-28 — outcome recorded.** Spec 006's owner moved the status gate to the controller (issue #146) and spec 006 is integrated via PR #170. Verify and record: `easyeat/backend/src/main/java/com/easyeat/dish/service/FoodCostAuditService.java` holds **zero** references to `DishStatus` or `PENDING_PRICE` and both `auditDishCost(Dish)` and `auditDishCost(UUID)` compute for any lifecycle state; the `PENDING_PRICE` restriction lives in `AdminDishCostAuditController` and raises `DishLockedException`. **The degraded path is withdrawn, not activated** — this feature injects `FoodCostAuditService` directly. Record two consequences found while verifying, both of which shape later tasks: `auditDishCost` raises `EmptyRecipeException` rather than returning a zero cost (T042a), and `RecipeItemAuditResponse` does not carry the ingredient's `IngredientStatus`, which FR-015 condition 2 needs (T076a)
+
+  **VERIFIED 2026-10-28 on the working branch**, after spec 006 landed via PR #170:
+
+  ```
+  grep -cE "DishStatus|PENDING_PRICE" dish/service/FoodCostAuditService.java   ->  0
+  grep -n  "PENDING_PRICE"            dish/controller/AdminDishCostAuditController.java
+      39:  if (dish.getStatus() != DishStatus.PENDING_PRICE) {
+      40:      throw new DishLockedException(
+  ```
+
+  Zero references in the service and the restriction in the controller is exactly the shape R-006-1 asked for. Both `auditDishCost(Dish)` and `auditDishCost(UUID)` are `@Transactional(readOnly = true)` and compute for any lifecycle state, so this feature can call them for `PUBLISHED` dishes under FR-011 and FR-012 without touching spec 006's code. **The degraded path is withdrawn, not activated**, and the duplicated-assembly debt item it would have created is removed from `plan.md` Complexity Tracking rather than accepted.
+
+  Also confirmed, since this feature's RBAC must agree with it: that controller already requires `hasAnyRole('ADMIN', 'ADMINISTRADOR')`, which matches FR-001's role set including the alias.
+- [x] T007 **SATISFIED 2026-10-28 — rule recorded, not re-decided.** The authoritative per-unit acquisition cost was named in writing by spec 006's owner on issue #146 and confirmed in merged code: **`ingredients.unit_purchase_cost`**, the master catalogue figure, never `ingredient_batches.unit_cost` and never `stock_audit_entries.unit_cost`. "Unpriced" means that column is `NULL` or `<= 0`, in which case the line contributes `$0.00` and the computation continues with `has_unpriced_ingredients` set. Scale 4 becomes scale 2 at **each line subtotal** (`HALF_UP`), and the total is the sum of already-rounded subtotals — so the Food Cost arrives at scale 2 and **this feature rounds it nowhere**. T042, T067 and T071 are thereby unblocked.
+
+  **VERIFIED 2026-10-28 in `FoodCostEngine`**, clause by clause rather than as a whole:
+
+  ```java
+  16:  public record IngredientCostItem(BigDecimal quantity, BigDecimal unitPurchaseCost) {}
+  39:  boolean isUnpriced = (unitPurchaseCost == null || unitPurchaseCost.compareTo(BigDecimal.ZERO) <= 0);
+  48:  BigDecimal subtotal = quantity.multiply(costToMultiply).setScale(2, RoundingMode.HALF_UP);
+  53:  totalCost = totalCost.setScale(2, RoundingMode.HALF_UP);
+  ```
+
+  The engine's only cost input is `unitPurchaseCost`, and `FoodCostAuditService` populates it from `Ingredient.getUnitPurchaseCost()` through `IngredientRepository`. It never reads `ingredient_batches` or `stock_audit_entries`, so the three-referent ambiguity is closed in code and not only in prose.
+
+  **Two consequences this feature must not get wrong.** First, the Food Cost arrives **already at scale 2**, so `dish_price_history.food_cost_snapshot NUMERIC(10,2)` stores it losslessly and this feature must round the Food Cost **nowhere** — a second `setScale` would be a no-op at best and a silent double-rounding if the scale ever widened. Second, rounding each line before summing means the total can differ from the unrounded sum by up to half a cent per line. That is spec 006's deliberate choice for cent-exact reporting, and it leaves FR-008 untouched: FR-008 forbids intermediate rounding inside the **margin** arithmetic, of which this value is an input, not an intermediate
+- [x] T008 **DONE 2026-10-28 — `V8`.** Determine this feature's Flyway version by listing `easyeat/backend/src/main/resources/db/migration/` and taking the lowest free sequential integer strictly greater than every migration present; record the chosen number for T014 and add its row to `.specify/memory/migrations.md` in the same commit as T014. **Confirmed 2026-10-28: the directory holds `V1`–`V7`, so the number is `V8`.** Spec 008 has written `V8__create_establishments.sql` on its own feature branch but has merged nothing to the integration branch, and by registry rule 4 a claim in flight reserves nothing — whichever merges first keeps the number. **Do not yield `V9` out of courtesy**: with `outOfOrder` disabled a later `V8` below an applied `V9` is rejected outright, so 008 would have to renumber anyway and a gap would be left for nothing. Re-confirm against the directory at the moment T014 authors the file, because the answer changes if 008 merges first.
+
+  **DETERMINED 2026-10-28: `V8__admin_dish_approval_pricing.sql`.** The directory listing on this branch:
+
+  ```
+  V1__create_users.sql                                   V5__extend_users_profile_and_dietary.sql
+  V2__create_password_reset_tokens.sql                   V6__create_ingredient_batches_and_refactor_lifecycle.sql
+  V3__extend_users_staff.sql                             V7__chef_dish_management.sql
+  V4__create_ingredients_and_stock_audit.sql
+  ```
+
+  The highest present is `V7`, so the lowest free integer strictly greater than every migration is **8**. Registered in `.specify/memory/migrations.md` as contested with spec 008, whose `V8__create_establishments.sql` exists on its own feature branch only.
+
+  **Recorded for whoever renumbers**: `V8__create_establishments.sql` was read on `origin/008-diner-catalog-multi-tenant` and creates only `establishments`. It does **not** touch `dishes`, `dishes.status` or `chk_dishes_status`, so the two migrations are independent in content and renumbering either is a rename plus a registry row. The `chk_dishes_status` redefinition that `008/data-model.md` plans has not been written — and T003 confirmed behaviourally that the live constraint **rejects** `'ACTIVE'`, the value 008 intends to use, so that conflict is a design question for its owner and not a numbering one.
+
+  **Also noted, not acted on**: spec 005's migration test is named `V7MigrationAndSeedDevTest`, which carries a version in its class name and would be invalidated by a renumbering — exactly what rule 5 of the registry exists to prevent. It is spec 005's file, so Principle V forbids renaming it from here; flagged for its owner
+
+### Single-tier authorization for this phase (Principle X)
+
+Principle X forbids single-tier work and states that **no automatic exception is permitted for setup, foundational or infrastructure tasks**; any such work requires explicit human authorization, and the Compliance clause requires that authorization to be documented.
+
+**Granted 2026-10-28 by the developer, recorded here as the constitution requires.** This phase is backend-only by its nature rather than by omission: seven of its eight tasks assert the state of upstream code and produce no artifact beyond a recorded outcome, and the eighth adds one constant to an enum. There is no user-facing surface to pair it with — a frontend counterpart to an enum constant would be an invented deliverable, which Principle V forbids.
+
+The frontend consequence that *does* exist was found while executing T005 and is deliberately **not** absorbed into this phase: the frontend's own status union is now narrower than the backend's. It is recorded as **T079a** in US3, where it becomes observable and where its vertical slice is real. That is the scope boundary this authorization covers — one tier now, with the paired work written down rather than forgotten.
+
+**Checkpoint**: readiness recorded and **the gate passes**. All eight tasks are closed with their evidence. Nothing in this phase waits on another spec's owner, and no task was closed by choosing a resolution unilaterally: T006 and T007 record decisions their owners made in writing on issue #146, and T005 executed a change authorized by a recorded amendment to D1. **Phase 2 may begin.**
 
 ---
 
@@ -60,7 +205,7 @@ The calculator receives the Food Cost as a parameter, so it does not depend on w
 ### Migration and dev seed
 
 - [ ] T013 Write `AdminPricingMigrationTest` in `easyeat/backend/src/test/java/com/easyeat/dish/migration/AdminPricingMigrationTest.java` against Testcontainers PostgreSQL 16, asserting the migration applies on top of every migration already present, that the `retail_price` backfill copies only strictly positive prices and leaves `NULL`/`0.00` unpriced, and that the new constraints and indexes exist. **Keep the name version-free** so an upstream renumbering cannot invalidate it
-- [ ] T014 Create the feature migration at `easyeat/backend/src/main/resources/db/migration/<version from T008>__admin_dish_approval_pricing.sql` per `data-model.md §3`: `dishes.retail_price`, `dishes.version`, `dishes.published_at`, the `retail_price` backfill, the `dish_review_history` and `dish_price_history` tables, their indexes, and `idx_dishes_review_inbox_published`. **Do not declare `idx_dishes_review_inbox_pending`** (owned by spec 005's `V7`) and **do not drop or replace `chk_dishes_status`** (owned by spec 005, already widened)
+- [ ] T014 Create the feature migration at `easyeat/backend/src/main/resources/db/migration/<version from T008>__admin_dish_approval_pricing.sql` per `data-model.md §3`: `dishes.retail_price`, `dishes.published_at`, the `retail_price` backfill, the `dish_review_history` and `dish_price_history` tables, their indexes, and `idx_dishes_review_inbox_published`. **Do not declare `idx_dishes_review_inbox_pending`** (owned by spec 005's `V7`), **do not drop or replace `chk_dishes_status`** (owned by spec 005, already widened), and **do not add a `version` column** — R-005-4 is withdrawn and FR-025 is enforced by the conditional `UPDATE`s of T067 and T076, so a version column would be dead weight on a table three specs write through. This task's column list previously named one; that was a leftover from the withdrawn design and is corrected
 - [ ] T015 **Depends on T005 (R-005-3).** Update the dev seed `easyeat/backend/src/main/resources/db/dev/R__seed_dev_dishes_and_dietary.sql` per `research.md §3.6` (D5): the five seeded dishes land `status = 'PUBLISHED'`, `is_active = TRUE`, `allergens_confirmed = TRUE`, `retail_price` backfilled from `price`, `version = 0`, `published_at = NOW()`, plus one synthetic `APPROVED` review row each marked `[SEED SINTÉTICO]`
 - [ ] T016 **Depends on T005 (R-005-3).** Extend `DevSeedDishesMigrationTest` in `easyeat/backend/src/test/java/com/easyeat/profile/migration/DevSeedDishesMigrationTest.java` with the new assertions, leaving every existing assertion unchanged
 
@@ -185,6 +330,8 @@ The calculator receives the Food Cost as a parameter, so it does not depend on w
 - [ ] T077 [US3] Implement `POST /admin/dishes/{id}/approval` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/AdminDishDecisionController.java` — **Serves**: FR-016, FR-018, FR-019
 - [ ] T078 [US3] Write `easyeat/frontend/tests/components/dishreview/PublicationConfirmModal.test.tsx` covering the advisory content, the required second confirmation, and that cancelling leaves the dish untouched — **Serves**: FR-017, FR-031
 - [ ] T079 [US3] Implement `easyeat/frontend/src/components/dishreview/PublicationConfirmModal.tsx` — unpriced-ingredient and negative-margin advisories with an explicit second confirmation (FR-017) — **Serves**: FR-017, FR-031
+
+- [ ] T079a [US3] Widen the frontend status domain to match the backend, in `easyeat/frontend/src/types/dish.ts` and `easyeat/frontend/src/components/dish/DishStatusBadge.tsx`. The union is `'DRAFT' | 'PENDING_PRICE'` and `isDishStatus` returns `false` for `'PUBLISHED'`, while the badge falls back to `'DRAFT'` for any unrecognised status — so once T076 can set `PUBLISHED`, a published dish renders as *"Borrador"* instead of failing visibly. Add the third member, admit it in the guard, and give the badge its own styling. **Found during T005, not during planning**: adding the constant to the backend enum made the two domains disagree, and no other task owns either file (T044 creates a new `types/dishReview.ts` and leaves the existing union untouched). These are files on spec 005's surface, so the change is narrow by intent — the third member and its badge entry, nothing else — **Serves**: FR-016, FR-033
 
 **Checkpoint**: all three P1 stories are independently functional.
 
