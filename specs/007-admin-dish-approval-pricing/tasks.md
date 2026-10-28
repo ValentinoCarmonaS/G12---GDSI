@@ -59,7 +59,28 @@
   ```
 
   `DishRepository` is at `catalog/repository/DishRepository.java`, beside the entity rather than in `dish/`, which is where this feature's inbox queries will go. `dish/repository/` holds `DishPhotoRepository` and `DishRecipeIngredientRepository`.
-- [ ] T003 [P] Verify the `dishes` table carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at`, and that the index `idx_dishes_review_inbox_pending (tenant_id, status, submitted_at)` exists, by inspecting `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql`; record against R-005-0 and R-005-1
+- [x] T003 [P] Verify the `dishes` table carries `status`, `category`, `allergens_confirmed`, `created_by` and `submitted_at`, and that the index `idx_dishes_review_inbox_pending (tenant_id, status, submitted_at)` exists, by inspecting `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql`; record against R-005-0 and R-005-1 — **VERIFIED 2026-10-28, R-005-0 and R-005-1 satisfied**
+
+  Verified against the **live schema** produced by T001's run, not against the migration text, so the result reflects what the database actually holds:
+
+  ```
+  allergens_confirmed | boolean                  | NOT NULL
+  category            | character varying        | NULL
+  created_by          | uuid                     | NULL
+  status              | character varying        | NOT NULL
+  submitted_at        | timestamp with time zone | NULL
+  ```
+
+  The FIFO index exists exactly as FR-003 needs it, column order included:
+
+  ```sql
+  CREATE INDEX idx_dishes_review_inbox_pending
+      ON public.dishes USING btree (tenant_id, status, submitted_at)
+  ```
+
+  **Two findings beyond what the task asked.** First, `chk_dishes_status` was read back from `pg_constraint` and admits `'DRAFT'`, `'PENDING_PRICE'` and `'PUBLISHED'`, closing R-005-2 against the running database rather than against the migration source. Second, that was confirmed behaviourally: an `INSERT` of `status = 'PUBLISHED'` **succeeds**, and an `INSERT` of `status = 'ACTIVE'` is **rejected** by the constraint. The second half matters beyond this task — spec 008's `data-model.md` plans to redefine this constraint around `'ACTIVE'`, and the database as it stands refuses that value, so the cross-spec conflict recorded in `research.md §3.7` is live rather than theoretical.
+
+  This is also the precise proof of T005's premise: the database admits a value the application enum cannot yet express.
 - [ ] T004 [P] Verify the tables `dish_recipe_ingredients` and `dish_photos` exist in `easyeat/backend/src/main/resources/db/migration/V7__chef_dish_management.sql`, and record the outcome against R-005-0
 - [ ] T005 **UNBLOCKED 2026-10-28 — execute under the recorded D1 amendment.** Add the `PUBLISHED` constant to `easyeat/backend/src/main/java/com/easyeat/dish/domain/DishStatus.java`, which declares only `DRAFT` and `PENDING_PRICE` while the database has admitted `PUBLISHED` since 005's `V7`. The authority is the amendment recorded in `plan.md` §R-005-3 and Complexity Tracking, which declares that enum **jointly owned** by specs 005 and 007. **Add the constant and nothing else**: do not reorder, rename or remove the existing ones — the enum is persisted by name through `@Enumerated(EnumType.STRING)`, so any of those is a data migration — do not touch any other class in `com.easyeat.dish.domain`, which stays 005-owned under D1 unchanged, and do not create a competing status enum in this feature. Update `DishEnumsTest` to assert the three constants. **R-005-4 is withdrawn and no longer part of this task**: no `@Version` is added anywhere, so T024 is no longer blocked.
 - [ ] T006 **SATISFIED 2026-10-28 — record the outcome and move on.** Spec 006's owner moved the status gate to the controller (issue #146) and spec 006 is integrated via PR #170. Verify and record: `easyeat/backend/src/main/java/com/easyeat/dish/service/FoodCostAuditService.java` holds **zero** references to `DishStatus` or `PENDING_PRICE` and both `auditDishCost(Dish)` and `auditDishCost(UUID)` compute for any lifecycle state; the `PENDING_PRICE` restriction lives in `AdminDishCostAuditController` and raises `DishLockedException`. **The degraded path is withdrawn, not activated** — this feature injects `FoodCostAuditService` directly. Record two consequences found while verifying, both of which shape later tasks: `auditDishCost` raises `EmptyRecipeException` rather than returning a zero cost (T042a), and `RecipeItemAuditResponse` does not carry the ingredient's `IngredientStatus`, which FR-015 condition 2 needs (T076a)
