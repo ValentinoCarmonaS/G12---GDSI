@@ -63,6 +63,17 @@ class GlobalExceptionHandlerDishMappingTest {
         return body;
     }
 
+    /** ProblemDetail stores extensions untyped, so the casts live here rather than in each test. */
+    @SuppressWarnings("unchecked")
+    private static List<String> stringsAt(ProblemDetail body, String key) {
+        return (List<String>) body.getProperties().get(key);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, String>> fieldErrorsOf(ProblemDetail body) {
+        return (List<Map<String, String>>) body.getProperties().get("errors");
+    }
+
     @Nested
     @DisplayName("409: three conflicts a client must be able to tell apart")
     class Conflicts {
@@ -166,7 +177,7 @@ class GlobalExceptionHandlerDishMappingTest {
             ProblemDetail body = bodyOf(response);
             assertThat(body.getType()).isEqualTo(URI.create(BASE + "publication-gate-failed"));
 
-            assertThat((List<?>) body.getProperties().get("unmetConditions"))
+            assertThat(stringsAt(body, "unmetConditions"))
                     .as("every unmet condition, so the Administrator fixes them in one pass")
                     .containsExactly("RETAIL_PRICE_MISSING", "ALLERGENS_UNCONFIRMED");
         }
@@ -181,7 +192,7 @@ class GlobalExceptionHandlerDishMappingTest {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
             ProblemDetail body = bodyOf(response);
             assertThat(body.getType()).isEqualTo(URI.create(BASE + "acknowledgement-required"));
-            assertThat((List<?>) body.getProperties().get("requiredAcknowledgements"))
+            assertThat(stringsAt(body, "requiredAcknowledgements"))
                     .containsExactly("NEGATIVE_MARGIN");
         }
 
@@ -221,9 +232,9 @@ class GlobalExceptionHandlerDishMappingTest {
             ProblemDetail body = bodyOf(response);
             assertThat(body.getType()).isEqualTo(URI.create(BASE + "invalid-retail-price"));
 
-            List<?> errors = (List<?>) body.getProperties().get("errors");
+            List<Map<String, String>> errors = fieldErrorsOf(body);
             assertThat(errors).hasSize(1);
-            assertThat((Map<?, ?>) errors.get(0))
+            assertThat(errors.get(0))
                     .as("the errors[] shape must match what the existing handler already emits "
                             + "for bean validation, so one client parser serves both")
                     .containsEntry("field", "retailPrice");
@@ -240,9 +251,9 @@ class GlobalExceptionHandlerDishMappingTest {
             assertThat(body.getType())
                     .isEqualTo(URI.create(BASE + "invalid-rejection-comment"));
 
-            List<?> errors = (List<?>) body.getProperties().get("errors");
+            List<Map<String, String>> errors = fieldErrorsOf(body);
             assertThat(errors).hasSize(1);
-            assertThat((Map<?, ?>) errors.get(0)).containsEntry("field", "comment");
+            assertThat(errors.get(0)).containsEntry("field", "comment");
         }
 
         @Test

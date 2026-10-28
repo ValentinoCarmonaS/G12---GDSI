@@ -7,6 +7,13 @@ import com.easyeat.auth.exception.InvalidTokenException;
 import com.easyeat.auth.exception.RateLimitExceededException;
 import com.easyeat.auth.exception.TokenAlreadyConsumedException;
 import com.easyeat.auth.exception.TokenExpiredException;
+import com.easyeat.dish.exception.AcknowledgementRequiredException;
+import com.easyeat.dish.exception.DishAlreadyDecidedException;
+import com.easyeat.dish.exception.DishStateConflictException;
+import com.easyeat.dish.exception.InvalidRejectionCommentException;
+import com.easyeat.dish.exception.InvalidRetailPriceException;
+import com.easyeat.dish.exception.PublicationGateException;
+import com.easyeat.dish.exception.StaleDishPriceException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -339,5 +346,125 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setInstance(URI.create(request.getRequestURI()));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
-}
 
+    // ================================================================
+    // Spec 007 - Administrative Back-Office: PVP, approval and audit.
+    //
+    // Seven handlers, all for this feature's own exceptions. There is
+    // deliberately NO handler for ObjectOptimisticLockingFailureException:
+    // R-005-4 is withdrawn, no @Version exists anywhere in this feature, so
+    // Spring never raises it and a handler would be dead code asserting a
+    // mechanism that is not there. FR-025 is enforced by conditional UPDATEs
+    // whose zero-row outcome raises the two 409s below.
+    // ================================================================
+
+    /** 409: the action was never legal from this state (FR-019, FR-024). */
+    @ExceptionHandler(DishStateConflictException.class)
+    public ResponseEntity<ProblemDetail> handleDishStateConflict(DishStateConflictException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/dish-invalid-state"));
+        problem.setTitle("Dish State Conflict");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("currentStatus", ex.getCurrentStatus());
+        problem.setProperty("requiredStatus", ex.getRequiredStatus());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    /**
+     * 409: the action was legal, and another Administrator took it first (FR-025).
+     * Distinct from the above so the client knows to refresh its list rather than
+     * report an illegal operation.
+     */
+    @ExceptionHandler(DishAlreadyDecidedException.class)
+    public ResponseEntity<ProblemDetail> handleDishAlreadyDecided(DishAlreadyDecidedException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/dish-already-decided"));
+        problem.setTitle("Dish Already Decided");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("currentStatus", ex.getCurrentStatus());
+        problem.setProperty("decidedAt", ex.getDecidedAt());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    /**
+     * 409: the retail price changed between being read and being saved (FR-025).
+     * Both prices may legitimately be null, so the keys are always set - an absent
+     * key would mean something different from "the dish was unpriced".
+     */
+    @ExceptionHandler(StaleDishPriceException.class)
+    public ResponseEntity<ProblemDetail> handleStaleDishPrice(StaleDishPriceException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/dish-stale-price"));
+        problem.setTitle("Stale Dish Price");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("expectedRetailPrice", ex.getExpectedRetailPrice());
+        problem.setProperty("currentRetailPrice", ex.getCurrentRetailPrice());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    /**
+     * 422: the publication gate blocked the transition (FR-015). Carries every unmet
+     * condition, so the Administrator fixes them in one pass rather than discovering
+     * them one at a time.
+     */
+    @ExceptionHandler(PublicationGateException.class)
+    public ResponseEntity<ProblemDetail> handlePublicationGate(PublicationGateException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/publication-gate-failed"));
+        problem.setTitle("Publication Gate Failed");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("unmetConditions", ex.getUnmetConditions().stream().map(Enum::name).toList());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem);
+    }
+
+    /**
+     * 422: an advisory needs explicit confirmation (FR-014, FR-017). A different type
+     * URI from the gate failure on purpose: the acknowledgement is an additional
+     * precondition and never an override, so a client must not treat a gate failure
+     * as something a confirmation can clear.
+     */
+    @ExceptionHandler(AcknowledgementRequiredException.class)
+    public ResponseEntity<ProblemDetail> handleAcknowledgementRequired(AcknowledgementRequiredException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/acknowledgement-required"));
+        problem.setTitle("Acknowledgement Required");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("requiredAcknowledgements", ex.getRequiredAcknowledgements().stream().map(Enum::name).toList());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem);
+    }
+
+    /**
+     * 400, not 422: FR-013 states 400, and the specification is the authority even
+     * though this codebase's bean-validation path returns 422 (Principle I). The
+     * errors[] shape matches what handleMethodArgumentNotValid already emits, so one
+     * client parser serves both.
+     */
+    @ExceptionHandler(InvalidRetailPriceException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidRetailPrice(InvalidRetailPriceException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-retail-price"));
+        problem.setTitle("Invalid Retail Price");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("errors", List.of(fieldError("retailPrice", ex.getMessage())));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    /** 400: FR-021 states 400, for the same reason as the price above. */
+    @ExceptionHandler(InvalidRejectionCommentException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidRejectionComment(InvalidRejectionCommentException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-rejection-comment"));
+        problem.setTitle("Invalid Rejection Comment");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("errors", List.of(fieldError("comment", ex.getMessage())));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    /** The errors[] entry shape already emitted for bean validation failures. */
+    private static Map<String, String> fieldError(String field, String message) {
+        Map<String, String> error = new HashMap<>();
+        error.put("field", field);
+        error.put("message", message);
+        return error;
+    }
+}
