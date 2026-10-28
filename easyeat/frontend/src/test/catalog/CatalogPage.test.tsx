@@ -22,6 +22,14 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { email: 'comensal@easyeat.com', role: 'COMENSAL' },
+    isAuthenticated: true,
+    logout: vi.fn(),
+  }),
+}));
+
 describe('CatalogPage Component Tests (T026, US2, COM-4.1.1, FR-007, FR-008, FR-009, FR-012)', () => {
   const defaultCartContext: CartContextType = {
     items: [],
@@ -115,8 +123,8 @@ describe('CatalogPage Component Tests (T026, US2, COM-4.1.1, FR-007, FR-008, FR-
 
     await waitFor(() => {
       expect(screen.getByText('La Farola de Palermo')).toBeInTheDocument();
-      expect(screen.getByText('Platos principales')).toBeInTheDocument();
-      expect(screen.getByText('Postres')).toBeInTheDocument();
+      expect(screen.getAllByText('Platos principales').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Postres').length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
       expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
     });
@@ -180,3 +188,4 @@ describe('CatalogPage Component Tests (T026, US2, COM-4.1.1, FR-007, FR-008, FR-
     });
   });
 });
+

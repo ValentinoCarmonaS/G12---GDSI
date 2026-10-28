@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import type { DishCatalogItem } from '@/types/dinerCatalog';
+import type { EnrichedDish } from '@/types/catalog';
 import { AllergenWarningBadge } from './AllergenWarningBadge';
 
 export interface DishCardProps {
-  dish: DishCatalogItem;
-  onAddToCart?: (dish: DishCatalogItem) => void;
+  dish: DishCatalogItem | EnrichedDish;
+  onAddToCart?: (dish: any) => void;
   onSelectDish?: (dish: DishCatalogItem) => void;
   showWarnings?: boolean;
   isReadOnly?: boolean;
@@ -19,13 +20,14 @@ export const DishCard: React.FC<DishCardProps> = ({
 }) => {
   const [imageError, setImageError] = useState(false);
 
-  const isAvailable = dish.isAvailable !== false;
+  const photoUrl = 'photoUrl' in dish ? dish.photoUrl : null;
+  const isAvailable = 'isAvailable' in dish ? dish.isAvailable !== false : dish.isActive !== false;
   const isOutOfStock = !isAvailable && !isReadOnly;
   const hasConflicts = dish.isCompliant === false && (dish.conflictingRestrictions?.length ?? 0) > 0;
 
   const handleCardClick = () => {
-    if (onSelectDish) {
-      onSelectDish(dish);
+    if (onSelectDish && 'recipeIngredients' in dish) {
+      onSelectDish(dish as DishCatalogItem);
     }
   };
 
@@ -50,9 +52,9 @@ export const DishCard: React.FC<DishCardProps> = ({
     >
       {/* Photo / Placeholder Container */}
       <div className="relative w-full h-44 bg-gray-100 overflow-hidden flex items-center justify-center">
-        {dish.photoUrl && !imageError ? (
+        {photoUrl && !imageError ? (
           <img
-            src={dish.photoUrl}
+            src={photoUrl}
             alt={dish.name}
             onError={() => setImageError(true)}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
