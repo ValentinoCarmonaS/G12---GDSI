@@ -51,7 +51,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T015 [P] [US1] Implement `EstablishmentSummaryResponse` DTO and `EstablishmentDiscoveryService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/EstablishmentDiscoveryService.java`
+- [x] T015 [P] [US1] Implement `EstablishmentSummaryResponse` DTO and `EstablishmentDiscoveryService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/EstablishmentDiscoveryService.java`
 - [ ] T016 [US1] Implement `EstablishmentDiscoveryController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/EstablishmentDiscoveryController.java`
 - [ ] T017 [P] [US1] Implement frontend API client method `searchEstablishments` in `easyeat/frontend/src/api/dinerCatalogApi.ts`
 - [ ] T018 [P] [US1] Create `TenantContext.tsx` and hook `useTenant.ts` in `easyeat/frontend/src/context/TenantContext.tsx` and `easyeat/frontend/src/hooks/useTenant.ts` managing active establishment state and session storage
