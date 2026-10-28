@@ -178,3 +178,24 @@ export interface DishProblemDetail {
   quantity?: number;
   unitOfMeasure?: string;
 }
+
+export interface RecipeItemAuditResponse {
+  ingredientId: string;
+  ingredientName: string;
+  recipeQuantity: number;
+  unitOfMeasure: string;
+  unitPurchaseCost: number;
+  lineSubtotal: number;
+  unpricedWarning: boolean;
+}
+
+export interface FoodCostAuditResponse {
+  dishId: string;
+  dishName: string;
+  totalFoodCost: number;
+  hasUnpricedIngredients: boolean;
+  warningNotes: string[];
+  requiredDietaryRestrictions: string[];
+  items: RecipeItemAuditResponse[];
+}
+

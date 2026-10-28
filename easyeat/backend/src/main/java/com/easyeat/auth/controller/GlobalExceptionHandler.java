@@ -304,6 +304,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
 
+    @ExceptionHandler(com.easyeat.dish.exception.EmptyRecipeException.class)
+    public ResponseEntity<ProblemDetail> handleEmptyRecipe(com.easyeat.dish.exception.EmptyRecipeException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/empty-recipe"));
+        problem.setTitle("Empty Recipe");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        if (ex.getDishId() != null) {
+            problem.setProperty("dishId", ex.getDishId().toString());
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
     @ExceptionHandler(InvalidQuantityException.class)
     public ResponseEntity<ProblemDetail> handleInvalidQuantity(InvalidQuantityException ex, HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());

@@ -94,6 +94,14 @@ export const dishApi = {
   },
 
   /**
+   * Retrieves food cost audit and declared dietary labels for an admin evaluating a dish in PENDING_PRICE.
+   */
+  async getFoodCostAudit(id: string): Promise<import('@/types/dish').FoodCostAuditResponse> {
+    const response = await apiClient.get<import('@/types/dish').FoodCostAuditResponse>(`/dishes/${id}/cost-audit`);
+    return response.data;
+  },
+
+  /**
    * Updates dish dietary restrictions and allergen confirmation state (CHF-2.2.3).
    */
   async updateDishAllergens(id: string, data: DishAllergensUpdateRequest): Promise<DishAllergensResponse> {
@@ -112,4 +120,3 @@ export const dishApi = {
 };
 
 export default dishApi;
-
