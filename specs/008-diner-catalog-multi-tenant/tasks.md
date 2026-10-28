@@ -12,7 +12,7 @@
 
 **Purpose**: Set up test fixtures, domain exceptions, RFC 7807 problem responses, and shared frontend TypeScript types.
 
-- [ ] T001 [P] Create base test support fixtures and builders for establishments, dishes, recipes, and tenants in `easyeat/backend/src/test/java/com/easyeat/catalog/CatalogTestFixtures.java`
+- [x] T001 [P] Create base test support fixtures and builders for establishments, dishes, recipes, and tenants in `easyeat/backend/src/test/java/com/easyeat/catalog/CatalogTestFixtures.java`
 - [ ] T002 [P] Create frontend API mock handlers for establishment discovery and diner catalog in `easyeat/frontend/src/test/mocks/dinerCatalogHandlers.ts`
 - [ ] T003 [P] Create domain exceptions (`EstablishmentNotFoundException`, `EstablishmentInactiveException`) in `easyeat/backend/src/main/java/com/easyeat/catalog/exception/`
 - [ ] T004 Update `GlobalExceptionHandler.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` mapping custom catalog exceptions to RFC 7807/9457 `ProblemDetail` responses with status codes 400, 401, 403, and 404
