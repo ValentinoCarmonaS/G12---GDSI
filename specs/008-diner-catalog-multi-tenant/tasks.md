@@ -144,7 +144,7 @@
 
 - [x] T049 Maintain backward compatibility by keeping deprecated `GET /api/v1/establishments/{tenantId}/dishes` in `CatalogController.java` delegating to new service logic, and verify all existing spec 003 tests pass without regression
 - [x] T050 End-to-end execution of validation scenarios from `quickstart.md`
-- [ ] T051 Run full backend test suite (`mvn test`) and frontend test suite (`npm test`)
+- [x] T051 Run full backend test suite (`mvn test`) and frontend test suite (`npm test`)
 
 ---
 
