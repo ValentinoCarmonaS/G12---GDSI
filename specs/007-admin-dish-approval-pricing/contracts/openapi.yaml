@@ -151,10 +151,14 @@ paths:
         State gate: `PENDING_PRICE` or `PUBLISHED`. Repricing a published dish changes neither its
         status, nor its recipe, nor its catalog visibility.
 
-        `expectedVersion` is REQUIRED. Unlike approval and rejection, a price save is legal from the
-        dish's current state no matter how stale the panel is, so the status guard cannot detect a
-        lost update between two concurrent saves - only the version the client read can. Omitting it
-        is a client defect and yields 400 with a field error, never a silent overwrite.
+        `expectedRetailPrice` is REQUIRED and nullable. Unlike approval and rejection, a price save
+        is legal from the dish's current state no matter how stale the panel is, so a status
+        predicate cannot detect a lost update between two concurrent saves - only the value the
+        client read can. The save is applied as a conditional UPDATE carrying
+        `AND retail_price IS NOT DISTINCT FROM :expectedRetailPrice`, and is accepted only if it
+        affected exactly one row. Omitting the field is a client defect and yields 400 with a field
+        error, never a silent overwrite. Sending `null` is NOT omission: it is the positive
+        assertion "the dish was unpriced when I read it", which is how the first price is set.
 
         Writes one immutable `dish_price_history` row capturing actor, timestamp, previous price,
         new price and the Food Cost prevailing at that instant.
@@ -178,8 +182,8 @@ paths:
                 $ref: '#/components/schemas/DishPricingResponse'
         '400':
           description: |
-            Invalid retail price (<= 0, non-numeric, more than two decimals) or missing
-            `expectedVersion`. Body carries `errors[]` binding each message to its field.
+            Invalid retail price (<= 0, non-numeric, more than two decimals) or `expectedRetailPrice`
+            absent from the body. Body carries `errors[]` binding each message to its field.
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/ValidationProblemDetail' }
@@ -197,8 +201,8 @@ paths:
               schema: { $ref: '#/components/schemas/ProblemDetail' }
         '409':
           description: |
-            `dish-invalid-state` (dish is in DRAFT) or `dish-stale-version` (another administrator
-            saved first; `currentVersion` is returned so the client can refresh).
+            `dish-invalid-state` (dish is in DRAFT) or `dish-stale-price` (another administrator
+            saved first; `currentRetailPrice` is returned so the client can refresh).
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/ConflictProblemDetail' }
@@ -226,9 +230,12 @@ paths:
         after the Chef submitted is caught here. Acknowledgements (unpriced ingredients, negative
         margin) are client-side confirmations carried in the request; the gate conditions are not.
 
-        `expectedVersion` is optional: the `PENDING_PRICE` guard already delivers first-decision-wins
-        for sequential decisions, and `@Version` covers the overlapping-transaction window. When
-        sent, it is validated and a mismatch yields `dish-stale-version`.
+        No expected-state field is carried. The transition is applied as a conditional UPDATE
+        carrying `AND status = 'PENDING_PRICE'` and is accepted only if it affected exactly one row,
+        which delivers first-decision-wins for both the sequential and the overlapping race: under
+        READ COMMITTED the second statement blocks on the row lock, re-evaluates its predicate
+        against the committed row and affects nothing. Zero rows yields `dish-already-decided` with
+        the status that now prevails.
       operationId: approveDish
       security:
         - bearerAuth: []
@@ -261,8 +268,8 @@ paths:
               schema: { $ref: '#/components/schemas/ProblemDetail' }
         '409':
           description: |
-            `dish-invalid-state` (dish is in DRAFT - FR-019), `dish-already-decided` (another
-            administrator rejected it first) or `dish-stale-version`.
+            `dish-invalid-state` (dish is in DRAFT - FR-019) or `dish-already-decided` (another
+            administrator rejected it first; the conditional UPDATE affected no row).
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/ConflictProblemDetail' }
@@ -326,8 +333,8 @@ paths:
               schema: { $ref: '#/components/schemas/ProblemDetail' }
         '409':
           description: |
-            `dish-invalid-state` (dish is PUBLISHED or DRAFT), `dish-already-decided` (another
-            administrator approved it first) or `dish-stale-version`.
+            `dish-invalid-state` (dish is PUBLISHED or DRAFT) or `dish-already-decided` (another
+            administrator approved it first; the conditional UPDATE affected no row).
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/ConflictProblemDetail' }
@@ -579,18 +586,22 @@ components:
 
     DishReviewDetailResponse:
       type: object
-      required: [dishId, name, category, status, version, allergensConfirmed, margin, publicationGate, foodCostAudit, reviewCycleCount, isResubmission]
+      required: [dishId, name, category, status, allergensConfirmed, margin, publicationGate, foodCostAudit, reviewCycleCount, isResubmission]
       properties:
         dishId: { type: string, format: uuid }
         name: { type: string }
         description: { type: string, nullable: true }
         category: { $ref: '#/components/schemas/DishCategory' }
         status: { $ref: '#/components/schemas/DishStatus' }
-        version:
-          type: integer
-          format: int64
-          description: Optimistic-locking token to echo back as `expectedVersion` when repricing.
-          example: 3
+        retailPrice:
+          type: number
+          format: decimal
+          nullable: true
+          description: |
+            The dish's assigned PVP, or `null` when it has never been priced. Echo this value back
+            as `expectedRetailPrice` when repricing; there is no version token, because concurrency
+            is controlled per operation (FR-025).
+          example: 11250.00
         photoUrl: { type: string, nullable: true }
         authorName: { type: string, nullable: true }
         authorDeactivated: { type: boolean }
@@ -610,20 +621,22 @@ components:
 
     SetRetailPriceRequest:
       type: object
-      required: [retailPrice, expectedVersion]
+      required: [retailPrice, expectedRetailPrice]
       properties:
         retailPrice:
           type: number
           format: decimal
           description: Strictly positive, at most two decimal places.
           example: 11250.00
-        expectedVersion:
-          type: integer
-          format: int64
+        expectedRetailPrice:
+          type: number
+          format: decimal
+          nullable: true
           description: |
-            REQUIRED. The `version` read when the panel was opened. A mismatch means another
-            administrator saved in the meantime and yields 409 `dish-stale-version`.
-          example: 3
+            REQUIRED, and `null` is a valid value. The `retailPrice` read when the panel was opened,
+            or `null` if the dish was unpriced then. A mismatch means another administrator saved in
+            the meantime and yields 409 `dish-stale-price`. Absent from the body yields 400.
+          example: 10800.00
         acknowledgeNegativeMargin:
           type: boolean
           default: false
@@ -631,11 +644,10 @@ components:
 
     DishPricingResponse:
       type: object
-      required: [dishId, status, version, margin, priceHistoryEntryId]
+      required: [dishId, status, margin, priceHistoryEntryId]
       properties:
         dishId: { type: string, format: uuid }
         status: { $ref: '#/components/schemas/DishStatus' }
-        version: { type: integer, format: int64, example: 4 }
         margin: { $ref: '#/components/schemas/MarginSummary' }
         priceHistoryEntryId:
           type: string
@@ -645,11 +657,6 @@ components:
     ApproveDishRequest:
       type: object
       properties:
-        expectedVersion:
-          type: integer
-          format: int64
-          nullable: true
-          description: Optional; validated when present.
         acknowledgeUnpricedIngredients:
           type: boolean
           default: false
@@ -659,16 +666,15 @@ components:
 
     DishApprovalResponse:
       type: object
-      required: [dishId, status, version, alreadyPublished, publishedAt]
+      required: [dishId, status, alreadyPublished, publishedAt]
       properties:
         dishId: { type: string, format: uuid }
         status: { $ref: '#/components/schemas/DishStatus' }
-        version: { type: integer, format: int64 }
         alreadyPublished:
           type: boolean
           description: |
             True when the dish was already PUBLISHED and this call changed nothing: no status
-            change, no version bump and no audit row (FR-018). The UI must report "ya estaba
+            change and no audit row (FR-018). The UI must report "ya estaba
             publicado", not a new publication.
           example: false
         publishedAt:
@@ -691,20 +697,15 @@ components:
           maxLength: 1000
           description: Mandatory feedback, 10 to 1000 characters after trimming, never blank.
           example: "El costo del salmón dispara el food cost. Reemplazalo por merluza y reenviá la ficha."
-        expectedVersion:
-          type: integer
-          format: int64
-          nullable: true
 
     DishRejectionResponse:
       type: object
-      required: [dishId, status, version, cycleNumber, reviewHistoryEntryId]
+      required: [dishId, status, cycleNumber, reviewHistoryEntryId]
       properties:
         dishId: { type: string, format: uuid }
         status:
           allOf: [{ $ref: '#/components/schemas/DishStatus' }]
           description: Always DRAFT after a successful rejection.
-        version: { type: integer, format: int64 }
         cycleNumber: { type: integer, example: 2 }
         reviewHistoryEntryId: { type: string, format: uuid }
 
@@ -797,7 +798,7 @@ components:
         - type: object
           description: |
             400 for the domain validations this feature owns (`invalid-retail-price`,
-            `invalid-rejection-comment`, `version-required`), matching the `errors[]` shape the
+            `invalid-rejection-comment`, `expected-retail-price-required`), matching the `errors[]` shape the
             existing handler already emits for bean validation.
           required: [errors]
           properties:
@@ -815,13 +816,13 @@ components:
               dish; `currentStatus` says what it became.
             - `https://easyeat.com/errors/dish-invalid-state` - the action is illegal from the
               current state (approve from DRAFT, reject a PUBLISHED dish).
-            - `https://easyeat.com/errors/dish-stale-version` - the row changed since it was read;
-              `currentVersion` lets the client refresh and retry.
+            - `https://easyeat.com/errors/dish-stale-price` - the dish's retail price changed since
+              it was read; `currentRetailPrice` lets the client refresh and retry.
           properties:
             currentStatus: { $ref: '#/components/schemas/DishStatus' }
             requiredStatus: { $ref: '#/components/schemas/DishStatus' }
-            expectedVersion: { type: integer, format: int64 }
-            currentVersion: { type: integer, format: int64 }
+            expectedRetailPrice: { type: number, format: decimal, nullable: true }
+            currentRetailPrice: { type: number, format: decimal, nullable: true }
             decidedAt: { type: string, format: date-time }
 
     PublicationGateProblemDetail:

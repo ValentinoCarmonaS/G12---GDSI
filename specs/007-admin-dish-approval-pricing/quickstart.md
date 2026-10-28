@@ -18,7 +18,7 @@ This feature is **not implementable** until spec 005's dish domain and spec 006'
 from the repository root:
 
 ```bash
-ls easyeat/backend/src/main/resources/db/migration/            # expect V7 (005) present; note the highest version — the next free one is this feature's
+ls easyeat/backend/src/main/resources/db/migration/            # confirmed 2026-10-28: V1..V7 present (V7 from 005), so this feature takes V8
 ls easyeat/backend/src/main/java/com/easyeat/dish/domain/      # expect Dish.java, DishStatus.java
 grep -rn "submitted_at" easyeat/backend/src/main/resources/db/migration/   # R-005-1
 grep -rn "idx_dishes_review_inbox_pending" easyeat/backend/src/main/resources/db/migration/  # R-005-1 index, owned by 005
@@ -98,16 +98,18 @@ as expected behaviour.
 3. **Audit detail.** `GET $API/admin/dishes/{id}/review-detail`.
    Expect the itemized `foodCostAudit` from spec 006, `margin.marginDerivable`,
    `margin.hasUnpricedIngredients`, and `publicationGate.unmetConditions` containing
-   `RETAIL_PRICE_MISSING`. Note the returned `version`.
+   `RETAIL_PRICE_MISSING`. Note the returned `retailPrice` — it is `null` on a dish never priced.
 4. **Approve too early fails.** `POST $API/admin/dishes/{id}/approval` with `{}`.
    Expect `422` `publication-gate-failed` with `unmetConditions: ["RETAIL_PRICE_MISSING"]`; the dish
    stays `PENDING_PRICE`.
 5. **Set the price.** `PUT $API/admin/dishes/{id}/retail-price` with
-   `{"retailPrice": 11250.00, "expectedVersion": <version>}`.
+   `{"retailPrice": 11250.00, "expectedRetailPrice": null}` — `null` because the dish was unpriced
+   when it was read, which is the positive assertion the compare-and-set expects.
    Expect `200`, `margin.marginPct` recomputed at scale 4, a `priceHistoryEntryId`, and
    `status` still `PENDING_PRICE` (FR-009).
-6. **Omitting the version is rejected.** Repeat step 5 without `expectedVersion`: expect `400` with
-   `errors[0].field = "expectedVersion"` — never a silent overwrite.
+6. **Omitting the expected price is rejected.** Repeat step 5 with no `expectedRetailPrice` key at
+   all: expect `400` with `errors[0].field = "expectedRetailPrice"` — never a silent overwrite. Note
+   that sending `"expectedRetailPrice": null` is *not* omission and must succeed on an unpriced dish.
 7. **Approve.** `POST $API/admin/dishes/{id}/approval` with the acknowledgements the detail response
    asked for. Expect `200`, `status: PUBLISHED`, `publishedAt` set, `alreadyPublished: false`, a
    `reviewHistoryEntryId`, and the dish gone from the `PENDING` tab and present in `PUBLISHED`.
@@ -143,12 +145,12 @@ as expected behaviour.
 
 ## 5. Scenario C — reprice a published dish and verify the audit trail (US2, FR-011, SC-008)
 
-1. Take the dish published in Scenario A and note its `version`.
-2. `PUT $API/admin/dishes/{id}/retail-price` with a new price and that `expectedVersion`.
+1. Take the dish published in Scenario A and note its `retailPrice`.
+2. `PUT $API/admin/dishes/{id}/retail-price` with a new price and that value as `expectedRetailPrice`.
    Expect `200`; `status` is still `PUBLISHED`, `publishedAt` unchanged, recipe untouched, and the
    dish still visible to diners at the new price.
-3. **Stale decision (FR-025).** Reuse the now-stale `expectedVersion`: expect `409`
-   `dish-stale-version` with `currentVersion` present so the UI can reconcile.
+3. **Stale decision (FR-025).** Reuse the now-stale `expectedRetailPrice`: expect `409`
+   `dish-stale-price` with `currentRetailPrice` present so the UI can reconcile.
 4. **Negative margin needs confirmation (FR-014).** Submit a price below the Food Cost without
    `acknowledgeNegativeMargin`: expect `422` `acknowledgement-required` with
    `["NEGATIVE_MARGIN"]`. Resend with the flag: expect `200`.
