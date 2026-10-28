@@ -20,6 +20,7 @@ import { FirstLoginPasswordPage } from '../pages/FirstLoginPasswordPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { DishCostAuditPage } from '../pages/DishCostAuditPage';
 import { VerifyEmailPage } from '../pages/VerifyEmailPage';
+import { EstablishmentDiscoveryPage } from '../pages/EstablishmentDiscoveryPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -200,6 +201,17 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route path="/profile" element={<Navigate to="/perfil" replace />} />
+
+      {/* Role-Protected Diner Discovery Route (COMENSAL) */}
+      <Route
+        path="/descubrimiento"
+        element={
+          <RoleRouteGuard allowedRoles={['COMENSAL']}>
+            <EstablishmentDiscoveryPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route path="/discovery" element={<Navigate to="/descubrimiento" replace />} />
 
       {/* Diner Home / Catalog View (Public for guests and diners) */}
       <Route path="/catalogo/*" element={<CatalogPage />} />

@@ -33,6 +33,7 @@ import java.util.NoSuchElementException;
 import com.easyeat.catalog.exception.DishNotFoundException;
 import com.easyeat.catalog.exception.EstablishmentInactiveException;
 import com.easyeat.catalog.exception.EstablishmentNotFoundException;
+import com.easyeat.catalog.exception.InvalidSearchQueryException;
 import com.easyeat.dish.exception.*;
 import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.inventory.exception.NegativeStockException;
@@ -368,5 +369,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setInstance(URI.create(request.getRequestURI()));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
-}
 
+    @ExceptionHandler(InvalidSearchQueryException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidSearchQuery(InvalidSearchQueryException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-search-query"));
+        problem.setTitle("Invalid Search Query");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+}

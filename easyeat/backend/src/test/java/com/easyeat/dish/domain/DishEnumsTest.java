@@ -120,11 +120,13 @@ class DishEnumsTest {
     void dishStatusValues() {
         assertThat(DishStatus.values()).containsExactly(
                 DishStatus.DRAFT,
-                DishStatus.PENDING_PRICE
+                DishStatus.PENDING_PRICE,
+                DishStatus.PUBLISHED
         );
 
         assertThat(DishStatus.valueOf("DRAFT")).isEqualTo(DishStatus.DRAFT);
         assertThat(DishStatus.valueOf("PENDING_PRICE")).isEqualTo(DishStatus.PENDING_PRICE);
+        assertThat(DishStatus.valueOf("PUBLISHED")).isEqualTo(DishStatus.PUBLISHED);
     }
 
     @Test

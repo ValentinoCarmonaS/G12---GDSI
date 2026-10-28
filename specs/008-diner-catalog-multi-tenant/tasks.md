@@ -45,21 +45,21 @@
 
 ### Tests for User Story 1 (TDD & Behavioral Acceptance - Write First) ⚠️
 
-- [ ] T012 [P] [US1] Unit test `EstablishmentDiscoveryServiceTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/EstablishmentDiscoveryServiceTest.java` validating `>= 3` character threshold, diacritic stripping, case folding, and inactive establishment exclusion
-- [ ] T013 [P] [US1] Web contract test `EstablishmentDiscoveryControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/EstablishmentDiscoveryControllerTest.java` verifying `GET /api/v1/establishments/search?q={query}` against OpenAPI schema and HTTP 401 unauthenticated guard
-- [ ] T014 [P] [US1] Frontend component test `EstablishmentSearchBar.test.tsx` in `easyeat/frontend/src/test/catalog/EstablishmentSearchBar.test.tsx` verifying autocomplete dropdown, 300 ms debounce, cart clear warning dialog, and empty states
+- [x] T012 [P] [US1] Unit test `EstablishmentDiscoveryServiceTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/EstablishmentDiscoveryServiceTest.java` validating `>= 3` character threshold, diacritic stripping, case folding, and inactive establishment exclusion
+- [x] T013 [P] [US1] Web contract test `EstablishmentDiscoveryControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/EstablishmentDiscoveryControllerTest.java` verifying `GET /api/v1/establishments/search?q={query}` against OpenAPI schema and HTTP 401 unauthenticated guard
+- [x] T014 [P] [US1] Frontend component test `EstablishmentSearchBar.test.tsx` in `easyeat/frontend/src/test/catalog/EstablishmentSearchBar.test.tsx` verifying autocomplete dropdown, 300 ms debounce, cart clear warning dialog, and empty states
 
 ### Implementation for User Story 1
 
-- [ ] T015 [P] [US1] Implement `EstablishmentSummaryResponse` DTO and `EstablishmentDiscoveryService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/EstablishmentDiscoveryService.java`
-- [ ] T016 [US1] Implement `EstablishmentDiscoveryController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/EstablishmentDiscoveryController.java`
-- [ ] T017 [P] [US1] Implement frontend API client method `searchEstablishments` in `easyeat/frontend/src/api/dinerCatalogApi.ts`
-- [ ] T018 [P] [US1] Create `TenantContext.tsx` and hook `useTenant.ts` in `easyeat/frontend/src/context/TenantContext.tsx` and `easyeat/frontend/src/hooks/useTenant.ts` managing active establishment state and session storage
-- [ ] T019 [P] [US1] Create `EstablishmentSwitchModal.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentSwitchModal.tsx` displaying the interactive confirmation dialog alerting diners before emptying their active cart upon tenant switch (COM-1.5.1 CA 5 / FR-029)
-- [ ] T020 [US1] Create `EstablishmentSearchBar.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentSearchBar.tsx` with debounced search, autocomplete dropdown, and cart switch interceptor
-- [ ] T021 [P] [US1] Create `EstablishmentBlockingNotice.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentBlockingNotice.tsx` rendering full-screen blocking screen for paused/disabled venues
-- [ ] T022 [US1] Create `EstablishmentDiscoveryPage.tsx` in `easyeat/frontend/src/pages/EstablishmentDiscoveryPage.tsx`
-- [ ] T023 [US1] Update `AppRoutes.tsx` and `postAuthRouting.ts` registering `/descubrimiento` route protected by `RoleRouteGuard allowedRoles={['COMENSAL']}` and routing diners with no active tenant to discovery
+- [x] T015 [P] [US1] Implement `EstablishmentSummaryResponse` DTO and `EstablishmentDiscoveryService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/EstablishmentDiscoveryService.java`
+- [x] T016 [US1] Implement `EstablishmentDiscoveryController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/EstablishmentDiscoveryController.java`
+- [x] T017 [P] [US1] Implement frontend API client method `searchEstablishments` in `easyeat/frontend/src/api/dinerCatalogApi.ts`
+- [x] T018 [P] [US1] Create `TenantContext.tsx` and hook `useTenant.ts` in `easyeat/frontend/src/context/TenantContext.tsx` and `easyeat/frontend/src/hooks/useTenant.ts` managing active establishment state and session storage
+- [x] T019 [P] [US1] Create `EstablishmentSwitchModal.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentSwitchModal.tsx` displaying the interactive confirmation dialog alerting diners before emptying their active cart upon tenant switch (COM-1.5.1 CA 5 / FR-029)
+- [x] T020 [US1] Create `EstablishmentSearchBar.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentSearchBar.tsx` with debounced search, autocomplete dropdown, and cart switch interceptor
+- [x] T021 [P] [US1] Create `EstablishmentBlockingNotice.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentBlockingNotice.tsx` rendering full-screen blocking screen for paused/disabled venues
+- [x] T022 [US1] Create `EstablishmentDiscoveryPage.tsx` in `easyeat/frontend/src/pages/EstablishmentDiscoveryPage.tsx`
+- [x] T023 [US1] Update `AppRoutes.tsx` and `postAuthRouting.ts` registering `/descubrimiento` route protected by `RoleRouteGuard allowedRoles={['COMENSAL']}` and routing diners with no active tenant to discovery
 
 **Checkpoint**: User Story 1 fully functional and independently verifiable.
 
