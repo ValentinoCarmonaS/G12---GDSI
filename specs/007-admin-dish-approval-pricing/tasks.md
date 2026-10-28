@@ -150,7 +150,22 @@
   The engine's only cost input is `unitPurchaseCost`, and `FoodCostAuditService` populates it from `Ingredient.getUnitPurchaseCost()` through `IngredientRepository`. It never reads `ingredient_batches` or `stock_audit_entries`, so the three-referent ambiguity is closed in code and not only in prose.
 
   **Two consequences this feature must not get wrong.** First, the Food Cost arrives **already at scale 2**, so `dish_price_history.food_cost_snapshot NUMERIC(10,2)` stores it losslessly and this feature must round the Food Cost **nowhere** — a second `setScale` would be a no-op at best and a silent double-rounding if the scale ever widened. Second, rounding each line before summing means the total can differ from the unrounded sum by up to half a cent per line. That is spec 006's deliberate choice for cent-exact reporting, and it leaves FR-008 untouched: FR-008 forbids intermediate rounding inside the **margin** arithmetic, of which this value is an input, not an intermediate
-- [ ] T008 Determine this feature's Flyway version by listing `easyeat/backend/src/main/resources/db/migration/` and taking the lowest free sequential integer strictly greater than every migration present; record the chosen number for T014 and add its row to `.specify/memory/migrations.md` in the same commit as T014. **Confirmed 2026-10-28: the directory holds `V1`–`V7`, so the number is `V8`.** Spec 008 has written `V8__create_establishments.sql` on its own feature branch but has merged nothing to the integration branch, and by registry rule 4 a claim in flight reserves nothing — whichever merges first keeps the number. **Do not yield `V9` out of courtesy**: with `outOfOrder` disabled a later `V8` below an applied `V9` is rejected outright, so 008 would have to renumber anyway and a gap would be left for nothing. Re-confirm against the directory at the moment T014 authors the file, because the answer changes if 008 merges first
+- [x] T008 **DONE 2026-10-28 — `V8`.** Determine this feature's Flyway version by listing `easyeat/backend/src/main/resources/db/migration/` and taking the lowest free sequential integer strictly greater than every migration present; record the chosen number for T014 and add its row to `.specify/memory/migrations.md` in the same commit as T014. **Confirmed 2026-10-28: the directory holds `V1`–`V7`, so the number is `V8`.** Spec 008 has written `V8__create_establishments.sql` on its own feature branch but has merged nothing to the integration branch, and by registry rule 4 a claim in flight reserves nothing — whichever merges first keeps the number. **Do not yield `V9` out of courtesy**: with `outOfOrder` disabled a later `V8` below an applied `V9` is rejected outright, so 008 would have to renumber anyway and a gap would be left for nothing. Re-confirm against the directory at the moment T014 authors the file, because the answer changes if 008 merges first.
+
+  **DETERMINED 2026-10-28: `V8__admin_dish_approval_pricing.sql`.** The directory listing on this branch:
+
+  ```
+  V1__create_users.sql                                   V5__extend_users_profile_and_dietary.sql
+  V2__create_password_reset_tokens.sql                   V6__create_ingredient_batches_and_refactor_lifecycle.sql
+  V3__extend_users_staff.sql                             V7__chef_dish_management.sql
+  V4__create_ingredients_and_stock_audit.sql
+  ```
+
+  The highest present is `V7`, so the lowest free integer strictly greater than every migration is **8**. Registered in `.specify/memory/migrations.md` as contested with spec 008, whose `V8__create_establishments.sql` exists on its own feature branch only.
+
+  **Recorded for whoever renumbers**: `V8__create_establishments.sql` was read on `origin/008-diner-catalog-multi-tenant` and creates only `establishments`. It does **not** touch `dishes`, `dishes.status` or `chk_dishes_status`, so the two migrations are independent in content and renumbering either is a rename plus a registry row. The `chk_dishes_status` redefinition that `008/data-model.md` plans has not been written — and T003 confirmed behaviourally that the live constraint **rejects** `'ACTIVE'`, the value 008 intends to use, so that conflict is a design question for its owner and not a numbering one.
+
+  **Also noted, not acted on**: spec 005's migration test is named `V7MigrationAndSeedDevTest`, which carries a version in its class name and would be invalidated by a renumbering — exactly what rule 5 of the registry exists to prevent. It is spec 005's file, so Principle V forbids renaming it from here; flagged for its owner
 
 **Checkpoint**: readiness recorded and the gate passes. Nothing in this phase waits on another spec's owner any longer; T005 is this feature's own work under the recorded D1 amendment.
 
