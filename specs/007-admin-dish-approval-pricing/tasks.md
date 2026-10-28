@@ -423,7 +423,11 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
   **`ReviewDishStatus` is declared here rather than reusing `DishStatus` from `types/dish.ts`.** That union is spec 005's and still admits only `DRAFT | PENDING_PRICE`; widening it is **T079a**, in US3, where the mismatch becomes observable. Importing it here would have made this feature's types lie about what the backend returns, and widening it here would have done US3's work early and without its test.
 
   Money is typed `number`, with the reason recorded: these values are displayed and compared, never used to derive a figure the backend stores. Every calculation that produces a stored price happens server-side in `BigDecimal` (FR-008). And `marginPct` is documented as requiring a null branch rather than a falsy check, because `0` is a legitimate margin that a `!marginPct` test would silently hide.
-- [ ] T045 [P] [US1] Write `easyeat/frontend/tests/api/dishReviewApi.test.ts` covering request shaping and error propagation for the inbox and detail calls — **Serves**: FR-032
+- [x] T045 [P] [US1] Write `easyeat/frontend/tests/api/dishReviewApi.test.ts` covering request shaping and error propagation for the inbox and detail calls — **Serves**: FR-032
+
+  **DONE 2026-10-28**, RED observed: `Failed to resolve import "../../src/api/dishReviewApi"`.
+
+  Three cases beyond request shaping. The identifier is asserted to be **URL-encoded**, so a malformed value cannot alter the path — `../../auth/users` must not become a traversal. Errors are asserted to **propagate** rather than collapse into a default value, because an inbox that silently renders empty on a 403 tells the Administrator there is nothing to review. And the client is asserted **not to retry**, since a silent retry would double a read the server may audit.
 - [ ] T046 [US1] Implement `easyeat/frontend/src/api/dishReviewApi.ts` as a typed client over the shared `apiClient` — **Serves**: shared infrastructure for all four stories; no single requirement
 - [ ] T047 [US1] Write `easyeat/frontend/tests/hooks/useDishReviewInbox.test.ts` covering tab and page state, counts, and reconciliation after a stale decision — **Serves**: FR-003, FR-032
 - [ ] T048 [US1] Implement `easyeat/frontend/src/hooks/useDishReviewInbox.ts` — **Serves**: FR-003, FR-032
