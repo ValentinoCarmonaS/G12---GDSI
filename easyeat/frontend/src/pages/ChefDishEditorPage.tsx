@@ -3,6 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { dishApi } from '@/api/dishApi';
 import { BasicIdentityStep } from '@/components/dish/BasicIdentityStep';
 import { RecipeBOMStep } from '@/components/dish/RecipeBOMStep';
+import { AllergenStep } from '@/components/dish/AllergenStep';
+import { ReviewSubmitStep } from '@/components/dish/ReviewSubmitStep';
+import { DishStepper, type DishEditorTab } from '@/components/dish/DishStepper';
 import { DishStatusBadge } from '@/components/dish/DishStatusBadge';
 import type { DishDetailResponse, CreateDishRequest, RecipeIngredientItem, RecipeUpdateRequest } from '@/types/dish';
 
@@ -11,7 +14,7 @@ export const ChefDishEditorPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [dish, setDish] = useState<DishDetailResponse | null>(null);
-  const [activeTab, setActiveTab] = useState<'identity' | 'recipe'>('identity');
+  const [activeTab, setActiveTab] = useState<DishEditorTab>('identity');
   const [isLoading, setIsLoading] = useState<boolean>(!!id);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -127,6 +130,49 @@ export const ChefDishEditorPage: React.FC = () => {
     }
   };
 
+  const handleSaveAllergens = async (restrictionCodes: string[], confirmed: boolean) => {
+    if (!id) return;
+    setIsSaving(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await dishApi.updateDishAllergens(id, { restrictionCodes, confirmed });
+      setSuccessMessage('Alérgenos actualizados correctamente.');
+      await fetchDish(id);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        'Error al guardar los alérgenos del plato.';
+      setErrorMessage(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveSubmitForReview = async () => {
+    if (!id) return;
+    setIsSaving(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      const updated = await dishApi.submitForReview(id);
+      setDish(updated);
+      setSuccessMessage('Ficha técnica enviada a revisión exitosamente.');
+      await fetchDish(id);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        'Error al enviar la ficha técnica a revisión.';
+      setErrorMessage(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-12 max-w-4xl flex justify-center text-zinc-500">
@@ -153,7 +199,11 @@ export const ChefDishEditorPage: React.FC = () => {
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
               {activeTab === 'identity'
                 ? 'Paso 1: Identidad básica del plato y fotografía.'
-                : 'Paso 2: Composición de la receta y escandallo de ingredientes (BOM).'}
+                : activeTab === 'recipe'
+                ? 'Paso 2: Composición de la receta y escandallo de ingredientes (BOM).'
+                : activeTab === 'allergens'
+                ? 'Paso 3: Etiquetado de alérgenos y preferencias dietarias.'
+                : 'Paso 4: Verificación de requisitos y envío para revisión de precios.'}
             </p>
           </div>
           {dish && (
@@ -165,32 +215,13 @@ export const ChefDishEditorPage: React.FC = () => {
       </div>
 
       {/* Stepper Tabs */}
-      <div className="flex border-b border-gray-800 mb-6 gap-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab('identity')}
-          className={`py-2.5 px-4 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === 'identity'
-              ? 'border-amber-500 text-amber-400'
-              : 'border-transparent text-gray-400 hover:text-gray-200'
-          }`}
-        >
-          Paso 1: Identidad básica
-        </button>
-        <button
-          type="button"
-          disabled={!id}
-          onClick={() => setActiveTab('recipe')}
-          className={`py-2.5 px-4 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === 'recipe'
-              ? 'border-amber-500 text-amber-400'
-              : 'border-transparent text-gray-400 hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed'
-          }`}
-          title={!id ? 'Creá el borrador básico primero' : undefined}
-        >
-          Paso 2: Receta y Escandallo (BOM)
-        </button>
-      </div>
+      <DishStepper
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        hasDishId={Boolean(id)}
+        status={dish?.status}
+        isLocked={dish ? dish.status === 'PENDING_PRICE' : false}
+      />
 
       {/* Notifications */}
       {errorMessage && (
@@ -205,7 +236,7 @@ export const ChefDishEditorPage: React.FC = () => {
       )}
 
       {/* Tab Panels */}
-      {activeTab === 'identity' ? (
+      {activeTab === 'identity' && (
         <BasicIdentityStep
           initialData={
             dish
@@ -222,7 +253,8 @@ export const ChefDishEditorPage: React.FC = () => {
           isReadOnly={dish ? dish.status === 'PENDING_PRICE' : false}
           isSaving={isSaving}
         />
-      ) : (
+      )}
+      {activeTab === 'recipe' && (
         <RecipeBOMStep
           dishId={id}
           initialRecipe={dish?.recipe || []}
@@ -230,6 +262,24 @@ export const ChefDishEditorPage: React.FC = () => {
           onRemoveIngredient={handleRemoveRecipeIngredient}
           isReadOnly={dish ? dish.status === 'PENDING_PRICE' : false}
           isSaving={isSaving}
+        />
+      )}
+      {activeTab === 'allergens' && (
+        <AllergenStep
+          dishId={id}
+          initialRestrictions={dish?.restrictionCodes || []}
+          initialConfirmed={dish?.allergensConfirmed || false}
+          onSaveAllergens={handleSaveAllergens}
+          isReadOnly={dish ? dish.status === 'PENDING_PRICE' : false}
+          isSaving={isSaving}
+        />
+      )}
+      {activeTab === 'review' && dish && (
+        <ReviewSubmitStep
+          dish={dish}
+          onSubmitForReview={handleSaveSubmitForReview}
+          isReadOnly={dish.status === 'PENDING_PRICE'}
+          isSubmitting={isSaving}
         />
       )}
     </div>

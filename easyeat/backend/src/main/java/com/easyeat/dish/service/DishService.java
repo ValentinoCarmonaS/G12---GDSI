@@ -27,8 +27,24 @@ import com.easyeat.dish.dto.RecipeResponse;
 import com.easyeat.dish.dto.RecipeUpdateRequest;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
 import com.easyeat.inventory.repository.IngredientRepository;
+import com.easyeat.dish.dto.AllergenResponse;
+import com.easyeat.dish.dto.AllergenUpdateRequest;
+import com.easyeat.profile.domain.DietaryRestriction;
+import com.easyeat.profile.exception.DietaryTaxonomyException;
+import com.easyeat.profile.repository.DietaryRestrictionRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import com.easyeat.dish.exception.IncompleteDishException;
+import com.easyeat.inventory.dto.IngredientStatus;
+import com.easyeat.notification.domain.AdminNotification;
+import com.easyeat.notification.domain.NotificationType;
+import com.easyeat.notification.repository.AdminNotificationRepository;
 
 @Service
 public class DishService {
@@ -37,16 +53,117 @@ public class DishService {
     private final DishPhotoRepository dishPhotoRepository;
     private final DishRecipeIngredientRepository dishRecipeIngredientRepository;
     private final IngredientRepository ingredientRepository;
+    private final DietaryRestrictionRepository dietaryRestrictionRepository;
+
+    private final AdminNotificationRepository adminNotificationRepository;
+
+    @Autowired
+    public DishService(
+            DishRepository dishRepository,
+            DishPhotoRepository dishPhotoRepository,
+            DishRecipeIngredientRepository dishRecipeIngredientRepository,
+            IngredientRepository ingredientRepository,
+            DietaryRestrictionRepository dietaryRestrictionRepository,
+            AdminNotificationRepository adminNotificationRepository) {
+        this.dishRepository = dishRepository;
+        this.dishPhotoRepository = dishPhotoRepository;
+        this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
+        this.ingredientRepository = ingredientRepository;
+        this.dietaryRestrictionRepository = dietaryRestrictionRepository;
+        this.adminNotificationRepository = adminNotificationRepository;
+    }
+
+    public DishService(
+            DishRepository dishRepository,
+            DishPhotoRepository dishPhotoRepository,
+            DishRecipeIngredientRepository dishRecipeIngredientRepository,
+            IngredientRepository ingredientRepository,
+            DietaryRestrictionRepository dietaryRestrictionRepository) {
+        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, dietaryRestrictionRepository, null);
+    }
 
     public DishService(
             DishRepository dishRepository,
             DishPhotoRepository dishPhotoRepository,
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository) {
-        this.dishRepository = dishRepository;
-        this.dishPhotoRepository = dishPhotoRepository;
-        this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
-        this.ingredientRepository = ingredientRepository;
+        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, null, null);
+    }
+
+    @Transactional
+    public DishDetailResponse submitForReview(UUID dishId) {
+        UUID tenantId = TenantContextHolder.getTenantId();
+        Dish dish = dishRepository.findByIdAndTenantId(dishId, tenantId)
+                .orElseThrow(() -> new DishNotFoundException(dishId));
+
+        if (dish.getStatus() == DishStatus.PENDING_PRICE) {
+            throw new DishLockedException(dishId, "PENDING_PRICE");
+        }
+
+        List<String> missingConditions = computeMissingConditions(dish);
+        if (!missingConditions.isEmpty()) {
+            throw new IncompleteDishException(dishId, missingConditions);
+        }
+
+        dish.setStatus(DishStatus.PENDING_PRICE);
+        dish.setSubmittedAt(Instant.now());
+        dish.setUpdatedAt(Instant.now());
+        Dish saved = dishRepository.save(dish);
+
+        if (adminNotificationRepository != null) {
+            String title = "Nuevo plato enviado a revisión";
+            String message = String.format("El Chef ha enviado la ficha técnica '%s' para revisión de precios.", saved.getName());
+            AdminNotification notification = new AdminNotification(
+                    tenantId,
+                    NotificationType.DISH_SUBMITTED_FOR_REVIEW,
+                    title,
+                    message,
+                    saved.getId(),
+                    saved.getCreatedBy() != null ? saved.getCreatedBy() : UUID.randomUUID()
+            );
+            adminNotificationRepository.save(notification);
+        }
+
+        return mapToDetailResponse(saved);
+    }
+
+    @Transactional
+    public AllergenResponse updateAllergens(UUID dishId, AllergenUpdateRequest request) {
+        UUID tenantId = TenantContextHolder.getTenantId();
+        Dish dish = dishRepository.findByIdAndTenantId(dishId, tenantId)
+                .orElseThrow(() -> new DishNotFoundException(dishId));
+
+        if (dish.getStatus() != DishStatus.DRAFT) {
+            throw new DishLockedException(dishId, dish.getStatus().name());
+        }
+
+        List<String> codes = request.restrictionCodes() != null ? request.restrictionCodes() : Collections.emptyList();
+
+        if (!codes.isEmpty() && dietaryRestrictionRepository != null) {
+            List<DietaryRestriction> found = dietaryRestrictionRepository.findAllById(codes);
+            Set<String> foundCodes = found.stream().map(DietaryRestriction::getCode).collect(Collectors.toSet());
+            for (String code : codes) {
+                if (!foundCodes.contains(code)) {
+                    throw DietaryTaxonomyException.forInvalidCode(code);
+                }
+            }
+        }
+
+        dish.setRestrictionCodes(new HashSet<>(codes));
+        dish.setAllergensConfirmed(Boolean.TRUE.equals(request.confirmed()));
+        dish.setUpdatedAt(Instant.now());
+
+        Dish saved = dishRepository.save(dish);
+
+        List<String> resultCodes = saved.getRestrictionCodes() != null
+                ? saved.getRestrictionCodes().stream().sorted().toList()
+                : Collections.emptyList();
+
+        return new AllergenResponse(
+                saved.getId(),
+                resultCodes,
+                Boolean.TRUE.equals(saved.getAllergensConfirmed())
+        );
     }
 
     @Transactional
@@ -337,15 +454,33 @@ public class DishService {
 
     private List<String> computeMissingConditions(Dish dish) {
         List<String> conditions = new ArrayList<>();
-        if (dish.getName() == null || dish.getName().isBlank()) {
+        if (dish.getName() == null || dish.getName().trim().isEmpty()) {
             conditions.add("El nombre del plato es obligatorio");
         }
         if (dish.getCategory() == null) {
             conditions.add("La categoría del plato es obligatoria");
         }
-        long recipeCount = dishRecipeIngredientRepository.countByIdDishId(dish.getId());
-        if (recipeCount == 0) {
+        List<com.easyeat.dish.domain.DishRecipeIngredient> recipeLines = dishRecipeIngredientRepository.findByIdDishId(dish.getId());
+        if (recipeLines.isEmpty()) {
             conditions.add("La receta debe contener al menos un ingrediente");
+        } else {
+            boolean hasNonPositive = false;
+            boolean hasInactive = false;
+            for (com.easyeat.dish.domain.DishRecipeIngredient line : recipeLines) {
+                if (line.getQuantity() == null || line.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                    hasNonPositive = true;
+                }
+                com.easyeat.inventory.entity.Ingredient ingredient = ingredientRepository.findByIdAndTenantId(line.getIngredientId(), dish.getTenantId()).orElse(null);
+                if (ingredient == null || ingredient.getStatus() != IngredientStatus.ACTIVE) {
+                    hasInactive = true;
+                }
+            }
+            if (hasNonPositive) {
+                conditions.add("Todos los ingredientes de la receta deben tener una cantidad estrictamente mayor a cero");
+            }
+            if (hasInactive) {
+                conditions.add("Todos los ingredientes de la receta deben estar en estado Activo en el inventario (sin ingredientes discontinuados)");
+            }
         }
         if (!Boolean.TRUE.equals(dish.getAllergensConfirmed())) {
             conditions.add("Se debe confirmar la sección de alérgenos");

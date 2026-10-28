@@ -5,6 +5,8 @@ import type {
   DishDetailResponse,
   DishPageResponse,
   PhotoUploadResponse,
+  DishAllergensUpdateRequest,
+  DishAllergensResponse,
 } from '@/types/dish';
 
 export const dishApi = {
@@ -96,6 +98,23 @@ export const dishApi = {
    */
   async getFoodCostAudit(id: string): Promise<import('@/types/dish').FoodCostAuditResponse> {
     const response = await apiClient.get<import('@/types/dish').FoodCostAuditResponse>(`/dishes/${id}/cost-audit`);
+    return response.data;
+  },
+
+  /**
+   * Updates dish dietary restrictions and allergen confirmation state (CHF-2.2.3).
+   */
+  async updateDishAllergens(id: string, data: DishAllergensUpdateRequest): Promise<DishAllergensResponse> {
+    const response = await apiClient.put<DishAllergensResponse>(`/dishes/${id}/allergens`, data);
+    return response.data;
+  },
+
+  /**
+   * Submits a dish for administrator review (CHF-2.2.4).
+   * Atomically transitions status to PENDING_PRICE and locks the dish against chef mutations.
+   */
+  async submitForReview(id: string): Promise<DishDetailResponse> {
+    const response = await apiClient.post<DishDetailResponse>(`/dishes/${id}/submit-review`);
     return response.data;
   },
 };
