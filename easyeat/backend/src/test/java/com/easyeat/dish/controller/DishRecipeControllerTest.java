@@ -141,8 +141,8 @@ class DishRecipeControllerTest extends DishControllerTestBase {
 
         @Test
         @WithMockUser(roles = "CHEF")
-        @DisplayName("Should return 422 Unprocessable Entity when ingredient is inactive or discontinued")
-        void updateRecipe_shouldReturn422_whenIngredientInactive() throws Exception {
+        @DisplayName("Should return 400 Bad Request when ingredient is inactive or discontinued")
+        void updateRecipe_shouldReturn400_whenIngredientInactive() throws Exception {
             RecipeUpdateRequest request = new RecipeUpdateRequest(List.of(
                     new RecipeIngredientItem(ingredientId1, 100.0)
             ));
@@ -153,14 +153,14 @@ class DishRecipeControllerTest extends DishControllerTestBase {
             mockMvc.perform(put("/api/v1/dishes/{id}/recipe", dishId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isUnprocessableEntity())
-                    .andExpect(jsonPath("$.status").value(422));
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400));
         }
 
         @Test
         @WithMockUser(roles = "CHEF")
-        @DisplayName("Should return 422 Unprocessable Entity when quantity violates unit rules")
-        void updateRecipe_shouldReturn422_whenQuantityInvalid() throws Exception {
+        @DisplayName("Should return 400 Bad Request when quantity violates unit rules")
+        void updateRecipe_shouldReturn400_whenQuantityInvalid() throws Exception {
             RecipeUpdateRequest request = new RecipeUpdateRequest(List.of(
                     new RecipeIngredientItem(ingredientId1, 1.5)
             ));
@@ -171,8 +171,8 @@ class DishRecipeControllerTest extends DishControllerTestBase {
             mockMvc.perform(put("/api/v1/dishes/{id}/recipe", dishId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isUnprocessableEntity())
-                    .andExpect(jsonPath("$.status").value(422));
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400));
         }
     }
 
