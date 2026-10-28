@@ -29,7 +29,7 @@
 - [x] T006 [P] Create Flyway migration script `V8__create_establishments.sql` in `easyeat/backend/src/main/resources/db/migration/V8__create_establishments.sql` (enabling `unaccent` extension, creating `establishments` table with UUID, name, status, opening_time, closing_time, timezone, audit timestamps, functional index on `(status, unaccent(LOWER(name)))`, and dev seed establishments)
 - [x] T007 [P] Create `EstablishmentStatus` enum in `easyeat/backend/src/main/java/com/easyeat/catalog/domain/EstablishmentStatus.java` (`ACTIVE`, `PAUSED`, `DISABLED`)
 - [x] T008 [P] Create `Establishment` JPA entity in `easyeat/backend/src/main/java/com/easyeat/catalog/domain/Establishment.java`
-- [ ] T009 [P] Create `EstablishmentRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/EstablishmentRepository.java` with autocomplete unaccent/ILIKE search queries
+- [x] T009 [P] Create `EstablishmentRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/EstablishmentRepository.java` with autocomplete unaccent/ILIKE search queries
 - [ ] T010 Update `SecurityConfig.java` in `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java` configuring role boundaries: `/api/v1/establishments/search`, `/api/v1/establishments/*/catalog`, and `/api/v1/establishments/*/catalog/availability` require `hasRole('COMENSAL')`
 - [x] T011 Integration test `V8EstablishmentsMigrationTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/migration/V8EstablishmentsMigrationTest.java` running against Testcontainers PostgreSQL verifying V8 schema migration and seed data
 
