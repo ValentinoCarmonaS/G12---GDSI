@@ -47,6 +47,9 @@ class DinerCatalogControllerTest {
     private DinerCatalogService dinerCatalogService;
 
     @MockBean
+    private com.easyeat.catalog.service.DishAvailabilityEngine dishAvailabilityEngine;
+
+    @MockBean
     private JwtService jwtService;
 
     @MockBean

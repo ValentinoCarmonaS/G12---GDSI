@@ -90,16 +90,15 @@ class MultiTenantCatalogIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        tenantA = UUID.randomUUID();
-        tenantB = UUID.randomUUID();
-
         // 1. Create Establishments
-        Establishment estA = new Establishment(tenantA, "Tenant A Burgers", EstablishmentStatus.ACTIVE,
+        Establishment estA = new Establishment(null, "Tenant A Burgers", EstablishmentStatus.ACTIVE,
                 LocalTime.of(0, 0), LocalTime.of(23, 59), "America/Argentina/Buenos_Aires");
-        Establishment estB = new Establishment(tenantB, "Tenant B Burgers", EstablishmentStatus.ACTIVE,
+        Establishment estB = new Establishment(null, "Tenant B Burgers", EstablishmentStatus.ACTIVE,
                 LocalTime.of(0, 0), LocalTime.of(23, 59), "America/Argentina/Buenos_Aires");
-        establishmentRepository.save(estA);
-        establishmentRepository.save(estB);
+        estA = establishmentRepository.save(estA);
+        estB = establishmentRepository.save(estB);
+        tenantA = estA.getId();
+        tenantB = estB.getId();
 
         // 2. Create Homonymous Ingredients ("Carne")
         Ingredient ingA = new Ingredient(tenantA, "Carne", IngredientCategory.MEAT, UnitOfMeasure.KG, BigDecimal.valueOf(100));
