@@ -20,6 +20,11 @@ import { CatalogMasterToggle } from '../components/catalog/CatalogMasterToggle';
 import { EmptyCatalogDietaryState } from '../components/catalog/EmptyCatalogDietaryState';
 import { AddToCartRiskModal } from '../components/cart/AddToCartRiskModal';
 import { CartDrawer } from '../components/cart/CartDrawer';
+import {
+  CatalogSearchFilter,
+  matchesDishQuery,
+  normalizeSearchTerm,
+} from '../components/catalog/CatalogSearchFilter';
 
 export const CatalogView: React.FC = () => {
   const navigate = useNavigate();
@@ -40,6 +45,7 @@ export const CatalogView: React.FC = () => {
   const [dishToConfirm, setDishToConfirm] = useState<EnrichedDish | null>(null);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Real-time stock-based dish availability polling (COM-4.1.2, FR-016)
   const { availability, isConnectionLost } = useRealtimeAvailability({
@@ -76,7 +82,7 @@ export const CatalogView: React.FC = () => {
       const data = await dinerCatalogApi.getEstablishmentCatalog(tenant.id);
       setCatalogData(data);
       if (data.categories && data.categories.length > 0) {
-        setActiveCategory(data.categories[0].category);
+        setActiveCategory(undefined);
       }
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'Error al cargar el catálogo del establecimiento.');
@@ -97,6 +103,35 @@ export const CatalogView: React.FC = () => {
     if (!catalogData?.categories) return [];
     return catalogData.categories.map((c) => c.category);
   }, [catalogData]);
+
+
+  const isQueryActive = normalizeSearchTerm(searchQuery).length > 0;
+
+  const filteredCategoryGroups = useMemo(() => {
+    if (!catalogData?.categories) return [];
+
+    return catalogData.categories
+      .filter((group) => {
+        if (activeCategory && activeCategory !== 'Todas') {
+          return group.category === activeCategory;
+        }
+        return true;
+      })
+      .map((group) => {
+        const matchingDishes = group.dishes.filter((dish) => {
+          if (!isQueryActive) return true;
+          return matchesDishQuery(dish, searchQuery);
+        });
+        return {
+          ...group,
+          dishes: matchingDishes,
+        };
+      })
+      .filter((group) => group.dishes.length > 0);
+  }, [catalogData, activeCategory, searchQuery, isQueryActive]);
+
+
+
 
   const isReadOnly = catalogData?.establishment?.isOpen === false;
 
@@ -294,6 +329,20 @@ export const CatalogView: React.FC = () => {
               </div>
             )}
 
+            {/* In-Catalog Rapid Search Filter (COM-4.2.3, FR-020) */}
+            <div className="pt-1">
+              <CatalogSearchFilter
+                value={searchQuery}
+                onChange={setSearchQuery}
+                onClear={() => setSearchQuery('')}
+                placeholder={
+                  activeCategory && activeCategory !== 'Todas'
+                    ? `Buscar en ${activeCategory} por plato o ingrediente...`
+                    : 'Buscar por plato o ingrediente en todo el menú...'
+                }
+              />
+            </div>
+
             {/* Sticky Category Navigation Bar (FR-008) */}
             {categories.length > 0 && (
               <StickyCategoryNav
@@ -303,7 +352,7 @@ export const CatalogView: React.FC = () => {
               />
             )}
 
-            {/* Empty Categories View */}
+            {/* Empty Categories View or Empty Search View */}
             {catalogData.categories.length === 0 ? (
               <div
                 data-testid="catalog-empty-store"
@@ -314,10 +363,10 @@ export const CatalogView: React.FC = () => {
                   El menú de este establecimiento se encuentra en preparación.
                 </p>
               </div>
-            ) : (
-              /* Categorized Sections (FR-007, FR-009) */
+) : (
+              /* Categorized Sections (FR-007, FR-009, FR-020, FR-022) */
               <div className="space-y-10">
-                {catalogData.categories.map((group) => (
+                {filteredCategoryGroups.map((group) => (
                   <section
                     key={group.category}
                     id={`category-section-${encodeURIComponent(group.category)}`}
