@@ -253,7 +253,9 @@ The calculator receives the Food Cost as a parameter, so it does not depend on w
 
 ### Audit aggregates (append-only)
 
-- [ ] T017 [P] Create the `ReviewEventType` enum (`APPROVED`, `REJECTED`) in `easyeat/backend/src/main/java/com/easyeat/dish/domain/ReviewEventType.java`
+- [x] T017 [P] Create the `ReviewEventType` enum (`APPROVED`, `REJECTED`) in `easyeat/backend/src/main/java/com/easyeat/dish/domain/ReviewEventType.java` — **DONE 2026-10-28**
+
+  Documented as closed against the database: the column is persisted by name and mirrored by `CHECK (event_type IN ('APPROVED','REJECTED'))`, so adding a constant means editing that constraint in the same change, and renaming or reordering one is a data migration. The two constants deliberately absent are recorded too — no `REPRICED`, because a price change is not a review decision and lives in `dish_price_history` (FR-010), and no `SUBMITTED`, because this log records decisions taken rather than states passed through.
 - [ ] T018 [P] Write `DishReviewHistoryRepositoryTest` in `easyeat/backend/src/test/java/com/easyeat/dish/repository/DishReviewHistoryRepositoryTest.java` asserting the append-only shape required by FR-034 and FR-035: save and query are exposed, **no** delete and **no** `@Modifying` update exist anywhere on the interface, and the `uq_drh_dish_cycle` uniqueness holds. The absence of those operations is the observable — assert that the interface does not declare them, not merely that calling them fails
 - [ ] T019 [P] Create the immutable `DishReviewHistory` entity in `easyeat/backend/src/main/java/com/easyeat/dish/domain/DishReviewHistory.java` with no setters and no `@PreUpdate`, per `data-model.md §2`
 - [ ] T020 Create `DishReviewHistoryRepository` in `easyeat/backend/src/main/java/com/easyeat/dish/repository/DishReviewHistoryRepository.java` exposing save and queries only
