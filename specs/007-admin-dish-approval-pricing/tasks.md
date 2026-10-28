@@ -409,7 +409,13 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
 
   **`recipeAbsent` exists because a null audit is ambiguous.** Without the flag, a client cannot distinguish "this dish has no recipe" from "the audit failed to load", and FR-037 asks for the absence to be *presented* rather than left blank. The suite asserts both: the audit is null **and** the flag is true.
 
-  The five cases pin that the consultation succeeds, that no margin is claimed while the **assigned price is still reported** (it is a fact about the dish), that the gate reports `EMPTY_RECIPE`, and that identity, author and review history all still render — which is the part FR-037 is really about.- [ ] T043 [US1] Implement the inbox and detail endpoints in `easyeat/backend/src/main/java/com/easyeat/dish/controller/AdminDishReviewController.java` — `GET /admin/dishes/review-inbox` and `GET /admin/dishes/{id}/review-detail` — **Serves**: FR-002, FR-006
+  The five cases pin that the consultation succeeds, that no margin is claimed while the **assigned price is still reported** (it is a fact about the dish), that the gate reports `EMPTY_RECIPE`, and that identity, author and review history all still render — which is the part FR-037 is really about.- [x] T043 [US1] Implement the inbox and detail endpoints in `easyeat/backend/src/main/java/com/easyeat/dish/controller/AdminDishReviewController.java` — `GET /admin/dishes/review-inbox` and `GET /admin/dishes/{id}/review-detail` — **Serves**: FR-002, FR-006
+
+  **DONE 2026-10-28**, T036 green at 22 of 22. The backend half of US1 is complete.
+
+  **The role gate sits at class level**, matching `AdminDishCostAuditController`, so a method added by US2, US3 or US4 cannot be left unguarded by omission. FR-001's `ADMIN` alias is included.
+
+  **An unknown tab is a 400 by construction**, not by hand-written validation: binding to the `InboxTab` enum makes Spring's converter reject anything outside it. That is the behaviour the requirement wants and one less branch to maintain — and it is why T036 asserts 400 rather than a fall back to `PENDING`, since showing the Administrator a list they did not request is worse than refusing the request.
 - [ ] T044 [P] [US1] Create the shared frontend types in `easyeat/frontend/src/types/dishReview.ts` for inbox, detail, pricing, history and feedback payloads — **Serves**: shared infrastructure for all four stories; no single requirement
 - [ ] T045 [P] [US1] Write `easyeat/frontend/tests/api/dishReviewApi.test.ts` covering request shaping and error propagation for the inbox and detail calls — **Serves**: FR-032
 - [ ] T046 [US1] Implement `easyeat/frontend/src/api/dishReviewApi.ts` as a typed client over the shared `apiClient` — **Serves**: shared infrastructure for all four stories; no single requirement
