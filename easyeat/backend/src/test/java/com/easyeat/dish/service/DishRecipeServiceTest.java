@@ -134,7 +134,6 @@ class DishRecipeServiceTest {
         @DisplayName("Should reject zero or negative quantities with InvalidQuantityException")
         void shouldRejectZeroOrNegativeQuantity() {
             when(dishRepository.findByIdAndTenantId(dishId, tenantId)).thenReturn(Optional.of(draftDish));
-            when(ingredientRepository.findByIdAndTenantId(activeContinuousIngredientId, tenantId)).thenReturn(Optional.of(continuousIngredient));
 
             RecipeUpdateRequest zeroRequest = new RecipeUpdateRequest(List.of(
                     new RecipeIngredientItem(activeContinuousIngredientId, 0.0)
