@@ -43,7 +43,7 @@ derives, because ±0.01 pp is not achievable for low prices.
 
 **Constraints**: exact decimal arithmetic for every monetary and margin value (scale 2 money, scale 4 quantities/unit costs, `HALF_UP`); no financial datum reachable through any Chef-facing payload (FR-023); strict tenant isolation on every query; one `@RestControllerAdvice` in the backend — extend `com.easyeat.auth.controller.GlobalExceptionHandler`, never add a competing advice
 
-**Scale/Scope**: 26 functional requirements, 4 user stories, 7 HTTP endpoints, 2 new tables, 3 new columns, 1 migration, ~10 new frontend components across 1 new admin route plus 1 Chef-side banner
+**Scale/Scope**: 33 functional requirements (26 original plus FR-027 to FR-033, added 2026-10-28 to bring the interface behaviour and the diner-visibility condition under the specification's authority), 4 user stories, 7 HTTP endpoints, 2 new tables, 3 new columns, 1 migration, ~10 new frontend components across 1 new admin route plus 1 Chef-side banner
 
 **Sequencing — stated plainly**: spec 005 has delivered `V7__chef_dish_management.sql` and the dish
 domain on `origin/005-chef-dish-management` (issue #137, PR #138, merged 2026-10-27), but that branch
@@ -136,6 +136,32 @@ enum cannot represent it, so the approval transition has no value to assign.
 has asked this feature to extend it; D1 as written does not permit that, so the decision **must be
 recorded as an agreed amendment to D1 before implementation** (Principle VIII) rather than settled
 inside a commit.
+
+### R-004-1 — A single authoritative source for the per-unit acquisition cost
+
+**Object**: a stated rule naming which value is *the* per-unit acquisition cost that the Food Cost
+consumes. Spec 004's inventory refactor (`V6__create_ingredient_batches_and_refactor_lifecycle.sql`,
+PR #126) left the cost recorded in three places: `ingredients.unit_purchase_cost NUMERIC(12,4) NOT NULL`
+(V4, untouched), `ingredient_batches.unit_cost NUMERIC(12,4) NOT NULL` (per purchase batch), and
+`stock_audit_entries.unit_cost` alongside `financial_loss`. The index
+`idx_ingredient_batches_active (tenant_id, ingredient_id, remaining_quantity, created_at ASC)` shows
+batches are consumed FIFO, so batches of the same ingredient may legitimately hold different costs.
+**Owner**: spec 004 owns the three columns; spec 006 owns the Food Cost computation that must choose
+among them. The decision is theirs jointly, not this feature's.
+**Why blocking**: FR-012 requires the margin to be recomputed "using the current Food Cost derived
+from up-to-date inventory acquisition costs", and with three candidate sources that phrase has no
+single referent — the master ingredient's cost, the oldest remaining batch under FIFO, or the
+weighted average of batches with remaining quantity are three different numbers and three different
+margins. The same ambiguity changes the meaning of `has_unpriced_ingredients`, which is detected
+today as a zero cost on the master ingredient: an ingredient may now carry a zero master cost while
+its batches hold real costs, or the reverse.
+**Secondary effect on this feature's own schema**: `dish_price_history.food_cost_snapshot` is
+`NUMERIC(10,2)` while every cost column above is scale 4, so the chosen rule must also state where
+the reduction to scale 2 happens.
+**Degraded behaviour**: none is safe. Assuming the master ingredient's cost would make this feature
+report margins that contradict the inventory's own valuation of the stock actually consumed, and the
+contradiction would surface as a financial discrepancy rather than as a visible error. This requires
+a recorded decision before the pricing domain is implemented (Principle VIII).
 
 ### R-006-1 — Food Cost computation reachable for published dishes
 
@@ -386,6 +412,19 @@ omitted them would be hiding the defect.
 assertion proving 2 queries per page.
 `DishGovernanceServiceTest` — publication gate combinations, acknowledgement requirements, audit-row
 contents, `cycle_number` computation.
+`DishReviewDetailServiceTest` — the embedded 006 audit, the gate-status projection and the margin
+recomputed on consultation.
+
+**Backend — repository shape** (`…/dish/repository/`)
+`DishReviewHistoryRepositoryTest` and `DishPriceHistoryRepositoryTest` — the append-only contract:
+save and queries are exposed, no delete and no `@Modifying` update exist, `uq_drh_dish_cycle` holds,
+and price history retrieves in chronological order. Added 2026-10-28: the two aggregates assert their
+own immutability rather than relying on the integration suites to notice a violation.
+
+**Backend — error mapping** (`…/dish/controller/`)
+`GlobalExceptionHandlerDishMappingTest` — the seven handlers this feature adds, each mapped to the
+status and problem type the contract declares. Added 2026-10-28, because the shared advice is the one
+object every story's failure path depends on.
 
 **Backend — MockMvc slices** (`…/dish/controller/`)
 `AdminDishReviewControllerTest`, `AdminDishDecisionControllerTest`,
@@ -423,6 +462,10 @@ row each.
 
 **Frontend — Vitest + React Testing Library** (`easyeat/frontend/tests/`, mirroring `src`)
 `tests/hooks/useRetailPriceCalculator.test.ts` (derivation, formatting, disabled states, boundaries),
+`tests/hooks/useDishReviewInbox.test.ts` (tab and page state, counts, reconciliation after a stale
+decision — FR-032), `tests/pages/AdminWorkspacePage.test.tsx` (the hub card and its pending count) and
+`tests/pages/KitchenWorkspacePage.test.tsx` (a returned draft renders the feedback banner and no
+financial figure appears) — the last three added 2026-10-28,
 `tests/components/dishreview/{ReviewInbox,MarginPriceCalculator,RejectionDialog,PublicationConfirmModal,DishAuditPanel}.test.tsx`,
 `tests/components/chef/DishRejectionFeedbackBanner.test.tsx`, `tests/api/dishReviewApi.test.ts`,
 `tests/pages/AdminDishReviewPage.test.tsx`, `tests/router/adminDishReviewRoute.test.tsx`. Coverage:
