@@ -66,7 +66,7 @@
 - [X] T027 [US1] Implement `DishPhotoService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishPhotoService.java` handling binary image validation (MIME, 5 MB limit), persistence in `dish_photos`, byte streaming, and deletion
 - [X] T028 [US1] Implement core `DishService` basic identity methods in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` for creating drafts, updating basic info, deleting drafts, fetching details, and paginating establishment dishes
 - [X] T029 [US1] Implement `DishController` basic endpoints and `DishPhotoController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/` guarded with `@PreAuthorize("hasRole('CHEF')")`
-- [ ] T030 [P] [US1] Implement frontend API client `dishApi.ts` in `easyeat/frontend/src/api/dishApi.ts` with methods for draft CRUD, photo upload/retrieval/deletion, and paginated listing
+- [X] T030 [P] [US1] Implement frontend API client `dishApi.ts` in `easyeat/frontend/src/api/dishApi.ts` with methods for draft CRUD, photo upload/retrieval/deletion, and paginated listing
 - [ ] T031 [P] [US1] Implement `DishStatusBadge.tsx` in `easyeat/frontend/src/components/dish/DishStatusBadge.tsx` displaying visual status badges for `Draft` and `Pending Price`
 - [ ] T032 [P] [US1] Implement `BasicIdentityStep.tsx` in `easyeat/frontend/src/components/dish/BasicIdentityStep.tsx` with name trimming, category selector, description counter, and photo dropzone with preview/delete
 - [ ] T033 [US1] Implement `ChefDishesPage.tsx` in `easyeat/frontend/src/pages/ChefDishesPage.tsx` with 20 items/page pagination, status filter ("All", "Draft", "Pending Price"), and new dish creation action

@@ -1,3 +1,4 @@
+import { apiClient } from './apiClient';
 import type {
   CreateDishRequest,
   UpdateDishRequest,
@@ -7,26 +8,64 @@ import type {
 } from '@/types/dish';
 
 export const dishApi = {
-  listDishes: async (_params?: { status?: string; page?: number; size?: number }): Promise<DishPageResponse> => {
-    throw new Error('dishApi.listDishes not implemented yet (T030)');
+  /**
+   * Retrieves paginated establishment dishes with optional status filtering.
+   */
+  async listDishes(params?: { status?: string; page?: number; size?: number }): Promise<DishPageResponse> {
+    const response = await apiClient.get<DishPageResponse>('/dishes', { params });
+    return response.data;
   },
-  createDishDraft: async (_data: CreateDishRequest): Promise<DishDetailResponse> => {
-    throw new Error('dishApi.createDishDraft not implemented yet (T030)');
+
+  /**
+   * Creates a new dish draft with basic identity.
+   */
+  async createDishDraft(data: CreateDishRequest): Promise<DishDetailResponse> {
+    const response = await apiClient.post<DishDetailResponse>('/dishes', data);
+    return response.data;
   },
-  getDishDetail: async (_id: string): Promise<DishDetailResponse> => {
-    throw new Error('dishApi.getDishDetail not implemented yet (T030)');
+
+  /**
+   * Retrieves full dish details by ID.
+   */
+  async getDishDetail(id: string): Promise<DishDetailResponse> {
+    const response = await apiClient.get<DishDetailResponse>(`/dishes/${id}`);
+    return response.data;
   },
-  updateDish: async (_id: string, _data: UpdateDishRequest): Promise<DishDetailResponse> => {
-    throw new Error('dishApi.updateDish not implemented yet (T030)');
+
+  /**
+   * Updates basic identity fields of an existing draft.
+   */
+  async updateDish(id: string, data: UpdateDishRequest): Promise<DishDetailResponse> {
+    const response = await apiClient.put<DishDetailResponse>(`/dishes/${id}`, data);
+    return response.data;
   },
-  deleteDish: async (_id: string): Promise<void> => {
-    throw new Error('dishApi.deleteDish not implemented yet (T030)');
+
+  /**
+   * Permanently deletes a dish draft and its photo.
+   */
+  async deleteDish(id: string): Promise<void> {
+    await apiClient.delete(`/dishes/${id}`);
   },
-  uploadPhoto: async (_id: string, _file: File): Promise<PhotoUploadResponse> => {
-    throw new Error('dishApi.uploadPhoto not implemented yet (T030)');
+
+  /**
+   * Uploads an image photo for the specified dish draft.
+   */
+  async uploadPhoto(id: string, file: File): Promise<PhotoUploadResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<PhotoUploadResponse>(`/dishes/${id}/photo`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
   },
-  deletePhoto: async (_id: string): Promise<void> => {
-    throw new Error('dishApi.deletePhoto not implemented yet (T030)');
+
+  /**
+   * Deletes the photo of the specified dish draft.
+   */
+  async deletePhoto(id: string): Promise<void> {
+    await apiClient.delete(`/dishes/${id}/photo`);
   },
 };
 
