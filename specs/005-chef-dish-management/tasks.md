@@ -120,11 +120,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T052 [P] [US3] Create Allergen DTOs (`AllergenUpdateRequest`, `AllergenResponse`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
-- [ ] T053 [US3] Implement allergen update and confirmation logic in `DishService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` managing `dish_dietary_restrictions` join table and `allergens_confirmed` flag
-- [ ] T054 [US3] Add allergen endpoint `PUT /api/v1/dishes/{id}/allergens` to `DishController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/DishController.java`
-- [ ] T055 [P] [US3] Implement `AllergenStep.tsx` in `easyeat/frontend/src/components/dish/AllergenStep.tsx` rendering Dietary Lifestyles and Common Allergens groups with clear warning indicators and explicit "Confirm allergen section" button
-- [ ] T056 [US3] Integrate `AllergenStep.tsx` into `ChefDishEditorPage.tsx` in `easyeat/frontend/src/pages/ChefDishEditorPage.tsx`
+- [X] T052 [P] [US3] Create Allergen DTOs (`AllergenUpdateRequest`, `AllergenResponse`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
+- [X] T053 [US3] Implement allergen update and confirmation logic in `DishService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` managing `dish_dietary_restrictions` join table and `allergens_confirmed` flag
+- [X] T054 [US3] Add allergen endpoint `PUT /api/v1/dishes/{id}/allergens` to `DishController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/DishController.java`
+- [X] T055 [P] [US3] Implement `AllergenStep.tsx` in `easyeat/frontend/src/components/dish/AllergenStep.tsx` rendering Dietary Lifestyles and Common Allergens groups with clear warning indicators and explicit "Confirm allergen section" button
+- [X] T056 [US3] Integrate `AllergenStep.tsx` into `ChefDishEditorPage.tsx` in `easyeat/frontend/src/pages/ChefDishEditorPage.tsx`
 
 **Checkpoint**: User Stories 1, 2, and 3 functional. Fiche technique contains identity, recipe BOM, and confirmed allergen tags.
 
