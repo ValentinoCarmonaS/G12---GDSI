@@ -10,6 +10,8 @@ import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { CounterWorkspacePage } from '../pages/CounterWorkspacePage';
 import { KitchenWorkspacePage } from '../pages/KitchenWorkspacePage';
 import { ChefIngredientsPage } from '../pages/ChefIngredientsPage';
+import { ChefDishesPage } from '../pages/ChefDishesPage';
+import { ChefDishEditorPage } from '../pages/ChefDishEditorPage';
 import { AdminWorkspacePage } from '../pages/AdminWorkspacePage';
 import { StaffManagementPage } from '../pages/StaffManagementPage';
 import { InventoryManagementPage } from '../pages/InventoryManagementPage';
@@ -105,6 +107,32 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route path="/kds/ingredients" element={<Navigate to="/cocina/ingredientes" replace />} />
+
+      {/* Role-Protected Dish & Recipe Management (CHEF) */}
+      <Route
+        path="/cocina/platos"
+        element={
+          <RoleRouteGuard allowedRoles={['CHEF']}>
+            <ChefDishesPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/cocina/platos/nuevo"
+        element={
+          <RoleRouteGuard allowedRoles={['CHEF']}>
+            <ChefDishEditorPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/cocina/platos/:id"
+        element={
+          <RoleRouteGuard allowedRoles={['CHEF']}>
+            <ChefDishEditorPage />
+          </RoleRouteGuard>
+        }
+      />
 
       <Route
         path="/cocina/*"

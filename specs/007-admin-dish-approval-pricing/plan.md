@@ -31,7 +31,7 @@ derives, because ±0.01 pp is not achievable for low prices.
 
 **Primary Dependencies**: Spring Boot 3.3.x (Web, Data JPA, Security, Validation), Flyway, PostgreSQL 16 driver, Lombok · React 18.3.1 (**not** React 19, which `005/plan.md` claims — `package.json` is authoritative), Vite 5, react-router-dom 6, Tailwind CSS 3, axios 1.7, lucide-react
 
-**Storage**: PostgreSQL 16; Flyway versioned migrations. This feature owns exactly one migration, `V8__admin_dish_approval_pricing.sql` (`V6` reserved by spec 005, `V7` by spec 008 — see [research.md §2(b)](./research.md))
+**Storage**: PostgreSQL 16; Flyway versioned migrations. This feature owns exactly one migration, named for the next free sequential version **at the moment the file is authored**, confirmed against `db/migration/` and never reserved in advance. Current queue: `V6` inventory batches (merged to `main`), `V7` spec 005 (merged into `005-chef-dish-management`), `V8` claimed by spec 008 → this feature takes **`V9__admin_dish_approval_pricing.sql`** unless the queue has moved again. See [research.md §2(b)](./research.md)
 
 **Testing**: JUnit 5 + AssertJ + Mockito, Spring MockMvc slice tests, Testcontainers PostgreSQL 16 · Vitest 2 + @testing-library/react + jsdom
 
@@ -45,11 +45,13 @@ derives, because ±0.01 pp is not achievable for low prices.
 
 **Scale/Scope**: 26 functional requirements, 4 user stories, 7 HTTP endpoints, 2 new tables, 3 new columns, 1 migration, ~10 new frontend components across 1 new admin route plus 1 Chef-side banner
 
-**Sequencing — stated plainly**: specs 005 and 006 have produced **no code** (verified across the
-working tree and every branch). This feature is therefore **not implementable** until 005's `V6` and
-dish domain and 006's cost engine land on `develop/sprint-2`. That is a sequencing dependency, not a
-Constitution Check failure and not an unresolved clarification: design proceeds now, implementation
-waits. Every object needed from upstream is a numbered requirement below.
+**Sequencing — stated plainly**: spec 005 has delivered `V7__chef_dish_management.sql` and the dish
+domain on `origin/005-chef-dish-management` (issue #137, PR #138, merged 2026-10-27), but that branch
+is **not yet integrated into `develop/sprint-2`** and no pull request is open to move it; spec 006 has
+produced **no code**. This feature is therefore **not implementable** until 005's branch and 006's cost
+engine land on `develop/sprint-2`. That is a sequencing dependency, not a Constitution Check failure
+and not an unresolved clarification: design proceeds now, implementation waits. Every object needed
+from upstream is a numbered requirement below.
 
 ## Constitution Check
 
@@ -67,7 +69,7 @@ waits. Every object needed from upstream is a numbered requirement below.
 | **VIII. Evidence over assumption, human escalation** | PASS | PASS | Every baseline claim verified by command with the result recorded ([research.md §1](./research.md)); the 005/006 absence verified across all branches; the margin bound derived symbolically **and** checked with exact decimal arithmetic over 2.6M cases rather than asserted from the spec's two convenient examples. The one apparently escalation-worthy conflict (008's `ACTIVE` vs this feature's `PUBLISHED`) proved decidable from 008's own deferral clause, so it is recorded, not escalated. |
 | **IX. Engineering over convenience** | PASS | PASS | The convenient paths were all declined: restating ±0.01 pp as a guarantee, reusing `price` as the PVP, trusting `@Version` alone for first-decision-wins, and letting FR-023 rest on "the UI does not render it" instead of structural omission in the response type. |
 | **X. Full-stack vertical slice** | PASS | PASS | Backend contracts and the Administrator Back-Office UI are specified together, plus the Chef-side feedback banner; `spec.md`'s first clarification records the full-stack scope decision. No single-tier delivery. |
-| **XI. Upstream synchronization awareness** | PASS (with alert) | PASS (with alert) | `git fetch origin main` executed 2026-10-26: `HEAD d89cf47`, `origin/main c29728e`, merge-base `daa0f97` → **branch is 12 commits behind and 17 ahead**. A staleness alert was raised to the developer; no `pull`/`merge`/`rebase` was run. Impact assessed: the 12 upstream commits touch only `auth/service/EmailService.java`, `application*.yml`, `.env.example`, `README.md` and spec 001 docs (agnostic SMTP); `origin/main` still carries `V1..V5` and no dish, catalog, security or migration file is affected, so this design's baseline stands. |
+| **XI. Upstream synchronization awareness** | PASS (with alert) | PASS (with alert) | **As of 2026-10-27** (the 2026-10-26 measurement below is superseded; any later reader must re-measure before trusting this row). `git fetch origin` executed 2026-10-27: `HEAD c3536e0`; the sprint's integration branch is `origin/develop/sprint-2`, against which this branch is **33 commits behind and 0 ahead** — every local commit is already integrated. `origin/develop/sprint-2` is itself 0 behind and 22 ahead of `origin/main`. A staleness alert was raised; no `pull`/`merge`/`rebase` was run (the decision is the developer's). **Impact assessed, and this time the baseline did move**: `V6__create_ingredient_batches_and_refactor_lifecycle.sql` (spec 004, PR #126) is now on both branches and consumed the version this plan had attributed to spec 005, which forced the renumbering recorded in [research.md §2(b)](./research.md). `Ingredient.unitPurchaseCost` was verified unchanged (`nullable = false`, scale 4, `HALF_UP`), so the Food Cost premises hold. Prior measurement, kept for the record: 2026-10-26, `HEAD d89cf47`, `origin/main c29728e`, 12 behind / 17 ahead. |
 
 **Gate result**: PASS pre-design and post-design. No principle is violated; the single deliberate
 boundary exception (replacing 005's `chk_dishes_status` if R-005-2 is refused) is recorded in
@@ -79,9 +81,9 @@ Per D1 this feature owns none of specs 005/006's objects. Requirements are numbe
 its owner, why this feature cannot proceed without it, and the degraded behaviour if it never
 arrives. Each is mirrored as a decision entry in [research.md](./research.md).
 
-### R-005-0 — The dish domain and migration `V6` (blanket precondition)
+### R-005-0 — The dish domain and migration `V7` (blanket precondition) — **DELIVERED, AWAITING INTEGRATION**
 
-**Object**: `V6__chef_dish_management.sql` (`dishes.status`, `category`, `allergens_confirmed`,
+**Object**: `V7__chef_dish_management.sql` (`dishes.status`, `category`, `allergens_confirmed`,
 `created_by`, `dish_recipe_ingredients`, `dish_photos`), `com.easyeat.dish.domain.Dish`,
 `DishStatus`, `DishRepository`, and the `DRAFT → PENDING_PRICE` submit transition.
 **Owner**: spec 005. **Why blocking**: this feature's entire surface reads `status`, `category`,
@@ -89,29 +91,51 @@ arrives. Each is mirrored as a decision entry in [research.md](./research.md).
 `PENDING_PRICE`. **Degraded behaviour if never delivered**: none is possible — the feature cannot be
 implemented at all. Creating these objects here is forbidden by D1 and would produce a second owner
 of `dishes`.
+**Status (2026-10-27)**: delivered on `origin/005-chef-dish-management`. `com.easyeat.dish.domain`
+exists with `DishStatus`, `DishCategory`, `DishPhoto` and `DishRecipeIngredient`; the migration and
+the three new tables are present. Remaining blocker is the integration of that branch into
+`develop/sprint-2`, not the work itself.
 
-### R-005-1 — `dishes.submitted_at`
+### R-005-1 — `dishes.submitted_at` — **RESOLVED IN SCHEMA**
 
 **Object**: `submitted_at TIMESTAMPTZ NULL`, written to `NOW()` by 005's
 `POST /api/v1/dishes/{id}/submit-review` on **every** `DRAFT → PENDING_PRICE` transition, including
 resubmissions. Read-only here.
 **Owner**: spec 005 (it owns the transition that produces the instant). **Why blocking**: FR-003
-requires FIFO by submission timestamp; no such column exists, and `dish_review_history` cannot
-substitute because a first-time submission leaves no row in it.
-**Degraded behaviour**: the pending tab orders by `dishes.created_at ASC`. **Defect**: a dish
-rejected and resubmitted later keeps its original position and jumps ahead of dishes submitted before
-it — ordering by authorship, not submission. `updated_at ASC` was rejected as a worse fallback
-because this feature's own price saves would reorder the queue. Neither satisfies FR-003 as written.
+requires FIFO by submission timestamp, and `dish_review_history` cannot substitute because a
+first-time submission leaves no row in it.
+**Status (2026-10-27)**: satisfied at the schema level. 005's `V7` creates `submitted_at` and the
+covering index `idx_dishes_review_inbox_pending (tenant_id, status, submitted_at)` (issue #137,
+PR #138). FR-003 therefore orders by `submitted_at ASC` against that index, and **the degraded
+`created_at ASC` / `updated_at ASC` orderings previously recorded here are withdrawn** — no fallback
+is needed and none is authorised.
+**Residual dependency**: the write itself belongs to 005's US4 (issue #133, open). Until it lands the
+column is `NULL` on every row, so FR-003's ordering cannot be verified end to end even though the
+schema supports it.
 
-### R-005-2 — `PUBLISHED` admitted by the status domain
+### R-005-2 — `PUBLISHED` admitted by the status domain — **RESOLVED IN SCHEMA**
 
 **Object**: 005's `CONSTRAINT chk_dishes_status CHECK (status IN ('DRAFT','PENDING_PRICE'))` widened
-to include `'PUBLISHED'` (or dropped in favour of the application enum).
+to include `'PUBLISHED'`.
 **Owner**: spec 005. **Why blocking**: the approval transition cannot persist `PUBLISHED` against
 that constraint, and Flyway forbids editing an applied migration.
-**Degraded behaviour**: this feature's `V8` drops and replaces the constraint — the single deliberate
-D1 exception, registered in Complexity Tracking and gated on human approval. The column's type,
-nullability and default are untouched under either path.
+**Status (2026-10-27)**: satisfied. 005's `V7` declares
+`CHECK (status IN ('DRAFT','PENDING_PRICE','PUBLISHED'))` (issue #137, PR #138). The deliberate D1
+exception that would have had this feature drop and replace a 005-owned constraint is **withdrawn**
+and removed from Complexity Tracking. The column's type, nullability and default are untouched.
+
+### R-005-3 — `PUBLISHED` admitted by the `DishStatus` enum
+
+**Object**: the constant `PUBLISHED` added to `com.easyeat.dish.domain.DishStatus`, which currently
+declares only `DRAFT` and `PENDING_PRICE`.
+**Owner**: spec 005 owns that package per R-005-0, and D1 forbids this feature from creating or
+owning objects inside it. **Why blocking**: the database now accepts `PUBLISHED` but the application
+enum cannot represent it, so the approval transition has no value to assign.
+**Degraded behaviour**: none is acceptable. Two admissible paths, and the choice is a human decision:
+005 adds the constant, or `DishStatus` is declared jointly owned and this feature extends it. Spec 005
+has asked this feature to extend it; D1 as written does not permit that, so the decision **must be
+recorded as an agreed amendment to D1 before implementation** (Principle VIII) rather than settled
+inside a commit.
 
 ### R-006-1 — Food Cost computation reachable for published dishes
 
@@ -143,7 +167,7 @@ preserving, must be fixed before 006 merges.
 specs/007-admin-dish-approval-pricing/
 ├── plan.md              # This file
 ├── research.md          # Phase 0: decisions, amendments, cross-spec conflicts
-├── data-model.md        # Phase 1: entities, V8 DDL, state machine, FR traceability
+├── data-model.md        # Phase 1: entities, migration DDL, state machine, FR traceability
 ├── quickstart.md        # Phase 1: runnable validation guide
 ├── contracts/
 │   └── openapi.yaml     # Phase 1: the 7-endpoint HTTP surface
@@ -190,7 +214,7 @@ config/SecurityConfig.java                      # REUSED - /api/v1/admin/** alre
 
 ```text
 src/main/resources/
-├── db/migration/V8__admin_dish_approval_pricing.sql   # NEW: the single migration this feature owns
+├── db/migration/V9__admin_dish_approval_pricing.sql   # NEW: the single migration this feature owns (version confirmed at authoring time)
 └── db/dev/R__seed_dev_dishes_and_dietary.sql          # MODIFIED (D5): PUBLISHED + retail_price + synthetic approval
 ```
 
@@ -376,7 +400,9 @@ payload contains no cost, margin or price key.
 `auth/contract/OpenApiContractTest` and `profile/contract/DinerProfileOpenApiContractTest`.
 
 **Backend — Testcontainers PostgreSQL 16** (`…/dish/integration/`, `…/dish/migration/`)
-`FlywayMigrationV8Test` — the migration applies cleanly on top of `V1..V6` (and `V7`), the
+`AdminPricingMigrationTest` — deliberately version-free in its name, so a renumbering upstream does
+not invalidate it. Asserts the migration applies cleanly on top of every migration already present
+(`V1..V7` as of 2026-10-27, `V8` once spec 008 lands), the
 `retail_price` backfill copies only strictly positive prices and leaves `NULL`/`0.00` unpriced, and
 the constraints and indexes exist.
 `DishApprovalPricingIntegrationTest` — audit rows written for approval, rejection and repricing;
@@ -409,15 +435,17 @@ view. Observable behaviour only — no assertions on React internals.
 
 *Phases, not tasks: no identifiers, estimates, assignees or per-file checklists.*
 
-**Phase 0 — Upstream readiness gate.** Deliverables: a recorded verification that R-005-0, R-005-1 and R-006-1
-are satisfied, and an explicit decision on each fallback otherwise. Exit criteria: `V6` applies,
-`com.easyeat.dish.domain.Dish`/`DishStatus` exist, `dish_recipe_ingredients` exists, the cost engine
-is reachable, and the FIFO ordering column is chosen and written down.
+**Phase 0 — Upstream readiness gate.** Deliverables: a recorded verification that R-005-0, R-005-1,
+R-005-3 and R-006-1 are satisfied, and an explicit decision on each open item otherwise. Exit criteria:
+spec 005's branch is integrated into `develop/sprint-2` so that `V7` applies and
+`com.easyeat.dish.domain.Dish`/`DishStatus` and `dish_recipe_ingredients` are on the working branch;
+`DishStatus` admits `PUBLISHED` under an agreed owner (R-005-3); the cost engine is reachable; and the
+free migration version is confirmed against `db/migration/` rather than assumed.
 
-**Phase 1 — Persistence.** Deliverables: `V8`, the two audit entities and their append-only
-repositories, the three columns added to 005's `Dish`, `@Immutable` on the catalog mapping, the dev
-seed update. Exit criteria: `FlywayMigrationV8Test` and the updated `DevSeedDishesMigrationTest` pass;
-spec 003's catalog tests still pass.
+**Phase 1 — Persistence.** Deliverables: this feature's migration, the two audit entities and their
+append-only repositories, the three columns added to 005's `Dish`, `@Immutable` on the catalog mapping,
+the dev seed update. Exit criteria: `AdminPricingMigrationTest` and the updated
+`DevSeedDishesMigrationTest` pass; spec 003's catalog tests still pass.
 
 **Phase 2 — Pricing domain.** Deliverables: `RetailPricingCalculator` and the margin/threshold
 invariants. Exit criteria: `RetailPricingCalculatorTest` and `MarginRoundTripToleranceTest` pass with
@@ -447,9 +475,8 @@ and types, plus the Chef feedback banner. Exit criteria: the Vitest suites pass 
 
 | Violation / debt | Why needed | Simpler alternative rejected because |
 |---|---|---|
-| Replacing 005's `chk_dishes_status` in `V8` — **only if R-005-2 is refused**; a deliberate D1 exception requiring human approval | `PUBLISHED` cannot be persisted against a `CHECK` that admits only `DRAFT`/`PENDING_PRICE`, and Flyway forbids editing the applied `V6` | Editing `V6` in place breaks Flyway checksums; dropping the check entirely loses a real database invariant; shipping without `PUBLISHED` makes the feature impossible |
+| Extending 005's `com.easyeat.dish.domain.DishStatus` with `PUBLISHED` from this feature — a D1 exception **pending human decision** (R-005-3) | The database now admits `PUBLISHED` but the enum does not, so the approval transition has no value to assign; spec 005 has asked this feature to make the change | Having 005 add the constant is cheaper and respects D1 literally, and remains the preferred path; vendoring a second status enum into this feature would create two sources of truth for the dish lifecycle |
 | Two JPA entities over `dishes` (writable `dish.domain.Dish`, `@Immutable` `catalog.domain.Dish`) | Spec 003's diner read path exists and works; rewriting it onto the new aggregate is unrequested scope (Principle V) | One shared entity cannot be both version-locked for writers and inert for diner reads; `@Immutable` is what structurally stops a future write from bypassing `@Version` |
 | Deprecated `dishes.price` kept alongside `retail_price` | Dropping it would break spec 003's tests and the dev seed inside this feature's scope | Reusing `price` as the PVP cannot express "not yet priced" (`NOT NULL`) and contradicts the spec's Key Entities. **Owner of removal**: the Sprint 3 catalog-lifecycle feature (CHF-2.2.5) |
-| Degraded FIFO ordering by `created_at` if R-005-1 never arrives | FR-003 needs *some* deterministic order; silently unordered output is worse | `updated_at ASC` is worse still — this feature's own price saves would reorder the queue. Neither satisfies FR-003 as written; the defect is documented, not hidden |
 | Duplicated audit-DTO assembly if R-006-1 is refused | FR-011/FR-012 need the Food Cost for published dishes, which 006's gated service cannot provide | Duplicating the *calculation* is forbidden (006 owns it); calling 006's HTTP endpoint from the server would be in-process HTTP |
 | Validation status 400 instead of the codebase's bean-validation 422 for price and comment | FR-013 and FR-021 state 400 explicitly, and the specification is the source of truth (Principle I) | Amending the spec to 422 would be cheaper and is recorded as the runner-up in [research.md §3.4](./research.md); a second `@RestControllerAdvice` to rewrite the status is not acceptable |

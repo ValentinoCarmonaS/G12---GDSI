@@ -18,15 +18,18 @@ This feature is **not implementable** until spec 005's dish domain and spec 006'
 from the repository root:
 
 ```bash
-ls easyeat/backend/src/main/resources/db/migration/            # expect V6 (005) and V7 (008) present
+ls easyeat/backend/src/main/resources/db/migration/            # expect V7 (005) present; note the highest version — the next free one is this feature's
 ls easyeat/backend/src/main/java/com/easyeat/dish/domain/      # expect Dish.java, DishStatus.java
 grep -rn "submitted_at" easyeat/backend/src/main/resources/db/migration/   # R-005-1
+grep -rn "idx_dishes_review_inbox_pending" easyeat/backend/src/main/resources/db/migration/  # R-005-1 index, owned by 005
+grep -rn "PUBLISHED" easyeat/backend/src/main/java/com/easyeat/dish/domain/DishStatus.java   # R-005-3
 grep -rln "class FoodCostEngine" easyeat/backend/src/main/java/com/easyeat/dish/
 ```
 
-Any miss is a stop condition, except `submitted_at`: its absence activates the documented degraded
-FIFO fallback (ordering by `created_at ASC`, which is **not** FIFO by submission). Record which
-branch you took before writing code.
+**Every miss is a stop condition.** `submitted_at` and the `PUBLISHED` status check were delivered by
+spec 005 on 2026-10-27 (issue #137, PR #138), so the degraded FIFO fallback that used to apply here is
+withdrawn — if the column is missing, the branch simply lacks 005's work and you stop. `DishStatus`
+without `PUBLISHED` is also a stop condition: it is R-005-3, pending a decision on who owns that enum.
 
 ---
 
@@ -71,7 +74,7 @@ curl -s -X POST $API/admin/staff -H "Authorization: Bearer $ADMIN_TOKEN" \
 cd easyeat/backend && mvn test
 
 # Only this feature's suites
-mvn test -Dtest='RetailPricingCalculatorTest,MarginRoundTripToleranceTest,AdminDishReviewControllerTest,AdminDishPricingControllerTest,AdminDishDecisionControllerTest,ChefReviewFeedbackControllerTest,DishApprovalConcurrencyTest,DishApprovalPricingIntegrationTest,DishReviewInboxIntegrationTest,FlywayMigrationV8Test,DevSeedDishesMigrationTest'
+mvn test -Dtest='RetailPricingCalculatorTest,MarginRoundTripToleranceTest,AdminDishReviewControllerTest,AdminDishPricingControllerTest,AdminDishDecisionControllerTest,ChefReviewFeedbackControllerTest,DishApprovalConcurrencyTest,DishApprovalPricingIntegrationTest,DishReviewInboxIntegrationTest,AdminPricingMigrationTest,DevSeedDishesMigrationTest'
 
 # Frontend
 cd easyeat/frontend && npm test
