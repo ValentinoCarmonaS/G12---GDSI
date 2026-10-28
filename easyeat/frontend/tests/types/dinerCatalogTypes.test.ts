@@ -28,7 +28,8 @@ describe('Diner Catalog Types and Type Guards (T005)', () => {
   });
 
   it('validates isEstablishmentStatus type guard correctly', () => {
-    expect(isEstablishmentStatus('ACTIVE')).toBe(true);
+    const activeStatus: EstablishmentStatus = 'ACTIVE';
+    expect(isEstablishmentStatus(activeStatus)).toBe(true);
     expect(isEstablishmentStatus('PAUSED')).toBe(true);
     expect(isEstablishmentStatus('DISABLED')).toBe(true);
     expect(isEstablishmentStatus('DELETED')).toBe(false);
