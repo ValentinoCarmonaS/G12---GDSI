@@ -16,7 +16,7 @@
 - [ ] T002 [P] Create frontend API mock handlers for establishment discovery and diner catalog in `easyeat/frontend/src/test/mocks/dinerCatalogHandlers.ts`
 - [x] T003 [P] Create domain exceptions (`EstablishmentNotFoundException`, `EstablishmentInactiveException`) in `easyeat/backend/src/main/java/com/easyeat/catalog/exception/`
 - [x] T004 Update `GlobalExceptionHandler.java` in `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` mapping custom catalog exceptions to RFC 7807/9457 `ProblemDetail` responses with status codes 400, 401, 403, and 404
-- [ ] T005 [P] Create shared TypeScript interfaces and DTOs in `easyeat/frontend/src/types/dinerCatalog.ts` (`EstablishmentSummary`, `EstablishmentDetail`, `DishCatalogItem`, `CategoryGroup`, `CatalogResponse`, `AvailabilityMap`)
+- [x] T005 [P] Create shared TypeScript interfaces and DTOs in `easyeat/frontend/src/types/dinerCatalog.ts` (`EstablishmentSummary`, `EstablishmentDetail`, `DishCatalogItem`, `CategoryGroup`, `CatalogResponse`, `AvailabilityMap`)
 
 ---
 
