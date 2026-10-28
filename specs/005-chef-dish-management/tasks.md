@@ -156,7 +156,7 @@
 - [X] T069 [P] [US4] Implement `adminNotificationApi.ts` in `easyeat/frontend/src/api/adminNotificationApi.ts` with methods for querying notifications and marking them as read
 - [X] T070 [P] [US4] Implement `ReviewSubmitStep.tsx` in `easyeat/frontend/src/components/dish/ReviewSubmitStep.tsx` displaying section completeness checklist, validation feedback, and "Send for Review" action
 - [X] T071 [US4] Implement `DishStepper.tsx` in `easyeat/frontend/src/components/dish/DishStepper.tsx` coordinating the 4 sequential steps with disabled read-only view when status is `PENDING_PRICE`
-- [ ] T072 [US4] Implement `AdminNotificationBell.tsx` in `easyeat/frontend/src/components/notification/AdminNotificationBell.tsx` and integrate it into `easyeat/frontend/src/pages/AdminWorkspacePage.tsx` displaying unread count badge and notification items
+- [X] T072 [US4] Implement `AdminNotificationBell.tsx` in `easyeat/frontend/src/components/notification/AdminNotificationBell.tsx` and integrate it into `easyeat/frontend/src/pages/AdminWorkspacePage.tsx` displaying unread count badge and notification items
 
 **Checkpoint**: All User Stories (1 through 4) fully functional and verified end-to-end.
 
