@@ -74,7 +74,7 @@
 ### Tests for User Story 2 (TDD & Behavioral Acceptance - Write First) ⚠️
 
 - [x] T024 [P] [US2] Unit test `DinerCatalogServiceTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/DinerCatalogServiceTest.java` validating category grouping, exclusion of unpublished dishes, operating hours evaluation, photo URL formatting, and retail price fallback
-- [ ] T025 [P] [US2] Web contract test `DinerCatalogControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/DinerCatalogControllerTest.java` verifying `GET /api/v1/establishments/{tenantId}/catalog` and HTTP 401/403/404 RFC 7807 responses
+- [x] T025 [P] [US2] Web contract test `DinerCatalogControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/DinerCatalogControllerTest.java` verifying `GET /api/v1/establishments/{tenantId}/catalog` and HTTP 401/403/404 RFC 7807 responses
 - [ ] T026 [P] [US2] Frontend component tests `DishCard.test.tsx` and `CatalogPage.test.tsx` in `easyeat/frontend/src/test/catalog/` verifying image fallback, sticky nav, category hiding, and read-only mode
 
 ### Implementation for User Story 2
