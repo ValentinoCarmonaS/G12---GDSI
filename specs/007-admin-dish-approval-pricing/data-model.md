@@ -316,11 +316,15 @@ More-than-two-decimals is detected as `price.stripTrailingZeros().scale() > 2` o
 
 ---
 
-## 6. Dev seed and its test (D5)
+## 6. Dev seed and its test (D5 — **WITHDRAWN 2026-10-28**)
 
-`R__seed_dev_dishes_and_dietary.sql` is extended so its five dishes land `status = 'PUBLISHED'`, `is_active = TRUE`, `allergens_confirmed = TRUE`, `category` set per dish, `retail_price` = the existing `price` value, `published_at = NOW()`, `created_by = NULL`, plus one synthetic `dish_review_history` row per dish (`cycle_number = 1`, `APPROVED`, `admin_id = b0eebc99-…-a22`, comment prefixed `[SEED SINTÉTICO]`). Being a repeatable migration it runs after all versioned ones, so it may reference both 005's and this feature's columns; it therefore becomes dependent on `V7` and this feature's `V8` together.
+D5 called for the five seeded dishes to land `status = 'PUBLISHED'` with `retail_price` backfilled, `published_at = NOW()`, `created_by = NULL` and one synthetic `APPROVED` review row each, so that the diner catalog would not be empty in dev under D4's predicate. **It is withdrawn**; the reasoning is recorded in [research.md §3.6](./research.md), and in short: its premise was measurably false, executing it would have broken a green test belonging to spec 005, and `PENDING_PRICE` is the state this feature's own inbox and quickstart need.
 
-**Effect on `DevSeedDishesMigrationTest`**: its existing assertions (≥ 5 dishes for the tenant, dietary mappings present) keep passing unchanged. It is extended to assert the new seeded invariants — all five rows `PUBLISHED` with `retail_price = price` and `retail_price > 0`, one `APPROVED` review row each — so that SC-001 holds in the dev database with **no exception**, and spec 003's catalog tests (`CatalogControllerTest`, `CatalogComplianceServiceTest`, `CatalogComplianceIntegrationTest`) continue to see exactly the same five visible dishes under D4's stricter predicate.
+**What the seed does instead.** `status`, `is_active`, `allergens_confirmed` and `created_by` are left exactly as spec 005 wrote them. The seed states `retail_price` and `published_at` explicitly as `NULL`, in the `INSERT` and in the `ON CONFLICT … DO UPDATE`, so the five dishes are deterministically **unpriced and never approved**. That is not cosmetic: `V8`'s backfill copies `price` into `retail_price` for rows already present on a developer's existing database, so without the explicit `NULL`s the dev state would differ between an existing database and a fresh clone. Being a repeatable migration it still runs after every versioned one, so it may reference this feature's columns; it therefore depends on `V7` and `V8` together.
+
+**Effect on `DevSeedDishesMigrationTest`**: every existing assertion keeps passing unchanged. It gains assertions that the five rows carry `retail_price IS NULL`, `published_at IS NULL`, no `dish_review_history` row, and `status = 'PENDING_PRICE'` — the last one duplicated from spec 005's own test on purpose, so this feature records the state it depends on rather than trusting another spec to preserve it.
+
+**Consequence accepted**: the dev diner catalog is empty under D4's predicate until an Administrator approves something, and `SC-001` is therefore verified by this feature's integration tests rather than by seeded data. Populating it with published dev rows is a decision for specs 003 and 008.
 
 ---
 

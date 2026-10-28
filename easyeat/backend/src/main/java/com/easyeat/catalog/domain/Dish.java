@@ -45,6 +45,24 @@ public class Dish {
     @Column(name = "submitted_at")
     private Instant submittedAt;
 
+    /**
+     * The retail price (PVP) assigned by the Administrator, owned by spec 007.
+     *
+     * <p>Nullable, and that is the point: {@code null} means "not yet priced", a state the
+     * pre-existing {@code price} column cannot express. {@code price} is deprecated and survives
+     * only for spec 003's artifacts.
+     */
+    @Column(name = "retail_price", precision = 10, scale = 2)
+    private BigDecimal retailPrice;
+
+    /**
+     * The instant of the {@code PENDING_PRICE -> PUBLISHED} transition, owned by spec 007.
+     * {@code null} for any dish never approved, and never cleared here — unpublishing belongs to
+     * the Sprint 3 catalog feature.
+     */
+    @Column(name = "published_at")
+    private Instant publishedAt;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
@@ -170,6 +188,22 @@ public class Dish {
 
     public void setSubmittedAt(Instant submittedAt) {
         this.submittedAt = submittedAt;
+    }
+
+    public BigDecimal getRetailPrice() {
+        return retailPrice;
+    }
+
+    public void setRetailPrice(BigDecimal retailPrice) {
+        this.retailPrice = retailPrice;
+    }
+
+    public Instant getPublishedAt() {
+        return publishedAt;
+    }
+
+    public void setPublishedAt(Instant publishedAt) {
+        this.publishedAt = publishedAt;
     }
 
     public Boolean getIsActive() {

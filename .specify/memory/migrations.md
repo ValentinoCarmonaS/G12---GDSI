@@ -32,7 +32,9 @@ Repeatable migrations carry no version and are re-applied whenever their content
 
 | Version | Spec | Status |
 |---|---|---|
-| V8 | **008 and 007, contested** | `V8__create_establishments.sql` is written on `008-diner-catalog-multi-tenant` (PRs #168, #169, merged into that feature branch only). Spec 007 takes the same number for `V8__admin_dish_approval_pricing.sql`, because rule 2 yields it against the integration branch and rule 4 makes 008's claim a courtesy. **Whichever merges to `develop/sprint-2` first keeps `V8`; the other renames its file to `V9` and updates this table.** |
+| V8 | **008 and 007, contested — both now written** | `V8__create_establishments.sql` exists on `008-diner-catalog-multi-tenant` (PRs #168, #169, merged into that feature branch only). `V8__admin_dish_approval_pricing.sql` exists on `feat/007/phase-2-foundational` as of 2026-10-28, authored after confirming `V1`–`V7` on the integration branch as rule 2 requires. **Whichever merges to `develop/sprint-2` first keeps `V8`; the other renames its file to `V9` and updates this table.** |
+
+**Renumbering either is cheap, and that is by design.** Spec 007's migration test is named `AdminPricingMigrationTest` and **nothing inside it hardcodes a version**: it locates the migration by its Flyway description and reads the preceding version from `flyway.info()`. A rename changes the filename and this table, nothing else. Spec 005's `V7MigrationAndSeedDevTest` does carry its version in the class name, which rule 5 exists to prevent; it is noted for that spec's owner.
 
 **Why 007 does not simply yield `V9`.** It would not help 008 and would cost something. With `outOfOrder` disabled, a `V8` merged *after* an applied `V9` sits below the highest applied version and is rejected on every database not recreated — so 008 would have to renumber to `V10` rather than `V9`, and `V8` would be left as a permanent gap. Deferring a number only helps when the deferrer merges second, which nobody can promise in advance. The rule is merge order, and it is the same rule for both.
 
