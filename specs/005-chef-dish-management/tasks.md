@@ -149,7 +149,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T065 [P] [US4] Create Notification DTOs (`NotificationResponse`, `NotificationPageResponse`) in `easyeat/backend/src/main/java/com/easyeat/notification/dto/` matching OpenAPI contract
+- [X] T065 [P] [US4] Create Notification DTOs (`NotificationResponse`, `NotificationPageResponse`) in `easyeat/backend/src/main/java/com/easyeat/notification/dto/` matching OpenAPI contract
 - [ ] T066 [US4] Implement `submitForReview` in `DishService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` with `@Transactional` pessimistic locking, completeness condition evaluation, status transition to `PENDING_PRICE`, immutability check interceptor, and notification dispatch
 - [ ] T067 [US4] Implement `AdminNotificationService` in `easyeat/backend/src/main/java/com/easyeat/notification/service/AdminNotificationService.java` managing notification persistence, tenant retrieval with `unreadOnly` filter, and mark-as-read updates
 - [ ] T068 [US4] Add submission endpoint `POST /api/v1/dishes/{id}/submit-review` to `DishController` and implement `AdminNotificationController` in `easyeat/backend/src/main/java/com/easyeat/notification/controller/AdminNotificationController.java` guarded with `@PreAuthorize("hasRole('ADMINISTRADOR')")`
