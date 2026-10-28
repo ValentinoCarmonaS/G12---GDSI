@@ -93,7 +93,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T041 [P] [US2] Create Recipe DTOs (`RecipeUpdateRequest`, `RecipeResponse`, `RecipeIngredientItem`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
+- [X] T041 [P] [US2] Create Recipe DTOs (`RecipeUpdateRequest`, `RecipeResponse`, `RecipeIngredientItem`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
 - [ ] T042 [US2] Implement recipe management logic in `DishService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` (upserting recipe lines, joining `unit_of_measure` dynamically in 3NF from `ingredients`, validating positive quantities and discrete vs continuous precision, and removing recipe lines)
 - [ ] T043 [US2] Add recipe endpoints `PUT /api/v1/dishes/{id}/recipe` and `DELETE /api/v1/dishes/{id}/recipe/ingredients/{ingredientId}` to `DishController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/DishController.java`
 - [ ] T044 [P] [US2] Implement `IngredientSelectorModal.tsx` in `easyeat/frontend/src/components/dish/IngredientSelectorModal.tsx` querying Chef active ingredients catalog (20/page, A-Z) with category and text filters
