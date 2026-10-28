@@ -221,7 +221,7 @@ class AdminDishReviewControllerTest extends DishControllerTestBase {
         }
 
         @Test
-        @DisplayName("an absent author serialises as null rather than being omitted")
+        @DisplayName("an absent author serialises as a present null, not as an omitted key")
         void nullAuthorIsPresentAsNull() throws Exception {
             DishReviewInboxItemResponse anonymous = new DishReviewInboxItemResponse(
                     UUID.randomUUID(), "Tarta", DishCategory.POSTRES, DishStatus.PENDING_PRICE,
@@ -232,7 +232,7 @@ class AdminDishReviewControllerTest extends DishControllerTestBase {
 
             mockMvc.perform(get(INBOX).param("tab", "PENDING"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.items[0].authorName").doesNotExist());
+                    .andExpect(jsonPath("$.items[0].authorName").value((Object) null));
         }
     }
 
