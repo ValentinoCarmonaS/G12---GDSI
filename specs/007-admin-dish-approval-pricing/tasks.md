@@ -216,7 +216,11 @@ The calculator receives the Food Cost as a parameter, so it does not depend on w
   **INV-2 is asserted in both directions, and they are not symmetric.** At or above the threshold the deviation never exceeds 0.01 pp — swept over seven margins and ~1,500 qualifying prices, asserting the sweep actually reaches that region so a mis-scoped loop cannot pass vacuously. Below the threshold the test asserts only that **violations exist**, not that every value violates: some quotients below the threshold round exactly, so "if and only if" read as a universal would be false. What makes FR-008's condition load-bearing is that the region contains violations at all.
 
   **One case discriminates between the two candidate formulas.** `research.md §3.1` records that the first-order estimate `0.5·fc/p²` *understates* the error at `fc=0.07` (1.0802 pp estimated against 1.1111 pp observed). The test computes both and asserts the exact bound covers the observed deviation while the first-order estimate does not — so an implementation that used the cheaper formula would fail here rather than pass quietly.
-- [ ] T012 Extend `RetailPricingCalculator` in `easyeat/backend/src/main/java/com/easyeat/dish/service/RetailPricingCalculator.java` with the worst-case deviation `marginTolerancePp` and the disclosure threshold `toleranceThresholdPrice` that `contracts/openapi.yaml` §MarginSummary and the amended FR-008 require
+- [x] T012 Extend `RetailPricingCalculator` in `easyeat/backend/src/main/java/com/easyeat/dish/service/RetailPricingCalculator.java` with the worst-case deviation `marginTolerancePp` and the disclosure threshold `toleranceThresholdPrice` that `contracts/openapi.yaml` §MarginSummary and the amended FR-008 require — **DONE 2026-10-28**, 16 of 16 green
+
+  `marginTolerancePp` implements the **exact** bound `0.5·fc / (p·(p − 0.005))`, deliberately not the first-order estimate `0.5·fc/p²`. T011 asserts the difference rather than trusting it: at `fc = 0.07` the estimate gives 1.0802 pp while the real deviation is 1.1111 pp, so the cheap formula under-reports exactly where a client most needs the truth.
+
+  `toleranceThresholdPrice` returns `50·(1 − margin/100)` at scale 2, matching the four values `research.md §3.1` tabulates for the 55–75% band: 22.50, 20.00, 15.00 and 12.50.
 
 ### Migration and dev seed
 

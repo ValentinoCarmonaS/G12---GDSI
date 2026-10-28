@@ -28,6 +28,11 @@ public class RetailPricingCalculator {
 
     private static final MathContext QUOTIENT = MathContext.DECIMAL128;
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
+    private static final BigDecimal FIFTY = BigDecimal.valueOf(50);
+    private static final BigDecimal HALF = new BigDecimal("0.5");
+
+    /** Half of the smallest representable monetary unit: the most a 2-decimal rounding can cost. */
+    private static final BigDecimal HALF_CENT = new BigDecimal("0.005");
 
     /**
      * Derives the retail price from a target margin: {@code food_cost / (1 - margin_pct/100)}.
@@ -98,6 +103,51 @@ public class RetailPricingCalculator {
         requireNonNull(foodCost, "foodCost");
         requireNonNull(marginPct, "marginPct");
         return marginDerivable(foodCost) && marginPct.compareTo(HUNDRED) < 0;
+    }
+
+    /**
+     * The worst-case deviation, in percentage points, of a margin re-derived from a stored
+     * 2-decimal price: {@code 0.5 * food_cost / (retail_price * (retail_price - 0.005))}.
+     *
+     * <p>This is the <b>exact</b> bound of `research.md §3.1`, not the first-order estimate
+     * {@code 0.5 * food_cost / retail_price^2}. The distinction is not academic: at a food cost
+     * of 0.07 the estimate gives 1.0802 pp while the real deviation is 1.1111 pp, so the cheaper
+     * formula would under-report precisely where the client most needs the truth.
+     *
+     * <p>Surfaced as {@code marginTolerancePp} so the interface can disclose the achievable
+     * precision below the threshold instead of promising ±0.01 pp (FR-008, FR-030).
+     */
+    public BigDecimal marginTolerancePp(BigDecimal foodCost, BigDecimal retailPrice) {
+        requireNonNull(foodCost, "foodCost");
+        requireNonNull(retailPrice, "retailPrice");
+
+        if (retailPrice.compareTo(HALF_CENT) <= 0) {
+            throw new IllegalArgumentException(
+                    "No deviation bound exists for a retail price at or below half a cent: the "
+                            + "denominator vanishes. Received " + retailPrice);
+        }
+
+        BigDecimal denominator = retailPrice.multiply(retailPrice.subtract(HALF_CENT));
+        return foodCost.multiply(HALF)
+                .divide(denominator, QUOTIENT)
+                .setScale(MARGIN_SCALE, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * The price at or above which the ±0.01 pp round-trip tolerance of FR-008 holds:
+     * {@code 50 * (1 - margin_pct/100)}.
+     *
+     * <p>Below it the guarantee is unattainable because rounding the price to two decimals costs
+     * more than a hundredth of a point, and the system must disclose
+     * {@link #marginTolerancePp(BigDecimal, BigDecimal)} instead of asserting the bound.
+     *
+     * <p>Surfaced as {@code toleranceThresholdPrice} in the contract's MarginSummary.
+     */
+    public BigDecimal toleranceThresholdPrice(BigDecimal marginPct) {
+        requireNonNull(marginPct, "marginPct");
+
+        BigDecimal ratio = BigDecimal.ONE.subtract(marginPct.divide(HUNDRED, QUOTIENT));
+        return FIFTY.multiply(ratio).setScale(MONEY_SCALE, RoundingMode.HALF_UP);
     }
 
     private static void requireNonNull(BigDecimal value, String name) {
