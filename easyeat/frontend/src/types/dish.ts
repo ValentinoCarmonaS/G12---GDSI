@@ -34,6 +34,7 @@ export interface RecipeIngredientItem {
   ingredientName: string;
   quantity: number;
   unitOfMeasure: UnitOfMeasure;
+  isIngredientActive?: boolean;
 }
 
 /**
@@ -66,7 +67,8 @@ export interface RecipeItemInput {
  * Payload for updating full recipe Bill of Materials (Step 2).
  */
 export interface RecipeUpdateRequest {
-  recipe: RecipeItemInput[];
+  ingredients?: RecipeItemInput[];
+  recipe?: RecipeItemInput[];
 }
 
 /**
@@ -75,7 +77,9 @@ export interface RecipeUpdateRequest {
 export interface RecipeResponse {
   dishId: string;
   recipe: RecipeIngredientItem[];
-  updatedAt: string;
+  ingredients?: RecipeIngredientItem[];
+  totalIngredientsCount?: number;
+  updatedAt?: string;
 }
 
 /**

@@ -73,4 +73,31 @@ public class DishController {
         dishService.deleteDraft(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}/recipe")
+    @PreAuthorize("hasRole('CHEF')")
+    public ResponseEntity<com.easyeat.dish.dto.RecipeResponse> updateDishRecipe(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.easyeat.dish.dto.RecipeUpdateRequest request
+    ) {
+        com.easyeat.dish.dto.RecipeResponse response = dishService.updateRecipe(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}/recipe/ingredients/{ingredientId}")
+    @PreAuthorize("hasRole('CHEF')")
+    public ResponseEntity<Void> removeRecipeIngredient(
+            @PathVariable UUID id,
+            @PathVariable UUID ingredientId
+    ) {
+        dishService.removeRecipeIngredient(id, ingredientId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/recipe")
+    @PreAuthorize("hasRole('CHEF')")
+    public ResponseEntity<com.easyeat.dish.dto.RecipeResponse> getDishRecipe(@PathVariable UUID id) {
+        com.easyeat.dish.dto.RecipeResponse response = dishService.getRecipe(id);
+        return ResponseEntity.ok(response);
+    }
 }

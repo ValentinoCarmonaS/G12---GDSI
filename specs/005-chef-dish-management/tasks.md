@@ -84,21 +84,21 @@
 
 ### Tests for User Story 2 (TDD & Behavioral Acceptance - Write First) ⚠️
 
-- [ ] T035 [P] [US2] Unit test `DishRecipeServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishRecipeServiceTest.java` validating strictly positive quantity rejection (<= 0), discrete unit integer scaling ('u'), continuous unit decimal scaling, active ingredient validation, duplicate rejection, and line deletion
-- [ ] T036 [P] [US2] Web contract test `DishRecipeControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishRecipeControllerTest.java` verifying `PUT /api/v1/dishes/{id}/recipe` and `DELETE /api/v1/dishes/{id}/recipe/ingredients/{ingredientId}` against OpenAPI schema
-- [ ] T037 [P] [US2] Behavioral acceptance test `DishRecipeAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishRecipeAcceptanceTest.java` covering User Story 2 acceptance scenarios using JUnit 5 and Testcontainers
-- [ ] T038 [P] [US2] Frontend component test `IngredientSelectorModal.test.tsx` in `easyeat/frontend/tests/components/dish/IngredientSelectorModal.test.tsx` verifying search by name, category filtering, 20 items per page pagination, and exclusion of discontinued ingredients
-- [ ] T039 [P] [US2] Frontend component test `RecipeBOMStep.test.tsx` in `easyeat/frontend/tests/components/dish/RecipeBOMStep.test.tsx` verifying quantity entry masking, duplicate ingredient alert, and recipe line removal
-- [ ] T040 [P] [US2] Frontend user journey integration test `us2_recipe_definition.test.tsx` in `easyeat/frontend/tests/integration/us2_recipe_definition.test.tsx` verifying end-to-end recipe composition using Vitest
+- [X] T035 [P] [US2] Unit test `DishRecipeServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishRecipeServiceTest.java` validating strictly positive quantity rejection (<= 0), discrete unit integer scaling ('u'), continuous unit decimal scaling, active ingredient validation, duplicate rejection, and line deletion
+- [X] T036 [P] [US2] Web contract test `DishRecipeControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishRecipeControllerTest.java` verifying `PUT /api/v1/dishes/{id}/recipe` and `DELETE /api/v1/dishes/{id}/recipe/ingredients/{ingredientId}` against OpenAPI schema
+- [X] T037 [P] [US2] Behavioral acceptance test `DishRecipeAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishRecipeAcceptanceTest.java` covering User Story 2 acceptance scenarios using JUnit 5 and Testcontainers
+- [X] T038 [P] [US2] Frontend component test `IngredientSelectorModal.test.tsx` in `easyeat/frontend/tests/components/dish/IngredientSelectorModal.test.tsx` verifying search by name, category filtering, 20 items per page pagination, and exclusion of discontinued ingredients
+- [X] T039 [P] [US2] Frontend component test `RecipeBOMStep.test.tsx` in `easyeat/frontend/tests/components/dish/RecipeBOMStep.test.tsx` verifying quantity entry masking, duplicate ingredient alert, and recipe line removal
+- [X] T040 [P] [US2] Frontend user journey integration test `us2_recipe_definition.test.tsx` in `easyeat/frontend/tests/integration/us2_recipe_definition.test.tsx` verifying end-to-end recipe composition using Vitest
 
 ### Implementation for User Story 2
 
-- [ ] T041 [P] [US2] Create Recipe DTOs (`RecipeUpdateRequest`, `RecipeResponse`, `RecipeIngredientItem`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
-- [ ] T042 [US2] Implement recipe management logic in `DishService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` (upserting recipe lines, joining `unit_of_measure` dynamically in 3NF from `ingredients`, validating positive quantities and discrete vs continuous precision, and removing recipe lines)
-- [ ] T043 [US2] Add recipe endpoints `PUT /api/v1/dishes/{id}/recipe` and `DELETE /api/v1/dishes/{id}/recipe/ingredients/{ingredientId}` to `DishController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/DishController.java`
-- [ ] T044 [P] [US2] Implement `IngredientSelectorModal.tsx` in `easyeat/frontend/src/components/dish/IngredientSelectorModal.tsx` querying Chef active ingredients catalog (20/page, A-Z) with category and text filters
-- [ ] T045 [P] [US2] Implement `RecipeBOMStep.tsx` in `easyeat/frontend/src/components/dish/RecipeBOMStep.tsx` with recipe ingredients table, unit display, input masks (integer/decimal), duplicate warning banner, and delete actions
-- [ ] T046 [US2] Integrate `RecipeBOMStep.tsx` and `IngredientSelectorModal.tsx` into `ChefDishEditorPage.tsx` in `easyeat/frontend/src/pages/ChefDishEditorPage.tsx`
+- [X] T041 [P] [US2] Create Recipe DTOs (`RecipeUpdateRequest`, `RecipeResponse`, `RecipeIngredientItem`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
+- [X] T042 [US2] Implement recipe management logic in `DishService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` (upserting recipe lines, joining `unit_of_measure` dynamically in 3NF from `ingredients`, validating positive quantities and discrete vs continuous precision, and removing recipe lines)
+- [X] T043 [US2] Add recipe endpoints `PUT /api/v1/dishes/{id}/recipe` and `DELETE /api/v1/dishes/{id}/recipe/ingredients/{ingredientId}` to `DishController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/DishController.java`
+- [X] T044 [P] [US2] Implement `IngredientSelectorModal.tsx` in `easyeat/frontend/src/components/dish/IngredientSelectorModal.tsx` querying Chef active ingredients catalog (20/page, A-Z) with category and text filters
+- [X] T045 [P] [US2] Implement `RecipeBOMStep.tsx` in `easyeat/frontend/src/components/dish/RecipeBOMStep.tsx` with recipe ingredients table, unit display, input masks (integer/decimal), duplicate warning banner, and delete actions
+- [X] T046 [US2] Integrate `RecipeBOMStep.tsx` and `IngredientSelectorModal.tsx` into `ChefDishEditorPage.tsx` in `easyeat/frontend/src/pages/ChefDishEditorPage.tsx`
 
 **Checkpoint**: User Stories 1 and 2 fully functional. Dishes can be authored with full BOM recipes.
 

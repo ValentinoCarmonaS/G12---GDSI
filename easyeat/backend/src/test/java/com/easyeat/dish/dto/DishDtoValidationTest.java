@@ -105,4 +105,48 @@ class DishDtoValidationTest {
         Set<ConstraintViolation<UpdateDishRequest>> violations = validator.validate(request);
         assertThat(violations).isNotEmpty();
     }
+
+    @Test
+    @DisplayName("RecipeUpdateRequest should pass when ingredients list is valid")
+    void recipeUpdateRequest_shouldPass_whenValid() {
+        RecipeUpdateRequest request = new RecipeUpdateRequest(java.util.List.of(
+                new RecipeIngredientItem(java.util.UUID.randomUUID(), 100.0)
+        ));
+
+        Set<ConstraintViolation<RecipeUpdateRequest>> violations = validator.validate(request);
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
+    @DisplayName("RecipeUpdateRequest should fail when ingredients list is null")
+    void recipeUpdateRequest_shouldFail_whenIngredientsNull() {
+        RecipeUpdateRequest request = new RecipeUpdateRequest(null);
+
+        Set<ConstraintViolation<RecipeUpdateRequest>> violations = validator.validate(request);
+        assertThat(violations).isNotEmpty();
+        assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("ingredients"));
+    }
+
+    @Test
+    @DisplayName("RecipeIngredientItem should fail when quantity is zero or negative")
+    void recipeIngredientItem_shouldFail_whenQuantityZeroOrNegative() {
+        RecipeIngredientItem itemZero = new RecipeIngredientItem(java.util.UUID.randomUUID(), 0.0);
+        Set<ConstraintViolation<RecipeIngredientItem>> violationsZero = validator.validate(itemZero);
+        assertThat(violationsZero).isNotEmpty();
+        assertThat(violationsZero).anyMatch(v -> v.getPropertyPath().toString().equals("quantity"));
+
+        RecipeIngredientItem itemNeg = new RecipeIngredientItem(java.util.UUID.randomUUID(), -5.0);
+        Set<ConstraintViolation<RecipeIngredientItem>> violationsNeg = validator.validate(itemNeg);
+        assertThat(violationsNeg).isNotEmpty();
+        assertThat(violationsNeg).anyMatch(v -> v.getPropertyPath().toString().equals("quantity"));
+    }
+
+    @Test
+    @DisplayName("RecipeIngredientItem should fail when ingredientId is null")
+    void recipeIngredientItem_shouldFail_whenIngredientIdNull() {
+        RecipeIngredientItem item = new RecipeIngredientItem(null, 10.0);
+        Set<ConstraintViolation<RecipeIngredientItem>> violations = validator.validate(item);
+        assertThat(violations).isNotEmpty();
+        assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("ingredientId"));
+    }
 }

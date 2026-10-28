@@ -2,14 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { dishApi } from '@/api/dishApi';
 import { BasicIdentityStep } from '@/components/dish/BasicIdentityStep';
+import { RecipeBOMStep } from '@/components/dish/RecipeBOMStep';
 import { DishStatusBadge } from '@/components/dish/DishStatusBadge';
-import type { DishDetailResponse, CreateDishRequest } from '@/types/dish';
+import type { DishDetailResponse, CreateDishRequest, RecipeIngredientItem, RecipeUpdateRequest } from '@/types/dish';
 
 export const ChefDishEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [dish, setDish] = useState<DishDetailResponse | null>(null);
+  const [activeTab, setActiveTab] = useState<'identity' | 'recipe'>('identity');
   const [isLoading, setIsLoading] = useState<boolean>(!!id);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export const ChefDishEditorPage: React.FC = () => {
     }
   }, [id, fetchDish]);
 
-  const handleSave = async (data: CreateDishRequest, photoFile?: File) => {
+  const handleSaveIdentity = async (data: CreateDishRequest, photoFile?: File) => {
     setIsSaving(true);
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -83,6 +85,48 @@ export const ChefDishEditorPage: React.FC = () => {
     }
   };
 
+  const handleSaveRecipe = async (recipeItems: RecipeIngredientItem[]) => {
+    if (!id) return;
+    setIsSaving(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      const payload: RecipeUpdateRequest = {
+        ingredients: recipeItems.map((item) => ({
+          ingredientId: item.ingredientId,
+          quantity: item.quantity,
+        })),
+      };
+      await dishApi.updateRecipe(id, payload);
+      setSuccessMessage('Receta actualizada correctamente.');
+      await fetchDish(id);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        'Error al guardar la receta del plato.';
+      setErrorMessage(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveRecipeIngredient = async (ingredientId: string) => {
+    if (!id) return;
+    try {
+      await dishApi.removeRecipeIngredient(id, ingredientId);
+      setSuccessMessage('Ingrediente eliminado de la receta.');
+      await fetchDish(id);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        'Error al eliminar el ingrediente de la receta.';
+      setErrorMessage(message);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-12 max-w-4xl flex justify-center text-zinc-500">
@@ -107,7 +151,9 @@ export const ChefDishEditorPage: React.FC = () => {
               {id ? `Ficha Técnica: ${dish?.name || 'Cargando...'}` : 'Nueva Ficha Técnica'}
             </h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              Paso 1: Identidad básica del plato y fotografía.
+              {activeTab === 'identity'
+                ? 'Paso 1: Identidad básica del plato y fotografía.'
+                : 'Paso 2: Composición de la receta y escandallo de ingredientes (BOM).'}
             </p>
           </div>
           {dish && (
@@ -116,6 +162,34 @@ export const ChefDishEditorPage: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Stepper Tabs */}
+      <div className="flex border-b border-gray-800 mb-6 gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('identity')}
+          className={`py-2.5 px-4 text-sm font-semibold border-b-2 transition-colors ${
+            activeTab === 'identity'
+              ? 'border-amber-500 text-amber-400'
+              : 'border-transparent text-gray-400 hover:text-gray-200'
+          }`}
+        >
+          Paso 1: Identidad básica
+        </button>
+        <button
+          type="button"
+          disabled={!id}
+          onClick={() => setActiveTab('recipe')}
+          className={`py-2.5 px-4 text-sm font-semibold border-b-2 transition-colors ${
+            activeTab === 'recipe'
+              ? 'border-amber-500 text-amber-400'
+              : 'border-transparent text-gray-400 hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed'
+          }`}
+          title={!id ? 'Creá el borrador básico primero' : undefined}
+        >
+          Paso 2: Receta y Escandallo (BOM)
+        </button>
       </div>
 
       {/* Notifications */}
@@ -130,23 +204,34 @@ export const ChefDishEditorPage: React.FC = () => {
         </div>
       )}
 
-      {/* Basic Identity Form Component */}
-      <BasicIdentityStep
-        initialData={
-          dish
-            ? {
-                name: dish.name,
-                category: dish.category,
-                description: dish.description,
-                photoUrl: dish.photoUrl,
-              }
-            : undefined
-        }
-        onSave={handleSave}
-        onPhotoDelete={handlePhotoDelete}
-        isReadOnly={dish ? dish.status === 'PENDING_PRICE' : false}
-        isSaving={isSaving}
-      />
+      {/* Tab Panels */}
+      {activeTab === 'identity' ? (
+        <BasicIdentityStep
+          initialData={
+            dish
+              ? {
+                  name: dish.name,
+                  category: dish.category,
+                  description: dish.description,
+                  photoUrl: dish.photoUrl,
+                }
+              : undefined
+          }
+          onSave={handleSaveIdentity}
+          onPhotoDelete={handlePhotoDelete}
+          isReadOnly={dish ? dish.status === 'PENDING_PRICE' : false}
+          isSaving={isSaving}
+        />
+      ) : (
+        <RecipeBOMStep
+          dishId={id}
+          initialRecipe={dish?.recipe || []}
+          onSaveRecipe={handleSaveRecipe}
+          onRemoveIngredient={handleRemoveRecipeIngredient}
+          isReadOnly={dish ? dish.status === 'PENDING_PRICE' : false}
+          isSaving={isSaving}
+        />
+      )}
     </div>
   );
 };
