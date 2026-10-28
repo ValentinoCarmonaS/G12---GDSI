@@ -102,17 +102,17 @@
 
 ### Tests for User Story 3 (TDD & Behavioral Acceptance - Write First) ⚠️
 
-- [ ] T037 [P] [US3] Unit test `DishAvailabilityEngineTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/DishAvailabilityEngineTest.java` (pure in-memory test covering decimal boundaries, fractional shortfalls, negative stock handling, empty recipe guard, inactive ingredients, shared ingredient N:M matrix, and simultaneous invalidation)
-- [ ] T038 [P] [US3] Web contract test `DinerAvailabilityControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/DinerAvailabilityControllerTest.java` verifying `GET /api/v1/establishments/{tenantId}/catalog/availability` with ETag and `304 Not Modified`
-- [ ] T039 [P] [US3] Integration test `MultiTenantCatalogIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/integration/MultiTenantCatalogIntegrationTest.java` verifying homonymous dishes and ingredients between Tenant A and Tenant B, cross-tenant isolation, and 401/403/404 codes with PostgreSQL Testcontainers
-- [ ] T040 [P] [US3] Frontend hook test `useRealtimeAvailability.test.ts` in `easyeat/frontend/src/test/catalog/useRealtimeAvailability.test.ts` verifying polling interval, 304 handling, visibilitychange pause/resume, and network error resilience
+- [x] T037 [P] [US3] Unit test `DishAvailabilityEngineTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/DishAvailabilityEngineTest.java` (pure in-memory test covering decimal boundaries, fractional shortfalls, negative stock handling, empty recipe guard, inactive ingredients, shared ingredient N:M matrix, and simultaneous invalidation)
+- [x] T038 [P] [US3] Web contract test `DinerAvailabilityControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/DinerAvailabilityControllerTest.java` verifying `GET /api/v1/establishments/{tenantId}/catalog/availability` with ETag and `304 Not Modified`
+- [x] T039 [P] [US3] Integration test `MultiTenantCatalogIntegrationTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/integration/MultiTenantCatalogIntegrationTest.java` verifying homonymous dishes and ingredients between Tenant A and Tenant B, cross-tenant isolation, and 401/403/404 codes with PostgreSQL Testcontainers
+- [x] T040 [P] [US3] Frontend hook test `useRealtimeAvailability.test.ts` in `easyeat/frontend/src/test/catalog/useRealtimeAvailability.test.ts` verifying polling interval, 304 handling, visibilitychange pause/resume, and network error resilience
 
 ### Implementation for User Story 3
 
-- [ ] T041 [US3] Implement `DishAvailabilityEngine` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/DishAvailabilityEngine.java` calculating binary availability `{ [dishId]: boolean }` and generating stable ETag hashes (SHA-256) from the availability map
-- [ ] T042 [US3] Add availability endpoint `GET /api/v1/establishments/{tenantId}/catalog/availability` to `DinerCatalogController.java` with conditional ETag validation and `304 Not Modified`
-- [ ] T043 [P] [US3] Implement frontend hook `useRealtimeAvailability.ts` in `easyeat/frontend/src/hooks/useRealtimeAvailability.ts` with 2.5s conditional polling, ETag caching, graceful network degradation (3-failure banner), and Page Visibility API pausing
-- [ ] T044 [US3] Integrate availability hook into `CatalogPage.tsx` smoothly toggling greyscale classes and "Agotado" badges on affected dish cards without layout shift or image reloading
+- [x] T041 [US3] Implement `DishAvailabilityEngine` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/DishAvailabilityEngine.java` calculating binary availability `{ [dishId]: boolean }` and generating stable ETag hashes (SHA-256) from the availability map
+- [x] T042 [US3] Add availability endpoint `GET /api/v1/establishments/{tenantId}/catalog/availability` to `DinerCatalogController.java` with conditional ETag validation and `304 Not Modified`
+- [x] T043 [P] [US3] Implement frontend hook `useRealtimeAvailability.ts` in `easyeat/frontend/src/hooks/useRealtimeAvailability.ts` with 2.5s conditional polling, ETag caching, graceful network degradation (3-failure banner), and Page Visibility API pausing
+- [x] T044 [US3] Integrate availability hook into `CatalogPage.tsx` smoothly toggling greyscale classes and "Agotado" badges on affected dish cards without layout shift or image reloading
 
 **Checkpoint**: User Story 3 fully functional and verified against <= 3s real-time SLA.
 
@@ -126,13 +126,13 @@
 
 ### Tests for User Story 4 (TDD & Behavioral Acceptance - Write First) ⚠️
 
-- [ ] T045 [P] [US4] Frontend unit test `CatalogSearchFilter.test.tsx` in `easyeat/frontend/src/test/catalog/CatalogSearchFilter.test.tsx` verifying case- and diacritic-insensitive filtering, title and ingredient matching, empty input preservation, and spelling suggestion prompt
+- [x] T045 [P] [US4] Frontend unit test `CatalogSearchFilter.test.tsx` in `easyeat/frontend/src/test/catalog/CatalogSearchFilter.test.tsx` verifying case- and diacritic-insensitive filtering, title and ingredient matching, empty input preservation, and spelling suggestion prompt
 
 ### Implementation for User Story 4
 
-- [ ] T046 [P] [US4] Create `CatalogSearchFilter.tsx` in `easyeat/frontend/src/components/catalog/CatalogSearchFilter.tsx` with search input and clear button
-- [ ] T047 [US4] Integrate in-catalog search filter in `CatalogPage.tsx`, combining text matching across dish name and `recipeIngredients` with active category filters
-- [ ] T048 [US4] Add empty search state view in `CatalogPage.tsx` with no-results message and spelling check suggestion prompt
+- [x] T046 [P] [US4] Create `CatalogSearchFilter.tsx` in `easyeat/frontend/src/components/catalog/CatalogSearchFilter.tsx` with search input and clear button
+- [x] T047 [US4] Integrate in-catalog search filter in `CatalogPage.tsx`, combining text matching across dish name and `recipeIngredients` with active category filters
+- [x] T048 [US4] Add empty search state view in `CatalogPage.tsx` with no-results message and spelling check suggestion prompt
 
 **Checkpoint**: User Story 4 fully functional and verified.
 

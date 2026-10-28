@@ -50,6 +50,7 @@ public class DinerCatalogService {
     private final DishRecipeIngredientRepository dishRecipeIngredientRepository;
     private final IngredientRepository ingredientRepository;
     private final CatalogComplianceService catalogComplianceService;
+    private final DishAvailabilityEngine dishAvailabilityEngine;
 
     public DinerCatalogService(
             EstablishmentRepository establishmentRepository,
@@ -58,12 +59,25 @@ public class DinerCatalogService {
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository,
             CatalogComplianceService catalogComplianceService) {
+        this(establishmentRepository, dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, catalogComplianceService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public DinerCatalogService(
+            EstablishmentRepository establishmentRepository,
+            DishRepository dishRepository,
+            DishPhotoRepository dishPhotoRepository,
+            DishRecipeIngredientRepository dishRecipeIngredientRepository,
+            IngredientRepository ingredientRepository,
+            CatalogComplianceService catalogComplianceService,
+            DishAvailabilityEngine dishAvailabilityEngine) {
         this.establishmentRepository = establishmentRepository;
         this.dishRepository = dishRepository;
         this.dishPhotoRepository = dishPhotoRepository;
         this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
         this.ingredientRepository = ingredientRepository;
         this.catalogComplianceService = catalogComplianceService;
+        this.dishAvailabilityEngine = dishAvailabilityEngine;
     }
 
     public DinerCatalogResponse getCatalog(UUID tenantId, User user) {
@@ -174,7 +188,9 @@ public class DinerCatalogService {
                 : Collections.emptyList();
 
         BigDecimal price = dish.getPrice() != null ? dish.getPrice() : BigDecimal.ZERO;
-        boolean isAvailable = dish.getIsActive() != null && dish.getIsActive();
+        boolean isAvailable = dishAvailabilityEngine != null
+                ? dishAvailabilityEngine.isDishAvailable(dish.getId(), tenantId)
+                : (dish.getIsActive() != null && dish.getIsActive());
 
         return new DishCatalogItemDto(
                 dish.getId(),

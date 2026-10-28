@@ -187,5 +187,96 @@ describe('CatalogPage Component Tests (T026, US2, COM-4.1.1, FR-007, FR-008, FR-
       expect(screen.getByText('Carne de ternera, Mozzarella, Jamón cocido, Papas')).toBeInTheDocument();
     });
   });
-});
 
+  describe('In-Catalog Rapid Search Filter Tests (T047, T048, US4, COM-4.2.3, FR-020, FR-021, FR-022, FR-023, FR-024, FR-025)', () => {
+    it('filters dishes in real time by name and hides categories with zero matches (CA 1, FR-020, FR-022)', async () => {
+      vi.spyOn(dinerCatalogApi, 'getEstablishmentCatalog').mockResolvedValueOnce(mockCatalogData);
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
+        expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByTestId('catalog-search-input');
+      fireEvent.change(searchInput, { target: { value: 'Milanesa' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
+        expect(screen.queryByText('Flan Casero con Dulce de Leche')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('category-grid-Postres')).not.toBeInTheDocument();
+      });
+    });
+
+    it('filters dishes by recipe ingredients, case- and diacritic-insensitively (CA 2, CA 3, FR-021)', async () => {
+      vi.spyOn(dinerCatalogApi, 'getEstablishmentCatalog').mockResolvedValueOnce(mockCatalogData);
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByTestId('catalog-search-input');
+      fireEvent.change(searchInput, { target: { value: 'jamon' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
+        expect(screen.queryByText('Flan Casero con Dulce de Leche')).not.toBeInTheDocument();
+      });
+
+      fireEvent.change(searchInput, { target: { value: 'DULCE DE LECHE' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
+        expect(screen.queryByText('Milanesa Napolitana con Papas Fritas')).not.toBeInTheDocument();
+      });
+    });
+
+    it('displays empty search state with spelling suggestion when no dishes match (CA 6, FR-024, T048)', async () => {
+      vi.spyOn(dinerCatalogApi, 'getEstablishmentCatalog').mockResolvedValueOnce(mockCatalogData);
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByTestId('catalog-search-input');
+      fireEvent.change(searchInput, { target: { value: 'platoinexistente123' } });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('catalog-empty-search')).toBeInTheDocument();
+        expect(screen.getByText('No se encontraron platos')).toBeInTheDocument();
+        expect(
+          screen.getByText(/No encontramos resultados para tu búsqueda. Verificá la ortografía o probá con otros términos o ingredientes./)
+        ).toBeInTheDocument();
+        expect(screen.queryByText('Milanesa Napolitana con Papas Fritas')).not.toBeInTheDocument();
+      });
+
+      const clearBtn = screen.getByTestId('clear-empty-search-btn');
+      fireEvent.click(clearBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
+        expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
+        expect(screen.queryByTestId('catalog-empty-search')).not.toBeInTheDocument();
+      });
+    });
+
+    it('ignores whitespace-only search input and preserves full catalog state (CA 8, FR-025)', async () => {
+      vi.spyOn(dinerCatalogApi, 'getEstablishmentCatalog').mockResolvedValueOnce(mockCatalogData);
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByTestId('catalog-search-input');
+      fireEvent.change(searchInput, { target: { value: '     ' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
+        expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
+      });
+    });
+  });
+});
