@@ -28,7 +28,8 @@ public class DinerCatalogController {
     public ResponseEntity<DinerCatalogResponse> getEstablishmentCatalog(
             @PathVariable UUID tenantId,
             @AuthenticationPrincipal User user) {
-        throw new UnsupportedOperationException("TDD RED: not implemented yet");
+        DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, user);
+        return ResponseEntity.ok(response);
     }
 }
 
