@@ -1,8 +1,8 @@
 # Specification Quality Checklist: Diner Real-Time Catalog & Multi-Tenant Establishment Discovery
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 26/10/2026
-**Feature**: [spec.md](file:///c:/Users/seeba/OneDrive/Documentos/FIUBA/git/G12---GDSI/specs/008-diner-catalog-multi-tenant/spec.md)
+**Created**: 26/10/2026 | **Last Audited & Updated**: 28/10/2026
+**Feature**: [spec.md](file:///f:/ALL/PROGRAMACION/Proyectos/SDD/sdd%20-%20gdsi%20-%20grupo%2012/specs/008-diner-catalog-multi-tenant/spec.md)
 
 ## Content Quality
 
@@ -31,9 +31,11 @@
 
 ## Notes
 
-- All items pass (16/16). Spec is fully validated and ready for `/speckit-plan`.
-- Mandatory authentication with DINER role verified and covered by FR-027 and SC-011 (401 Unauthorized, zero data exposure to unauthenticated clients).
-- Shopping cart, ordering, and direct QR/deep-link access are explicitly out of scope for this spec.
-- Operating hours model noted as assumption: if not yet modeled, planning phase will address it as a lightweight data extension.
-- Dish PUBLISHED state documented as dependency on prior specs (005/006/007).
-- Real-time update mechanism intentionally left to planning phase (polling vs SSE vs WebSocket).
+- All items pass (16/16). Spec is fully audited, purified of technical implementation details, and aligned with user stories COM-1.5.1, COM-4.1.1, COM-4.1.2, COM-4.2.3 and project sprint roadmap.
+- Audited contradictions resolved via grill-me on 28/10/2026:
+  - Autocomplete strictly excludes inactive establishments (FR-003); FR-005 and COM-1.5.1 CA 4 handle concurrent transition to paused/disabled.
+  - Operating hours decoupled from culinary stock availability (FR-012, FR-013, COM-4.1.1 CA 5, COM-4.1.2 CA 6); outside operating hours catalog renders in full color in read-only mode with schedule banner, leaving "Agotado" strictly for inventory lack of ingredients.
+  - Formal Sprint Scope Delimitation Matrix added, mapping criteria deferred to Sprint 3 (Cart, price filters) and Sprint 4 (Checkout, ACID stock deduction) preserving Constitution Principles I, V, and VII.
+  - Geolocation/GPS cercanía explicitly declared out of scope for MVP; discovery is strictly textual by establishment name (5 SP).
+  - Implementation details (SQL tables, Flyway migrations, HTTP endpoints) removed from spec.md into plan.md and data-model.md.
+  - Network failure resiliency added (FR-028): graceful degradation preserving last-known availability state, continuing background retries, and showing a non-intrusive notification banner upon 3 consecutive failures.
