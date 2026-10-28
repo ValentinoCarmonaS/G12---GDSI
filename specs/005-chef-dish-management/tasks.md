@@ -112,19 +112,19 @@
 
 ### Tests for User Story 3 (TDD & Behavioral Acceptance - Write First) ⚠️
 
-- [ ] T047 [P] [US3] Unit test `DishAllergenServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishAllergenServiceTest.java` verifying taxonomy code mapping against `dietary_restrictions`, zero-label confirmed validity, explicit `allergens_confirmed` persistence, and edit rejection when not in `DRAFT`
-- [ ] T048 [P] [US3] Web contract test `DishAllergenControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishAllergenControllerTest.java` verifying `PUT /api/v1/dishes/{id}/allergens` against OpenAPI schema
-- [ ] T049 [P] [US3] Behavioral acceptance test `DishAllergenAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishAllergenAcceptanceTest.java` covering User Story 3 acceptance scenarios using JUnit 5 and Testcontainers
-- [ ] T050 [P] [US3] Frontend component test `AllergenStep.test.tsx` in `easyeat/frontend/tests/components/dish/AllergenStep.test.tsx` verifying grouping into Dietary Lifestyles and Common Allergens, multi-selection, and explicit confirmation toggle behavior
-- [ ] T051 [P] [US3] Frontend user journey integration test `us3_allergen_labeling.test.tsx` in `easyeat/frontend/tests/integration/us3_allergen_labeling.test.tsx` verifying allergen labeling and explicit confirmation flow using Vitest
+- [X] T047 [P] [US3] Unit test `DishAllergenServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishAllergenServiceTest.java` verifying taxonomy code mapping against `dietary_restrictions`, zero-label confirmed validity, explicit `allergens_confirmed` persistence, and edit rejection when not in `DRAFT`
+- [X] T048 [P] [US3] Web contract test `DishAllergenControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishAllergenControllerTest.java` verifying `PUT /api/v1/dishes/{id}/allergens` against OpenAPI schema
+- [X] T049 [P] [US3] Behavioral acceptance test `DishAllergenAcceptanceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/acceptance/DishAllergenAcceptanceTest.java` covering User Story 3 acceptance scenarios using JUnit 5 and Testcontainers
+- [X] T050 [P] [US3] Frontend component test `AllergenStep.test.tsx` in `easyeat/frontend/tests/components/dish/AllergenStep.test.tsx` verifying grouping into Dietary Lifestyles and Common Allergens, multi-selection, and explicit confirmation toggle behavior
+- [X] T051 [P] [US3] Frontend user journey integration test `us3_allergen_labeling.test.tsx` in `easyeat/frontend/tests/integration/us3_allergen_labeling.test.tsx` verifying allergen labeling and explicit confirmation flow using Vitest
 
 ### Implementation for User Story 3
 
-- [ ] T052 [P] [US3] Create Allergen DTOs (`AllergenUpdateRequest`, `AllergenResponse`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
-- [ ] T053 [US3] Implement allergen update and confirmation logic in `DishService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` managing `dish_dietary_restrictions` join table and `allergens_confirmed` flag
-- [ ] T054 [US3] Add allergen endpoint `PUT /api/v1/dishes/{id}/allergens` to `DishController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/DishController.java`
-- [ ] T055 [P] [US3] Implement `AllergenStep.tsx` in `easyeat/frontend/src/components/dish/AllergenStep.tsx` rendering Dietary Lifestyles and Common Allergens groups with clear warning indicators and explicit "Confirm allergen section" button
-- [ ] T056 [US3] Integrate `AllergenStep.tsx` into `ChefDishEditorPage.tsx` in `easyeat/frontend/src/pages/ChefDishEditorPage.tsx`
+- [X] T052 [P] [US3] Create Allergen DTOs (`AllergenUpdateRequest`, `AllergenResponse`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
+- [X] T053 [US3] Implement allergen update and confirmation logic in `DishService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` managing `dish_dietary_restrictions` join table and `allergens_confirmed` flag
+- [X] T054 [US3] Add allergen endpoint `PUT /api/v1/dishes/{id}/allergens` to `DishController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/DishController.java`
+- [X] T055 [P] [US3] Implement `AllergenStep.tsx` in `easyeat/frontend/src/components/dish/AllergenStep.tsx` rendering Dietary Lifestyles and Common Allergens groups with clear warning indicators and explicit "Confirm allergen section" button
+- [X] T056 [US3] Integrate `AllergenStep.tsx` into `ChefDishEditorPage.tsx` in `easyeat/frontend/src/pages/ChefDishEditorPage.tsx`
 
 **Checkpoint**: User Stories 1, 2, and 3 functional. Fiche technique contains identity, recipe BOM, and confirmed allergen tags.
 

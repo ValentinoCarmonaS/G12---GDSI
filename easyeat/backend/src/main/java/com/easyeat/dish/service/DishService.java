@@ -27,8 +27,19 @@ import com.easyeat.dish.dto.RecipeResponse;
 import com.easyeat.dish.dto.RecipeUpdateRequest;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
 import com.easyeat.inventory.repository.IngredientRepository;
+import com.easyeat.dish.dto.AllergenResponse;
+import com.easyeat.dish.dto.AllergenUpdateRequest;
+import com.easyeat.profile.domain.DietaryRestriction;
+import com.easyeat.profile.exception.DietaryTaxonomyException;
+import com.easyeat.profile.repository.DietaryRestrictionRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class DishService {
@@ -37,16 +48,67 @@ public class DishService {
     private final DishPhotoRepository dishPhotoRepository;
     private final DishRecipeIngredientRepository dishRecipeIngredientRepository;
     private final IngredientRepository ingredientRepository;
+    private final DietaryRestrictionRepository dietaryRestrictionRepository;
+
+    @Autowired
+    public DishService(
+            DishRepository dishRepository,
+            DishPhotoRepository dishPhotoRepository,
+            DishRecipeIngredientRepository dishRecipeIngredientRepository,
+            IngredientRepository ingredientRepository,
+            DietaryRestrictionRepository dietaryRestrictionRepository) {
+        this.dishRepository = dishRepository;
+        this.dishPhotoRepository = dishPhotoRepository;
+        this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
+        this.ingredientRepository = ingredientRepository;
+        this.dietaryRestrictionRepository = dietaryRestrictionRepository;
+    }
 
     public DishService(
             DishRepository dishRepository,
             DishPhotoRepository dishPhotoRepository,
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository) {
-        this.dishRepository = dishRepository;
-        this.dishPhotoRepository = dishPhotoRepository;
-        this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
-        this.ingredientRepository = ingredientRepository;
+        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, null);
+    }
+
+    @Transactional
+    public AllergenResponse updateAllergens(UUID dishId, AllergenUpdateRequest request) {
+        UUID tenantId = TenantContextHolder.getTenantId();
+        Dish dish = dishRepository.findByIdAndTenantId(dishId, tenantId)
+                .orElseThrow(() -> new DishNotFoundException(dishId));
+
+        if (dish.getStatus() != DishStatus.DRAFT) {
+            throw new DishLockedException(dishId, dish.getStatus().name());
+        }
+
+        List<String> codes = request.restrictionCodes() != null ? request.restrictionCodes() : Collections.emptyList();
+
+        if (!codes.isEmpty() && dietaryRestrictionRepository != null) {
+            List<DietaryRestriction> found = dietaryRestrictionRepository.findAllById(codes);
+            Set<String> foundCodes = found.stream().map(DietaryRestriction::getCode).collect(Collectors.toSet());
+            for (String code : codes) {
+                if (!foundCodes.contains(code)) {
+                    throw DietaryTaxonomyException.forInvalidCode(code);
+                }
+            }
+        }
+
+        dish.setRestrictionCodes(new HashSet<>(codes));
+        dish.setAllergensConfirmed(Boolean.TRUE.equals(request.confirmed()));
+        dish.setUpdatedAt(Instant.now());
+
+        Dish saved = dishRepository.save(dish);
+
+        List<String> resultCodes = saved.getRestrictionCodes() != null
+                ? saved.getRestrictionCodes().stream().sorted().toList()
+                : Collections.emptyList();
+
+        return new AllergenResponse(
+                saved.getId(),
+                resultCodes,
+                Boolean.TRUE.equals(saved.getAllergensConfirmed())
+        );
     }
 
     @Transactional
