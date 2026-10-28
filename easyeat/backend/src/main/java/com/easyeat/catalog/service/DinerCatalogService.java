@@ -59,15 +59,10 @@ public class DinerCatalogService {
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository,
             CatalogComplianceService catalogComplianceService) {
-        this.establishmentRepository = establishmentRepository;
-        this.dishRepository = dishRepository;
-        this.dishPhotoRepository = dishPhotoRepository;
-        this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
-        this.ingredientRepository = ingredientRepository;
-        this.catalogComplianceService = catalogComplianceService;
-        this.dishAvailabilityEngine = null;
+        this(establishmentRepository, dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, catalogComplianceService, null);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public DinerCatalogService(
             EstablishmentRepository establishmentRepository,
             DishRepository dishRepository,
