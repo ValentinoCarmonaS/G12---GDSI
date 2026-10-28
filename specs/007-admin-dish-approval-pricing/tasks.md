@@ -298,7 +298,7 @@ The calculator receives the Food Cost as a parameter, so it does not depend on w
 
 - [x] T026 [P] Create `DishStateConflictException` in `easyeat/backend/src/main/java/com/easyeat/dish/exception/DishStateConflictException.java`
 - [x] T027 [P] Create `DishAlreadyDecidedException` in `easyeat/backend/src/main/java/com/easyeat/dish/exception/DishAlreadyDecidedException.java`
-- [ ] T028 [P] Create `StaleDishPriceException` in `easyeat/backend/src/main/java/com/easyeat/dish/exception/StaleDishPriceException.java`, carrying the retail price that actually prevails so the handler can return `currentRetailPrice`. Raised when the repricing `UPDATE` affects no row
+- [x] T028 [P] Create `StaleDishPriceException` in `easyeat/backend/src/main/java/com/easyeat/dish/exception/StaleDishPriceException.java`, carrying the retail price that actually prevails so the handler can return `currentRetailPrice`. Raised when the repricing `UPDATE` affects no row
 - [ ] T029 [P] Create `PublicationGateException` in `easyeat/backend/src/main/java/com/easyeat/dish/exception/PublicationGateException.java` carrying the unmet conditions
 - [ ] T030 [P] Create `AcknowledgementRequiredException` in `easyeat/backend/src/main/java/com/easyeat/dish/exception/AcknowledgementRequiredException.java` carrying the acknowledgement kinds
 - [ ] T031 [P] Create `InvalidRetailPriceException` in `easyeat/backend/src/main/java/com/easyeat/dish/exception/InvalidRetailPriceException.java`
