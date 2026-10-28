@@ -63,7 +63,7 @@
 ### Implementation for User Story 1
 
 - [X] T026 [P] [US1] Create basic dish DTOs (`CreateDishRequest`, `UpdateDishRequest`, `DishSummaryResponse`, `DishDetailResponse`, `DishPageResponse`, `PhotoUploadResponse`) in `easyeat/backend/src/main/java/com/easyeat/dish/dto/` matching OpenAPI contract
-- [ ] T027 [US1] Implement `DishPhotoService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishPhotoService.java` handling binary image validation (MIME, 5 MB limit), persistence in `dish_photos`, byte streaming, and deletion
+- [X] T027 [US1] Implement `DishPhotoService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishPhotoService.java` handling binary image validation (MIME, 5 MB limit), persistence in `dish_photos`, byte streaming, and deletion
 - [ ] T028 [US1] Implement core `DishService` basic identity methods in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishService.java` for creating drafts, updating basic info, deleting drafts, fetching details, and paginating establishment dishes
 - [ ] T029 [US1] Implement `DishController` basic endpoints and `DishPhotoController` in `easyeat/backend/src/main/java/com/easyeat/dish/controller/` guarded with `@PreAuthorize("hasRole('CHEF')")`
 - [ ] T030 [P] [US1] Implement frontend API client `dishApi.ts` in `easyeat/frontend/src/api/dishApi.ts` with methods for draft CRUD, photo upload/retrieval/deletion, and paginated listing
