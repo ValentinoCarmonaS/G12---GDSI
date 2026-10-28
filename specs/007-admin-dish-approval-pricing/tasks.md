@@ -416,7 +416,13 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
   **The role gate sits at class level**, matching `AdminDishCostAuditController`, so a method added by US2, US3 or US4 cannot be left unguarded by omission. FR-001's `ADMIN` alias is included.
 
   **An unknown tab is a 400 by construction**, not by hand-written validation: binding to the `InboxTab` enum makes Spring's converter reject anything outside it. That is the behaviour the requirement wants and one less branch to maintain — and it is why T036 asserts 400 rather than a fall back to `PENDING`, since showing the Administrator a list they did not request is worse than refusing the request.
-- [ ] T044 [P] [US1] Create the shared frontend types in `easyeat/frontend/src/types/dishReview.ts` for inbox, detail, pricing, history and feedback payloads — **Serves**: shared infrastructure for all four stories; no single requirement
+- [x] T044 [P] [US1] Create the shared frontend types in `easyeat/frontend/src/types/dishReview.ts` for inbox, detail, pricing, history and feedback payloads — **Serves**: shared infrastructure for all four stories; no single requirement
+
+  **DONE 2026-10-28.** Covers all four stories in one file, because the inbox, the calculator, the history and the Chef feedback share one contract and splitting it per story would duplicate the shapes.
+
+  **`ReviewDishStatus` is declared here rather than reusing `DishStatus` from `types/dish.ts`.** That union is spec 005's and still admits only `DRAFT | PENDING_PRICE`; widening it is **T079a**, in US3, where the mismatch becomes observable. Importing it here would have made this feature's types lie about what the backend returns, and widening it here would have done US3's work early and without its test.
+
+  Money is typed `number`, with the reason recorded: these values are displayed and compared, never used to derive a figure the backend stores. Every calculation that produces a stored price happens server-side in `BigDecimal` (FR-008). And `marginPct` is documented as requiring a null branch rather than a falsy check, because `0` is a legitimate margin that a `!marginPct` test would silently hide.
 - [ ] T045 [P] [US1] Write `easyeat/frontend/tests/api/dishReviewApi.test.ts` covering request shaping and error propagation for the inbox and detail calls — **Serves**: FR-032
 - [ ] T046 [US1] Implement `easyeat/frontend/src/api/dishReviewApi.ts` as a typed client over the shared `apiClient` — **Serves**: shared infrastructure for all four stories; no single requirement
 - [ ] T047 [US1] Write `easyeat/frontend/tests/hooks/useDishReviewInbox.test.ts` covering tab and page state, counts, and reconciliation after a stale decision — **Serves**: FR-003, FR-032
