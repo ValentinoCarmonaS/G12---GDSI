@@ -51,7 +51,7 @@
 
 ### Tests for User Story 1 (TDD & Behavioral Acceptance - Write First) ⚠️
 
-- [ ] T018 [P] [US1] Unit test `DishBasicServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishBasicServiceTest.java` validating name whitespace trimming, tenant uniqueness constraint, closed category validation, draft deletion, and character limits (100 name, 500 description)
+- [X] T018 [P] [US1] Unit test `DishBasicServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishBasicServiceTest.java` validating name whitespace trimming, tenant uniqueness constraint, closed category validation, draft deletion, and character limits (100 name, 500 description)
 - [ ] T019 [P] [US1] Unit test `DishPhotoServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishPhotoServiceTest.java` validating MIME types (JPEG, PNG, WebP), 5 MB file size limit rejection, and photo deletion in draft status
 - [ ] T020 [P] [US1] Web contract test `DishControllerBasicTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishControllerBasicTest.java` verifying `POST /api/v1/dishes`, `GET /api/v1/dishes`, `GET /api/v1/dishes/{id}`, `PUT /api/v1/dishes/{id}`, and `DELETE /api/v1/dishes/{id}` against OpenAPI schema
 - [ ] T021 [P] [US1] Web contract test `DishPhotoControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/DishPhotoControllerTest.java` verifying `POST /api/v1/dishes/{id}/photo`, `GET /api/v1/dishes/{id}/photo`, and `DELETE /api/v1/dishes/{id}/photo`
