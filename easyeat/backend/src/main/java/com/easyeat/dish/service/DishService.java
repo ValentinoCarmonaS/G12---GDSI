@@ -22,6 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import com.easyeat.dish.dto.RecipeIngredientItem;
+import com.easyeat.dish.dto.RecipeResponse;
+import com.easyeat.dish.dto.RecipeUpdateRequest;
+import com.easyeat.dish.repository.DishRecipeIngredientRepository;
+import com.easyeat.inventory.repository.IngredientRepository;
 import java.util.UUID;
 
 @Service
@@ -29,10 +34,28 @@ public class DishService {
 
     private final DishRepository dishRepository;
     private final DishPhotoRepository dishPhotoRepository;
+    private final DishRecipeIngredientRepository dishRecipeIngredientRepository;
+    private final IngredientRepository ingredientRepository;
 
-    public DishService(DishRepository dishRepository, DishPhotoRepository dishPhotoRepository) {
+    public DishService(
+            DishRepository dishRepository,
+            DishPhotoRepository dishPhotoRepository,
+            DishRecipeIngredientRepository dishRecipeIngredientRepository,
+            IngredientRepository ingredientRepository) {
         this.dishRepository = dishRepository;
         this.dishPhotoRepository = dishPhotoRepository;
+        this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
+        this.ingredientRepository = ingredientRepository;
+    }
+
+    @Transactional
+    public RecipeResponse updateRecipe(UUID dishId, RecipeUpdateRequest request) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Transactional
+    public void removeRecipeIngredient(UUID dishId, UUID ingredientId) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Transactional

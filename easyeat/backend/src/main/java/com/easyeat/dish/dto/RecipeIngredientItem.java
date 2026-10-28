@@ -9,4 +9,7 @@ public record RecipeIngredientItem(
         String unitOfMeasure,
         Boolean isIngredientActive
 ) {
+    public RecipeIngredientItem(UUID ingredientId, Double quantity) {
+        this(ingredientId, null, quantity, null, null);
+    }
 }
