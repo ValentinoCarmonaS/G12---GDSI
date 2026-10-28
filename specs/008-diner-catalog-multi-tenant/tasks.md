@@ -126,7 +126,7 @@
 
 ### Tests for User Story 4 (TDD & Behavioral Acceptance - Write First) ⚠️
 
-- [ ] T045 [P] [US4] Frontend unit test `CatalogSearchFilter.test.tsx` in `easyeat/frontend/src/test/catalog/CatalogSearchFilter.test.tsx` verifying case- and diacritic-insensitive filtering, title and ingredient matching, empty input preservation, and spelling suggestion prompt
+- [x] T045 [P] [US4] Frontend unit test `CatalogSearchFilter.test.tsx` in `easyeat/frontend/src/test/catalog/CatalogSearchFilter.test.tsx` verifying case- and diacritic-insensitive filtering, title and ingredient matching, empty input preservation, and spelling suggestion prompt
 
 ### Implementation for User Story 4
 
