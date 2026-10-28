@@ -449,7 +449,15 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
   **Errors are modelled by what can be done about them**, not as strings: a `kind` plus a `retryable` flag, so the interface does not have to guess whether to offer a retry. A 403 is not retryable; a transport failure is.
 
   A request sequence guard drops the response of an abandoned tab, so a slow `PENDING` reply cannot overwrite the `HISTORY` view the Administrator has already switched to.
-- [ ] T049 [US1] Write `easyeat/frontend/tests/components/dishreview/ReviewInbox.test.tsx` covering tab switching, FIFO rendering, pagination, the pending badge, the initial-versus-resubmission marker and a distinct empty state per tab — **Serves**: FR-002, FR-003, FR-004, FR-028, FR-029
+- [x] T049 [US1] Write `easyeat/frontend/tests/components/dishreview/ReviewInbox.test.tsx` covering tab switching, FIFO rendering, pagination, the pending badge, the initial-versus-resubmission marker and a distinct empty state per tab — **Serves**: FR-002, FR-003, FR-004, FR-028, FR-029
+
+  **DONE 2026-10-28**, RED observed: none of the four component modules resolve.
+
+  **Written as a composition test, with no `ReviewInbox.tsx` created.** Neither `plan.md`'s component tree nor `tasks.md` declares such a component, and inventing one to match the file's name would add an artifact no document asks for (Principle V). The file is named after the feature; the subject is the four components behaving as one surface, which is the only place tab switching, FIFO order, pagination and the badge can be checked **against each other**.
+
+  **Empty, loading and error are asserted to be three distinct states**, never substituted for one another: loading shows a skeleton and *not* the empty state, because the two say opposite things; an error *replaces* the list rather than sitting above stale rows; and the two empty views carry different wording, since "nothing awaits you" and "nothing has been reviewed yet" are different facts.
+
+  **A non-retryable error is asserted to offer no retry button.** Offering one for a permission failure promises something that cannot work, which is the distinction FR-032 draws between an authorization notice and a recoverable failure.
 - [ ] T050 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxTabs.tsx` — three tabs plus the pending badge — **Serves**: FR-002, FR-003
 - [ ] T051 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxList.tsx` — FIFO list with distinct empty, loading (skeleton) and error states — **Serves**: FR-028, FR-029
 - [ ] T052 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxRow.tsx` — name, category, author, `submittedAt`, status and the "Inicial" / "Reenvío (ciclo N)" marker — **Serves**: FR-004, FR-027
