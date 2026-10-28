@@ -23,7 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-@DisplayName("DishRepository Contract and Query Verification Tests (T015)")
+@DisplayName("DishRepository Contract and Query Verification Tests (T015, T028)")
 class DishRepositoryTest {
 
     @Test
@@ -67,6 +67,10 @@ class DishRepositoryTest {
         // existsByIdAndTenantId
         Method existsByIdAndTenantIdMethod = DishRepository.class.getMethod("existsByIdAndTenantId", UUID.class, UUID.class);
         assertThat(existsByIdAndTenantIdMethod.getReturnType()).isEqualTo(boolean.class);
+
+        // findByTenantIdAndStatusAndIsActiveTrue (T028)
+        Method findPublishedActiveMethod = DishRepository.class.getMethod("findByTenantIdAndStatusAndIsActiveTrue", UUID.class, DishStatus.class);
+        assertThat(findPublishedActiveMethod.getReturnType()).isEqualTo(List.class);
     }
 
     @Test
@@ -89,6 +93,7 @@ class DishRepositoryTest {
         when(mockRepo.findByTenantIdAndStatus(tenantId, DishStatus.DRAFT, pageable)).thenReturn(new PageImpl<>(List.of(sampleDish), pageable, 1));
         when(mockRepo.findByIdAndTenantId(dishId, tenantId)).thenReturn(Optional.of(sampleDish));
         when(mockRepo.existsByIdAndTenantId(dishId, tenantId)).thenReturn(true);
+        when(mockRepo.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED)).thenReturn(List.of(sampleDish));
 
         assertThat(mockRepo.existsByTenantIdAndNameLowerTrimmed(tenantId, name)).isTrue();
         assertThat(mockRepo.existsByTenantIdAndNameLowerTrimmedAndIdNot(tenantId, name, dishId)).isFalse();
@@ -96,6 +101,7 @@ class DishRepositoryTest {
         assertThat(mockRepo.findByTenantIdAndStatus(tenantId, DishStatus.DRAFT, pageable).getContent()).containsExactly(sampleDish);
         assertThat(mockRepo.findByIdAndTenantId(dishId, tenantId)).contains(sampleDish);
         assertThat(mockRepo.existsByIdAndTenantId(dishId, tenantId)).isTrue();
+        assertThat(mockRepo.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED)).containsExactly(sampleDish);
 
         verify(mockRepo, times(1)).existsByTenantIdAndNameLowerTrimmed(tenantId, name);
         verify(mockRepo, times(1)).existsByTenantIdAndNameLowerTrimmedAndIdNot(tenantId, name, dishId);
@@ -103,5 +109,6 @@ class DishRepositoryTest {
         verify(mockRepo, times(1)).findByTenantIdAndStatus(tenantId, DishStatus.DRAFT, pageable);
         verify(mockRepo, times(1)).findByIdAndTenantId(dishId, tenantId);
         verify(mockRepo, times(1)).existsByIdAndTenantId(dishId, tenantId);
+        verify(mockRepo, times(1)).findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED);
     }
 }

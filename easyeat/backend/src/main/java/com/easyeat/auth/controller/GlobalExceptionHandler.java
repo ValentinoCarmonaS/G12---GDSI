@@ -31,6 +31,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import com.easyeat.catalog.exception.DishNotFoundException;
+import com.easyeat.catalog.exception.EstablishmentInactiveException;
+import com.easyeat.catalog.exception.EstablishmentNotFoundException;
+import com.easyeat.catalog.exception.InvalidSearchQueryException;
 import com.easyeat.dish.exception.*;
 import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.inventory.exception.NegativeStockException;
@@ -331,6 +334,33 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
 
+    @ExceptionHandler(EstablishmentNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleEstablishmentNotFound(EstablishmentNotFoundException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/establishment-not-found"));
+        problem.setTitle("Establishment Not Found");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        if (ex.getEstablishmentId() != null) {
+            problem.setProperty("establishmentId", ex.getEstablishmentId().toString());
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+    }
+
+    @ExceptionHandler(EstablishmentInactiveException.class)
+    public ResponseEntity<ProblemDetail> handleEstablishmentInactive(EstablishmentInactiveException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/establishment-inactive"));
+        problem.setTitle("Establishment Inactive");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        if (ex.getEstablishmentId() != null) {
+            problem.setProperty("establishmentId", ex.getEstablishmentId().toString());
+        }
+        if (ex.getCurrentStatus() != null) {
+            problem.setProperty("currentStatus", ex.getCurrentStatus());
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problem);
+    }
+
     @ExceptionHandler(PhotoStorageException.class)
     public ResponseEntity<ProblemDetail> handlePhotoStorage(PhotoStorageException ex, HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
@@ -339,5 +369,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setInstance(URI.create(request.getRequestURI()));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
-}
 
+    @ExceptionHandler(InvalidSearchQueryException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidSearchQuery(InvalidSearchQueryException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-search-query"));
+        problem.setTitle("Invalid Search Query");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+}
