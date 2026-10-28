@@ -26,3 +26,4 @@ public class EstablishmentDiscoveryController {
         return ResponseEntity.ok(results);
     }
 }
+

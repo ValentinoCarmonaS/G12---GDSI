@@ -67,3 +67,4 @@ export const EstablishmentSwitchModal: React.FC<EstablishmentSwitchModalProps> =
     </div>
   );
 };
+

@@ -73,3 +73,4 @@ export const EstablishmentBlockingNotice: React.FC<EstablishmentBlockingNoticePr
     </div>
   );
 };
+

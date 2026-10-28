@@ -6,3 +6,4 @@ public class InvalidSearchQueryException extends RuntimeException {
         super(message);
     }
 }
+

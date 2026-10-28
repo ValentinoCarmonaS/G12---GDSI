@@ -348,6 +348,7 @@ describe('RoleRouteGuard Component', () => {
         id: 'diner-1',
         email: 'diner@easyeat.com',
         role: 'COMENSAL',
+        tenantId: 'tenant-1',
         tokenVersion: 1,
       },
       token: 'mock-token',

@@ -213,3 +213,4 @@ export const EstablishmentSearchBar: React.FC<EstablishmentSearchBarProps> = ({
     </div>
   );
 };
+

@@ -17,3 +17,4 @@ export const dinerCatalogApi = {
     return response.data;
   },
 };
+

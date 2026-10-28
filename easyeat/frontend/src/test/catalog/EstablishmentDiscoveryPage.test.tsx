@@ -76,3 +76,4 @@ describe('EstablishmentDiscoveryPage Tests (T022, US1, COM-1.5.1)', () => {
     );
   });
 });
+

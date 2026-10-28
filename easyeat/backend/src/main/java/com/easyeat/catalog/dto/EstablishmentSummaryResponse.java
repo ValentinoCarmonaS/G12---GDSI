@@ -106,3 +106,4 @@ public class EstablishmentSummaryResponse {
         return Objects.hash(id, name, status, isOpen);
     }
 }
+

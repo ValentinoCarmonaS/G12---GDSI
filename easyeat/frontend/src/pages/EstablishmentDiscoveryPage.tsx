@@ -103,3 +103,4 @@ export const EstablishmentDiscoveryPage: React.FC = () => {
 };
 
 export default EstablishmentDiscoveryPage;
+

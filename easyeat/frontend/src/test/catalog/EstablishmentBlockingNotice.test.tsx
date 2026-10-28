@@ -65,3 +65,4 @@ describe('EstablishmentBlockingNotice Component Tests (T021, COM-1.5.1 CA 4, FR-
     expect(onBackMock).toHaveBeenCalledTimes(1);
   });
 });
+
