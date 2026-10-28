@@ -161,6 +161,7 @@ describe('RoleRouteGuard Component', () => {
   });
 
   it('silently redirects COMENSAL attempting to access /cocina to /catalogo with history replacement (T027, CHF-1.2.1)', () => {
+    sessionStorage.setItem('easyeat_active_tenant', JSON.stringify({ id: 'tenant-1' }));
     vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
       isAuthenticated: true,
       user: {
@@ -269,6 +270,7 @@ describe('RoleRouteGuard Component', () => {
   });
 
   it('silently redirects COMENSAL attempting to access /admin to /catalogo with history replacement (T034, ADM-1.1.1)', () => {
+    sessionStorage.setItem('easyeat_active_tenant', JSON.stringify({ id: 'tenant-1' }));
     vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
       isAuthenticated: true,
       user: {
@@ -337,5 +339,69 @@ describe('RoleRouteGuard Component', () => {
     );
 
     expect(screen.getByText('Admin Workspace View')).toBeInTheDocument();
+  });
+
+  it('allows COMENSAL to access /descubrimiento route (T023, COM-1.5.1)', () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      user: {
+        id: 'diner-1',
+        email: 'diner@easyeat.com',
+        role: 'COMENSAL',
+        tokenVersion: 1,
+      },
+      token: 'mock-token',
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/descubrimiento']}>
+        <Routes>
+          <Route
+            path="/descubrimiento"
+            element={
+              <RoleRouteGuard allowedRoles={['COMENSAL']}>
+                <p>Establishment Discovery View</p>
+              </RoleRouteGuard>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Establishment Discovery View')).toBeInTheDocument();
+  });
+
+  it('redirects unauthenticated user accessing /descubrimiento to /login preserving target in state.from (T023)', () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: false,
+      user: null,
+      token: null,
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/descubrimiento']}>
+        <Routes>
+          <Route path="/login" element={<div><p>Login Page</p><LocationWatcher /></div>} />
+          <Route
+            path="/descubrimiento"
+            element={
+              <RoleRouteGuard allowedRoles={['COMENSAL']}>
+                <p>Establishment Discovery View</p>
+              </RoleRouteGuard>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Login Page')).toBeInTheDocument();
+    expect(screen.queryByText('Establishment Discovery View')).not.toBeInTheDocument();
+    expect(screen.getByTestId('state-from')).toHaveTextContent('/descubrimiento');
   });
 });

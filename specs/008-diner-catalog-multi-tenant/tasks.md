@@ -59,7 +59,7 @@
 - [x] T020 [US1] Create `EstablishmentSearchBar.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentSearchBar.tsx` with debounced search, autocomplete dropdown, and cart switch interceptor
 - [x] T021 [P] [US1] Create `EstablishmentBlockingNotice.tsx` in `easyeat/frontend/src/components/catalog/EstablishmentBlockingNotice.tsx` rendering full-screen blocking screen for paused/disabled venues
 - [x] T022 [US1] Create `EstablishmentDiscoveryPage.tsx` in `easyeat/frontend/src/pages/EstablishmentDiscoveryPage.tsx`
-- [ ] T023 [US1] Update `AppRoutes.tsx` and `postAuthRouting.ts` registering `/descubrimiento` route protected by `RoleRouteGuard allowedRoles={['COMENSAL']}` and routing diners with no active tenant to discovery
+- [x] T023 [US1] Update `AppRoutes.tsx` and `postAuthRouting.ts` registering `/descubrimiento` route protected by `RoleRouteGuard allowedRoles={['COMENSAL']}` and routing diners with no active tenant to discovery
 
 **Checkpoint**: User Story 1 fully functional and independently verifiable.
 
