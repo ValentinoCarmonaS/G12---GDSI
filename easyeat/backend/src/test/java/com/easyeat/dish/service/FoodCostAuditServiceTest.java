@@ -7,7 +7,6 @@ import com.easyeat.dish.domain.DishCategory;
 import com.easyeat.dish.domain.DishRecipeIngredient;
 import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.dto.FoodCostAuditResponse;
-import com.easyeat.dish.exception.DishLockedException;
 import com.easyeat.dish.exception.DishNotFoundException;
 import com.easyeat.dish.exception.EmptyRecipeException;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
@@ -65,7 +64,9 @@ class FoodCostAuditServiceTest {
     }
 
     private Dish createDish(String name, DishCategory category) {
-        return new Dish(tenantId, name, category, "Desc", new BigDecimal("100.00"), true, UUID.randomUUID());
+        Dish dish = new Dish(tenantId, name, category, "Desc", new BigDecimal("100.00"), true, UUID.randomUUID());
+        dish.setId(dishId);
+        return dish;
     }
 
     @Test
@@ -78,19 +79,29 @@ class FoodCostAuditServiceTest {
     }
 
     @Test
-    @DisplayName("Throws DishLockedException when dish is in DRAFT status")
-    void shouldThrowDishLocked_whenDishInDraft() {
+    @DisplayName("Successfully computes food cost for a dish in DRAFT status without throwing state lock (status-agnostic service unblocking spec 007)")
+    void shouldComputeFoodCostAudit_whenDishIsDraft() {
         Dish dish = createDish("Milanesa", DishCategory.PLATOS_PRINCIPALES);
         dish.setStatus(DishStatus.DRAFT);
-        when(dishRepository.findByIdAndTenantId(dishId, tenantId)).thenReturn(Optional.of(dish));
 
-        assertThatThrownBy(() -> auditService.auditDishCost(dishId))
-                .isInstanceOf(DishLockedException.class)
-                .hasMessageContaining("PENDING_PRICE");
+        UUID meatId = UUID.randomUUID();
+        DishRecipeIngredient line = new DishRecipeIngredient(dishId, meatId, new BigDecimal("0.5000"));
+
+        Ingredient meat = new Ingredient(tenantId, "Carne", IngredientCategory.MEAT, UnitOfMeasure.KG, new BigDecimal("5000.00"));
+        meat.setId(meatId);
+
+        when(dishRepository.findByIdAndTenantId(dishId, tenantId)).thenReturn(Optional.of(dish));
+        when(dishRecipeIngredientRepository.findByIdDishId(dishId)).thenReturn(List.of(line));
+        when(ingredientRepository.findAllById(List.of(meatId))).thenReturn(List.of(meat));
+
+        FoodCostAuditResponse response = auditService.auditDishCost(dishId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.totalFoodCost()).isEqualByComparingTo(new BigDecimal("2500.00"));
     }
 
     @Test
-    @DisplayName("Throws EmptyRecipeException when dish in PENDING_PRICE has no ingredients")
+    @DisplayName("Throws EmptyRecipeException when dish has no ingredients")
     void shouldThrowEmptyRecipe_whenNoIngredients() {
         Dish dish = createDish("Milanesa", DishCategory.PLATOS_PRINCIPALES);
         dish.setStatus(DishStatus.PENDING_PRICE);
@@ -163,4 +174,3 @@ class FoodCostAuditServiceTest {
         assertThat(response.items().get(0).unpricedWarning()).isTrue();
     }
 }
-

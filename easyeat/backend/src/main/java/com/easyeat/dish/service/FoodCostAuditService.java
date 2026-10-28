@@ -4,10 +4,8 @@ import com.easyeat.catalog.domain.Dish;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.dish.domain.DishRecipeIngredient;
-import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.dto.FoodCostAuditResponse;
 import com.easyeat.dish.dto.RecipeItemAuditResponse;
-import com.easyeat.dish.exception.DishLockedException;
 import com.easyeat.dish.exception.DishNotFoundException;
 import com.easyeat.dish.exception.EmptyRecipeException;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
@@ -44,14 +42,12 @@ public class FoodCostAuditService {
         UUID tenantId = TenantContextHolder.getTenantId();
         Dish dish = dishRepository.findByIdAndTenantId(dishId, tenantId)
                 .orElseThrow(() -> new DishNotFoundException(dishId));
+        return auditDishCost(dish);
+    }
 
-        if (dish.getStatus() != DishStatus.PENDING_PRICE) {
-            throw new DishLockedException(
-                    String.format("El plato con ID %s no puede ser auditado financieramente en estado '%s'. Requiere estado 'PENDING_PRICE'.",
-                            dishId, dish.getStatus() != null ? dish.getStatus().name() : "NULL")
-            );
-        }
-
+    @Transactional(readOnly = true)
+    public FoodCostAuditResponse auditDishCost(Dish dish) {
+        UUID dishId = dish.getId();
         List<DishRecipeIngredient> recipeLines = dishRecipeIngredientRepository.findByIdDishId(dishId);
         if (recipeLines.isEmpty()) {
             throw new EmptyRecipeException(dishId);
@@ -121,4 +117,3 @@ public class FoodCostAuditService {
         );
     }
 }
-
