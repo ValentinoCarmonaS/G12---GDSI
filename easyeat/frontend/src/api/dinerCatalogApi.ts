@@ -1,5 +1,5 @@
 import { apiClient } from './apiClient';
-import { EstablishmentSummary } from '@/types/dinerCatalog';
+import { EstablishmentSummary, CatalogResponse } from '@/types/dinerCatalog';
 
 export const dinerCatalogApi = {
   /**
@@ -16,5 +16,13 @@ export const dinerCatalogApi = {
     });
     return response.data;
   },
-};
 
+  /**
+   * Retrieve live categorized menu catalog for selected establishment (COM-4.1.1, FR-007, FR-026).
+   * Path: GET /establishments/{tenantId}/catalog
+   */
+  getEstablishmentCatalog: async (tenantId: string): Promise<CatalogResponse> => {
+    const response = await apiClient.get<CatalogResponse>(`/establishments/${tenantId}/catalog`);
+    return response.data;
+  },
+};

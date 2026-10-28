@@ -18,6 +18,8 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
 
     List<Dish> findByTenantIdAndIsActiveTrue(UUID tenantId);
 
+    List<Dish> findByTenantIdAndStatusAndIsActiveTrue(UUID tenantId, DishStatus status);
+
     List<Dish> findByIdIn(List<UUID> ids);
 
     Page<Dish> findByTenantId(UUID tenantId, Pageable pageable);

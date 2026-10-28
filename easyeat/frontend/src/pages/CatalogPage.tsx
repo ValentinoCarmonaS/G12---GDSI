@@ -1,48 +1,124 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
-import { useCatalog } from '../hooks/useCatalog';
 import { useAuth } from '../hooks/useAuth';
 import { useProfile } from '../hooks/useProfile';
-import { CatalogFilterProvider, useCatalogFilter } from '../context/CatalogFilterContext';
+import { useCatalog } from '../hooks/useCatalog';
+import { TenantContext, TenantProvider } from '../context/TenantContext';
+import { CatalogFilterContext, CatalogFilterProvider, useCatalogFilter } from '../context/CatalogFilterContext';
 import { CartProvider } from '../context/CartContext';
 import { useCart } from '../hooks/useCart';
-import { CatalogMasterToggle } from '../components/catalog/CatalogMasterToggle';
+import { dinerCatalogApi } from '../api/dinerCatalogApi';
+import type { CatalogResponse, DishCatalogItem } from '../types/dinerCatalog';
+import type { EnrichedDish } from '../types/catalog';
+import { StickyCategoryNav } from '../components/catalog/StickyCategoryNav';
+import { OperatingHoursBanner } from '../components/catalog/OperatingHoursBanner';
 import { DishCard } from '../components/catalog/DishCard';
+import { DishDetailModal } from '../components/catalog/DishDetailModal';
+import { CatalogMasterToggle } from '../components/catalog/CatalogMasterToggle';
 import { EmptyCatalogDietaryState } from '../components/catalog/EmptyCatalogDietaryState';
 import { AddToCartRiskModal } from '../components/cart/AddToCartRiskModal';
 import { CartDrawer } from '../components/cart/CartDrawer';
-import { EnrichedDish } from '../types/catalog';
 
 export const CatalogView: React.FC = () => {
-  const { dishes, isLoading, error, refetch } = useCatalog();
+  const navigate = useNavigate();
+  const tenantContext = useContext(TenantContext);
+  const tenant = tenantContext?.tenant;
+  const isTenantLoading = tenantContext?.isLoading ?? false;
+
   const { isAuthenticated } = useAuth();
   const { profile } = useProfile();
   const { isFilterActive, setIsFilterActive } = useCatalogFilter();
   const { addItem, totalCount } = useCart();
+  const catalogHook = useCatalog();
 
+  const [catalogData, setCatalogData] = useState<CatalogResponse | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedDish, setSelectedDish] = useState<DishCatalogItem | null>(null);
   const [dishToConfirm, setDishToConfirm] = useState<EnrichedDish | null>(null);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
+  const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
 
   const activeRestrictionsCount = useMemo(() => {
     if (!isAuthenticated || !profile?.dietaryRestrictions) return 0;
     return profile.dietaryRestrictions.length;
   }, [isAuthenticated, profile]);
 
-  const displayedDishes = useMemo(() => {
-    if (!isAuthenticated || activeRestrictionsCount === 0 || !isFilterActive) {
-      return dishes;
+  // Missing tenant redirection (COM-1.5.1 / FR-004)
+  useEffect(() => {
+    if (
+      !isTenantLoading &&
+      !tenant &&
+      isAuthenticated &&
+      (!catalogHook.dishes || catalogHook.dishes.length === 0)
+    ) {
+      navigate('/descubrimiento', { replace: true });
     }
-    // Strict conjunction: show dishes that are compliant
-    return dishes.filter((dish) => dish.isCompliant !== false);
-  }, [dishes, isFilterActive, isAuthenticated, activeRestrictionsCount]);
+  }, [tenant, isTenantLoading, isAuthenticated, catalogHook.dishes, navigate]);
 
-  const handleAddToCart = (dish: EnrichedDish) => {
-    if (isAuthenticated && activeRestrictionsCount > 0 && dish.isCompliant === false) {
-      // Intercept with preventive risk modal (FR-021)
-      setDishToConfirm(dish);
+  // Load live categorized catalog from API when tenant is present
+  const loadCatalog = async () => {
+    if (!tenant?.id) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await dinerCatalogApi.getEstablishmentCatalog(tenant.id);
+      setCatalogData(data);
+      if (data.categories && data.categories.length > 0) {
+        setActiveCategory(data.categories[0].category);
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || 'Error al cargar el catálogo del establecimiento.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tenant?.id) {
+      loadCatalog();
     } else {
-      addItem(dish, false);
+      setIsLoading(false);
+    }
+  }, [tenant?.id]);
+
+  const categories = useMemo(() => {
+    if (!catalogData?.categories) return [];
+    return catalogData.categories.map((c) => c.category);
+  }, [catalogData]);
+
+  const isReadOnly = catalogData?.establishment?.isOpen === false;
+
+  const displayedLegacyDishes = useMemo(() => {
+    if (!isAuthenticated || activeRestrictionsCount === 0 || !isFilterActive) {
+      return catalogHook.dishes;
+    }
+    return catalogHook.dishes.filter((dish) => dish.isCompliant !== false);
+  }, [catalogHook.dishes, isFilterActive, isAuthenticated, activeRestrictionsCount]);
+
+  const handleAddToCart = (dish: DishCatalogItem | EnrichedDish) => {
+    if (isReadOnly || ('isAvailable' in dish && dish.isAvailable === false)) return;
+
+    if (isAuthenticated && activeRestrictionsCount > 0 && dish.isCompliant === false) {
+      setDishToConfirm(dish as EnrichedDish);
+    } else {
+      addItem(
+        {
+          id: dish.id,
+          tenantId: tenant?.id || ('tenantId' in dish ? dish.tenantId : ''),
+          name: dish.name,
+          price: dish.price,
+          description: dish.description ?? null,
+          isActive: true,
+          isCompliant: dish.isCompliant,
+          conflictingRestrictions: dish.conflictingRestrictions,
+        },
+        false
+      );
     }
   };
 
@@ -57,26 +133,40 @@ export const CatalogView: React.FC = () => {
     setDishToConfirm(null);
   };
 
+  const pageTitle = catalogData?.establishment?.name || tenant?.name || 'Catálogo de Productos';
+
   return (
     <WorkspaceLayout
-      title="Catálogo de Productos"
-      subtitle="Explorá nuestros platos y armá tu pedido"
+      title={pageTitle}
+      subtitle="Explorá nuestra carta y armá tu pedido en tiempo real"
     >
       <div className="space-y-6">
-        {/* Floating / Header Cart Access Button */}
-        <div className="flex justify-end">
+        {/* Top Header Actions */}
+        <div className="flex items-center justify-between gap-4">
+          {tenant ? (
+            <button
+              type="button"
+              onClick={() => navigate('/descubrimiento')}
+              data-testid="switch-establishment-btn"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl shadow-2xs transition-colors cursor-pointer"
+            >
+              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Cambiar local</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
+          {/* Floating Cart Button */}
           <button
             type="button"
             onClick={() => setIsCartOpen(true)}
             data-testid="open-cart-button"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm rounded-xl shadow-sm transition-all focus:ring-2 focus:ring-amber-500"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all focus:ring-2 focus:ring-amber-500 cursor-pointer"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -88,7 +178,7 @@ export const CatalogView: React.FC = () => {
             {totalCount > 0 && (
               <span
                 data-testid="cart-badge-count"
-                className="ml-1 px-2 py-0.5 text-xs bg-white text-amber-800 rounded-full font-extrabold"
+                className="ml-1 px-1.5 py-0.5 text-2xs bg-white text-amber-800 rounded-full font-extrabold"
               >
                 {totalCount}
               </span>
@@ -96,7 +186,7 @@ export const CatalogView: React.FC = () => {
           </button>
         </div>
 
-        {/* FR-026: Unauthenticated Guest Warning & Call to Action */}
+        {/* Guest Banner (FR-026, spec 003) */}
         {!isAuthenticated && (
           <div
             data-testid="guest-banner"
@@ -131,7 +221,7 @@ export const CatalogView: React.FC = () => {
           </div>
         )}
 
-        {/* Master Dietary Toggle (FR-023) */}
+        {/* Master Dietary Toggle (FR-023, spec 003) */}
         {isAuthenticated && activeRestrictionsCount > 0 && (
           <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
             <CatalogMasterToggle
@@ -142,56 +232,110 @@ export const CatalogView: React.FC = () => {
           </div>
         )}
 
+        {/* Operating Hours Schedule Banner (FR-012, spec 008) */}
+        {catalogData?.establishment && (
+          <OperatingHoursBanner
+            isOpen={catalogData.establishment.isOpen}
+            nextOpeningSchedule={catalogData.establishment.nextOpeningSchedule}
+          />
+        )}
+
         {/* Loading State */}
-        {isLoading && (
-          <div
-            data-testid="catalog-loading"
-            className="py-16 text-center text-gray-500 space-y-3"
-          >
+        {(isLoading || catalogHook.isLoading) && !catalogData && (
+          <div data-testid="catalog-loading" className="py-20 text-center text-gray-500 space-y-3">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent" />
             <p className="text-sm font-medium">Cargando menú del comedor...</p>
           </div>
         )}
 
         {/* Error State */}
-        {error && !isLoading && (
-          <div
-            data-testid="catalog-error"
-            className="p-6 bg-red-50 border border-red-200 rounded-xl text-center space-y-3"
-          >
-            <p className="text-sm font-semibold text-red-800">{error}</p>
+        {(error || catalogHook.error) && !isLoading && !catalogHook.isLoading && !catalogData && (
+          <div data-testid="catalog-error" className="p-6 bg-red-50 border border-red-200 rounded-2xl text-center space-y-3">
+            <p className="text-sm font-semibold text-red-800">{error || catalogHook.error}</p>
             <button
               type="button"
-              onClick={() => refetch()}
+              onClick={() => {
+                loadCatalog();
+                catalogHook.refetch();
+              }}
               data-testid="catalog-retry-button"
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer"
             >
               Reintentar
             </button>
           </div>
         )}
 
-        {/* Dishes Grid or Empty State */}
-        {!isLoading && !error && (
+        {/* Categorized Catalog Content (Spec 008) */}
+        {!isLoading && !error && catalogData && (
           <>
-            {dishes.length === 0 ? (
+            {/* Sticky Category Navigation Bar (FR-008) */}
+            {categories.length > 0 && (
+              <StickyCategoryNav
+                categories={categories}
+                activeCategory={activeCategory}
+                onSelectCategory={setActiveCategory}
+              />
+            )}
+
+            {/* Empty Categories View */}
+            {catalogData.categories.length === 0 ? (
               <div
                 data-testid="catalog-empty-store"
-                className="py-16 text-center text-gray-500 bg-white rounded-xl border border-gray-200"
+                className="py-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200"
               >
-                <p className="text-base font-semibold text-gray-700">No hay platos disponibles</p>
-                <p className="text-xs text-gray-500 mt-1">El menú de este comedor se actualizará pronto.</p>
+                <p className="text-base font-semibold text-gray-700">No hay platos publicados</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  El menú de este establecimiento se encuentra en preparación.
+                </p>
               </div>
-            ) : displayedDishes.length === 0 ? (
-              <EmptyCatalogDietaryState
-                onViewFullMenu={() => setIsFilterActive(false)}
-              />
             ) : (
-              <div
-                data-testid="dishes-grid"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-              >
-                {displayedDishes.map((dish) => (
+              /* Categorized Sections (FR-007, FR-009) */
+              <div className="space-y-10">
+                {catalogData.categories.map((group) => (
+                  <section
+                    key={group.category}
+                    id={`category-section-${encodeURIComponent(group.category)}`}
+                    className="space-y-4 scroll-mt-20"
+                  >
+                    <div className="border-b border-gray-200 pb-2">
+                      <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">
+                        {group.category}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {group.dishes.length} {group.dishes.length === 1 ? 'plato disponible' : 'platos disponibles'}
+                      </p>
+                    </div>
+
+                    <div
+                      data-testid={`category-grid-${group.category}`}
+                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                    >
+                      {group.dishes.map((dish) => (
+                        <DishCard
+                          key={dish.id}
+                          dish={dish}
+                          isReadOnly={isReadOnly}
+                          onSelectDish={setSelectedDish}
+                          onAddToCart={handleAddToCart}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Fallback Flat Catalog Content (Spec 003 compatibility when useCatalog has dishes) */}
+        {!isLoading && !catalogData && !catalogHook.isLoading && !catalogHook.error && catalogHook.dishes.length > 0 && (
+          <>
+            {displayedLegacyDishes.length === 0 ? (
+              <EmptyCatalogDietaryState onViewFullMenu={() => setIsFilterActive(false)} />
+            ) : (
+              <div data-testid="dishes-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {displayedLegacyDishes.map((dish) => (
                   <DishCard
                     key={dish.id}
                     dish={dish}
@@ -205,7 +349,16 @@ export const CatalogView: React.FC = () => {
         )}
       </div>
 
-      {/* Preventive Risk Modal (FR-021) */}
+      {/* Informational Dish Detail Modal (FR-007, FR-012, FR-014) */}
+      <DishDetailModal
+        dish={selectedDish}
+        isOpen={!!selectedDish}
+        onClose={() => setSelectedDish(null)}
+        isReadOnly={isReadOnly}
+        nextOpeningSchedule={catalogData?.establishment?.nextOpeningSchedule}
+      />
+
+      {/* Preventive Risk Modal (FR-021, spec 003) */}
       <AddToCartRiskModal
         isOpen={!!dishToConfirm}
         dishName={dishToConfirm?.name || ''}
@@ -214,27 +367,33 @@ export const CatalogView: React.FC = () => {
         onCancel={handleCancelRisk}
       />
 
-      {/* Cart Drawer with Persistent Inline Warnings (FR-022) */}
+      {/* Cart Drawer */}
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
-        onCheckout={() => {
-          setIsCartOpen(false);
-          // Could navigate or trigger order flow
-        }}
+        onCheckout={() => setIsCartOpen(false)}
       />
     </WorkspaceLayout>
   );
 };
 
 export const CatalogPage: React.FC = () => {
-  return (
-    <CatalogFilterProvider>
-      <CartProvider>
-        <CatalogView />
-      </CartProvider>
-    </CatalogFilterProvider>
-  );
+  const existingTenantContext = useContext(TenantContext);
+  const existingFilterContext = useContext(CatalogFilterContext);
+
+  let content = <CatalogView />;
+
+  if (!existingFilterContext) {
+    content = <CatalogFilterProvider>{content}</CatalogFilterProvider>;
+  }
+
+  content = <CartProvider>{content}</CartProvider>;
+
+  if (!existingTenantContext) {
+    content = <TenantProvider>{content}</TenantProvider>;
+  }
+
+  return content;
 };
 
 export default CatalogPage;

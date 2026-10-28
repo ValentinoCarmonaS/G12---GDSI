@@ -73,22 +73,22 @@
 
 ### Tests for User Story 2 (TDD & Behavioral Acceptance - Write First) ⚠️
 
-- [ ] T024 [P] [US2] Unit test `DinerCatalogServiceTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/DinerCatalogServiceTest.java` validating category grouping, exclusion of unpublished dishes, operating hours evaluation, photo URL formatting, and retail price fallback
-- [ ] T025 [P] [US2] Web contract test `DinerCatalogControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/DinerCatalogControllerTest.java` verifying `GET /api/v1/establishments/{tenantId}/catalog` and HTTP 401/403/404 RFC 7807 responses
-- [ ] T026 [P] [US2] Frontend component tests `DishCard.test.tsx` and `CatalogPage.test.tsx` in `easyeat/frontend/src/test/catalog/` verifying image fallback, sticky nav, category hiding, and read-only mode
+- [x] T024 [P] [US2] Unit test `DinerCatalogServiceTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/service/DinerCatalogServiceTest.java` validating category grouping, exclusion of unpublished dishes, operating hours evaluation, photo URL formatting, and retail price fallback
+- [x] T025 [P] [US2] Web contract test `DinerCatalogControllerTest` in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/DinerCatalogControllerTest.java` verifying `GET /api/v1/establishments/{tenantId}/catalog` and HTTP 401/403/404 RFC 7807 responses
+- [x] T026 [P] [US2] Frontend component tests `DishCard.test.tsx` and `CatalogPage.test.tsx` in `easyeat/frontend/src/test/catalog/` verifying image fallback, sticky nav, category hiding, and read-only mode
 
 ### Implementation for User Story 2
 
-- [ ] T027 [P] [US2] Implement catalog DTOs (`DinerCatalogResponse`, `DishCatalogItemDto`, `CategoryGroupDto`, `EstablishmentDetailDto`) in `easyeat/backend/src/main/java/com/easyeat/catalog/dto/`
-- [ ] T028 [US2] Update `DishRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/DishRepository.java` adding query for dishes with `tenantId`, `status = PUBLISHED`, and `isActive = true`
-- [ ] T029 [US2] Implement `DinerCatalogService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/DinerCatalogService.java` assembling categorized menu, checking timezone schedule, and integrating dietary compliance via `CatalogComplianceService`
-- [ ] T030 [US2] Implement `DinerCatalogController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/DinerCatalogController.java`
-- [ ] T031 [P] [US2] Implement frontend API client method `getEstablishmentCatalog` in `easyeat/frontend/src/api/dinerCatalogApi.ts`
-- [ ] T032 [P] [US2] Create `StickyCategoryNav.tsx` in `easyeat/frontend/src/components/catalog/StickyCategoryNav.tsx` with smooth scrolling and active indicator
-- [ ] T033 [P] [US2] Refactor `DishCard.tsx` in `easyeat/frontend/src/components/catalog/DishCard.tsx` displaying name, price, dietary flags, photo with lightweight SVG placeholder fallback, and full color vs greyscale styling
-- [ ] T034 [P] [US2] Create `DishDetailModal.tsx` in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx` showing enlarged photo, recipe ingredients, and outside-hours state notice
-- [ ] T035 [P] [US2] Create `OperatingHoursBanner.tsx` in `easyeat/frontend/src/components/catalog/OperatingHoursBanner.tsx` displaying schedule notice and read-only banner
-- [ ] T036 [US2] Refactor `CatalogPage.tsx` in `easyeat/frontend/src/pages/CatalogPage.tsx` to render the categorized catalog, sticky navigation, and handle missing tenant redirection
+- [x] T027 [P] [US2] Implement catalog DTOs (`DinerCatalogResponse`, `DishCatalogItemDto`, `CategoryGroupDto`, `EstablishmentDetailDto`) in `easyeat/backend/src/main/java/com/easyeat/catalog/dto/`
+- [x] T028 [US2] Update `DishRepository` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/DishRepository.java` adding query for dishes with `tenantId`, `status = PUBLISHED`, and `isActive = true`
+- [x] T029 [US2] Implement `DinerCatalogService` in `easyeat/backend/src/main/java/com/easyeat/catalog/service/DinerCatalogService.java` assembling categorized menu, checking timezone schedule, and integrating dietary compliance via `CatalogComplianceService`
+- [x] T030 [US2] Implement `DinerCatalogController` in `easyeat/backend/src/main/java/com/easyeat/catalog/controller/DinerCatalogController.java`
+- [x] T031 [P] [US2] Implement frontend API client method `getEstablishmentCatalog` in `easyeat/frontend/src/api/dinerCatalogApi.ts`
+- [x] T032 [P] [US2] Create `StickyCategoryNav.tsx` in `easyeat/frontend/src/components/catalog/StickyCategoryNav.tsx` with smooth scrolling and active indicator
+- [x] T033 [P] [US2] Refactor `DishCard.tsx` in `easyeat/frontend/src/components/catalog/DishCard.tsx` displaying name, price, dietary flags, photo with lightweight SVG placeholder fallback, and full color vs greyscale styling
+- [x] T034 [P] [US2] Create `DishDetailModal.tsx` in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx` showing enlarged photo, recipe ingredients, and outside-hours state notice
+- [x] T035 [P] [US2] Create `OperatingHoursBanner.tsx` in `easyeat/frontend/src/components/catalog/OperatingHoursBanner.tsx` displaying schedule notice and read-only banner
+- [x] T036 [US2] Refactor `CatalogPage.tsx` in `easyeat/frontend/src/pages/CatalogPage.tsx` to render the categorized catalog, sticky navigation, and handle missing tenant redirection
 
 **Checkpoint**: User Story 2 fully functional and independently verifiable.
 
