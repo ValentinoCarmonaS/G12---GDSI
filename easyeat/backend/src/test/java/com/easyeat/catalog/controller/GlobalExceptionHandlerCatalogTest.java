@@ -3,6 +3,7 @@ package com.easyeat.catalog.controller;
 import com.easyeat.auth.controller.GlobalExceptionHandler;
 import com.easyeat.catalog.exception.EstablishmentInactiveException;
 import com.easyeat.catalog.exception.EstablishmentNotFoundException;
+import com.easyeat.catalog.exception.InvalidSearchQueryException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -66,5 +67,21 @@ class GlobalExceptionHandlerCatalogTest {
         assertThat(body.getProperties()).containsEntry("establishmentId", establishmentId.toString());
         assertThat(body.getProperties()).containsEntry("currentStatus", "PAUSED");
     }
-}
 
+    @Test
+    @DisplayName("Should map InvalidSearchQueryException to 400 BAD_REQUEST ProblemDetail")
+    void handleInvalidSearchQueryException() {
+        InvalidSearchQueryException ex = new InvalidSearchQueryException("Search query must contain at least 3 non-whitespace characters.");
+
+        ResponseEntity<ProblemDetail> response = exceptionHandler.handleInvalidSearchQuery(ex, request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        ProblemDetail body = response.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.getType()).isEqualTo(URI.create("https://easyeat.com/errors/invalid-search-query"));
+        assertThat(body.getTitle()).isEqualTo("Invalid Search Query");
+        assertThat(body.getStatus()).isEqualTo(400);
+        assertThat(body.getDetail()).contains("at least 3");
+        assertThat(body.getInstance()).isEqualTo(URI.create("/api/v1/establishments/test"));
+    }
+}
