@@ -460,7 +460,7 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
   **A non-retryable error is asserted to offer no retry button.** Offering one for a permission failure promises something that cannot work, which is the distinction FR-032 draws between an authorization notice and a recoverable failure.
 - [x] T050 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxTabs.tsx` — three tabs plus the pending badge — **Serves**: FR-002, FR-003
 - [x] T051 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxList.tsx` — FIFO list with distinct empty, loading (skeleton) and error states — **Serves**: FR-028, FR-029
-- [ ] T052 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxRow.tsx` — name, category, author, `submittedAt`, status and the "Inicial" / "Reenvío (ciclo N)" marker — **Serves**: FR-004, FR-027
+- [x] T052 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxRow.tsx` — name, category, author, `submittedAt`, status and the "Inicial" / "Reenvío (ciclo N)" marker — **Serves**: FR-004, FR-027
 - [ ] T053 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/InboxPagination.tsx` — 20-per-page controls — **Serves**: FR-003
 - [ ] T054 [US1] Write `easyeat/frontend/tests/components/dishreview/DishAuditPanel.test.tsx` covering identity, dietary labels, the itemized cost breakdown and the unpriced-ingredient advisory — **Serves**: FR-006
 - [ ] T055 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/FoodCostBreakdownTable.tsx` — line items, subtotals and total per portion — **Serves**: FR-006
