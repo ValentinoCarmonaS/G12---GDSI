@@ -488,9 +488,11 @@ components:
           format: date-time
           nullable: true
           description: |
-            Instant of the DRAFT -> PENDING_PRICE transition, written by spec 005 (R-005-1). Null
-            when upstream has not provided it; under that degraded fallback the pending tab is
-            ordered by creation time instead, which is NOT FIFO by submission.
+            Instant of the DRAFT -> PENDING_PRICE transition, written by spec 005 (R-005-1) on
+            every transition including resubmissions. The pending tab is ordered by this column
+            ascending, and by nothing else: the creation-time fallback this description used to
+            offer is WITHDRAWN and not authorised (plan.md R-005-1), because it would silently
+            stop being FIFO by submission while still looking ordered.
         publishedAt:
           type: string
           format: date-time
