@@ -315,7 +315,26 @@ The calculator receives the Food Cost as a parameter, so it does not depend on w
   The advice now carries 32 `@ExceptionHandler` methods in one class, seven of them this feature's. No competing advice was added, and no handler for `ObjectOptimisticLockingFailureException` exists — asserted by T033, not merely intended.
 
   **Correction recorded**: the test committed with T033 had two type errors of its own (`List<?>` and `Map<?,?>` against typed AssertJ matchers). The RED it reported was genuine — all seven handler methods were missing — but the file would not have compiled even with them present. Fixed here, with the untyped casts moved into two helpers so `ProblemDetail`'s untyped extension map is handled in one place instead of in each assertion.
-**Checkpoint**: foundation ready — user story implementation can begin. Nothing remains blocked: T007 is satisfied, so T042, T067 and T071 proceed.
+### Coverage, measured per class rather than in aggregate
+
+The JaCoCo gate added at the head of this phase is scoped to `BUNDLE`, because `com.easyeat.dish.service` is shared with spec 006 and a package rule would subject another spec's future work to a threshold chosen here. The consequence was stated when the gate went in: **the bundle figure cannot prove this feature's own classes are covered**, so each one is measured individually.
+
+It was, and the first measurement found the gate doing exactly what was predicted of it. The bundle read 89.16% while **five of this phase's own classes sat below 80%**: `DishPriceHistory` 66.67%, `DishReviewHistory` 67.50%, `InvalidRetailPriceException` 53.85%, `PublicationGateException` and `AcknowledgementRequiredException` 75.00%.
+
+What was uncovered is the part worth recording: it was precisely the behaviour the commit messages of T029, T030 and T031 claim. T031 says the exception "distinguishes its three faults"; one branch was exercised. T029 and T030 say an empty condition list is refused because it would mean the gate passed; that guard had no test at all. A claim in a commit message that no test exercises is a hope.
+
+Closed by `AdminDishExceptionsTest` and by extending the two audit suites. Final figures, 715 tests green with the gate met:
+
+| Class | LINE | BRANCH |
+|---|---|---|
+| `RetailPricingCalculator` | 97.56% | 93.75% |
+| `DishReviewHistory` | 100% | 80.00% |
+| `DishPriceHistory` | 100% | 75.00% |
+| The seven exceptions and three enums | 100% | 100% |
+
+Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **90.54%** line and from 68.33% to **69.75%** branch, so this phase raised both rather than leaning on the existing margin.
+
+**Checkpoint**: foundation ready — user story implementation can begin. Nothing remains blocked: T007 is satisfied, so T042, T067 and T071 proceed. All 26 tasks of this phase are closed, T025 as cancelled.
 
 ---
 

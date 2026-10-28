@@ -254,6 +254,85 @@ class DishReviewHistoryRepositoryTest {
             assertThatThrownBy(() -> DishReviewHistory.approved(
                     UUID.randomUUID(), UUID.randomUUID(), 0, UUID.randomUUID()))
                     .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> DishReviewHistory.approved(
+                    UUID.randomUUID(), UUID.randomUUID(), null, UUID.randomUUID()))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("the identifiers are all required, so no entry can be orphaned")
+        void identifiersAreRequired() {
+            UUID any = UUID.randomUUID();
+            assertThatThrownBy(() -> DishReviewHistory.approved(null, any, 1, any))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> DishReviewHistory.approved(any, null, 1, any))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> DishReviewHistory.approved(any, any, 1, null))
+                    .as("FR-035 keeps the actor on every row, so admin_id cannot be absent")
+                    .isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("what an entry reports about itself")
+    class EntryState {
+
+        private final UUID dish = UUID.randomUUID();
+        private final UUID tenant = UUID.randomUUID();
+        private final UUID admin = UUID.randomUUID();
+
+        @Test
+        @DisplayName("an approval reports every field it was built from")
+        void approvalCarriesItsData() {
+            DishReviewHistory entry = DishReviewHistory.approved(dish, tenant, 3, admin);
+
+            assertThat(entry.getDishId()).isEqualTo(dish);
+            assertThat(entry.getTenantId()).isEqualTo(tenant);
+            assertThat(entry.getCycleNumber()).isEqualTo(3);
+            assertThat(entry.getAdminId()).isEqualTo(admin);
+            assertThat(entry.getEventType()).isEqualTo(ReviewEventType.APPROVED);
+            assertThat(entry.getComment()).isNull();
+            assertThat(entry.getCreatedAt())
+                    .as("the instant is assigned at construction, not left for the database")
+                    .isNotNull();
+            assertThat(entry.getId())
+                    .as("the identifier is generated on persist, so it is null until then")
+                    .isNull();
+        }
+
+        @Test
+        @DisplayName("a rejection reports its event type and its trimmed comment")
+        void rejectionCarriesItsData() {
+            DishReviewHistory entry = DishReviewHistory.rejected(dish, tenant, 2, admin,
+                    "  El costo del salmon dispara el food cost.  ");
+
+            assertThat(entry.getEventType()).isEqualTo(ReviewEventType.REJECTED);
+            assertThat(entry.getComment())
+                    .isEqualTo("El costo del salmon dispara el food cost.");
+        }
+
+        @Test
+        @DisplayName("two unpersisted entries are never equal, since neither has an identity yet")
+        void unpersistedEntriesAreDistinct() {
+            DishReviewHistory a = DishReviewHistory.approved(dish, tenant, 1, admin);
+            DishReviewHistory b = DishReviewHistory.approved(dish, tenant, 1, admin);
+
+            assertThat(a)
+                    .as("equality is by database identity; two transient rows are two rows")
+                    .isEqualTo(a)
+                    .isNotEqualTo(b)
+                    .isNotEqualTo("not an entry")
+                    .isNotEqualTo(null);
+            assertThat(a.hashCode()).isEqualTo(a.hashCode());
+        }
+
+        @Test
+        @DisplayName("toString names the dish, cycle and event, for a readable log line")
+        void toStringIsUseful() {
+            String text = DishReviewHistory.rejected(dish, tenant, 4, admin,
+                    "Reemplazalo por merluza y reenvia.").toString();
+
+            assertThat(text).contains(dish.toString(), "4", "REJECTED");
         }
     }
 }

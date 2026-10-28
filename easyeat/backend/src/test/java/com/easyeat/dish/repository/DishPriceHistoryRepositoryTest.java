@@ -199,5 +199,94 @@ class DishPriceHistoryRepositoryTest {
                     .isEqualTo(2);
             assertThat(entry.getPreviousPrice().scale()).isEqualTo(2);
         }
+
+        @Test
+        @DisplayName("a value arriving at scale 0 or 1 is normalised rather than stored as-is")
+        void lowerScaleIsNormalised() {
+            DishPriceHistory entry = DishPriceHistory.record(
+                    DISH, TENANT, ADMIN, new BigDecimal("100"), new BigDecimal("200.5"),
+                    new BigDecimal("50"));
+
+            assertThat(entry.getPreviousPrice()).isEqualByComparingTo("100.00");
+            assertThat(entry.getNewPrice().scale()).isEqualTo(2);
+            assertThat(entry.getFoodCostSnapshot().scale()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("the identifiers are all required, so no entry can be orphaned")
+        void identifiersAreRequired() {
+            BigDecimal price = new BigDecimal("11250.00");
+            BigDecimal cost = new BigDecimal("4500.00");
+
+            assertThatThrownBy(() -> DishPriceHistory.record(null, TENANT, ADMIN, null, price, cost))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> DishPriceHistory.record(DISH, null, ADMIN, null, price, cost))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> DishPriceHistory.record(DISH, TENANT, null, null, price, cost))
+                    .as("FR-035 keeps the actor on every row")
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("the new price and the Food Cost are both mandatory")
+        void mandatoryAmounts() {
+            assertThatThrownBy(() -> DishPriceHistory.record(DISH, TENANT, ADMIN, null, null,
+                    new BigDecimal("4500.00")))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> DishPriceHistory.record(DISH, TENANT, ADMIN, null,
+                    new BigDecimal("11250.00"), null))
+                    .as("a price change with no recorded Food Cost could not be audited later")
+                    .isInstanceOf(NullPointerException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("what an entry reports about itself")
+    class EntryState {
+
+        private final UUID dish = UUID.randomUUID();
+        private final UUID tenant = UUID.randomUUID();
+        private final UUID admin = UUID.randomUUID();
+
+        @Test
+        @DisplayName("an entry reports every field it was built from")
+        void carriesItsData() {
+            DishPriceHistory entry = DishPriceHistory.record(dish, tenant, admin,
+                    new BigDecimal("10800.00"), new BigDecimal("11250.00"),
+                    new BigDecimal("4500.00"));
+
+            assertThat(entry.getDishId()).isEqualTo(dish);
+            assertThat(entry.getTenantId()).isEqualTo(tenant);
+            assertThat(entry.getAdminId()).isEqualTo(admin);
+            assertThat(entry.getCreatedAt()).isNotNull();
+            assertThat(entry.getId())
+                    .as("generated on persist, so null while transient")
+                    .isNull();
+        }
+
+        @Test
+        @DisplayName("two unpersisted entries are never equal, since neither has an identity yet")
+        void unpersistedEntriesAreDistinct() {
+            DishPriceHistory a = DishPriceHistory.record(dish, tenant, admin, null,
+                    new BigDecimal("11250.00"), new BigDecimal("4500.00"));
+            DishPriceHistory b = DishPriceHistory.record(dish, tenant, admin, null,
+                    new BigDecimal("11250.00"), new BigDecimal("4500.00"));
+
+            assertThat(a)
+                    .isEqualTo(a)
+                    .isNotEqualTo(b)
+                    .isNotEqualTo("not an entry")
+                    .isNotEqualTo(null);
+            assertThat(a.hashCode()).isEqualTo(a.hashCode());
+        }
+
+        @Test
+        @DisplayName("toString names the amounts, for a readable log line")
+        void toStringIsUseful() {
+            String text = DishPriceHistory.record(dish, tenant, admin, null,
+                    new BigDecimal("11250.00"), new BigDecimal("4500.00")).toString();
+
+            assertThat(text).contains(dish.toString(), "11250.00", "4500.00");
+        }
     }
 }
