@@ -167,7 +167,15 @@
 
   **Also noted, not acted on**: spec 005's migration test is named `V7MigrationAndSeedDevTest`, which carries a version in its class name and would be invalidated by a renumbering — exactly what rule 5 of the registry exists to prevent. It is spec 005's file, so Principle V forbids renaming it from here; flagged for its owner
 
-**Checkpoint**: readiness recorded and the gate passes. Nothing in this phase waits on another spec's owner any longer; T005 is this feature's own work under the recorded D1 amendment.
+### Single-tier authorization for this phase (Principle X)
+
+Principle X forbids single-tier work and states that **no automatic exception is permitted for setup, foundational or infrastructure tasks**; any such work requires explicit human authorization, and the Compliance clause requires that authorization to be documented.
+
+**Granted 2026-10-28 by the developer, recorded here as the constitution requires.** This phase is backend-only by its nature rather than by omission: seven of its eight tasks assert the state of upstream code and produce no artifact beyond a recorded outcome, and the eighth adds one constant to an enum. There is no user-facing surface to pair it with — a frontend counterpart to an enum constant would be an invented deliverable, which Principle V forbids.
+
+The frontend consequence that *does* exist was found while executing T005 and is deliberately **not** absorbed into this phase: the frontend's own status union is now narrower than the backend's. It is recorded as **T079a** in US3, where it becomes observable and where its vertical slice is real. That is the scope boundary this authorization covers — one tier now, with the paired work written down rather than forgotten.
+
+**Checkpoint**: readiness recorded and **the gate passes**. All eight tasks are closed with their evidence. Nothing in this phase waits on another spec's owner, and no task was closed by choosing a resolution unilaterally: T006 and T007 record decisions their owners made in writing on issue #146, and T005 executed a change authorized by a recorded amendment to D1. **Phase 2 may begin.**
 
 ---
 
