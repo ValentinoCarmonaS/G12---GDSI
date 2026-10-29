@@ -175,6 +175,16 @@ describe('the review inbox surface', () => {
       expect(screen.getByTestId('inbox-row')).toHaveTextContent(/autor no registrado/i);
     });
 
+    it('renders a row with no submission instant as "Sin fecha de envío"', () => {
+      renderInbox({ items: [item({ submittedAt: null })] });
+
+      // The contract allows a null submittedAt on the PUBLISHED and HISTORY tabs. A blank cell
+      // there is indistinguishable from a formatting fault, which FR-027 rules out for the
+      // author column and which is no more readable here.
+      expect(screen.getByTestId('inbox-row-submitted-at')).toHaveTextContent(/sin fecha de envío/i);
+      expect(screen.getByTestId('inbox-row')).toHaveTextContent('Risotto de Hongos');
+    });
+
     it('marks a suspended author without implying the dish is blocked (FR-026)', () => {
       renderInbox({ items: [item({ authorDeactivated: true })] });
 

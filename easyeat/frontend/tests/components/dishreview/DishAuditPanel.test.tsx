@@ -123,6 +123,30 @@ describe('DishAuditPanel', () => {
       expect(screen.getByTestId('food-cost-total')).toHaveTextContent('4.500,00');
     });
 
+    it('renders a line with no declared unit as a dash rather than an empty cell', () => {
+      render(
+        <FoodCostBreakdownTable
+          audit={audit({
+            items: [
+              {
+                ingredientId: 'ing-3',
+                ingredientName: 'Caldo de Verduras',
+                quantity: 1,
+                unitOfMeasure: null,
+                unitPurchaseCost: 900,
+                lineSubtotal: 900,
+                unpricedWarning: false,
+              },
+            ],
+          })}
+        />
+      );
+
+      const row = screen.getByTestId('cost-line');
+      expect(row).toHaveTextContent('Caldo de Verduras');
+      expect(row).toHaveTextContent('—');
+    });
+
     it('renders a zero Food Cost as a figure, not as an absence', () => {
       render(
         <FoodCostBreakdownTable audit={audit({ totalFoodCost: 0, items: [] })} />
