@@ -479,7 +479,11 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
   **Two cases pin behaviour that a working-looking page gets wrong.** Switching tabs must **clear the open detail**, because that dish belonged to the previous view and leaving it up invites a decision made from the wrong list. And a detail failure must **remove the previous panel** rather than leave it beside the error — otherwise the Administrator decides about a dish they are no longer looking at, which is the worst outcome on this screen.
 
   **SC-007 is asserted as information sufficiency**, which is how it was rewritten: the five blocks must all be present — identity, declared labels, the itemized cost, the gate status and the author attribution — rather than measuring whether the Administrator decided faster.
-- [ ] T059 [US1] Implement `easyeat/frontend/src/pages/AdminDishReviewPage.tsx` — `/admin/dishes`, inbox plus detail panel — **Serves**: FR-002, FR-006
+- [x] T059 [US1] Implement `easyeat/frontend/src/pages/AdminDishReviewPage.tsx` — `/admin/dishes`, inbox plus detail panel — **Serves**: FR-002, FR-006
+
+  **DONE 2026-10-29**, T058 green at 14 of 14.
+
+  The inbox stays on screen while a dish is open, so the Administrator keeps sight of the queue. Two rules keep the halves honest about each other: **switching tabs closes the open dish**, because it belonged to the view being left; and a **failed detail load clears the panel** rather than leaving the previous dish beside an error, which would have the Administrator reading one file while the page talks about another. The panel is cleared *before* the request, not after it resolves.
 - [ ] T060 [US1] Write `easyeat/frontend/tests/router/adminDishReviewRoute.test.tsx` asserting `/admin/dishes` resolves before the `/admin/*` catch-all and is role-guarded — **Serves**: FR-001
 - [ ] T061 [US1] Register the route in `easyeat/frontend/src/router/AppRoutes.tsx` **before** the `/admin/*` catch-all, matching how `/admin/staff` and `/admin/inventory` are declared — **Serves**: FR-001
 - [ ] T062 [US1] Write `easyeat/frontend/tests/pages/AdminWorkspacePage.test.tsx` asserting the dish-review hub card renders, displays the pending count it receives, and links to `/admin/dishes` — **Serves**: FR-003
