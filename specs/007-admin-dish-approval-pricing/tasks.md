@@ -485,9 +485,33 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
 
   The inbox stays on screen while a dish is open, so the Administrator keeps sight of the queue. Two rules keep the halves honest about each other: **switching tabs closes the open dish**, because it belonged to the view being left; and a **failed detail load clears the panel** rather than leaving the previous dish beside an error, which would have the Administrator reading one file while the page talks about another. The panel is cleared *before* the request, not after it resolves.
 - [x] T060 [US1] Write `easyeat/frontend/tests/router/adminDishReviewRoute.test.tsx` asserting `/admin/dishes` resolves before the `/admin/*` catch-all and is role-guarded — **Serves**: FR-001
+
+  **DONE 2026-10-29**, RED observed: 1 of 7 failing, `/admin/dishes` answered by the `/admin/*` catch-all. Route order is asserted in **both** directions, because each failure is silent in a browser — the Administrator still sees a page, just not the one they asked for. Declared too late the catch-all wins and the inbox is unreachable; declared too broadly it swallows `/admin/dishes/:id/cost-audit` (spec 005) and the rest of the admin perimeter.
+
+  **The hub is identified by its subtitle, not its title.** The first draft asserted the absence of *"Panel de Administración"* to prove the hub had not answered. The inbox page carries a *"Volver al Panel de Administración"* link of its own, so that assertion reported the hub as present on the very page that had correctly replaced it. The unambiguous marker is the hub's subtitle.
+
+  **One case asserts the network is never touched by a rejected role**: a guard that redirects *after* firing the inbox request would leak the queue's existence and spend a 403 on every Chef who mistypes a URL.
 - [x] T061 [US1] Register the route in `easyeat/frontend/src/router/AppRoutes.tsx` **before** the `/admin/*` catch-all, matching how `/admin/staff` and `/admin/inventory` are declared — **Serves**: FR-001
+
+  **DONE 2026-10-29**, T060 green at 7 of 7 and the five pre-existing router suites still green at 74 of 74.
+
+  **The source position is kept even though React Router does not need it.** v6 ranks matches by specificity rather than source order, so a literal `/admin/dishes` outranks the `/admin/*` splat wherever it is written. The declaration is placed before the catch-all anyway, because source order is what a reader checks when a route stops resolving, and a file whose order disagrees with its behaviour forces the next person to know about ranking before they can trust it.
 - [x] T062 [US1] Write `easyeat/frontend/tests/pages/AdminWorkspacePage.test.tsx` asserting the dish-review hub card renders, displays the pending count it receives, and links to `/admin/dishes` — **Serves**: FR-003
+
+  **DONE 2026-10-29**, RED observed: 6 of the 6 new cases failing, the 4 pre-existing ones green. **The file already existed** — it is spec 005's suite for this shared page — so the cases were added as a second `describe` rather than replacing it: the notification panel below the card belongs to the earlier spec and must keep working.
+
+  **The count's source is pinned by the test**, with the unread-alert count mocked to a *different* number in the same case. See T063 for why the two are not interchangeable.
+
+  Two cases cover **not knowing** the count: a failed load must render `--` rather than a zero, and must not claim the queue is empty either, since both are fabrications about work waiting. And the link must already be reachable while the count is in flight, so a hanging count endpoint cannot strand the Administrator on the hub.
 - [x] T063 [US1] Add the hub card linking to the inbox with its pending count in `easyeat/frontend/src/pages/AdminWorkspacePage.tsx` — **Serves**: FR-003
+
+  **DONE 2026-10-29**, T062 green at 10 of 10.
+
+  **The card's count changed source, and this is the substantive decision of the task.** The *"Menú y Precios"* card already existed as an inert `div` whose number came from `adminNotificationApi`'s unread-alert count. That is a different quantity from the one the card claims to show: its own copy reads *"platos pendientes de fijación de precio"*, but the alert count falls to zero as soon as the Administrator reads the alerts, while the dishes stay in the queue. `FR-003` and `contracts/openapi.yaml` name **`pendingCount`** as the authority on dishes awaiting a decision, so the card now reads that, and `plan.md` §Frontend design already specified the card as *"linked from `AdminWorkspacePage` with its pending count"*. The notification panel below the card keeps using the feed, which is what that panel is actually about.
+
+  **`size: 1`**, the contract's minimum: `pendingCount` is returned on every tab, so the hub has no use for the twenty rows it would not render.
+
+  **The description line is suppressed when the count is unknown.** With the count at `--` the previous markup still read *"Sin platos pendientes de revisión"*, so a failed request produced a card that denied the existence of work it had not managed to look up.
 
 **Checkpoint**: User Story 1 is fully functional and independently testable.
 
