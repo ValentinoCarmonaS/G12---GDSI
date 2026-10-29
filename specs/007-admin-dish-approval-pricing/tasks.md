@@ -486,7 +486,7 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
   The inbox stays on screen while a dish is open, so the Administrator keeps sight of the queue. Two rules keep the halves honest about each other: **switching tabs closes the open dish**, because it belonged to the view being left; and a **failed detail load clears the panel** rather than leaving the previous dish beside an error, which would have the Administrator reading one file while the page talks about another. The panel is cleared *before* the request, not after it resolves.
 - [x] T060 [US1] Write `easyeat/frontend/tests/router/adminDishReviewRoute.test.tsx` asserting `/admin/dishes` resolves before the `/admin/*` catch-all and is role-guarded — **Serves**: FR-001
 - [x] T061 [US1] Register the route in `easyeat/frontend/src/router/AppRoutes.tsx` **before** the `/admin/*` catch-all, matching how `/admin/staff` and `/admin/inventory` are declared — **Serves**: FR-001
-- [ ] T062 [US1] Write `easyeat/frontend/tests/pages/AdminWorkspacePage.test.tsx` asserting the dish-review hub card renders, displays the pending count it receives, and links to `/admin/dishes` — **Serves**: FR-003
+- [x] T062 [US1] Write `easyeat/frontend/tests/pages/AdminWorkspacePage.test.tsx` asserting the dish-review hub card renders, displays the pending count it receives, and links to `/admin/dishes` — **Serves**: FR-003
 - [ ] T063 [US1] Add the hub card linking to the inbox with its pending count in `easyeat/frontend/src/pages/AdminWorkspacePage.tsx` — **Serves**: FR-003
 
 **Checkpoint**: User Story 1 is fully functional and independently testable.

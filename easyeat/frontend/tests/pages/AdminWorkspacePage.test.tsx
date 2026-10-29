@@ -5,11 +5,54 @@ import { AdminWorkspacePage } from '@/pages/AdminWorkspacePage';
 import { authApi } from '@/api/authApi';
 import { staffApi } from '@/api/staffApi';
 import { inventoryApi } from '@/api/inventoryApi';
+import { dishReviewApi } from '@/api/dishReviewApi';
+import { adminNotificationApi } from '@/api/adminNotificationApi';
 import * as AuthModule from '@/hooks/useAuth';
+import type { DishReviewInboxPage } from '@/types/dishReview';
 
 vi.mock('@/api/staffApi');
 vi.mock('@/api/inventoryApi');
 vi.mock('@/hooks/useAuth');
+vi.mock('@/api/dishReviewApi', () => ({
+  dishReviewApi: {
+    getInbox: vi.fn().mockResolvedValue({
+      items: [],
+      page: 0,
+      size: 1,
+      totalElements: 0,
+      totalPages: 0,
+      hasNext: false,
+      pendingCount: 0,
+    }),
+    getDetail: vi.fn(),
+  },
+}));
+vi.mock('@/api/adminNotificationApi', () => ({
+  adminNotificationApi: {
+    listNotifications: vi.fn().mockResolvedValue({
+      content: [],
+      page: 0,
+      size: 20,
+      totalElements: 0,
+      totalPages: 0,
+      unreadCount: 0,
+    }),
+    markAsRead: vi.fn(),
+  },
+}));
+
+function inboxPage(overrides: Partial<DishReviewInboxPage> = {}): DishReviewInboxPage {
+  return {
+    items: [],
+    page: 0,
+    size: 1,
+    totalElements: 0,
+    totalPages: 0,
+    hasNext: false,
+    pendingCount: 0,
+    ...overrides,
+  };
+}
 
 describe('AdminWorkspacePage (T035, ADM-1.1.1)', () => {
   beforeEach(() => {
@@ -101,5 +144,138 @@ describe('AdminWorkspacePage (T035, ADM-1.1.1)', () => {
 
     expect(await screen.findByText('Panel de Administración')).toBeInTheDocument();
     expect(authApi.me).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * T062 — the dish-review hub card (FR-003).
+ *
+ * The card is the only entry point the Administrator is given to the review inbox, and the number
+ * on it is a claim about work waiting. Both halves are asserted, and the count is asserted against
+ * the inbox payload specifically: FR-003 makes `pendingCount` the authority on dishes awaiting a
+ * decision, and the admin notification feed — which the panel below this card still uses — counts
+ * unread alerts instead. The two diverge the moment an alert is read, and a card reading zero over
+ * a non-empty queue would tell the Administrator there is nothing to do.
+ */
+describe('AdminWorkspacePage - dish review hub card (T062, FR-003)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(staffApi.listStaff).mockResolvedValue([]);
+    vi.mocked(inventoryApi.listIngredients).mockResolvedValue([]);
+    vi.spyOn(authApi, 'me').mockResolvedValue(undefined);
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      user: {
+        id: 'admin-user-1',
+        email: 'roberto.admin@laesquina.com',
+        role: 'ADMINISTRADOR',
+        tenantId: 'tenant-restaurante-alpha',
+        tokenVersion: 1,
+      },
+      token: 'jwt-admin-token',
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+  });
+
+  it('renders the card and links it to the review inbox at /admin/dishes', async () => {
+    vi.mocked(dishReviewApi.getInbox).mockResolvedValue(inboxPage({ pendingCount: 7 }));
+
+    render(
+      <MemoryRouter>
+        <AdminWorkspacePage />
+      </MemoryRouter>
+    );
+
+    const card = await screen.findByText('Menú y Precios');
+    expect(card.closest('a')).toHaveAttribute('href', '/admin/dishes');
+  });
+
+  it('displays the pendingCount the inbox endpoint returns, not the unread alert count', async () => {
+    vi.mocked(dishReviewApi.getInbox).mockResolvedValue(inboxPage({ pendingCount: 7 }));
+    vi.mocked(adminNotificationApi.listNotifications).mockResolvedValue({
+      content: [],
+      page: 0,
+      size: 20,
+      totalElements: 2,
+      totalPages: 1,
+      unreadCount: 2,
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminWorkspacePage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByTestId('admin-pending-review-count')).toHaveTextContent('7');
+    expect(await screen.findByText('7 platos pendientes de fijación de precio')).toBeInTheDocument();
+    expect(screen.queryByText('2 platos pendientes de fijación de precio')).not.toBeInTheDocument();
+  });
+
+  it('states the queue is empty when pendingCount is zero', async () => {
+    vi.mocked(dishReviewApi.getInbox).mockResolvedValue(inboxPage({ pendingCount: 0 }));
+
+    render(
+      <MemoryRouter>
+        <AdminWorkspacePage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByTestId('admin-pending-review-count')).toHaveTextContent('0');
+    expect(screen.getByText('Sin platos pendientes de revisión')).toBeInTheDocument();
+  });
+
+  it('shows the -- fallback instead of a zero when the inbox count cannot be loaded', async () => {
+    vi.mocked(dishReviewApi.getInbox).mockRejectedValue(new Error('Network error'));
+
+    render(
+      <MemoryRouter>
+        <AdminWorkspacePage />
+      </MemoryRouter>
+    );
+
+    // A zero here would be a false statement about an unknown queue, which is worse than no number.
+    expect(await screen.findByTestId('admin-pending-review-count')).toHaveTextContent('--');
+    expect(screen.queryByText(/platos pendientes de fijación de precio/)).not.toBeInTheDocument();
+    // Nor may the card claim the queue is empty: it does not know that either.
+    expect(screen.queryByText('Sin platos pendientes de revisión')).not.toBeInTheDocument();
+  });
+
+  it('asks the inbox for the smallest page that still carries the count', async () => {
+    vi.mocked(dishReviewApi.getInbox).mockResolvedValue(inboxPage({ pendingCount: 3 }));
+
+    render(
+      <MemoryRouter>
+        <AdminWorkspacePage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('3 platos pendientes de fijación de precio');
+    // pendingCount comes back on every tab, so the hub has no use for the rows themselves.
+    expect(dishReviewApi.getInbox).toHaveBeenCalledTimes(1);
+    expect(dishReviewApi.getInbox).toHaveBeenCalledWith({ tab: 'PENDING', size: 1 });
+  });
+
+  it('keeps the link reachable when the count is still loading', async () => {
+    let resolveInbox: (value: DishReviewInboxPage) => void = () => {};
+    vi.mocked(dishReviewApi.getInbox).mockReturnValue(
+      new Promise<DishReviewInboxPage>((resolve) => {
+        resolveInbox = resolve;
+      })
+    );
+
+    render(
+      <MemoryRouter>
+        <AdminWorkspacePage />
+      </MemoryRouter>
+    );
+
+    const card = await screen.findByText('Menú y Precios');
+    expect(card.closest('a')).toHaveAttribute('href', '/admin/dishes');
+
+    resolveInbox(inboxPage({ pendingCount: 1 }));
+    expect(await screen.findByTestId('admin-pending-review-count')).toHaveTextContent('1');
   });
 });
