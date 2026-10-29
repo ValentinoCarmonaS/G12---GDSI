@@ -5,6 +5,7 @@ import { authApi } from '../api/authApi';
 import { staffApi } from '../api/staffApi';
 import { inventoryApi } from '../api/inventoryApi';
 import { adminNotificationApi } from '../api/adminNotificationApi';
+import { dishReviewApi } from '../api/dishReviewApi';
 import { useAuth } from '../hooks/useAuth';
 import type { AdminNotificationResponse } from '../types/notification';
 
@@ -30,10 +31,15 @@ export const AdminWorkspacePage: React.FC = () => {
 
     adminNotificationApi
       .listNotifications({ unreadOnly: true })
-      .then((data) => {
-        setPendingNotifications(data.content || []);
-        setPendingReviewCount(data.unreadCount ?? data.totalElements);
-      })
+      .then((data) => setPendingNotifications(data.content || []))
+      .catch(() => setPendingNotifications([]));
+
+    // FR-003: pendingCount is the authority on dishes awaiting a decision. The notification feed
+    // above counts unread alerts, which stops matching the queue as soon as an alert is read.
+    // pendingCount is returned on every tab, so the smallest page the contract allows is enough.
+    dishReviewApi
+      .getInbox({ tab: 'PENDING', size: 1 })
+      .then((data) => setPendingReviewCount(data.pendingCount))
       .catch(() => setPendingReviewCount(null));
   }, []);
 
@@ -82,17 +88,22 @@ export const AdminWorkspacePage: React.FC = () => {
           <p className="text-xs text-gray-500 mt-1">Catálogo maestro y ajustes →</p>
         </Link>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <Link
+          to="/admin/dishes"
+          className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-purple-300 hover:shadow transition-all block"
+        >
           <h3 className="font-semibold text-gray-900 text-lg mb-2">Menú y Precios</h3>
-          <p className="text-3xl font-bold text-purple-600">
+          <p data-testid="admin-pending-review-count" className="text-3xl font-bold text-purple-600">
             {pendingReviewCount !== null ? `${pendingReviewCount}` : '--'}
           </p>
-          <p className="text-xs text-gray-500 mt-1">
-            {pendingReviewCount && pendingReviewCount > 0
-              ? `${pendingReviewCount} platos pendientes de fijación de precio`
-              : 'Sin platos pendientes de revisión'}
-          </p>
-        </div>
+          {pendingReviewCount !== null && (
+            <p className="text-xs text-gray-500 mt-1">
+              {pendingReviewCount > 0
+                ? `${pendingReviewCount} platos pendientes de fijación de precio`
+                : 'Sin platos pendientes de revisión'}
+            </p>
+          )}
+        </Link>
 
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="font-semibold text-gray-900 text-lg mb-2">Auditoría de Sesiones</h3>

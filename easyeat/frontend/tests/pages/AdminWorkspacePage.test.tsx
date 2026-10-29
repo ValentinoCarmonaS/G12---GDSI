@@ -31,10 +31,11 @@ vi.mock('@/api/adminNotificationApi', () => ({
   adminNotificationApi: {
     listNotifications: vi.fn().mockResolvedValue({
       content: [],
-      page: 0,
-      size: 20,
+      pageNumber: 0,
+      pageSize: 20,
       totalElements: 0,
       totalPages: 0,
+      isLast: true,
       unreadCount: 0,
     }),
     markAsRead: vi.fn(),
@@ -196,10 +197,11 @@ describe('AdminWorkspacePage - dish review hub card (T062, FR-003)', () => {
     vi.mocked(dishReviewApi.getInbox).mockResolvedValue(inboxPage({ pendingCount: 7 }));
     vi.mocked(adminNotificationApi.listNotifications).mockResolvedValue({
       content: [],
-      page: 0,
-      size: 20,
+      pageNumber: 0,
+      pageSize: 20,
       totalElements: 2,
       totalPages: 1,
+      isLast: true,
       unreadCount: 2,
     });
 

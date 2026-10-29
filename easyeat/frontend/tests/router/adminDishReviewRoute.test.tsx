@@ -36,10 +36,11 @@ vi.mock('@/api/adminNotificationApi', () => ({
   adminNotificationApi: {
     listNotifications: vi.fn().mockResolvedValue({
       content: [],
-      page: 0,
-      size: 20,
+      pageNumber: 0,
+      pageSize: 20,
       totalElements: 0,
       totalPages: 0,
+      isLast: true,
       unreadCount: 0,
     }),
     markAsRead: vi.fn(),
