@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,4 +54,24 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
     int updateRetailPriceIfUnchanged(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId,
                                      @Param("expectedPrice") BigDecimal expectedPrice,
                                      @Param("newPrice") BigDecimal newPrice);
+
+    /**
+     * The approval transition of FR-016, FR-025, spec 007: a single conditional {@code UPDATE}
+     * restating the source status the Administrator acted on, accepted only when it affects
+     * exactly one row. Zero rows means another decision committed first (FR-025's race), not that
+     * this one was ever illegal — the status predicate is what tells those two apart.
+     *
+     * <p>Sets {@code is_active = TRUE} in the same statement, per {@code research.md §3.9}: 005's
+     * drafts default it {@code FALSE}, and D4's diner-visibility predicate needs both {@code
+     * is_active} and {@code status = PUBLISHED} together, so a dish that only transitioned status
+     * would stay invisible and SC-001 would be unprovable. This is the first and only path in
+     * this feature that writes {@code is_active}; the Sprint 3 pause feature owns every other one.
+     */
+    @Modifying
+    @Query("UPDATE Dish d SET d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED, "
+            + "d.publishedAt = :publishedAt, d.isActive = true "
+            + "WHERE d.id = :dishId AND d.tenantId = :tenantId "
+            + "AND d.status = com.easyeat.dish.domain.DishStatus.PENDING_PRICE")
+    int updateApprovalIfPending(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId,
+                                @Param("publishedAt") Instant publishedAt);
 }

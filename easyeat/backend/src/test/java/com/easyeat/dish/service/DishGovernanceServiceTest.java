@@ -391,11 +391,14 @@ class DishGovernanceServiceTest {
 
             assertThat(response.status()).isEqualTo(DishStatus.PUBLISHED);
             assertThat(response.alreadyPublished()).isFalse();
-            assertThat(response.reviewHistoryEntryId()).isNotNull();
 
             ArgumentCaptor<DishReviewHistory> captor = ArgumentCaptor.forClass(DishReviewHistory.class);
             verify(reviewHistoryRepository).save(captor.capture());
             DishReviewHistory entry = captor.getValue();
+            // Echoes back whatever id the write produced, same as DishPricingResponse does for
+            // the price-history row (T067) — the mocked repository never generates one, so this
+            // asserts equality with the written entry rather than non-nullity.
+            assertThat(response.reviewHistoryEntryId()).isEqualTo(entry.getId());
             assertThat(entry.getEventType()).isEqualTo(ReviewEventType.APPROVED);
             assertThat(entry.getAdminId()).isEqualTo(ADMIN_ID);
             assertThat(entry.getDishId()).isEqualTo(dish.getId());
