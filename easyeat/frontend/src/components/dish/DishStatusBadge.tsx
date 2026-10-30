@@ -28,6 +28,10 @@ const STATUS_CONFIGS: Record<string, StatusConfig> = {
     label: 'Inactivo',
     classes: 'bg-zinc-200 text-zinc-600 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700',
   },
+  PUBLISHED: {
+    label: 'Publicado',
+    classes: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
+  },
 };
 
 export const DishStatusBadge: React.FC<DishStatusBadgeProps> = ({ status, className = '' }) => {
