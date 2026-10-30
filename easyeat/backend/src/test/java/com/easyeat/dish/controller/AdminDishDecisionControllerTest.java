@@ -1,13 +1,17 @@
 package com.easyeat.dish.controller;
 
 import com.easyeat.dish.domain.AcknowledgementKind;
+import com.easyeat.dish.domain.PublicationGateCondition;
+import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
 import com.easyeat.dish.dto.MarginSummary;
 import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.exception.AcknowledgementRequiredException;
+import com.easyeat.dish.exception.DishAlreadyDecidedException;
 import com.easyeat.dish.exception.DishNotFoundException;
 import com.easyeat.dish.exception.DishStateConflictException;
 import com.easyeat.dish.exception.InvalidRetailPriceException;
+import com.easyeat.dish.exception.PublicationGateException;
 import com.easyeat.dish.exception.StaleDishPriceException;
 import com.easyeat.dish.service.DishGovernanceService;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,23 +35,24 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * The pricing portion of the decision surface (FR-009, FR-013, FR-014, SC-003) — {@code PUT
- * /admin/dishes/{id}/retail-price}. Approval and rejection are added to this class by US3 and
- * US4, which is why the class is created here rather than per story (same posture as
- * {@code AdminDishReviewController}).
+ * The pricing (FR-009, FR-013, FR-014, SC-003) and approval (FR-015 through FR-019, SC-003)
+ * portions of the decision surface — {@code PUT /admin/dishes/{id}/retail-price} and {@code POST
+ * /admin/dishes/{id}/approval}. Rejection is added to this class by US4, which is why the class is
+ * created here rather than per story (same posture as {@code AdminDishReviewController}).
  *
  * <p>This is a web-slice test: the service is mocked, so the assertions are about role gating,
  * request shaping and the exact HTTP status/body the contract publishes for each exception
- * {@link DishGovernanceService} is documented to raise — not about the pricing arithmetic itself,
- * which belongs to {@code DishGovernanceServiceTest}.
+ * {@link DishGovernanceService} is documented to raise — not about the pricing or gate logic
+ * itself, which belongs to {@code DishGovernanceServiceTest}.
  */
 @WebMvcTest(AdminDishDecisionController.class)
-@DisplayName("AdminDishDecisionController: retail pricing (FR-009, FR-013, FR-014)")
+@DisplayName("AdminDishDecisionController: pricing and approval")
 class AdminDishDecisionControllerTest extends DishControllerTestBase {
 
     private static final String RETAIL_PRICE = "/api/v1/admin/dishes/%s/retail-price";
@@ -308,6 +314,170 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
                             .content("""
                                     {"retailPrice": 11250.00, "expectedRetailPrice": null}
                                     """))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    private static final String APPROVAL = "/api/v1/admin/dishes/%s/approval";
+
+    private String approvalUrl() {
+        return String.format(APPROVAL, dishId);
+    }
+
+    private static DishApprovalResponse approvalResponse(boolean alreadyPublished) {
+        return new DishApprovalResponse(UUID.randomUUID(), DishStatus.PUBLISHED, alreadyPublished,
+                Instant.parse("2026-10-30T10:00:00Z"),
+                alreadyPublished ? null : UUID.randomUUID());
+    }
+
+    @Nested
+    @DisplayName("the role gate on approval (FR-001)")
+    class ApprovalRoleGate {
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRADOR")
+        @DisplayName("the ADMINISTRADOR alias is admitted")
+        void administradorAdmitted() throws Exception {
+            when(governanceService.approve(eq(dishId), anyBoolean(), anyBoolean()))
+                    .thenReturn(approvalResponse(false));
+
+            mockMvc.perform(post(approvalUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isOk());
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"CHEF", "ENCARGADO", "COMENSAL"})
+        @DisplayName("every other role is refused with 403")
+        void otherRolesRefused(String role) throws Exception {
+            mockMvc.perform(post(approvalUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}")
+                            .with(org.springframework.security.test.web.servlet.request
+                                    .SecurityMockMvcRequestPostProcessors.user("x").roles(role)))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("the publication gate (FR-015, FR-018, FR-019)")
+    class ApprovalGate {
+
+        @Test
+        @DisplayName("every gate failure carries its own unmetConditions entry")
+        void gateFailureNamesUnmetConditions() throws Exception {
+            when(governanceService.approve(eq(dishId), anyBoolean(), anyBoolean()))
+                    .thenThrow(new PublicationGateException(dishId,
+                            List.of(PublicationGateCondition.RETAIL_PRICE_MISSING,
+                                    PublicationGateCondition.EMPTY_RECIPE)));
+
+            mockMvc.perform(post(approvalUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.type").value("https://easyeat.com/errors/publication-gate-failed"))
+                    .andExpect(jsonPath("$.unmetConditions", org.hamcrest.Matchers.hasSize(2)))
+                    .andExpect(jsonPath("$.unmetConditions[0]").value("RETAIL_PRICE_MISSING"))
+                    .andExpect(jsonPath("$.unmetConditions[1]").value("EMPTY_RECIPE"));
+        }
+
+        @Test
+        @DisplayName("approving a dish in DRAFT is a 409 dish-invalid-state")
+        void draftYields409() throws Exception {
+            when(governanceService.approve(eq(dishId), anyBoolean(), anyBoolean()))
+                    .thenThrow(new DishStateConflictException(dishId, "DRAFT", "PENDING_PRICE"));
+
+            mockMvc.perform(post(approvalUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("https://easyeat.com/errors/dish-invalid-state"));
+        }
+
+        @Test
+        @DisplayName("approving an already-PUBLISHED dish is an idempotent 200, not a conflict")
+        void alreadyPublishedIsIdempotent() throws Exception {
+            when(governanceService.approve(eq(dishId), anyBoolean(), anyBoolean()))
+                    .thenReturn(approvalResponse(true));
+
+            mockMvc.perform(post(approvalUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.alreadyPublished").value(true))
+                    .andExpect(jsonPath("$.reviewHistoryEntryId").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("another administrator deciding first yields 409 dish-already-decided")
+        void raceYields409() throws Exception {
+            when(governanceService.approve(eq(dishId), anyBoolean(), anyBoolean()))
+                    .thenThrow(new DishAlreadyDecidedException(dishId, "DRAFT", Instant.now()));
+
+            mockMvc.perform(post(approvalUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("https://easyeat.com/errors/dish-already-decided"));
+        }
+
+        @Test
+        @DisplayName("the acknowledgement challenge for unpriced ingredients or a negative margin")
+        void acknowledgementChallenge() throws Exception {
+            when(governanceService.approve(eq(dishId), eq(false), eq(false)))
+                    .thenThrow(new AcknowledgementRequiredException(dishId,
+                            List.of(AcknowledgementKind.UNPRICED_INGREDIENTS,
+                                    AcknowledgementKind.NEGATIVE_MARGIN)));
+
+            mockMvc.perform(post(approvalUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.type").value("https://easyeat.com/errors/acknowledgement-required"))
+                    .andExpect(jsonPath("$.requiredAcknowledgements", org.hamcrest.Matchers.hasSize(2)));
+        }
+
+        @Test
+        @DisplayName("both acknowledgement flags are forwarded to the service")
+        void acknowledgementFlagsForwarded() throws Exception {
+            when(governanceService.approve(eq(dishId), eq(true), eq(true)))
+                    .thenReturn(approvalResponse(false));
+
+            mockMvc.perform(post(approvalUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"acknowledgeUnpricedIngredients": true, "acknowledgeNegativeMargin": true}
+                                    """))
+                    .andExpect(status().isOk());
+
+            verify(governanceService).approve(eq(dishId), eq(true), eq(true));
+        }
+
+        @Test
+        @DisplayName("an empty body defaults both acknowledgement flags to false")
+        void emptyBodyDefaultsToFalse() throws Exception {
+            when(governanceService.approve(eq(dishId), eq(false), eq(false)))
+                    .thenReturn(approvalResponse(false));
+
+            mockMvc.perform(post(approvalUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isOk());
+
+            verify(governanceService).approve(eq(dishId), eq(false), eq(false));
+        }
+
+        @Test
+        @DisplayName("a dish not found in the caller's establishment is a 404")
+        void dishNotFoundYields404() throws Exception {
+            when(governanceService.approve(eq(dishId), anyBoolean(), anyBoolean()))
+                    .thenThrow(new DishNotFoundException(dishId));
+
+            mockMvc.perform(post(approvalUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
                     .andExpect(status().isNotFound());
         }
     }
