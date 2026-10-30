@@ -39,8 +39,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("ChefDishReviewFeedbackController (FR-023)")
 class ChefDishReviewFeedbackControllerTest extends DishControllerTestBase {
 
-    private static final Pattern FINANCIAL_FIELD =
-            Pattern.compile("cost|margin|price", Pattern.CASE_INSENSITIVE);
+    /**
+     * Matches a JSON <em>key</em> whose name contains a financial term, not the term appearing
+     * anywhere in the body — the Chef's own feedback comment is free text an Administrator wrote
+     * and may legitimately say "el costo del salmón..."; FR-023 is about no financial *field*
+     * existing on the payload, not about censoring prose that happens to use the word.
+     */
+    private static final Pattern FINANCIAL_KEY =
+            Pattern.compile("\"[a-zA-Z]*(cost|margin|price)[a-zA-Z]*\"\\s*:", Pattern.CASE_INSENSITIVE);
 
     @MockBean
     private ChefReviewFeedbackService feedbackService;
@@ -142,7 +148,7 @@ class ChefDishReviewFeedbackControllerTest extends DishControllerTestBase {
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
 
-            assertThat(FINANCIAL_FIELD.matcher(body).find()).isFalse();
+            assertThat(FINANCIAL_KEY.matcher(body).find()).isFalse();
         }
     }
 }
