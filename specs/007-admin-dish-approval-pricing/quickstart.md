@@ -176,9 +176,84 @@ With both servers running, log in as `admin@easyeat.com` and open `/admin/dishes
   bidirectional margin ↔ PVP calculator; editing one field drives the other, and reformatting to two
   decimals happens on blur, never mid-keystroke;
 - with Food Cost `0.00` the margin input is disabled and the direct-price path is required;
-- margins at `≥ 100%` and `≤ −500%` show a boundary advisory and block derivation;
+- margins at `≥ 100%` show a boundary advisory and block derivation (the `≤ −500%` floor named here
+  was withdrawn by `spec.md`'s own clarification log, CHK014, before Phase 4 began — only the 100%
+  upper bound has mathematical grounding, since it divides by zero; a negative margin of any size is
+  a legitimate commercial decision gated by FR-014's confirmation, not refused here — see `tasks.md`
+  T069's correction note for the same stale wording caught earlier in this delivery);
 - a PVP below the tolerance threshold shows the achievable precision instead of claiming ±0.01 pp;
 - saving a negative margin and publishing with advisories each require a second confirmation;
 - the rejection dialog enforces 10–1000 characters with a live counter and a disabled submit;
 - `403`, each flavour of `409` and `400` surface distinct messages, and a stale decision refreshes
   the list instead of leaving a phantom row.
+
+---
+
+## 7. Execution record (T103/T104, 2026-10-30)
+
+### Scenarios A, B and C — executed end to end against a live instance
+
+Ran against a real backend (`mvn spring-boot:run -Dspring-boot.run.profiles=dev`) and a real
+PostgreSQL 16 container, with real `curl` requests driving every step — not inferred from the test
+suites, though the suites already cover the same ground (`DishApprovalPricingIntegrationTest`,
+`DishVisibilityPredicateIntegrationTest`, `DishReviewInboxIntegrationTest`, every controller test).
+
+- **Scenario A** (§3): all 9 steps reproduced exactly as written, including step 8's diner-visibility
+  check — confirmed with a real `GET /establishments/{tenantId}/dishes` call that only the
+  `PUBLISHED` dish is visible and its `price` field carries the `retail_price` value (`1500.0`),
+  which is this phase's own T096-T098 exercised against a running server, not just the test suite.
+- **Scenario B** (§4): all 5 steps reproduced exactly. Step 4's "same for `ENCARGADO` and `COMENSAL`
+  tokens" was not separately driven by `curl` — the `CHEF`-vs-anonymous pair already demonstrates the
+  role gate, and every other role is already covered by `ChefDishReviewFeedbackControllerTest`'s own
+  RBAC matrix; repeating it by hand here would not add evidence the suite doesn't already carry.
+- **Scenario C** (§5): all 7 steps reproduced exactly, including the live-margin check (step 7): after
+  raising the one recipe ingredient's `unitPurchaseCost` from 1200 to 2000, `review-detail` reported
+  `foodCost` moving from 600 to 1000 and `marginPct` from −20% to −100% while `retailPrice` stayed at
+  500 — the margin is recomputed live, never read from a stored value.
+
+Every response body, status code and error type matched what this document already specified; no
+corrections were needed to §3, §4 or §5. The one correction this execution did produce is §6's
+`≤ −500%` line, recorded above with T103.
+
+### SC-006 (T104) — what could and could not be verified here
+
+No `tc`/`netem` and no browser-based network emulation (Chrome DevTools Protocol or equivalent) is
+available in this execution environment — checked before falling back to the plan below, per the
+constitution's Principle VIII, which requires stating this rather than fabricating a true end-to-end
+capture.
+
+**What was measured**: 20 pending dishes were seeded (one already carrying a recipe and a priced
+history from Scenario A/C). Both SC-006 endpoints were called 20 times each against the live local
+server, with no added network delay (loopback), and the 95th percentile of `curl`'s own
+`time_total` was taken:
+
+| Surface | Server p95 (loopback) | Response payload |
+|---|---|---|
+| `GET /admin/dishes/review-inbox?tab=PENDING&size=20` | 0.0828 s | 6184 bytes |
+| `GET /admin/dishes/{id}/review-detail` | 0.0227 s | 1156 bytes |
+
+**What was calculated, not measured**: the 20 Mbps / 50 ms RTT network component SC-006 names, from
+the stated conditions rather than a real constrained link — transfer time as payload size ÷ 2.5 MB/s
+(20 Mbps), plus 2 × 50 ms for the connection/request round trip:
+
+| Surface | Transfer time | RTT overhead | Calculated network component |
+|---|---|---|---|
+| Review inbox | 6184 / 2.5 MB/s ≈ 0.0025 s | 0.100 s | ≈ 0.103 s |
+| Review detail | 1156 / 2.5 MB/s ≈ 0.0005 s | 0.100 s | ≈ 0.100 s |
+
+**Combined estimate (measured server p95 + calculated network component), labeled as such, not as a
+captured end-to-end measurement**:
+
+- Review inbox: 0.0828 s + 0.103 s ≈ **0.19 s**
+- Review detail: 0.0227 s + 0.100 s ≈ **0.12 s**
+
+**Verdict**: both estimates fall far inside SC-006's 2-second bound — roughly a 10× margin — so the
+criterion is very likely met. It is reported as "likely met, by calculated estimate" rather than
+"verified", because this combined figure has three honest gaps Principle VIII requires naming: (1)
+it does not model TCP slow start, congestion control or any packet loss a real constrained link
+would add beyond flat RTT overhead; (2) it excludes client-side render time — the interval between
+the response arriving and the list or the Food Cost panel actually painting, which this
+curl-only setup cannot observe since no browser tool is available in this session; and (3) the
+local Docker/JVM environment this was measured in is not production hardware. A real measurement
+with browser-based network throttling, if that tool becomes available in a future session, would be
+strictly better evidence than this estimate and should replace it rather than being added alongside it.
