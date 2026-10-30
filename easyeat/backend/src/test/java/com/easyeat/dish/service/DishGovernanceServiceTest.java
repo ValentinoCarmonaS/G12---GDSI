@@ -5,16 +5,25 @@ import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.catalog.domain.Dish;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.common.context.TenantContextHolder;
+import com.easyeat.dish.domain.AcknowledgementKind;
 import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.domain.DishPriceHistory;
+import com.easyeat.dish.domain.DishReviewHistory;
+import com.easyeat.dish.domain.PublicationGateCondition;
+import com.easyeat.dish.domain.ReviewEventType;
+import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
 import com.easyeat.dish.dto.FoodCostAuditResponse;
 import com.easyeat.dish.exception.AcknowledgementRequiredException;
+import com.easyeat.dish.exception.DishAlreadyDecidedException;
 import com.easyeat.dish.exception.DishStateConflictException;
 import com.easyeat.dish.exception.EmptyRecipeException;
 import com.easyeat.dish.exception.InvalidRetailPriceException;
+import com.easyeat.dish.exception.PublicationGateException;
 import com.easyeat.dish.exception.StaleDishPriceException;
 import com.easyeat.dish.repository.DishPriceHistoryRepository;
+import com.easyeat.dish.repository.DishPublicationGateRepository;
+import com.easyeat.dish.repository.DishReviewHistoryRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +35,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,17 +44,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * The price-save portion of {@link DishGovernanceService} (FR-009, FR-010, FR-011, FR-013,
- * FR-014, FR-025, SC-008). Approval and rejection are added to this suite by US3 and US4, which is
- * why the class is created here rather than per story (same posture as {@code
- * DishReviewDetailServiceTest} and the controller it backs).
+ * {@link DishGovernanceService}'s price-save (FR-009, FR-010, FR-011, FR-013, FR-014, FR-025,
+ * SC-008) and publication-gate/approval (FR-015 through FR-019, FR-025, FR-033, SC-001) portions.
+ * Rejection is added to this suite by US4, which is why the class is created here rather than per
+ * story (same posture as {@code DishReviewDetailServiceTest} and the controller it backs).
  */
-@DisplayName("DishGovernanceService: setRetailPrice")
+@DisplayName("DishGovernanceService")
 class DishGovernanceServiceTest {
 
     private static final UUID TENANT = UUID.randomUUID();
@@ -55,6 +66,8 @@ class DishGovernanceServiceTest {
     private DishPriceHistoryRepository priceHistoryRepository;
     private FoodCostAuditService foodCostAuditService;
     private UserRepository userRepository;
+    private DishPublicationGateRepository gateRepository;
+    private DishReviewHistoryRepository reviewHistoryRepository;
     private DishGovernanceService service;
 
     private Dish dish;
@@ -65,9 +78,12 @@ class DishGovernanceServiceTest {
         priceHistoryRepository = Mockito.mock(DishPriceHistoryRepository.class);
         foodCostAuditService = Mockito.mock(FoodCostAuditService.class);
         userRepository = Mockito.mock(UserRepository.class);
+        gateRepository = Mockito.mock(DishPublicationGateRepository.class);
+        reviewHistoryRepository = Mockito.mock(DishReviewHistoryRepository.class);
 
         service = new DishGovernanceService(dishRepository, priceHistoryRepository,
-                foodCostAuditService, new RetailPricingCalculator(), userRepository);
+                foodCostAuditService, new RetailPricingCalculator(), userRepository,
+                gateRepository, reviewHistoryRepository);
 
         TenantContextHolder.setTenantId(TENANT);
 
@@ -88,6 +104,17 @@ class DishGovernanceServiceTest {
         when(foodCostAuditService.auditDishCost(dish))
                 .thenReturn(audit(FOOD_COST, false));
         when(priceHistoryRepository.save(any(DishPriceHistory.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Gate satisfied by default (FR-015): a positive price, at least one active recipe
+        // line and confirmed allergens. Individual approval tests narrow these to exercise one
+        // failing condition at a time.
+        dish.setRetailPrice(new BigDecimal("11250.00"));
+        dish.setAllergensConfirmed(true);
+        when(gateRepository.countActiveRecipeLines(dish.getId(), TENANT)).thenReturn(1L);
+        when(reviewHistoryRepository.findMaxCycleNumberByDishId(dish.getId()))
+                .thenReturn(Optional.empty());
+        when(reviewHistoryRepository.save(any(DishReviewHistory.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
@@ -346,6 +373,227 @@ class DishGovernanceServiceTest {
             assertThat(response.margin().foodCost()).isNull();
             assertThat(response.margin().marginPct()).isNull();
             assertThat(response.margin().marginDerivable()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("approve: the publication gate (FR-015, FR-016, FR-019)")
+    class Approval {
+
+        @Test
+        @DisplayName("a dish satisfying all three conditions transitions to PUBLISHED and writes "
+                + "the approval audit row")
+        void approvesWhenGateSatisfied() {
+            when(dishRepository.updateApprovalIfPending(eq(dish.getId()), eq(TENANT), any(Instant.class)))
+                    .thenReturn(1);
+
+            DishApprovalResponse response = service.approve(dish.getId(), false, false);
+
+            assertThat(response.status()).isEqualTo(DishStatus.PUBLISHED);
+            assertThat(response.alreadyPublished()).isFalse();
+            assertThat(response.reviewHistoryEntryId()).isNotNull();
+
+            ArgumentCaptor<DishReviewHistory> captor = ArgumentCaptor.forClass(DishReviewHistory.class);
+            verify(reviewHistoryRepository).save(captor.capture());
+            DishReviewHistory entry = captor.getValue();
+            assertThat(entry.getEventType()).isEqualTo(ReviewEventType.APPROVED);
+            assertThat(entry.getAdminId()).isEqualTo(ADMIN_ID);
+            assertThat(entry.getDishId()).isEqualTo(dish.getId());
+            assertThat(entry.getCycleNumber()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("the cycle number is the dish's highest recorded cycle plus one, not "
+                + "hardcoded to one")
+        void cycleNumberIsMaxPlusOne() {
+            when(reviewHistoryRepository.findMaxCycleNumberByDishId(dish.getId()))
+                    .thenReturn(Optional.of(2));
+            when(dishRepository.updateApprovalIfPending(eq(dish.getId()), eq(TENANT), any(Instant.class)))
+                    .thenReturn(1);
+
+            service.approve(dish.getId(), false, false);
+
+            ArgumentCaptor<DishReviewHistory> captor = ArgumentCaptor.forClass(DishReviewHistory.class);
+            verify(reviewHistoryRepository).save(captor.capture());
+            assertThat(captor.getValue().getCycleNumber()).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("approving an already-PUBLISHED dish is idempotent: 200, no status change, "
+                + "no new audit row, the original publishedAt")
+        void idempotentOnAlreadyPublished() {
+            Instant originalPublishedAt = Instant.parse("2026-10-20T10:00:00Z");
+            dish.setStatus(DishStatus.PUBLISHED);
+            dish.setPublishedAt(originalPublishedAt);
+
+            DishApprovalResponse response = service.approve(dish.getId(), false, false);
+
+            assertThat(response.status()).isEqualTo(DishStatus.PUBLISHED);
+            assertThat(response.alreadyPublished()).isTrue();
+            assertThat(response.publishedAt()).isEqualTo(originalPublishedAt);
+            assertThat(response.reviewHistoryEntryId()).isNull();
+            verifyNoInteractions(reviewHistoryRepository);
+            verify(dishRepository, never()).updateApprovalIfPending(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("approving a dish in DRAFT is refused (FR-019)")
+        void draftRejected() {
+            dish.setStatus(DishStatus.DRAFT);
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(DishStateConflictException.class);
+            verifyNoInteractions(reviewHistoryRepository);
+        }
+
+        @Test
+        @DisplayName("a missing retail price blocks the gate, naming RETAIL_PRICE_MISSING")
+        void missingPriceBlocksGate() {
+            dish.setRetailPrice(null);
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(PublicationGateException.class)
+                    .satisfies(ex -> assertThat(((PublicationGateException) ex).getUnmetConditions())
+                            .containsExactly(PublicationGateCondition.RETAIL_PRICE_MISSING));
+        }
+
+        @Test
+        @DisplayName("no recipe lines at all blocks the gate, naming EMPTY_RECIPE")
+        void noRecipeLinesBlocksGate() {
+            when(gateRepository.countActiveRecipeLines(dish.getId(), TENANT)).thenReturn(0L);
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(PublicationGateException.class)
+                    .satisfies(ex -> assertThat(((PublicationGateException) ex).getUnmetConditions())
+                            .containsExactly(PublicationGateCondition.EMPTY_RECIPE));
+        }
+
+        @Test
+        @DisplayName("a recipe of only DISCONTINUED ingredients blocks the gate while the audit "
+                + "still reports a non-zero Food Cost (T076a)")
+        void discontinuedOnlyRecipeBlocksGateDespiteNonZeroCost() {
+            when(gateRepository.countActiveRecipeLines(dish.getId(), TENANT)).thenReturn(0L);
+            when(foodCostAuditService.auditDishCost(dish)).thenReturn(audit(FOOD_COST, false));
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(PublicationGateException.class)
+                    .satisfies(ex -> assertThat(((PublicationGateException) ex).getUnmetConditions())
+                            .contains(PublicationGateCondition.EMPTY_RECIPE));
+            // The cost audit (mocked above as non-zero) is exactly what T076a says cannot be used
+            // to derive condition 2 — the gate blocked on the dedicated active-recipe-line count,
+            // not on a zero cost that was never there.
+        }
+
+        @Test
+        @DisplayName("unconfirmed allergens block the gate, naming ALLERGENS_UNCONFIRMED")
+        void unconfirmedAllergensBlockGate() {
+            dish.setAllergensConfirmed(false);
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(PublicationGateException.class)
+                    .satisfies(ex -> assertThat(((PublicationGateException) ex).getUnmetConditions())
+                            .containsExactly(PublicationGateCondition.ALLERGENS_UNCONFIRMED));
+        }
+
+        @Test
+        @DisplayName("every unmet condition is reported at once, not just the first found")
+        void allUnmetConditionsReportedTogether() {
+            dish.setRetailPrice(null);
+            dish.setAllergensConfirmed(false);
+            when(gateRepository.countActiveRecipeLines(dish.getId(), TENANT)).thenReturn(0L);
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(PublicationGateException.class)
+                    .satisfies(ex -> assertThat(((PublicationGateException) ex).getUnmetConditions())
+                            .containsExactlyInAnyOrder(
+                                    PublicationGateCondition.RETAIL_PRICE_MISSING,
+                                    PublicationGateCondition.EMPTY_RECIPE,
+                                    PublicationGateCondition.ALLERGENS_UNCONFIRMED));
+        }
+
+        @Test
+        @DisplayName("a gate failure is reported even when an acknowledgement would otherwise "
+                + "also be missing — the gate is never offered as something a confirmation clears")
+        void gateFailureTakesPriorityOverAcknowledgement() {
+            dish.setAllergensConfirmed(false);
+            when(foodCostAuditService.auditDishCost(dish)).thenReturn(audit(FOOD_COST, true));
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(PublicationGateException.class);
+        }
+
+        @Test
+        @DisplayName("unpriced ingredients without acknowledgement block approval (FR-017)")
+        void unpricedIngredientsRequireAcknowledgement() {
+            when(foodCostAuditService.auditDishCost(dish)).thenReturn(audit(FOOD_COST, true));
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(AcknowledgementRequiredException.class)
+                    .satisfies(ex -> assertThat(
+                            ((AcknowledgementRequiredException) ex).getRequiredAcknowledgements())
+                            .containsExactly(AcknowledgementKind.UNPRICED_INGREDIENTS));
+        }
+
+        @Test
+        @DisplayName("acknowledging unpriced ingredients lets the approval proceed")
+        void acknowledgingUnpricedIngredientsProceeds() {
+            when(foodCostAuditService.auditDishCost(dish)).thenReturn(audit(FOOD_COST, true));
+            when(dishRepository.updateApprovalIfPending(eq(dish.getId()), eq(TENANT), any(Instant.class)))
+                    .thenReturn(1);
+
+            DishApprovalResponse response = service.approve(dish.getId(), true, false);
+
+            assertThat(response.status()).isEqualTo(DishStatus.PUBLISHED);
+        }
+
+        @Test
+        @DisplayName("a negative margin without acknowledgement blocks approval (FR-014, FR-017)")
+        void negativeMarginRequiresAcknowledgement() {
+            dish.setRetailPrice(new BigDecimal("100.00"));
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(AcknowledgementRequiredException.class)
+                    .satisfies(ex -> assertThat(
+                            ((AcknowledgementRequiredException) ex).getRequiredAcknowledgements())
+                            .containsExactly(AcknowledgementKind.NEGATIVE_MARGIN));
+        }
+
+        @Test
+        @DisplayName("acknowledging the negative margin lets the approval proceed")
+        void acknowledgingNegativeMarginProceeds() {
+            dish.setRetailPrice(new BigDecimal("100.00"));
+            when(dishRepository.updateApprovalIfPending(eq(dish.getId()), eq(TENANT), any(Instant.class)))
+                    .thenReturn(1);
+
+            DishApprovalResponse response = service.approve(dish.getId(), false, true);
+
+            assertThat(response.status()).isEqualTo(DishStatus.PUBLISHED);
+        }
+
+        @Test
+        @DisplayName("a lost race (zero rows affected despite a satisfied gate) is reported as "
+                + "dish-already-decided, carrying the status that now prevails")
+        void raceReportedAsAlreadyDecided() {
+            // The initial read sees PENDING_PRICE and the gate passes against it; between that
+            // read and the conditional UPDATE, a concurrent rejection commits, so the UPDATE
+            // affects no row and the re-fetch that follows sees the new status. Two Dish
+            // instances rather than mutating one, because Mockito's stub returns the same
+            // reference on every call and the real race is exactly two different reads.
+            Dish racedDish = new Dish();
+            racedDish.setId(dish.getId());
+            racedDish.setTenantId(TENANT);
+            racedDish.setStatus(DishStatus.DRAFT);
+
+            when(dishRepository.findByIdAndTenantId(dish.getId(), TENANT))
+                    .thenReturn(Optional.of(dish), Optional.of(racedDish));
+            when(dishRepository.updateApprovalIfPending(eq(dish.getId()), eq(TENANT), any(Instant.class)))
+                    .thenReturn(0);
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(DishAlreadyDecidedException.class)
+                    .satisfies(ex -> assertThat(
+                            ((DishAlreadyDecidedException) ex).getCurrentStatus()).isEqualTo("DRAFT"));
+            verifyNoInteractions(reviewHistoryRepository);
         }
     }
 }
