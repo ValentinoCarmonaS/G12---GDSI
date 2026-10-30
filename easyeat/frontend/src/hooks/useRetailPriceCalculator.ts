@@ -122,6 +122,9 @@ export function useRetailPriceCalculator(foodCost: number): UseRetailPriceCalcul
     if (margin !== null) {
       setMarginInput(formatFixed(roundHalfUp(margin, DISPLAY_SCALE)));
     }
+    // FR-030: the derived field is "not editable until editing ends" — editing has now ended,
+    // so neither field is authoritative over the other until the Administrator types again.
+    setEditedField(null);
   }, [marginInput]);
 
   const onPriceBlur = useCallback(() => {
@@ -129,6 +132,7 @@ export function useRetailPriceCalculator(foodCost: number): UseRetailPriceCalcul
     if (price !== null) {
       setPriceInput(formatFixed(roundHalfUp(price, DISPLAY_SCALE)));
     }
+    setEditedField(null);
   }, [priceInput]);
 
   return {

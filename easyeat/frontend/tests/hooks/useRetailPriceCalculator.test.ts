@@ -151,5 +151,21 @@ describe('useRetailPriceCalculator', () => {
       act(() => result.current.onMarginChange('60'));
       expect(result.current.editedField).toBe('margin');
     });
+
+    it('leaving the field being edited clears which one is authoritative (FR-030)', () => {
+      const { result } = renderHook(() => useRetailPriceCalculator(4500));
+      act(() => result.current.onMarginChange('60'));
+      expect(result.current.editedField).toBe('margin');
+
+      act(() => result.current.onMarginBlur());
+      expect(result.current.editedField).toBeNull();
+    });
+
+    it('leaving the price field clears it the same way', () => {
+      const { result } = renderHook(() => useRetailPriceCalculator(4500));
+      act(() => result.current.onPriceChange('11250'));
+      act(() => result.current.onPriceBlur());
+      expect(result.current.editedField).toBeNull();
+    });
   });
 });

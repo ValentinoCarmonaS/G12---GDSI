@@ -75,10 +75,15 @@ describe('MarginPriceCalculator', () => {
   });
 
   it('discloses the server-computed achievable deviation below the precision threshold (SC-002)', () => {
+    // research.md §3.1's own pinned case: a Food Cost of 0.07 at a 60% target margin derives
+    // 0.18, below the 20.00 threshold a 60% margin implies, with an observed deviation of
+    // 1.1111 pp rather than the ±0.01 pp bound.
     render(
       <MarginPriceCalculator
         margin={margin({
-          retailPrice: 0.15,
+          foodCost: 0.07,
+          retailPrice: 0.18,
+          marginPct: 61.1111,
           toleranceThresholdPrice: 20,
           marginTolerancePp: 1.1111,
         })}
@@ -86,7 +91,7 @@ describe('MarginPriceCalculator', () => {
       />
     );
 
-    expect(screen.getByText(/1\.11/)).toBeInTheDocument();
+    expect(screen.getByText(/1,11/)).toBeInTheDocument();
     expect(screen.queryByText(/±0[.,]01/)).not.toBeInTheDocument();
   });
 
