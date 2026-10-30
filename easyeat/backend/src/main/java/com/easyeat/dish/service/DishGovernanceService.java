@@ -3,6 +3,7 @@ package com.easyeat.dish.service;
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.catalog.domain.Dish;
+import com.easyeat.catalog.exception.DishNotFoundException;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.dish.domain.AcknowledgementKind;
@@ -16,7 +17,6 @@ import com.easyeat.dish.dto.FoodCostAuditResponse;
 import com.easyeat.dish.dto.MarginSummary;
 import com.easyeat.dish.exception.AcknowledgementRequiredException;
 import com.easyeat.dish.exception.DishAlreadyDecidedException;
-import com.easyeat.dish.exception.DishNotFoundException;
 import com.easyeat.dish.exception.DishStateConflictException;
 import com.easyeat.dish.exception.EmptyRecipeException;
 import com.easyeat.dish.exception.InvalidRetailPriceException;
@@ -69,6 +69,7 @@ public class DishGovernanceService {
     private final UserRepository userRepository;
     private final DishPublicationGateRepository gateRepository;
     private final DishReviewHistoryRepository reviewHistoryRepository;
+    private final DishAccessGuard accessGuard;
 
     public DishGovernanceService(DishRepository dishRepository,
                                  DishPriceHistoryRepository priceHistoryRepository,
@@ -76,7 +77,8 @@ public class DishGovernanceService {
                                  RetailPricingCalculator calculator,
                                  UserRepository userRepository,
                                  DishPublicationGateRepository gateRepository,
-                                 DishReviewHistoryRepository reviewHistoryRepository) {
+                                 DishReviewHistoryRepository reviewHistoryRepository,
+                                 DishAccessGuard accessGuard) {
         this.dishRepository = dishRepository;
         this.priceHistoryRepository = priceHistoryRepository;
         this.foodCostAuditService = foodCostAuditService;
@@ -84,6 +86,7 @@ public class DishGovernanceService {
         this.userRepository = userRepository;
         this.gateRepository = gateRepository;
         this.reviewHistoryRepository = reviewHistoryRepository;
+        this.accessGuard = accessGuard;
     }
 
     /**
@@ -118,8 +121,8 @@ public class DishGovernanceService {
         }
 
         UUID tenantId = TenantContextHolder.getRequiredTenantId();
-        Dish dish = dishRepository.findByIdAndTenantId(dishId, tenantId)
-                .orElseThrow(() -> new DishNotFoundException(dishId));
+        // FR-001, SC-003: 403 for another tenant's dish, 404 only when it truly does not exist.
+        Dish dish = accessGuard.requireOwnedByTenant(dishId, tenantId);
 
         if (dish.getStatus() != DishStatus.PENDING_PRICE && dish.getStatus() != DishStatus.PUBLISHED) {
             throw new DishStateConflictException(dishId, dish.getStatus().name(),
@@ -193,8 +196,8 @@ public class DishGovernanceService {
     public DishApprovalResponse approve(UUID dishId, boolean acknowledgeUnpricedIngredients,
                                         boolean acknowledgeNegativeMargin) {
         UUID tenantId = TenantContextHolder.getRequiredTenantId();
-        Dish dish = dishRepository.findByIdAndTenantId(dishId, tenantId)
-                .orElseThrow(() -> new DishNotFoundException(dishId));
+        // FR-001, SC-003: 403 for another tenant's dish, 404 only when it truly does not exist.
+        Dish dish = accessGuard.requireOwnedByTenant(dishId, tenantId);
 
         if (dish.getStatus() == DishStatus.PUBLISHED) {
             return new DishApprovalResponse(dishId, DishStatus.PUBLISHED, true,

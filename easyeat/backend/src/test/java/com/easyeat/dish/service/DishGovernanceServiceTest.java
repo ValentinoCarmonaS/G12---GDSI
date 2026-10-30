@@ -3,8 +3,10 @@ package com.easyeat.dish.service;
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.catalog.domain.Dish;
+import com.easyeat.catalog.exception.DishNotFoundException;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.common.context.TenantContextHolder;
+import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.dish.domain.AcknowledgementKind;
 import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.domain.DishPriceHistory;
@@ -68,6 +70,7 @@ class DishGovernanceServiceTest {
     private UserRepository userRepository;
     private DishPublicationGateRepository gateRepository;
     private DishReviewHistoryRepository reviewHistoryRepository;
+    private DishAccessGuard accessGuard;
     private DishGovernanceService service;
 
     private Dish dish;
@@ -80,10 +83,11 @@ class DishGovernanceServiceTest {
         userRepository = Mockito.mock(UserRepository.class);
         gateRepository = Mockito.mock(DishPublicationGateRepository.class);
         reviewHistoryRepository = Mockito.mock(DishReviewHistoryRepository.class);
+        accessGuard = Mockito.mock(DishAccessGuard.class);
 
         service = new DishGovernanceService(dishRepository, priceHistoryRepository,
                 foodCostAuditService, new RetailPricingCalculator(), userRepository,
-                gateRepository, reviewHistoryRepository);
+                gateRepository, reviewHistoryRepository, accessGuard);
 
         TenantContextHolder.setTenantId(TENANT);
 
@@ -99,6 +103,9 @@ class DishGovernanceServiceTest {
         dish.setName("Risotto de Hongos");
         dish.setStatus(DishStatus.PENDING_PRICE);
 
+        when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT)).thenReturn(dish);
+        // Still needed for the stale-price re-fetch inside setRetailPrice, which reads the same
+        // dish's current price after a lost compare-and-set rather than re-checking ownership.
         when(dishRepository.findByIdAndTenantId(dish.getId(), TENANT))
                 .thenReturn(Optional.of(dish));
         when(foodCostAuditService.auditDishCost(dish))
@@ -177,6 +184,34 @@ class DishGovernanceServiceTest {
                         DishStateConflictException conflict = (DishStateConflictException) ex;
                         assertThat(conflict.getCurrentStatus()).isEqualTo("DRAFT");
                     });
+        }
+    }
+
+    @Nested
+    @DisplayName("lookup failures (FR-001, SC-003)")
+    class LookupFailures {
+
+        @Test
+        @DisplayName("a dish that does not exist anywhere is 404")
+        void unknownDish() {
+            when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT))
+                    .thenThrow(new DishNotFoundException(dish.getId()));
+
+            assertThatThrownBy(() -> service.setRetailPrice(dish.getId(),
+                    new BigDecimal("11250.00"), null, false))
+                    .isInstanceOf(DishNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("a dish belonging to another establishment is forbidden, not merely absent "
+                + "— spec.md's Edge Cases rule out 404 as an alternative here")
+        void crossTenantDishIsForbidden() {
+            when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT))
+                    .thenThrow(new TenantViolationException(TENANT, UUID.randomUUID()));
+
+            assertThatThrownBy(() -> service.setRetailPrice(dish.getId(),
+                    new BigDecimal("11250.00"), null, false))
+                    .isInstanceOf(TenantViolationException.class);
         }
     }
 
@@ -406,6 +441,27 @@ class DishGovernanceServiceTest {
         }
 
         @Test
+        @DisplayName("a dish that does not exist anywhere is 404")
+        void unknownDish() {
+            when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT))
+                    .thenThrow(new DishNotFoundException(dish.getId()));
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(DishNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("a dish belonging to another establishment is forbidden, not merely absent "
+                + "(FR-001, SC-003) — spec.md's Edge Cases rule out 404 as an alternative here")
+        void crossTenantDishIsForbidden() {
+            when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT))
+                    .thenThrow(new TenantViolationException(TENANT, UUID.randomUUID()));
+
+            assertThatThrownBy(() -> service.approve(dish.getId(), false, false))
+                    .isInstanceOf(TenantViolationException.class);
+        }
+
+        @Test
         @DisplayName("the cycle number is the dish's highest recorded cycle plus one, not "
                 + "hardcoded to one")
         void cycleNumberIsMaxPlusOne() {
@@ -577,18 +633,20 @@ class DishGovernanceServiceTest {
         @DisplayName("a lost race (zero rows affected despite a satisfied gate) is reported as "
                 + "dish-already-decided, carrying the status that now prevails")
         void raceReportedAsAlreadyDecided() {
-            // The initial read sees PENDING_PRICE and the gate passes against it; between that
-            // read and the conditional UPDATE, a concurrent rejection commits, so the UPDATE
-            // affects no row and the re-fetch that follows sees the new status. Two Dish
-            // instances rather than mutating one, because Mockito's stub returns the same
-            // reference on every call and the real race is exactly two different reads.
+            // The initial read (via accessGuard, stubbed in setUp to return the PENDING_PRICE
+            // dish) sees the gate pass; between that read and the conditional UPDATE, a
+            // concurrent rejection commits, so the UPDATE affects no row and the re-fetch that
+            // follows — the service's own dishRepository.findByIdAndTenantId call, not
+            // accessGuard's — sees the new status. A second Dish instance rather than mutating
+            // the first, because the real race is exactly two different reads of two different
+            // states.
             Dish racedDish = new Dish();
             racedDish.setId(dish.getId());
             racedDish.setTenantId(TENANT);
             racedDish.setStatus(DishStatus.DRAFT);
 
             when(dishRepository.findByIdAndTenantId(dish.getId(), TENANT))
-                    .thenReturn(Optional.of(dish), Optional.of(racedDish));
+                    .thenReturn(Optional.of(racedDish));
             when(dishRepository.updateApprovalIfPending(eq(dish.getId()), eq(TENANT), any(Instant.class)))
                     .thenReturn(0);
 

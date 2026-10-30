@@ -4,8 +4,9 @@ import com.easyeat.auth.domain.User;
 import com.easyeat.auth.domain.UserStatus;
 import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.catalog.domain.Dish;
-import com.easyeat.catalog.repository.DishRepository;
+import com.easyeat.catalog.exception.DishNotFoundException;
 import com.easyeat.common.context.TenantContextHolder;
+import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.dish.domain.AcknowledgementKind;
 import com.easyeat.dish.domain.DishCategory;
 import com.easyeat.dish.domain.DishPhoto;
@@ -13,7 +14,6 @@ import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.domain.PublicationGateCondition;
 import com.easyeat.dish.dto.DishReviewDetailResponse;
 import com.easyeat.dish.dto.FoodCostAuditResponse;
-import com.easyeat.dish.exception.DishNotFoundException;
 import com.easyeat.dish.exception.EmptyRecipeException;
 import com.easyeat.dish.repository.DishPhotoRepository;
 import com.easyeat.dish.repository.DishPublicationGateRepository;
@@ -55,7 +55,7 @@ class DishReviewDetailServiceTest {
     private static final UUID TENANT = UUID.randomUUID();
     private static final BigDecimal FOOD_COST = new BigDecimal("4500.00");
 
-    private DishRepository dishRepository;
+    private DishAccessGuard accessGuard;
     private FoodCostAuditService foodCostAuditService;
     private DishReviewHistoryRepository reviewHistoryRepository;
     private DishPublicationGateRepository gateRepository;
@@ -67,7 +67,7 @@ class DishReviewDetailServiceTest {
 
     @BeforeEach
     void setUp() {
-        dishRepository = Mockito.mock(DishRepository.class);
+        accessGuard = Mockito.mock(DishAccessGuard.class);
         foodCostAuditService = Mockito.mock(FoodCostAuditService.class);
         reviewHistoryRepository = Mockito.mock(DishReviewHistoryRepository.class);
         gateRepository = Mockito.mock(DishPublicationGateRepository.class);
@@ -75,9 +75,9 @@ class DishReviewDetailServiceTest {
         userRepository = Mockito.mock(UserRepository.class);
 
         service = new DishReviewDetailService(
-                dishRepository, foodCostAuditService, reviewHistoryRepository,
+                foodCostAuditService, reviewHistoryRepository,
                 gateRepository, photoRepository, userRepository,
-                new RetailPricingCalculator());
+                new RetailPricingCalculator(), accessGuard);
 
         TenantContextHolder.setTenantId(TENANT);
 
@@ -91,7 +91,7 @@ class DishReviewDetailServiceTest {
         dish.setAllergensConfirmed(true);
         dish.setSubmittedAt(Instant.parse("2026-10-01T10:00:00Z"));
 
-        when(dishRepository.findByIdAndTenantId(any(), any())).thenReturn(Optional.of(dish));
+        when(accessGuard.requireOwnedByTenant(any(), any())).thenReturn(dish);
         when(foodCostAuditService.auditDishCost(any(Dish.class))).thenReturn(audit(FOOD_COST, false));
         when(reviewHistoryRepository.countByDishIdAndTenantId(any(), any())).thenReturn(0L);
         when(gateRepository.countActiveRecipeLines(any(), any())).thenReturn(3L);
@@ -176,17 +176,20 @@ class DishReviewDetailServiceTest {
         @Test
         @DisplayName("an unknown dish is not found")
         void unknownDish() {
-            when(dishRepository.findByIdAndTenantId(any(), any())).thenReturn(Optional.empty());
+            when(accessGuard.requireOwnedByTenant(any(), any()))
+                    .thenThrow(new DishNotFoundException(dish.getId()));
 
             assertThatThrownBy(() -> detail()).isInstanceOf(DishNotFoundException.class);
         }
 
         @Test
-        @DisplayName("the lookup is tenant-scoped, so a dish of another establishment is unseen")
-        void lookupIsTenantScoped() {
-            detail();
+        @DisplayName("a dish belonging to another establishment is forbidden, not merely absent "
+                + "(FR-001, SC-003) — spec.md's Edge Cases rule out 404 as an alternative here")
+        void crossTenantDishIsForbidden() {
+            when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT))
+                    .thenThrow(new TenantViolationException(TENANT, UUID.randomUUID()));
 
-            Mockito.verify(dishRepository).findByIdAndTenantId(dish.getId(), TENANT);
+            assertThatThrownBy(() -> detail()).isInstanceOf(TenantViolationException.class);
         }
     }
 
