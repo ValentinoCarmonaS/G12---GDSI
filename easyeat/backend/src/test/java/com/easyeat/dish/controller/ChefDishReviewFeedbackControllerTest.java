@@ -52,7 +52,7 @@ class ChefDishReviewFeedbackControllerTest extends DishControllerTestBase {
     }
 
     private static ChefReviewFeedbackResponse feedback() {
-        return new ChefReviewFeedbackResponse(UUID.randomUUID(), "DRAFT", List.of(
+        return new ChefReviewFeedbackResponse(UUID.randomUUID(), com.easyeat.dish.domain.DishStatus.DRAFT, List.of(
                 new ChefReviewFeedbackEntry(2, "Lucía Ferraro",
                         "El costo del salmón dispara el food cost. Usá merluza.",
                         Instant.parse("2026-10-29T10:00:00Z")),
