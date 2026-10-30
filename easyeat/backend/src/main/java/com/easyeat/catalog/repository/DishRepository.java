@@ -19,7 +19,13 @@ import java.util.UUID;
 @Repository
 public interface DishRepository extends JpaRepository<Dish, UUID> {
 
-    List<Dish> findByTenantIdAndIsActiveTrue(UUID tenantId);
+    /**
+     * D4's diner-visibility predicate, spec 007 FR-033/SC-001: a dish reaches the diner catalog
+     * only once it is both {@code is_active} and {@code PUBLISHED}. Replaces the pre-007
+     * {@code findByTenantIdAndIsActiveTrue}, which predates {@code status} existing on this
+     * entity and so let every active dish through regardless of review state.
+     */
+    List<Dish> findByTenantIdAndIsActiveTrueAndStatus(UUID tenantId, DishStatus status);
 
     List<Dish> findByIdIn(List<UUID> ids);
 
