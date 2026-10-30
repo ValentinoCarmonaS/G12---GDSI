@@ -6,13 +6,19 @@ import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.catalog.domain.Dish;
 import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.dish.domain.AcknowledgementKind;
+import com.easyeat.dish.domain.DishPriceHistory;
+import com.easyeat.dish.domain.DishReviewHistory;
 import com.easyeat.dish.domain.PublicationGateCondition;
+import com.easyeat.dish.dto.DishAuditHistoryResponse;
+import com.easyeat.dish.dto.DishPriceHistoryEntryResponse;
 import com.easyeat.dish.dto.DishReviewDetailResponse;
+import com.easyeat.dish.dto.DishReviewHistoryEntryResponse;
 import com.easyeat.dish.dto.FoodCostAuditResponse;
 import com.easyeat.dish.dto.MarginSummary;
 import com.easyeat.dish.dto.PublicationGateStatus;
 import com.easyeat.dish.exception.EmptyRecipeException;
 import com.easyeat.dish.repository.DishPhotoRepository;
+import com.easyeat.dish.repository.DishPriceHistoryRepository;
 import com.easyeat.dish.repository.DishPublicationGateRepository;
 import com.easyeat.dish.repository.DishReviewHistoryRepository;
 import org.springframework.stereotype.Service;
@@ -20,9 +26,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * The complete culinary file an Administrator reads before deciding (FR-006), with the margin
@@ -40,6 +51,7 @@ public class DishReviewDetailService {
 
     private final FoodCostAuditService foodCostAuditService;
     private final DishReviewHistoryRepository reviewHistoryRepository;
+    private final DishPriceHistoryRepository priceHistoryRepository;
     private final DishPublicationGateRepository gateRepository;
     private final DishPhotoRepository photoRepository;
     private final UserRepository userRepository;
@@ -48,6 +60,7 @@ public class DishReviewDetailService {
 
     public DishReviewDetailService(FoodCostAuditService foodCostAuditService,
                                    DishReviewHistoryRepository reviewHistoryRepository,
+                                   DishPriceHistoryRepository priceHistoryRepository,
                                    DishPublicationGateRepository gateRepository,
                                    DishPhotoRepository photoRepository,
                                    UserRepository userRepository,
@@ -55,6 +68,7 @@ public class DishReviewDetailService {
                                    DishAccessGuard accessGuard) {
         this.foodCostAuditService = foodCostAuditService;
         this.reviewHistoryRepository = reviewHistoryRepository;
+        this.priceHistoryRepository = priceHistoryRepository;
         this.gateRepository = gateRepository;
         this.photoRepository = photoRepository;
         this.userRepository = userRepository;
@@ -111,6 +125,56 @@ public class DishReviewDetailService {
                 gate,
                 recipeAbsent,
                 audit);
+    }
+
+    /**
+     * Both audit trails, each ordered by creation timestamp ascending (FR-010, FR-022, SC-005) —
+     * the only surface where review decisions and price changes are presented together.
+     *
+     * <p>Reviewer and actor names are resolved with a single batched lookup rather than one
+     * query per entry, the same N+1 discipline {@code DishReviewInboxService} already applies to
+     * the inbox page.
+     */
+    @Transactional(readOnly = true)
+    public DishAuditHistoryResponse getHistory(UUID dishId) {
+        UUID tenantId = TenantContextHolder.getRequiredTenantId();
+        // FR-001, SC-003: 403 for another tenant's dish, 404 only when it truly does not exist.
+        accessGuard.requireOwnedByTenant(dishId, tenantId);
+
+        List<DishReviewHistory> reviewRows =
+                reviewHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(dishId, tenantId);
+        List<DishPriceHistory> priceRows =
+                priceHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(dishId, tenantId);
+
+        Set<UUID> actorIds = new HashSet<>();
+        reviewRows.forEach(row -> actorIds.add(row.getAdminId()));
+        priceRows.forEach(row -> actorIds.add(row.getAdminId()));
+        Map<UUID, String> namesById = userRepository.findAllById(actorIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getFullName));
+
+        List<DishReviewHistoryEntryResponse> reviewEvents = reviewRows.stream()
+                .map(row -> new DishReviewHistoryEntryResponse(
+                        row.getId(), row.getCycleNumber(), row.getEventType(),
+                        actorName(namesById, row.getAdminId()), row.getComment(), row.getCreatedAt()))
+                .toList();
+        List<DishPriceHistoryEntryResponse> priceChanges = priceRows.stream()
+                .map(row -> new DishPriceHistoryEntryResponse(
+                        row.getId(), row.getPreviousPrice(), row.getNewPrice(),
+                        row.getFoodCostSnapshot(), actorName(namesById, row.getAdminId()),
+                        row.getCreatedAt()))
+                .toList();
+
+        return new DishAuditHistoryResponse(dishId, reviewEvents, priceChanges);
+    }
+
+    /**
+     * Unlike the Chef attribution in {@link #getDetail}, these name fields are required
+     * (non-nullable) by the contract: an Administrator audit trail does not have a degraded
+     * attribution case to express, so a lookup miss falls back to a generic label instead of
+     * {@code null}.
+     */
+    private String actorName(Map<UUID, String> namesById, UUID adminId) {
+        return namesById.getOrDefault(adminId, "Administrador");
     }
 
     /**

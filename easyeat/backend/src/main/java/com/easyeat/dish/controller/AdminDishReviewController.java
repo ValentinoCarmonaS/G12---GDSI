@@ -1,8 +1,10 @@
 package com.easyeat.dish.controller;
 
+import com.easyeat.dish.dto.DishAuditHistoryResponse;
 import com.easyeat.dish.dto.DishReviewDetailResponse;
 import com.easyeat.dish.dto.DishReviewInboxPageResponse;
 import com.easyeat.dish.dto.InboxTab;
+import com.easyeat.dish.service.DishAccessGuard;
 import com.easyeat.dish.service.DishReviewDetailService;
 import com.easyeat.dish.service.DishReviewInboxService;
 import org.springframework.http.ResponseEntity;
@@ -66,12 +68,22 @@ public class AdminDishReviewController {
      * The complete culinary file with the itemized Food Cost audit (FR-006).
      *
      * <p>A dish with no recipe is a 200 carrying {@code recipeAbsent: true}, not an error: the
-     * absence is a fact about the dish (FR-037). An unknown or cross-tenant dish is a 404, because
-     * the service's lookup is tenant-scoped and a dish of another establishment is simply not
-     * there.
+     * absence is a fact about the dish (FR-037). An unknown dish is a 404; a dish belonging to
+     * another establishment is a 403, not a 404 (FR-001, SC-003) — {@link DishAccessGuard} is
+     * what tells the two apart. (Corrected 2026-10-29: this comment previously claimed 404 for
+     * both, which was the bug fixed on this branch's upstream commits.)
      */
     @GetMapping("/{id}/review-detail")
     public ResponseEntity<DishReviewDetailResponse> getReviewDetail(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(detailService.getDetail(id));
+    }
+
+    /**
+     * Both audit trails, chronological (FR-010, FR-022, SC-005) — the only surface where review
+     * decisions and price changes are presented together.
+     */
+    @GetMapping("/{id}/review-history")
+    public ResponseEntity<DishAuditHistoryResponse> getReviewHistory(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(detailService.getHistory(id));
     }
 }
