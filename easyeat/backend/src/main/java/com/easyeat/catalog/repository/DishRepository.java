@@ -74,4 +74,17 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
             + "AND d.status = com.easyeat.dish.domain.DishStatus.PENDING_PRICE")
     int updateApprovalIfPending(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId,
                                 @Param("publishedAt") Instant publishedAt);
+
+    /**
+     * The rejection transition of FR-020, FR-025, spec 007: the same conditional-`UPDATE` shape
+     * as {@link #updateApprovalIfPending}, restating {@code PENDING_PRICE} as the source status.
+     * Names only {@code status} — {@code retail_price} is deliberately absent from the `SET`
+     * clause, which is how FR-020's "the assigned retail price MUST be preserved" is kept true:
+     * there is nothing here that could touch it.
+     */
+    @Modifying
+    @Query("UPDATE Dish d SET d.status = com.easyeat.dish.domain.DishStatus.DRAFT "
+            + "WHERE d.id = :dishId AND d.tenantId = :tenantId "
+            + "AND d.status = com.easyeat.dish.domain.DishStatus.PENDING_PRICE")
+    int updateRejectionIfPending(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId);
 }

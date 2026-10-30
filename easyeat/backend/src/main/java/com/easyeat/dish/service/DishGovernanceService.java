@@ -13,12 +13,14 @@ import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.domain.PublicationGateCondition;
 import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
+import com.easyeat.dish.dto.DishRejectionResponse;
 import com.easyeat.dish.dto.FoodCostAuditResponse;
 import com.easyeat.dish.dto.MarginSummary;
 import com.easyeat.dish.exception.AcknowledgementRequiredException;
 import com.easyeat.dish.exception.DishAlreadyDecidedException;
 import com.easyeat.dish.exception.DishStateConflictException;
 import com.easyeat.dish.exception.EmptyRecipeException;
+import com.easyeat.dish.exception.InvalidRejectionCommentException;
 import com.easyeat.dish.exception.InvalidRetailPriceException;
 import com.easyeat.dish.exception.PublicationGateException;
 import com.easyeat.dish.exception.StaleDishPriceException;
@@ -252,6 +254,56 @@ public class DishGovernanceService {
 
         return new DishApprovalResponse(dishId, DishStatus.PUBLISHED, false, publishedAt,
                 entry.getId());
+    }
+
+    /**
+     * Returns a dish to the kitchen with mandatory feedback (FR-020 through FR-022, FR-024,
+     * FR-025).
+     *
+     * <p>The comment is validated before any database access, the same posture {@link
+     * #setRetailPrice} takes for its own input. The conditional {@code UPDATE} this issues names
+     * only {@code status} — never {@code retail_price} — which is how FR-020's "the assigned
+     * retail price MUST be preserved across the rejection" is kept true: there is no write path
+     * here that could touch it, and no {@code dish_price_history} row is written either, since a
+     * rejection is not a price change.
+     *
+     * @throws InvalidRejectionCommentException the comment is absent, blank, or outside 10 to
+     *     1000 characters after trimming (FR-021).
+     * @throws DishStateConflictException the dish is in {@code DRAFT} or {@code PUBLISHED}:
+     *     rejection is only legal from {@code PENDING_PRICE} (FR-019, FR-024).
+     * @throws DishAlreadyDecidedException another Administrator's decision committed first
+     *     (FR-025); carries the status that now prevails.
+     */
+    @Transactional
+    public DishRejectionResponse reject(UUID dishId, String comment) {
+        String trimmed = comment == null ? null : comment.trim();
+        if (trimmed == null || trimmed.isEmpty() || trimmed.length() < 10 || trimmed.length() > 1000) {
+            throw new InvalidRejectionCommentException(comment);
+        }
+
+        UUID tenantId = TenantContextHolder.getRequiredTenantId();
+        // FR-001, SC-003: 403 for another tenant's dish, 404 only when it truly does not exist.
+        Dish dish = accessGuard.requireOwnedByTenant(dishId, tenantId);
+
+        if (dish.getStatus() != DishStatus.PENDING_PRICE) {
+            throw new DishStateConflictException(dishId, dish.getStatus().name(),
+                    "PENDING_PRICE");
+        }
+
+        int updated = dishRepository.updateRejectionIfPending(dishId, tenantId);
+        if (updated == 0) {
+            String currentStatus = dishRepository.findByIdAndTenantId(dishId, tenantId)
+                    .map(d -> d.getStatus().name())
+                    .orElse(dish.getStatus().name());
+            throw new DishAlreadyDecidedException(dishId, currentStatus, Instant.now());
+        }
+
+        int cycleNumber = reviewHistoryRepository.findMaxCycleNumberByDishId(dishId).orElse(0) + 1;
+        DishReviewHistory entry = DishReviewHistory.rejected(dishId, tenantId, cycleNumber,
+                resolveCurrentUserId(), trimmed);
+        reviewHistoryRepository.save(entry);
+
+        return new DishRejectionResponse(dishId, DishStatus.DRAFT, cycleNumber, entry.getId());
     }
 
     /**
