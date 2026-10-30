@@ -3,8 +3,10 @@ package com.easyeat.dish.service;
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.catalog.domain.Dish;
+import com.easyeat.catalog.exception.DishNotFoundException;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.common.context.TenantContextHolder;
+import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.domain.DishPriceHistory;
 import com.easyeat.dish.dto.DishPricingResponse;
@@ -55,6 +57,7 @@ class DishGovernanceServiceTest {
     private DishPriceHistoryRepository priceHistoryRepository;
     private FoodCostAuditService foodCostAuditService;
     private UserRepository userRepository;
+    private DishAccessGuard accessGuard;
     private DishGovernanceService service;
 
     private Dish dish;
@@ -65,9 +68,10 @@ class DishGovernanceServiceTest {
         priceHistoryRepository = Mockito.mock(DishPriceHistoryRepository.class);
         foodCostAuditService = Mockito.mock(FoodCostAuditService.class);
         userRepository = Mockito.mock(UserRepository.class);
+        accessGuard = Mockito.mock(DishAccessGuard.class);
 
         service = new DishGovernanceService(dishRepository, priceHistoryRepository,
-                foodCostAuditService, new RetailPricingCalculator(), userRepository);
+                foodCostAuditService, new RetailPricingCalculator(), userRepository, accessGuard);
 
         TenantContextHolder.setTenantId(TENANT);
 
@@ -83,6 +87,9 @@ class DishGovernanceServiceTest {
         dish.setName("Risotto de Hongos");
         dish.setStatus(DishStatus.PENDING_PRICE);
 
+        when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT)).thenReturn(dish);
+        // Still needed for the stale-price re-fetch inside setRetailPrice, which reads the same
+        // dish's current price after a lost compare-and-set rather than re-checking ownership.
         when(dishRepository.findByIdAndTenantId(dish.getId(), TENANT))
                 .thenReturn(Optional.of(dish));
         when(foodCostAuditService.auditDishCost(dish))
@@ -150,6 +157,34 @@ class DishGovernanceServiceTest {
                         DishStateConflictException conflict = (DishStateConflictException) ex;
                         assertThat(conflict.getCurrentStatus()).isEqualTo("DRAFT");
                     });
+        }
+    }
+
+    @Nested
+    @DisplayName("lookup failures (FR-001, SC-003)")
+    class LookupFailures {
+
+        @Test
+        @DisplayName("a dish that does not exist anywhere is 404")
+        void unknownDish() {
+            when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT))
+                    .thenThrow(new DishNotFoundException(dish.getId()));
+
+            assertThatThrownBy(() -> service.setRetailPrice(dish.getId(),
+                    new BigDecimal("11250.00"), null, false))
+                    .isInstanceOf(DishNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("a dish belonging to another establishment is forbidden, not merely absent "
+                + "— spec.md's Edge Cases rule out 404 as an alternative here")
+        void crossTenantDishIsForbidden() {
+            when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT))
+                    .thenThrow(new TenantViolationException(TENANT, UUID.randomUUID()));
+
+            assertThatThrownBy(() -> service.setRetailPrice(dish.getId(),
+                    new BigDecimal("11250.00"), null, false))
+                    .isInstanceOf(TenantViolationException.class);
         }
     }
 
