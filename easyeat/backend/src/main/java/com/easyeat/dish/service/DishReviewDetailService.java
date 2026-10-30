@@ -4,7 +4,6 @@ import com.easyeat.auth.domain.User;
 import com.easyeat.auth.domain.UserStatus;
 import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.catalog.domain.Dish;
-import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.dish.domain.AcknowledgementKind;
 import com.easyeat.dish.domain.PublicationGateCondition;
@@ -12,7 +11,6 @@ import com.easyeat.dish.dto.DishReviewDetailResponse;
 import com.easyeat.dish.dto.FoodCostAuditResponse;
 import com.easyeat.dish.dto.MarginSummary;
 import com.easyeat.dish.dto.PublicationGateStatus;
-import com.easyeat.dish.exception.DishNotFoundException;
 import com.easyeat.dish.exception.EmptyRecipeException;
 import com.easyeat.dish.repository.DishPhotoRepository;
 import com.easyeat.dish.repository.DishPublicationGateRepository;
@@ -40,36 +38,37 @@ import java.util.UUID;
 @Service
 public class DishReviewDetailService {
 
-    private final DishRepository dishRepository;
     private final FoodCostAuditService foodCostAuditService;
     private final DishReviewHistoryRepository reviewHistoryRepository;
     private final DishPublicationGateRepository gateRepository;
     private final DishPhotoRepository photoRepository;
     private final UserRepository userRepository;
     private final RetailPricingCalculator calculator;
+    private final DishAccessGuard accessGuard;
 
-    public DishReviewDetailService(DishRepository dishRepository,
-                                   FoodCostAuditService foodCostAuditService,
+    public DishReviewDetailService(FoodCostAuditService foodCostAuditService,
                                    DishReviewHistoryRepository reviewHistoryRepository,
                                    DishPublicationGateRepository gateRepository,
                                    DishPhotoRepository photoRepository,
                                    UserRepository userRepository,
-                                   RetailPricingCalculator calculator) {
-        this.dishRepository = dishRepository;
+                                   RetailPricingCalculator calculator,
+                                   DishAccessGuard accessGuard) {
         this.foodCostAuditService = foodCostAuditService;
         this.reviewHistoryRepository = reviewHistoryRepository;
         this.gateRepository = gateRepository;
         this.photoRepository = photoRepository;
         this.userRepository = userRepository;
         this.calculator = calculator;
+        this.accessGuard = accessGuard;
     }
 
     @Transactional(readOnly = true)
     public DishReviewDetailResponse getDetail(UUID dishId) {
         UUID tenantId = TenantContextHolder.getRequiredTenantId();
 
-        Dish dish = dishRepository.findByIdAndTenantId(dishId, tenantId)
-                .orElseThrow(() -> new DishNotFoundException(dishId));
+        // FR-001, SC-003: 403 for another tenant's dish, 404 only when it truly does not exist —
+        // findByIdAndTenantId cannot tell those apart on its own, since both come back empty.
+        Dish dish = accessGuard.requireOwnedByTenant(dishId, tenantId);
 
         // T042a / FR-037: a dish with no recipe lines makes spec 006's service raise rather than
         // return a zero cost. That is correct for a question about itemized cost, and wrong to
