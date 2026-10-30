@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PendingEmailBanner } from '@/components/profile/PendingEmailBanner';
@@ -9,6 +9,14 @@ describe('PendingEmailBanner Component (T015, COM-1.4.1)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    // The cooldown-timer test below enables fake timers and restores them inline, but only on
+    // its own success path: a failed assertion between vi.useFakeTimers() and vi.useRealTimers()
+    // would leak fake timers into every test file that runs afterward in the same worker,
+    // breaking userEvent's internal delays there. Restoring here is unconditional.
+    vi.useRealTimers();
   });
 
   it('renders pending status banner showing proposed email', () => {
