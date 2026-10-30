@@ -22,9 +22,11 @@ import java.util.UUID;
  * the class level so a method added later cannot be left unguarded by omission. That is the same
  * posture {@code AdminDishCostAuditController} takes.
  *
- * <p>Pricing, approval and rejection are added to this class by US2, US3 and US4. It is created
- * here rather than once per story because three stories share it, and splitting it per story would
- * produce competing controllers over one path prefix.
+ * <p>Pricing, approval and rejection are read-write transitions and live in the sibling {@code
+ * AdminDishDecisionController} instead, per {@code plan.md}'s source tree, which splits the two
+ * by read/write rather than merging all seven operations into one class. (Corrected 2026-10-29:
+ * this comment previously predicted they would land here; T068 placed the first of them in the
+ * sibling class, as planned.)
  */
 @RestController
 @RequestMapping("/api/v1/admin/dishes")

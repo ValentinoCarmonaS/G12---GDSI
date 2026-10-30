@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -72,6 +73,43 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setProperty("errors", errors);
 
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem);
+    }
+
+    /**
+     * 400: spec 007's {@code expectedRetailPrice} was absent from the request body (FR-013,
+     * FR-025). Its field carries {@code @JsonProperty(required = true)}, which Jackson checks for
+     * presence rather than non-nullity, so this fires only when the key itself is missing — an
+     * explicit {@code null} deserializes normally and never reaches here. Any other malformed-body
+     * failure falls through to Spring's default handling, unchanged.
+     */
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        if (!isMissingExpectedRetailPrice(ex)) {
+            return super.handleHttpMessageNotReadable(ex, headers, status, request);
+        }
+
+        String detail = "El campo 'expectedRetailPrice' es obligatorio en el cuerpo de la solicitud, aunque su valor sea null.";
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+        problem.setType(URI.create("https://easyeat.com/errors/expected-retail-price-required"));
+        problem.setTitle("Expected Retail Price Required");
+        if (request instanceof ServletWebRequest servletWebRequest) {
+            problem.setInstance(URI.create(servletWebRequest.getRequest().getRequestURI()));
+        }
+        problem.setProperty("errors", List.of(fieldError("expectedRetailPrice", detail)));
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    /**
+     * Matched on the message Jackson emits for a missing required creator property, rather than
+     * on jackson-databind's own exception types, so this stays correct across a minor Jackson
+     * version bump without adding an import this file does not otherwise need.
+     */
+    private static boolean isMissingExpectedRetailPrice(HttpMessageNotReadableException ex) {
+        Throwable cause = ex.getMostSpecificCause();
+        return cause != null && cause.getMessage() != null
+                && cause.getMessage().contains("Missing required creator property 'expectedRetailPrice'");
     }
 
     @ExceptionHandler(EmailAlreadyRegisteredException.class)
