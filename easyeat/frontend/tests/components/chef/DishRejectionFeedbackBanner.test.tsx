@@ -24,7 +24,7 @@ describe('DishRejectionFeedbackBanner', () => {
   it('renders the comment, the reviewer and a formatted timestamp', () => {
     render(<DishRejectionFeedbackBanner entries={[entry]} />);
 
-    expect(screen.getByText(entry.comment)).toBeInTheDocument();
+    expect(screen.getByText(entry.comment as string)).toBeInTheDocument();
     expect(screen.getByText(/Lucía Ferraro/)).toBeInTheDocument();
     expect(screen.getByText(/2026/)).toBeInTheDocument();
   });
@@ -39,7 +39,7 @@ describe('DishRejectionFeedbackBanner', () => {
 
     render(<DishRejectionFeedbackBanner entries={[entry, second]} />);
 
-    expect(screen.getByText(entry.comment)).toBeInTheDocument();
-    expect(screen.getByText(second.comment)).toBeInTheDocument();
+    expect(screen.getByText(entry.comment as string)).toBeInTheDocument();
+    expect(screen.getByText(second.comment as string)).toBeInTheDocument();
   });
 });
