@@ -4,6 +4,7 @@ import com.easyeat.dish.domain.AcknowledgementKind;
 import com.easyeat.dish.dto.DishPricingResponse;
 import com.easyeat.dish.dto.MarginSummary;
 import com.easyeat.dish.domain.DishStatus;
+import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.dish.exception.AcknowledgementRequiredException;
 import com.easyeat.dish.exception.DishNotFoundException;
 import com.easyeat.dish.exception.DishStateConflictException;
@@ -298,7 +299,7 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
     class LookupFailures {
 
         @Test
-        @DisplayName("a dish not found in the caller's establishment is a 404, covering cross-tenant access too")
+        @DisplayName("a dish that does not exist anywhere is a 404")
         void dishNotFoundYields404() throws Exception {
             when(governanceService.setRetailPrice(eq(dishId), any(), any(), anyBoolean()))
                     .thenThrow(new DishNotFoundException(dishId));
@@ -309,6 +310,21 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
                                     {"retailPrice": 11250.00, "expectedRetailPrice": null}
                                     """))
                     .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("a dish belonging to another establishment is a 403, not a 404 (FR-001, "
+                + "SC-003) — spec.md's Edge Cases rule out 404 as an alternative here")
+        void crossTenantDishYields403() throws Exception {
+            when(governanceService.setRetailPrice(eq(dishId), any(), any(), anyBoolean()))
+                    .thenThrow(new TenantViolationException(UUID.randomUUID(), UUID.randomUUID()));
+
+            mockMvc.perform(put(url())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"retailPrice": 11250.00, "expectedRetailPrice": null}
+                                    """))
+                    .andExpect(status().isForbidden());
         }
     }
 }
