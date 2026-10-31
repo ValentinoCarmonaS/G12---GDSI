@@ -810,13 +810,23 @@ asks for, and a new component carries the actions beside it.
   the same reason its own draft comment is not reset by `isOpen` alone. A `dish-stale-price` or
   `dish-already-decided` 409 both show the server's own `detail` message and call `onDecided`, so
   the panel re-fetches rather than keep showing a decision the Administrator thinks succeeded.
-- [ ] T109 [P] Extend `easyeat/frontend/tests/pages/AdminDishReviewPage.test.tsx` asserting the
+- [x] T109 [P] Extend `easyeat/frontend/tests/pages/AdminDishReviewPage.test.tsx` asserting the
   three controls are reachable from `/admin/dishes` once a dish is open — the exact gap
   `HANDOFF-post-merge-ui-gap.md` §2 found manually, now pinned by a page-level test so no future
   phase can reintroduce it by building a component in isolation again — and that a successful
   decision refreshes both the open detail and the inbox's pending count — **Serves**: SC-007
-- [ ] T110 Render `DishDecisionActions` in `easyeat/frontend/src/pages/AdminDishReviewPage.tsx`
+
+  **DONE 2026-10-31**, RED observed: 4 of 4 new cases failed — no price field and no decision
+  button existed anywhere in the page's rendered output, since `AdminDishReviewPage` only rendered
+  `DishAuditPanel`.
+- [x] T110 Render `DishDecisionActions` in `easyeat/frontend/src/pages/AdminDishReviewPage.tsx`
   beside `DishAuditPanel`, re-fetching the detail and the inbox on `onDecided` — **Serves**: SC-007
+
+  **DONE 2026-10-31, GREEN** at 18 of 18, `tsc --noEmit` clean. `onDecided` re-runs the existing
+  `openDish` for the currently-open dish id (same loading/error path every other detail load
+  already takes) and calls `inbox.refresh()`, so a price save, an approval or a rejection all
+  leave both halves of the page showing the server's current state rather than the Administrator's
+  stale read.
 - [ ] T111 Run the full frontend suite (`npx vitest run`) and `tsc --noEmit`; record the result and
   correct `quickstart.md` §6's T103 note, which could only validate these three components in
   isolation at the time, never as reachable from `/admin/dishes`

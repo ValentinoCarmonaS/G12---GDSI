@@ -5,6 +5,7 @@ import { ReviewInboxTabs } from '@/components/dishreview/ReviewInboxTabs';
 import { ReviewInboxList } from '@/components/dishreview/ReviewInboxList';
 import { InboxPagination } from '@/components/dishreview/InboxPagination';
 import { DishAuditPanel } from '@/components/dishreview/DishAuditPanel';
+import { DishDecisionActions } from '@/components/dishreview/DishDecisionActions';
 import { useDishReviewInbox } from '@/hooks/useDishReviewInbox';
 import { dishReviewApi } from '@/api/dishReviewApi';
 import type { DishReviewDetail, InboxTab } from '@/types/dishReview';
@@ -61,6 +62,20 @@ export const AdminDishReviewPage: React.FC = () => {
     },
     [inbox]
   );
+
+  /**
+   * Re-fetches the open dish's detail and the inbox after a decision changed either one:
+   * a price save can flip `publicationGate`, an approval publishes the dish, a rejection returns
+   * it to `DRAFT` and moves it out of the Pending tab. Re-running `openDish` keeps this on the
+   * same path as every other detail load, including the loading state and FR-032's error
+   * handling if the refetch itself fails.
+   */
+  const handleDecided = useCallback(() => {
+    if (detail) {
+      void openDish(detail.dishId);
+    }
+    inbox.refresh();
+  }, [detail, openDish, inbox]);
 
   return (
     <WorkspaceLayout
@@ -119,7 +134,12 @@ export const AdminDishReviewPage: React.FC = () => {
             </div>
           )}
 
-          {!isDetailLoading && !detailError && detail && <DishAuditPanel detail={detail} />}
+          {!isDetailLoading && !detailError && detail && (
+            <div className="space-y-6">
+              <DishAuditPanel detail={detail} />
+              <DishDecisionActions detail={detail} onDecided={handleDecided} />
+            </div>
+          )}
 
           {!isDetailLoading && !detailError && !detail && (
             <div data-testid="detail-placeholder" className="px-4 py-16 text-center">
