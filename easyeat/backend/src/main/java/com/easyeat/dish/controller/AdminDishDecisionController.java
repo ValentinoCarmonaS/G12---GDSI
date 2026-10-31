@@ -1,11 +1,14 @@
 package com.easyeat.dish.controller;
 
+import com.easyeat.dish.dto.ApproveDishRequest;
+import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
 import com.easyeat.dish.dto.SetRetailPriceRequest;
 import com.easyeat.dish.service.DishGovernanceService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,7 +18,7 @@ import java.util.UUID;
 
 /**
  * The Administrator's write surface over a dish's commercial decisions (FR-009 to FR-025):
- * pricing here, approval and rejection added by US3 and US4.
+ * pricing and approval here, rejection added by US4.
  *
  * <p>Created separately from {@code AdminDishReviewController} per {@code plan.md}'s source
  * tree, which splits the read surface from the three mutating transitions. The role gate matches
@@ -48,5 +51,22 @@ public class AdminDishDecisionController {
         return ResponseEntity.ok(governanceService.setRetailPrice(
                 id, request.retailPrice(), request.expectedRetailPrice(),
                 request.acknowledgeNegativeMargin()));
+    }
+
+    /**
+     * Evaluates the publication gate and, if satisfied, publishes the dish (FR-015 through
+     * FR-019, FR-025, FR-033, SC-001).
+     *
+     * <p>An already-{@code PUBLISHED} dish is a 200 idempotent no-op (FR-018), never a conflict;
+     * {@code DRAFT} is a 409 (FR-019); a failed gate is a 422 naming every unmet condition
+     * (FR-015); an unacknowledged advisory is a distinct 422 (FR-017).
+     */
+    @PostMapping("/{id}/approval")
+    public ResponseEntity<DishApprovalResponse> approve(
+            @PathVariable("id") UUID id,
+            @RequestBody ApproveDishRequest request) {
+
+        return ResponseEntity.ok(governanceService.approve(
+                id, request.acknowledgeUnpricedIngredients(), request.acknowledgeNegativeMargin()));
     }
 }

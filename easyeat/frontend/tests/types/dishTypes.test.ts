@@ -43,8 +43,13 @@ describe('Dish Types and Validation (T006)', () => {
   it('validates DishStatus type guard', () => {
     expect(isDishStatus('DRAFT')).toBe(true);
     expect(isDishStatus('PENDING_PRICE')).toBe(true);
-    expect(isDishStatus('PUBLISHED')).toBe(false);
+    // T079a: PUBLISHED was rejected here before spec 007's T076 could ever set it on a dish;
+    // the backend's DishStatus enum admitted the constant under T005's D1 amendment, and this
+    // union disagreed with it until now.
+    expect(isDishStatus('PUBLISHED')).toBe(true);
     expect(isDishStatus('')).toBe(false);
+    expect(isDishStatus('ACTIVE')).toBe(false);
+    expect(isDishStatus(null)).toBe(false);
   });
 
   it('ensures typing compatibility for DishDetailResponse and completeness fields', () => {

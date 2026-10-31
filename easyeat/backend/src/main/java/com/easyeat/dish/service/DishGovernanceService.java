@@ -8,16 +8,23 @@ import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.dish.domain.AcknowledgementKind;
 import com.easyeat.dish.domain.DishPriceHistory;
+import com.easyeat.dish.domain.DishReviewHistory;
 import com.easyeat.dish.domain.DishStatus;
+import com.easyeat.dish.domain.PublicationGateCondition;
+import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
 import com.easyeat.dish.dto.FoodCostAuditResponse;
 import com.easyeat.dish.dto.MarginSummary;
 import com.easyeat.dish.exception.AcknowledgementRequiredException;
+import com.easyeat.dish.exception.DishAlreadyDecidedException;
 import com.easyeat.dish.exception.DishStateConflictException;
 import com.easyeat.dish.exception.EmptyRecipeException;
 import com.easyeat.dish.exception.InvalidRetailPriceException;
+import com.easyeat.dish.exception.PublicationGateException;
 import com.easyeat.dish.exception.StaleDishPriceException;
 import com.easyeat.dish.repository.DishPriceHistoryRepository;
+import com.easyeat.dish.repository.DishPublicationGateRepository;
+import com.easyeat.dish.repository.DishReviewHistoryRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,25 +32,29 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * The commercial terms transition of US2 (FR-009 through FR-014, FR-025, SC-008): the single
- * write path by which a retail price is assigned or changed.
+ * The three decision transitions US2, US3 and US4 share over a dish: the commercial price save
+ * (FR-009 through FR-014, FR-025, SC-008) and the publication approval (FR-015 through FR-019,
+ * FR-025, FR-033, SC-001) implemented here; rejection is added to this class by US4.
  *
- * <p>{@code DishGovernanceService} is created here rather than per story because US3 and US4
- * extend it with the approval and rejection transitions — three stories sharing one class over
- * the three writes {@code plan.md} groups together, rather than three competing services.
+ * <p>{@code DishGovernanceService} is created in the earliest story that needs it and extended
+ * by later ones, per {@code plan.md}'s source tree — three stories sharing one class over the
+ * three writes it groups together, rather than three competing services.
  *
- * <p>Three boundaries this method respects rather than crosses, the same ones {@link
- * DishReviewDetailService} already states for the read side. It never recomputes the Food Cost
- * itself: spec 006's {@link FoodCostAuditService} is injected and its total read verbatim. It
- * never enforces the publication gate — FR-015 belongs to the approval transition, not to a
- * price save, and FR-009 names no recipe precondition at all. And it carries no entity version:
- * FR-025 is enforced by a conditional {@code UPDATE} that restates the exact price the
- * Administrator read, confined to this one write path rather than reaching every writer of
- * {@code dishes}.
+ * <p>Three boundaries both methods respect rather than cross, the same ones {@link
+ * DishReviewDetailService} already states for the read side. Neither recomputes the Food Cost
+ * itself: spec 006's {@link FoodCostAuditService} is injected and its total read verbatim.
+ * {@code setRetailPrice} never enforces the publication gate, and FR-009 names no recipe
+ * precondition at all; {@code approve} is the one place that gate is enforced, and only at the
+ * instant the action is received, never from an earlier reading. And neither carries an entity
+ * version: FR-025 is enforced by a conditional {@code UPDATE} per operation that restates the
+ * exact state the Administrator acted on, confined to the one write path it guards rather than
+ * reaching every writer of {@code dishes}.
  */
 @Service
 public class DishGovernanceService {
@@ -56,6 +67,8 @@ public class DishGovernanceService {
     private final FoodCostAuditService foodCostAuditService;
     private final RetailPricingCalculator calculator;
     private final UserRepository userRepository;
+    private final DishPublicationGateRepository gateRepository;
+    private final DishReviewHistoryRepository reviewHistoryRepository;
     private final DishAccessGuard accessGuard;
 
     public DishGovernanceService(DishRepository dishRepository,
@@ -63,12 +76,16 @@ public class DishGovernanceService {
                                  FoodCostAuditService foodCostAuditService,
                                  RetailPricingCalculator calculator,
                                  UserRepository userRepository,
+                                 DishPublicationGateRepository gateRepository,
+                                 DishReviewHistoryRepository reviewHistoryRepository,
                                  DishAccessGuard accessGuard) {
         this.dishRepository = dishRepository;
         this.priceHistoryRepository = priceHistoryRepository;
         this.foodCostAuditService = foodCostAuditService;
         this.calculator = calculator;
         this.userRepository = userRepository;
+        this.gateRepository = gateRepository;
+        this.reviewHistoryRepository = reviewHistoryRepository;
         this.accessGuard = accessGuard;
     }
 
@@ -147,6 +164,94 @@ public class DishGovernanceService {
 
         MarginSummary margin = buildMarginSummary(retailPrice, foodCost, hasUnpricedIngredients);
         return new DishPricingResponse(dishId, dish.getStatus(), margin, entry.getId());
+    }
+
+    /**
+     * Evaluates the publication gate and, if it is satisfied, publishes the dish (FR-015 through
+     * FR-019, FR-025, FR-033, SC-001).
+     *
+     * <p>Order of checks. An already-{@code PUBLISHED} dish is an idempotent no-op before
+     * anything else is evaluated (FR-018) — its gate is not re-checked, because re-publishing is
+     * not the operation being asked for. A {@code DRAFT} dish is refused outright (FR-019): the
+     * action was never legal from that state. Only then are the three gate conditions evaluated,
+     * all at once rather than short-circuited, so every unmet one is reported together (FR-015).
+     * The acknowledgement check (FR-017) runs only once the gate is fully satisfied — it is
+     * subordinate to the gate and must never be offered as a way past it. The conditional {@code
+     * UPDATE} is the write itself, so FR-025's guard is the last thing that can fail.
+     *
+     * <p>{@code auditDishCost} is called without catching {@link EmptyRecipeException} here,
+     * unlike {@link #setRetailPrice}: gate condition 2 having already passed means at least one
+     * recipe line exists, so the recipe cannot be empty by the time this is reached.
+     *
+     * @throws DishNotFoundException no dish with this id exists in the caller's establishment.
+     * @throws DishStateConflictException the dish is in {@code DRAFT} (FR-019).
+     * @throws PublicationGateException one or more of the three gate conditions is unmet
+     *     (FR-015); carries every unmet condition.
+     * @throws AcknowledgementRequiredException the gate is satisfied but an unpriced ingredient
+     *     or a negative margin was not acknowledged (FR-017).
+     * @throws DishAlreadyDecidedException another Administrator's decision committed first
+     *     (FR-025); carries the status that now prevails.
+     */
+    @Transactional
+    public DishApprovalResponse approve(UUID dishId, boolean acknowledgeUnpricedIngredients,
+                                        boolean acknowledgeNegativeMargin) {
+        UUID tenantId = TenantContextHolder.getRequiredTenantId();
+        // FR-001, SC-003: 403 for another tenant's dish, 404 only when it truly does not exist.
+        Dish dish = accessGuard.requireOwnedByTenant(dishId, tenantId);
+
+        if (dish.getStatus() == DishStatus.PUBLISHED) {
+            return new DishApprovalResponse(dishId, DishStatus.PUBLISHED, true,
+                    dish.getPublishedAt(), null);
+        }
+        if (dish.getStatus() != DishStatus.PENDING_PRICE) {
+            throw new DishStateConflictException(dishId, dish.getStatus().name(),
+                    "PENDING_PRICE");
+        }
+
+        List<PublicationGateCondition> unmet = new ArrayList<>();
+        if (dish.getRetailPrice() == null || dish.getRetailPrice().signum() <= 0) {
+            unmet.add(PublicationGateCondition.RETAIL_PRICE_MISSING);
+        }
+        if (gateRepository.countActiveRecipeLines(dishId, tenantId) == 0) {
+            unmet.add(PublicationGateCondition.EMPTY_RECIPE);
+        }
+        if (!Boolean.TRUE.equals(dish.getAllergensConfirmed())) {
+            unmet.add(PublicationGateCondition.ALLERGENS_UNCONFIRMED);
+        }
+        if (!unmet.isEmpty()) {
+            throw new PublicationGateException(dishId, unmet);
+        }
+
+        FoodCostAuditResponse audit = foodCostAuditService.auditDishCost(dish);
+        BigDecimal marginPct = calculator.marginFrom(audit.totalFoodCost(), dish.getRetailPrice());
+
+        List<AcknowledgementKind> requiredAcks = new ArrayList<>();
+        if (audit.hasUnpricedIngredients() && !acknowledgeUnpricedIngredients) {
+            requiredAcks.add(AcknowledgementKind.UNPRICED_INGREDIENTS);
+        }
+        if (marginPct.signum() < 0 && !acknowledgeNegativeMargin) {
+            requiredAcks.add(AcknowledgementKind.NEGATIVE_MARGIN);
+        }
+        if (!requiredAcks.isEmpty()) {
+            throw new AcknowledgementRequiredException(dishId, requiredAcks);
+        }
+
+        Instant publishedAt = Instant.now();
+        int updated = dishRepository.updateApprovalIfPending(dishId, tenantId, publishedAt);
+        if (updated == 0) {
+            String currentStatus = dishRepository.findByIdAndTenantId(dishId, tenantId)
+                    .map(d -> d.getStatus().name())
+                    .orElse(dish.getStatus().name());
+            throw new DishAlreadyDecidedException(dishId, currentStatus, Instant.now());
+        }
+
+        int cycleNumber = reviewHistoryRepository.findMaxCycleNumberByDishId(dishId).orElse(0) + 1;
+        DishReviewHistory entry = DishReviewHistory.approved(dishId, tenantId, cycleNumber,
+                resolveCurrentUserId());
+        reviewHistoryRepository.save(entry);
+
+        return new DishApprovalResponse(dishId, DishStatus.PUBLISHED, false, publishedAt,
+                entry.getId());
     }
 
     /**
