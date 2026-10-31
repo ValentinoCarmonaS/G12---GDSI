@@ -58,3 +58,6 @@ target/
 .gradle/
 build/
 .claude/
+
+# Local / Spec Kit generated
+.opencode/
