@@ -109,6 +109,11 @@ describe('dinerCatalogHandlers Mock Fixtures and Setup (T002)', () => {
     // Availability response
     const availability = await handlers.getCatalogAvailability(MOCK_TENANT_ID);
     expect(availability.availability[MOCK_DISH_ID_1]).toBe(true);
+
+    // Complete listing (Fix C-01) returns only active establishments
+    const allEstablishments: Array<{ status: string }> = await handlers.getAllEstablishments();
+    expect(allEstablishments.length).toBeGreaterThanOrEqual(1);
+    expect(allEstablishments.every((e) => e.status === 'ACTIVE')).toBe(true);
   });
 });
 

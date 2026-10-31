@@ -155,6 +155,10 @@ Framework: Vitest, React Testing Library, jsdom. Focused on static component ren
 - **Action**: Direct unauthenticated browser navigation to `/descubrimiento` or `/catalogo`.
 - **Expected Outcome**: Frontend `RoleRouteGuard` intercepts navigation and redirects client to `/login`.
 
+### Scenario 10: Complete Establishment Listing (Fix C-01, FR-030, FR-031, FR-032)
+- **Action**: Login as an authenticated `ROLE_COMENSAL` diner and open `/descubrimiento`.
+- **Expected Outcome**: The discovery screen loads the complete list of active establishments via `GET /api/v1/establishments`; paused/disabled establishments do not appear; selecting one loads its live catalog (same behavior as COM-1.5.1 CA2); if no active establishments exist, an informative empty state is displayed.
+
 ---
 
 ## 7. Automated Execution Commands

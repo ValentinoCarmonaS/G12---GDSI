@@ -14,6 +14,36 @@ security:
   - BearerAuth: []
 
 paths:
+  /establishments:
+    get:
+      summary: List all active establishments for diner discovery
+      description: >
+        Returns the complete list of active establishments (status = ACTIVE) for the
+        authenticated diner discovery screen. Excludes paused or disabled establishments.
+        Requires authentication with the COMENSAL role.
+      operationId: getAllEstablishments
+      responses:
+        '200':
+          description: Complete list of active establishments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EstablishmentSummaryResponse'
+        '401':
+          description: Unauthenticated client - zero data exposure
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '403':
+          description: Insufficient role (only COMENSAL can list establishments)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
   /establishments/search:
     get:
       summary: Search active establishments by name autocomplete
