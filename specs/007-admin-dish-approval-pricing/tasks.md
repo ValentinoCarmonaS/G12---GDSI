@@ -782,7 +782,7 @@ asks for, and a new component carries the actions beside it.
   **DONE 2026-10-31, GREEN** at 26 of 26, `tsc --noEmit` clean. Same shape as the two existing read
   methods: encode the id, forward the body/params verbatim, unwrap `response.data`, no retry, no
   error normalisation.
-- [ ] T107 [P] Write `easyeat/frontend/tests/components/dishreview/DishDecisionActions.test.tsx`
+- [x] T107 [P] Write `easyeat/frontend/tests/components/dishreview/DishDecisionActions.test.tsx`
   covering: the price calculator and both decision buttons render only for the dish states the
   contract allows (`PENDING_PRICE`: price + both buttons; `PUBLISHED`: price only, for repricing;
   `DRAFT`: neither); "Aprobar y Publicar" is disabled while `publicationGate.satisfied` is false;
@@ -794,9 +794,22 @@ asks for, and a new component carries the actions beside it.
   (approve/reject) response is shown to the Administrator and also triggers `onDecided`, so the
   panel refreshes against the server's truth rather than its own stale read
   — **Serves**: FR-009 to FR-021, FR-025, FR-031
-- [ ] T108 Implement `easyeat/frontend/src/components/dishreview/DishDecisionActions.tsx`,
+
+  **DONE 2026-10-31**, RED observed: `Failed to resolve import ".../DishDecisionActions"` — the
+  component did not exist yet. Exercises the real `MarginPriceCalculator`,
+  `PublicationConfirmModal` and `RejectionDialog`, not stubs, so a prop mismatch against any of
+  the three would fail here exactly as in the browser. 17 cases.
+- [x] T108 Implement `easyeat/frontend/src/components/dishreview/DishDecisionActions.tsx`,
   composing `MarginPriceCalculator`, `PublicationConfirmModal` and `RejectionDialog` against the
   three `dishReviewApi` write methods — **Serves**: same
+
+  **DONE 2026-10-31, GREEN** at 17 of 17 on first implementation, `tsc --noEmit` clean. `DishAuditPanel`
+  is untouched, exactly as planned: it stays the read-only culinary file, and this component sits
+  beside it. `MarginPriceCalculator` is remounted (via `key`) on every dish/price change, because
+  its own seed effect runs once per mount by design; `RejectionDialog` is remounted per dish for
+  the same reason its own draft comment is not reset by `isOpen` alone. A `dish-stale-price` or
+  `dish-already-decided` 409 both show the server's own `detail` message and call `onDecided`, so
+  the panel re-fetches rather than keep showing a decision the Administrator thinks succeeded.
 - [ ] T109 [P] Extend `easyeat/frontend/tests/pages/AdminDishReviewPage.test.tsx` asserting the
   three controls are reachable from `/admin/dishes` once a dish is open — the exact gap
   `HANDOFF-post-merge-ui-gap.md` §2 found manually, now pinned by a page-level test so no future
