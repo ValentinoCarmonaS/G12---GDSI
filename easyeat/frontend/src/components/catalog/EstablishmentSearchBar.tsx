@@ -31,9 +31,34 @@ export const EstablishmentSearchBar: React.FC<EstablishmentSearchBarProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Debounced search (300 ms, COM-1.5.1 CA 1)
+  // Debounced search (300 ms, COM-1.5.1 CA 1) + complete listing (Fix C-01)
   useEffect(() => {
     const trimmed = query.trim();
+
+    if (trimmed.length === 0) {
+      let cancelled = false;
+      setIsLoading(true);
+      dinerCatalogApi
+        .getAllEstablishments()
+        .then((data) => {
+          if (cancelled) return;
+          setResults(data);
+          setIsDropdownOpen(true);
+        })
+        .catch((err) => {
+          console.error('Error loading establishments:', err);
+          if (cancelled) return;
+          setResults([]);
+          setIsDropdownOpen(true);
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     if (trimmed.length < 3) {
       setResults([]);
       setIsDropdownOpen(false);
@@ -129,7 +154,7 @@ export const EstablishmentSearchBar: React.FC<EstablishmentSearchBarProps> = ({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => {
-            if (results.length > 0 && query.trim().length >= 3) {
+            if (results.length > 0) {
               setIsDropdownOpen(true);
             }
           }}
@@ -150,8 +175,8 @@ export const EstablishmentSearchBar: React.FC<EstablishmentSearchBarProps> = ({
         )}
       </div>
 
-      {/* Autocomplete Dropdown */}
-      {isDropdownOpen && query.trim().length >= 3 && (
+      {/* Autocomplete Dropdown / Complete Listing (Fix C-01) */}
+      {isDropdownOpen && (
         <div
           role="listbox"
           className="absolute z-40 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden max-h-80 overflow-y-auto animate-fade-in"
@@ -197,7 +222,9 @@ export const EstablishmentSearchBar: React.FC<EstablishmentSearchBarProps> = ({
             ))
           ) : (
             <div className="px-5 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-              No se encontraron establecimientos. Intentá modificar tu búsqueda.
+              {query.trim().length === 0
+                ? 'No hay establecimientos activos en este momento.'
+                : 'No se encontraron establecimientos. Intentá modificar tu búsqueda.'}
             </div>
           )}
         </div>

@@ -46,5 +46,26 @@ public class EstablishmentDiscoveryService {
                 ))
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public List<EstablishmentSummaryResponse> getAllActiveEstablishments() {
+        List<Establishment> activeEstablishments = establishmentRepository.findAllByStatus(EstablishmentStatus.ACTIVE);
+
+        if (activeEstablishments == null || activeEstablishments.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return activeEstablishments.stream()
+                .map(est -> new EstablishmentSummaryResponse(
+                        est.getId(),
+                        est.getName(),
+                        est.getStatus(),
+                        est.getOpeningTime(),
+                        est.getClosingTime(),
+                        est.getTimezone(),
+                        est.isOpen()
+                ))
+                .toList();
+    }
 }
 
