@@ -57,3 +57,7 @@ target/
 *.ear
 .gradle/
 build/
+
+# Local / Spec Kit generated
+.specify/
+.opencode/
