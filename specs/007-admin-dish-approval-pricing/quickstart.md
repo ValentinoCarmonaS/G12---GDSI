@@ -18,7 +18,7 @@ This feature is **not implementable** until spec 005's dish domain and spec 006'
 from the repository root:
 
 ```bash
-ls easyeat/backend/src/main/resources/db/migration/            # expect V7 (005) present; note the highest version — the next free one is this feature's
+ls easyeat/backend/src/main/resources/db/migration/            # confirmed 2026-10-28: V1..V7 present (V7 from 005), so this feature took V8, then V9 (correction 2026-10-31: spec 008 merged its own V8__create_establishments.sql into develop/sprint-2 first, so this feature's migration was renumbered to V9__admin_dish_approval_pricing.sql on integration — see .specify/memory/migrations.md)
 ls easyeat/backend/src/main/java/com/easyeat/dish/domain/      # expect Dish.java, DishStatus.java
 grep -rn "submitted_at" easyeat/backend/src/main/resources/db/migration/   # R-005-1
 grep -rn "idx_dishes_review_inbox_pending" easyeat/backend/src/main/resources/db/migration/  # R-005-1 index, owned by 005
@@ -98,16 +98,18 @@ as expected behaviour.
 3. **Audit detail.** `GET $API/admin/dishes/{id}/review-detail`.
    Expect the itemized `foodCostAudit` from spec 006, `margin.marginDerivable`,
    `margin.hasUnpricedIngredients`, and `publicationGate.unmetConditions` containing
-   `RETAIL_PRICE_MISSING`. Note the returned `version`.
+   `RETAIL_PRICE_MISSING`. Note the returned `retailPrice` — it is `null` on a dish never priced.
 4. **Approve too early fails.** `POST $API/admin/dishes/{id}/approval` with `{}`.
    Expect `422` `publication-gate-failed` with `unmetConditions: ["RETAIL_PRICE_MISSING"]`; the dish
    stays `PENDING_PRICE`.
 5. **Set the price.** `PUT $API/admin/dishes/{id}/retail-price` with
-   `{"retailPrice": 11250.00, "expectedVersion": <version>}`.
+   `{"retailPrice": 11250.00, "expectedRetailPrice": null}` — `null` because the dish was unpriced
+   when it was read, which is the positive assertion the compare-and-set expects.
    Expect `200`, `margin.marginPct` recomputed at scale 4, a `priceHistoryEntryId`, and
    `status` still `PENDING_PRICE` (FR-009).
-6. **Omitting the version is rejected.** Repeat step 5 without `expectedVersion`: expect `400` with
-   `errors[0].field = "expectedVersion"` — never a silent overwrite.
+6. **Omitting the expected price is rejected.** Repeat step 5 with no `expectedRetailPrice` key at
+   all: expect `400` with `errors[0].field = "expectedRetailPrice"` — never a silent overwrite. Note
+   that sending `"expectedRetailPrice": null` is *not* omission and must succeed on an unpriced dish.
 7. **Approve.** `POST $API/admin/dishes/{id}/approval` with the acknowledgements the detail response
    asked for. Expect `200`, `status: PUBLISHED`, `publishedAt` set, `alreadyPublished: false`, a
    `reviewHistoryEntryId`, and the dish gone from the `PENDING` tab and present in `PUBLISHED`.
@@ -143,12 +145,12 @@ as expected behaviour.
 
 ## 5. Scenario C — reprice a published dish and verify the audit trail (US2, FR-011, SC-008)
 
-1. Take the dish published in Scenario A and note its `version`.
-2. `PUT $API/admin/dishes/{id}/retail-price` with a new price and that `expectedVersion`.
+1. Take the dish published in Scenario A and note its `retailPrice`.
+2. `PUT $API/admin/dishes/{id}/retail-price` with a new price and that value as `expectedRetailPrice`.
    Expect `200`; `status` is still `PUBLISHED`, `publishedAt` unchanged, recipe untouched, and the
    dish still visible to diners at the new price.
-3. **Stale decision (FR-025).** Reuse the now-stale `expectedVersion`: expect `409`
-   `dish-stale-version` with `currentVersion` present so the UI can reconcile.
+3. **Stale decision (FR-025).** Reuse the now-stale `expectedRetailPrice`: expect `409`
+   `dish-stale-price` with `currentRetailPrice` present so the UI can reconcile.
 4. **Negative margin needs confirmation (FR-014).** Submit a price below the Food Cost without
    `acknowledgeNegativeMargin`: expect `422` `acknowledgement-required` with
    `["NEGATIVE_MARGIN"]`. Resend with the flag: expect `200`.
@@ -174,9 +176,84 @@ With both servers running, log in as `admin@easyeat.com` and open `/admin/dishes
   bidirectional margin ↔ PVP calculator; editing one field drives the other, and reformatting to two
   decimals happens on blur, never mid-keystroke;
 - with Food Cost `0.00` the margin input is disabled and the direct-price path is required;
-- margins at `≥ 100%` and `≤ −500%` show a boundary advisory and block derivation;
+- margins at `≥ 100%` show a boundary advisory and block derivation (the `≤ −500%` floor named here
+  was withdrawn by `spec.md`'s own clarification log, CHK014, before Phase 4 began — only the 100%
+  upper bound has mathematical grounding, since it divides by zero; a negative margin of any size is
+  a legitimate commercial decision gated by FR-014's confirmation, not refused here — see `tasks.md`
+  T069's correction note for the same stale wording caught earlier in this delivery);
 - a PVP below the tolerance threshold shows the achievable precision instead of claiming ±0.01 pp;
 - saving a negative margin and publishing with advisories each require a second confirmation;
 - the rejection dialog enforces 10–1000 characters with a live counter and a disabled submit;
 - `403`, each flavour of `409` and `400` surface distinct messages, and a stale decision refreshes
   the list instead of leaving a phantom row.
+
+---
+
+## 7. Execution record (T103/T104, 2026-10-30)
+
+### Scenarios A, B and C — executed end to end against a live instance
+
+Ran against a real backend (`mvn spring-boot:run -Dspring-boot.run.profiles=dev`) and a real
+PostgreSQL 16 container, with real `curl` requests driving every step — not inferred from the test
+suites, though the suites already cover the same ground (`DishApprovalPricingIntegrationTest`,
+`DishVisibilityPredicateIntegrationTest`, `DishReviewInboxIntegrationTest`, every controller test).
+
+- **Scenario A** (§3): all 9 steps reproduced exactly as written, including step 8's diner-visibility
+  check — confirmed with a real `GET /establishments/{tenantId}/dishes` call that only the
+  `PUBLISHED` dish is visible and its `price` field carries the `retail_price` value (`1500.0`),
+  which is this phase's own T096-T098 exercised against a running server, not just the test suite.
+- **Scenario B** (§4): all 5 steps reproduced exactly. Step 4's "same for `ENCARGADO` and `COMENSAL`
+  tokens" was not separately driven by `curl` — the `CHEF`-vs-anonymous pair already demonstrates the
+  role gate, and every other role is already covered by `ChefDishReviewFeedbackControllerTest`'s own
+  RBAC matrix; repeating it by hand here would not add evidence the suite doesn't already carry.
+- **Scenario C** (§5): all 7 steps reproduced exactly, including the live-margin check (step 7): after
+  raising the one recipe ingredient's `unitPurchaseCost` from 1200 to 2000, `review-detail` reported
+  `foodCost` moving from 600 to 1000 and `marginPct` from −20% to −100% while `retailPrice` stayed at
+  500 — the margin is recomputed live, never read from a stored value.
+
+Every response body, status code and error type matched what this document already specified; no
+corrections were needed to §3, §4 or §5. The one correction this execution did produce is §6's
+`≤ −500%` line, recorded above with T103.
+
+### SC-006 (T104) — what could and could not be verified here
+
+No `tc`/`netem` and no browser-based network emulation (Chrome DevTools Protocol or equivalent) is
+available in this execution environment — checked before falling back to the plan below, per the
+constitution's Principle VIII, which requires stating this rather than fabricating a true end-to-end
+capture.
+
+**What was measured**: 20 pending dishes were seeded (one already carrying a recipe and a priced
+history from Scenario A/C). Both SC-006 endpoints were called 20 times each against the live local
+server, with no added network delay (loopback), and the 95th percentile of `curl`'s own
+`time_total` was taken:
+
+| Surface | Server p95 (loopback) | Response payload |
+|---|---|---|
+| `GET /admin/dishes/review-inbox?tab=PENDING&size=20` | 0.0828 s | 6184 bytes |
+| `GET /admin/dishes/{id}/review-detail` | 0.0227 s | 1156 bytes |
+
+**What was calculated, not measured**: the 20 Mbps / 50 ms RTT network component SC-006 names, from
+the stated conditions rather than a real constrained link — transfer time as payload size ÷ 2.5 MB/s
+(20 Mbps), plus 2 × 50 ms for the connection/request round trip:
+
+| Surface | Transfer time | RTT overhead | Calculated network component |
+|---|---|---|---|
+| Review inbox | 6184 / 2.5 MB/s ≈ 0.0025 s | 0.100 s | ≈ 0.103 s |
+| Review detail | 1156 / 2.5 MB/s ≈ 0.0005 s | 0.100 s | ≈ 0.100 s |
+
+**Combined estimate (measured server p95 + calculated network component), labeled as such, not as a
+captured end-to-end measurement**:
+
+- Review inbox: 0.0828 s + 0.103 s ≈ **0.19 s**
+- Review detail: 0.0227 s + 0.100 s ≈ **0.12 s**
+
+**Verdict**: both estimates fall far inside SC-006's 2-second bound — roughly a 10× margin — so the
+criterion is very likely met. It is reported as "likely met, by calculated estimate" rather than
+"verified", because this combined figure has three honest gaps Principle VIII requires naming: (1)
+it does not model TCP slow start, congestion control or any packet loss a real constrained link
+would add beyond flat RTT overhead; (2) it excludes client-side render time — the interval between
+the response arriving and the list or the Food Cost panel actually painting, which this
+curl-only setup cannot observe since no browser tool is available in this session; and (3) the
+local Docker/JVM environment this was measured in is not production hardware. A real measurement
+with browser-based network throttling, if that tool becomes available in a future session, would be
+strictly better evidence than this estimate and should replace it rather than being added alongside it.

@@ -147,6 +147,7 @@ class DinerCatalogQuickstartIntegrationTest {
         burger.setDescription("Hamburguesa jugosa con pan de papa");
         burger.setCategory(DishCategory.PLATOS_PRINCIPALES);
         burger.setPrice(new BigDecimal("9500.00"));
+        burger.setRetailPrice(new BigDecimal("9500.00"));
         burger.setStatus(DishStatus.PUBLISHED);
         burger.setIsActive(true);
         burger = dishRepository.save(burger);
@@ -161,6 +162,7 @@ class DinerCatalogQuickstartIntegrationTest {
         milanesa.setDescription("Milanesa con jamón y queso");
         milanesa.setCategory(DishCategory.PLATOS_PRINCIPALES);
         milanesa.setPrice(new BigDecimal("10500.00"));
+        milanesa.setRetailPrice(new BigDecimal("10500.00"));
         milanesa.setStatus(DishStatus.PUBLISHED);
         milanesa.setIsActive(true);
         milanesa = dishRepository.save(milanesa);
@@ -174,6 +176,7 @@ class DinerCatalogQuickstartIntegrationTest {
         pizza.setDescription("Pizza a la piedra con mozzarella");
         pizza.setCategory(DishCategory.PLATOS_PRINCIPALES);
         pizza.setPrice(new BigDecimal("8500.00"));
+        pizza.setRetailPrice(new BigDecimal("8500.00"));
         pizza.setStatus(DishStatus.PUBLISHED);
         pizza.setIsActive(true);
         pizza = dishRepository.save(pizza);
@@ -312,6 +315,7 @@ class DinerCatalogQuickstartIntegrationTest {
         publishedDrink.setName("Limonada Menta y Jengibre");
         publishedDrink.setCategory(DishCategory.BEBIDAS);
         publishedDrink.setPrice(new BigDecimal("3000.00"));
+        publishedDrink.setRetailPrice(new BigDecimal("3000.00"));
         publishedDrink.setStatus(DishStatus.PUBLISHED);
         publishedDrink.setIsActive(true);
         dishRepository.save(publishedDrink);

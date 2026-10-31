@@ -7,6 +7,7 @@ import com.easyeat.catalog.dto.CartComplianceResponse;
 import com.easyeat.catalog.dto.EnrichedDishResponse;
 import com.easyeat.catalog.exception.DishNotFoundException;
 import com.easyeat.catalog.repository.DishRepository;
+import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.profile.domain.DietaryCategory;
 import com.easyeat.profile.domain.DietaryRestriction;
 import com.easyeat.profile.domain.UserDietaryRestriction;
@@ -69,7 +70,7 @@ class CatalogComplianceServiceTest {
     void getEnrichedCatalog_guestUser_returnsAllCompliant() {
         Dish dish1 = createDish(tenantId, "Milanesa", new BigDecimal("7500.00"), Set.of("DAIRY", "WHEAT"));
         Dish dish2 = createDish(tenantId, "Ensalada Verde", new BigDecimal("5000.00"), Set.of("VEGAN", "CELIAC"));
-        when(dishRepository.findByTenantIdAndIsActiveTrue(tenantId)).thenReturn(List.of(dish1, dish2));
+        when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED)).thenReturn(List.of(dish1, dish2));
 
         List<EnrichedDishResponse> catalog = catalogComplianceService.getEnrichedCatalog(tenantId, null);
 
@@ -85,7 +86,7 @@ class CatalogComplianceServiceTest {
     @DisplayName("Diner with zero restrictions: should mark all dishes compliant (FR-025)")
     void getEnrichedCatalog_dinerWithoutRestrictions_returnsAllCompliant() {
         Dish dish1 = createDish(tenantId, "Hamburguesa", new BigDecimal("8500.00"), Set.of("DAIRY"));
-        when(dishRepository.findByTenantIdAndIsActiveTrue(tenantId)).thenReturn(List.of(dish1));
+        when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED)).thenReturn(List.of(dish1));
         when(userDietaryRestrictionRepository.findByIdUserId(diner.getId())).thenReturn(Collections.emptyList());
 
         List<EnrichedDishResponse> catalog = catalogComplianceService.getEnrichedCatalog(tenantId, diner);
@@ -113,7 +114,7 @@ class CatalogComplianceServiceTest {
         // Dish 4: Violates both VEGAN and PEANUTS
         Dish dish4 = createDish(tenantId, "Postre Mixto", new BigDecimal("4500.00"), Set.of("PEANUTS", "DAIRY"));
 
-        when(dishRepository.findByTenantIdAndIsActiveTrue(tenantId)).thenReturn(List.of(dish1, dish2, dish3, dish4));
+        when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED)).thenReturn(List.of(dish1, dish2, dish3, dish4));
 
         List<EnrichedDishResponse> catalog = catalogComplianceService.getEnrichedCatalog(tenantId, diner);
 
@@ -185,6 +186,8 @@ class CatalogComplianceServiceTest {
     private Dish createDish(UUID tenantId, String name, BigDecimal price, Set<String> restrictions) {
         Dish dish = new Dish(tenantId, name, "Descripción de " + name, price, true);
         dish.setId(UUID.randomUUID());
+        dish.setStatus(DishStatus.PUBLISHED);
+        dish.setRetailPrice(price);
         dish.setRestrictionCodes(new HashSet<>(restrictions));
         return dish;
     }

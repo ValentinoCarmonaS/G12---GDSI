@@ -187,7 +187,10 @@ public class DinerCatalogService {
                 ? compliance.getConflictingRestrictions()
                 : Collections.emptyList();
 
-        BigDecimal price = dish.getPrice() != null ? dish.getPrice() : BigDecimal.ZERO;
+        // Spec 007 FR-033/D2: the diner-facing price is the Administrator-assigned retail price,
+        // never the legacy `price` column. Corrected 2026-10-31 on integration into
+        // develop/sprint-2 — this service predates spec 007 and read the legacy column.
+        BigDecimal price = dish.getRetailPrice() != null ? dish.getRetailPrice() : BigDecimal.ZERO;
         boolean isAvailable = dishAvailabilityEngine != null
                 ? dishAvailabilityEngine.isDishAvailable(dish.getId(), tenantId)
                 : (dish.getIsActive() != null && dish.getIsActive());

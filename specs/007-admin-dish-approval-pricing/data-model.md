@@ -4,7 +4,7 @@
 **Date**: 2026-10-26
 **Specification**: [spec.md](./spec.md) · **Decisions**: [research.md](./research.md) · **Contracts**: [contracts/openapi.yaml](./contracts/openapi.yaml)
 
-Scope of ownership: this feature owns `dishes.retail_price`, `dishes.version`, `dishes.published_at`, the `dish_review_history` and `dish_price_history` tables, and the indexes serving the inbox and history queries. It owns **no** object of spec 005's `V6` migration. Everything it needs from 005 or 006 and does not own is an [Upstream Requirement](./plan.md#upstream-requirements).
+Scope of ownership: this feature owns `dishes.retail_price`, `dishes.published_at`, the `dish_review_history` and `dish_price_history` tables, and the indexes serving the inbox and history queries. It owns **no** object of spec 005's `V6` migration. Everything it needs from 005 or 006 and does not own is an [Upstream Requirement](./plan.md#upstream-requirements).
 
 ---
 
@@ -19,12 +19,11 @@ Columns added by **this** feature:
 | Attribute | Type | Nullable | Rules |
 |---|---|---|---|
 | `retail_price` | `NUMERIC(10,2)` | Yes | The PVP. `NULL` means "not yet priced". When present MUST be `> 0` (FR-013). Written only by the pricing path; scale 2, `HALF_UP`. |
-| `version` | `BIGINT` | No | Optimistic-locking token, `DEFAULT 0`, incremented by Hibernate `@Version`. First use of optimistic locking in the project (FR-025). |
 | `published_at` | `TIMESTAMPTZ` | Yes | Set on the `PENDING_PRICE → PUBLISHED` transition. `NULL` for every dish never approved. Never cleared by this feature (unpublishing is Sprint 3). |
 
 Columns **consumed** from upstream (never created here): `status`, `category`, `allergens_confirmed`, `created_by`, `submitted_at` (all delivered by 005's `V7`; `submitted_at` added by issue #137 / PR #138, closing **R-005-1**); `name`, `description`, `tenant_id`, `is_active`, `created_at`, `updated_at`, `price` (V5, spec 003).
 
-Fields added to the entity class (ordinary incremental work on an existing class, permitted by D1): `retailPrice`, `version` (`@Version`), `publishedAt`. They are added to `com.easyeat.catalog.domain.Dish`, which already carries no `@Version`, no `retail_price` and no `published_at`.
+Fields added to the entity class (ordinary incremental work on an existing class, permitted by D1): `retailPrice` and `publishedAt`, and **nothing else**. No `@Version` field is added — see §1.2. They are added to `com.easyeat.catalog.domain.Dish`, which already carries no `retail_price` and no `published_at`.
 
 ### 1.2. D3 withdrawn — one entity, guarded by review instead of by `@Immutable`
 
@@ -32,12 +31,18 @@ Fields added to the entity class (ordinary incremental work on an existing class
 
 **Why the original plan is not merely inconvenient but impossible**: `@Immutable` cannot be applied to `catalog.domain.Dish`, because it is the **only** entity over `dishes` and spec 005 already writes through it (`DishService` sets `submitted_at` on the submit transition). Annotating it would break spec 005's own feature, not just this one.
 
-**Revised decision**: this feature adds `@Version` to the single entity and accepts that optimistic locking is now a property shared by every writer of `dishes`. The structural guarantee `@Immutable` would have given is replaced by two weaker but real ones:
+**First revision, also superseded**: add `@Version` to the single entity and accept that optimistic locking becomes a property shared by every writer of `dishes`. That was escalated as `R-005-4`, because it changes failure behaviour for spec 003 and spec 005 — a concurrent write that previously overwrote silently would now raise a conflict.
 
-- `@Version` on the shared entity means **every** write path through it carries the version predicate, including spec 003's and spec 005's. That is strictly safer than the two-entity split, where only the back-office path was guarded.
-- The diner read path stays read-only by construction: `DishRepository` declares only `findByTenantIdAndIsActiveTrue` and `findByIdIn`, and `CatalogComplianceService` only reads. This is now a **review-enforced** invariant rather than a compiler-enforced one, and the loss of that enforcement is registered as debt in `plan.md` Complexity Tracking.
+**Revised decision as of 2026-10-28**: no version column and no `@Version` field. `R-005-4` is withdrawn. FR-025's three operations are each applied as a conditional `UPDATE` that restates the state the Administrator acted upon, and are accepted only if they affect exactly one row — the source status for approval and rejection, the previously read price for repricing. The guarantee is identical where FR-025 asks for it, and the cost is confined to this feature:
 
-**Consequence for other writers**: adding `@Version` to a shared entity changes failure behaviour for spec 003 and spec 005 as well — a concurrent write that previously overwrote silently now raises a conflict. That is the correct behaviour, but it is a change to code this feature does not own, so it requires the same acknowledgement as any D1 boundary crossing (see `R-005-4` in `plan.md`).
+- nothing changes for spec 003's catalog writes or spec 005's submit transition, so no agreement from their owners is needed and their tests keep asserting the semantics they assert today;
+- the shared table gains only this feature's own columns, so the migration is narrower;
+- the guard lives in this feature's repository methods, which is inside D1's boundary rather than across it.
+
+Two guarantees still replace the structural one `@Immutable` would have given, and both are weaker than a compiler check:
+
+- The diner read path stays read-only by construction: `catalog/repository/DishRepository` declares reads only, and `CatalogComplianceService` only reads. This is a **review-enforced** invariant, and the loss of enforcement is registered as debt in `plan.md` Complexity Tracking. **Corrected 2026-10-28**: this clause used to say that repository declares only `findByTenantIdAndIsActiveTrue` and `findByIdIn`. That was true before spec 005 extended it; it now declares seven methods, including a paged `findByTenantIdAndStatus`. All of them are reads, so the invariant holds — but the enumeration did not, and an invariant stated against a stale list is unverifiable. What matters is the property, not the count: **no write path may be added to that interface**, and this feature adds none, keeping its own inbox queries in `dish/repository/DishReviewInboxRepository`.
+- The concurrency guard is **per operation, not per row**. A write path added to `dishes` later, outside FR-025's three operations, inherits no protection — which a version column would have given it automatically. This is the one respect in which the withdrawn design was stronger, it is registered as debt beside the item above, and the two share one mitigation: any new write path through `catalog/repository/DishRepository` must carry its own predicate.
 
 ### 1.3. `DishReviewHistory` (`dish_review_history`) — immutable administrative decisions
 
@@ -81,7 +86,6 @@ erDiagram
         uuid tenant_id
         varchar_50 status "DRAFT, PENDING_PRICE, PUBLISHED"
         numeric_10_2 retail_price "OWNED BY 007, nullable, > 0"
-        bigint version "OWNED BY 007"
         timestamptz published_at "OWNED BY 007"
         timestamptz submitted_at "R-005-1, read-only here"
         numeric_10_2 price "LEGACY (spec 003), never written after 007"
@@ -129,24 +133,26 @@ stateDiagram-v2
 
 | # | Transition | Trigger | Guard (evaluated server-side, inside the transaction) | Effects | Loser / failure |
 |---|---|---|---|---|---|
-| T1 | `PENDING_PRICE → PUBLISHED` | `POST /admin/dishes/{id}/approval` | `status = PENDING_PRICE`; **publication gate** (FR-015): `retail_price > 0` **and** ≥ 1 recipe line whose ingredient is `ACTIVE` **and** `allergens_confirmed = TRUE`; required acknowledgements present (FR-017) | `status = PUBLISHED`, `published_at = NOW()`, `is_active = TRUE` (§3.4), `version++`, one `dish_review_history` row (`APPROVED`, `cycle_number = MAX+1`) | gate unmet → **422** `publication-gate-failed` with `unmetConditions[]`; missing acknowledgement → **422** `acknowledgement-required`; `status = DRAFT` → **409** `dish-invalid-state` (FR-019); `status = PUBLISHED` → **200 idempotent no-op** (FR-018) |
-| T2 | `PENDING_PRICE → DRAFT` | `POST /admin/dishes/{id}/rejection` | `status = PENDING_PRICE`; comment valid | `status = DRAFT`, `version++`, one `dish_review_history` row (`REJECTED`, `cycle_number = MAX+1`, comment). `published_at` untouched; recipe, labels and `retail_price` untouched | invalid comment → **400** `invalid-rejection-comment` (dish stays `PENDING_PRICE`); `status = PUBLISHED` → **409** `dish-invalid-state` (FR-024); `status = DRAFT` → **409** `dish-invalid-state` (FR-019) |
-| T3 | pricing, status-preserving | `PUT /admin/dishes/{id}/retail-price` | `status ∈ {PENDING_PRICE, PUBLISHED}` (FR-009); `expectedVersion` matches; price valid; negative margin acknowledged (FR-014) | `retail_price` set, `version++`, one `dish_price_history` row. Status, recipe, `is_active` and `published_at` unchanged (FR-011) | `status = DRAFT` → **409** `dish-invalid-state`; stale `expectedVersion` → **409** `dish-stale-version`; invalid price → **400** `invalid-retail-price`; unacknowledged negative margin → **422** `acknowledgement-required` |
+| T1 | `PENDING_PRICE → PUBLISHED` | `POST /admin/dishes/{id}/approval` | `status = PENDING_PRICE`; **publication gate** (FR-015): `retail_price > 0` **and** ≥ 1 recipe line whose ingredient is `ACTIVE` **and** `allergens_confirmed = TRUE`; required acknowledgements present (FR-017) | `status = PUBLISHED`, `published_at = NOW()`, `is_active = TRUE` (§3.4), one `dish_review_history` row (`APPROVED`, `cycle_number = MAX+1`). The `UPDATE` carries `AND status = 'PENDING_PRICE'`; zero rows affected → **409** `dish-already-decided` with the prevailing `currentStatus` and `decidedAt` | gate unmet → **422** `publication-gate-failed` with `unmetConditions[]`; missing acknowledgement → **422** `acknowledgement-required`; `status = DRAFT` → **409** `dish-invalid-state` (FR-019); `status = PUBLISHED` → **200 idempotent no-op** (FR-018) |
+| T2 | `PENDING_PRICE → DRAFT` | `POST /admin/dishes/{id}/rejection` | `status = PENDING_PRICE`; comment valid | `status = DRAFT`, one `dish_review_history` row (`REJECTED`, `cycle_number = MAX+1`, comment). `published_at` untouched; recipe, labels and `retail_price` untouched. The `UPDATE` carries `AND status = 'PENDING_PRICE'`; zero rows affected → **409** `dish-already-decided` | invalid comment → **400** `invalid-rejection-comment` (dish stays `PENDING_PRICE`); `status = PUBLISHED` → **409** `dish-invalid-state` (FR-024); `status = DRAFT` → **409** `dish-invalid-state` (FR-019) |
+| T3 | pricing, status-preserving | `PUT /admin/dishes/{id}/retail-price` | `status ∈ {PENDING_PRICE, PUBLISHED}` (FR-009); `expectedRetailPrice` matches the stored value; price valid; negative margin acknowledged (FR-014) | `retail_price` set, one `dish_price_history` row. Status, recipe, `is_active` and `published_at` unchanged (FR-011). The `UPDATE` carries `AND retail_price IS NOT DISTINCT FROM :expectedRetailPrice` — `IS NOT DISTINCT FROM`, not `=`, because the first assignment compares against `NULL` | `status = DRAFT` → **409** `dish-invalid-state`; zero rows affected → **409** `dish-stale-price` with `currentRetailPrice`; `expectedRetailPrice` absent from the body → **400** bound to that field (an explicit `null` is not absence: it asserts "the dish was unpriced when I read it"); invalid price → **400** `invalid-retail-price`; unacknowledged negative margin → **422** `acknowledgement-required` |
 
-**Idempotent approval (FR-018)**: when `status` is already `PUBLISHED`, the transaction writes nothing — no status change, no `version` bump, no audit row — and returns `200 OK` with `alreadyPublished: true` plus the original `publishedAt`, so the UI reports "ya estaba publicado" instead of a fresh publication.
+**Idempotent approval (FR-018)**: when `status` is already `PUBLISHED`, the transaction writes nothing — no status change, no audit row — and returns `200 OK` with `alreadyPublished: true` plus the original `publishedAt`, so the UI reports "ya estaba publicado" instead of a fresh publication.
 
 ---
 
 ## 3. Flyway migration owned by this feature
 
 **File**: `easyeat/backend/src/main/resources/db/migration/V9__admin_dish_approval_pricing.sql`
-**Version rationale and renumbering rule**: see [research.md §2(b)](./research.md). The version is **not reserved in advance** — it is the next free sequential number confirmed against `db/migration/` when the file is authored. Queue as of 2026-10-27: `V6` inventory batches (on `main`), `V7` spec 005 (on `005-chef-dish-management`), `V8` claimed by spec 008 → `V9` here.
-**Applies on top of**: `V1..V7` (`V1..V6` on `main`, `V7` pending integration from spec 005) plus `V8` once spec 008 lands.
+**Correction 2026-10-31, found while integrating into `develop/sprint-2`**: this file was authored and merged across Phases 1-7 as `V8__admin_dish_approval_pricing.sql`, per the rationale below which was accurate at the time. By the integration of 2026-10-31 (PR #182), spec 008 had already merged `V8__create_establishments.sql` into `develop/sprint-2` first, so by the registry's own rule 4 spec 008 kept `V8` and this file was renamed to `V9__admin_dish_approval_pricing.sql` during that merge, with no change to its content. `AdminPricingMigrationTest` carries no version in its name (registry rule 5) and required no change. See [`.specify/memory/migrations.md`](../../.specify/memory/migrations.md) for the resolved registry entry.
+**Version rationale and renumbering rule (historical, as decided 2026-10-28)**: see [research.md §2(b)](./research.md) and the project registry at [`.specify/memory/migrations.md`](../../.specify/memory/migrations.md). The version is **not reserved in advance** — it is the next free sequential number confirmed against `db/migration/` when the file is authored. **Confirmed 2026-10-28**: the integration branch holds `V1`–`V7` (`V7` landed with spec 005 via PR #160), so this feature took **`V8`** at authoring time (renumbered to `V9` on integration, see the correction above).
+**On spec 008's competing claim**: spec 008 had written `V8__create_establishments.sql` on its own feature branch (PRs #168, #169, both merged into `008-diner-catalog-multi-tenant`, none into the integration branch at the time). By rule 4 of the registry a claim in flight reserves nothing, and whichever branch merges first keeps the number; the other renames its file. Taking `V9` instead at authoring time would not have spared spec 008, because Flyway runs with `outOfOrder` disabled: if this feature had merged `V9` first, 008's `V8` would sit below the highest applied version and be rejected outright on every database not recreated — so 008 would have had to renumber anyway, and a gap would be left behind. The two migrations are independent in content — this one alters `dishes`, 008's creates `establishments` and does not touch `dishes.status` — so renumbering either was a rename plus a registry row, with no semantic consequence. In the event, spec 008 merged first, and this feature is the one that renumbered.
+**Applies on top of**: `V1..V7`, all present on the integration branch.
 
 ```sql
 -- ====================================================================
 -- EasyEat: Administrative Back-Office - PVP, Approval and Audit
--- Owns: dishes.retail_price / version / published_at, dish_review_history,
+-- Owns: dishes.retail_price / published_at, dish_review_history,
 --       dish_price_history, inbox indexes, retail_price backfill.
 -- Owns NOTHING of spec 005's or spec 008's migrations.
 -- ====================================================================
@@ -154,8 +160,9 @@ stateDiagram-v2
 -- 1. Columns owned by this feature
 ALTER TABLE dishes
     ADD COLUMN IF NOT EXISTS retail_price NUMERIC(10, 2),
-    ADD COLUMN IF NOT EXISTS version      BIGINT      NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+-- No version column: FR-025 is enforced by conditional UPDATEs, not by a
+-- row version. See §1.2 and plan.md R-005-4 (withdrawn).
 
 ALTER TABLE dishes
     ADD CONSTRAINT chk_dishes_retail_price_positive
@@ -238,7 +245,7 @@ CREATE INDEX IF NOT EXISTS idx_dishes_review_inbox_published
 
 ### 3.2. `cycle_number` without a race
 
-The value is computed as `COALESCE(MAX(cycle_number), 0) + 1` for the dish **inside the same transaction** that performs the status transition. Two concurrent decisions cannot both commit, because each one also updates the `dishes` row with the `@Version` predicate, so the second `UPDATE` matches zero rows and its transaction is rolled back before its audit row can commit. `UNIQUE (dish_id, cycle_number)` is therefore the **proof** of the invariant rather than its mechanism: if it is ever violated, a write path exists that bypasses the dish-row version guard, which is exactly the defect we want to fail loudly.
+The value is computed as `COALESCE(MAX(cycle_number), 0) + 1` for the dish **inside the same transaction** that performs the status transition. Two concurrent decisions cannot both commit, because each one also issues the conditional `UPDATE` on the `dishes` row carrying `AND status = 'PENDING_PRICE'`: the second matches zero rows and its transaction is rolled back before its audit row can commit. Under PostgreSQL's default `READ COMMITTED` the second statement blocks on the row lock, then re-evaluates its predicate against the committed row and finds the status no longer matches, so the window where both read `PENDING_PRICE` is closed by the statement itself rather than by a version comparison. `UNIQUE (dish_id, cycle_number)` is therefore the **proof** of the invariant rather than its mechanism: if it is ever violated, a write path exists that bypasses the status predicate, which is exactly the defect we want to fail loudly.
 
 ### 3.3. How immutability is actually enforced
 
@@ -249,6 +256,20 @@ Append-only service paths: `DishReviewHistoryRepository` and `DishPriceHistoryRe
 The approval transition sets `is_active = TRUE` in the same atomic update, because 005 defaults new drafts to `FALSE` and D4's diner predicate requires both flags. See [research.md §3.9](./research.md). No other path in this feature writes `is_active`; Sprint 3's pause flips it without touching `status`.
 
 ---
+
+### 3.5. A dish with no recipe lines (FR-037)
+
+Spec 006's `FoodCostAuditService.auditDishCost` raises `EmptyRecipeException` when a dish has no rows in `dish_recipe_ingredients`, rather than returning a zero cost. FR-012 recomputes the margin on **every** consultation, so this feature's read paths reach that condition for any dish submitted without a recipe.
+
+**Rule**: every read path catches it and renders the recipe-absent state — no itemization, no margin, and the publication gate reported as unmet on condition 2 — while still rendering identity, status, author attribution, the assigned price if any, and the review history. It is never propagated as a failed request, because the absence of a recipe is a fact about the dish, not a fault in the consultation. The write paths need no special handling: FR-015 condition 2 already blocks approval, and repricing is legal on a dish with no recipe (the margin is simply not computable, which FR-014's acknowledgement already covers).
+
+**Why this is not spec 006's defect**: its endpoint answers "itemize this dish's cost", and for a dish with no recipe that request has no answer. This feature's detail view answers a broader question, so the same condition is information rather than an error.
+
+### 3.6. `IngredientStatus` is not in the audit payload (FR-015, condition 2)
+
+`RecipeItemAuditResponse` carries the ingredient's id, name, quantity, unit of measure, unit cost, line subtotal and unpriced flag — but **not** its `IngredientStatus` — and `FoodCostAuditService` does not exclude discontinued lines from the total. FR-015 condition 2 requires at least one recipe line whose ingredient is `ACTIVE`, so **the gate cannot be evaluated from the audit payload**: this feature evaluates it with its own query, counting the dish's recipe lines joined to `ingredients` on `status = 'ACTIVE'`.
+
+The two artifacts answer different questions and both are right: the Food Cost projects what the recipe costs as written, including lines whose ingredient has since been discontinued; the gate asks whether the dish can be produced today. Deriving one from the other would corrupt whichever lost.
 
 ## 4. Deletion, typing and author semantics
 
@@ -296,11 +317,15 @@ More-than-two-decimals is detected as `price.stripTrailingZeros().scale() > 2` o
 
 ---
 
-## 6. Dev seed and its test (D5)
+## 6. Dev seed and its test (D5 — **WITHDRAWN 2026-10-28**)
 
-`R__seed_dev_dishes_and_dietary.sql` is extended so its five dishes land `status = 'PUBLISHED'`, `is_active = TRUE`, `allergens_confirmed = TRUE`, `category` set per dish, `retail_price` = the existing `price` value, `version = 0`, `published_at = NOW()`, `created_by = NULL`, plus one synthetic `dish_review_history` row per dish (`cycle_number = 1`, `APPROVED`, `admin_id = b0eebc99-…-a22`, comment prefixed `[SEED SINTÉTICO]`). Being a repeatable migration it runs after all versioned ones, so it may reference both 005's and this feature's columns; it therefore becomes dependent on `V6` and `V8` together.
+D5 called for the five seeded dishes to land `status = 'PUBLISHED'` with `retail_price` backfilled, `published_at = NOW()`, `created_by = NULL` and one synthetic `APPROVED` review row each, so that the diner catalog would not be empty in dev under D4's predicate. **It is withdrawn**; the reasoning is recorded in [research.md §3.6](./research.md), and in short: its premise was measurably false, executing it would have broken a green test belonging to spec 005, and `PENDING_PRICE` is the state this feature's own inbox and quickstart need.
 
-**Effect on `DevSeedDishesMigrationTest`**: its existing assertions (≥ 5 dishes for the tenant, dietary mappings present) keep passing unchanged. It is extended to assert the new seeded invariants — all five rows `PUBLISHED` with `retail_price = price` and `retail_price > 0`, one `APPROVED` review row each — so that SC-001 holds in the dev database with **no exception**, and spec 003's catalog tests (`CatalogControllerTest`, `CatalogComplianceServiceTest`, `CatalogComplianceIntegrationTest`) continue to see exactly the same five visible dishes under D4's stricter predicate.
+**What the seed does instead.** `status`, `is_active`, `allergens_confirmed` and `created_by` are left exactly as spec 005 wrote them. The seed states `retail_price` and `published_at` explicitly as `NULL`, in the `INSERT` and in the `ON CONFLICT … DO UPDATE`, so the five dishes are deterministically **unpriced and never approved**. That is not cosmetic: `V8`'s backfill copies `price` into `retail_price` for rows already present on a developer's existing database, so without the explicit `NULL`s the dev state would differ between an existing database and a fresh clone. Being a repeatable migration it still runs after every versioned one, so it may reference this feature's columns; it therefore depends on `V7` and `V8` together.
+
+**Effect on `DevSeedDishesMigrationTest`**: every existing assertion keeps passing unchanged. It gains assertions that the five rows carry `retail_price IS NULL`, `published_at IS NULL`, no `dish_review_history` row, and `status = 'PENDING_PRICE'` — the last one duplicated from spec 005's own test on purpose, so this feature records the state it depends on rather than trusting another spec to preserve it.
+
+**Consequence accepted**: the dev diner catalog is empty under D4's predicate until an Administrator approves something, and `SC-001` is therefore verified by this feature's integration tests rather than by seeded data. Populating it with published dev rows is a decision for specs 003 and 008.
 
 ---
 
@@ -323,14 +348,15 @@ More-than-two-decimals is detected as `price.stripTrailingZeros().scale() > 2` o
 | FR-013 | `chk_dishes_retail_price_positive` + domain validation → 400 (§5.5) |
 | FR-014 | `acknowledgeNegativeMargin` in the pricing request; absent → 422 `acknowledgement-required` |
 | FR-015 | T1 publication gate, re-evaluated at approval time, incl. recipes emptied or discontinued after submission |
-| FR-016 | T1 single atomic transaction: `status`, `published_at`, `is_active`, `version`, audit row |
+| FR-016 | T1 single atomic transaction: `status`, `published_at`, `is_active`, audit row |
 | FR-017 | `acknowledgeUnpricedIngredients` / `acknowledgeNegativeMargin` in the approval request |
-| FR-018 | T1 idempotent branch: 200 OK, `alreadyPublished: true`, no audit row, no `version` bump |
+| FR-018 | T1 idempotent branch: 200 OK, `alreadyPublished: true`, no audit row, no state change |
 | FR-019 | T1/T2 guard on `DRAFT` → 409 `dish-invalid-state` |
 | FR-020 | T2: `status = DRAFT`, dish leaves the pending tab, 005's edit lock releases |
 | FR-021 | `chk_drh_rejection_comment` + domain validation (trim, 10..1000) → 400 |
 | FR-022 | `dish_review_history` (dish, actor, timestamp, reason, `cycle_number`), append-only (§3.3) |
 | FR-023 | `GET /dishes/{id}/review-feedback` (CHEF) — response type carries **no** financial field at all (structural omission, §contracts) |
 | FR-024 | T2 guard on `PUBLISHED` → 409 `dish-invalid-state` |
-| FR-025 | `dishes.version` `@Version` + per-operation status guards + `expectedVersion` on repricing; 409 taxonomy |
+| FR-025 | Conditional `UPDATE` per operation: `AND status = 'PENDING_PRICE'` for T1/T2, `AND retail_price IS NOT DISTINCT FROM :expectedRetailPrice` for T3; zero affected rows → 409 taxonomy |
+| FR-037 | §3.5: `EmptyRecipeException` from 006's audit service is caught on every read path and rendered as the dish's recipe-absent state, never propagated |
 | FR-026 | §4.3 — no author-status filter anywhere; FK intact; `RESTRICT` on audit actors |

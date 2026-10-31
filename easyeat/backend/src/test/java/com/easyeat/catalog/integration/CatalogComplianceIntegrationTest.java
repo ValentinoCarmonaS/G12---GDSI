@@ -9,6 +9,7 @@ import com.easyeat.catalog.dto.CartComplianceResponse;
 import com.easyeat.catalog.dto.EnrichedDishResponse;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.catalog.service.CatalogComplianceService;
+import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.profile.domain.UserDietaryRestriction;
 import com.easyeat.profile.domain.UserDietaryRestrictionId;
 import com.easyeat.profile.repository.ProfileUserRepository;
@@ -88,13 +89,19 @@ class CatalogComplianceIntegrationTest {
     @DisplayName("Tenant isolation: querying tenant A only returns active dishes for tenant A")
     void getEnrichedCatalog_tenantIsolation_onlyReturnsTenantDishes() {
         Dish dishA1 = new Dish(tenantA, "Pasta Mediterránea", "Pasta fresca con albahaca", new BigDecimal("7500.00"), true);
+        dishA1.setStatus(DishStatus.PUBLISHED);
+        dishA1.setRetailPrice(new BigDecimal("7500.00"));
         dishA1.setRestrictionCodes(Set.of("VEGAN"));
         dishRepository.save(dishA1);
 
         Dish dishA2Inactive = new Dish(tenantA, "Plato Inactivo", "No disponible", new BigDecimal("5000.00"), false);
+        dishA2Inactive.setStatus(DishStatus.PUBLISHED);
+        dishA2Inactive.setRetailPrice(new BigDecimal("5000.00"));
         dishRepository.save(dishA2Inactive);
 
         Dish dishB1 = new Dish(tenantB, "Asado Criollo", "Carne vacuna", new BigDecimal("14000.00"), true);
+        dishB1.setStatus(DishStatus.PUBLISHED);
+        dishB1.setRetailPrice(new BigDecimal("14000.00"));
         dishRepository.save(dishB1);
 
         List<EnrichedDishResponse> catalogA = catalogComplianceService.getEnrichedCatalog(tenantA, null);
@@ -118,11 +125,15 @@ class CatalogComplianceIntegrationTest {
 
         // Dish 1: Compliant (has VEGAN, no DAIRY)
         Dish dishVegan = new Dish(tenantA, "Ensalada Tofu", "Vegano puro", new BigDecimal("6500.00"), true);
+        dishVegan.setStatus(DishStatus.PUBLISHED);
+        dishVegan.setRetailPrice(new BigDecimal("6500.00"));
         dishVegan.setRestrictionCodes(Set.of("VEGAN"));
         dishRepository.save(dishVegan);
 
         // Dish 2: Conflicting with VEGAN and DAIRY
         Dish dishLasagna = new Dish(tenantA, "Lasaña Tradicional", "Carne y queso", new BigDecimal("9500.00"), true);
+        dishLasagna.setStatus(DishStatus.PUBLISHED);
+        dishLasagna.setRetailPrice(new BigDecimal("9500.00"));
         dishLasagna.setRestrictionCodes(Set.of("DAIRY"));
         dishRepository.save(dishLasagna);
 

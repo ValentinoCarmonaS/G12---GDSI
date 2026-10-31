@@ -5,6 +5,7 @@ import com.easyeat.auth.domain.UserRole;
 import com.easyeat.auth.domain.UserStatus;
 import com.easyeat.auth.security.JwtService;
 import com.easyeat.catalog.domain.Dish;
+import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.catalog.dto.CartComplianceRequest;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.profile.dto.EmailChangeRequestDto;
@@ -225,11 +226,15 @@ class DinerProfileQuickstartIntegrationTest {
 
         // Dish 1: Compliant (CELIAC + VEGETARIAN, no allergens)
         Dish salad = new Dish(tenantId, "Ensalada Mediterránea", "Fresca", new BigDecimal("4500.00"), true);
+        salad.setStatus(DishStatus.PUBLISHED);
+        salad.setRetailPrice(new BigDecimal("4500.00"));
         salad.setRestrictionCodes(Set.of("CELIAC", "VEGETARIAN"));
         salad = dishRepository.save(salad);
 
         // Dish 2: Conflicting (PEANUTS + SOY allergens, not celiac)
         Dish padThai = new Dish(tenantId, "Pad Thai con Maní", "Salteado con maní", new BigDecimal("6200.00"), true);
+        padThai.setStatus(DishStatus.PUBLISHED);
+        padThai.setRetailPrice(new BigDecimal("6200.00"));
         padThai.setRestrictionCodes(Set.of("PEANUTS", "SOY"));
         padThai = dishRepository.save(padThai);
 

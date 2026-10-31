@@ -56,6 +56,7 @@ public final class CatalogTestFixtures {
         dish.setCategory(DishCategory.PLATOS_PRINCIPALES);
         dish.setDescription(DEFAULT_DISH_DESCRIPTION);
         dish.setPrice(DEFAULT_DISH_PRICE);
+        dish.setRetailPrice(DEFAULT_DISH_PRICE); // diner-facing price is retail_price (spec 007 FR-033)
         dish.setStatus(DishStatus.PUBLISHED);
         dish.setIsActive(true);
         dish.setAllergensConfirmed(true);
@@ -156,6 +157,7 @@ public final class CatalogTestFixtures {
             dish.setCategory(this.category);
             dish.setDescription(this.description);
             dish.setPrice(this.price);
+            dish.setRetailPrice(this.price);
             dish.setStatus(this.status);
             dish.setIsActive(this.isActive);
             dish.setAllergensConfirmed(this.allergensConfirmed);

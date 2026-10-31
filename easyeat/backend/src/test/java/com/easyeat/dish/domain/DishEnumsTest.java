@@ -130,6 +130,14 @@ class DishEnumsTest {
     }
 
     @Test
+    @DisplayName("DishStatus constant names must match the chk_dishes_status database domain")
+    void dishStatusNamesMatchDatabaseDomain() {
+        assertThat(DishStatus.values())
+                .extracting(Enum::name)
+                .containsExactly("DRAFT", "PENDING_PRICE", "PUBLISHED");
+    }
+
+    @Test
     @DisplayName("DishStatus should serialize and deserialize with Jackson")
     void dishStatusJackson() throws JsonProcessingException {
         String json = objectMapper.writeValueAsString(DishStatus.DRAFT);
@@ -137,5 +145,8 @@ class DishEnumsTest {
 
         DishStatus status = objectMapper.readValue("\"PENDING_PRICE\"", DishStatus.class);
         assertThat(status).isEqualTo(DishStatus.PENDING_PRICE);
+
+        assertThat(objectMapper.writeValueAsString(DishStatus.PUBLISHED)).isEqualTo("\"PUBLISHED\"");
+        assertThat(objectMapper.readValue("\"PUBLISHED\"", DishStatus.class)).isEqualTo(DishStatus.PUBLISHED);
     }
 }

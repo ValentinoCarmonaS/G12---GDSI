@@ -18,12 +18,16 @@ export function isDishCategory(val: unknown): val is DishCategory {
 }
 
 /**
- * Chef dish lifecycle statuses (CHF-2.2.1, CHF-2.2.4).
+ * Chef dish lifecycle statuses (CHF-2.2.1, CHF-2.2.4, spec 007's DishStatus).
+ *
+ * PUBLISHED added by T079a: the backend enum admitted it under T005's D1 amendment before this
+ * union did, which made a published dish render as the raw token 'PUBLISHED' through
+ * DishStatusBadge's fallback once T076 could set it.
  */
-export type DishStatus = 'DRAFT' | 'PENDING_PRICE';
+export type DishStatus = 'DRAFT' | 'PENDING_PRICE' | 'PUBLISHED';
 
 export function isDishStatus(val: unknown): val is DishStatus {
-  return val === 'DRAFT' || val === 'PENDING_PRICE';
+  return val === 'DRAFT' || val === 'PENDING_PRICE' || val === 'PUBLISHED';
 }
 
 /**
