@@ -4,6 +4,7 @@ import com.easyeat.dish.domain.AcknowledgementKind;
 import com.easyeat.dish.domain.PublicationGateCondition;
 import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
+import com.easyeat.dish.dto.DishRejectionResponse;
 import com.easyeat.dish.dto.MarginSummary;
 import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.common.exception.TenantViolationException;
@@ -11,6 +12,7 @@ import com.easyeat.dish.exception.AcknowledgementRequiredException;
 import com.easyeat.dish.exception.DishAlreadyDecidedException;
 import com.easyeat.dish.exception.DishNotFoundException;
 import com.easyeat.dish.exception.DishStateConflictException;
+import com.easyeat.dish.exception.InvalidRejectionCommentException;
 import com.easyeat.dish.exception.InvalidRetailPriceException;
 import com.easyeat.dish.exception.PublicationGateException;
 import com.easyeat.dish.exception.StaleDishPriceException;
@@ -508,6 +510,126 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    private static final String REJECTION = "/api/v1/admin/dishes/%s/rejection";
+
+    private String rejectionUrl() {
+        return String.format(REJECTION, dishId);
+    }
+
+    private static final String VALID_COMMENT =
+            "El costo del salmón dispara el food cost. Reemplazalo por merluza y reenviá la ficha.";
+
+    private static String rejectionBody(String comment) {
+        return "{\"comment\": " + (comment == null ? "null" : "\"" + comment + "\"") + "}";
+    }
+
+    private static DishRejectionResponse rejectionResponse() {
+        return new DishRejectionResponse(UUID.randomUUID(), DishStatus.DRAFT, 1, UUID.randomUUID());
+    }
+
+    @Nested
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("rejection: feedback to the kitchen (FR-020, FR-021, FR-024)")
+    class Rejection {
+
+        @Test
+        @DisplayName("a valid comment rejects the dish and returns the new cycle")
+        void validRejectionSucceeds() throws Exception {
+            when(governanceService.reject(eq(dishId), eq(VALID_COMMENT)))
+                    .thenReturn(rejectionResponse());
+
+            mockMvc.perform(post(rejectionUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(rejectionBody(VALID_COMMENT)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("DRAFT"));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "123456789",
+                "          ",
+        })
+        @DisplayName("a comment at 9 characters or whitespace-only is a 400")
+        void shortOrBlankCommentRejected(String comment) throws Exception {
+            when(governanceService.reject(eq(dishId), eq(comment)))
+                    .thenThrow(new InvalidRejectionCommentException(comment));
+
+            mockMvc.perform(post(rejectionUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(rejectionBody(comment)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("https://easyeat.com/errors/invalid-rejection-comment"))
+                    .andExpect(jsonPath("$.errors[0].field").value("comment"));
+        }
+
+        @Test
+        @DisplayName("a comment at exactly 10 characters is accepted")
+        void tenCharacterCommentAccepted() throws Exception {
+            String tenChars = "1234567890";
+            when(governanceService.reject(eq(dishId), eq(tenChars)))
+                    .thenReturn(rejectionResponse());
+
+            mockMvc.perform(post(rejectionUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(rejectionBody(tenChars)))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("a comment at exactly 1000 characters is accepted")
+        void thousandCharacterCommentAccepted() throws Exception {
+            String thousandChars = "a".repeat(1000);
+            when(governanceService.reject(eq(dishId), eq(thousandChars)))
+                    .thenReturn(rejectionResponse());
+
+            mockMvc.perform(post(rejectionUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(rejectionBody(thousandChars)))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("a comment at 1001 characters is a 400")
+        void tooLongCommentRejected() throws Exception {
+            String tooLong = "a".repeat(1001);
+            when(governanceService.reject(eq(dishId), eq(tooLong)))
+                    .thenThrow(new InvalidRejectionCommentException(tooLong));
+
+            mockMvc.perform(post(rejectionUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(rejectionBody(tooLong)))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("rejecting a PUBLISHED dish is a 409")
+        void publishedDishYields409() throws Exception {
+            when(governanceService.reject(eq(dishId), eq(VALID_COMMENT)))
+                    .thenThrow(new DishStateConflictException(dishId, "PUBLISHED", "PENDING_PRICE"));
+
+            mockMvc.perform(post(rejectionUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(rejectionBody(VALID_COMMENT)))
+                    .andExpect(status().isConflict());
+        }
+
+        @Test
+        @DisplayName("markup in the comment is forwarded verbatim, never stripped at this layer")
+        void markupStoredVerbatim() throws Exception {
+            String withMarkup = "<b>urgente</b> revisar el costo del salmón antes de reenviar";
+            when(governanceService.reject(eq(dishId), eq(withMarkup)))
+                    .thenReturn(rejectionResponse());
+
+            mockMvc.perform(post(rejectionUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(rejectionBody(withMarkup)))
+                    .andExpect(status().isOk());
+
+            verify(governanceService).reject(eq(dishId), eq(withMarkup));
         }
     }
 }

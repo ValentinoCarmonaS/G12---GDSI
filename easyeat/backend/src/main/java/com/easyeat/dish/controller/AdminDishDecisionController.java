@@ -3,6 +3,8 @@ package com.easyeat.dish.controller;
 import com.easyeat.dish.dto.ApproveDishRequest;
 import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
+import com.easyeat.dish.dto.DishRejectionResponse;
+import com.easyeat.dish.dto.RejectDishRequest;
 import com.easyeat.dish.dto.SetRetailPriceRequest;
 import com.easyeat.dish.service.DishGovernanceService;
 import org.springframework.http.ResponseEntity;
@@ -68,5 +70,19 @@ public class AdminDishDecisionController {
 
         return ResponseEntity.ok(governanceService.approve(
                 id, request.acknowledgeUnpricedIngredients(), request.acknowledgeNegativeMargin()));
+    }
+
+    /**
+     * Returns the dish to the kitchen with mandatory feedback (FR-020, FR-021, FR-024).
+     *
+     * <p>Only legal from {@code PENDING_PRICE}: {@code PUBLISHED} is a 409 (FR-024, catalog
+     * unpublishing is out of scope) and so is {@code DRAFT} (FR-019).
+     */
+    @PostMapping("/{id}/rejection")
+    public ResponseEntity<DishRejectionResponse> reject(
+            @PathVariable("id") UUID id,
+            @RequestBody RejectDishRequest request) {
+
+        return ResponseEntity.ok(governanceService.reject(id, request.comment()));
     }
 }

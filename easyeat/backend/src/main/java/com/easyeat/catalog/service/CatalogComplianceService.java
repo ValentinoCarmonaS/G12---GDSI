@@ -8,6 +8,7 @@ import com.easyeat.catalog.dto.CartItemEvaluation;
 import com.easyeat.catalog.dto.EnrichedDishResponse;
 import com.easyeat.catalog.exception.DishNotFoundException;
 import com.easyeat.catalog.repository.DishRepository;
+import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.profile.domain.DietaryCategory;
 import com.easyeat.profile.domain.DietaryRestriction;
 import com.easyeat.profile.domain.UserDietaryRestriction;
@@ -37,7 +38,7 @@ public class CatalogComplianceService {
     }
 
     public List<EnrichedDishResponse> getEnrichedCatalog(UUID tenantId, User user) {
-        List<Dish> dishes = dishRepository.findByTenantIdAndIsActiveTrue(tenantId);
+        List<Dish> dishes = dishRepository.findByTenantIdAndIsActiveTrueAndStatus(tenantId, DishStatus.PUBLISHED);
         if (dishes.isEmpty()) {
             return Collections.emptyList();
         }
@@ -82,7 +83,7 @@ public class CatalogComplianceService {
                     dish.getTenantId(),
                     dish.getName(),
                     dish.getDescription(),
-                    dish.getPrice(),
+                    dish.getRetailPrice(),
                     dish.getIsActive(),
                     true,
                     Collections.emptyList()
@@ -117,7 +118,7 @@ public class CatalogComplianceService {
                 dish.getTenantId(),
                 dish.getName(),
                 dish.getDescription(),
-                dish.getPrice(),
+                dish.getRetailPrice(),
                 dish.getIsActive(),
                 isCompliant,
                 conflicts

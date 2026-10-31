@@ -1,7 +1,9 @@
 package com.easyeat.dish.controller;
 
+import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.dish.domain.DishCategory;
 import com.easyeat.dish.domain.DishStatus;
+import com.easyeat.dish.dto.DishAuditHistoryResponse;
 import com.easyeat.dish.dto.DishReviewInboxItemResponse;
 import com.easyeat.dish.dto.DishReviewInboxPageResponse;
 import com.easyeat.dish.dto.InboxTab;
@@ -268,6 +270,51 @@ class AdminDishReviewControllerTest extends DishControllerTestBase {
                             .with(org.springframework.security.test.web.servlet.request
                                     .SecurityMockMvcRequestPostProcessors.user("x").roles(role)))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("review history (FR-010, FR-022, SC-005)")
+    class ReviewHistory {
+
+        private String url(UUID id) {
+            return "/api/v1/admin/dishes/" + id + "/review-history";
+        }
+
+        @Test
+        @org.springframework.security.test.context.support.WithMockUser(roles = "ADMIN")
+        @DisplayName("returns both audit trails")
+        void returnsBothTrails() throws Exception {
+            UUID id = UUID.randomUUID();
+            when(detailService.getHistory(id)).thenReturn(
+                    new DishAuditHistoryResponse(id, List.of(), List.of()));
+
+            mockMvc.perform(get(url(id)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.dishId").value(id.toString()))
+                    .andExpect(jsonPath("$.reviewEvents").isArray())
+                    .andExpect(jsonPath("$.priceChanges").isArray());
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"CHEF", "ENCARGADO", "COMENSAL"})
+        @DisplayName("the history endpoint carries the same role gate as the inbox")
+        void historyIsRoleGated(String role) throws Exception {
+            mockMvc.perform(get(url(UUID.randomUUID()))
+                            .with(org.springframework.security.test.web.servlet.request
+                                    .SecurityMockMvcRequestPostProcessors.user("x").roles(role)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @org.springframework.security.test.context.support.WithMockUser(roles = "ADMIN")
+        @DisplayName("a dish belonging to another establishment is a 403, not a 404")
+        void crossTenantYields403() throws Exception {
+            UUID id = UUID.randomUUID();
+            when(detailService.getHistory(id))
+                    .thenThrow(new TenantViolationException(UUID.randomUUID(), UUID.randomUUID()));
+
+            mockMvc.perform(get(url(id))).andExpect(status().isForbidden());
         }
     }
 }

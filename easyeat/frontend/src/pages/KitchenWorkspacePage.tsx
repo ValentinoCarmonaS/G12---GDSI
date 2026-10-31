@@ -1,18 +1,44 @@
-import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { authApi } from '../api/authApi';
+import { chefReviewFeedbackApi } from '../api/chefReviewFeedbackApi';
+import { DishRejectionFeedbackBanner } from '../components/chef/DishRejectionFeedbackBanner';
+import type { ChefReviewFeedbackEntry } from '../types/dishReview';
 
 export const KitchenWorkspacePage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const returnedDishId = searchParams.get('dishId');
+  const [feedbackEntries, setFeedbackEntries] = useState<ChefReviewFeedbackEntry[]>([]);
+
   useEffect(() => {
     authApi.me().catch(() => { /* handled by interceptor */ });
   }, []);
+
+  useEffect(() => {
+    // FR-020, FR-023: a draft the Administrator just rejected names itself in the URL when it
+    // sends the Chef back here. Absent that, nothing is fetched — a page that asked on every
+    // visit would itself be the defect this feature's confidentiality boundary guards against.
+    if (!returnedDishId) {
+      setFeedbackEntries([]);
+      return;
+    }
+    chefReviewFeedbackApi.getFeedback(returnedDishId)
+      .then((feedback) => setFeedbackEntries(feedback.entries))
+      .catch(() => setFeedbackEntries([]));
+  }, [returnedDishId]);
 
   return (
     <WorkspaceLayout
       title="Kitchen Display System (KDS)"
       subtitle="Comandas en preparación y despachos de cocina"
     >
+      {feedbackEntries.length > 0 && (
+        <div className="mb-6">
+          <DishRejectionFeedbackBanner entries={feedbackEntries} />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between gap-3">
           <div>

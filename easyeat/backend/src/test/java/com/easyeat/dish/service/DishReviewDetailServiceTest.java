@@ -14,8 +14,13 @@ import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.domain.PublicationGateCondition;
 import com.easyeat.dish.dto.DishReviewDetailResponse;
 import com.easyeat.dish.dto.FoodCostAuditResponse;
+import com.easyeat.dish.domain.DishPriceHistory;
+import com.easyeat.dish.domain.DishReviewHistory;
+import com.easyeat.dish.domain.ReviewEventType;
+import com.easyeat.dish.dto.DishAuditHistoryResponse;
 import com.easyeat.dish.exception.EmptyRecipeException;
 import com.easyeat.dish.repository.DishPhotoRepository;
+import com.easyeat.dish.repository.DishPriceHistoryRepository;
 import com.easyeat.dish.repository.DishPublicationGateRepository;
 import com.easyeat.dish.repository.DishReviewHistoryRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -58,6 +63,7 @@ class DishReviewDetailServiceTest {
     private DishAccessGuard accessGuard;
     private FoodCostAuditService foodCostAuditService;
     private DishReviewHistoryRepository reviewHistoryRepository;
+    private DishPriceHistoryRepository priceHistoryRepository;
     private DishPublicationGateRepository gateRepository;
     private DishPhotoRepository photoRepository;
     private UserRepository userRepository;
@@ -70,12 +76,13 @@ class DishReviewDetailServiceTest {
         accessGuard = Mockito.mock(DishAccessGuard.class);
         foodCostAuditService = Mockito.mock(FoodCostAuditService.class);
         reviewHistoryRepository = Mockito.mock(DishReviewHistoryRepository.class);
+        priceHistoryRepository = Mockito.mock(DishPriceHistoryRepository.class);
         gateRepository = Mockito.mock(DishPublicationGateRepository.class);
         photoRepository = Mockito.mock(DishPhotoRepository.class);
         userRepository = Mockito.mock(UserRepository.class);
 
         service = new DishReviewDetailService(
-                foodCostAuditService, reviewHistoryRepository,
+                foodCostAuditService, reviewHistoryRepository, priceHistoryRepository,
                 gateRepository, photoRepository, userRepository,
                 new RetailPricingCalculator(), accessGuard);
 
@@ -94,6 +101,10 @@ class DishReviewDetailServiceTest {
         when(accessGuard.requireOwnedByTenant(any(), any())).thenReturn(dish);
         when(foodCostAuditService.auditDishCost(any(Dish.class))).thenReturn(audit(FOOD_COST, false));
         when(reviewHistoryRepository.countByDishIdAndTenantId(any(), any())).thenReturn(0L);
+        when(reviewHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(any(), any()))
+                .thenReturn(List.of());
+        when(priceHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(any(), any()))
+                .thenReturn(List.of());
         when(gateRepository.countActiveRecipeLines(any(), any())).thenReturn(3L);
         when(photoRepository.findByDishId(any())).thenReturn(Optional.empty());
         when(userRepository.findById(any())).thenReturn(Optional.empty());
@@ -519,6 +530,88 @@ class DishReviewDetailServiceTest {
 
             assertThat(response.reviewCycleCount()).isEqualTo((int) cycles);
             assertThat(response.isResubmission()).isEqualTo(isResubmission);
+        }
+    }
+
+    @Nested
+    @DisplayName("getHistory: both audit trails (FR-010, FR-022, SC-005)")
+    class History {
+
+        @Test
+        @DisplayName("review events and price changes are returned as two ascending lists")
+        void returnsBothTrailsAscending() {
+            UUID adminId = UUID.randomUUID();
+            User admin = new User();
+            admin.setId(adminId);
+            admin.setFullName("Lucía Ferraro");
+            when(userRepository.findAllById(any())).thenReturn(List.of(admin));
+
+            DishReviewHistory rejected = DishReviewHistory.rejected(dish.getId(), TENANT, 1,
+                    adminId, "Faltan las fotos del plato, por favor adjuntalas.");
+            when(reviewHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(dish.getId(), TENANT))
+                    .thenReturn(List.of(rejected));
+
+            DishPriceHistory priced = DishPriceHistory.record(dish.getId(), TENANT, adminId,
+                    null, new BigDecimal("11250.00"), FOOD_COST);
+            when(priceHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(dish.getId(), TENANT))
+                    .thenReturn(List.of(priced));
+
+            DishAuditHistoryResponse history = service.getHistory(dish.getId());
+
+            assertThat(history.dishId()).isEqualTo(dish.getId());
+            assertThat(history.reviewEvents()).hasSize(1);
+            assertThat(history.reviewEvents().get(0).eventType()).isEqualTo(ReviewEventType.REJECTED);
+            assertThat(history.reviewEvents().get(0).reviewerName()).isEqualTo("Lucía Ferraro");
+            assertThat(history.reviewEvents().get(0).comment())
+                    .isEqualTo("Faltan las fotos del plato, por favor adjuntalas.");
+            assertThat(history.priceChanges()).hasSize(1);
+            assertThat(history.priceChanges().get(0).actorName()).isEqualTo("Lucía Ferraro");
+            assertThat(history.priceChanges().get(0).previousPrice()).isNull();
+            assertThat(history.priceChanges().get(0).newPrice())
+                    .isEqualTo(new BigDecimal("11250.00"));
+        }
+
+        @Test
+        @DisplayName("an approval entry carries no comment, by construction")
+        void approvalEntryHasNoComment() {
+            UUID adminId = UUID.randomUUID();
+            when(userRepository.findAllById(any())).thenReturn(List.of());
+            DishReviewHistory approved = DishReviewHistory.approved(dish.getId(), TENANT, 1, adminId);
+            when(reviewHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(dish.getId(), TENANT))
+                    .thenReturn(List.of(approved));
+
+            DishAuditHistoryResponse history = service.getHistory(dish.getId());
+
+            assertThat(history.reviewEvents().get(0).comment()).isNull();
+        }
+
+        @Test
+        @DisplayName("a dish with no history yet returns two empty lists, not an error")
+        void emptyHistoryIsNotAnError() {
+            DishAuditHistoryResponse history = service.getHistory(dish.getId());
+
+            assertThat(history.reviewEvents()).isEmpty();
+            assertThat(history.priceChanges()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("a dish that does not exist anywhere is 404")
+        void unknownDish() {
+            when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT))
+                    .thenThrow(new DishNotFoundException(dish.getId()));
+
+            assertThatThrownBy(() -> service.getHistory(dish.getId()))
+                    .isInstanceOf(DishNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("a dish belonging to another establishment is forbidden, not merely absent")
+        void crossTenantDishIsForbidden() {
+            when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT))
+                    .thenThrow(new TenantViolationException(TENANT, UUID.randomUUID()));
+
+            assertThatThrownBy(() -> service.getHistory(dish.getId()))
+                    .isInstanceOf(TenantViolationException.class);
         }
     }
 }

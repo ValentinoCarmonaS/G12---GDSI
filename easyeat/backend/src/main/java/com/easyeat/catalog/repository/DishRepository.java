@@ -19,7 +19,13 @@ import java.util.UUID;
 @Repository
 public interface DishRepository extends JpaRepository<Dish, UUID> {
 
-    List<Dish> findByTenantIdAndIsActiveTrue(UUID tenantId);
+    /**
+     * D4's diner-visibility predicate, spec 007 FR-033/SC-001: a dish reaches the diner catalog
+     * only once it is both {@code is_active} and {@code PUBLISHED}. Replaces the pre-007
+     * {@code findByTenantIdAndIsActiveTrue}, which predates {@code status} existing on this
+     * entity and so let every active dish through regardless of review state.
+     */
+    List<Dish> findByTenantIdAndIsActiveTrueAndStatus(UUID tenantId, DishStatus status);
 
     List<Dish> findByIdIn(List<UUID> ids);
 
@@ -74,4 +80,17 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
             + "AND d.status = com.easyeat.dish.domain.DishStatus.PENDING_PRICE")
     int updateApprovalIfPending(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId,
                                 @Param("publishedAt") Instant publishedAt);
+
+    /**
+     * The rejection transition of FR-020, FR-025, spec 007: the same conditional-`UPDATE` shape
+     * as {@link #updateApprovalIfPending}, restating {@code PENDING_PRICE} as the source status.
+     * Names only {@code status} — {@code retail_price} is deliberately absent from the `SET`
+     * clause, which is how FR-020's "the assigned retail price MUST be preserved" is kept true:
+     * there is nothing here that could touch it.
+     */
+    @Modifying
+    @Query("UPDATE Dish d SET d.status = com.easyeat.dish.domain.DishStatus.DRAFT "
+            + "WHERE d.id = :dishId AND d.tenantId = :tenantId "
+            + "AND d.status = com.easyeat.dish.domain.DishStatus.PENDING_PRICE")
+    int updateRejectionIfPending(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId);
 }
