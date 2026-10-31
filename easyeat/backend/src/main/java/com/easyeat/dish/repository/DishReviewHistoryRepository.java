@@ -1,6 +1,7 @@
 package com.easyeat.dish.repository;
 
 import com.easyeat.dish.domain.DishReviewHistory;
+import com.easyeat.dish.dto.DishRejectionCount;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -55,4 +56,24 @@ public interface DishReviewHistoryRepository
      * current status.
      */
     boolean existsByDishIdAndTenantId(UUID dishId, UUID tenantId);
+
+    /**
+     * Past rejections for a whole page of dishes, in one grouped query (FR-004).
+     *
+     * <p>Added by T037 for the inbox. The per-dish {@code countByDishIdAndTenantId} above is
+     * correct for one dish and an N+1 for a page of twenty, so the inbox uses this instead;
+     * {@code DishReviewInboxServiceTest} asserts the per-dish method is never called while
+     * building a page.
+     *
+     * <p>A dish with no rejections yields <b>no row</b> rather than a zero, because there is
+     * nothing to group. The caller treats a missing entry as zero, which is cheaper than an
+     * outer join from the dish side and keeps this query over one table.
+     */
+    @Query("SELECT new com.easyeat.dish.dto.DishRejectionCount(h.dishId, COUNT(h)) "
+            + "FROM DishReviewHistory h "
+            + "WHERE h.tenantId = :tenantId AND h.dishId IN :dishIds "
+            + "AND h.eventType = com.easyeat.dish.domain.ReviewEventType.REJECTED "
+            + "GROUP BY h.dishId")
+    List<DishRejectionCount> countRejectionsByDishIds(@Param("tenantId") UUID tenantId,
+                                                      @Param("dishIds") List<UUID> dishIds);
 }

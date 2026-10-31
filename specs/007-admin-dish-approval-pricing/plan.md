@@ -333,7 +333,9 @@ dish/                                           # package created by spec 005 (e
 │   ├── DishPriceHistory.java                   # NEW: immutable price change
 │   └── ReviewEventType.java                    # NEW: APPROVED, REJECTED
 ├── repository/
-│   ├── DishRepository.java                     # MODIFIED (005-owned): inbox queries by (tenant, status) + orderings
+│   ├── DishReviewInboxRepository.java          # NEW (007-owned): the three inbox queries. NOT a change to
+│   │                                           #   catalog/repository/DishRepository, which is spec 003's and
+│   │                                           #   which data-model §1.2 watches for new write paths
 │   ├── DishReviewHistoryRepository.java        # NEW: save + queries only; no delete, no @Modifying update
 │   └── DishPriceHistoryRepository.java         # NEW: same append-only shape
 ├── service/

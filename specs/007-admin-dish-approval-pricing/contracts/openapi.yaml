@@ -488,9 +488,11 @@ components:
           format: date-time
           nullable: true
           description: |
-            Instant of the DRAFT -> PENDING_PRICE transition, written by spec 005 (R-005-1). Null
-            when upstream has not provided it; under that degraded fallback the pending tab is
-            ordered by creation time instead, which is NOT FIFO by submission.
+            Instant of the DRAFT -> PENDING_PRICE transition, written by spec 005 (R-005-1) on
+            every transition including resubmissions. The pending tab is ordered by this column
+            ascending, and by nothing else: the creation-time fallback this description used to
+            offer is WITHDRAWN and not authorised (plan.md R-005-1), because it would silently
+            stop being FIFO by submission while still looking ordered.
         publishedAt:
           type: string
           format: date-time
@@ -586,7 +588,7 @@ components:
 
     DishReviewDetailResponse:
       type: object
-      required: [dishId, name, category, status, allergensConfirmed, margin, publicationGate, foodCostAudit, reviewCycleCount, isResubmission]
+      required: [dishId, name, category, status, allergensConfirmed, margin, publicationGate, recipeAbsent, reviewCycleCount, isResubmission]
       properties:
         dishId: { type: string, format: uuid }
         name: { type: string }
@@ -612,11 +614,21 @@ components:
         isResubmission: { type: boolean, example: true }
         margin: { $ref: '#/components/schemas/MarginSummary' }
         publicationGate: { $ref: '#/components/schemas/PublicationGateStatus' }
+        recipeAbsent:
+          type: boolean
+          description: |
+            True when the dish holds no recipe lines at all (FR-037). `foodCostAudit` is then null
+            and `margin.foodCost` is null, and this flag is what distinguishes that legitimate
+            state from a failed lookup - a null audit on its own would be ambiguous. The dish is
+            unpublishable while this holds, which the publication gate reports as EMPTY_RECIPE.
+          example: false
         foodCostAudit:
+          nullable: true
           description: |
             Spec 006's `FoodCostAuditResponse`, embedded verbatim and computed in-process for any
             status (R-006-1). Its itemized shape is owned by
             `specs/006-recipe-food-cost/contracts/openapi.yaml` and is not redefined here.
+            Null when `recipeAbsent` is true: there is nothing to itemize.
           type: object
 
     SetRetailPriceRequest:

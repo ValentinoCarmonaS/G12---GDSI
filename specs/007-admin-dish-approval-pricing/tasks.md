@@ -127,7 +127,7 @@
   }
   ```
 
-  And `components/dish/DishStatusBadge.tsx:34` falls back to `'DRAFT'` for any status it does not recognise, so a published dish would render as *"Borrador"* rather than failing visibly. **No task in this breakdown covers either file** — T044 creates a *new* `types/dishReview.ts` and does not touch the existing union.
+  And `components/dish/DishStatusBadge.tsx:34-38` has no entry for `PUBLISHED`, so a published dish renders the raw token **`PUBLISHED`** in a Spanish interface. **Corrected 2026-10-28**: this record first said the badge falls back to `'DRAFT'` and would show *"Borrador"*. The `'DRAFT'` fallback applies only when `status` is not a string; an unrecognised string is printed verbatim through `label: status`. **No task in this breakdown covers either file** — T044 creates a *new* `types/dishReview.ts` and does not touch the existing union.
 
   **This is latent, not live, and that is what fixes the ordering**: nothing can set `PUBLISHED` until T076 exists, so no user can see the mislabel today. It becomes a real defect the moment US3 lands. Recorded as **T079a** in US3 rather than fixed here, because Principle V forbids changes no task backs and the files belong to spec 005's surface.
 - [x] T006 **SATISFIED 2026-10-28 — outcome recorded.** Spec 006's owner moved the status gate to the controller (issue #146) and spec 006 is integrated via PR #170. Verify and record: `easyeat/backend/src/main/java/com/easyeat/dish/service/FoodCostAuditService.java` holds **zero** references to `DishStatus` or `PENDING_PRICE` and both `auditDishCost(Dish)` and `auditDishCost(UUID)` compute for any lifecycle state; the `PENDING_PRICE` restriction lives in `AdminDishCostAuditController` and raises `DishLockedException`. **The degraded path is withdrawn, not activated** — this feature injects `FoodCostAuditService` directly. Record two consequences found while verifying, both of which shape later tasks: `auditDishCost` raises `EmptyRecipeException` rather than returning a zero cost (T042a), and `RecipeItemAuditResponse` does not carry the ingredient's `IngredientStatus`, which FR-015 condition 2 needs (T076a)
@@ -346,39 +346,174 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
 
 ### Tests for User Story 1
 
-- [ ] T035 [US1] Write `DishReviewInboxServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishReviewInboxServiceTest.java` covering tab filtering, FIFO ordering by `submitted_at ASC`, resubmission derivation, and a query-count assertion proving 2 queries per page regardless of page size — **Serves**: FR-002, FR-003, FR-004
-- [ ] T036 [P] [US1] Write the inbox and detail portions of `AdminDishReviewControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/AdminDishReviewControllerTest.java`: the full RBAC matrix (ADMINISTRADOR allowed, ADMIN alias allowed, CHEF 403, ENCARGADO 403, COMENSAL 403, anonymous 401), cross-tenant access denied with 403, pagination beyond the last page returning an empty list with accurate metadata, the per-view empty state (FR-028), the out-of-range page result with accurate metadata (FR-036), and that a dish whose author Chef has been deactivated still appears in the inbox with its author name rendered (FR-026) — **Serves**: FR-001, FR-005, FR-026, FR-027, FR-028, SC-003
+- [x] T035 [US1] Write `DishReviewInboxServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishReviewInboxServiceTest.java` covering tab filtering, FIFO ordering by `submitted_at ASC`, resubmission derivation, and a query-count assertion proving the count is **flat in the page size** regardless of page size — **Serves**: FR-002, FR-003, FR-004 — **DONE 2026-10-28**, RED observed
+
+  **Correction to this task's own wording.** It asked for "2 queries per page". That number is not reachable under the contract this feature publishes: the item payload needs the author's name and account status, the past-rejection count and the pending badge, so a page costs the dish content query, its count query, one batched rejection-count query and one batched author query. The *invariant the number was standing in for* is what matters and is what the suite asserts — **the count does not grow with the page size**, measured at sizes 1, 5, 20 and 100, which is precisely the N+1 this requirement exists to prevent. Pinning a literal 2 would have forced an awkward design or failed honestly.
+
+  **Query count is measured as repository invocations, not SQL statements**, because this is a unit test over mocks. That is the right level for the defect: a service that asks the history repository once per dish is an N+1 whatever SQL results. The SQL-level count stays with `DishReviewInboxIntegrationTest` in Phase 7.
+
+  **Found while writing it, and fixed in the same commit**: `contracts/openapi.yaml` still offered the degraded creation-time ordering for the pending tab, which `plan.md` R-005-1 withdrew and explicitly deauthorised once `submitted_at` landed. The suite now asserts the absence of that fallback — no `createdAt` or `updatedAt` order may appear in the requested sort — so the contract and the plan agree and the test enforces the agreement.
+- [x] T036 [P] [US1] Write the inbox and detail portions of `AdminDishReviewControllerTest` in `easyeat/backend/src/test/java/com/easyeat/dish/controller/AdminDishReviewControllerTest.java`: the full RBAC matrix (ADMINISTRADOR allowed, ADMIN alias allowed, CHEF 403, ENCARGADO 403, COMENSAL 403, anonymous 401), cross-tenant access denied with 403, pagination beyond the last page returning an empty list with accurate metadata, the per-view empty state (FR-028), the out-of-range page result with accurate metadata (FR-036), and that a dish whose author Chef has been deactivated still appears in the inbox with its author name rendered (FR-026) — **Serves**: FR-001, FR-005, FR-026, FR-027, FR-028, SC-003
 
 ### Implementation for User Story 1
 
-- [ ] T037 [US1] Add the inbox queries to `easyeat/backend/src/main/java/com/easyeat/dish/repository/DishRepository.java` — tenant-scoped paging by `(tenant_id, status)` with `submitted_at ASC` for pending and `published_at DESC` for published; incremental work on a 005-owned interface, permitted by D1 — **Serves**: FR-002, FR-003
-- [ ] T038 [US1] Implement `DishReviewInboxService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishReviewInboxService.java` — three tabs, FIFO, 20-per-page default, pending count badge, and the initial-versus-resubmission indicator in 2 queries per page — **Serves**: FR-002, FR-003, FR-004
-- [ ] T039 [US1] Create the inbox response records `DishReviewInboxItemResponse` and `DishReviewInboxPageResponse` in `easyeat/backend/src/main/java/com/easyeat/dish/dto/`, mirroring `contracts/openapi.yaml` — **Serves**: FR-003, FR-004
-- [ ] T040 [US1] Write `DishReviewDetailServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishReviewDetailServiceTest.java` covering the embedded spec 006 audit, the publication-gate status projection and the recomputed margin — **Serves**: FR-006, FR-012, FR-015
-- [ ] T041 [US1] Create the detail response records `DishReviewDetailResponse`, `MarginSummary` and `PublicationGateStatus` in `easyeat/backend/src/main/java/com/easyeat/dish/dto/`, mirroring `contracts/openapi.yaml` — **Serves**: FR-006, FR-008, FR-012
-- [ ] T042 [US1] Implement `DishReviewDetailService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishReviewDetailService.java` — identity, labels, the itemized Food Cost audit obtained by injecting spec 006's `FoodCostAuditService` directly (T006: it is status-agnostic, so the same call serves `PENDING_PRICE` and `PUBLISHED`), gate evaluation and the margin recomputed on consultation. The Food Cost source is fixed by T007 — `ingredients.unit_purchase_cost`, already at scale 2 — so do not re-decide it and do not round it again — **Serves**: FR-006, FR-012
-- [ ] T042a [US1] In the same service, catch `EmptyRecipeException` from `FoodCostAuditService` and render the recipe-absent state — no itemization, no margin, publication gate reported unmet on condition 2 — while still returning identity, status, author attribution, the assigned price if any and the review history. **Never propagate it as a failed request**: a dish with no recipe lines is a fact about the dish, not a fault in the consultation. Covered by a case in `DishReviewDetailServiceTest` — **Serves**: FR-037
-- [ ] T043 [US1] Implement the inbox and detail endpoints in `easyeat/backend/src/main/java/com/easyeat/dish/controller/AdminDishReviewController.java` — `GET /admin/dishes/review-inbox` and `GET /admin/dishes/{id}/review-detail` — **Serves**: FR-002, FR-006
-- [ ] T044 [P] [US1] Create the shared frontend types in `easyeat/frontend/src/types/dishReview.ts` for inbox, detail, pricing, history and feedback payloads — **Serves**: shared infrastructure for all four stories; no single requirement
-- [ ] T045 [P] [US1] Write `easyeat/frontend/tests/api/dishReviewApi.test.ts` covering request shaping and error propagation for the inbox and detail calls — **Serves**: FR-032
-- [ ] T046 [US1] Implement `easyeat/frontend/src/api/dishReviewApi.ts` as a typed client over the shared `apiClient` — **Serves**: shared infrastructure for all four stories; no single requirement
-- [ ] T047 [US1] Write `easyeat/frontend/tests/hooks/useDishReviewInbox.test.ts` covering tab and page state, counts, and reconciliation after a stale decision — **Serves**: FR-003, FR-032
-- [ ] T048 [US1] Implement `easyeat/frontend/src/hooks/useDishReviewInbox.ts` — **Serves**: FR-003, FR-032
-- [ ] T049 [US1] Write `easyeat/frontend/tests/components/dishreview/ReviewInbox.test.tsx` covering tab switching, FIFO rendering, pagination, the pending badge, the initial-versus-resubmission marker and a distinct empty state per tab — **Serves**: FR-002, FR-003, FR-004, FR-028, FR-029
-- [ ] T050 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxTabs.tsx` — three tabs plus the pending badge — **Serves**: FR-002, FR-003
-- [ ] T051 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxList.tsx` — FIFO list with distinct empty, loading (skeleton) and error states — **Serves**: FR-028, FR-029
-- [ ] T052 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxRow.tsx` — name, category, author, `submittedAt`, status and the "Inicial" / "Reenvío (ciclo N)" marker — **Serves**: FR-004, FR-027
-- [ ] T053 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/InboxPagination.tsx` — 20-per-page controls — **Serves**: FR-003
-- [ ] T054 [US1] Write `easyeat/frontend/tests/components/dishreview/DishAuditPanel.test.tsx` covering identity, dietary labels, the itemized cost breakdown and the unpriced-ingredient advisory — **Serves**: FR-006
-- [ ] T055 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/FoodCostBreakdownTable.tsx` — line items, subtotals and total per portion — **Serves**: FR-006
-- [ ] T056 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/UnpricedIngredientBadge.tsx` — amber advisory — **Serves**: FR-006
-- [ ] T057 [US1] Implement `easyeat/frontend/src/components/dishreview/DishAuditPanel.tsx` composing identity, labels and the cost breakdown — **Serves**: FR-006
-- [ ] T058 [US1] Write `easyeat/frontend/tests/pages/AdminDishReviewPage.test.tsx` covering the inbox-to-detail transition, the rendering of each backend error, and the information sufficiency SC-007 now requires: the detail view presents the culinary file, the itemized Food Cost audit, the prevailing margin, the state of each publication gate condition and the prior review cycles, with no additional navigation — **Serves**: FR-002, FR-032, SC-007
-- [ ] T059 [US1] Implement `easyeat/frontend/src/pages/AdminDishReviewPage.tsx` — `/admin/dishes`, inbox plus detail panel — **Serves**: FR-002, FR-006
-- [ ] T060 [US1] Write `easyeat/frontend/tests/router/adminDishReviewRoute.test.tsx` asserting `/admin/dishes` resolves before the `/admin/*` catch-all and is role-guarded — **Serves**: FR-001
-- [ ] T061 [US1] Register the route in `easyeat/frontend/src/router/AppRoutes.tsx` **before** the `/admin/*` catch-all, matching how `/admin/staff` and `/admin/inventory` are declared — **Serves**: FR-001
-- [ ] T062 [US1] Write `easyeat/frontend/tests/pages/AdminWorkspacePage.test.tsx` asserting the dish-review hub card renders, displays the pending count it receives, and links to `/admin/dishes` — **Serves**: FR-003
-- [ ] T063 [US1] Add the hub card linking to the inbox with its pending count in `easyeat/frontend/src/pages/AdminWorkspacePage.tsx` — **Serves**: FR-003
+- [x] T037 [US1] **DONE 2026-10-28. The original named a file that does not exist.** Create `easyeat/backend/src/main/java/com/easyeat/dish/repository/DishReviewInboxRepository.java` with the three inbox queries: tenant-scoped paging with `submitted_at ASC` for the pending tab, `published_at DESC` for the published tab, and an `EXISTS` over `dish_review_history` for the reviewed tab. **Do not add them to `catalog/repository/DishRepository`** — **Serves**: FR-002, FR-003
+
+  The task used to say "add the inbox queries to `com.easyeat.dish.repository.DishRepository` — incremental work on a 005-owned interface". **Three claims in one sentence, and all three were wrong.** There is no `DishRepository` in `com.easyeat.dish.repository`; the only one is `catalog/repository/DishRepository.java`; and it belongs to spec **003**, not 005. `plan.md` carried the same error in its source tree, and `data-model.md §1.2` described that interface as declaring only two methods when it declares seven — a description that was accurate before spec 005 extended it. All three are corrected in this commit.
+
+  **Why a 007-owned interface rather than extending the catalog one.** Two Spring Data interfaces over one entity are ordinary, and D1's concern is two owners of the **entity**, not of a query. More to the point, `data-model.md §1.2` rests the review-enforced read-only invariant on `catalog/repository/DishRepository` gaining no new paths — so that is precisely the file not to widen. The `findByTenantIdAndStatus` already there is left alone rather than reused, because the pending tab needs an ordering it does not impose.
+
+  **Ordering lives in the query, not in a caller-supplied sort.** FR-003's FIFO is a requirement rather than a preference, so a caller cannot hand in a different `Sort` and still be served. Every query is tenant-scoped in its own `WHERE`, so a caller that forgets to filter cannot read across establishments.
+
+  **The batch rejection count went on `DishReviewHistoryRepository`**, this feature's own Phase 2 interface: one grouped query for the whole page. The per-dish `countByDishIdAndTenantId` already there is correct for one dish and an N+1 for twenty, so T035 asserts it is never called while building a page. A dish with no rejections yields **no row** rather than a zero — there is nothing to group — and the service reads a missing entry as zero, which keeps the query over one table instead of outer-joining from the dish side.
+
+  **Signature corrected from what T035 guessed.** The test had assumed `List<Object[]>`; the method returns `List<DishRejectionCount>`, a record. A positional array compiles just as happily with the count and the identifier swapped, which is a defect waiting to happen. The test is updated in this commit, and its fixtures stop reflecting into `Dish` and `User` now that both were confirmed to expose the setters it needs.
+- [x] T038 [US1] Implement `DishReviewInboxService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishReviewInboxService.java` — three tabs, FIFO, 20-per-page default, pending count badge, and the initial-versus-resubmission indicator in 2 queries per page — **Serves**: FR-002, FR-003, FR-004
+
+  **DONE 2026-10-28**, T035 green at 33 of 33. Four repository calls per page — the dish page, its count, one grouped rejection count, one batched author lookup — and the count does not move with the page size.
+
+  **The test found a design error, which is what it was for.** The service first reported `page` and `size` from the returned `Page`. `Page.empty()` is *unpaged*, so an empty view reported `size = 0` and `totalPages = 0`: a client that asked for page 9 of 20 would have been told it was on page 0 of 0. FR-036 requires the metadata to stay accurate **precisely when the page is empty**, so the response now echoes the **requested** page and size and derives the page count from the total. That is also robust against a repository returning an unpaged result.
+
+  A second failure was the test's own: its pageable captor always verified `findPendingInbox`, so the published-ordering case verified the wrong method. Split into two captors.
+- [x] T039 [US1] Create the inbox response records `DishReviewInboxItemResponse` and `DishReviewInboxPageResponse` in `easyeat/backend/src/main/java/com/easyeat/dish/dto/`, mirroring `contracts/openapi.yaml` — **Serves**: FR-003, FR-004
+
+  Committed **before T038** rather than after it, although the task list numbers them the other way: T038's service cannot compile without these records, so this order keeps every commit in the history buildable. The 1:1 mapping is unaffected.
+
+  **What the item record deliberately omits** is as much the design as what it carries: no Food Cost and no margin. FR-012 recomputes those on consultation, so a list of twenty dishes would otherwise cost twenty cost audits. They belong to the detail view.
+
+  **Correction to T036 in the same commit.** That test asserted an absent author serialises as an *omitted* key. The project sets no `@JsonInclude` and no Jackson inclusion policy, so nulls are serialised as present nulls — the assertion was testing a convention the project does not have. It now asserts a present null, which is both what happens and what the contract's `nullable: true` describes.
+- [x] T040 [US1] Write `DishReviewDetailServiceTest` in `easyeat/backend/src/test/java/com/easyeat/dish/service/DishReviewDetailServiceTest.java` covering the embedded spec 006 audit, the publication-gate status projection and the recomputed margin — **Serves**: FR-006, FR-012, FR-015
+
+  **DONE 2026-10-28**, RED observed before T041–T043.
+
+  **Two things the suite is careful not to test.** The audit's arithmetic belongs to spec 006's own suite, so the assertion here is that the **very object** its service returned is embedded — `isSameAs` — which proves the payload is passed through rather than reshaped and means a change in 006's shape needs no change here. And the gate is asserted as *status*, not as enforcement: FR-015 is enforced at the approval transition in US3, and reporting it here is a different job.
+
+  **Condition 2 is asserted to come from a dedicated query, not from the audit payload.** One test sets zero active recipe lines while the audit still returns a non-zero cost, which is the real situation a recipe of only `DISCONTINUED` ingredients produces: the cost projects the recipe as written, the gate asks whether the dish can be produced today, and neither can be derived from the other. That requires a new 007-owned `DishPublicationGateRepository`, created in T042.
+
+  **Two contract changes in this commit, both forced by FR-037.** `DishReviewDetailResponse` gains `recipeAbsent`, and `foodCostAudit` becomes nullable and leaves the required list. Without the flag a null audit is indistinguishable from a failed lookup, and FR-037 asks for the absence to be *presented* rather than merely left blank.
+- [x] T041 [US1] Create the detail response records `DishReviewDetailResponse`, `MarginSummary` and `PublicationGateStatus` in `easyeat/backend/src/main/java/com/easyeat/dish/dto/`, mirroring `contracts/openapi.yaml` — **Serves**: FR-006, FR-008, FR-012
+
+  **DONE 2026-10-28.** Committed before T042 for the same reason T039 preceded T038: the service cannot compile without them, so this order keeps every commit buildable.
+
+  Each record's Javadoc carries the reasoning a field name cannot. `marginPct` is null rather than zero while unpriced, because **zero claims the dish breaks even** — a different statement from "not yet priced". `satisfied` stays true while acknowledgements are outstanding, because FR-017 makes an acknowledgement an additional precondition and never a gate failure. And `PublicationGateStatus` states that it is **advisory**: FR-015 re-evaluates all three conditions at the instant the action arrives and binds nothing to an earlier reading.
+- [x] T042 [US1] Implement `DishReviewDetailService` in `easyeat/backend/src/main/java/com/easyeat/dish/service/DishReviewDetailService.java` — identity, labels, the itemized Food Cost audit obtained by injecting spec 006's `FoodCostAuditService` directly (T006: it is status-agnostic, so the same call serves `PENDING_PRICE` and `PUBLISHED`), gate evaluation and the margin recomputed on consultation. The Food Cost source is fixed by T007 — `ingredients.unit_purchase_cost`, already at scale 2 — so do not re-decide it and do not round it again — **Serves**: FR-006, FR-012
+
+  **DONE 2026-10-28**, T040 green at 35 of 35 on the first run.
+
+  **Three boundaries respected rather than crossed**, each stated in the class: it never recomputes the Food Cost (spec 006's service is injected and its payload embedded verbatim — the same object, which T040 asserts with `isSameAs`); it never rounds that cost again, because T007 established it arrives at scale 2; and it never *enforces* the gate, because FR-015 re-evaluates all three conditions at the instant the action arrives and binds nothing to an earlier reading.
+
+  **`DishPublicationGateRepository` created here**, 007-owned, with one query: how many recipe lines reference an `ACTIVE` ingredient. It answers the question no existing payload can — `RecipeItemAuditResponse` carries no ingredient lifecycle state and the audit deliberately includes discontinued lines in its total. Zero covers **both** shapes of condition 2's failure with one number, no recipe at all and a recipe whose every ingredient was discontinued, because FR-015 treats them alike: neither can be produced. `recipeAbsent` is what tells the reader which it is.
+
+  **Correction 2026-10-29, found while starting Phase 6.** `getDetail` used `dishRepository.findByIdAndTenantId` and raised `DishNotFoundException` (404) for a cross-tenant dish, the same outcome as a truly nonexistent one. `spec.md` states the opposite twice and in terms that admit no other reading: FR-001 ("every cross-tenant request MUST be rejected with HTTP 403 Forbidden") and the Edge Cases section verbatim — "HTTP 404 is not an admissible alternative." T036's own task text already said "cross-tenant access denied with 403" correctly; the implementation disagreed with it. The 404 came from following `DishCostAuditIT`'s precedent (spec 006, a different endpoint with no FR-001/SC-003 text of its own) rather than this spec's. Fixed with a new `DishAccessGuard` component — `findById` without a tenant filter, then an explicit tenant comparison, raising `DishNotFoundException` only when the id does not exist at all and `TenantViolationException` (403, already mapped by `GlobalExceptionHandler`) when it belongs to another tenant — which `DishReviewDetailService` now depends on instead of `DishRepository` directly. Verified GREEN: `DishAccessGuardTest` 3 of 3 (new, 100% line/branch), `DishReviewDetailServiceTest` 36 of 36, full suite 808 of 808.
+- [x] T042a [US1] In the same service, catch `EmptyRecipeException` from `FoodCostAuditService` and render the recipe-absent state — no itemization, no margin, publication gate reported unmet on condition 2 — while still returning identity, status, author attribution, the assigned price if any and the review history. **Never propagate it as a failed request**: a dish with no recipe lines is a fact about the dish, not a fault in the consultation. Covered by a case in `DishReviewDetailServiceTest` — **Serves**: FR-037 — **DONE 2026-10-28**, 5 of 5 in that group
+
+  **Why the exception is caught rather than prevented.** Checking for an empty recipe before calling the audit would mean a second query asking a question the audit already answers, and would still race. Catching is both cheaper and correct: spec 006 raising for "itemize this dish's cost" is right, because for a dish with no recipe that request has no answer.
+
+  **`recipeAbsent` exists because a null audit is ambiguous.** Without the flag, a client cannot distinguish "this dish has no recipe" from "the audit failed to load", and FR-037 asks for the absence to be *presented* rather than left blank. The suite asserts both: the audit is null **and** the flag is true.
+
+  The five cases pin that the consultation succeeds, that no margin is claimed while the **assigned price is still reported** (it is a fact about the dish), that the gate reports `EMPTY_RECIPE`, and that identity, author and review history all still render — which is the part FR-037 is really about.- [x] T043 [US1] Implement the inbox and detail endpoints in `easyeat/backend/src/main/java/com/easyeat/dish/controller/AdminDishReviewController.java` — `GET /admin/dishes/review-inbox` and `GET /admin/dishes/{id}/review-detail` — **Serves**: FR-002, FR-006
+
+  **DONE 2026-10-28**, T036 green at 22 of 22. The backend half of US1 is complete.
+
+  **The role gate sits at class level**, matching `AdminDishCostAuditController`, so a method added by US2, US3 or US4 cannot be left unguarded by omission. FR-001's `ADMIN` alias is included.
+
+  **An unknown tab is a 400 by construction**, not by hand-written validation: binding to the `InboxTab` enum makes Spring's converter reject anything outside it. That is the behaviour the requirement wants and one less branch to maintain — and it is why T036 asserts 400 rather than a fall back to `PENDING`, since showing the Administrator a list they did not request is worse than refusing the request.
+- [x] T044 [P] [US1] Create the shared frontend types in `easyeat/frontend/src/types/dishReview.ts` for inbox, detail, pricing, history and feedback payloads — **Serves**: shared infrastructure for all four stories; no single requirement
+
+  **DONE 2026-10-28.** Covers all four stories in one file, because the inbox, the calculator, the history and the Chef feedback share one contract and splitting it per story would duplicate the shapes.
+
+  **`ReviewDishStatus` is declared here rather than reusing `DishStatus` from `types/dish.ts`.** That union is spec 005's and still admits only `DRAFT | PENDING_PRICE`; widening it is **T079a**, in US3, where the mismatch becomes observable. Importing it here would have made this feature's types lie about what the backend returns, and widening it here would have done US3's work early and without its test.
+
+  Money is typed `number`, with the reason recorded: these values are displayed and compared, never used to derive a figure the backend stores. Every calculation that produces a stored price happens server-side in `BigDecimal` (FR-008). And `marginPct` is documented as requiring a null branch rather than a falsy check, because `0` is a legitimate margin that a `!marginPct` test would silently hide.
+- [x] T045 [P] [US1] Write `easyeat/frontend/tests/api/dishReviewApi.test.ts` covering request shaping and error propagation for the inbox and detail calls — **Serves**: FR-032
+
+  **DONE 2026-10-28**, RED observed: `Failed to resolve import "../../src/api/dishReviewApi"`.
+
+  Three cases beyond request shaping. The identifier is asserted to be **URL-encoded**, so a malformed value cannot alter the path — `../../auth/users` must not become a traversal. Errors are asserted to **propagate** rather than collapse into a default value, because an inbox that silently renders empty on a 403 tells the Administrator there is nothing to review. And the client is asserted **not to retry**, since a silent retry would double a read the server may audit.
+- [x] T046 [US1] Implement `easyeat/frontend/src/api/dishReviewApi.ts` as a typed client over the shared `apiClient` — **Serves**: shared infrastructure for all four stories; no single requirement
+
+  **DONE 2026-10-28**, T045 green at 10 of 10.
+
+  **Thin by intent, and the class says so**: it shapes requests, unwraps bodies, and does nothing else — no retries, no caching, no defaulting of error responses. Each of those would hide a server failure behind something that looks like data.
+- [x] T047 [US1] Write `easyeat/frontend/tests/hooks/useDishReviewInbox.test.ts` covering tab and page state, counts, and reconciliation after a stale decision — **Serves**: FR-003, FR-032
+
+  **DONE 2026-10-28**, RED observed: the hook module does not resolve.
+
+  **FR-032's reconciliation clause drove four cases, and one of them is the interesting one.** The requirement says a dish that has received a terminal decision must be removed *and the view reconciled*, so removing the row is not enough: the counts and pagination must stop describing it. The sharp case is removing the **last row of a page** — the Administrator would otherwise be stranded on an empty page 1 with no way forward — so the hook is required to step back to page 0.
+
+  Three more cases pin behaviour a naive hook gets wrong: switching to the tab **already active** must not throw the Administrator back to page 0; the list must **keep its previous items while a refetch is in flight**, because blanking on every refresh loses their place; and a 403 is **not retryable** while a transport error is, since offering "retry" for a permission failure is a lie.
+- [x] T048 [US1] Implement `easyeat/frontend/src/hooks/useDishReviewInbox.ts` — **Serves**: FR-003, FR-032
+
+  **DONE 2026-10-28**, T047 green at 14 of 14 — after the test caught a real bug.
+
+  **The bug.** `reconcileAfterStaleDecision` computed "was that the last row on the page?" *inside* a `setItems` updater and read the flag on the next line. React does not run an updater synchronously, so the flag was always `false` and the step-back never happened: the Administrator would have been stranded on an empty page. Now computed from the rendered state, with the reason recorded in the code so the mistake is not reintroduced.
+
+  **Errors are modelled by what can be done about them**, not as strings: a `kind` plus a `retryable` flag, so the interface does not have to guess whether to offer a retry. A 403 is not retryable; a transport failure is.
+
+  A request sequence guard drops the response of an abandoned tab, so a slow `PENDING` reply cannot overwrite the `HISTORY` view the Administrator has already switched to.
+- [x] T049 [US1] Write `easyeat/frontend/tests/components/dishreview/ReviewInbox.test.tsx` covering tab switching, FIFO rendering, pagination, the pending badge, the initial-versus-resubmission marker and a distinct empty state per tab — **Serves**: FR-002, FR-003, FR-004, FR-028, FR-029
+
+  **DONE 2026-10-28**, RED observed: none of the four component modules resolve.
+
+  **Written as a composition test, with no `ReviewInbox.tsx` created.** Neither `plan.md`'s component tree nor `tasks.md` declares such a component, and inventing one to match the file's name would add an artifact no document asks for (Principle V). The file is named after the feature; the subject is the four components behaving as one surface, which is the only place tab switching, FIFO order, pagination and the badge can be checked **against each other**.
+
+  **Empty, loading and error are asserted to be three distinct states**, never substituted for one another: loading shows a skeleton and *not* the empty state, because the two say opposite things; an error *replaces* the list rather than sitting above stale rows; and the two empty views carry different wording, since "nothing awaits you" and "nothing has been reviewed yet" are different facts.
+
+  **A non-retryable error is asserted to offer no retry button.** Offering one for a permission failure promises something that cannot work, which is the distinction FR-032 draws between an authorization notice and a recoverable failure.
+- [x] T050 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxTabs.tsx` — three tabs plus the pending badge — **Serves**: FR-002, FR-003
+- [x] T051 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxList.tsx` — FIFO list with distinct empty, loading (skeleton) and error states — **Serves**: FR-028, FR-029
+- [x] T052 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/ReviewInboxRow.tsx` — name, category, author, `submittedAt`, status and the "Inicial" / "Reenvío (ciclo N)" marker — **Serves**: FR-004, FR-027
+- [x] T053 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/InboxPagination.tsx` — 20-per-page controls — **Serves**: FR-003
+- [x] T054 [US1] Write `easyeat/frontend/tests/components/dishreview/DishAuditPanel.test.tsx` covering identity, dietary labels, the itemized cost breakdown and the unpriced-ingredient advisory — **Serves**: FR-006
+
+  **DONE 2026-10-28**, RED observed: the panel and the breakdown table do not resolve.
+
+  **Two assertions guard against a plausible-looking mistake.** A Food Cost of `0,00` must render as a **figure**, not as a dash: zero is a real cost — a recipe whose every ingredient is unpriced — and a dash would make it indistinguishable from "not computed". And the panel-level unpriced warning must say the total is **incomplete**, not that it is wrong, because the Administrator is about to make a decision about money and those are different claims.
+
+  **An outstanding acknowledgement is asserted not to be rendered as a gate condition.** FR-017 makes it an additional precondition and never a failure, so a panel that listed it among the unmet conditions would tell the Administrator a publishable dish is blocked.
+- [x] T055 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/FoodCostBreakdownTable.tsx` — line items, subtotals and total per portion — **Serves**: FR-006
+- [x] T056 [P] [US1] Implement `easyeat/frontend/src/components/dishreview/UnpricedIngredientBadge.tsx` — amber advisory — **Serves**: FR-006
+- [x] T057 [US1] Implement `easyeat/frontend/src/components/dishreview/DishAuditPanel.tsx` composing identity, labels and the cost breakdown — **Serves**: FR-006
+- [x] T058 [US1] Write `easyeat/frontend/tests/pages/AdminDishReviewPage.test.tsx` covering the inbox-to-detail transition, the rendering of each backend error, and the information sufficiency SC-007 now requires: the detail view presents the culinary file, the itemized Food Cost audit, the prevailing margin, the state of each publication gate condition and the prior review cycles, with no additional navigation — **Serves**: FR-002, FR-032, SC-007
+
+  **DONE 2026-10-28**, RED observed: the page module does not resolve.
+
+  **Two cases pin behaviour that a working-looking page gets wrong.** Switching tabs must **clear the open detail**, because that dish belonged to the previous view and leaving it up invites a decision made from the wrong list. And a detail failure must **remove the previous panel** rather than leave it beside the error — otherwise the Administrator decides about a dish they are no longer looking at, which is the worst outcome on this screen.
+
+  **SC-007 is asserted as information sufficiency**, which is how it was rewritten: the five blocks must all be present — identity, declared labels, the itemized cost, the gate status and the author attribution — rather than measuring whether the Administrator decided faster.
+- [x] T059 [US1] Implement `easyeat/frontend/src/pages/AdminDishReviewPage.tsx` — `/admin/dishes`, inbox plus detail panel — **Serves**: FR-002, FR-006
+
+  **DONE 2026-10-29**, T058 green at 14 of 14.
+
+  The inbox stays on screen while a dish is open, so the Administrator keeps sight of the queue. Two rules keep the halves honest about each other: **switching tabs closes the open dish**, because it belonged to the view being left; and a **failed detail load clears the panel** rather than leaving the previous dish beside an error, which would have the Administrator reading one file while the page talks about another. The panel is cleared *before* the request, not after it resolves.
+- [x] T060 [US1] Write `easyeat/frontend/tests/router/adminDishReviewRoute.test.tsx` asserting `/admin/dishes` resolves before the `/admin/*` catch-all and is role-guarded — **Serves**: FR-001
+
+  **DONE 2026-10-29**, RED observed: 1 of 7 failing, `/admin/dishes` answered by the `/admin/*` catch-all. Route order is asserted in **both** directions, because each failure is silent in a browser — the Administrator still sees a page, just not the one they asked for. Declared too late the catch-all wins and the inbox is unreachable; declared too broadly it swallows `/admin/dishes/:id/cost-audit` (spec 005) and the rest of the admin perimeter.
+
+  **The hub is identified by its subtitle, not its title.** The first draft asserted the absence of *"Panel de Administración"* to prove the hub had not answered. The inbox page carries a *"Volver al Panel de Administración"* link of its own, so that assertion reported the hub as present on the very page that had correctly replaced it. The unambiguous marker is the hub's subtitle.
+
+  **One case asserts the network is never touched by a rejected role**: a guard that redirects *after* firing the inbox request would leak the queue's existence and spend a 403 on every Chef who mistypes a URL.
+- [x] T061 [US1] Register the route in `easyeat/frontend/src/router/AppRoutes.tsx` **before** the `/admin/*` catch-all, matching how `/admin/staff` and `/admin/inventory` are declared — **Serves**: FR-001
+
+  **DONE 2026-10-29**, T060 green at 7 of 7 and the five pre-existing router suites still green at 74 of 74.
+
+  **The source position is kept even though React Router does not need it.** v6 ranks matches by specificity rather than source order, so a literal `/admin/dishes` outranks the `/admin/*` splat wherever it is written. The declaration is placed before the catch-all anyway, because source order is what a reader checks when a route stops resolving, and a file whose order disagrees with its behaviour forces the next person to know about ranking before they can trust it.
+- [x] T062 [US1] Write `easyeat/frontend/tests/pages/AdminWorkspacePage.test.tsx` asserting the dish-review hub card renders, displays the pending count it receives, and links to `/admin/dishes` — **Serves**: FR-003
+
+  **DONE 2026-10-29**, RED observed: 6 of the 6 new cases failing, the 4 pre-existing ones green. **The file already existed** — it is spec 005's suite for this shared page — so the cases were added as a second `describe` rather than replacing it: the notification panel below the card belongs to the earlier spec and must keep working.
+
+  **The count's source is pinned by the test**, with the unread-alert count mocked to a *different* number in the same case. See T063 for why the two are not interchangeable.
+
+  Two cases cover **not knowing** the count: a failed load must render `--` rather than a zero, and must not claim the queue is empty either, since both are fabrications about work waiting. And the link must already be reachable while the count is in flight, so a hanging count endpoint cannot strand the Administrator on the hub.
+- [x] T063 [US1] Add the hub card linking to the inbox with its pending count in `easyeat/frontend/src/pages/AdminWorkspacePage.tsx` — **Serves**: FR-003
+
+  **DONE 2026-10-29**, T062 green at 10 of 10.
+
+  **The card's count changed source, and this is the substantive decision of the task.** The *"Menú y Precios"* card already existed as an inert `div` whose number came from `adminNotificationApi`'s unread-alert count. That is a different quantity from the one the card claims to show: its own copy reads *"platos pendientes de fijación de precio"*, but the alert count falls to zero as soon as the Administrator reads the alerts, while the dishes stay in the queue. `FR-003` and `contracts/openapi.yaml` name **`pendingCount`** as the authority on dishes awaiting a decision, so the card now reads that, and `plan.md` §Frontend design already specified the card as *"linked from `AdminWorkspacePage` with its pending count"*. The notification panel below the card keeps using the feed, which is what that panel is actually about.
+
+  **`size: 1`**, the contract's minimum: `pendingCount` is returned on every tab, so the hub has no use for the twenty rows it would not render.
+
+  **The description line is suppressed when the count is unknown.** With the count at `--` the previous markup still read *"Sin platos pendientes de revisión"*, so a failed request produced a card that denied the existence of work it had not managed to look up.
 
 **Checkpoint**: User Story 1 is fully functional and independently testable.
 
@@ -429,7 +564,9 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
 - [ ] T078 [US3] Write `easyeat/frontend/tests/components/dishreview/PublicationConfirmModal.test.tsx` covering the advisory content, the required second confirmation, and that cancelling leaves the dish untouched — **Serves**: FR-017, FR-031
 - [ ] T079 [US3] Implement `easyeat/frontend/src/components/dishreview/PublicationConfirmModal.tsx` — unpriced-ingredient and negative-margin advisories with an explicit second confirmation (FR-017) — **Serves**: FR-017, FR-031
 
-- [ ] T079a [US3] Widen the frontend status domain to match the backend, in `easyeat/frontend/src/types/dish.ts` and `easyeat/frontend/src/components/dish/DishStatusBadge.tsx`. The union is `'DRAFT' | 'PENDING_PRICE'` and `isDishStatus` returns `false` for `'PUBLISHED'`, while the badge falls back to `'DRAFT'` for any unrecognised status — so once T076 can set `PUBLISHED`, a published dish renders as *"Borrador"* instead of failing visibly. Add the third member, admit it in the guard, and give the badge its own styling. **Found during T005, not during planning**: adding the constant to the backend enum made the two domains disagree, and no other task owns either file (T044 creates a new `types/dishReview.ts` and leaves the existing union untouched). These are files on spec 005's surface, so the change is narrow by intent — the third member and its badge entry, nothing else — **Serves**: FR-016, FR-033
+- [ ] T079a [US3] Widen the frontend status domain to match the backend, in `easyeat/frontend/src/types/dish.ts` and `easyeat/frontend/src/components/dish/DishStatusBadge.tsx`. The union is `'DRAFT' | 'PENDING_PRICE'` and `isDishStatus` returns `false` for `'PUBLISHED'`, while the badge has no entry for it — so once T076 can set `PUBLISHED`, a published dish renders the raw English token **`PUBLISHED`** in the middle of a Spanish interface, with neutral grey styling that says nothing about the state.
+
+  **Correction 2026-10-28 to the symptom this task originally described.** It said the badge "falls back to `'DRAFT'`" and would render *"Borrador"*. **That is wrong**, and the real behaviour is different in a way that matters to whoever fixes it. Reading `DishStatusBadge.tsx:34-38`: `normalizedKey` falls back to `'DRAFT'` only when `status` is **not a string**; for an unrecognised *string* the lookup misses and the fallback config uses `label: status`, printing the value verbatim. So the defect is an untranslated token, not a wrong-but-plausible label. The wrong description was the more dangerous one — "Borrador" would have been a silent lie about the state, while `PUBLISHED` is visibly broken — so the fix is no less necessary, but the test for it must assert the token is gone rather than that "Borrador" is. Add the third member, admit it in the guard, and give the badge its own styling. **Found during T005, not during planning**: adding the constant to the backend enum made the two domains disagree, and no other task owns either file (T044 creates a new `types/dishReview.ts` and leaves the existing union untouched). These are files on spec 005's surface, so the change is narrow by intent — the third member and its badge entry, nothing else — **Serves**: FR-016, FR-033
 
 **Checkpoint**: all three P1 stories are independently functional.
 
