@@ -14,6 +14,9 @@ vi.mock('../../src/api/dishReviewApi', () => ({
   dishReviewApi: {
     getInbox: vi.fn(),
     getDetail: vi.fn(),
+    setRetailPrice: vi.fn(),
+    approve: vi.fn(),
+    reject: vi.fn(),
   },
 }));
 
@@ -263,6 +266,100 @@ describe('AdminDishReviewPage', () => {
 
       expect(await screen.findByTestId('recipe-absent-state')).toBeInTheDocument();
       expect(screen.getByTestId('audit-author')).toBeInTheDocument();
+    });
+  });
+
+  /**
+   * T109: closes the exact gap `HANDOFF-post-merge-ui-gap.md` §2 found by hand — the panel
+   * rendered the publication gate's status but offered nothing to act on it. Pinned here at the
+   * page level, not only on `DishDecisionActions` in isolation, so no future phase can reintroduce
+   * it by building a component that nothing ever imports.
+   */
+  describe('the decision controls are reachable from the page (closing the post-merge UI gap)', () => {
+    it('a PENDING_PRICE dish shows the price field and both decision buttons', async () => {
+      renderPage();
+      await userEvent.click(await screen.findByTestId('inbox-row'));
+      await screen.findByTestId('dietary-labels');
+
+      expect(screen.getByLabelText(/precio de venta/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /aprobar y publicar/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /rechazar \/ devolver a cocina/i })
+      ).toBeInTheDocument();
+    });
+
+    it('a PUBLISHED dish shows only the price field, for repricing', async () => {
+      vi.mocked(dishReviewApi.getDetail).mockResolvedValue(
+        detail({ status: 'PUBLISHED', retailPrice: 11250, publishedAt: '2026-10-02T10:00:00Z' })
+      );
+
+      renderPage();
+      await userEvent.click(await screen.findByTestId('inbox-row'));
+      await screen.findByTestId('dietary-labels');
+
+      expect(screen.getByLabelText(/precio de venta/i)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /aprobar y publicar/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /rechazar \/ devolver a cocina/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it('approving refreshes both the open detail and the inbox counts', async () => {
+      vi.mocked(dishReviewApi.getDetail).mockResolvedValue(
+        detail({
+          publicationGate: { satisfied: true, unmetConditions: [], requiredAcknowledgements: [] },
+        })
+      );
+      vi.mocked(dishReviewApi.approve).mockResolvedValue({
+        dishId: 'dish-1',
+        status: 'PUBLISHED',
+        alreadyPublished: false,
+        publishedAt: '2026-10-05T10:00:00Z',
+        reviewHistoryEntryId: 'h-1',
+      });
+
+      renderPage();
+      await userEvent.click(await screen.findByTestId('inbox-row'));
+      await screen.findByTestId('dietary-labels');
+
+      vi.mocked(dishReviewApi.getInbox).mockClear();
+      vi.mocked(dishReviewApi.getDetail).mockClear();
+      vi.mocked(dishReviewApi.getDetail).mockResolvedValue(
+        detail({ status: 'PUBLISHED', publishedAt: '2026-10-05T10:00:00Z' })
+      );
+
+      await userEvent.click(screen.getByRole('button', { name: /aprobar y publicar/i }));
+
+      await waitFor(() => expect(dishReviewApi.getDetail).toHaveBeenCalledWith('dish-1'));
+      expect(dishReviewApi.getInbox).toHaveBeenCalled();
+    });
+
+    it('rejecting refreshes both the open detail and the inbox counts', async () => {
+      vi.mocked(dishReviewApi.reject).mockResolvedValue({
+        dishId: 'dish-1',
+        status: 'DRAFT',
+        cycleNumber: 1,
+        reviewHistoryEntryId: 'h-1',
+      });
+
+      renderPage();
+      await userEvent.click(await screen.findByTestId('inbox-row'));
+      await screen.findByTestId('dietary-labels');
+
+      vi.mocked(dishReviewApi.getInbox).mockClear();
+      vi.mocked(dishReviewApi.getDetail).mockClear();
+      vi.mocked(dishReviewApi.getDetail).mockResolvedValue(detail({ status: 'DRAFT' }));
+
+      await userEvent.click(screen.getByRole('button', { name: /rechazar \/ devolver a cocina/i }));
+      await screen.findByRole('dialog');
+      await userEvent.type(
+        screen.getByLabelText(/comentario/i),
+        'Falta la foto del plato, por favor.'
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+
+      await waitFor(() => expect(dishReviewApi.getDetail).toHaveBeenCalledWith('dish-1'));
+      expect(dishReviewApi.getInbox).toHaveBeenCalled();
     });
   });
 });
