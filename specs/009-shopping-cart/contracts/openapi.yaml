@@ -1,0 +1,387 @@
+openapi: 3.0.3
+info:
+  title: EasyEat Shopping Cart & Diner Demographics API
+  description: >
+    Specification for diner demographic data management, profile photo/avatar upload and removal,
+    and cart-related stock and item operations in EasyEat.
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+    description: EasyEat Backend API Gateway
+
+security:
+  - BearerAuth: []
+
+paths:
+  /profile/me:
+    get:
+      summary: Get complete diner profile including demographics and avatar
+      description: >
+        Returns the authenticated diner's profile details, contact information, dietary preferences,
+        demographics (age, gender, address), and the avatar URL if present.
+      operationId: getDinerProfile
+      responses:
+        '200':
+          description: Diner profile successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedProfileResponse'
+        '401':
+          description: Unauthenticated client
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /profile/demographics:
+    put:
+      summary: Update diner demographic data
+      description: >
+        Updates demographic contact fields: age (14-120), gender (closed standard classification),
+        and contact address (up to 255 characters, strictly without routing or delivery geocoding).
+      operationId: updateDemographics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemographicsRequest'
+      responses:
+        '200':
+          description: Demographic data successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedProfileResponse'
+        '400':
+          description: Validation error (invalid age range, invalid gender, address > 255 chars)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthenticated client
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /profile/avatar:
+    post:
+      summary: Upload diner profile photo
+      description: >
+        Uploads an image file (JPEG, PNG, WEBP) strictly between 1 byte and 5 MB (5,242,880 bytes).
+        Persists image payload into PostgreSQL user_photos BYTEA storage.
+      operationId: uploadAvatar
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Image file (JPEG, PNG, WEBP, max 5 MB)
+      responses:
+        '200':
+          description: Avatar photo successfully uploaded and associated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarUploadResponse'
+        '400':
+          description: Invalid file format or size exceeded (> 5 MB)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthenticated client
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+    delete:
+      summary: Remove custom diner profile photo
+      description: >
+        Deletes the user's custom photo from user_photos table, reverting to system default avatar.
+      operationId: removeAvatar
+      responses:
+        '204':
+          description: Avatar photo successfully removed
+        '401':
+          description: Unauthenticated client
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+    get:
+      summary: Retrieve diner avatar image binary stream
+      description: >
+        Returns the raw image binary bytes of the authenticated user's avatar.
+      operationId: getAvatarPhoto
+      responses:
+        '200':
+          description: Image binary stream
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: No custom photo configured (client should render default avatar)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthenticated client
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /cart/validate-stock:
+    post:
+      summary: Validate real-time stock availability for requested cart items
+      description: >
+        Validates that requested quantities for a list of dishes do not exceed current kitchen stock.
+        Used by the frontend 300 ms debounced sync modifier.
+      operationId: validateCartStock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartStockValidationRequest'
+      responses:
+        '200':
+          description: Stock validation evaluation per dish
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartStockValidationResponse'
+        '401':
+          description: Unauthenticated client
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ExtendedProfileResponse:
+      type: object
+      required:
+        - id
+        - email
+        - dietaryRestrictions
+      properties:
+        id:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        fullName:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+        pendingEmail:
+          type: string
+          nullable: true
+        emailVerificationPending:
+          type: boolean
+        age:
+          type: integer
+          minimum: 14
+          maximum: 120
+          nullable: true
+          description: Biological age between 14 and 120 years
+        gender:
+          type: string
+          enum: [Femenino, Masculino, No binario, Prefiero no responder, FEMALE, MALE, NON_BINARY, PREFER_NOT_TO_SAY]
+          nullable: true
+        address:
+          type: string
+          maxLength: 255
+          nullable: true
+          description: Contact address up to 255 characters (no routing/delivery geocoding)
+        avatarUrl:
+          type: string
+          nullable: true
+          description: Relative URL to avatar image or null if default
+        dietaryRestrictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DietaryRestrictionItemDto'
+
+    DietaryRestrictionItemDto:
+      type: object
+      required:
+        - code
+        - name
+        - category
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    DemographicsRequest:
+      type: object
+      properties:
+        age:
+          type: integer
+          minimum: 14
+          maximum: 120
+          nullable: true
+          example: 28
+        gender:
+          type: string
+          enum: [Femenino, Masculino, No binario, Prefiero no responder, FEMALE, MALE, NON_BINARY, PREFER_NOT_TO_SAY]
+          nullable: true
+          example: Femenino
+        address:
+          type: string
+          maxLength: 255
+          nullable: true
+          example: Av. Corrientes 1234, 4to B
+
+    AvatarUploadResponse:
+      type: object
+      required:
+        - userId
+        - fileName
+        - contentType
+        - fileSize
+        - avatarUrl
+      properties:
+        userId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        contentType:
+          type: string
+        fileSize:
+          type: integer
+        avatarUrl:
+          type: string
+
+    CartStockValidationRequest:
+      type: object
+      required:
+        - tenantId
+        - items
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - dishId
+              - quantity
+            properties:
+              dishId:
+                type: string
+                format: uuid
+              quantity:
+                type: integer
+                minimum: 1
+
+    CartStockValidationResponse:
+      type: object
+      required:
+        - isValid
+        - items
+      properties:
+        isValid:
+          type: boolean
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - dishId
+              - isAvailable
+              - availableStock
+              - requestedQuantity
+            properties:
+              dishId:
+                type: string
+                format: uuid
+              isAvailable:
+                type: boolean
+              availableStock:
+                type: integer
+              requestedQuantity:
+                type: integer
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
