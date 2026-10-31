@@ -827,9 +827,16 @@ asks for, and a new component carries the actions beside it.
   already takes) and calls `inbox.refresh()`, so a price save, an approval or a rejection all
   leave both halves of the page showing the server's current state rather than the Administrator's
   stale read.
-- [ ] T111 Run the full frontend suite (`npx vitest run`) and `tsc --noEmit`; record the result and
+- [x] T111 Run the full frontend suite (`npx vitest run`) and `tsc --noEmit`; record the result and
   correct `quickstart.md` §6's T103 note, which could only validate these three components in
   isolation at the time, never as reachable from `/admin/dishes`
+
+  **DONE 2026-10-31.** Full suite: 587 of 587 tests across 91 files, `tsc --noEmit` clean — no
+  regression from wiring three previously-unused components into the live page. `quickstart.md`
+  §6 now carries a correction note explaining that T103's own check was honestly scoped to
+  component isolation (its note already said so) and that Phase 8 is what actually makes every
+  bullet in §6 true of `/admin/dishes` itself, backed by `AdminDishReviewPage.test.tsx` (T109)
+  rather than only the component suites.
 
 ---
 
