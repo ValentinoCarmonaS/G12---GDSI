@@ -752,6 +752,94 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
 
 ---
 
+## Phase 8: Decision UI Wiring — Closing the Approve/Reject/Price Gap (Priority: P1)
+
+**Context**: discovered during manual UI testing after the full 007 delivery was merged to `main`
+(see `HANDOFF-post-merge-ui-gap.md`). `MarginPriceCalculator` (T072), `PublicationConfirmModal`
+(T079) and `RejectionDialog` (T091) were each built and tested in isolation, one per phase, but no
+task in Phases 3-7 wired any of them into `AdminDishReviewPage` / `DishAuditPanel`. `dishReviewApi`
+(T046) also never grew the three write methods the contract defines (`PUT .../retail-price`,
+`POST .../approval`, `POST .../rejection`) — only the two read methods exist. The result:
+`/admin/dishes` renders the publication gate's *status* but offers no control to act on it — no
+"Aprobar y Publicar" button, no "Rechazar / Devolver a cocina" button, no price input, anywhere.
+`DishAuditPanel` itself is unchanged by this phase: it stays the read-only culinary file FR-006
+asks for, and a new component carries the actions beside it.
+
+- [x] T105 [P] Write `easyeat/frontend/tests/api/dishReviewApi.test.ts` additions covering
+  `setRetailPrice`, `approve` and `reject`: request shaping (method, URL-encoded id in the path,
+  request body) and error propagation, mirroring the existing `getInbox`/`getDetail` test style
+  — **Serves**: FR-009, FR-013, FR-015, FR-017, FR-020, FR-021, FR-025
+
+  **DONE 2026-10-31**, RED observed: 16 of 26 new assertions failed with `dishReviewApi.<method>
+  is not a function` for all three methods (only `getInbox`/`getDetail` existed). Covers encoded
+  ids, `expectedRetailPrice: null` sent as a positive value rather than omitted, an empty approval
+  body when no acknowledgement is required, the comment sent unpre-trimmed, and 409/422
+  propagation for `dish-stale-price`, `dish-already-decided` and `publication-gate-failed`.
+- [x] T106 Implement `setRetailPrice`, `approve` and `reject` in
+  `easyeat/frontend/src/api/dishReviewApi.ts` as thin wrappers over `PUT /admin/dishes/{id}/retail-price`,
+  `POST /admin/dishes/{id}/approval` and `POST /admin/dishes/{id}/rejection` — **Serves**: same
+
+  **DONE 2026-10-31, GREEN** at 26 of 26, `tsc --noEmit` clean. Same shape as the two existing read
+  methods: encode the id, forward the body/params verbatim, unwrap `response.data`, no retry, no
+  error normalisation.
+- [x] T107 [P] Write `easyeat/frontend/tests/components/dishreview/DishDecisionActions.test.tsx`
+  covering: the price calculator and both decision buttons render only for the dish states the
+  contract allows (`PENDING_PRICE`: price + both buttons; `PUBLISHED`: price only, for repricing;
+  `DRAFT`: neither); "Aprobar y Publicar" is disabled while `publicationGate.satisfied` is false;
+  approving with `requiredAcknowledgements` outstanding opens `PublicationConfirmModal` and maps
+  each acknowledgement kind to its own request flag on confirm; approving with none outstanding
+  calls the API directly with no flags; cancelling either modal/dialog calls the API not at all
+  (FR-031); rejecting opens `RejectionDialog` and sends the typed comment verbatim; a successful
+  action calls `onDecided`; a `409 dish-stale-price` (price save) or `409 dish-already-decided`
+  (approve/reject) response is shown to the Administrator and also triggers `onDecided`, so the
+  panel refreshes against the server's truth rather than its own stale read
+  — **Serves**: FR-009 to FR-021, FR-025, FR-031
+
+  **DONE 2026-10-31**, RED observed: `Failed to resolve import ".../DishDecisionActions"` — the
+  component did not exist yet. Exercises the real `MarginPriceCalculator`,
+  `PublicationConfirmModal` and `RejectionDialog`, not stubs, so a prop mismatch against any of
+  the three would fail here exactly as in the browser. 17 cases.
+- [x] T108 Implement `easyeat/frontend/src/components/dishreview/DishDecisionActions.tsx`,
+  composing `MarginPriceCalculator`, `PublicationConfirmModal` and `RejectionDialog` against the
+  three `dishReviewApi` write methods — **Serves**: same
+
+  **DONE 2026-10-31, GREEN** at 17 of 17 on first implementation, `tsc --noEmit` clean. `DishAuditPanel`
+  is untouched, exactly as planned: it stays the read-only culinary file, and this component sits
+  beside it. `MarginPriceCalculator` is remounted (via `key`) on every dish/price change, because
+  its own seed effect runs once per mount by design; `RejectionDialog` is remounted per dish for
+  the same reason its own draft comment is not reset by `isOpen` alone. A `dish-stale-price` or
+  `dish-already-decided` 409 both show the server's own `detail` message and call `onDecided`, so
+  the panel re-fetches rather than keep showing a decision the Administrator thinks succeeded.
+- [x] T109 [P] Extend `easyeat/frontend/tests/pages/AdminDishReviewPage.test.tsx` asserting the
+  three controls are reachable from `/admin/dishes` once a dish is open — the exact gap
+  `HANDOFF-post-merge-ui-gap.md` §2 found manually, now pinned by a page-level test so no future
+  phase can reintroduce it by building a component in isolation again — and that a successful
+  decision refreshes both the open detail and the inbox's pending count — **Serves**: SC-007
+
+  **DONE 2026-10-31**, RED observed: 4 of 4 new cases failed — no price field and no decision
+  button existed anywhere in the page's rendered output, since `AdminDishReviewPage` only rendered
+  `DishAuditPanel`.
+- [x] T110 Render `DishDecisionActions` in `easyeat/frontend/src/pages/AdminDishReviewPage.tsx`
+  beside `DishAuditPanel`, re-fetching the detail and the inbox on `onDecided` — **Serves**: SC-007
+
+  **DONE 2026-10-31, GREEN** at 18 of 18, `tsc --noEmit` clean. `onDecided` re-runs the existing
+  `openDish` for the currently-open dish id (same loading/error path every other detail load
+  already takes) and calls `inbox.refresh()`, so a price save, an approval or a rejection all
+  leave both halves of the page showing the server's current state rather than the Administrator's
+  stale read.
+- [x] T111 Run the full frontend suite (`npx vitest run`) and `tsc --noEmit`; record the result and
+  correct `quickstart.md` §6's T103 note, which could only validate these three components in
+  isolation at the time, never as reachable from `/admin/dishes`
+
+  **DONE 2026-10-31.** Full suite: 587 of 587 tests across 91 files, `tsc --noEmit` clean — no
+  regression from wiring three previously-unused components into the live page. `quickstart.md`
+  §6 now carries a correction note explaining that T103's own check was honestly scoped to
+  component isolation (its note already said so) and that Phase 8 is what actually makes every
+  bullet in §6 true of `/admin/dishes` itself, backed by `AdminDishReviewPage.test.tsx` (T109)
+  rather than only the component suites.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -876,3 +964,4 @@ All four upstream decisions are closed. The dependencies they created survive as
 - **Objects this feature must not touch**: `chk_dishes_status` and `idx_dishes_review_inbox_pending` (owned by spec 005's `V7`), any new object inside `com.easyeat.dish.domain` beyond the fields D1 permits, and catalog unpublishing or discontinuation (a declared non-goal)
 - `checklists/approval-pricing.md` holds 59 requirements-quality items, **all 59 marked with their provenance as of 2026-10-28**, so `/speckit-implement` reads a satisfied gate. A marked box records requirements quality, not implementation progress
 - **Task count is now 106**: T042a and T076a were added on 2026-10-28 from consequences found while verifying spec 006's merged code, and T025 remains cancelled. Both carry the `Serves` annotation, so the FR→task mapping stays complete; FR-037 is new in `spec.md` and is served by T042a
+- **Task count is now 113**: T105-T111 (Phase 8) were added on 2026-10-31 after manual UI testing of the merged feature found that no phase had wired `MarginPriceCalculator`, `PublicationConfirmModal` or `RejectionDialog` into the page that renders them — each passed its own component-level test in isolation, so the frontend suite stayed green throughout, but nothing asserted the three were reachable from `/admin/dishes` itself. See `HANDOFF-post-merge-ui-gap.md` for the finding as made

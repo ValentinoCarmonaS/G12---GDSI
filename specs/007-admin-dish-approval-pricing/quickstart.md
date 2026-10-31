@@ -187,6 +187,22 @@ With both servers running, log in as `admin@easyeat.com` and open `/admin/dishes
 - `403`, each flavour of `409` and `400` surface distinct messages, and a stale decision refreshes
   the list instead of leaving a phantom row.
 
+**Correction, found 2026-10-31 during manual UI testing after this feature was fully merged to
+`main` (recorded in `HANDOFF-post-merge-ui-gap.md`).** When T103 executed this section, every
+bullet above was true of `MarginPriceCalculator`, `PublicationConfirmModal` and `RejectionDialog`
+**in isolation**, which is as far as that task's own note (`tasks.md` T103) honestly scoped its
+check — "referenced against the existing component/page test suites... rather than a fabricated
+manual-browser narrative". What neither that check nor the suite caught: none of the three
+components was imported by `AdminDishReviewPage` or `DishAuditPanel`. `/admin/dishes` rendered the
+publication gate's status and nothing to act on it — no price field, no "Aprobar y Publicar", no
+"Rechazar / Devolver a cocina" — because no task in Phases 3-7 wired them in, and no page-level
+test asserted they were reachable. Closed in Phase 8 (`tasks.md` T105-T110): `dishReviewApi`
+gained its three missing write methods, a new `DishDecisionActions` component composes the three
+UI pieces against them, and it is now rendered on `/admin/dishes` beside `DishAuditPanel`. Every
+bullet above is now additionally backed by a page-level test (`AdminDishReviewPage.test.tsx`), not
+only a component-level one — see T109. Full frontend suite verified green after the wiring: 587 of
+587 across 91 files, `tsc --noEmit` clean.
+
 ---
 
 ## 7. Execution record (T103/T104, 2026-10-30)
