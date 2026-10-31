@@ -31,8 +31,9 @@
 
 ## Notes
 
-- **Validación de Calidad**: Completada en 1 iteración con 100% de cumplimiento.
-- **Cobertura de Historias de Usuario**: Las 4 historias (COM-6.1.1, COM-6.1.2, COM-6.1.3 y COM-1.4.2) y sus 15 criterios de aceptación quedaron rigurosamente mapeados a 32 requisitos funcionales atómicos (`FR-001` a `FR-032`) y 9 invariantes matemáticos y de negocio (`INV-1` a `INV-9`).
+- **Validación de Calidad**: Completada con 100% de cumplimiento (16/16 ítems pasando).
+- **Sesión de Clarificación (/speckit-clarify)**: Se resolvieron 5 preguntas clave de arquitectura funcional, UX y datos (sincronización diferida de stock con debouncing de 300 ms, visibilidad contextual del botón flotante en catálogo, preservación con advertencia de stock insuficiente concurrente, eliminación diferida de foto de perfil al guardar formulario y selector previo de cantidad en el detalle del plato).
+- **Cobertura de Historias de Usuario**: Las 4 historias (COM-6.1.1, COM-6.1.2, COM-6.1.3 y COM-1.4.2) y sus 15 criterios de aceptación quedaron rigurosamente mapeados a 33 requisitos funcionales atómicos (`FR-001` a `FR-032`, incluyendo `FR-014a`) y 9 invariantes matemáticos y de negocio (`INV-1` a `INV-9`).
 - **Agnosticismo Tecnológico**: Se verificó la total ausencia de términos técnicos de implementación (sin frameworks, endpoints, tablas SQL ni esquemas).
 - **Consistencia con Upstream**: Total coherencia con los módulos previos (Spec 003 de perfil y restricciones dietarias, Spec 007 de precios de venta al público y Spec 008 de catálogo multi-tenant y carrito en sesión local).
 - **Estado**: La especificación está lista y aprobada para avanzar a la fase de planificación (`/speckit-plan`).
