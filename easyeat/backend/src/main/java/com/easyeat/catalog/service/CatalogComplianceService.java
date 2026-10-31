@@ -38,7 +38,7 @@ public class CatalogComplianceService {
     }
 
     public List<EnrichedDishResponse> getEnrichedCatalog(UUID tenantId, User user) {
-        List<Dish> dishes = dishRepository.findByTenantIdAndIsActiveTrueAndStatus(tenantId, DishStatus.PUBLISHED);
+        List<Dish> dishes = dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED);
         if (dishes.isEmpty()) {
             return Collections.emptyList();
         }

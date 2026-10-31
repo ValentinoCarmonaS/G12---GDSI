@@ -366,7 +366,7 @@ config/SecurityConfig.java                      # REUSED - /api/v1/admin/** alre
 
 ```text
 src/main/resources/
-├── db/migration/V8__admin_dish_approval_pricing.sql   # NEW: the single migration this feature owns (version confirmed at authoring time)
+├── db/migration/V9__admin_dish_approval_pricing.sql   # NEW: the single migration this feature owns (authored as V8, renumbered to V9 on integration into develop/sprint-2 2026-10-31 — spec 008 merged V8 first, see .specify/memory/migrations.md)
 └── db/dev/R__seed_dev_dishes_and_dietary.sql          # MODIFIED: explicit NULL retail_price/published_at (D5 withdrawn)
 ```
 

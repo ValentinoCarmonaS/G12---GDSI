@@ -18,7 +18,7 @@ This feature is **not implementable** until spec 005's dish domain and spec 006'
 from the repository root:
 
 ```bash
-ls easyeat/backend/src/main/resources/db/migration/            # confirmed 2026-10-28: V1..V7 present (V7 from 005), so this feature takes V8
+ls easyeat/backend/src/main/resources/db/migration/            # confirmed 2026-10-28: V1..V7 present (V7 from 005), so this feature took V8, then V9 (correction 2026-10-31: spec 008 merged its own V8__create_establishments.sql into develop/sprint-2 first, so this feature's migration was renumbered to V9__admin_dish_approval_pricing.sql on integration — see .specify/memory/migrations.md)
 ls easyeat/backend/src/main/java/com/easyeat/dish/domain/      # expect Dish.java, DishStatus.java
 grep -rn "submitted_at" easyeat/backend/src/main/resources/db/migration/   # R-005-1
 grep -rn "idx_dishes_review_inbox_pending" easyeat/backend/src/main/resources/db/migration/  # R-005-1 index, owned by 005

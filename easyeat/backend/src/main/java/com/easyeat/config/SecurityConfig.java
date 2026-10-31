@@ -77,6 +77,11 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/dishes/*/photo").permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
+                        .requestMatchers(
+                                "/api/v1/establishments/search",
+                                "/api/v1/establishments/*/catalog",
+                                "/api/v1/establishments/*/catalog/availability"
+                        ).hasRole("COMENSAL")
                         .requestMatchers(HttpMethod.GET, "/api/v1/dishes/*/cost-audit").hasAnyRole("ADMINISTRADOR", "ADMIN")
                         .requestMatchers("/api/v1/dishes/**").hasRole("CHEF")
                         .requestMatchers("/api/v1/admin/notifications/**").hasAnyRole("ADMINISTRADOR", "ADMIN")

@@ -4,24 +4,38 @@ export const ROLE_DEFAULT_ROUTES: Record<Role, string> = {
   ENCARGADO: '/mostrador',
   CHEF: '/cocina',
   ADMINISTRADOR: '/admin',
-  COMENSAL: '/catalogo',
+  COMENSAL: '/descubrimiento',
 };
 
 export const ROLE_ALLOWED_PREFIXES: Record<Role, string[]> = {
   ENCARGADO: ['/mostrador', '/counter'],
   CHEF: ['/cocina', '/kds'],
   ADMINISTRADOR: ['/admin'],
-  COMENSAL: ['/catalogo', '/catalog', '/perfil', '/profile'],
+  COMENSAL: ['/catalogo', '/catalog', '/descubrimiento', '/discovery', '/perfil', '/profile'],
 };
 
 /**
  * Returns the operational landing route assigned to a specific user role.
- * Falls back safely to '/catalogo' if role is missing or unassigned.
+ * For COMENSAL: if an active tenant is selected in sessionStorage, routes to '/catalogo',
+ * otherwise routes to '/descubrimiento' (T023, COM-1.5.1).
  */
 export function getRoleDefaultRoute(role?: Role | null): string {
   if (!role || !ROLE_DEFAULT_ROUTES[role]) {
-    return '/catalogo';
+    return '/descubrimiento';
   }
+
+  if (role === 'COMENSAL') {
+    try {
+      const activeTenant =
+        typeof window !== 'undefined' && window.sessionStorage
+          ? window.sessionStorage.getItem('easyeat_active_tenant')
+          : null;
+      return activeTenant ? '/catalogo' : '/descubrimiento';
+    } catch {
+      return '/descubrimiento';
+    }
+  }
+
   return ROLE_DEFAULT_ROUTES[role];
 }
 

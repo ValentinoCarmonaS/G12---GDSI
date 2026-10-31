@@ -23,9 +23,14 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
      * D4's diner-visibility predicate, spec 007 FR-033/SC-001: a dish reaches the diner catalog
      * only once it is both {@code is_active} and {@code PUBLISHED}. Replaces the pre-007
      * {@code findByTenantIdAndIsActiveTrue}, which predates {@code status} existing on this
-     * entity and so let every active dish through regardless of review state.
+     * entity and so let every active dish through regardless of review state. Consolidated
+     * 2026-10-31 on integration into {@code develop/sprint-2}: spec 008's
+     * {@code DinerCatalogService} and {@code DishAvailabilityEngine} already called this same
+     * predicate under this name, so spec 007's independently-written
+     * {@code findByTenantIdAndIsActiveTrueAndStatus} was retired in its favour rather than
+     * keeping two near-identical derived queries.
      */
-    List<Dish> findByTenantIdAndIsActiveTrueAndStatus(UUID tenantId, DishStatus status);
+    List<Dish> findByTenantIdAndStatusAndIsActiveTrue(UUID tenantId, DishStatus status);
 
     List<Dish> findByIdIn(List<UUID> ids);
 

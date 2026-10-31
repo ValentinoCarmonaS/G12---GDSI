@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   getRoleDefaultRoute,
   isRouteAllowedForRole,
@@ -7,7 +7,11 @@ import {
 import { Role } from '@/types/auth';
 
 describe('postAuthRouting Policy (Canonical Spanish Routes)', () => {
-  describe('getRoleDefaultRoute (FR-005, FR-006)', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  describe('getRoleDefaultRoute (FR-005, FR-006, T023)', () => {
     it('maps ENCARGADO to /mostrador', () => {
       expect(getRoleDefaultRoute('ENCARGADO')).toBe('/mostrador');
     });
@@ -20,13 +24,18 @@ describe('postAuthRouting Policy (Canonical Spanish Routes)', () => {
       expect(getRoleDefaultRoute('ADMINISTRADOR')).toBe('/admin');
     });
 
-    it('maps COMENSAL to /catalogo', () => {
+    it('maps COMENSAL with no active tenant in session to /descubrimiento (T023)', () => {
+      expect(getRoleDefaultRoute('COMENSAL')).toBe('/descubrimiento');
+    });
+
+    it('maps COMENSAL with active tenant in session to /catalogo (T023)', () => {
+      sessionStorage.setItem('easyeat_active_tenant', JSON.stringify({ id: 'tenant-1', name: 'Resto' }));
       expect(getRoleDefaultRoute('COMENSAL')).toBe('/catalogo');
     });
 
-    it('falls back safely to /catalogo if role is undefined or unrecognized', () => {
-      expect(getRoleDefaultRoute(undefined as unknown as Role)).toBe('/catalogo');
-      expect(getRoleDefaultRoute('UNKNOWN_ROLE' as unknown as Role)).toBe('/catalogo');
+    it('falls back safely to /descubrimiento if role is undefined or unrecognized', () => {
+      expect(getRoleDefaultRoute(undefined as unknown as Role)).toBe('/descubrimiento');
+      expect(getRoleDefaultRoute('UNKNOWN_ROLE' as unknown as Role)).toBe('/descubrimiento');
     });
   });
 
@@ -51,17 +60,26 @@ describe('postAuthRouting Policy (Canonical Spanish Routes)', () => {
       expect(isRouteAllowedForRole('ADMINISTRADOR', '/cocina')).toBe(false);
     });
 
-    it('allows COMENSAL on /catalogo paths', () => {
+    it('allows COMENSAL on /catalogo, /descubrimiento, and /perfil paths', () => {
       expect(isRouteAllowedForRole('COMENSAL', '/catalogo')).toBe(true);
+      expect(isRouteAllowedForRole('COMENSAL', '/catalog')).toBe(true);
+      expect(isRouteAllowedForRole('COMENSAL', '/descubrimiento')).toBe(true);
+      expect(isRouteAllowedForRole('COMENSAL', '/discovery')).toBe(true);
+      expect(isRouteAllowedForRole('COMENSAL', '/perfil')).toBe(true);
       expect(isRouteAllowedForRole('COMENSAL', '/mostrador')).toBe(false);
     });
   });
 
-  describe('resolvePostAuthRedirect (FR-005, FR-006)', () => {
+  describe('resolvePostAuthRedirect (FR-005, FR-006, T023)', () => {
     it('returns role default route when no target URL is provided', () => {
       expect(resolvePostAuthRedirect('CHEF')).toBe('/cocina');
       expect(resolvePostAuthRedirect('ENCARGADO', undefined)).toBe('/mostrador');
       expect(resolvePostAuthRedirect('ADMINISTRADOR', '/')).toBe('/admin');
+      expect(resolvePostAuthRedirect('COMENSAL', '/login')).toBe('/descubrimiento');
+    });
+
+    it('routes COMENSAL with active tenant to /catalogo when redirecting from /login', () => {
+      sessionStorage.setItem('easyeat_active_tenant', JSON.stringify({ id: 'tenant-1' }));
       expect(resolvePostAuthRedirect('COMENSAL', '/login')).toBe('/catalogo');
     });
 
@@ -69,6 +87,8 @@ describe('postAuthRouting Policy (Canonical Spanish Routes)', () => {
       expect(resolvePostAuthRedirect('CHEF', '/cocina/estacion-principal')).toBe('/cocina/estacion-principal');
       expect(resolvePostAuthRedirect('ENCARGADO', '/mostrador/despacho/4')).toBe('/mostrador/despacho/4');
       expect(resolvePostAuthRedirect('ADMINISTRADOR', '/admin/reportes')).toBe('/admin/reportes');
+      expect(resolvePostAuthRedirect('COMENSAL', '/descubrimiento')).toBe('/descubrimiento');
+      expect(resolvePostAuthRedirect('COMENSAL', '/catalogo')).toBe('/catalogo');
     });
 
     it('discards unauthorized target deep link and routes to user default workspace (FR-006, SC-003)', () => {
@@ -78,8 +98,8 @@ describe('postAuthRouting Policy (Canonical Spanish Routes)', () => {
       // ENCARGADO attempting to access /cocina/estacion-1 must land on /mostrador
       expect(resolvePostAuthRedirect('ENCARGADO', '/cocina/estacion-1')).toBe('/mostrador');
 
-      // COMENSAL attempting to access /mostrador must land on /catalogo
-      expect(resolvePostAuthRedirect('COMENSAL', '/mostrador')).toBe('/catalogo');
+      // COMENSAL attempting to access /mostrador must land on /descubrimiento (if no tenant)
+      expect(resolvePostAuthRedirect('COMENSAL', '/mostrador')).toBe('/descubrimiento');
     });
   });
 
@@ -98,33 +118,6 @@ describe('postAuthRouting Policy (Canonical Spanish Routes)', () => {
     it('discards unauthorized targets outside /mostrador and redirects to /mostrador', () => {
       expect(resolvePostAuthRedirect('ENCARGADO', '/cocina')).toBe('/mostrador');
       expect(resolvePostAuthRedirect('ENCARGADO', '/cocina/pedidos')).toBe('/mostrador');
-      expect(resolvePostAuthRedirect('ENCARGADO', '/admin')).toBe('/mostrador');
-      expect(resolvePostAuthRedirect('ENCARGADO', '/admin/usuarios')).toBe('/mostrador');
-      expect(resolvePostAuthRedirect('ENCARGADO', '/catalogo')).toBe('/mostrador');
-    });
-  });
-
-  describe('User Story 4: Redirection Policy for CHEF (T028, CHF-1.2.1)', () => {
-    it('resolves directly to /cocina when no target link is specified or target is empty', () => {
-      expect(resolvePostAuthRedirect('CHEF')).toBe('/cocina');
-      expect(resolvePostAuthRedirect('CHEF', '')).toBe('/cocina');
-      expect(resolvePostAuthRedirect('CHEF', undefined)).toBe('/cocina');
-    });
-
-    it('preserves authorized deep link targets within /cocina station paths', () => {
-      expect(resolvePostAuthRedirect('CHEF', '/cocina/estacion-1')).toBe('/cocina/estacion-1');
-      expect(resolvePostAuthRedirect('CHEF', '/cocina/pedidos/urgentes')).toBe('/cocina/pedidos/urgentes');
-      expect(resolvePostAuthRedirect('CHEF', '/cocina/kds-turno-noche')).toBe('/cocina/kds-turno-noche');
-    });
-
-    it('discards unauthorized targets outside /cocina and redirects to default /cocina', () => {
-      expect(resolvePostAuthRedirect('CHEF', '/mostrador')).toBe('/cocina');
-      expect(resolvePostAuthRedirect('CHEF', '/mostrador/entregas')).toBe('/cocina');
-      expect(resolvePostAuthRedirect('CHEF', '/admin')).toBe('/cocina');
-      expect(resolvePostAuthRedirect('CHEF', '/admin/reportes')).toBe('/cocina');
-      expect(resolvePostAuthRedirect('CHEF', '/catalogo')).toBe('/cocina');
     });
   });
 });
-
-

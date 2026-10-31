@@ -23,20 +23,20 @@
 | V5 | `V5__extend_users_profile_and_dietary.sql` | 003 | — |
 | V6 | `V6__create_ingredient_batches_and_refactor_lifecycle.sql` | 004 | PR #126 |
 | V7 | `V7__chef_dish_management.sql` | 005 | PR #160 |
+| V8 | `V8__create_establishments.sql` | 008 | merged into `develop/sprint-2` ahead of spec 007 (exact PR not confirmed from this integration; present on `develop/sprint-2` when spec 007 was integrated 2026-10-31) |
+| V9 | `V9__admin_dish_approval_pricing.sql` | 007 | renumbered from `V8` during the `007-admin-dish-approval-pricing` → `develop/sprint-2` integration (PR #182), per rule 4: spec 008 merged first and kept `V8` |
 
-Spec 006 (`006-recipe-food-cost`, PR #170, merged 2026-10-28) added **no** migration: its recipe model reuses `dish_recipe_ingredients` from 005's `V7`. A feature that needs no schema change takes no version, and that is worth recording so nobody looks for a missing `V8` from it.
+Spec 006 (`006-recipe-food-cost`, PR #170, merged 2026-10-28) added **no** migration: its recipe model reuses `dish_recipe_ingredients` from 005's `V7`. A feature that needs no schema change takes no version, and that is worth recording so nobody looks for a missing version from it.
 
 Repeatable migrations carry no version and are re-applied whenever their content changes: `db/dev/R__seed_dev_users.sql`, `db/dev/R__seed_dev_dishes_and_dietary.sql`.
 
 ## In flight — claimed but not yet merged
 
-| Version | Spec | Status |
-|---|---|---|
-| V8 | **008 and 007, contested — both now written** | `V8__create_establishments.sql` exists on `008-diner-catalog-multi-tenant` (PRs #168, #169, merged into that feature branch only). `V8__admin_dish_approval_pricing.sql` exists on `feat/007/phase-2-foundational` as of 2026-10-28, authored after confirming `V1`–`V7` on the integration branch as rule 2 requires. **Whichever merges to `develop/sprint-2` first keeps `V8`; the other renames its file to `V9` and updates this table.** |
+None. The `V8` contest between specs 007 and 008 (below) is resolved: 008 merged first and kept `V8`; 007 renumbered to `V9` per rule 4, exactly as this table anticipated.
 
-**Renumbering either is cheap, and that is by design.** Spec 007's migration test is named `AdminPricingMigrationTest` and **nothing inside it hardcodes a version**: it locates the migration by its Flyway description and reads the preceding version from `flyway.info()`. A rename changes the filename and this table, nothing else. Spec 005's `V7MigrationAndSeedDevTest` does carry its version in the class name, which rule 5 exists to prevent; it is noted for that spec's owner.
+**Renumbering either was cheap, and that was by design.** Spec 007's migration test is named `AdminPricingMigrationTest` and **nothing inside it hardcodes a version**: it locates the migration by its Flyway description and reads the preceding version from `flyway.info()`. A rename changes the filename and this table, nothing else. Spec 005's `V7MigrationAndSeedDevTest` does carry its version in the class name, which rule 5 exists to prevent; it is noted for that spec's owner.
 
-**Why 007 does not simply yield `V9`.** It would not help 008 and would cost something. With `outOfOrder` disabled, a `V8` merged *after* an applied `V9` sits below the highest applied version and is rejected on every database not recreated — so 008 would have to renumber to `V10` rather than `V9`, and `V8` would be left as a permanent gap. Deferring a number only helps when the deferrer merges second, which nobody can promise in advance. The rule is merge order, and it is the same rule for both.
+**Why 007 did not simply yield `V9` in advance.** Deferring a number only helps when the deferrer merges second, which nobody could promise ahead of time — the rule is merge order, decided only once an actual integration happens, not by courtesy. As it played out, 008 did merge first (it was already on `develop/sprint-2` when 007's integration PR #182 was opened), so 007 renumbered its already-written `V8__admin_dish_approval_pricing.sql` to `V9__admin_dish_approval_pricing.sql` during that integration, exactly as this table anticipated.
 
 The two files are independent in content, so renumbering either is a rename plus a row here: 007's alters `dishes` and creates the two audit tables; 008's creates `establishments` and, verified on its branch, does **not** touch `dishes.status` or `chk_dishes_status`, despite `008/data-model.md` planning to redefine that constraint. If 008 ever writes that redefinition it collides with spec 007's `PUBLISHED`, which is a design conflict rather than a numbering one — recorded in `specs/007-admin-dish-approval-pricing/research.md §3.7`.
 
