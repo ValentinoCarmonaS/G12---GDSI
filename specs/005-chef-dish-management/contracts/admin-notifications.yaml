@@ -1,0 +1,192 @@
+openapi: 3.0.3
+info:
+  title: EasyEat - Internal Admin Notifications API
+  version: 1.0.0
+  description: |
+    OpenAPI 3.0 contract for Administrator internal alerts and notifications (spec 005).
+    Allows the restaurant administrator to query submitted dishes pending price review and mark notifications as read.
+servers:
+  - url: /api/v1
+    description: EasyEat REST API v1
+tags:
+  - name: Admin Notifications
+    description: Internal alert query and status management for restaurant administrators
+
+paths:
+  /admin/notifications:
+    get:
+      tags:
+        - Admin Notifications
+      summary: List administrative notifications (CHF-2.2.4)
+      description: |
+        Returns notifications belonging to the authenticated Administrator's establishment.
+        Can be filtered to display unread alerts only. Ordered by creation timestamp descending.
+      operationId: listAdminNotifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: unreadOnly
+          in: query
+          required: false
+          description: If true, returns only notifications with isRead = false
+          schema:
+            type: boolean
+            default: false
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/notifications/{id}/read:
+    patch:
+      tags:
+        - Admin Notifications
+      summary: Mark notification as read (CHF-2.2.4)
+      description: Sets isRead to true for the specified notification.
+      operationId: markNotificationAsRead
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID of the notification
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          example: "DISH_SUBMITTED_FOR_REVIEW"
+        title:
+          type: string
+          example: "Nuevo plato enviado a revisión"
+        message:
+          type: string
+          example: "El Chef Valentino ha enviado la ficha técnica 'Risotto de Hongos' para revisión de precios."
+        dishId:
+          type: string
+          format: uuid
+        chefId:
+          type: string
+          format: uuid
+        isRead:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+
+    NotificationPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationResponse'
+        unreadCount:
+          type: integer
+          example: 3
+        pageNumber:
+          type: integer
+          example: 0
+        pageSize:
+          type: integer
+          example: 20
+        totalElements:
+          type: integer
+          example: 12
+        totalPages:
+          type: integer
+          example: 1
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+
+  responses:
+    Unauthorized:
+      description: Missing, invalid, or expired JWT token (RFC 7807)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Forbidden:
+      description: Access denied due to insufficient permissions (Requires ADMINISTRADOR role)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    NotFound:
+      description: Notification not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'

@@ -10,13 +10,18 @@ import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { CounterWorkspacePage } from '../pages/CounterWorkspacePage';
 import { KitchenWorkspacePage } from '../pages/KitchenWorkspacePage';
 import { ChefIngredientsPage } from '../pages/ChefIngredientsPage';
+import { ChefDishesPage } from '../pages/ChefDishesPage';
+import { ChefDishEditorPage } from '../pages/ChefDishEditorPage';
 import { AdminWorkspacePage } from '../pages/AdminWorkspacePage';
 import { StaffManagementPage } from '../pages/StaffManagementPage';
 import { InventoryManagementPage } from '../pages/InventoryManagementPage';
 import { CatalogPage } from '../pages/CatalogPage';
 import { FirstLoginPasswordPage } from '../pages/FirstLoginPasswordPage';
 import { ProfilePage } from '../pages/ProfilePage';
+import { DishCostAuditPage } from '../pages/DishCostAuditPage';
+import { AdminDishReviewPage } from '../pages/AdminDishReviewPage';
 import { VerifyEmailPage } from '../pages/VerifyEmailPage';
+import { EstablishmentDiscoveryPage } from '../pages/EstablishmentDiscoveryPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -106,6 +111,32 @@ export const AppRoutes: React.FC = () => {
       />
       <Route path="/kds/ingredients" element={<Navigate to="/cocina/ingredientes" replace />} />
 
+      {/* Role-Protected Dish & Recipe Management (CHEF) */}
+      <Route
+        path="/cocina/platos"
+        element={
+          <RoleRouteGuard allowedRoles={['CHEF']}>
+            <ChefDishesPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/cocina/platos/nuevo"
+        element={
+          <RoleRouteGuard allowedRoles={['CHEF']}>
+            <ChefDishEditorPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/cocina/platos/:id"
+        element={
+          <RoleRouteGuard allowedRoles={['CHEF']}>
+            <ChefDishEditorPage />
+          </RoleRouteGuard>
+        }
+      />
+
       <Route
         path="/cocina/*"
         element={
@@ -138,6 +169,22 @@ export const AppRoutes: React.FC = () => {
 
       {/* Role-Protected Back-Office Administration Panel (ADMINISTRADOR) */}
       <Route
+        path="/admin/dishes/:id/cost-audit"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <DishCostAuditPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/dishes"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <AdminDishReviewPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
         path="/admin/*"
         element={
           <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
@@ -163,6 +210,17 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route path="/profile" element={<Navigate to="/perfil" replace />} />
+
+      {/* Role-Protected Diner Discovery Route (COMENSAL) */}
+      <Route
+        path="/descubrimiento"
+        element={
+          <RoleRouteGuard allowedRoles={['COMENSAL']}>
+            <EstablishmentDiscoveryPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route path="/discovery" element={<Navigate to="/descubrimiento" replace />} />
 
       {/* Diner Home / Catalog View (Public for guests and diners) */}
       <Route path="/catalogo/*" element={<CatalogPage />} />

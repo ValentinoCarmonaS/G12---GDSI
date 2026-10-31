@@ -21,6 +21,7 @@
         <java.version>21</java.version>
         <jjwt.version>0.12.6</jjwt.version>
         <testcontainers.version>1.21.4</testcontainers.version>
+        <jacoco.version>0.8.12</jacoco.version>
     </properties>
 
     <dependencyManagement>
@@ -131,6 +132,75 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <!--
+                                  Measured on 2026-10-28 before this gate was added: LINE 89.91%,
+                                  INSTRUCTION 88.58%, BRANCH 68.33%. The two limits below therefore
+                                  hold today with room to spare, and the gate cannot break the build
+                                  for work already merged.
+
+                                  BRANCH is deliberately NOT gated: at 68.33% a project-wide 80%
+                                  rule would fail immediately, and raising the bar on code this
+                                  feature does not own is not this feature's call. Recorded as a
+                                  finding instead.
+
+                                  The scope is BUNDLE rather than PACKAGE because
+                                  com.easyeat.dish.service is shared with spec 006: a package rule
+                                  would subject another spec's future work to a gate chosen here.
+                                -->
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.80</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludes>
+                        <!-- Generated or declaration-only: no behaviour to cover. -->
+                        <exclude>**/EasyEatApplication.class</exclude>
+                        <exclude>**/dto/**</exclude>
+                        <exclude>**/config/**</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>

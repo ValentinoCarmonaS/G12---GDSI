@@ -62,4 +62,63 @@ class DevSeedDishesMigrationTest {
         );
         assertThat(restrictions).contains("CELIAC", "VEGETARIAN", "PEANUTS", "SOY", "WHEAT");
     }
+
+    /**
+     * Added by spec 007 (T016). Decision D5, which would have published these five dishes, is
+     * withdrawn — see {@code specs/007-admin-dish-approval-pricing/research.md §3.6}. What the
+     * Administrative Back-Office depends on is the opposite state: five dishes that are pending,
+     * unpriced and never approved, which is what its review inbox exists to work on and what its
+     * quickstart approves one of.
+     *
+     * <p>{@code status} is asserted here as well as in spec 005's own
+     * {@code V7MigrationAndSeedDevTest} on purpose. Duplicating it records the state this feature
+     * depends on inside this feature's own suite, instead of trusting another spec to preserve it.
+     */
+    @Test
+    @DisplayName("the dev dishes are pending, unpriced and never approved (spec 007, D5 withdrawn)")
+    void devSeedDishesArePendingAndUnpriced() {
+        UUID tenantId = UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11");
+
+        List<java.util.Map<String, Object>> dishes = jdbcTemplate.queryForList(
+                "SELECT name, status, retail_price, published_at FROM dishes "
+                        + "WHERE tenant_id = ? ORDER BY name",
+                tenantId
+        );
+
+        assertThat(dishes).hasSizeGreaterThanOrEqualTo(5);
+
+        assertThat(dishes)
+                .allSatisfy(dish -> {
+                    assertThat(dish.get("status"))
+                            .as("the review inbox of spec 007 decides dishes that are awaiting a "
+                                    + "decision, so the dev fixture must be pending")
+                            .isEqualTo("PENDING_PRICE");
+                    assertThat(dish.get("retail_price"))
+                            .as("stated explicitly as NULL in the seed: V8's backfill would "
+                                    + "otherwise price these rows on a pre-existing database and "
+                                    + "leave them unpriced on a fresh one")
+                            .isNull();
+                    assertThat(dish.get("published_at"))
+                            .as("a dish never approved has no publication instant")
+                            .isNull();
+                });
+    }
+
+    @Test
+    @DisplayName("the dev dishes carry no administrative review history (spec 007, D5 withdrawn)")
+    void devSeedDishesHaveNoReviewHistory() {
+        UUID tenantId = UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11");
+
+        Integer reviewRows = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM dish_review_history WHERE tenant_id = ?",
+                Integer.class,
+                tenantId
+        );
+
+        assertThat(reviewRows)
+                .as("D5 would have inserted a synthetic APPROVED row per dish. It is withdrawn, "
+                        + "and a pending dish has no decision to record — a synthetic audit trail "
+                        + "would be a fabricated history of a decision nobody took")
+                .isZero();
+    }
 }

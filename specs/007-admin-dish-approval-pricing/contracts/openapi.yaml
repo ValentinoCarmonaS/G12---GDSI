@@ -1,0 +1,860 @@
+openapi: 3.0.3
+info:
+  title: EasyEat - Administrative Dish Audit, Retail Pricing (PVP) and Catalog Approval API
+  version: 1.0.0
+  description: |
+    API contracts for the Administrative Back-Office of dish governance (Sprint 2 - ADM-5.1.1,
+    ADM-5.2.1, ADM-5.2.2, ADM-5.2.3), consuming the dish lifecycle of spec 005 and the Food Cost
+    engine of spec 006.
+
+    Conventions inherited from the existing codebase:
+    - Administrative endpoints live under `/api/v1/admin/**`, which `SecurityConfig` already gates
+      with `hasAnyRole("ADMINISTRADOR","ADMIN")` at the filter chain, in addition to the
+      controller-level `@PreAuthorize`. The Chef-facing feedback endpoint stays on the `/dishes/**`
+      surface used by spec 005 and is gated by `@PreAuthorize("hasRole('CHEF')")` only.
+    - Errors are RFC 9457 `application/problem+json` documents emitted by the single
+      `GlobalExceptionHandler`.
+    - Monetary values are exact 2-decimal decimals; recipe quantities and unit costs carry 4 decimals.
+    - The margin is NEVER persisted: it is recomputed from the live Food Cost on every consultation.
+
+    Round-trip precision: deriving a price from a target margin is correctly rounded (HALF_UP, scale
+    2), but re-deriving the margin from that stored price deviates by up to
+    `0.5 * foodCost / (retailPrice * (retailPrice - 0.005))` percentage points. The +/-0.01 pp
+    tolerance of FR-008 holds only when `retailPrice >= 50 * (1 - marginPct/100)`; responses expose
+    `marginTolerancePp` and `toleranceThresholdPrice` so clients can disclose the real precision
+    instead of promising a bound that does not hold.
+servers:
+  - url: /api/v1
+    description: Production & Local Gateway
+
+tags:
+  - name: Admin Dish Review
+    description: Segmented review inbox, audit detail and administrative history (ADM-5.1.1)
+  - name: Admin Dish Pricing
+    description: Retail price (PVP) assignment and price audit trail (ADM-5.2.1)
+  - name: Admin Dish Decisions
+    description: Approval / publication gate and rejection with feedback (ADM-5.2.2, ADM-5.2.3)
+  - name: Chef Dish Feedback
+    description: Chef-facing rejection feedback, financially blind by construction (FR-023)
+
+paths:
+  /admin/dishes/review-inbox:
+    get:
+      tags: [Admin Dish Review]
+      summary: Segmented review inbox with pagination and pending count (ADM-5.1.1)
+      description: |
+        Owning requirements: FR-002, FR-003, FR-004, FR-005.
+        Allowed roles: ADMINISTRADOR (alias ADMIN). State gate: none; each tab filters by status.
+
+        - `PENDING`: dishes in `PENDING_PRICE`, ordered FIFO by `submittedAt` ascending.
+        - `PUBLISHED`: dishes in `PUBLISHED`, ordered by `publishedAt` descending.
+        - `HISTORY`: dishes with at least one administrative review cycle, ordered by the most
+          recent review event descending.
+
+        `pendingCount` is returned on every tab so the badge never depends on the active tab.
+        A page beyond the last one returns an empty `items[]` with accurate metadata and HTTP 200.
+      operationId: getDishReviewInbox
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tab
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/InboxTab'
+        - name: page
+          in: query
+          required: false
+          description: Zero-based page index.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: One page of the requested tab
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishReviewInboxPageResponse'
+        '400':
+          description: Unknown tab or malformed pagination parameters
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden - role is not ADMINISTRADOR
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+
+  /admin/dishes/{id}/review-detail:
+    get:
+      tags: [Admin Dish Review]
+      summary: Full culinary file, Food Cost audit and current pricing state (ADM-5.1.1, ADM-5.1.2)
+      description: |
+        Owning requirements: FR-006, FR-007, FR-012, FR-015, FR-017.
+        Allowed roles: ADMINISTRADOR (alias ADMIN).
+        State gate: `PENDING_PRICE` or `PUBLISHED`; a dish in `DRAFT` returns 409.
+
+        Embeds spec 006's `FoodCostAuditResponse` verbatim, computed in-process for any status
+        (upstream requirement R-006-1), so the Back-Office needs a single call for both pending and
+        published dishes. The margin and the publication-gate evaluation are recomputed on every
+        request and never read from storage.
+      operationId: getDishReviewDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DishId'
+      responses:
+        '200':
+          description: Audit and pricing detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishReviewDetailResponse'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden - non-admin role or cross-tenant dish
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '404':
+          description: Dish not found in the caller's establishment
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '409':
+          description: Dish is in DRAFT and has not been submitted for review
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+
+  /admin/dishes/{id}/retail-price:
+    put:
+      tags: [Admin Dish Pricing]
+      summary: Assign or update the retail price (PVP) (ADM-5.2.1)
+      description: |
+        Owning requirements: FR-009, FR-010, FR-011, FR-013, FR-014, FR-025.
+        Allowed roles: ADMINISTRADOR (alias ADMIN).
+        State gate: `PENDING_PRICE` or `PUBLISHED`. Repricing a published dish changes neither its
+        status, nor its recipe, nor its catalog visibility.
+
+        `expectedRetailPrice` is REQUIRED and nullable. Unlike approval and rejection, a price save
+        is legal from the dish's current state no matter how stale the panel is, so a status
+        predicate cannot detect a lost update between two concurrent saves - only the value the
+        client read can. The save is applied as a conditional UPDATE carrying
+        `AND retail_price IS NOT DISTINCT FROM :expectedRetailPrice`, and is accepted only if it
+        affected exactly one row. Omitting the field is a client defect and yields 400 with a field
+        error, never a silent overwrite. Sending `null` is NOT omission: it is the positive
+        assertion "the dish was unpriced when I read it", which is how the first price is set.
+
+        Writes one immutable `dish_price_history` row capturing actor, timestamp, previous price,
+        new price and the Food Cost prevailing at that instant.
+      operationId: setDishRetailPrice
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DishId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetRetailPriceRequest'
+      responses:
+        '200':
+          description: Price persisted and audited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishPricingResponse'
+        '400':
+          description: |
+            Invalid retail price (<= 0, non-numeric, more than two decimals) or `expectedRetailPrice`
+            absent from the body. Body carries `errors[]` binding each message to its field.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ValidationProblemDetail' }
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden - non-admin role or cross-tenant dish
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '404':
+          description: Dish not found in the caller's establishment
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '409':
+          description: |
+            `dish-invalid-state` (dish is in DRAFT) or `dish-stale-price` (another administrator
+            saved first; `currentRetailPrice` is returned so the client can refresh).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ConflictProblemDetail' }
+        '422':
+          description: |
+            `acknowledgement-required` - the price yields a negative margin and
+            `acknowledgeNegativeMargin` was not sent (FR-014).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/AcknowledgementProblemDetail' }
+
+  /admin/dishes/{id}/approval:
+    post:
+      tags: [Admin Dish Decisions]
+      summary: Evaluate the publication gate and publish the dish (ADM-5.2.2)
+      description: |
+        Owning requirements: FR-015, FR-016, FR-017, FR-018, FR-019, FR-025.
+        Allowed roles: ADMINISTRADOR (alias ADMIN).
+        State gate: `PENDING_PRICE` transitions to `PUBLISHED`; `PUBLISHED` is an idempotent no-op
+        returning 200 with `alreadyPublished: true` and the ORIGINAL `publishedAt`, so the UI does
+        not misreport it as a fresh publication; `DRAFT` is rejected with 409.
+
+        All three publication-gate conditions are re-evaluated server-side at the moment of the
+        transition, not at submission time: a recipe emptied or whose ingredients were discontinued
+        after the Chef submitted is caught here. Acknowledgements (unpriced ingredients, negative
+        margin) are client-side confirmations carried in the request; the gate conditions are not.
+
+        No expected-state field is carried. The transition is applied as a conditional UPDATE
+        carrying `AND status = 'PENDING_PRICE'` and is accepted only if it affected exactly one row,
+        which delivers first-decision-wins for both the sequential and the overlapping race: under
+        READ COMMITTED the second statement blocks on the row lock, re-evaluates its predicate
+        against the committed row and affects nothing. Zero rows yields `dish-already-decided` with
+        the status that now prevails.
+      operationId: approveDish
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DishId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveDishRequest'
+      responses:
+        '200':
+          description: Dish published, or already published (idempotent)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishApprovalResponse'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden - non-admin role or cross-tenant dish
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '404':
+          description: Dish not found in the caller's establishment
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '409':
+          description: |
+            `dish-invalid-state` (dish is in DRAFT - FR-019) or `dish-already-decided` (another
+            administrator rejected it first; the conditional UPDATE affected no row).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ConflictProblemDetail' }
+        '422':
+          description: |
+            `publication-gate-failed` with `unmetConditions[]` naming each failed condition
+            (RETAIL_PRICE_MISSING, EMPTY_RECIPE, ALLERGENS_UNCONFIRMED), or
+            `acknowledgement-required` with `requiredAcknowledgements[]`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/PublicationGateProblemDetail' }
+
+  /admin/dishes/{id}/rejection:
+    post:
+      tags: [Admin Dish Decisions]
+      summary: Reject the dish and return it to the kitchen with mandatory feedback (ADM-5.2.3)
+      description: |
+        Owning requirements: FR-020, FR-021, FR-022, FR-024, FR-025.
+        Allowed roles: ADMINISTRADOR (alias ADMIN).
+        State gate: only from `PENDING_PRICE`. `PUBLISHED` yields 409 (unpublishing is out of scope,
+        FR-024); `DRAFT` yields 409 (FR-019).
+
+        The comment is mandatory, 10 to 1000 characters after trimming, never whitespace-only. It is
+        stored and rendered as literal text; markup is never interpreted.
+      operationId: rejectDish
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DishId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectDishRequest'
+      responses:
+        '200':
+          description: Dish returned to DRAFT and the rejection recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishRejectionResponse'
+        '400':
+          description: |
+            Comment missing, blank, shorter than 10 or longer than 1000 characters. The dish stays in
+            `PENDING_PRICE`. Body carries `errors[]` bound to the `comment` field.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ValidationProblemDetail' }
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden - non-admin role or cross-tenant dish
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '404':
+          description: Dish not found in the caller's establishment
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '409':
+          description: |
+            `dish-invalid-state` (dish is PUBLISHED or DRAFT) or `dish-already-decided` (another
+            administrator approved it first; the conditional UPDATE affected no row).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ConflictProblemDetail' }
+
+  /admin/dishes/{id}/review-history:
+    get:
+      tags: [Admin Dish Review]
+      summary: Administrative review and price history of a dish (ADM-5.2.3)
+      description: |
+        Owning requirements: FR-010, FR-022, SC-005, SC-008.
+        Allowed roles: ADMINISTRADOR (alias ADMIN). State gate: none.
+        Returns both audit trails in chronological order; this is the only surface where review
+        decisions and price changes are presented together.
+      operationId: getDishReviewHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DishId'
+      responses:
+        '200':
+          description: Full chronological audit trail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishAuditHistoryResponse'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden - non-admin role or cross-tenant dish
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '404':
+          description: Dish not found in the caller's establishment
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+
+  /dishes/{id}/review-feedback:
+    get:
+      tags: [Chef Dish Feedback]
+      summary: Rejection feedback for the authoring kitchen (ADM-5.2.3, Chef side)
+      description: |
+        Owning requirements: FR-023, SC-003.
+        Allowed roles: CHEF, within the dish's own establishment. State gate: none.
+
+        FINANCIAL CONFIDENTIALITY IS STRUCTURAL, NOT COSMETIC. `ChefReviewFeedbackResponse` and
+        `ChefReviewFeedbackEntry` declare no monetary, cost, margin or price property at all: there
+        is no field for the frontend to choose not to render, and no serialization setting can leak
+        one. Acquisition costs, Food Cost, margins and the retail price history are unreachable
+        through this endpoint by construction.
+      operationId: getChefReviewFeedback
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DishId'
+      responses:
+        '200':
+          description: Review feedback for the dish, newest cycle first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChefReviewFeedbackResponse'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden - caller is not a CHEF of the dish's establishment
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '404':
+          description: Dish not found in the caller's establishment
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    DishId:
+      name: id
+      in: path
+      required: true
+      description: Unique identifier of the dish
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    InboxTab:
+      type: string
+      enum: [PENDING, PUBLISHED, HISTORY]
+
+    DishStatus:
+      type: string
+      description: |
+        Lifecycle status. DRAFT and PENDING_PRICE are owned by spec 005; PUBLISHED is introduced by
+        this feature.
+      enum: [DRAFT, PENDING_PRICE, PUBLISHED]
+
+    DishCategory:
+      type: string
+      description: Closed culinary category owned by spec 005.
+      enum: [Entradas, Platos principales, Postres, Bebidas, Ensaladas]
+
+    ReviewEventType:
+      type: string
+      enum: [APPROVED, REJECTED]
+
+    PublicationGateCondition:
+      type: string
+      enum: [RETAIL_PRICE_MISSING, EMPTY_RECIPE, ALLERGENS_UNCONFIRMED]
+
+    AcknowledgementKind:
+      type: string
+      enum: [UNPRICED_INGREDIENTS, NEGATIVE_MARGIN]
+
+    DishReviewInboxItemResponse:
+      type: object
+      required:
+        - dishId
+        - name
+        - category
+        - status
+        - isResubmission
+        - reviewCycleCount
+        - authorDeactivated
+      properties:
+        dishId: { type: string, format: uuid }
+        name: { type: string, example: Risotto de Hongos Portobello }
+        category: { $ref: '#/components/schemas/DishCategory' }
+        status: { $ref: '#/components/schemas/DishStatus' }
+        authorName:
+          type: string
+          nullable: true
+          description: Null when the dish has no recorded author; the UI renders "Autor no registrado".
+          example: Camila Duarte
+        authorDeactivated:
+          type: boolean
+          description: |
+            True when the authoring Chef's account is SUSPENDED. Informational only - it never
+            blocks any administrative action on the dish (FR-026).
+          example: false
+        submittedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Instant of the DRAFT -> PENDING_PRICE transition, written by spec 005 (R-005-1) on
+            every transition including resubmissions. The pending tab is ordered by this column
+            ascending, and by nothing else: the creation-time fallback this description used to
+            offer is WITHDRAWN and not authorised (plan.md R-005-1), because it would silently
+            stop being FIFO by submission while still looking ordered.
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        retailPrice:
+          type: number
+          format: decimal
+          nullable: true
+          example: 11250.00
+        isResubmission:
+          type: boolean
+          description: True when the dish has at least one past rejection (FR-004).
+          example: true
+        reviewCycleCount:
+          type: integer
+          description: Number of past rejections; the current cycle number is this value plus one.
+          example: 1
+
+    DishReviewInboxPageResponse:
+      type: object
+      required: [items, page, size, totalElements, totalPages, hasNext, pendingCount]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/DishReviewInboxItemResponse' }
+        page: { type: integer, example: 0 }
+        size: { type: integer, example: 20 }
+        totalElements: { type: integer, format: int64, example: 37 }
+        totalPages: { type: integer, example: 2 }
+        hasNext: { type: boolean, example: true }
+        pendingCount:
+          type: integer
+          format: int64
+          description: Total dishes awaiting decision; returned on every tab for the badge (FR-003).
+          example: 37
+
+    MarginSummary:
+      type: object
+      description: |
+        Always recomputed from the live Food Cost; never persisted (FR-012).
+      required: [foodCost, hasUnpricedIngredients, marginDerivable]
+      properties:
+        foodCost:
+          type: number
+          format: decimal
+          example: 4500.00
+        retailPrice:
+          type: number
+          format: decimal
+          nullable: true
+          example: 11250.00
+        marginPct:
+          type: number
+          format: decimal
+          nullable: true
+          description: Scale 4, HALF_UP. Null while the dish has no retail price.
+          example: 60.0000
+        marginTolerancePp:
+          type: number
+          format: decimal
+          nullable: true
+          description: |
+            Worst-case deviation, in percentage points, of a margin re-derived from the stored
+            2-decimal price: `0.5 * foodCost / (retailPrice * (retailPrice - 0.005))`.
+          example: 0.0000
+        toleranceThresholdPrice:
+          type: number
+          format: decimal
+          nullable: true
+          description: |
+            `50 * (1 - marginPct/100)`. At or above this price the +/-0.01 pp round-trip tolerance
+            holds; below it the client must disclose the achievable precision instead.
+          example: 20.00
+        hasUnpricedIngredients:
+          type: boolean
+          example: false
+        marginDerivable:
+          type: boolean
+          description: False when foodCost is 0.00, which disables margin-to-price derivation (FR-013).
+          example: true
+
+    PublicationGateStatus:
+      type: object
+      required: [satisfied, unmetConditions, requiredAcknowledgements]
+      properties:
+        satisfied: { type: boolean, example: false }
+        unmetConditions:
+          type: array
+          items: { $ref: '#/components/schemas/PublicationGateCondition' }
+        requiredAcknowledgements:
+          type: array
+          items: { $ref: '#/components/schemas/AcknowledgementKind' }
+
+    DishReviewDetailResponse:
+      type: object
+      required: [dishId, name, category, status, allergensConfirmed, margin, publicationGate, recipeAbsent, reviewCycleCount, isResubmission]
+      properties:
+        dishId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        category: { $ref: '#/components/schemas/DishCategory' }
+        status: { $ref: '#/components/schemas/DishStatus' }
+        retailPrice:
+          type: number
+          format: decimal
+          nullable: true
+          description: |
+            The dish's assigned PVP, or `null` when it has never been priced. Echo this value back
+            as `expectedRetailPrice` when repricing; there is no version token, because concurrency
+            is controlled per operation (FR-025).
+          example: 11250.00
+        photoUrl: { type: string, nullable: true }
+        authorName: { type: string, nullable: true }
+        authorDeactivated: { type: boolean }
+        allergensConfirmed: { type: boolean }
+        submittedAt: { type: string, format: date-time, nullable: true }
+        publishedAt: { type: string, format: date-time, nullable: true }
+        reviewCycleCount: { type: integer, example: 1 }
+        isResubmission: { type: boolean, example: true }
+        margin: { $ref: '#/components/schemas/MarginSummary' }
+        publicationGate: { $ref: '#/components/schemas/PublicationGateStatus' }
+        recipeAbsent:
+          type: boolean
+          description: |
+            True when the dish holds no recipe lines at all (FR-037). `foodCostAudit` is then null
+            and `margin.foodCost` is null, and this flag is what distinguishes that legitimate
+            state from a failed lookup - a null audit on its own would be ambiguous. The dish is
+            unpublishable while this holds, which the publication gate reports as EMPTY_RECIPE.
+          example: false
+        foodCostAudit:
+          nullable: true
+          description: |
+            Spec 006's `FoodCostAuditResponse`, embedded verbatim and computed in-process for any
+            status (R-006-1). Its itemized shape is owned by
+            `specs/006-recipe-food-cost/contracts/openapi.yaml` and is not redefined here.
+            Null when `recipeAbsent` is true: there is nothing to itemize.
+          type: object
+
+    SetRetailPriceRequest:
+      type: object
+      required: [retailPrice, expectedRetailPrice]
+      properties:
+        retailPrice:
+          type: number
+          format: decimal
+          description: Strictly positive, at most two decimal places.
+          example: 11250.00
+        expectedRetailPrice:
+          type: number
+          format: decimal
+          nullable: true
+          description: |
+            REQUIRED, and `null` is a valid value. The `retailPrice` read when the panel was opened,
+            or `null` if the dish was unpriced then. A mismatch means another administrator saved in
+            the meantime and yields 409 `dish-stale-price`. Absent from the body yields 400.
+          example: 10800.00
+        acknowledgeNegativeMargin:
+          type: boolean
+          default: false
+          description: Explicit confirmation that a price below the Food Cost is intended (FR-014).
+
+    DishPricingResponse:
+      type: object
+      required: [dishId, status, margin, priceHistoryEntryId]
+      properties:
+        dishId: { type: string, format: uuid }
+        status: { $ref: '#/components/schemas/DishStatus' }
+        margin: { $ref: '#/components/schemas/MarginSummary' }
+        priceHistoryEntryId:
+          type: string
+          format: uuid
+          description: Identifier of the immutable audit row written by this call (FR-010, SC-008).
+
+    ApproveDishRequest:
+      type: object
+      properties:
+        acknowledgeUnpricedIngredients:
+          type: boolean
+          default: false
+        acknowledgeNegativeMargin:
+          type: boolean
+          default: false
+
+    DishApprovalResponse:
+      type: object
+      required: [dishId, status, alreadyPublished, publishedAt]
+      properties:
+        dishId: { type: string, format: uuid }
+        status: { $ref: '#/components/schemas/DishStatus' }
+        alreadyPublished:
+          type: boolean
+          description: |
+            True when the dish was already PUBLISHED and this call changed nothing: no status
+            change and no audit row (FR-018). The UI must report "ya estaba
+            publicado", not a new publication.
+          example: false
+        publishedAt:
+          type: string
+          format: date-time
+          description: Original publication instant; unchanged on an idempotent call.
+        reviewHistoryEntryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Null on an idempotent call, since no audit row is created.
+
+    RejectDishRequest:
+      type: object
+      required: [comment]
+      properties:
+        comment:
+          type: string
+          minLength: 10
+          maxLength: 1000
+          description: Mandatory feedback, 10 to 1000 characters after trimming, never blank.
+          example: "El costo del salmón dispara el food cost. Reemplazalo por merluza y reenviá la ficha."
+
+    DishRejectionResponse:
+      type: object
+      required: [dishId, status, cycleNumber, reviewHistoryEntryId]
+      properties:
+        dishId: { type: string, format: uuid }
+        status:
+          allOf: [{ $ref: '#/components/schemas/DishStatus' }]
+          description: Always DRAFT after a successful rejection.
+        cycleNumber: { type: integer, example: 2 }
+        reviewHistoryEntryId: { type: string, format: uuid }
+
+    DishReviewHistoryEntryResponse:
+      type: object
+      required: [entryId, cycleNumber, eventType, reviewerName, createdAt]
+      properties:
+        entryId: { type: string, format: uuid }
+        cycleNumber: { type: integer, example: 1 }
+        eventType: { $ref: '#/components/schemas/ReviewEventType' }
+        reviewerName: { type: string, example: "Lucía Ferraro" }
+        comment: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+
+    DishPriceHistoryEntryResponse:
+      type: object
+      required: [entryId, newPrice, foodCostSnapshot, actorName, createdAt]
+      properties:
+        entryId: { type: string, format: uuid }
+        previousPrice: { type: number, format: decimal, nullable: true, example: 9500.00 }
+        newPrice: { type: number, format: decimal, example: 11250.00 }
+        foodCostSnapshot:
+          type: number
+          format: decimal
+          description: |
+            Food Cost prevailing when the price was decided. An audit fact, never read back to
+            compute a displayed margin - which keeps FR-012 intact.
+          example: 4500.00
+        actorName: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    DishAuditHistoryResponse:
+      type: object
+      required: [dishId, reviewEvents, priceChanges]
+      properties:
+        dishId: { type: string, format: uuid }
+        reviewEvents:
+          type: array
+          items: { $ref: '#/components/schemas/DishReviewHistoryEntryResponse' }
+        priceChanges:
+          type: array
+          items: { $ref: '#/components/schemas/DishPriceHistoryEntryResponse' }
+
+    ChefReviewFeedbackEntry:
+      type: object
+      description: |
+        Deliberately carries only text, time and reviewer identity. No cost, margin or price property
+        exists on this schema (FR-023, SC-003).
+      required: [cycleNumber, reviewerName, comment, createdAt]
+      properties:
+        cycleNumber: { type: integer, example: 1 }
+        reviewerName: { type: string, example: "Lucía Ferraro" }
+        comment: { type: string }
+        createdAt: { type: string, format: date-time }
+      additionalProperties: false
+
+    ChefReviewFeedbackResponse:
+      type: object
+      required: [dishId, status, entries]
+      properties:
+        dishId: { type: string, format: uuid }
+        status: { $ref: '#/components/schemas/DishStatus' }
+        entries:
+          type: array
+          description: Rejection feedback, newest cycle first. Empty when never rejected.
+          items: { $ref: '#/components/schemas/ChefReviewFeedbackEntry' }
+      additionalProperties: false
+
+    ProblemDetail:
+      type: object
+      description: RFC 9457 document emitted by the shared GlobalExceptionHandler.
+      required: [type, title, status]
+      properties:
+        type: { type: string, format: uri, example: https://easyeat.com/errors/dish-invalid-state }
+        title: { type: string, example: Invalid Dish State }
+        status: { type: integer, example: 409 }
+        detail: { type: string }
+        instance: { type: string, example: "/api/v1/admin/dishes/7d6c.../approval" }
+
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field: { type: string, example: retailPrice }
+        message: { type: string, example: El PVP admite como máximo dos decimales. }
+
+    ValidationProblemDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetail'
+        - type: object
+          description: |
+            400 for the domain validations this feature owns (`invalid-retail-price`,
+            `invalid-rejection-comment`, `expected-retail-price-required`), matching the `errors[]` shape the
+            existing handler already emits for bean validation.
+          required: [errors]
+          properties:
+            errors:
+              type: array
+              items: { $ref: '#/components/schemas/FieldError' }
+
+    ConflictProblemDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetail'
+        - type: object
+          description: |
+            409 taxonomy, so the client can tell the three cases apart:
+            - `https://easyeat.com/errors/dish-already-decided` - someone else already decided this
+              dish; `currentStatus` says what it became.
+            - `https://easyeat.com/errors/dish-invalid-state` - the action is illegal from the
+              current state (approve from DRAFT, reject a PUBLISHED dish).
+            - `https://easyeat.com/errors/dish-stale-price` - the dish's retail price changed since
+              it was read; `currentRetailPrice` lets the client refresh and retry.
+          properties:
+            currentStatus: { $ref: '#/components/schemas/DishStatus' }
+            requiredStatus: { $ref: '#/components/schemas/DishStatus' }
+            expectedRetailPrice: { type: number, format: decimal, nullable: true }
+            currentRetailPrice: { type: number, format: decimal, nullable: true }
+            decidedAt: { type: string, format: date-time }
+
+    PublicationGateProblemDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetail'
+        - type: object
+          description: 422 `publication-gate-failed`; one entry per unmet condition (FR-015).
+          required: [unmetConditions]
+          properties:
+            unmetConditions:
+              type: array
+              items: { $ref: '#/components/schemas/PublicationGateCondition' }
+
+    AcknowledgementProblemDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetail'
+        - type: object
+          description: 422 `acknowledgement-required` (FR-014, FR-017).
+          required: [requiredAcknowledgements]
+          properties:
+            requiredAcknowledgements:
+              type: array
+              items: { $ref: '#/components/schemas/AcknowledgementKind' }

@@ -1,0 +1,166 @@
+openapi: 3.0.3
+info:
+  title: EasyEat - Automated Food Cost Audit API (ADM-5.1.2)
+  version: 1.0.0
+  description: API contracts for automated food cost auditing and declared dietary tags for Administrator review (Sprint 2 - ADM-5.1.2).
+servers:
+  - url: /api/v1
+    description: Production & Local Gateway
+
+paths:
+  /dishes/{id}/cost-audit:
+    get:
+      tags:
+        - Admin Dish Cost Audit
+      summary: Retrieve dynamic Food Cost audit and declared dietary labels (ADM-5.1.2)
+      description: |
+        Computes real-time raw material production cost per portion and reads declared dietary restriction tags.
+        Restricted exclusively to ADMIN / ADMINISTRADOR role.
+        Enforced at Controller level: Dish must be in PENDING_PRICE status (submitted for review by the Chef).
+      operationId: auditDishCost
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique identifier of the dish
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Itemized Food Cost audit and dietary labels breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodCostAuditResponse'
+        '400':
+          description: Dish has no assigned recipe
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden (access restricted strictly to ADMINISTRADOR or cross-tenant access)
+        '404':
+          description: Dish not found
+        '409':
+          description: Dish is not in PENDING_PRICE status (e.g. still in DRAFT)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UnitOfMeasure:
+      type: string
+      enum: [G, KG, ML, L, U]
+      example: G
+
+    RecipeItemAuditResponse:
+      type: object
+      required:
+        - ingredientId
+        - ingredientName
+        - recipeQuantity
+        - unitOfMeasure
+        - unitPurchaseCost
+        - lineSubtotal
+        - unpricedWarning
+      properties:
+        ingredientId:
+          type: string
+          format: uuid
+        ingredientName:
+          type: string
+          example: Tomate Perita
+        recipeQuantity:
+          type: number
+          format: decimal
+          example: 150.0
+        unitOfMeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        unitPurchaseCost:
+          type: number
+          format: decimal
+          example: 1200.00
+        lineSubtotal:
+          type: number
+          format: decimal
+          example: 180.00
+        unpricedWarning:
+          type: boolean
+          example: false
+
+    FoodCostAuditResponse:
+      type: object
+      required:
+        - dishId
+        - dishName
+        - totalFoodCost
+        - hasUnpricedIngredients
+        - warningNotes
+        - requiredDietaryRestrictions
+        - items
+      properties:
+        dishId:
+          type: string
+          format: uuid
+        dishName:
+          type: string
+          example: Pizza Margherita
+        totalFoodCost:
+          type: number
+          format: decimal
+          example: 850.50
+        hasUnpricedIngredients:
+          type: boolean
+          example: false
+        warningNotes:
+          type: array
+          items:
+            type: string
+          example: []
+        requiredDietaryRestrictions:
+          type: array
+          items:
+            type: string
+          example: ["CELIAC", "DAIRY"]
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeItemAuditResponse'
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://api.easyeat.com/errors/invalid-state
+        title:
+          type: string
+          example: Invalid Dish State
+        status:
+          type: integer
+          example: 409
+        detail:
+          type: string
+          example: Dish must be in PENDING_PRICE status to perform cost audit.
+        instance:
+          type: string
+          example: /api/v1/dishes/7d6c6e12-4f32-47d3-9f56-2e86bf30fa12/cost-audit

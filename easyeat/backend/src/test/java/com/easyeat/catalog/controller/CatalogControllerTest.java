@@ -7,8 +7,12 @@ import com.easyeat.auth.domain.UserStatus;
 import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.auth.security.JwtAuthenticationFilter;
 import com.easyeat.auth.security.JwtService;
-import com.easyeat.catalog.dto.EnrichedDishResponse;
-import com.easyeat.catalog.service.CatalogComplianceService;
+import com.easyeat.catalog.domain.EstablishmentStatus;
+import com.easyeat.catalog.dto.CategoryGroupDto;
+import com.easyeat.catalog.dto.DinerCatalogResponse;
+import com.easyeat.catalog.dto.DishCatalogItemDto;
+import com.easyeat.catalog.dto.EstablishmentDetailDto;
+import com.easyeat.catalog.service.DinerCatalogService;
 import com.easyeat.config.SecurityConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,14 +40,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(CatalogController.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class, JwtAuthenticationFilter.class})
-@DisplayName("CatalogController Web Contract Tests (T040, US3, FR-017, FR-026)")
+@DisplayName("CatalogController Web Contract Tests (T040 / T049 Backward Compatibility)")
 class CatalogControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
-    private CatalogComplianceService catalogComplianceService;
+    private DinerCatalogService dinerCatalogService;
 
     @MockBean
     private JwtService jwtService;
@@ -53,6 +57,7 @@ class CatalogControllerTest {
 
     private UUID tenantId;
     private User authenticatedDiner;
+    private EstablishmentDetailDto establishmentDetail;
 
     @BeforeEach
     void setUp() {
@@ -63,25 +68,31 @@ class CatalogControllerTest {
         authenticatedDiner.setEmail("diner@easyeat.com");
         authenticatedDiner.setRole(UserRole.COMENSAL);
         authenticatedDiner.setStatus(UserStatus.ACTIVE);
+
+        establishmentDetail = new EstablishmentDetailDto(tenantId, "Café Central", EstablishmentStatus.ACTIVE, true, "Abierto");
     }
 
     @Test
-    @DisplayName("Public guest access: GET /api/v1/establishments/{tenantId}/dishes returns 200 without auth (FR-026)")
+    @DisplayName("Public guest access: GET /api/v1/establishments/{tenantId}/dishes returns 200 delegating to DinerCatalogService")
     void getEstablishmentDishes_guest_returns200() throws Exception {
         UUID dishId = UUID.randomUUID();
-        EnrichedDishResponse dish = new EnrichedDishResponse(
+        DishCatalogItemDto dishItem = new DishCatalogItemDto(
                 dishId,
-                tenantId,
                 "Ensalada Mixta",
                 "Tomate y lechuga",
+                "ENSALADAS",
                 new BigDecimal("4500.00"),
+                null,
                 true,
                 true,
-                Collections.emptyList()
+                Collections.emptyList(),
+                List.of("Tomate", "Lechuga")
         );
+        CategoryGroupDto categoryGroup = new CategoryGroupDto("ENSALADAS", List.of(dishItem));
+        DinerCatalogResponse catalogResponse = new DinerCatalogResponse(establishmentDetail, List.of(categoryGroup));
 
-        when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), isNull()))
-                .thenReturn(List.of(dish));
+        when(dinerCatalogService.getCatalog(eq(tenantId), isNull()))
+                .thenReturn(catalogResponse);
 
         mockMvc.perform(get("/api/v1/establishments/{tenantId}/dishes", tenantId)
                         .accept(MediaType.APPLICATION_JSON))
@@ -94,39 +105,46 @@ class CatalogControllerTest {
                 .andExpect(jsonPath("$[0].isCompliant").value(true))
                 .andExpect(jsonPath("$[0].conflictingRestrictions").isEmpty());
 
-        verify(catalogComplianceService).getEnrichedCatalog(eq(tenantId), isNull());
+        verify(dinerCatalogService).getCatalog(eq(tenantId), isNull());
     }
 
     @Test
-    @DisplayName("Authenticated diner: GET /api/v1/establishments/{tenantId}/dishes passes user and returns compliance flags (FR-017)")
+    @DisplayName("Authenticated diner: GET /api/v1/establishments/{tenantId}/dishes passes user and returns compliance flags")
     void getEstablishmentDishes_authenticatedDiner_returnsEnrichedDishes() throws Exception {
         UUID dish1Id = UUID.randomUUID();
         UUID dish2Id = UUID.randomUUID();
 
-        EnrichedDishResponse compliantDish = new EnrichedDishResponse(
+        DishCatalogItemDto dish1 = new DishCatalogItemDto(
                 dish1Id,
-                tenantId,
                 "Wok de Verduras",
                 "Sin TACC / Vegano",
+                "PLATOS_PRINCIPALES",
                 new BigDecimal("8000.00"),
+                null,
                 true,
                 true,
-                Collections.emptyList()
+                Collections.emptyList(),
+                List.of("Verduras")
         );
 
-        EnrichedDishResponse conflictingDish = new EnrichedDishResponse(
+        DishCatalogItemDto dish2 = new DishCatalogItemDto(
                 dish2Id,
-                tenantId,
                 "Pastel de Papa con Queso",
                 "Contiene lácteos",
+                "PLATOS_PRINCIPALES",
                 new BigDecimal("9500.00"),
+                null,
                 true,
                 false,
-                List.of("DAIRY")
+                List.of("DAIRY"),
+                List.of("Papa", "Queso")
         );
 
-        when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), any(User.class)))
-                .thenReturn(List.of(compliantDish, conflictingDish));
+        CategoryGroupDto group = new CategoryGroupDto("PLATOS_PRINCIPALES", List.of(dish1, dish2));
+        DinerCatalogResponse catalogResponse = new DinerCatalogResponse(establishmentDetail, List.of(group));
+
+        when(dinerCatalogService.getCatalog(eq(tenantId), any(User.class)))
+                .thenReturn(catalogResponse);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 authenticatedDiner,
@@ -146,14 +164,14 @@ class CatalogControllerTest {
                 .andExpect(jsonPath("$[1].isCompliant").value(false))
                 .andExpect(jsonPath("$[1].conflictingRestrictions[0]").value("DAIRY"));
 
-        verify(catalogComplianceService).getEnrichedCatalog(eq(tenantId), any(User.class));
+        verify(dinerCatalogService).getCatalog(eq(tenantId), any(User.class));
     }
 
     @Test
     @DisplayName("Empty menu: returns empty JSON array")
     void getEstablishmentDishes_emptyCatalog_returnsEmptyArray() throws Exception {
-        when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), isNull()))
-                .thenReturn(Collections.emptyList());
+        when(dinerCatalogService.getCatalog(eq(tenantId), isNull()))
+                .thenReturn(new DinerCatalogResponse(establishmentDetail, Collections.emptyList()));
 
         mockMvc.perform(get("/api/v1/establishments/{tenantId}/dishes", tenantId)
                         .accept(MediaType.APPLICATION_JSON))

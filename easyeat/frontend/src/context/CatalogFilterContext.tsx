@@ -9,7 +9,7 @@ export interface CatalogFilterContextType {
   resetFilter: () => void;
 }
 
-const CatalogFilterContext = createContext<CatalogFilterContextType | undefined>(undefined);
+export const CatalogFilterContext = createContext<CatalogFilterContextType | undefined>(undefined);
 
 export interface CatalogFilterProviderProps {
   children: React.ReactNode;
