@@ -26,6 +26,21 @@
 - **Q5: Articulación con el modo 'solo lectura' del catálogo fuera de horario (COM-4.1.1 en Spec 008)**: En Spec 008, el catálogo cerrado se definió en 'modo solo lectura' (debido a que en Sprint 2 no existía el carrito de compras ni reservas diferidas). ¿Cómo convive dicha regla con la reserva de pedidos anticipados de Sprint 3?  
   → **A5**: Evolución natural y armónica para Sprint 3: el modo 'solo lectura' de Spec 008 restringe de forma estricta el retiro *inmediato* (en consonancia con la definición original del backlog: *"deshabilita la opción de agregar al carrito para retiro inmediato"* y la nota de Spec 008 *"respetando la coherencia con futuras reservas diferidas (Sprint 3)"*). Estando el establecimiento cerrado, el comensal puede conformar su carrito y avanzar al checkout; es en esta pantalla donde "Lo antes posible" permanece inhabilitado y se lo encauza obligatoriamente a una reserva programada ("Para más tarde") en un turno operativo futuro.
 
+- **Q6: Expiración de órdenes y liberación de cupos (TTL)**: ¿Cuál debe ser el tiempo de expiración para liberar automáticamente el cupo de una orden en estado 'PENDING_PAYMENT' si el comensal abandona la sesión o no completa la transacción?  
+  → **A6**: Se establece una expiración automática por inactividad de 15 minutos desde la creación de la orden. Si la orden no transiciona a confirmada/pagada dentro de ese plazo, el sistema pasa la orden a estado 'EXPIRED' y reintegra inmediatamente el cupo a la franja horaria correspondiente.
+
+- **Q7: Cancelación voluntaria de reserva pendiente**: ¿Puede el comensal cancelar o modificar la franja horaria de su orden pendiente de pago voluntariamente antes de que expire el TTL de 15 minutos?  
+  → **A7**: Sí, el comensal dispone de una acción explícita para cancelar voluntariamente su orden en estado 'PENDING_PAYMENT' desde la pantalla de confirmación/espera, transicionándola a 'CANCELLED' y liberando de inmediato el cupo asignado a la franja horaria. Si desea cambiar de turno, cancela la orden actual y conforma una nueva reserva.
+
+- **Q8: Métrica de consumo de capacidad (tickets vs platos)**: Para el cómputo de saturación y capacidad de la franja horaria, ¿cómo impacta la cantidad de platos contenidos en el carrito?  
+  → **A8**: El cómputo de capacidad es estrictamente unitario por orden comercial (1 pedido = 1 cupo de franja), consistente con el modelo Lean del MVP enfocado en tickets de comanda individuales para retiro en mostrador.
+
+- **Q9: Límite de reservas concurrentes por comensal (anti-acaparamiento)**: Para prevenir el acaparamiento artificial de cupos en franjas horarias de alta demanda, ¿cuántas órdenes en estado 'PENDING_PAYMENT' puede mantener activas un mismo comensal en simultáneo?  
+  → **A9**: Se restringe estrictamente a un máximo de una (1) orden activa en estado 'PENDING_PAYMENT' por comensal. Si el usuario ya posee una reserva pendiente, debe completarla (pagarla) o cancelarla explícitamente antes de poder iniciar un nuevo checkout y reservar otro cupo.
+
+- **Q10: Visualización de vigencia y cuenta regresiva del TTL**: Para que el comensal conozca el tiempo disponible antes de que expire su reserva (TTL de 15 minutos), ¿cómo debe presentarse la vigencia en la pantalla de espera de pago?  
+  → **A10**: Se incorpora un contador regresivo dinámico en pantalla (de 15:00 a 00:00) sincronizado con la hora del servidor, que despliega una alerta visual de expiración inminente cuando restan menos de 2 minutos para garantizar transparencia al comensal antes de la liberación automática del cupo.
+
 ---
 
 ## Sprint Scope Delimitation Matrix
@@ -175,6 +190,9 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 - **Pedidos cercanos al horario de cierre**: Las franjas horarias disponibles no pueden exceder el horario de cierre comercial del establecimiento. La última franja del día debe finalizar a más tardar en el horario de cierre (`closing_time`).
 - **Pérdida temporal de conexión en checkout**: Si el polling periódico falla por corte momentáneo de red, la interfaz no bloquea la interacción del usuario y reintenta en el siguiente ciclo. Si falla al momento de la confirmación final, se notifica el fallo de red sin duplicar solicitudes.
 - **Alternancia repetitiva entre modos**: Si el comensal cambia repetidamente entre "Lo antes posible" y "Para más tarde", el estado interno limpia y restablece consistentemente los campos de fecha y turno sin dejar valores residuales huérfanos.
+- **Expiración de reservas abandonadas en checkout (TTL de 15 minutos)**: Si un comensal genera una orden en estado 'PENDING_PAYMENT' pero abandona la sesión o no procede al pago dentro de los 15 minutos, el sistema invalida la reserva transicionándola a 'EXPIRED' y devuelve el cupo a la franja horaria correspondiente.
+- **Liberación inmediata por cancelación voluntaria**: Si un comensal cancela explícitamente su orden en espera de pago, el sistema transiciona la orden a 'CANCELLED' y reintegra el cupo al instante sin aguardar el vencimiento del TTL.
+- **Intento de reservas múltiples por el mismo comensal**: Si un comensal que ya cuenta con una orden en estado 'PENDING_PAYMENT' intenta confirmar un nuevo pedido, el backend bloquea la transacción y el frontend muestra el aviso: *"Ya poseés una orden pendiente de confirmación. Por favor, completá o cancelá tu reserva actual para continuar."*
 
 ---
 
@@ -205,6 +223,12 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 - **FR-021**: El sistema DEBE tomar la hora del servidor como única autoridad temporal para todas las evaluaciones de apertura, cierre, franjas vigentes y lead time, ignorando cualquier desfase del reloj del cliente.
 - **FR-022**: El sistema DEBE conservar íntegro el contexto del establecimiento (`tenant_id`), comensal autenticado y los ítems del carrito durante toda la experiencia de configuración de retiro.
 - **FR-023**: Cuando el establecimiento se encuentre fuera de su horario comercial de atención, el sistema DEBE permitir la conformación del carrito para reservas programadas, deshabilitando de forma estricta la modalidad 'Lo antes posible' en el checkout con un distintivo explicativo y obligando a elegir un turno en 'Para más tarde'.
+- **FR-024**: El sistema DEBE expirar automáticamente cualquier orden en estado 'PENDING_PAYMENT' que supere los 15 minutos sin confirmación de pago, transicionándola a 'EXPIRED' y liberando de forma inmediata el cupo asignado a la franja horaria.
+- **FR-025**: El sistema DEBE permitir al comensal cancelar voluntariamente su orden en estado 'PENDING_PAYMENT' desde la pantalla de confirmación/espera de pago, transicionándola a 'CANCELLED' y liberando de forma inmediata el cupo asignado a la franja horaria sin esperar el vencimiento del TTL.
+- **FR-026**: Cada orden confirmada en el checkout DEBE descontar exactamente una (1) unidad de cupo de la capacidad máxima de la franja horaria asignada, con independencia de la cantidad de ítems o platos individuales contenidos en el pedido.
+- **FR-027**: El sistema DEBE restringir a un máximo de una (1) orden activa en estado 'PENDING_PAYMENT' simultánea por comensal, impidiendo confirmar un nuevo checkout si el comensal ya cuenta con una reserva pendiente no resuelta.
+- **FR-028**: La pantalla de la orden en estado 'PENDING_PAYMENT' DEBE exhibir un contador regresivo dinámico (desde 15:00 hasta 00:00) sincronizado con el reloj del servidor, advirtiendo de forma visualmente destacada cuando resten menos de 2 minutos de vigencia antes de la expiración.
+- **FR-029**: Si el contador regresivo alcanza 00:00 sin confirmación de pago, el frontend DEBE desplegar una notificación informando que la reserva expiró por inactividad y redirigir al comensal al catálogo con la grilla de franjas horarias actualizada.
 
 ### Invariants
 
@@ -217,12 +241,14 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 5. **Invariante de Ventana de Planificación**: La fecha de retiro $D_{reserva}$ debe pertenecer al intervalo:  
    $$D_{hoy} \le D_{reserva} \le D_{hoy} + 7\text{ días operativos}$$
 6. **Invariante de Asignación Atómica (FCFS)**: La adjudicación de cupos en base de datos es serializable o atómica mediante bloqueo optimista/pesimista, garantizando cero sobreventa ante concurrencia extrema.
+7. **Invariante de Reserva Única Activa**: Para cualquier comensal $C$, la cantidad de órdenes concurrentes en estado `PENDING_PAYMENT` no puede ser superior a una:  
+   $$\text{Órdenes Pendientes}(C) \le 1$$
 
 ---
 
 ## Key Entities
 
-- **Order (Orden / Pedido)**: Representa la transacción comercial iniciada por el comensal. Atributos conceptuales clave en esta iteración: identificador único, identificador del establecimiento (`tenant_id`), identificador del comensal, modalidad de retiro (`IMMEDIATE` o `SCHEDULED`), fecha de retiro programada, hora de inicio y fin de la franja asignada, estado de la orden (`PENDING_PAYMENT` / `RESERVED`), total y detalle de platos del carrito.
+- **Order (Orden / Pedido)**: Representa la transacción comercial iniciada por el comensal. Atributos conceptuales clave en esta iteración: identificador único, identificador del establecimiento (`tenant_id`), identificador del comensal, modalidad de retiro (`IMMEDIATE` o `SCHEDULED`), fecha de retiro programada, hora de inicio y fin de la franja asignada, estado de la orden (`PENDING_PAYMENT` / `RESERVED` / `EXPIRED` / `CANCELLED`), total y detalle de platos del carrito.
 - **TimeSlotAvailability (Disponibilidad de Franja Horaria)**: Proyección operativa de un intervalo de 15 minutos en una fecha determinada. Atributos: fecha, hora de inicio, hora de fin, capacidad total de pedidos, cantidad de pedidos confirmados, porcentaje de saturación y estado operativo (`AVAILABLE`, `HIGH_DEMAND`, `SOLD_OUT`, `EXPIRED_OR_LEAD_TIME`).
 - **EstablishmentOperatingSchedule (Configuración Operativa del Local)**: Define las restricciones temporales del establecimiento. Atributos: días operativos de atención, hora de apertura (`opening_time`), hora de cierre (`closing_time`), zona horaria (`timezone`, por defecto `America/Argentina/Buenos_Aires`), margen de anticipación mínimo (`lead_time_minutes`, por defecto 30 minutos) y cupo máximo de pedidos por franja de 15 minutos (por defecto 10 pedidos).
 
@@ -238,6 +264,8 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 - **SC-004 (Claridad en la Demanda)**: El 100% de las franjas con ocupación entre el 80% y 99% exhiben la insignia "Alta Demanda" y despliegan el mensaje de aviso preventivo en el resumen del checkout.
 - **SC-005 (Mantenibilidad Arquitectónica)**: La orden queda persistida en estado `PENDING_PAYMENT` con todos sus datos de franja validados, permitiendo que la futura integración del gateway de pagos en el Sprint 4 opere como un consumidor directo sin requerir migraciones de datos ni descarte de modelos.
 - **SC-006 (Latencia de Refresco de Estado)**: Las consultas periódicas de sincronización de franjas horarias responden en menos de 100 ms en condiciones normales de red sin degradar el rendimiento del backend.
+- **SC-007 (Liberación Oportuna por Expiración)**: El 100% de las órdenes en `PENDING_PAYMENT` que superen los 15 minutos sin confirmación de pago transicionan a `EXPIRED`, reintegrando su cupo a la franja correspondiente y reflejándose en el siguiente ciclo de consulta.
+- **SC-008 (Liberación Inmediata por Cancelación Voluntaria)**: Ante la cancelación explícita de una orden pendiente por el comensal, la liberación del cupo en base de datos se ejecuta en menos de 200 ms y queda disponible de inmediato para nuevas reservas.
 
 ---
 
