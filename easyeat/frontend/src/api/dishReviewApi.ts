@@ -1,8 +1,14 @@
 import { apiClient } from './apiClient';
 import type {
+  ApproveDishRequest,
+  DishApprovalResult,
+  DishPricingResult,
+  DishRejectionResult,
   DishReviewDetail,
   DishReviewInboxPage,
   InboxTab,
+  RejectDishRequest,
+  SetRetailPriceRequest,
 } from '@/types/dishReview';
 
 /** FR-003: the page size the contract publishes as the default. */
@@ -48,6 +54,51 @@ export const dishReviewApi = {
   async getDetail(dishId: string): Promise<DishReviewDetail> {
     const response = await apiClient.get<DishReviewDetail>(
       `/admin/dishes/${encodeURIComponent(dishId)}/review-detail`
+    );
+    return response.data;
+  },
+
+  /**
+   * Assigns or updates the retail price (FR-009 to FR-014, FR-025).
+   *
+   * `expectedRetailPrice` is sent exactly as the caller passed it, `null` included: that is the
+   * positive assertion "the dish was unpriced when I read it", not an omission, and the contract
+   * rejects an actually-omitted field with 400.
+   */
+  async setRetailPrice(
+    dishId: string,
+    request: SetRetailPriceRequest
+  ): Promise<DishPricingResult> {
+    const response = await apiClient.put<DishPricingResult>(
+      `/admin/dishes/${encodeURIComponent(dishId)}/retail-price`,
+      request
+    );
+    return response.data;
+  },
+
+  /**
+   * Evaluates the publication gate and publishes the dish (FR-015 to FR-019).
+   *
+   * The gate itself is re-evaluated server-side; this call carries only the acknowledgements the
+   * Administrator already confirmed, never a gate condition.
+   */
+  async approve(dishId: string, request: ApproveDishRequest): Promise<DishApprovalResult> {
+    const response = await apiClient.post<DishApprovalResult>(
+      `/admin/dishes/${encodeURIComponent(dishId)}/approval`,
+      request
+    );
+    return response.data;
+  },
+
+  /**
+   * Rejects the dish and returns it to the kitchen with mandatory feedback (FR-020 to FR-022).
+   *
+   * The comment is sent exactly as typed, never pre-trimmed: FR-021 stores it verbatim.
+   */
+  async reject(dishId: string, request: RejectDishRequest): Promise<DishRejectionResult> {
+    const response = await apiClient.post<DishRejectionResult>(
+      `/admin/dishes/${encodeURIComponent(dishId)}/rejection`,
+      request
     );
     return response.data;
   },

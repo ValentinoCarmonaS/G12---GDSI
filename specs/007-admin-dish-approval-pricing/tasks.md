@@ -765,13 +765,23 @@ task in Phases 3-7 wired any of them into `AdminDishReviewPage` / `DishAuditPane
 `DishAuditPanel` itself is unchanged by this phase: it stays the read-only culinary file FR-006
 asks for, and a new component carries the actions beside it.
 
-- [ ] T105 [P] Write `easyeat/frontend/tests/api/dishReviewApi.test.ts` additions covering
+- [x] T105 [P] Write `easyeat/frontend/tests/api/dishReviewApi.test.ts` additions covering
   `setRetailPrice`, `approve` and `reject`: request shaping (method, URL-encoded id in the path,
   request body) and error propagation, mirroring the existing `getInbox`/`getDetail` test style
   — **Serves**: FR-009, FR-013, FR-015, FR-017, FR-020, FR-021, FR-025
-- [ ] T106 Implement `setRetailPrice`, `approve` and `reject` in
+
+  **DONE 2026-10-31**, RED observed: 16 of 26 new assertions failed with `dishReviewApi.<method>
+  is not a function` for all three methods (only `getInbox`/`getDetail` existed). Covers encoded
+  ids, `expectedRetailPrice: null` sent as a positive value rather than omitted, an empty approval
+  body when no acknowledgement is required, the comment sent unpre-trimmed, and 409/422
+  propagation for `dish-stale-price`, `dish-already-decided` and `publication-gate-failed`.
+- [x] T106 Implement `setRetailPrice`, `approve` and `reject` in
   `easyeat/frontend/src/api/dishReviewApi.ts` as thin wrappers over `PUT /admin/dishes/{id}/retail-price`,
   `POST /admin/dishes/{id}/approval` and `POST /admin/dishes/{id}/rejection` — **Serves**: same
+
+  **DONE 2026-10-31, GREEN** at 26 of 26, `tsc --noEmit` clean. Same shape as the two existing read
+  methods: encode the id, forward the body/params verbatim, unwrap `response.data`, no retry, no
+  error normalisation.
 - [ ] T107 [P] Write `easyeat/frontend/tests/components/dishreview/DishDecisionActions.test.tsx`
   covering: the price calculator and both decision buttons render only for the dish states the
   contract allows (`PENDING_PRICE`: price + both buttons; `PUBLISHED`: price only, for repricing;
