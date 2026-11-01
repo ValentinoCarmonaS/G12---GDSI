@@ -11,7 +11,7 @@
  */
 
 /** The three inbox views. Not a partition: HISTORY overlaps both others on purpose (FR-002). */
-export type InboxTab = 'PENDING' | 'PUBLISHED' | 'HISTORY';
+export type InboxTab = 'PENDING' | 'FINALIZED';
 
 /**
  * The dish lifecycle as spec 007 sees it.

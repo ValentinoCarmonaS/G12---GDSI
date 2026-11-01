@@ -27,13 +27,9 @@ const EMPTY_COPY: Record<InboxTab, { title: string; body: string }> = {
     title: 'No hay platos esperando decisión',
     body: 'Cuando un Chef envíe una ficha a revisión, va a aparecer acá, con el más antiguo primero.',
   },
-  PUBLISHED: {
-    title: 'Todavía no hay platos publicados',
-    body: 'Los platos aprobados aparecen acá y quedan visibles en el catálogo del comensal.',
-  },
-  HISTORY: {
-    title: 'Todavía no se revisó ningún plato',
-    body: 'Acá quedan los platos que ya pasaron por una decisión, aprobados o rechazados, en cualquier estado actual.',
+  FINALIZED: {
+    title: 'No hay platos finalizados',
+    body: 'Acá aparecerán los platos que ya recibieron una decisión.',
   },
 };
 

@@ -17,18 +17,13 @@ export interface ReviewInboxTabsProps {
 const TABS: ReadonlyArray<{ id: InboxTab; label: string; hint: string }> = [
   {
     id: 'PENDING',
-    label: 'Pendientes',
+    label: 'En espera',
     hint: 'Platos esperando una decisión, el más antiguo primero',
   },
   {
-    id: 'PUBLISHED',
-    label: 'Publicados',
-    hint: 'Platos visibles en el catálogo',
-  },
-  {
-    id: 'HISTORY',
-    label: 'Historial / Rechazados',
-    hint: 'Platos con al menos una revisión, en cualquier estado actual',
+    id: 'FINALIZED',
+    label: 'Finalizados',
+    hint: 'Platos que ya recibieron una decisión (aprobados, rechazados o cancelados)',
   },
 ];
 
