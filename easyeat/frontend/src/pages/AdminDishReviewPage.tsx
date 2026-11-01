@@ -77,6 +77,13 @@ export const AdminDishReviewPage: React.FC = () => {
     inbox.refresh();
   }, [detail, openDish, inbox]);
 
+  const handleCancelled = useCallback(() => {
+    setDetail(null);
+    setDetailError(null);
+    setIsDetailLoading(false);
+    inbox.refresh();
+  }, [inbox]);
+
   return (
     <WorkspaceLayout
       title="Bandeja de Revisión de Platos"
@@ -137,7 +144,11 @@ export const AdminDishReviewPage: React.FC = () => {
           {!isDetailLoading && !detailError && detail && (
             <div className="space-y-6">
               <DishAuditPanel detail={detail} />
-              <DishDecisionActions detail={detail} onDecided={handleDecided} />
+              <DishDecisionActions
+                detail={detail}
+                onDecided={handleDecided}
+                onCancelled={handleCancelled}
+              />
             </div>
           )}
 

@@ -10,6 +10,7 @@ vi.mock('../../../src/api/dishReviewApi', () => ({
     setRetailPrice: vi.fn(),
     approve: vi.fn(),
     reject: vi.fn(),
+    cancel: vi.fn(),
   },
 }));
 
@@ -94,6 +95,14 @@ describe('DishDecisionActions', () => {
     it('DRAFT renders nothing: a draft is priced and decided only once resubmitted', () => {
       const { container } = render(
         <DishDecisionActions detail={detail({ status: 'DRAFT' })} onDecided={vi.fn()} />
+      );
+
+      expect(container).toBeEmptyDOMElement();
+    });
+
+    it('CANCELLED renders no action controls because the state is terminal (FR-040)', () => {
+      const { container } = render(
+        <DishDecisionActions detail={detail({ status: 'CANCELLED' })} onDecided={vi.fn()} />
       );
 
       expect(container).toBeEmptyDOMElement();
@@ -391,6 +400,35 @@ describe('DishDecisionActions', () => {
 
       expect(await screen.findByTestId('rejection-error')).toHaveTextContent(/ya decidió/i);
       expect(onDecided).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('cancelling a pending dish (C-02)', () => {
+    it('does not call the cancellation API when the confirmation is abandoned', async () => {
+      const user = userEvent.setup();
+      render(<DishDecisionActions detail={detail()} onDecided={vi.fn()} onCancelled={vi.fn()} />);
+
+      await user.click(screen.getByRole('button', { name: /borrar/i }));
+      const dialog = screen.getByRole('dialog', { name: /confirmar borrado/i });
+      await user.click(within(dialog).getByRole('button', { name: /cancelar/i }));
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(dishReviewApi.cancel).not.toHaveBeenCalled();
+    });
+
+    it('calls cancellation and notifies the page to clear the cancelled detail', async () => {
+      const user = userEvent.setup();
+      vi.mocked(dishReviewApi.cancel).mockResolvedValue(undefined);
+      const onCancelled = vi.fn();
+      render(<DishDecisionActions detail={detail()} onDecided={vi.fn()} onCancelled={onCancelled} />);
+
+      await user.click(screen.getByRole('button', { name: /borrar/i }));
+      const dialog = screen.getByRole('dialog', { name: /confirmar borrado/i });
+      await user.click(within(dialog).getByRole('button', { name: /confirmar/i }));
+
+      await waitFor(() => expect(dishReviewApi.cancel).toHaveBeenCalledWith('dish-1'));
+      expect(onCancelled).toHaveBeenCalledTimes(1);
+      expect(onDecided).not.toHaveBeenCalled();
     });
   });
 });

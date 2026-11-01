@@ -739,16 +739,16 @@ Phase 2's classes together: **99.48% line**. The project moved from 89.91% to **
 - [x] T102 [P] Write `AdminDishApprovalOpenApiContractTest` in `easyeat/backend/src/test/java/com/easyeat/dish/contract/AdminDishApprovalOpenApiContractTest.java` following `auth/contract/OpenApiContractTest`, asserting every one of the seven operations matches `contracts/openapi.yaml`
 
   **DONE 2026-10-30, GREEN immediately — no production change.** A `@WebMvcTest` over the three controllers together (`AdminDishReviewController`, `AdminDishDecisionController`, `ChefDishReviewFeedbackController`), extending the existing `DishControllerTestBase`, with every collaborating service mocked. Same rigor as `auth/contract/OpenApiContractTest`: one test asserts the YAML file exists and names all seven paths, and one `MockMvc` call per operation checks status, content type and a couple of key response fields — no JSON-schema validation. All eight tests passed on the first run: every operation the contract names already exists with the shape it describes.
-- [x] T103 Execute the three scenarios of `specs/007-admin-dish-approval-pricing/quickstart.md` end to end and record the outcome, including the frontend validation of section 6
+- [x] T103 Execute the three scenarios of `specs/007-admin-dish-approval-pricing/quickstart.md` end to end and record the outcome, including the frontend validation of section 7
 
-  **DONE 2026-10-30.** Executed against a real backend (`mvn spring-boot:run -Dspring-boot.run.profiles=dev`) and a real PostgreSQL 16 container, real `curl` requests for every step of Scenarios A, B and C — recorded in full in quickstart.md's new §7. All 21 steps across the three scenarios matched the document's own expected status codes and bodies exactly; no corrections were needed to §3, §4 or §5. §4's "same for ENCARGADO and COMENSAL tokens" aside was covered by citing the existing RBAC-matrix controller tests rather than repeating it by hand, since CHEF-vs-anonymous already demonstrates the gate and the suite already carries the rest.
+  **DONE 2026-10-30.** Executed against a real backend (`mvn spring-boot:run -Dspring-boot.run.profiles=dev`) and a real PostgreSQL 16 container, real `curl` requests for every step of Scenarios A, B and C — recorded in full in quickstart.md's execution record (§8). All 21 steps across the three scenarios matched the document's own expected status codes and bodies exactly; no corrections were needed to §3, §4 or §5. §4's "same for ENCARGADO and COMENSAL tokens" aside was covered by citing the existing RBAC-matrix controller tests rather than repeating it by hand, since CHEF-vs-anonymous already demonstrates the gate and the suite already carries the rest.
 
-  **Correction to §6, found while executing this task.** Confirmed by direct re-read of `spec.md`'s clarification log that the `≤ −500%` margin floor §6 names was withdrawn (CHK014) before Phase 4 began — the same stale wording T069's own note already caught in `MarginPriceCalculator`'s task description. Fixed in §6 directly.
+  **Correction to §7, found while executing this task.** Confirmed by direct re-read of `spec.md`'s clarification log that the `≤ −500%` margin floor §7 names was withdrawn (CHK014) before Phase 4 began — the same stale wording T069's own note already caught in `MarginPriceCalculator`'s task description. Fixed in §7 directly.
 
-  **No browser tool was available in this session** (checked via `ToolSearch` before concluding this) — §6's frontend validation is referenced against the existing component/page test suites (`PublicationConfirmModal.test.tsx`, `RejectionDialog.test.tsx`, `DishRejectionFeedbackBanner.test.tsx`, `KitchenWorkspacePage.test.tsx`, and every admin dish-review component test across Phases 3-6) rather than a fabricated manual-browser narrative that did not happen, per constitution Principle VIII.
+  **No browser tool was available in this session** (checked via `ToolSearch` before concluding this) — §7's frontend validation is referenced against the existing component/page test suites (`PublicationConfirmModal.test.tsx`, `RejectionDialog.test.tsx`, `DishRejectionFeedbackBanner.test.tsx`, `KitchenWorkspacePage.test.tsx`, and every admin dish-review component test across Phases 3-6) rather than a fabricated manual-browser narrative that did not happen, per constitution Principle VIII.
 - [x] T104 Measure and record, in `specs/007-admin-dish-approval-pricing/quickstart.md`, the 95th-percentile elapsed time for the two surfaces SC-006 bounds: inbox request to list rendered, and detail request to itemized Food Cost rendered, each with 20 pending dishes on a 20 Mbps connection at 50 ms round-trip latency. SC-006 now names its start point, end point, load, network conditions and percentile, so record the measured values against those exact conditions and state the verdict — do not substitute a subjective impression of speed
 
-  **DONE 2026-10-30 — measured server time + calculated network overhead, not a captured end-to-end measurement.** No `tc`/`netem` and no browser-based network emulation is available in this sandbox (checked first). 20 pending dishes seeded; each endpoint called 20 times against the live local server (loopback, no added latency); server-side p95 taken from `curl`'s own `time_total`: review inbox 0.0828 s (6184-byte payload), review detail 0.0227 s (1156-byte payload). Network component calculated from SC-006's own stated conditions (payload ÷ 2.5 MB/s for 20 Mbps, plus 2×50 ms RTT): ≈0.103 s and ≈0.100 s respectively. Combined estimate: review inbox ≈0.19 s, review detail ≈0.12 s — both roughly 10× inside the 2-second bound. Recorded in quickstart.md §7 as "likely met, by calculated estimate", explicitly naming three gaps this estimate cannot close: no modeling of TCP slow start/congestion/packet loss beyond flat RTT, no client-side render time (unobservable without a browser tool), and a non-production local environment. Full detail and both tables are in quickstart.md §7, not duplicated here.
+  **DONE 2026-10-30 — measured server time + calculated network overhead, not a captured end-to-end measurement.** No `tc`/`netem` and no browser-based network emulation is available in this sandbox (checked first). 20 pending dishes seeded; each endpoint called 20 times against the live local server (loopback, no added latency); server-side p95 taken from `curl`'s own `time_total`: review inbox 0.0828 s (6184-byte payload), review detail 0.0227 s (1156-byte payload). Network component calculated from SC-006's own stated conditions (payload ÷ 2.5 MB/s for 20 Mbps, plus 2×50 ms RTT): ≈0.103 s and ≈0.100 s respectively. Combined estimate: review inbox ≈0.19 s, review detail ≈0.12 s — both roughly 10× inside the 2-second bound. Recorded in quickstart.md §8 as "likely met, by calculated estimate", explicitly naming three gaps this estimate cannot close: no modeling of TCP slow start/congestion/packet loss beyond flat RTT, no client-side render time (unobservable without a browser tool), and a non-production local environment. Full detail and both tables are in quickstart.md §8, not duplicated here.
 
 ---
 
@@ -828,17 +828,37 @@ asks for, and a new component carries the actions beside it.
   leave both halves of the page showing the server's current state rather than the Administrator's
   stale read.
 - [x] T111 Run the full frontend suite (`npx vitest run`) and `tsc --noEmit`; record the result and
-  correct `quickstart.md` §6's T103 note, which could only validate these three components in
+  correct `quickstart.md` §7's T103 note, which could only validate these three components in
   isolation at the time, never as reachable from `/admin/dishes`
 
   **DONE 2026-10-31.** Full suite: 587 of 587 tests across 91 files, `tsc --noEmit` clean — no
   regression from wiring three previously-unused components into the live page. `quickstart.md`
-  §6 now carries a correction note explaining that T103's own check was honestly scoped to
+  §7 now carries a correction note explaining that T103's own check was honestly scoped to
   component isolation (its note already said so) and that Phase 8 is what actually makes every
   bullet in §6 true of `/admin/dishes` itself, backed by `AdminDishReviewPage.test.tsx` (T109)
   rather than only the component suites.
 
 ---
+
+## Phase 9: Administrator Cancellation of Pending Dish (C-02 / US5)
+
+**Purpose**: Close the C-02 behavior end to end without changing spec 005's separate permission to
+delete a Chef-owned `DRAFT`. Only an Administrator may cancel a `PENDING_PRICE` dish; the Chef
+draft-delete endpoint remains state-guarded and returns 409 for a submitted dish. Cancellation is a
+soft delete, keeps the Administrator on the review inbox, and records the `CANCELLED` event.
+
+- [x] T112 [US5] Add regressions for cancellation event fields, no hard delete, and a lost conditional-update race in `DishGovernanceServiceTest`; add MockMvc role/status cases and a real-PostgreSQL transition/audit case in the existing governance, controller, and integration tests — **Serves**: FR-025, FR-038, FR-039, FR-041, SC-009. Test code is present; targeted verification is recorded by T117.
+- [x] T113 [US5] Implement cancellation as a `PENDING_PRICE` conditional update to `CANCELLED` with `is_active = false`, write no fabricated cancellation reason, and append the cycle-numbered `CANCELLED` audit event in the same transaction. Preserve Chef deletion only for `DRAFT`; the service's state guard blocks deletion of a review-pending dish — **Serves**: FR-038 to FR-041.
+- [x] T114 [US5] Add front-end cancellation API and modal regressions. Make confirmation buttons non-submit controls; on success clear the terminal detail and refresh the pending inbox without changing the route. Verify abandoning the modal sends no request and confirming stays on `/admin/dishes` — **Serves**: FR-031, FR-038, FR-039, FR-040, SC-009.
+- [x] T115 [US5] Extend the Chef dish status type and badge for `CANCELLED`, expose it in the status filter, and render cancelled dishes read-only with no edit/delete link, including when a Chef opens the editor URL directly — **Serves**: FR-040, FR-042. Regression coverage is in `ChefDishesPage.test.tsx` and `ChefDishEditorPage.test.tsx`.
+- [x] T116 [US5] Add V10 to extend `chk_dishes_status` and `chk_drh_event_type` with `CANCELLED`, without modifying applied V7/V9. Record the narrow D1 exception; update migration and API contract tests, OpenAPI, data-model, research, plan, spec, quickstart and migration registry — **Serves**: FR-001, FR-040, FR-041, SC-003, SC-009.
+- [ ] T117 [US5] Run the focused backend service, controller, migration/integration and contract tests, plus frontend component/page/API tests and TypeScript typecheck; record actual results here before declaring C-02 verified — **Serves**: all C-02 requirements.
+
+  **Partial evidence collected 2026-11-01**: `AdminPricingMigrationTest`, `DishApprovalPricingIntegrationTest` and `DishEnumsTest` passed **54/54**, including the V10 status/event domains and a real-PostgreSQL cancellation transition/audit entry. `DishGovernanceServiceTest` and the MockMvc controller class could not initialize Mockito-backed mocks under the available Java 25 runtime; the reported root issue is the existing Mockito inline instrumentation failure. The frontend test runner did not discover TypeScript tests, and the terminal session returned no test output, so frontend runtime results are not claimed. Keep this gate open until those suites are run in a supported environment.
+
+**Role boundary**: a `CHEF` request to `POST /api/v1/admin/dishes/{id}/cancel` is 403. A Chef's
+existing `DELETE /api/v1/dishes/{id}` remains valid only for `DRAFT` under spec 005 and is 409 for
+`PENDING_PRICE`. This is not a second path to cancel a proposal.
 
 ## Dependencies & Execution Order
 
@@ -965,3 +985,4 @@ All four upstream decisions are closed. The dependencies they created survive as
 - `checklists/approval-pricing.md` holds 59 requirements-quality items, **all 59 marked with their provenance as of 2026-10-28**, so `/speckit-implement` reads a satisfied gate. A marked box records requirements quality, not implementation progress
 - **Task count is now 106**: T042a and T076a were added on 2026-10-28 from consequences found while verifying spec 006's merged code, and T025 remains cancelled. Both carry the `Serves` annotation, so the FR→task mapping stays complete; FR-037 is new in `spec.md` and is served by T042a
 - **Task count is now 113**: T105-T111 (Phase 8) were added on 2026-10-31 after manual UI testing of the merged feature found that no phase had wired `MarginPriceCalculator`, `PublicationConfirmModal` or `RejectionDialog` into the page that renders them — each passed its own component-level test in isolation, so the frontend suite stayed green throughout, but nothing asserted the three were reachable from `/admin/dishes` itself. See `HANDOFF-post-merge-ui-gap.md` for the finding as made
+- **Task count is now 119**: T112-T117 (Phase 9 / US5) trace C-02 across backend state/audit, role-gated API, modal route preservation, Chef read-only status, V10 migration and focused verification. T112-T116 have been implemented and recorded; **T117 remains open** until focused suites and typecheck results are captured.

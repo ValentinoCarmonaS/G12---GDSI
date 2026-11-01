@@ -102,4 +102,11 @@ export const dishReviewApi = {
     );
     return response.data;
   },
+
+  /**
+   * Cancels a dish proposal (C-02).
+   */
+  async cancel(dishId: string): Promise<void> {
+    await apiClient.post(`/admin/dishes/${encodeURIComponent(dishId)}/cancel`);
+  },
 };

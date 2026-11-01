@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { AdminDishReviewPage } from '../../src/pages/AdminDishReviewPage';
 import { dishReviewApi } from '../../src/api/dishReviewApi';
 import type {
@@ -17,6 +17,7 @@ vi.mock('../../src/api/dishReviewApi', () => ({
     setRetailPrice: vi.fn(),
     approve: vi.fn(),
     reject: vi.fn(),
+    cancel: vi.fn(),
   },
 }));
 
@@ -104,8 +105,14 @@ function detail(overrides: Partial<DishReviewDetail> = {}): DishReviewDetail {
 }
 
 function renderPage() {
+  const CurrentPath = () => {
+    const location = useLocation();
+    return <span data-testid="current-path">{location.pathname}</span>;
+  };
+
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={['/admin/dishes']}>
+      <CurrentPath />
       <AdminDishReviewPage />
     </MemoryRouter>
   );
@@ -360,6 +367,26 @@ describe('AdminDishReviewPage', () => {
 
       await waitFor(() => expect(dishReviewApi.getDetail).toHaveBeenCalledWith('dish-1'));
       expect(dishReviewApi.getInbox).toHaveBeenCalled();
+    });
+
+    it('cancelling a pending dish clears its detail and stays on the admin inbox', async () => {
+      vi.mocked(dishReviewApi.cancel).mockResolvedValue(undefined);
+
+      renderPage();
+      await userEvent.click(await screen.findByTestId('inbox-row'));
+      await screen.findByTestId('dietary-labels');
+
+      vi.mocked(dishReviewApi.getInbox).mockClear();
+      vi.mocked(dishReviewApi.getDetail).mockClear();
+      await userEvent.click(screen.getByRole('button', { name: /borrar/i }));
+      const dialog = screen.getByRole('dialog', { name: /confirmar borrado/i });
+      await userEvent.click(within(dialog).getByRole('button', { name: /confirmar/i }));
+
+      await waitFor(() => expect(dishReviewApi.cancel).toHaveBeenCalledWith('dish-1'));
+      expect(await screen.findByTestId('detail-placeholder')).toBeInTheDocument();
+      expect(screen.getByTestId('current-path')).toHaveTextContent('/admin/dishes');
+      expect(dishReviewApi.getInbox).toHaveBeenCalled();
+      expect(dishReviewApi.getDetail).not.toHaveBeenCalled();
     });
   });
 });
