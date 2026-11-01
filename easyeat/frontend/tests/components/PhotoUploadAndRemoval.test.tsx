@@ -5,7 +5,6 @@ import { PersonalDataForm } from '@/components/profile/PersonalDataForm';
 
 describe('PhotoUploadAndRemoval Component Tests (T011, FR-024, FR-025, COM-1.4.2)', () => {
   const mockOnSubmit = vi.fn();
-  const mockOnCancel = vi.fn();
   const mockOnUploadAvatar = vi.fn();
   const mockOnRemoveAvatar = vi.fn();
 

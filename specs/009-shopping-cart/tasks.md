@@ -51,7 +51,7 @@
 - [X] T013 [US4] Implement `UserPhotoService.java` in `easyeat/backend/src/main/java/com/easyeat/profile/service/` with magic bytes detection, size boundary validation (<= 5 MB), and BYTEA database storage (depends on T005, T006)
 - [X] T014 [US4] Extend `ProfileService.java` in `easyeat/backend/src/main/java/com/easyeat/profile/service/` with `updateDemographics` and avatar management methods preserving baseline user data
 - [X] T015 [US4] Extend `ProfileController.java` and implement `ProfileAvatarController.java` in `easyeat/backend/src/main/java/com/easyeat/profile/controller/` exposing demographic and avatar stream endpoints with security authorization
-- [ ] T016 [P] [US4] Update TypeScript types in `easyeat/frontend/src/types/profile.ts` (`age`, `gender`, `address`, `avatarUrl`) and extend `easyeat/frontend/src/api/profileApi.ts` with `updateDemographics`, `uploadAvatar`, and `removeAvatar`
+- [X] T016 [P] [US4] Update TypeScript types in `easyeat/frontend/src/types/profile.ts` (`age`, `gender`, `address`, `avatarUrl`) and extend `easyeat/frontend/src/api/profileApi.ts` with `updateDemographics`, `uploadAvatar`, and `removeAvatar`
 - [ ] T017 [P] [US4] Implement `PhotoDeleteConfirmModal.tsx` in `easyeat/frontend/src/components/profile/` with verification dialog and provisional avatar fallback preview
 - [ ] T018 [US4] Extend `PersonalDataForm.tsx` in `easyeat/frontend/src/components/profile/` adding age, gender, address fields, avatar upload with 5 MB boundary check, and deferred removal execution on form submission
 - [ ] T019 [US4] Update `WorkspaceLayout.tsx` in `easyeat/frontend/src/components/common/` to reactively render custom avatar or institutional fallback in the top navigation bar
