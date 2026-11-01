@@ -49,7 +49,7 @@
 
 - [X] T012 [P] [US4] Implement DTOs `DemographicsRequest.java`, `AvatarUploadResponse.java`, and update `ExtendedProfileResponse.java` in `easyeat/backend/src/main/java/com/easyeat/profile/dto/`
 - [X] T013 [US4] Implement `UserPhotoService.java` in `easyeat/backend/src/main/java/com/easyeat/profile/service/` with magic bytes detection, size boundary validation (<= 5 MB), and BYTEA database storage (depends on T005, T006)
-- [ ] T014 [US4] Extend `ProfileService.java` in `easyeat/backend/src/main/java/com/easyeat/profile/service/` with `updateDemographics` and avatar management methods preserving baseline user data
+- [X] T014 [US4] Extend `ProfileService.java` in `easyeat/backend/src/main/java/com/easyeat/profile/service/` with `updateDemographics` and avatar management methods preserving baseline user data
 - [ ] T015 [US4] Extend `ProfileController.java` and implement `ProfileAvatarController.java` in `easyeat/backend/src/main/java/com/easyeat/profile/controller/` exposing demographic and avatar stream endpoints with security authorization
 - [ ] T016 [P] [US4] Update TypeScript types in `easyeat/frontend/src/types/profile.ts` (`age`, `gender`, `address`, `avatarUrl`) and extend `easyeat/frontend/src/api/profileApi.ts` with `updateDemographics`, `uploadAvatar`, and `removeAvatar`
 - [ ] T017 [P] [US4] Implement `PhotoDeleteConfirmModal.tsx` in `easyeat/frontend/src/components/profile/` with verification dialog and provisional avatar fallback preview
