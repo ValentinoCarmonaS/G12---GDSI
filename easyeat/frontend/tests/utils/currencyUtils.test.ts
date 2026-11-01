@@ -41,13 +41,13 @@ describe('currencyUtils (T024, US2, COM-6.1.2, INV-2, SC-007)', () => {
     });
 
     it('calculates line total in cents avoiding multiplication drift', () => {
-      // 19.99 * 3 in naive float = 59.970000000000006
-      const naiveMultiplication = 19.99 * 3;
-      expect(naiveMultiplication).not.toBe(59.97);
+      // 1.05 * 3 in naive float = 3.1500000000000004
+      const naiveMultiplication = 1.05 * 3;
+      expect(naiveMultiplication).not.toBe(3.15);
 
-      const lineCents = calculateLineTotalCents(19.99, 3);
-      expect(lineCents).toBe(5997);
-      expect(fromCents(lineCents)).toBe(59.97);
+      const lineCents = calculateLineTotalCents(1.05, 3);
+      expect(lineCents).toBe(315);
+      expect(fromCents(lineCents)).toBe(3.15);
     });
 
     it('calculates accumulated cart total across multiple line items with zero precision loss', () => {
