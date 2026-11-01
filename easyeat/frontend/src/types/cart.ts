@@ -3,6 +3,8 @@ export interface CartItem {
   name: string;
   price: number;
   quantity: number;
+  availableStock?: number;
+  lastSyncedQuantity?: number;
   isCompliant?: boolean;
   conflictingRestrictions?: string[];
   riskConfirmed?: boolean;
