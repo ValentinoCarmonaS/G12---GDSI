@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AdminPricingMigrationTest {
 
     private static final String MIGRATION_DESCRIPTION = "admin dish approval pricing";
-        private static final String CANCELLATION_MIGRATION_DESCRIPTION = "support admin dish cancellation";
+        private static final String CANCELLATION_MIGRATION_DESCRIPTION = "sync ingredient unit purchase cost";
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
