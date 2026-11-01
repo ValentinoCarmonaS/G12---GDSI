@@ -38,6 +38,15 @@ public class User {
     @Column(name = "phone", length = 20)
     private String phone;
 
+    @Column(name = "age")
+    private Integer age;
+
+    @Column(name = "gender", length = 50)
+    private String gender;
+
+    @Column(name = "address", length = 255)
+    private String address;
+
     @Column(name = "pending_email", length = 255)
     private String pendingEmail;
 
@@ -263,6 +272,30 @@ public class User {
 
     public void setEmailVerificationLastSentAt(Instant emailVerificationLastSentAt) {
         this.emailVerificationLastSentAt = emailVerificationLastSentAt;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 }
 
