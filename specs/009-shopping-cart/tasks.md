@@ -54,7 +54,7 @@
 - [X] T016 [P] [US4] Update TypeScript types in `easyeat/frontend/src/types/profile.ts` (`age`, `gender`, `address`, `avatarUrl`) and extend `easyeat/frontend/src/api/profileApi.ts` with `updateDemographics`, `uploadAvatar`, and `removeAvatar`
 - [X] T017 [P] [US4] Implement `PhotoDeleteConfirmModal.tsx` in `easyeat/frontend/src/components/profile/` with verification dialog and provisional avatar fallback preview
 - [X] T018 [US4] Extend `PersonalDataForm.tsx` in `easyeat/frontend/src/components/profile/` adding age, gender, address fields, avatar upload with 5 MB boundary check, and deferred removal execution on form submission
-- [ ] T019 [US4] Update `WorkspaceLayout.tsx` in `easyeat/frontend/src/components/common/` to reactively render custom avatar or institutional fallback in the top navigation bar
+- [X] T019 [US4] Update `WorkspaceLayout.tsx` in `easyeat/frontend/src/components/common/` to reactively render custom avatar or institutional fallback in the top navigation bar
 
 **Checkpoint**: Perfil demográfico y gestión de avatar 100% funcionales y testeables independientemente.
 

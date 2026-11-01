@@ -179,11 +179,13 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
     // Consolidate deferred photo removal if confirmed
     if (isPhotoRemovalPending && onRemoveAvatar) {
       await onRemoveAvatar();
+      window.dispatchEvent(new CustomEvent('easyeat:avatar-changed'));
     }
 
     // Consolidate staged photo upload if selected
     if (stagedPhotoFile && onUploadAvatar) {
       await onUploadAvatar(stagedPhotoFile);
+      window.dispatchEvent(new CustomEvent('easyeat:avatar-changed'));
     }
 
     const parsedAge = age.trim() ? parseInt(age.trim(), 10) : undefined;
