@@ -24,6 +24,11 @@
   Ningún actor puede operar el mecanismo de otra causa ni sustituirlo.
 - Q: ¿Dónde y cómo debe ubicarse el control de alternancia (toggle) en la interfaz del chef? → A: La especificación funcional no prescribe la posición visual, el color, la pantalla ni el layout del control de alternancia. La especificación define estrictamente el comportamiento observable: al accionar el control a estado pausado, el plato desaparece de la vista del comensal; al accionarlo a activo, se restaura la visibilidad del plato (sujeto a las demás condiciones de disponibilidad).
 - Q: ¿Cómo interactúa el umbral de stock crítico con las ventas de platos y la visualización del comensal? → A: El umbral de stock crítico es una referencia operativa interna de reposición para el administrador. No modifica la cantidad disponible real, no bloquea ventas, no altera el precio y no afecta la visibilidad ni la posibilidad de compra de los platos para el comensal mientras la cantidad disponible del insumo sea mayor a cero.
+- Q: ¿Cómo debe responder el carrito de compras del comensal si contiene un plato que el chef pausa manualmente durante el servicio? (CHF-2.2.5) → A: Preservación con bloqueo de compra: el plato permanece en el carrito de sesión exhibiendo una advertencia visible de "Pausado por cocina", inhabilitando los controles de incremento de cantidad y bloqueando el avance a la compra/checkout hasta que el comensal retire el ítem o el chef desactive la pausa manual (en consistencia con la regla de indisponibilidad de la especificación 009 FR-014a).
+- Q: En el módulo de inventario del panel administrativo (ADM-4.1.4), además del resalte visual destacado en cada fila, ¿debe el sistema ofrecer un filtro rápido para listar exclusivamente los ingredientes en estado crítico? → A: Filtro rápido de criticidad en cabecera: el módulo de inventario incorpora un control de filtrado rápido ("Solo insumos en stock crítico" o selector de estado de inventario) que permite al administrador aislar de inmediato los ingredientes por debajo de su umbral, facilitando armar la lista de compras sin necesidad de recorrer manualmente todas las páginas del inventario.
+- Q: ¿Cómo debe interactuar el umbral de stock crítico cuando un ingrediente transiciona a estado "Discontinued" (descontinuado) según el ciclo de vida de la spec 004? → A: Suspensión de alertas en estado descontinuado: los ingredientes en estado "Discontinued" suspenden de forma automática la evaluación y visualización de alertas de stock crítico, dado que son insumos que el establecimiento no tiene intención de reponer ante proveedores. El umbral numérico configurado se preserva en su registro histórico, y si el administrador reactiva el ingrediente a "Active", la evaluación de criticidad se reanuda inmediatamente.
+- Q: ¿Cómo debe propagarse el estado de pausa manual de un plato entre múltiples chefs que operan simultáneamente en el mismo establecimiento? → A: Sincronización colaborativa en tiempo real ($\le 3$ s): al accionar un chef el control de alternancia (toggle), el nuevo estado operativo del plato se sincroniza y refleja en tiempo real en los paneles de cocina de todos los chefs del establecimiento sin requerir recarga manual de pantalla, permitiendo que cualquier chef habilitado de la brigada pueda conmutar el estado según la evolución del servicio.
+- Q: ¿Cómo debe comportarse el control de alternancia (toggle) del chef si el plato se encuentra sin stock de insumos o desactivado administrativamente? → A: Operabilidad preventiva permanente: el chef puede accionar el control de alternancia en cualquier momento, con independencia de si el plato tiene stock o si está desactivado por el administrador. Esto permite establecer una pausa preventiva en cocina (por ejemplo, por equipamiento averiado), garantizando que el plato no se exhiba al comensal cuando se registre una reposición de inventario o una reactivación administrativa.
 
 ---
 
@@ -104,6 +109,18 @@ Los siguientes invariantes definen las reglas funcionales y operativas inviolabl
   $$\text{configurar\_umbral} \subset \text{Permisos}(\text{ADMIN}) \quad \land \quad \text{operar\_pausa\_chef} \subset \text{Permisos}(\text{CHEF})$$  
   Únicamente los usuarios autenticados con rol Administrador tienen autorización para fijar o modificar el umbral de stock crítico. Únicamente los usuarios autenticados con rol Chef tienen autorización para operar el control de alternancia de pausa manual de platos.
 
+- **INV-17: Inmunidad de alertas en insumos descontinuados**  
+  $$\text{estado}(i) = \text{DISCONTINUED} \implies \text{alerta\_visual\_visible}(i) = \text{false}$$  
+  Un ingrediente en estado descontinuado (especificación 004) no emite alertas visuales de reabastecimiento bajo ninguna circunstancia, aun cuando su cantidad disponible sea estrictamente menor al umbral configurado. El valor del umbral se conserva intacto en su registro histórico y se reactiva de manera automática si el ingrediente regresa a estado activo.
+
+- **INV-18: Sincronización colaborativa entre personal de cocina**  
+  $$\text{conmutación\_pausa}(p, \text{chef}_1) \implies \text{panel\_reflejado}(p, \text{chef}_2) \text{ en lapso } \le 3 \text{ segundos}$$  
+  Cualquier modificación sobre el control de alternancia ejecutada por un chef impacta en tiempo real en las interfaces de cocina de todos los usuarios con rol Chef del mismo establecimiento, garantizando visibilidad compartida y permitiendo a cualquiera de ellos revertir la pausa ante la normalización del servicio.
+
+- **INV-19: Autonomía operativa del control de alternancia del chef**  
+  $$\forall p \in \text{Platos}, \quad \text{control\_pausa\_chef}(p) \text{ es siempre operable por el chef}$$  
+  El control de alternancia del chef permanece habilitado y operable con independencia del estado de stock de sus ingredientes o del estado de activación comercial fijado por el administrador, permitiendo fijar pausas preventivas sin bloqueos de interfaz.
+
 ---
 
 ## User Scenarios & Testing *(mandatory)*
@@ -140,6 +157,7 @@ Los siguientes invariantes definen las reglas funcionales y operativas inviolabl
 3. **Dado** que un ingrediente se encuentra resaltado en estado crítico, **Cuando** se registra una reposición o ajuste positivo de mercadería que eleva la cantidad disponible a un valor mayor o igual que su umbral crítico, **Entonces** el sistema remueve el indicador visual de alerta en la siguiente visualización del inventario.
 4. **Dado** que un ingrediente entra en estado crítico, **Cuando** el sistema procesa la condición, **Entonces** la alerta permanece confinada exclusivamente a la visualización del panel administrativo, sin enviar correos electrónicos a proveedores, mensajes SMS ni órdenes de compra automáticas (NS-2).
 5. **Dado** que existen múltiples ingredientes en el inventario con cantidades inferiores a sus respectivos umbrales críticos, **Cuando** el administrador accede a la lista, **Entonces** todos los insumos afectados presentan su indicador de alerta visual simultáneamente.
+6. **Dado** que el administrador se encuentra en el módulo de inventario, **Cuando** activa el control de filtro rápido de insumos críticos, **Entonces** el sistema actualiza la lista para exhibir de forma exclusiva aquellos ingredientes cuya cantidad disponible sea estrictamente menor a su umbral crítico configurado.
 
 ---
 
@@ -185,6 +203,9 @@ Los siguientes invariantes definen las reglas funcionales y operativas inviolabl
 - **EC-020**: Múltiples ingredientes entran en estado crítico de forma simultánea → El módulo de inventario resalta visualmente todos los ingredientes que cumplan la condición, sin que la presencia de múltiples alertas degrade la visualización.
 - **EC-021**: Múltiples platos pausados manualmente por el chef en el mismo establecimiento → Cada plato pausado se oculta individualmente del menú del comensal.
 - **EC-022**: Umbral de stock crítico configurado en un valor arbitrariamente alto en relación a la capacidad física de almacenamiento → El sistema acepta el valor si cumple con ser un número entero mayor o igual a 0, sin imponer topes máximos artificiales a la decisión del administrador.
+- **EC-023**: Comensal con un plato en su carrito de compras cuando el chef acciona la pausa manual → El plato se preserva en el carrito de sesión marcado con una advertencia visible de "Pausado por cocina", se inhabilitan los controles de incremento de unidades y se bloquea la confirmación del pedido/checkout hasta que el comensal lo retire o el chef desactive la pausa.
+- **EC-024**: Ingrediente en estado descontinuado con cantidad disponible inferior a su umbral de stock crítico → El sistema no resalta el ingrediente como crítico ni emite alertas en el inventario; al reactivarse a "Active", si la cantidad continúa por debajo del umbral, el resaltado de alerta se reactiva inmediatamente.
+- **EC-025**: Dos o más chefs accionan el control de alternancia de pausa sobre el mismo plato casi en simultáneo → El sistema procesa los eventos mediante resolución secuencial ("el último cambio confirmado prevalece"), convergiendo en un estado definitivo consistente y sincronizado en todos los paneles de cocina en $\le 3$ segundos.
 
 ---
 
@@ -210,6 +231,11 @@ Los siguientes invariantes definen las reglas funcionales y operativas inviolabl
 - **FR-016**: Si un comensal se encuentra visualizando el panel de detalle de un plato en el instante en que el chef acciona la pausa manual, el sistema DEBE actualizar en tiempo real ($\le 3$ segundos) la vista marcando el plato como no disponible e inhabilitando las acciones de compra, y al cerrar el panel, el plato DEBE quedar excluido de la grilla del catálogo (cubre EC-017, INV-15).
 - **FR-017**: El sistema DEBE restringir la configuración del umbral de stock crítico exclusivamente a usuarios autenticados con rol Administrador, rechazando cualquier intento de configuración por parte de otros roles (cubre INV-16, EC-018).
 - **FR-018**: El sistema DEBE restringir la operación del control de alternancia de pausa manual exclusivamente a usuarios autenticados con rol Chef dentro de su propio establecimiento (cubre INV-16, EC-019).
+- **FR-019**: Si un plato se encuentra presente en el carrito de compras de un comensal cuando el chef acciona la pausa manual, el sistema DEBE preservar el producto en el carrito de sesión exhibiendo una advertencia visible de "Pausado por cocina", inhabilitando los controles de incremento de unidades y bloqueando la confirmación de la orden hasta que el comensal retire el ítem o el chef reactive la disponibilidad del plato (cubre CHF-2.2.5, EC-023, consistencia con especificación 009 FR-014a).
+- **FR-020**: El módulo de inventario del panel administrativo DEBE proveer un control de filtrado rápido que permita al administrador aislar y visualizar exclusivamente los ingredientes que se encuentren en estado de stock crítico ($\text{cantidad\_disponible} < \text{umbral\_critico}$), evitando la necesidad de recorrer manualmente la totalidad de los ítems o páginas del inventario (cubre ADM-4.1.4, INV-4).
+- **FR-021**: El sistema DEBE suspender la emisión de alertas visuales de stock crítico para cualquier ingrediente que se encuentre en estado "Discontinued" (descontinuado), preservando el valor de su umbral en el registro histórico y reanudando la evaluación de criticidad de forma automática si el ingrediente es reactivado al estado "Active" (cubre INV-17, EC-024, consistencia con especificación 004).
+- **FR-022**: El sistema DEBE propagar y reflejar el cambio de estado del control de alternancia de pausa manual de platos en los paneles de todos los usuarios autenticados con rol Chef dentro del mismo establecimiento en un lapso no superior a 3 segundos, sin exigir la recarga manual de la interfaz (cubre CHF-2.2.5, INV-18, EC-025).
+- **FR-023**: El sistema DEBE mantener el control de alternancia de pausa manual habilitado y operable por el personal con rol Chef en todo momento para los platos del catálogo, permitiendo fijar estados de pausa de forma preventiva aun cuando el plato se encuentre agotado por inventario o desactivado administrativamente (cubre CHF-2.2.5, INV-10, INV-19, EC-011, EC-012).
 
 ---
 
@@ -243,6 +269,7 @@ Los siguientes invariantes definen las reglas funcionales y operativas inviolabl
 - **SC-012**: El 100% de los ingredientes que cruzan el umbral crítico por efecto de una venta o ajuste manual reflejan el indicador visual de alerta en la siguiente consulta del módulo de inventario.
 - **SC-013**: El 100% de los ingredientes reabastecidos por encima de su umbral crítico dejan de exhibir el indicador visual de alerta en la siguiente consulta del módulo de inventario.
 - **SC-014**: Ante la coexistencia de múltiples causas de indisponibilidad sobre un mismo plato (ejemplo: pausa manual del chef y falta de stock de cocina), el sistema preserva la independencia de cada estado y las refleja de forma distinguible en los paneles de personal correspondientes.
+- **SC-015**: El 100% de las activaciones del filtro rápido de insumos críticos en el módulo de inventario reducen la visualización exclusivamente a ingredientes que cumplan la condición $\text{cantidad\_disponible} < \text{umbral\_critico}$.
 
 ---
 
