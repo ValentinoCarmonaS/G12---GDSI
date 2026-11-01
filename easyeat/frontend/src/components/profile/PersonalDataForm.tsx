@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User as UserIcon, Camera, Trash2 } from 'lucide-react';
 import { PhotoDeleteConfirmModal } from './PhotoDeleteConfirmModal';
+import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
 
 export interface PersonalDataFormProps {
   initialData?: {
@@ -23,8 +24,8 @@ export interface PersonalDataFormProps {
   }) => Promise<void>;
   onCancel?: () => void;
   onRequestEmailChange?: (newEmail: string) => Promise<void>;
-  onUploadAvatar?: (file: File) => Promise<void>;
-  onRemoveAvatar?: () => Promise<void>;
+  onUploadAvatar?: (file: File) => Promise<unknown>;
+  onRemoveAvatar?: () => Promise<unknown>;
   isSubmitting?: boolean;
 }
 
@@ -248,7 +249,7 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
           <div className="w-24 h-24 rounded-full overflow-hidden bg-neutral-100 border-2 border-neutral-200 flex items-center justify-center text-neutral-400">
             {avatarPreview ? (
               <img
-                src={avatarPreview}
+                src={getAuthenticatedAvatarUrl(avatarPreview)}
                 alt="Avatar comensal"
                 className="w-full h-full object-cover"
               />

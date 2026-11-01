@@ -65,6 +65,119 @@ describe('useProfile custom hook (T021, COM-1.4.1 & COM-1.4.3)', () => {
     expect(result.current.profile).toEqual(updatedProfile);
   });
 
+  it('updates personal data while preserving existing demographic and avatar data in state', async () => {
+    const profileWithDemographics: ProfileResponse = {
+      ...mockProfile,
+      age: 26,
+      gender: 'MALE',
+      address: 'Paseo Colón 850',
+      avatarUrl: '/api/v1/profile/avatar',
+    };
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(profileWithDemographics);
+    vi.spyOn(profileApi, 'getDietaryTaxonomy').mockResolvedValueOnce(mockTaxonomy);
+    const updatedPersonalData: ProfileResponse = {
+      ...mockProfile,
+      firstName: 'Agustin',
+      lastName: 'Carmona',
+      fullName: 'Agustin Carmona',
+    };
+    vi.spyOn(profileApi, 'updatePersonalData').mockResolvedValueOnce(updatedPersonalData);
+
+    const { result } = renderHook(() => useProfile());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.updatePersonalData({
+        firstName: 'Agustin',
+        lastName: 'Carmona',
+      });
+    });
+
+    expect(result.current.profile?.firstName).toBe('Agustin');
+    expect(result.current.profile?.age).toBe(26);
+    expect(result.current.profile?.gender).toBe('MALE');
+    expect(result.current.profile?.address).toBe('Paseo Colón 850');
+    expect(result.current.profile?.avatarUrl).toBe('/api/v1/profile/avatar');
+  });
+
+  it('updates demographic data and updates profile state', async () => {
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
+    vi.spyOn(profileApi, 'getDietaryTaxonomy').mockResolvedValueOnce(mockTaxonomy);
+    const updatedDemographics: ProfileResponse = {
+      ...mockProfile,
+      age: 30,
+      gender: 'FEMALE',
+      address: 'Av. Corrientes 1234',
+    };
+    vi.spyOn(profileApi, 'updateDemographics').mockResolvedValueOnce(updatedDemographics);
+
+    const { result } = renderHook(() => useProfile());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.updateDemographics({
+        age: 30,
+        gender: 'FEMALE',
+        address: 'Av. Corrientes 1234',
+      });
+    });
+
+    expect(result.current.profile?.age).toBe(30);
+    expect(result.current.profile?.gender).toBe('FEMALE');
+    expect(result.current.profile?.address).toBe('Av. Corrientes 1234');
+  });
+
+  it('uploads avatar and refreshes profile', async () => {
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValue(mockProfile);
+    vi.spyOn(profileApi, 'getDietaryTaxonomy').mockResolvedValue(mockTaxonomy);
+    const mockFile = new File(['dummy'], 'avatar.png', { type: 'image/png' });
+    vi.spyOn(profileApi, 'uploadAvatar').mockResolvedValueOnce({
+      userId: 'uuid-1',
+      fileName: 'avatar.png',
+      contentType: 'image/png',
+      fileSize: 100,
+      avatarUrl: '/api/v1/profile/avatar',
+    });
+
+    const { result } = renderHook(() => useProfile());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce({
+      ...mockProfile,
+      avatarUrl: '/api/v1/profile/avatar',
+    });
+
+    await act(async () => {
+      await result.current.uploadAvatar(mockFile);
+    });
+
+    expect(result.current.profile?.avatarUrl).toBe('/api/v1/profile/avatar');
+  });
+
+  it('removes avatar and refreshes profile', async () => {
+    const profileWithAvatar: ProfileResponse = {
+      ...mockProfile,
+      avatarUrl: '/api/v1/profile/avatar',
+    };
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValue(profileWithAvatar);
+    vi.spyOn(profileApi, 'getDietaryTaxonomy').mockResolvedValue(mockTaxonomy);
+    vi.spyOn(profileApi, 'removeAvatar').mockResolvedValueOnce();
+
+    const { result } = renderHook(() => useProfile());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce({
+      ...mockProfile,
+      avatarUrl: null,
+    });
+
+    await act(async () => {
+      await result.current.removeAvatar();
+    });
+
+    expect(result.current.profile?.avatarUrl).toBeNull();
+  });
+
   it('updates dietary restrictions and reflects changes in profile state', async () => {
     vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
     vi.spyOn(profileApi, 'getDietaryTaxonomy').mockResolvedValueOnce(mockTaxonomy);
