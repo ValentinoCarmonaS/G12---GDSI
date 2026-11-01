@@ -43,7 +43,7 @@
 - [X] T008 [P] [US4] Write unit tests in `UserPhotoServiceTest.java` in `easyeat/backend/src/test/java/com/easyeat/profile/service/` verifying magic bytes MIME validation (JPEG, PNG, WEBP), size boundary at 5.242.880 bytes, and rejection of > 5 MB and empty files (INV-4)
 - [X] T009 [P] [US4] Write MockMvc contract tests in `ProfileControllerTest.java` in `easyeat/backend/src/test/java/com/easyeat/profile/controller/` verifying `PUT /api/v1/profile/demographics`, `POST /api/v1/profile/avatar`, `GET /api/v1/profile/avatar`, and `DELETE /api/v1/profile/avatar` with RFC 7807 ProblemDetail error responses
 - [X] T010 [P] [US4] Write component tests in `PersonalDataForm.test.tsx` in `easyeat/frontend/tests/components/` verifying age field validation (14-120), gender selection, address text entry, and inline error message rendering
-- [ ] T011 [P] [US4] Write component tests in `PhotoUploadAndRemoval.test.tsx` in `easyeat/frontend/tests/components/` verifying 5 MB client size check, invalid MIME error, and deferred removal confirmation flow (FR-024, FR-025)
+- [X] T011 [P] [US4] Write component tests in `PhotoUploadAndRemoval.test.tsx` in `easyeat/frontend/tests/components/` verifying 5 MB client size check, invalid MIME error, and deferred removal confirmation flow (FR-024, FR-025)
 
 ### Implementation for User Story 4
 
