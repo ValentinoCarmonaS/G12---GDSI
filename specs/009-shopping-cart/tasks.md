@@ -39,7 +39,7 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T007 [P] [US4] Write unit and validation tests in `DemographicsValidationTest.java` in `easyeat/backend/src/test/java/com/easyeat/profile/domain/` validating age limits (14 to 120), address max 255 chars, and valid gender values (INV-5, INV-8)
+- [X] T007 [P] [US4] Write unit and validation tests in `DemographicsValidationTest.java` in `easyeat/backend/src/test/java/com/easyeat/profile/domain/` validating age limits (14 to 120), address max 255 chars, and valid gender values (INV-5, INV-8)
 - [ ] T008 [P] [US4] Write unit tests in `UserPhotoServiceTest.java` in `easyeat/backend/src/test/java/com/easyeat/profile/service/` verifying magic bytes MIME validation (JPEG, PNG, WEBP), size boundary at 5.242.880 bytes, and rejection of > 5 MB and empty files (INV-4)
 - [ ] T009 [P] [US4] Write MockMvc contract tests in `ProfileControllerTest.java` in `easyeat/backend/src/test/java/com/easyeat/profile/controller/` verifying `PUT /api/v1/profile/demographics`, `POST /api/v1/profile/avatar`, `GET /api/v1/profile/avatar`, and `DELETE /api/v1/profile/avatar` with RFC 7807 ProblemDetail error responses
 - [ ] T010 [P] [US4] Write component tests in `PersonalDataForm.test.tsx` in `easyeat/frontend/tests/components/` verifying age field validation (14-120), gender selection, address text entry, and inline error message rendering
