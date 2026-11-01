@@ -30,6 +30,7 @@ describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.spyOn(profileApi, 'getDietaryTaxonomy').mockResolvedValue(mockTaxonomy);
+    vi.spyOn(profileApi, 'updateDemographics').mockResolvedValue(mockProfile);
   });
 
   const renderWithProviders = (ui: React.ReactElement) => {
@@ -84,6 +85,38 @@ describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
     await user.click(saveBtn);
 
     expect(await screen.findByText(/actualizado correctamente/i)).toBeInTheDocument();
+  });
+
+  it('updates personal data and demographics on form submit and calls both endpoints', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValue(mockProfile);
+    const updatePersonalDataSpy = vi.spyOn(profileApi, 'updatePersonalData').mockResolvedValue(mockProfile);
+    const updateDemographicsSpy = vi.spyOn(profileApi, 'updateDemographics').mockResolvedValue({
+      ...mockProfile,
+      age: 28,
+      gender: 'MALE',
+      address: 'Paseo Colón 850',
+    });
+
+    renderWithProviders(<ProfilePage />);
+
+    const ageInput = await screen.findByLabelText(/edad/i);
+    await user.type(ageInput, '28');
+
+    const addressInput = screen.getByLabelText(/domicilio/i);
+    await user.type(addressInput, 'Paseo Colón 850');
+
+    const saveBtn = screen.getByRole('button', { name: /guardar cambios/i });
+    await user.click(saveBtn);
+
+    expect(await screen.findByText(/actualizado correctamente/i)).toBeInTheDocument();
+    expect(updatePersonalDataSpy).toHaveBeenCalled();
+    expect(updateDemographicsSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        age: 28,
+        address: 'Paseo Colón 850',
+      })
+    );
   });
 
   it('renders DietaryRestrictionsSelector and updates dietary preferences (T038)', async () => {

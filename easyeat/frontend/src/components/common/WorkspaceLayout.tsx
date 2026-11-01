@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { profileApi } from '../../api/profileApi';
 import { adminNotificationApi } from '../../api/adminNotificationApi';
 import { AdminNotificationBell } from '../notification/AdminNotificationBell';
+import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
 import type { AdminNotificationResponse } from '../../types/notification';
 
 interface WorkspaceLayoutProps {
@@ -180,7 +181,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   >
                     {avatarUrl ? (
                       <img
-                        src={avatarUrl}
+                        src={getAuthenticatedAvatarUrl(avatarUrl)}
                         alt="Avatar"
                         className="w-full h-full object-cover"
                       />

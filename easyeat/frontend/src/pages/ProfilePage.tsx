@@ -16,6 +16,10 @@ export const ProfilePage: React.FC = () => {
     error,
     cooldownSeconds,
     updatePersonalData,
+    updateDemographics,
+    uploadAvatar,
+    removeAvatar,
+    refreshProfile,
     updateDietaryRestrictions,
     requestEmailChange,
     resendVerification,
@@ -26,10 +30,27 @@ export const ProfilePage: React.FC = () => {
 
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
-  const handlePersonalDataSubmit = async (data: { firstName: string; lastName: string; phone?: string }) => {
+  const handlePersonalDataSubmit = async (data: {
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    age?: number;
+    gender?: string;
+    address?: string;
+  }) => {
     setSuccessBanner(null);
-    await updatePersonalData(data);
-    setSuccessBanner('Tus datos personales se han actualizado correctamente.');
+    await updatePersonalData({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      phone: data.phone,
+    });
+    await updateDemographics({
+      age: data.age ?? null,
+      gender: data.gender ?? null,
+      address: data.address ?? null,
+    });
+    await refreshProfile();
+    setSuccessBanner('Tus datos personales y demográficos se han actualizado correctamente.');
     setTimeout(() => {
       setSuccessBanner(null);
     }, 4000);
@@ -108,6 +129,10 @@ export const ProfilePage: React.FC = () => {
               initialData={profile || undefined}
               onSubmit={handlePersonalDataSubmit}
               onRequestEmailChange={handleRequestEmailChange}
+              onUploadAvatar={async (file) => {
+                await uploadAvatar(file);
+              }}
+              onRemoveAvatar={removeAvatar}
             />
 
             <DietaryRestrictionsSelector
