@@ -1,85 +1,87 @@
 # Implementation Plan: Shopping Cart Management & Diner Profile Demographics
 
-**Branch**: `009-shopping-cart` | **Fecha**: 31/10/2026 | **Spec**: [spec.md](./spec.md)
+**Branch**: `009-shopping-cart` | **Date**: 2026-10-31 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/009-shopping-cart/spec.md`
 
----
-
-## Summary
-
-Implementar la extensión integral full-stack del carrito de compras y del perfil demográfico del comensal para la plataforma web gastronómica EasyEat. Esta iteración abarca cuatro áreas funcionales rigurosamente acordadas:
-1. **COM-6.1.1 (Agregar plato al pedido)**: Incorporación de un selector numérico previo de cantidad en la vista de detalle del plato (`DishDetailModal`), permitiendo añadir de 1 a $N$ unidades a la sesión local del comensal en una única acción, con acumulación automática para platos repetidos y notificación visual de éxito.
-2. **COM-6.1.2 (Ver acumulado del carrito)**: Despliegue de un botón flotante interactivo (`FloatingCartButton`) en la esquina inferior derecha, visible de forma biunívoca exclusivamente en las vistas del catálogo cuando la orden contiene $\ge 1$ ítem. El botón exhibe la cantidad total de unidades y el subtotal monetario consolidado en tiempo real sin recargas de página, desplegando al interactuar un modal/drawer (`CartDrawer`) con el desglose íntegro. Todos los cálculos se rigen por aritmética de punto fijo a dos decimales basada en centavos enteros.
-3. **COM-6.1.3 (Modificar cantidades)**: Controles interactivos de suma y resta unitaria en el modal del carrito con recálculo instantáneo. El incremento se bloquea automáticamente al alcanzar el stock real disponible en cocina; restar sobre la última unidad (cantidad = 1) elimina el plato por completo. Las modificaciones rápidas aplican actualización optimista inmediata con sincronización diferida (*debouncing* de 300 ms) y reversión determinista (*rollback*) con alerta visible ante fallos de red o inconsistencias de stock.
-4. **COM-1.4.2 (Editar datos demográficos)**: Formulario de edición demográfica que amplía el expediente del comensal con edad (validación estricta en rango biológico de 14 a 120 años), género (clasificación cerrada estándar), domicilio de contacto (texto libre hasta 255 caracteres, aislado de ruteo o logística externa) y gestión de foto de perfil. La subida de imagen admite JPEG, PNG y WEBP hasta 5 MB (5.242.880 bytes inclusivo) persistida en PostgreSQL (`BYTEA`), reflejándose de inmediato en la barra superior (`WorkspaceLayout`). La eliminación de foto cuenta con diálogo de verificación y confirmación diferida al presionar "Guardar cambios", restableciendo el avatar institucional por defecto.
+**Companion artifacts**: [research.md](./research.md) · [data-model.md](./data-model.md) · [contracts/openapi.yaml](./contracts/openapi.yaml) · [contracts/behavioral-contracts.md](./contracts/behavioral-contracts.md) · [quickstart.md](./quickstart.md)
 
 ---
 
-## Technical Context
+## 1. Summary
 
-**Language/Version**: Java 21 (LTS), TypeScript 5.x / React 18.  
-**Primary Dependencies**:
-- *Backend*: Spring Boot 3.3.4 (Spring Web, Spring Data JPA, Spring Security, Spring Validation), Flyway Core 10.x, PostgreSQL Driver (`42.7.4`), JJWT (`0.12.5`), Lombok, Jackson Problem (`problem-spring-web` RFC 7807), Testcontainers (`1.20.1`). *(Verificado en `easyeat/backend/pom.xml`)*.
-- *Frontend*: React 18, React Router v6 (`react-router-dom`), Tailwind CSS v4, Lucide React (iconos), Axios (`apiClient.ts`). *(Verificado en `easyeat/frontend/package.json`)*.  
-**Storage**: PostgreSQL 16 (tabla `users` extendida con `age`, `gender`, `address`; tabla `user_photos` para almacenamiento binario `BYTEA` de avatares; sesión local `sessionStorage` para el carrito de compras con clave `'easyeat_cart'`). *(Verificado en migraciones `V1` a `V9` y `CartContext.tsx`)*.  
-**Testing**:
-- *Backend*: JUnit 5, Mockito, MockMvc, AssertJ, Testcontainers (pruebas de integración PostgreSQL reales).
-- *Frontend*: Vitest, React Testing Library, jsdom, `@testing-library/user-event`. *(Verificado en `easyeat/frontend/src/test`)*.  
-**Target Platform**: Servidores Linux / contenedores Docker para backend Spring Boot; navegadores web modernos estándar (Chrome, Firefox, Safari, Edge) para el frontend SPA.  
-**Project Type**: Full-stack Web Application (Spring Boot REST API Gateway + React Single-Page Application).  
-**Performance Goals**:
-- Latencia de adición y recálculo visual en carrito: $\le 100\text{ ms}$ (en memoria en cliente).
-- Sincronización diferida de stock: ventana de *debouncing* de $300\text{ ms}$.
-- Reflejo de avatar en barra de navegación: $\le 1\text{ segundo}$ tras confirmación en servidor.
-- Ocultamiento de botón flotante al vaciar carrito: $\le 500\text{ ms}$.  
-**Constraints**:
-- Autenticación obligatoria con rol `ROLE_COMENSAL` para acceso al catálogo, perfil demográfico y endpoints de avatar. Clientes anónimos reciben HTTP 401 Unauthorized sin fuga de datos.
-- Aislamiento multi-tenant estricto: el carrito se encuentra ligado al `tenantId` del restaurante activo; cambiar de establecimiento alerta y vacía la orden (Spec 008 COM-1.5.1 CA 5).
-- Aritmética decimal exacta a 2 decimales (punto fijo mediante centavos enteros, INV-2).
-- Cota de tamaño de imagen: $0 < \text{tamaño} \le 5.242.880\text{ bytes}$ (INV-4).
-- Cota de edad biológica: $14 \le \text{edad} \le 120$ (INV-5).
-- Domicilio exclusivamente como dato de contacto de texto, sin motores de ruteo, geocodificación ni APIs externas de delivery (INV-8).  
-**Scale/Scope**: Cientos de restaurantes concurrentes, menús de más de 50 platos por local, órdenes de carrito con hasta 50 ítems simultáneos, usuarios comensales gestionando personalización de perfil.
+Implement the complete full-stack extension for shopping cart management and diner profile demographics across the EasyEat gastronomic web platform. This iteration encompasses four rigorously agreed functional areas:
+1. **COM-6.1.1 (Add dish to order)**: Introduction of an interactive quantity selector in the dish detail view (`DishDetailModal`), allowing diners to add between 1 and $N$ units to their local cart session in a single interaction, with automatic quantity accumulation for repeat dishes and visible toast confirmation feedback.
+2. **COM-6.1.2 (View accumulated cart summary)**: Deployment of a reactive floating button (`FloatingCartButton`) in the bottom-right corner, conditionally and bijectively visible exclusively within catalog views when the order holds $\ge 1$ item. The button displays total item count and consolidated monetary subtotal in real time without page reload, opening an interactive detailed drawer (`CartDrawer`) with a full breakdown upon click. All monetary calculations adhere to fixed-point two-decimal arithmetic in integer cents.
+3. **COM-6.1.3 (Modify item quantities)**: Interactive unit increment and decrement controls within the cart drawer with instantaneous financial recalculation. Incrementing automatically disables when reaching real kitchen stock availability; decrementing at quantity 1 completely removes the item line. Rapid bursts apply optimistic UI updates with deferred backend synchronization (300 ms debounce window) and deterministic rollback with error alerting upon network failure or concurrent stock depletion.
+4. **COM-1.4.2 (Edit diner demographics & avatar)**: Demographic profile edition form extending the diner user record with age (strictly validated in biological range 14 to 120 years), gender (closed taxonomy), contact address (free-form text up to 255 characters, decoupled from routing or external logistics), and avatar photo management. Image upload supports JPEG, PNG, and WEBP up to 5 MB (5,242,880 bytes inclusive) stored directly in PostgreSQL (`BYTEA`), reflecting reactively on the top navigation bar (`WorkspaceLayout`). Photo removal features a verification modal and deferred confirmation upon clicking "Save changes", restoring the institutional default avatar.
 
 ---
 
-## Constitution Check
+## 2. Technical Context
 
-*GATE: Evaluación frente a la Constitución SDD versión 2.0.0. Aprobación obligatoria antes de avanzar a descomposición de tareas.*
+- **Language/Version**: Java 21 (LTS) backend, TypeScript 5.x / React 18 frontend. *(Verified in `easyeat/backend/pom.xml` and `easyeat/frontend/package.json`)*.
+- **Primary Dependencies**:
+  - *Backend*: Spring Boot 3.3.4 (Spring Web, Spring Data JPA, Spring Security, Spring Validation), Flyway Core 10.x, PostgreSQL Driver (`42.7.4`), JJWT (`0.12.5`), Lombok, Jackson Problem (`problem-spring-web` RFC 7807), Testcontainers (`1.20.1`).
+  - *Frontend*: React 18, React Router v6 (`react-router-dom`), Tailwind CSS v4, Lucide React icons, Axios (`apiClient.ts`).
+- **Storage**: PostgreSQL 16 (`users` table extended with `age`, `gender`, `address`; `user_photos` table for binary `BYTEA` storage of avatars; client-side `sessionStorage` for cart persistence using key `'easyeat_cart'`). Next available migration on this branch: `V12__extend_user_demographics_and_avatar.sql` (renumbered from V10 to prevent collision with sprint-3's V10 and V11 migrations).
+- **Testing**:
+  - *Backend*: JUnit 5, Mockito, MockMvc, AssertJ, Testcontainers (PostgreSQL 16).
+  - *Frontend*: Vitest, React Testing Library, jsdom, `@testing-library/user-event`.
+- **Target Platform**: Linux servers / Docker containers for backend Spring Boot; modern standard web browsers (Chrome, Firefox, Safari, Edge) for frontend SPA.
+- **Project Type**: Full-stack Web Application (Spring Boot REST API Gateway + React Single-Page Application).
+- **Performance Goals**:
+  - Addition and local visual recalculation latency in cart: $\le 100\text{ ms}$ (in-memory client state).
+  - Deferred stock sync: $300\text{ ms}$ debounce window.
+  - Avatar reflection on navbar: $\le 1\text{ s}$ upon server confirmation.
+  - Floating button hide on cart empty: $\le 500\text{ ms}$.
+- **Constraints**:
+  - Mandatory authentication with `ROLE_COMENSAL` for catalog, demographic profile, and avatar endpoints. Anonymous requests receive HTTP 401 Unauthorized without data leakage.
+  - Strict multi-tenant isolation: the cart session is bound to the active restaurant's `tenantId`; switching establishments warns and flushes the order (Spec 008 COM-1.5.1 AC 5).
+  - Exact monetary arithmetic with 2 decimal places (fixed-point integer cents, INV-2).
+  - Image size boundary: $0 < \text{size} \le 5,242,880\text{ bytes}$ (INV-4).
+  - Biological age boundary: $14 \le \text{age} \le 120$ (INV-5).
+  - Address strictly treated as descriptive contact text without geocoding, route engines, or delivery integrations (INV-8).
+- **Scale/Scope**: Hundreds of concurrent establishments, menus with 50+ dishes per restaurant, cart orders with up to 50 concurrent line items, diner users managing profile customization.
 
-| Principio | Estado | Evidencia y Justificación Técnica |
+---
+
+## 3. Constitution Check
+
+*GATE: Evaluation against SDD Project Constitution version 2.0.0. Mandatory approval before progressing to task breakdown.*
+
+| Principle | Status | Evidence & Technical Justification |
 |---|---|---|
-| **I. The Specification Is the Source of Truth** | **PASS** | El plan técnico cubre rigurosamente los 15 criterios de aceptación (15/15), las 9 invariantes matemáticas y de negocio (INV-1 a INV-9) y los 32 requerimientos funcionales (FR-001 a FR-032) definidos en `specs/009-shopping-cart/spec.md`. No se redefinen requisitos funcionalmente. |
-| **II. Specification Before Implementation** | **PASS** | La especificación fue completada y ratificada previamente; el proceso de ingeniería produjo los artefactos de diseño requeridos (`research.md`, `data-model.md`, `contracts/openapi.yaml`, `contracts/behavioral-contracts.md`, `quickstart.md`, `plan.md`) antes de cualquier codificación o generación de tareas. |
-| **III. Layered Verification Proportional to Risk** | **PASS** | Estrategia de pruebas en 4 capas: (1) Pruebas unitarias de invariantes matemáticas (aritmética de centavos INV-2, suma de unidades INV-1, rango de edad INV-5); (2) Pruebas de integración Spring Boot con Testcontainers y MockMvc validando DDL Flyway `V10`, constraints de base de datos y endpoints de avatar/demográficos; (3) Pruebas de componentes frontend (RTL) para selector numérico, botón flotante, modal y debounce/rollback; (4) Pruebas de regresión con specs previas (003, 007, 008). |
-| **IV. Simple, Cohesive, and Justified Design** | **PASS** | Se reutiliza `sessionStorage` y `CartContext` existente en lugar de introducir esquemas complejos de carritos distribuidos en base de datos. Se reutiliza el patrón probado de almacenamiento `BYTEA` de `DishPhoto` para los avatares (`UserPhoto`), evitando dependencias innecesarias de proveedores cloud externos. |
-| **V. Bounded Scope** | **PASS** | El alcance está estrictamente delimitado a las 4 historias de usuario (COM-6.1.1, COM-6.1.2, COM-6.1.3, COM-1.4.2). Checkout, pasarelas de pago, ruteo geográfico, filtros de catálogo e historial de compras quedan explícitamente excluidos como Out of Scope. |
-| **VI. Controlled Technical Debt** | **PASS** | Se incorpora la migración limpia `V10__extend_user_demographics_and_avatar.sql` siguiendo secuencialmente a `V9__admin_dish_approval_pricing.sql`, sin modificar tablas de cocina ni alterar migraciones históricas. |
-| **VII. Traceability, Consistency, and Documentation** | **PASS** | Matriz de trazabilidad bidireccional completa documentada en este plan: 15/15 ACs, 9/9 Invariantes y 32/32 FRs vinculados con decisiones técnicas, contratos y pruebas verificables. |
-| **VIII. Evidence Over Assumption and Human Escalation** | **PASS** | Todas las decisiones técnicas se sustentan en patrones observables del repositorio (`CartContext.tsx`, `dish_photos`, `WorkspaceLayout.tsx`, `ProfileController.java`) y en las aclaraciones formales acordadas en la sesión de grill-me del 31/10/2026. |
-| **IX. Engineering Over Convenience** | **PASS** | Errores estructurados RFC 7807 `ProblemDetail`, validación de magic bytes para evitar spoofing de extensiones de imagen, constraints `CHECK` en PostgreSQL como última línea de defensa ante datos inválidos. |
-| **X. Full-Stack End-to-End Integrity (Vertical Slices)** | **PASS** | Entrega un vertical slice full-stack integrado: backend (migración Flyway `V10`, entidades JPA, repositorios, servicios, controladores REST, validaciones) y frontend (componentes React, context providers, hooks, estilos Tailwind y vistas integradas). |
+| **I. The Specification Is the Source of Truth** | **PASS** | Technical plan covers all 15 acceptance criteria (15/15), 9 mathematical and business invariants (INV-1 to INV-9), and 32 functional requirements (FR-001 to FR-032) from `specs/009-shopping-cart/spec.md`. Requirements are not diluted or redefined. |
+| **II. Specification Before Implementation** | **PASS** | Specification completed and ratified beforehand; engineering artifacts produced (`research.md`, `data-model.md`, `contracts/openapi.yaml`, `contracts/behavioral-contracts.md`, `quickstart.md`, `plan.md`) prior to code generation. |
+| **III. Layered Verification Proportional to Risk** | **PASS** | 4-layer testing strategy: (1) Unit tests for mathematical invariants (penny arithmetic INV-2, unit sum INV-1, age range INV-5); (2) Spring Boot integration tests with Testcontainers and MockMvc verifying Flyway `V12` DDL, database constraints, and profile endpoints; (3) Frontend component tests (RTL) for quantity selector, floating button, drawer, and debounce/rollback; (4) Regression tests with previous specs (003, 007, 008). |
+| **IV. Simple, Cohesive, and Justified Design** | **PASS** | Reuses `sessionStorage` and existing `CartContext` rather than introducing distributed cart schemas in database. Reuses proven `BYTEA` storage pattern from `DishPhoto` for diner avatars (`UserPhoto`), avoiding external cloud storage dependencies. |
+| **V. Bounded Scope** | **PASS** | Strictly bounded to the 4 user stories (COM-6.1.1, COM-6.1.2, COM-6.1.3, COM-1.4.2). Checkout, payment gateways, geographic delivery routing, catalog filters, and order history are explicitly Out of Scope. |
+| **VI. Controlled Technical Debt** | **PASS** | Incorporates clean Flyway migration `V12__extend_user_demographics_and_avatar.sql` following sprint-3 migrations V10 and V11 without mutating kitchen tables or historical migrations. |
+| **VII. Traceability, Consistency, and Documentation** | **PASS** | Full bidirectional traceability matrix documented: 15/15 ACs, 9/9 Invariants, and 32/32 FRs mapped to technical decisions, contracts, and tests. |
+| **VIII. Evidence Over Assumption and Human Escalation** | **PASS** | All technical decisions grounded in repository code (`CartContext.tsx`, `dish_photos`, `WorkspaceLayout.tsx`, `ProfileController.java`) and formal clarifications from grill-me sessions. |
+| **IX. Engineering Over Convenience** | **PASS** | RFC 7807 `ProblemDetail` structured errors, magic bytes validation preventing MIME spoofing, PostgreSQL `CHECK` constraints as defense-in-depth against invalid data. |
+| **X. Full-Stack End-to-End Integrity (Vertical Slices)** | **PASS** | Delivers integrated vertical slices: backend (Flyway `V12`, JPA entities, repositories, services, REST controllers, validations) and frontend (React components, context providers, hooks, Tailwind styling, integrated views). |
 
 ---
 
-## Project Structure
+## 4. Project Structure
 
 ### Documentation (this feature)
 
 ```text
 specs/009-shopping-cart/
-├── spec.md                  # Especificación funcional aprobada
+├── spec.md                  # Approved functional specification
 ├── checklists/
-│   └── requirements.md      # Lista de verificación de calidad del spec
-├── plan.md                  # Este plan técnico de implementación
-├── research.md              # Fase 0: investigación y decisiones técnicas
-├── data-model.md            # Fase 1: modelo de datos conceptual y esquema relacional
-├── quickstart.md            # Fase 1: guía de validación end-to-end ejecutable
-├── contracts/               # Fase 1: especificación de contratos
-│   ├── openapi.yaml         # Contrato OpenAPI 3.0.3 de endpoints expuestos
-│   └── behavioral-contracts.md # Contratos de comportamiento detallados por operación
-└── tasks.md                 # Fase 2: desglose de tareas (a ser generado por /speckit-tasks)
+│   └── requirements.md      # Specification quality checklist
+├── plan.md                  # Technical implementation plan
+├── research.md              # Phase 0: research & technical decisions
+├── data-model.md            # Phase 1: conceptual data model & relational schema
+├── quickstart.md            # Phase 1: executable end-to-end validation guide
+├── contracts/               # Phase 1: contract specifications
+│   ├── openapi.yaml         # OpenAPI 3.0.3 contract for exposed endpoints
+│   └── behavioral-contracts.md # Detailed behavioral contracts per operation
+└── tasks.md                 # Phase 2: task breakdown linked to GitHub issues
 ```
 
 ### Source Code Layout
@@ -92,190 +94,189 @@ easyeat/
 │   │   │   ├── java/com/easyeat/
 │   │   │   │   ├── profile/
 │   │   │   │   │   ├── controller/
-│   │   │   │   │   │   ├── ProfileController.java            # Extendido: PUT /demographics, endpoints /avatar
-│   │   │   │   │   │   └── ProfileAvatarController.java      # GET /api/v1/profile/avatar (stream binario)
+│   │   │   │   │   │   ├── ProfileController.java            # Extended: PUT /demographics, /avatar endpoints
+│   │   │   │   │   │   └── ProfileAvatarController.java      # GET /api/v1/profile/avatar (binary stream)
 │   │   │   │   │   ├── domain/
-│   │   │   │   │   │   ├── UserPhoto.java                    # Entidad JPA para almacenamiento BYTEA de avatares
-│   │   │   │   │   │   └── Gender.java                       # Enum para clasificación estándar de género
+│   │   │   │   │   │   ├── UserPhoto.java                    # JPA Entity for BYTEA avatar storage
+│   │   │   │   │   │   └── Gender.java                       # Enum for closed gender taxonomy
 │   │   │   │   │   ├── dto/
-│   │   │   │   │   │   ├── DemographicsRequest.java          # DTO de entrada: edad (14-120), género, domicilio
-│   │   │   │   │   │   ├── AvatarUploadResponse.java         # DTO de respuesta de subida de avatar
-│   │   │   │   │   │   └── ExtendedProfileResponse.java      # Extensión de ProfileResponse con datos demográficos
+│   │   │   │   │   │   ├── DemographicsRequest.java          # Inbound DTO: age (14-120), gender, address
+│   │   │   │   │   │   ├── AvatarUploadResponse.java         # Outbound DTO for avatar upload
+│   │   │   │   │   │   └── ExtendedProfileResponse.java      # ProfileResponse extension with demographic data
 │   │   │   │   │   ├── repository/
-│   │   │   │   │   │   └── UserPhotoRepository.java          # JPA Repository para tabla user_photos
+│   │   │   │   │   │   └── UserPhotoRepository.java          # JPA Repository for user_photos table
 │   │   │   │   │   └── service/
-│   │   │   │   │       ├── ProfileService.java               # Extendido con actualización demográfica
-│   │   │   │   │       └── UserPhotoService.java             # Lógica de validación (magic bytes, <= 5MB) y persistencia
+│   │   │   │   │       ├── ProfileService.java               # Extended with demographic update logic
+│   │   │   │   │       └── UserPhotoService.java             # Validation (magic bytes, <= 5MB) and BYTEA persistence
 │   │   │   │   ├── cart/
 │   │   │   │   │   ├── controller/
-│   │   │   │   │   │   └── CartValidationController.java     # POST /api/v1/cart/validate-stock (soporte de sync)
+│   │   │   │   │   │   └── CartValidationController.java     # POST /api/v1/cart/validate-stock (sync endpoint)
 │   │   │   │   │   └── dto/
 │   │   │   │   │       ├── CartStockValidationRequest.java
 │   │   │   │   │       └── CartStockValidationResponse.java
 │   │   │   │   ├── auth/domain/
-│   │   │   │   │   └── User.java                             # Extendido con columnas age, gender, address
+│   │   │   │   │   └── User.java                             # Extended with age, gender, address columns
 │   │   │   │   └── config/
-│   │   │   │       └── SecurityConfig.java                   # Configuración de permisos para /profile/** y /cart/**
+│   │   │   │       └── SecurityConfig.java                   # Access rules for /profile/** and /cart/**
 │   │   │   └── resources/
 │   │   │       └── db/migration/
-│   │   │           └── V10__extend_user_demographics_and_avatar.sql # DDL Flyway para user_photos y columnas en users
+│   │   │           └── V12__extend_user_demographics_and_avatar.sql # Flyway DDL for user_photos and users columns
 │   │   └── test/java/com/easyeat/
 │   │       ├── profile/
-│   │       │   ├── controller/ProfileControllerTest.java     # Pruebas MockMvc de endpoints demográficos y avatar
-│   │       │   ├── service/UserPhotoServiceTest.java         # Pruebas unitarias de límites de imagen y magic bytes
-│   │       │   └── domain/DemographicsValidationTest.java    # Pruebas de validación de edad (14-120) y constraints
+│   │       │   ├── controller/ProfileControllerTest.java     # MockMvc slice tests for demographic & avatar endpoints
+│   │       │   ├── service/UserPhotoServiceTest.java         # Unit tests for image boundaries and magic bytes
+│   │       │   ├── domain/DemographicsValidationTest.java    # Unit tests for age (14-120) and gender constraints
+│   │       │   └── migration/DemographicsAvatarMigrationTest.java # Flyway V12 migration test
 │   │       └── cart/
-│   │           └── CartValidationIntegrationTest.java        # Pruebas de integración de validación de stock
+│   │           └── CartValidationIntegrationTest.java        # Stock validation integration tests
 │   └── pom.xml
 │
 └── frontend/
     ├── src/
     │   ├── api/
-    │   │   ├── profileApi.ts                                 # Extendido: updateDemographics, uploadAvatar, removeAvatar
-    │   │   └── cartValidationApi.ts                          # Cliente para validación de stock de carrito
+    │   │   ├── profileApi.ts                                 # Extended: updateDemographics, uploadAvatar, removeAvatar
+    │   │   └── cartValidationApi.ts                          # Client for cart stock validation
     │   ├── components/
     │   │   ├── cart/
-    │   │   │   ├── FloatingCartButton.tsx                    # Nuevo: Botón flotante reactivo (cantidad + subtotal exacto)
-    │   │   │   ├── CartDrawer.tsx                            # Extendido: Controles (+/-), subtotales y eliminación total
-    │   │   │   └── CartItemWithBadge.tsx                     # Extendido: Advertencias de stock y formato monetario
+    │   │   │   ├── FloatingCartButton.tsx                    # Reactive floating cart button (items + exact subtotal)
+    │   │   │   ├── CartDrawer.tsx                            # Drawer with item breakdown, (+/-) controls, removal
+    │   │   │   └── CartItemWithBadge.tsx                     # Line item with stock badges and currency formatting
     │   │   ├── catalog/
-    │   │   │   └── DishDetailModal.tsx                       # Extendido: Selector numérico previo (1..stock) y botón agregar
+    │   │   │   └── DishDetailModal.tsx                       # Extended with numeric selector (1..stock) and add button
     │   │   ├── common/
-    │   │   │   └── WorkspaceLayout.tsx                       # Extendido: Reflejo inmediato de avatar en barra de navegación
+    │   │   │   └── WorkspaceLayout.tsx                       # Reactive avatar rendering in top navigation bar
     │   │   └── profile/
-    │   │       ├── PersonalDataForm.tsx                      # Extendido: Campos edad, género, domicilio y gestión de foto
-    │   │       └── PhotoDeleteConfirmModal.tsx               # Nuevo: Diálogo de confirmación para eliminación diferida
+    │   │       ├── PersonalDataForm.tsx                      # Form with age, gender, address, and avatar management
+    │   │       └── PhotoDeleteConfirmModal.tsx               # Modal dialog for deferred avatar deletion
     │   ├── context/
-    │   │   └── CartContext.tsx                               # Extendido: addItem con cantidad, debounce 300ms y rollback
+    │   │   └── CartContext.tsx                               # Extended: addItem with quantity, 300ms debounce, rollback
     │   ├── hooks/
-    │   │   ├── useCart.ts                                    # Reexportación del hook de carrito
-    │   │   └── useDebouncedCartModifier.ts                   # Hook para gestión de ráfagas (+/-), debounce y rollback
+    │   │   ├── useCart.ts                                    # Cart hook re-export
+    │   │   └── useDebouncedCartModifier.ts                   # Debounce hook for rapid +/- clicks and deterministic rollback
     │   ├── utils/
-    │   │   └── currencyUtils.ts                              # Nuevo: Aritmética decimal exacta en centavos enteros (INV-2)
+    │   │   └── currencyUtils.ts                              # Fixed-point integer cent arithmetic (INV-2)
     │   ├── types/
-    │   │   ├── cart.ts                                       # Extendido: availableStock, lastSyncedQuantity
-    │   │   └── profile.ts                                    # Extendido: age, gender, address, avatarUrl
+    │   │   ├── cart.ts                                       # Extended: availableStock, lastSyncedQuantity
+    │   │   └── profile.ts                                    # Extended: age, gender, address, avatarUrl
     │   └── pages/
-    │       ├── CatalogPage.tsx                               # Integración de FloatingCartButton y visibilidad condicional
-    │       └── ProfilePage.tsx                               # Integración del formulario demográfico
+    │       ├── CatalogPage.tsx                               # Integration of FloatingCartButton and contextual visibility
+    │       └── ProfilePage.tsx                               # Integration of demographics form
     └── tests/
         ├── cart/
-        │   ├── CartContext.test.tsx                          # Pruebas de INV-1, INV-2, acumulación y sessionStorage
-        │   ├── FloatingCartButton.test.tsx                   # Pruebas de INV-6, INV-7 (visibilidad contextual)
-        │   ├── useDebouncedCartModifier.test.ts              # Pruebas de debounce 300ms, fallo de red y rollback (INV-9)
-        │   └── DishDetailModal.test.tsx                      # Pruebas del selector numérico y cotas de stock (INV-3)
+        │   ├── CartContext.test.tsx                          # Tests for INV-1, INV-2, accumulation, and sessionStorage
+        │   ├── FloatingCartButton.test.tsx                   # Tests for INV-6, INV-7 (contextual visibility)
+        │   ├── useDebouncedCartModifier.test.ts              # Tests for 300ms debounce, network failure, rollback (INV-9)
+        │   └── DishDetailModal.test.tsx                      # Tests for numeric selector and stock boundaries (INV-3)
         └── profile/
-            ├── PersonalDataForm.test.tsx                     # Pruebas de edad (14-120), género, domicilio (INV-5, INV-8)
-            └── PhotoUploadAndRemoval.test.tsx                # Pruebas de límite 5MB (INV-4) y confirmación diferida
+            ├── PersonalDataForm.test.tsx                     # Tests for age (14-120), gender, address (INV-5, INV-8)
+            └── PhotoUploadAndRemoval.test.tsx                # Tests for 5MB limit (INV-4) and deferred removal flow
 ```
 
-**Structure Decision**: Se mantiene la arquitectura por capas y paquetes por feature estándar del repositorio. En backend, se extiende el módulo existente `com.easyeat.profile` y se incorpora `com.easyeat.cart` para validación de inventario. En frontend, se incorporan componentes especializados dentro de `components/cart/` y utilidades matemáticas en `utils/currencyUtils.ts`.
+---
+
+## 5. Technical Decisions by Functional Area
+
+### D-001 — Local Session Management & Multi-Tenant Isolation
+- **Decision**: Shopping cart state is stored in `sessionStorage` (key `'easyeat_cart'`), indexed by active restaurant `tenantId` from `TenantContext`. Navigating to a different establishment while items are present triggers `EstablishmentSwitchModal` before clearing the cart.
+- **Source**: `specs/009-shopping-cart/spec.md` (FR-002, FR-004, A-003); `specs/008-diner-catalog-multi-tenant` (COM-1.5.1 AC 5); `easyeat/frontend/src/context/CartContext.tsx`.
+- **Covers**: COM-6.1.1 AC-1.1, FR-004.
+- **Invariants Protected**: INV-1, INV-7.
+- **Risk**: Loss of selected items if the diner inadvertently switches establishments.
+- **Mitigation**: Explicit confirmation modal prior to clearing the cart, requiring intentional diner confirmation.
+- **Rejected Alternative**: Storing unconfirmed carts in relational database. Rejected due to unnecessary DB overhead, cleanup of abandoned carts, and state overhead.
+
+### D-002 — Quantity Selector in Dish Detail View
+- **Decision**: Integrate a numeric quantity selector in `DishDetailModal.tsx` with lower bound 1 and upper bound $\max(0, \text{availableStock} - \text{quantityInCart})$. Clicking "Add to Cart" dispatches the selected quantity in one action via `addItem(dish, quantity)`, displaying a 3-second success toast.
+- **Source**: `specs/009-shopping-cart/spec.md` (Clarification 1, FR-001, FR-002, FR-003); `DishDetailModal.tsx`.
+- **Covers**: COM-6.1.1 AC-1.1, AC-1.2, AC-1.3, AC-1.4, AC-1.5; FR-001, FR-002, FR-003; SC-001.
+- **Invariants Protected**: INV-1, INV-3.
+- **Risk**: Desynchronization if kitchen stock decreases while modal is open.
+- **Mitigation**: Pre-addition stock verification and visual alert if requested quantity exceeds remaining availability.
+- **Rejected Alternative**: Single fixed 1-unit addition button. Rejected as it was explicitly dismissed during specification clarification.
+
+### D-003 — Reactive Floating Cart Button, Drawer & Decimal Precision
+- **Decision**: Implement `FloatingCartButton.tsx` in a fixed bottom-right position with visibility bijectively conditioned on $\text{totalCount} \ge 1 \land \text{isCatalogView}$. All line subtotals and grand totals use fixed-point integer cent arithmetic (`currencyUtils.ts`). Clicking the button opens `CartDrawer.tsx`.
+- **Source**: `specs/009-shopping-cart/spec.md` (FR-005 to FR-010, INV-1, INV-2, INV-6, INV-7); `CartDrawer.tsx`.
+- **Covers**: COM-6.1.2 AC-2.1, AC-2.2, AC-2.3, AC-2.4; FR-005 to FR-010, FR-017; SC-002, SC-007, SC-009.
+- **Invariants Protected**: INV-1, INV-2, INV-6, INV-7.
+- **Risk**: IEEE 754 floating-point rounding errors drifting cents across multi-line additions.
+- **Mitigation**: `toCents` and `fromCents` helper utilities with strict integer penny rounding `Math.round((amount + Number.EPSILON) * 100)`.
+- **Rejected Alternative**: Keeping floating button visible on all views including profile. Rejected to prevent overlap with save buttons on forms.
+
+### D-004 — Quantity Modification, Stock Guardrails & Debounced Rollback
+- **Decision**: Within the cart drawer, clicking `+` and `-` applies immediate optimistic UI updates. A 300 ms debounce window batches requests to the backend. If validation fails due to network outage or stock exhaustion, the counter deterministically rolls back to `lastConfirmedQuantity` with a visual alert. Decrementing at quantity 1 removes the item.
+- **Source**: `specs/009-shopping-cart/spec.md` (FR-011 to FR-016, INV-3, INV-9); `CartItemWithBadge.tsx`.
+- **Covers**: COM-6.1.3 AC-3.1, AC-3.2, AC-3.3, AC-3.4, AC-3.5; FR-011 to FR-016; SC-003, SC-004.
+- **Invariants Protected**: INV-1, INV-3, INV-6, INV-9.
+- **Risk**: Race conditions during rapid click bursts on high-latency networks.
+- **Mitigation**: Custom hook `useDebouncedCartModifier` retaining `lastConfirmedQuantity` and cancelling trailing timers before dispatching final synchronization.
+- **Rejected Alternative**: Synchronous blocking network call on every click. Rejected due to UI freezing and input lag.
+
+### D-005 — Diner Demographics, Validation & BYTEA Avatar Storage
+- **Decision**: Extend `users` table with columns `age` (CHECK $14 \le \text{age} \le 120$), `gender` (CHECK closed taxonomy), and `address` (CHECK $\le 255$ chars, contact text only). Create `user_photos` table for binary `BYTEA` storage of images $\le 5$ MB validated by magic bytes (JPEG/PNG/WEBP). Photo removal utilizes a confirmation dialog and defers actual server deletion until form submission ("Save changes"), reactively updating the navbar avatar.
+- **Source**: `specs/009-shopping-cart/spec.md` (FR-018 to FR-032, INV-4, INV-5, INV-8); `UserPhotoService.java`; migration `V12`.
+- **Covers**: COM-1.4.2 AC-4.1 to AC-4.6; FR-018 to FR-032; SC-005, SC-006, SC-008.
+- **Invariants Protected**: INV-4, INV-5, INV-8.
+- **Risk**: Malicious files disguised with false image extensions or server exhaustion.
+- **Mitigation**: Binary magic bytes validation, 5,242,880 bytes boundary check in Spring Boot, and PostgreSQL `CHECK` constraints.
+- **Rejected Alternative**: Immediate photo deletion upon confirming modal. Rejected as it violates deferred confirmation requirement.
 
 ---
 
-## Decisiones Técnicas por Área Funcional
+## 6. Conceptual Data Model
 
-### D-001 — Gestión de Sesión Local y Aislamiento por Establecimiento
-- **Decisión**: El carrito de compras se almacena en `sessionStorage` (clave `'easyeat_cart'`), indexado por el `tenantId` del restaurante activo obtenido de `TenantContext`. Si el comensal navega a un nuevo restaurante teniendo ítems de otro local, se dispara el modal de confirmación `EstablishmentSwitchModal` antes de purgar la sesión previa.
-- **Fuente**: `specs/009-shopping-cart/spec.md` (FR-002, FR-004, A-003); `specs/008-diner-catalog-multi-tenant` (COM-1.5.1 CA 5); `easyeat/frontend/src/context/CartContext.tsx`.
-- **Cubre**: COM-6.1.1 AC-1.1, FR-004.
-- **Invariantes protegidas**: INV-1, INV-7.
-- **Riesgo**: Pérdida de ítems seleccionados si el comensal cambia involuntariamente de restaurante.
-- **Mitigación**: Diálogo explícito de advertencia previo al vaciado de la orden, requiriendo confirmación consciente del usuario.
-- **Alternativa descartada**: Almacenar carritos de compras no confirmados en base de datos relacional. Descartada por saturación innecesaria de la BD y complejidad de recolección de carritos huérfanos.
+### Entity Summary
+1. **Shopping Cart (`ShoppingCart`)**: Local browser session container (`sessionStorage`). Attributes: `tenantId`, `items`, `totalCount`, `totalAmount`, `isFloatingButtonVisible`.
+2. **Cart Line Item (`CartItem`)**: Product line. Attributes: `dishId`, `name`, `price`, `quantity`, `subtotal`, `availableStock`, dietary flags.
+3. **Dish Reference (`DishCatalogReference`)**: Read-only reference from active catalog (`dishes`, `retail_price`, availability).
+4. **Diner Demographics (`DinerDemographics`)**: Extension of `users` table (`age`, `gender`, `address`).
+5. **Diner Avatar Photo (`UserPhoto`)**: Relational `BYTEA` storage in `user_photos` table (`user_id`, `data`, `content_type`, `file_size`, `file_name`).
 
-### D-002 — Selector Numérico Previo en Vista de Detalle de Plato
-- **Decisión**: Incorporar en `DishDetailModal.tsx` un selector numérico con cota inferior 1 y cota superior $\max(0, \text{stockRealDisponible} - \text{cantidadEnCarrito})$. Al pulsar "Agregar al Carrito", se despacha la cantidad seleccionada en una sola interacción mediante `addItem(dish, quantity)`, desplegando un toast emergente de confirmación de 3 segundos.
-- **Fuente**: `specs/009-shopping-cart/spec.md` (Clarificación 1, FR-001, FR-002, FR-003); `DishDetailModal.tsx`.
-- **Cubre**: COM-6.1.1 AC-1.1, AC-1.2, AC-1.3, AC-1.4, AC-1.5; FR-001, FR-002, FR-003; SC-001.
-- **Invariantes protegidas**: INV-1, INV-3.
-- **Riesgo**: Desincronización si el stock en cocina desciende mientras el modal está abierto.
-- **Mitigación**: Verificación de stock previa a la adición y advertencia visual si la suma supera la disponibilidad remanente.
-- **Alternativa descartada**: Botón de adición fija de 1 unidad sin selector numérico. Descartada porque fue rechazada expresamente en la clarificación del spec.
-
-### D-003 — Botón Flotante Reactivo, Modal de Carrito y Precisión Decimal
-- **Decisión**: Implementar `FloatingCartButton.tsx` en posición fija inferior derecha, cuya visibilidad está biunívocamente condicionada a $\text{totalCount} \ge 1 \land \text{isCatalogView}$. Todos los cálculos de subtotales y total se realizan mediante aritmética de punto fijo entera basada en centavos (`currencyUtils.ts`). Al pulsar el botón flotante, se despliega el modal interactivo `CartDrawer`.
-- **Fuente**: `specs/009-shopping-cart/spec.md` (FR-005 a FR-010, INV-1, INV-2, INV-6, INV-7); `CartDrawer.tsx`.
-- **Cubre**: COM-6.1.2 AC-2.1, AC-2.2, AC-2.3, AC-2.4; FR-005 a FR-010, FR-017; SC-002, SC-007, SC-009.
-- **Invariantes protegidas**: INV-1, INV-2, INV-6, INV-7.
-- **Riesgo**: Desviaciones de centavos por redondeo de punto flotante en sumas complejas (drift de IEEE 754).
-- **Mitigación**: Función `toCents` y `fromCents` con redondeo estricto `Math.round((amount + Number.EPSILON) * 100)` sobre números enteros de centavos.
-- **Alternativa descartada**: Visibilidad del botón flotante en todas las pantallas incluyendo perfil. Descartada para evitar solapamientos con botones de guardado de formularios.
-
-### D-004 — Modificación de Cantidades, Bloqueo de Stock y Reversión con Debounce
-- **Decisión**: En el modal del carrito, las pulsaciones de `+` y `-` aplican cambios optimistas inmediatos en la interfaz. Una ventana de amortiguación (*debouncing*) de 300 ms agrupa las peticiones hacia el backend. Si la petición falla por error de red o stock insuficiente, el contador se revierte de forma determinista al último valor confirmado y se muestra una alerta visual. Restar sobre cantidad 1 elimina el producto completamente.
-- **Fuente**: `specs/009-shopping-cart/spec.md` (FR-011 a FR-016, INV-3, INV-9); `CartItemWithBadge.tsx`.
-- **Cubre**: COM-6.1.3 AC-3.1, AC-3.2, AC-3.3, AC-3.4, AC-3.5; FR-011 a FR-016; SC-003, SC-004.
-- **Invariantes protegidas**: INV-1, INV-3, INV-6, INV-9.
-- **Riesgo**: Inconsistencias temporales durante ráfagas de clicks rápidos en conexiones de alta latencia.
-- **Mitigación**: Hook `useDebouncedCartModifier` que retiene `lastConfirmedQuantity` y cancela temporizadores previos antes de emitir la sincronización definitiva.
-- **Alternativa descartada**: Sincronización bloqueante por cada click individual. Descartada por provocar parpadeos y congelamiento de UI.
-
-### D-005 — Datos Demográficos, Validación y Almacenamiento de Avatar BYTEA
-- **Decisión**: Extender la tabla `users` con columnas `age` (CHECK $14 \le \text{age} \le 120$), `gender` (CHECK clasificación cerrada) y `address` (CHECK $\le 255$ caracteres, tratado estrictamente como dato de contacto sin ruteo). Crear la tabla `user_photos` para almacenamiento binario `BYTEA` de fotos $\le 5$ MB validadas por magic bytes (JPEG/PNG/WEBP). La eliminación de foto cuenta con diálogo de confirmación y surte efecto diferido únicamente al pulsar "Guardar cambios", actualizando el avatar en `WorkspaceLayout.tsx`.
-- **Fuente**: `specs/009-shopping-cart/spec.md` (FR-018 a FR-032, INV-4, INV-5, INV-8); `DishPhotoService.java`; migración `V7`.
-- **Cubre**: COM-1.4.2 AC-4.1 a AC-4.6; FR-018 a FR-032; SC-005, SC-006, SC-008.
-- **Invariantes protegidas**: INV-4, INV-5, INV-8.
-- **Riesgo**: Carga de archivos maliciosos renombrados con extensiones de imagen falsas o saturación de base de datos.
-- **Mitigación**: Validación binaria por magic bytes en backend, límite duro de 5.242.880 bytes en Spring Boot y constraint `CHECK` en PostgreSQL.
-- **Alternativa descartada**: Eliminación inmediata de la foto al confirmar el modal. Descartada porque viola el requisito de confirmación diferida de la especificación.
+*(For full relational schema, constraints, lifecycle, and DDL script, see [data-model.md](./data-model.md)).*
 
 ---
 
-## Modelo de Datos Conceptual
+## 7. Behavioral Contracts
 
-### Resumen de Entidades
-1. **Carrito de Compras (`ShoppingCart`)**: Contenedor en sesión local (`sessionStorage`). Atributos: `tenantId`, `items`, `totalCount`, `totalAmount`, `isFloatingButtonVisible`.
-2. **Ítem del Carrito (`CartItem`)**: Línea de producto. Atributos: `dishId`, `name`, `price`, `quantity`, `subtotal`, `availableStock`, flags dietarios.
-3. **Plato / Referencia (`DishCatalogReference`)**: Referencia de solo lectura del catálogo activo (`dishes`, `retail_price`, disponibilidad en cocina).
-4. **Perfil Demográfico (`DinerDemographics`)**: Extensión de `users` en BD (`age`, `gender`, `address`).
-5. **Foto de Perfil / Avatar (`UserPhoto`)**: Almacenamiento relacional `BYTEA` en tabla `user_photos` (`user_id`, `data`, `content_type`, `file_size`, `file_name`).
+Operations exposed to frontend and formal contracts:
+1. `AddToCartFromDishDetail`: Quantity selector addition with success toast.
+2. `ModifyCartItemQuantity`: Drawer quantity updates, stock cap, removal on 1, debounced sync with rollback.
+3. `UpdateDinerDemographics` (`PUT /api/v1/profile/demographics`): Update age, gender, contact address.
+4. `UploadProfileAvatar` (`POST /api/v1/profile/avatar`): Multipart upload of avatar $\le 5$ MB and navbar sync.
+5. `RemoveProfileAvatar` (`DELETE /api/v1/profile/avatar`): Deferred deletion of custom avatar.
+6. `ValidateCartStock` (`POST /api/v1/cart/validate-stock`): Batch stock verification for debounced modifier.
 
-*(Para el detalle exhaustivo de tipos, restricciones, ciclo de vida y script DDL de migración `V10`, consultar [data-model.md](./data-model.md)).*
-
----
-
-## Contratos de Comportamiento
-
-Las operaciones expuestas al frontend y sus contratos formales de entrada/salida son:
-1. `AddToCartFromDishDetail`: Adición al carrito con selector de cantidad previa y notificación de éxito.
-2. `ModifyCartItemQuantity`: Modificación de cantidades en modal, bloqueo de stock, eliminación total en 1 y sincronización diferida con rollback.
-3. `UpdateDinerDemographics` (`PUT /api/v1/profile/demographics`): Actualización de edad, género y domicilio de contacto.
-4. `UploadProfileAvatar` (`POST /api/v1/profile/avatar`): Carga multipart/form-data de avatar $\le 5$ MB y reflejo en navbar.
-5. `RemoveProfileAvatar` (`DELETE /api/v1/profile/avatar`): Eliminación diferida de avatar personalizado y vuelta al default.
-6. `ValidateCartStock` (`POST /api/v1/cart/validate-stock`): Validación masiva de disponibilidad de stock para el debounce.
-
-*(Para el detalle de esquemas OpenAPI 3.0.3, consultar [contracts/openapi.yaml](./contracts/openapi.yaml); para los contratos semánticos por operación, consultar [contracts/behavioral-contracts.md](./contracts/behavioral-contracts.md)).*
+*(For detailed schemas, see [contracts/openapi.yaml](./contracts/openapi.yaml) and [contracts/behavioral-contracts.md](./contracts/behavioral-contracts.md)).*
 
 ---
 
-## Estrategia de Testing Integral
+## 8. Comprehensive Testing Strategy
 
-Siguiendo el Principio III de la Constitución (Verificación por Capas Proporcional al Riesgo):
+Following Constitution Principle III (Layered Verification Proportional to Risk):
 
-### 1. Pruebas Unitarias de Invariantes Matemáticas y de Negocio
-- `currencyUtils.test.ts`: Verificación de aritmética decimal exacta en centavos enteros (INV-2), evaluando sumas de valores fraccionarios (ej. \$12,33 × 3 = \$36,99; \$9,99 + \$14,50 = \$24,49) sin drift de punto flotante.
-- `CartContext.test.tsx`: Verificación de cálculo estricto de cantidad total $\sum q_i$ (INV-1), acumulación de platos idénticos sin duplicar filas (AC-1.2), y eliminación total al decrementar cantidad 1 (INV-6, AC-3.4).
-- `UserPhotoServiceTest.java`: Verificación de validación de tamaño de archivo (INV-4): aceptación de archivo en límite exacto de 5.242.880 bytes y rechazo en 5.242.881 bytes. Verificación de rechazo de formatos no admitidos (PDF, SVG, GIF) y archivos vacíos.
-- `DemographicsValidationTest.java`: Verificación de límites de edad (INV-5): aceptación de 14 y 120 años; rechazo de 13, 121, negativos, decimales y caracteres alfanuméricos.
+### 1. Unit Tests for Mathematical & Business Invariants
+- `currencyUtils.test.ts`: Verification of exact penny arithmetic (INV-2), evaluating multiplications (e.g. \$12.33 × 3 = \$36.99; \$9.99 + \$14.50 = \$24.49) with zero floating-point drift.
+- `CartContext.test.tsx`: Verification of strict total item calculation $\sum q_i$ (INV-1), accumulation without duplicate rows (AC-1.2), and complete removal when decrementing quantity 1 (INV-6, AC-3.4).
+- `UserPhotoServiceTest.java`: Verification of file size boundaries (INV-4): acceptance at 5,242,880 bytes, rejection at 5,242,881 bytes. Rejection of unsupported MIME formats (PDF, SVG, GIF) and empty files.
+- `DemographicsValidationTest.java`: Verification of biological age boundaries (INV-5): acceptance of 14 and 120; rejection of 13, 121, negative numbers, decimals, and alphanumeric input.
 
-### 2. Pruebas de Integración Backend (JUnit 5 + MockMvc + Testcontainers)
-- `ProfileControllerTest.java`: Verificación de endpoints `GET /api/v1/profile/me`, `PUT /api/v1/profile/demographics`, `POST /api/v1/profile/avatar` y `DELETE /api/v1/profile/avatar` bajo autenticación con rol `COMENSAL`. Respuestas 401 para solicitudes anónimas.
-- `FlywayMigrationV10Test.java`: Verificación de ejecución limpia de la migración `V10__extend_user_demographics_and_avatar.sql` sobre PostgreSQL 16 y activación efectiva de los constraints `CHECK`.
-- `CartValidationIntegrationTest.java`: Verificación del endpoint de validación de stock frente a recetas de insumos reales.
+### 2. Backend Integration Tests (JUnit 5 + MockMvc + Testcontainers)
+- `ProfileControllerTest.java`: Verification of `GET /api/v1/profile/me`, `PUT /api/v1/profile/demographics`, `POST /api/v1/profile/avatar`, and `DELETE /api/v1/profile/avatar` with `ROLE_COMENSAL` authentication and 401 unauthenticated mapping.
+- `DemographicsAvatarMigrationTest.java`: Clean execution of Flyway migration `V12__extend_user_demographics_and_avatar.sql` against real PostgreSQL 16 and activation of `CHECK` constraints.
+- `CartValidationIntegrationTest.java`: Verification of stock validation endpoint against live recipe ingredients.
 
-### 3. Pruebas de Componentes y Estado Frontend (Vitest + React Testing Library)
-- `FloatingCartButton.test.tsx`: Verificación de visibilidad biunívoca (INV-6, INV-7): renderizado exclusivo cuando $\text{totalCount} \ge 1$ y ocultamiento instantáneo al vaciar el carrito o cambiar a pantalla de perfil.
-- `DishDetailModal.test.tsx`: Verificación del selector numérico (FR-001, FR-002): cotas entre 1 y stock disponible, bloqueo de adición si el plato está agotado (`isAvailable = false`) o el carrito ya contiene el stock máximo (INV-3).
-- `useDebouncedCartModifier.test.ts`: Verificación de la ventana de debounce de 300 ms, actualización optimista inmediata, simulación de error de red y verificación de rollback al valor confirmado previo (INV-9).
-- `PersonalDataForm.test.tsx`: Verificación del formulario demográfico, validación visual en línea de edad y confirmación diferida de eliminación de foto (FR-024, FR-025).
-- `WorkspaceLayout.test.tsx`: Verificación del reflejo dinámico del avatar de usuario en la barra de navegación superior y renderizado del avatar genérico predeterminado en ausencia de foto.
+### 3. Frontend Component & State Tests (Vitest + RTL)
+- `FloatingCartButton.test.tsx`: Verification of bijective visibility (INV-6, INV-7): rendered strictly when $\text{totalCount} \ge 1 \land \text{isCatalogView}$, hidden when cart is empty or navigating to profile.
+- `DishDetailModal.test.tsx`: Verification of quantity selector bounds between 1 and available stock, disabled state when dish is out of stock (`isAvailable = false`) or cart already contains maximum stock (INV-3).
+- `useDebouncedCartModifier.test.ts`: Verification of 300 ms debounce window, optimistic updates, network failure simulation, and rollback to last confirmed quantity (INV-9).
+- `PersonalDataForm.test.tsx`: Demographic form rendering, inline validation errors, and deferred photo removal flow (FR-024, FR-025).
+- `WorkspaceLayout.test.tsx`: Reactive reflection of user avatar in navbar and fallback rendering when no photo exists.
 
 ---
 
-## Manejo de Errores
+## 9. Error Handling
 
-Todos los errores generados por la capa de backend se estructuran conforme a la especificación estándar RFC 7807 `ProblemDetail` estandarizada en el repositorio (`GlobalExceptionHandler.java`):
+All backend errors follow RFC 7807 `ProblemDetail` standardized in `GlobalExceptionHandler.java`:
 
 ```json
 {
@@ -293,51 +294,51 @@ Todos los errores generados por la capa de backend se estructuran conforme a la 
 }
 ```
 
-- **Mapeo de Errores de Validación en Frontend**: El formulario demográfico `PersonalDataForm.tsx` intercepta los campos listados en `errors` para marcar visualmente el campo en rojo y renderizar el mensaje de error inmediatamente debajo del control respectivo.
-- **Errores de Imagen**: Mensajes específicos para archivo mayor a 5 MB (`"El archivo supera el tamaño máximo permitido de 5 MB."`) y formato no permitido (`"Formato no soportado. Debe ser JPEG, PNG o WebP."`).
-- **Errores de Red en Carrito**: Notificación flotante de advertencia (`"Error de conexión: se restablecieron las cantidades de {plato.name}"`) disparada automáticamente tras el rollback del debounce.
+- **Validation Error Mapping**: `PersonalDataForm.tsx` maps fields in `errors` to highlight inputs in red and display field-specific error messages.
+- **Image Errors**: Explicit messages for files exceeding 5 MB (`"El archivo supera el tamaño máximo permitido de 5 MB."`) and invalid MIME types (`"Formato no soportado. Debe ser JPEG, PNG o WebP."`).
+- **Cart Network Errors**: Toast alert (`"Error de conexión: se restablecieron las cantidades de {dish.name}"`) triggered upon debounce rollback.
 
 ---
 
-## Cumplimiento de Invariantes de Negocio
+## 10. Business Invariants Compliance
 
-| Invariante | Descripción Funcional | Enforce en | Mecanismo de Enforce | Test que la Verifica | AC Relacionado |
+| Invariant | Functional Description | Enforced In | Enforcement Mechanism | Verifying Test | Related AC |
 |---|---|---|---|---|---|
-| **INV-1** | Cantidad total del carrito = $\sum q_i$ | Frontend | Reducción aritmética estricta sobre ítems en `CartContext` | `CartContextTest.testTotalCountCalculation` | AC-1.1, AC-2.1 |
-| **INV-2** | Subtotales y total exactos con 2 decimales | Frontend | Aritmética de punto fijo en centavos enteros (`toCents`/`fromCents`) | `currencyUtilsTest.testExactMonetaryPrecision` | AC-2.1, AC-2.3 |
-| **INV-3** | Cantidad unitaria $\le$ stock real en cocina | Ambas | Deshabilitación visual de control `+` y validación en `/cart/validate-stock` | `DishDetailModalTest.testMaxStockBoundary` | AC-1.3, AC-3.3 |
-| **INV-4** | $0 < \text{tamaño\_foto} \le 5.242.880\text{ bytes}$ | Ambas | Validación de `File.size` en cliente y `chk_user_photos_file_size` en BD | `UserPhotoServiceTest.testFileSizeBoundaries` | AC-4.1, AC-4.2 |
-| **INV-5** | Edad entera $14 \le \text{edad} \le 120$ | Ambas | Validación regex/rango en cliente y `chk_users_age_range` en BD | `DemographicsValidationTest.testAgeRange` | AC-4.4, AC-4.5 |
-| **INV-6** | Carrito vacío $\iff$ botón flotante oculto | Frontend | Renderizado condicional estricto `totalCount > 0` | `FloatingCartButtonTest.testHiddenWhenEmpty` | AC-2.2, AC-3.4 |
-| **INV-7** | Carrito $\ge 1$ y en catálogo $\iff$ botón visible | Frontend | Renderizado condicional `totalCount >= 1 && isCatalogView` | `FloatingCartButtonTest.testVisibleWhenHasItems` | AC-2.1, AC-2.4 |
-| **INV-8** | Domicilio aislado como contacto sin ruteo | Ambas | Almacenamiento de texto plano sin dependencias logísticas | `ProfileServiceTest.testAddressIsolatedStorage` | AC-4.6 |
-| **INV-9** | Reversión determinista por desconexión en debounce | Frontend | Hook con `lastConfirmedQuantity` y rollback ante catch | `useDebouncedModifierTest.testRollbackOnFailure`| AC-3.5 |
+| **INV-1** | Cart total count = $\sum q_i$ | Frontend | Arithmetic reduction over line items in `CartContext` | `CartContextTest.testTotalCountCalculation` | AC-1.1, AC-2.1 |
+| **INV-2** | Exact monetary subtotals and totals (2 decimals) | Frontend | Fixed-point integer cent arithmetic (`toCents`/`fromCents`) | `currencyUtilsTest.testExactMonetaryPrecision` | AC-2.1, AC-2.3 |
+| **INV-3** | Line item quantity $\le$ kitchen available stock | Both | UI disable of `+` control and `/cart/validate-stock` check | `DishDetailModalTest.testMaxStockBoundary` | AC-1.3, AC-3.3 |
+| **INV-4** | $0 < \text{fileSize} \le 5,242,880\text{ bytes}$ | Both | Client `File.size` check and database `chk_user_photos_file_size` | `UserPhotoServiceTest.testFileSizeBoundaries` | AC-4.1, AC-4.2 |
+| **INV-5** | Integer age $14 \le \text{age} \le 120$ | Both | Client input range validation and database `chk_users_age_range` | `DemographicsValidationTest.testAgeRange` | AC-4.4, AC-4.5 |
+| **INV-6** | Empty cart $\iff$ floating button hidden | Frontend | Strict conditional rendering `totalCount > 0` | `FloatingCartButtonTest.testHiddenWhenEmpty` | AC-2.2, AC-3.4 |
+| **INV-7** | Cart $\ge 1$ and in catalog $\iff$ button visible | Frontend | Strict conditional `totalCount >= 1 && isCatalogView` | `FloatingCartButtonTest.testVisibleWhenHasItems` | AC-2.1, AC-2.4 |
+| **INV-8** | Address decoupled as contact text without routing | Both | Plain string storage up to 255 chars without logistics | `ProfileServiceTest.testAddressIsolatedStorage` | AC-4.6 |
+| **INV-9** | Deterministic rollback on debounce network failure | Frontend | Custom hook with `lastConfirmedQuantity` & catch rollback | `useDebouncedModifierTest.testRollbackOnFailure`| AC-3.5 |
 
 ---
 
-## Casos Borde Abordados
+## 11. Edge Cases Addressed
 
-1. **Mismo plato agregado reiteradamente**: Acumula $+m$ a la cantidad existente en la misma fila; no duplica filas en el carrito (AC-1.2, FR-003).
-2. **Cotas del selector numérico en detalle**: Bloqueado entre 1 y la disponibilidad máxima remanente.
-3. **Alcanzar stock exacto y pulsar suma adicional**: Control `+` se deshabilita visualmente; pulsaciones adicionales no modifican la cantidad ni los importes (AC-3.3, INV-3).
-4. **Reducción concurrente de stock en cocina**: El plato se preserva en el carrito con distintivo visible de "Stock insuficiente", deshabilitando la suma y bloqueando el avance a la orden (FR-014a).
-5. **Restar sobre cantidad 1**: Elimina la fila del ítem por completo sin dejar cantidades en 0 ni números negativos (AC-3.4, FR-015).
-6. **Vaciado completo del carrito desde el modal**: Al eliminar el último ítem, el modal refleja estado vacío y el botón flotante exterior desaparece inmediatamente (INV-6, SC-009).
-7. **Modificaciones rápidas sucesivas y corte de red**: El debounce de 300 ms consolida las pulsaciones; ante desconexión o HTTP 5xx, el contador se revierte de inmediato al último valor confirmado y se notifica al usuario (INV-9, SC-004).
-8. **Precisión en centavos y sumas con decimales**: Aritmética de punto fijo en centavos previene desfasajes de coma flotante (INV-2, SC-007).
-9. **Plato con stock inicial igual a 0**: Botón "Agregar al Carrito" deshabilitado con etiqueta "Agotado" (AC-1.3, FR-001).
-10. **Archivo de imagen en límite exacto de 5,0 MB**: Archivo de exactamente 5.242.880 bytes es aceptado; archivo de 5.242.881 bytes es rechazado (INV-4, SC-005).
-11. **Archivo con formato MIME no admitido**: Archivos como `.pdf`, `.gif`, `.svg` o `.exe` son interceptados y rechazados indicando los tipos soportados (JPEG, PNG, WEBP) (AC-4.3, FR-020).
-12. **Edad en límites de coherencia biológica**: 14 y 120 años son aceptados; 13 y 121 años son rechazados (AC-4.4, INV-5, SC-006).
-13. **Eliminación de foto sin foto previa configurada**: La opción de eliminar foto se mantiene deshabilitada si el usuario solo posee el avatar por defecto.
-14. **Domicilio en texto libre**: Admite hasta 255 caracteres sin requerir normalización postal externa ni geocodificación (INV-8, FR-029).
-15. **Persistencia tras cerrar modal de carrito**: Cerrar el drawer o modal conserva íntegramente los productos y cantidades en la sesión local.
+1. **Same dish added repeatedly**: Accumulates $+m$ to existing line item quantity; does not duplicate rows (AC-1.2, FR-003).
+2. **Quantity selector bounds**: Clamped between 1 and remaining available stock.
+3. **Reaching stock limit and clicking `+`**: `+` button disables; further clicks do not alter quantity or subtotal (AC-3.3, INV-3).
+4. **Concurrent stock reduction in kitchen**: Item preserved in cart with visible "Insufficient stock" warning badge, disabling addition and blocking order submission (FR-014a).
+5. **Decrementing quantity 1**: Completely removes line item without leaving 0 or negative values (AC-3.4, FR-015).
+6. **Clearing cart from drawer**: Removing final item displays empty drawer state and hides outer floating button immediately (INV-6, SC-009).
+7. **Rapid click burst with network interruption**: 300 ms debounce batches calls; upon outage or HTTP 5xx, counter immediately rolls back to last confirmed count with user notification (INV-9, SC-004).
+8. **Penny rounding precision**: Fixed-point integer cent arithmetic eliminates floating point drift (INV-2, SC-007).
+9. **Dish with initial stock of 0**: "Add to Cart" button disabled with "Out of stock" label (AC-1.3, FR-001).
+10. **Image at exact 5.0 MB boundary**: File of exactly 5,242,880 bytes accepted; file of 5,242,881 bytes rejected (INV-4, SC-005).
+11. **Unsupported MIME type**: Files such as `.pdf`, `.gif`, `.svg`, or `.exe` rejected with clear error message (AC-4.3, FR-020).
+12. **Age biological limits**: 14 and 120 accepted; 13 and 121 rejected (AC-4.4, INV-5, SC-006).
+13. **Photo deletion without existing photo**: Delete option disabled if user only has default avatar.
+14. **Free-form contact address**: Accepts up to 255 chars without requiring external postal normalization or geocoding (INV-8, FR-029).
+15. **Persistence upon closing cart drawer**: Closing drawer preserves items and counts in local session.
 
 ---
 
-## Matriz de Trazabilidad Obligatoria
+## 12. Mandatory Traceability Matrix
 
-| Criterio de Aceptación (AC) | Requerimientos Funcionales | Invariantes | Decisión Técnica / Artefacto | Prueba Verificable |
+| Acceptance Criteria (AC) | Functional Requirements | Invariants | Technical Decision / Artifact | Verifying Test |
 |---|---|---|---|---|
 | **COM-6.1.1 AC-1.1** | FR-001, FR-002 | INV-1, INV-7 | D-002, `DishDetailModal.tsx` | `DishDetailModalTest.testQuantitySelectorAndAdd` |
 | **COM-6.1.1 AC-1.2** | FR-003 | INV-1, INV-3 | D-001, D-002, `CartContext.tsx` | `CartContextTest.testAccumulateExistingDish` |
@@ -359,71 +360,69 @@ Todos los errores generados por la capa de backend se estructuran conforme a la 
 | **COM-1.4.2 AC-4.5** | FR-024, FR-025 | — | D-005, `PhotoDeleteConfirmModal` | `PhotoRemovalTest.testDeferredConfirmationFlow` |
 | **COM-1.4.2 AC-4.6** | FR-029, FR-030 | INV-8 | D-005, `ProfileController.java` | `ProfileControllerTest.testSaveContactAddress` |
 
-*Cobertura Total*: 15/15 Criterios de Aceptación (con escenarios 1.5, 3.5 y 4.5 desglosados = 19 escenarios cubiertos) + 9/9 Invariantes de Negocio + 32/32 Requerimientos Funcionales.
+---
+
+## 13. Assumptions
+
+- `[ASSUMPTION-001]`: Diner is authenticated with role `COMENSAL` and has an active `tenantId` in the navigation context (guaranteed by Spec 001, 002, 008).
+- `[ASSUMPTION-002]`: Browser `sessionStorage` has adequate quota for normal cart JSON payloads (< 50 KB).
+- `[ASSUMPTION-003]`: Avatars use standard web MIME types (`image/jpeg`, `image/png`, `image/webp`). SVG is intentionally rejected to eliminate stored XSS vectors.
+- `[ASSUMPTION-004]`: Contact address does not require cadastral validation or postal code formatting, stored as free text up to 255 chars.
+- `[ASSUMPTION-005]`: Default institutional avatar is served as a local static SVG asset without database storage.
 
 ---
 
-## Assumptions
+## 14. Out of Scope
 
-- `[SUPUESTO-001]`: El comensal se encuentra autenticado con rol `COMENSAL` y cuenta con un `tenantId` activo seleccionado en el contexto de navegación (garantizado por Spec 001, Spec 002 y Spec 008).
-- `[SUPUESTO-002]`: El almacenamiento en sesión local del navegador (`sessionStorage`) dispone de espacio suficiente para estructuras JSON de carrito habituales (< 50 KB).
-- `[SUPUESTO-003]`: Los avatares de perfil utilizan los tipos MIME web universales (`image/jpeg`, `image/png`, `image/webp`). Otros formatos como SVG se descartan deliberadamente por riesgo de vectores de inyección XSS.
-- `[SUPUESTO-004]`: El domicilio de contacto no requiere validación de nomenclatura catastral ni verificación de código postal en esta etapa, admitiéndose como texto descriptivo de hasta 255 caracteres.
-- `[SUPUESTO-005]`: El avatar genérico institucional por defecto se sirve como un recurso SVG estático local en el frontend sin requerir persistencia en la base de datos para usuarios sin foto.
-
----
-
-## Out of Scope (Heredado del Spec)
-
-- **Pasarela de pagos y procesamiento de cobro**: Autorización de tarjetas de crédito/débito y confirmación de transferencias (diferido a Sprint 4).
-- **Checkout formal de la orden**: Generación de números de comanda y despacho a cocina KDS (diferido a Sprint 4).
-- **Cálculo de rutas de envío o logística de delivery**: Cálculo de kilometraje, geocodificación de direcciones o integración con repartidores externos.
-- **Autenticación, registro y recuperación de contraseñas**: Mecanismos de login y signup (cubiertos por specs 001 y 002).
-- **Gestión de datos de contacto base y preferencias dietarias**: Edición de nombre, apellido, teléfono y restricciones alérgenas (cubiertos por spec 003).
-- **Búsqueda, filtros y navegación de catálogo**: Búsqueda por texto y categorías gastronómicas (cubiertos por spec 008).
-- **Historial de pedidos y compras pasadas**.
-- **Cupones, promociones y descuentos de marketing**.
-- **Sincronización multi-dispositivo en tiempo real del carrito**.
-- **Soporte multi-moneda**: La plataforma opera exclusivamente en la moneda de curso legal configurada para el restaurante.
+- **Payment Gateway & Checkout Processing**: Credit/debit card processing and transaction confirmation (deferred to Sprint 4).
+- **Kitchen Order Dispatch**: Order ticket creation and KDS dispatch (deferred to Sprint 4).
+- **Delivery Logistics & Routing**: Mileage calculation, address geocoding, or courier dispatch.
+- **Authentication & User Registration**: Login, password reset, and registration workflows (Specs 001, 002).
+- **Dietary & Baseline Contact Management**: First/last name, phone, allergen tags (Spec 003).
+- **Catalog Browsing, Filters & Search**: Search bars and category filters (Spec 008).
+- **Order History & Past Purchases**.
+- **Promotional Coupons & Marketing Discounts**.
+- **Multi-Device Real-Time Cart Synchronization**.
+- **Multi-Currency Handling**: Operates solely in establishment legal currency.
 
 ---
 
-## Riesgos y Mitigaciones
+## 15. Risks and Mitigations
 
-| Riesgo Identificado | Impacto | Probabilidad | Estrategia de Mitigación en el Plan |
+| Identified Risk | Impact | Likelihood | Mitigation Strategy in Plan |
 |---|---|---|---|
-| Modificaciones rápidas sucesivas de cantidad provocan race conditions con el stock | Alto | Media | Ventana de debounce de 300 ms en frontend con rollback determinista y cancelación de timers previos. |
-| Errores de redondeo de punto flotante en cálculo de subtotales | Medio | Alta | Estandarización de aritmética de punto fijo en centavos enteros (`toCents`/`fromCents`). |
-| Carga de archivos maliciosos renombrados con extensión .jpg o .png | Crítico | Baja | Validación estricta en servidor de magic bytes en el payload binario (`UserPhotoService.java`). |
-| Pérdida de foto original si el usuario cierra el formulario tras confirmar eliminación provisional | Medio | Media | Confirmación diferida al formulario: el borrado efectivo en servidor solo se despacha al presionar "Guardar cambios". |
-| Inconsistencia de stock al agregar desde catálogo mientras el stock desciende en cocina | Medio | Media | Verificación de inventario en tiempo real con cota superior dinámica en el selector de cantidad. |
+| Rapid click bursts on quantity causing race conditions with kitchen stock | High | Medium | 300 ms debounce window in frontend with deterministic rollback and timer cancellation. |
+| Floating-point rounding drift in subtotal calculations | Medium | High | Fixed-point integer cent arithmetic standard (`toCents`/`fromCents`). |
+| Malicious files uploaded with fake `.jpg` or `.png` extensions | Critical | Low | Strict server-side binary magic bytes verification (`UserPhotoService.java`). |
+| Premature avatar loss if user closes form after modal confirmation | Medium | Medium | Deferred confirmation: actual server deletion dispatches only when clicking "Save changes". |
+| Stock discrepancy when adding from catalog while kitchen stock depletes | Medium | Medium | Real-time inventory check with dynamic upper bound in quantity selector. |
 
 ---
 
-## Phasing (Fases de Implementación de Alto Nivel)
+## 16. Implementation Phasing
 
-### Fase 1: Persistencia Relacional y Endpoints de Perfil Demográfico y Avatar (Backend)
-- **Alcance**: Migración Flyway `V10__extend_user_demographics_and_avatar.sql`, entidad `UserPhoto`, extensión de `User`, DTOs de entrada/salida demográficos, `UserPhotoService` con validación de magic bytes y tamaño $\le 5$ MB, y endpoints REST en `ProfileController`.
-- **Criterio de Done Verificable**: Migración `V10` ejecutada exitosamente en PostgreSQL; tests de integración `ProfileControllerTest` y `UserPhotoServiceTest` aprobados al 100%.
+### Phase 1: Relational Persistence & Profile Endpoints (Backend)
+- **Scope**: Flyway migration `V12__extend_user_demographics_and_avatar.sql`, entity `UserPhoto`, `User` extension, DTOs, `UserPhotoService` with magic bytes and $\le 5$ MB validation, REST endpoints in `ProfileController`.
+- **Verifiable Done**: Migration `V12` executed cleanly in PostgreSQL; integration tests `ProfileControllerTest` and `UserPhotoServiceTest` 100% passing.
 
-### Fase 2: Formulario Demográfico y Actualización de Avatar en Navbar (Frontend)
-- **Alcance**: Extensión de `profileApi.ts`, integración de campos de edad (14-120), género y domicilio en `PersonalDataForm.tsx`, componente modal `PhotoDeleteConfirmModal.tsx` con confirmación diferida, y actualización reactiva de avatar en `WorkspaceLayout.tsx`.
-- **Criterio de Done Verificable**: Formulario demográfico guarda exitosamente en API; rechazo visual de edad inválida e imágenes > 5 MB; cambio inmediato de foto en barra superior.
+### Phase 2: Demographics Form & Navbar Avatar Update (Frontend)
+- **Scope**: Extension of `profileApi.ts`, demographics fields in `PersonalDataForm.tsx`, modal `PhotoDeleteConfirmModal.tsx` with deferred confirmation, reactive avatar in `WorkspaceLayout.tsx`.
+- **Verifiable Done**: Form persists to API; visual rejection of invalid age and files > 5 MB; immediate avatar update in navbar.
 
-### Fase 3: Selector Previo de Cantidad en Detalle de Plato (COM-6.1.1)
-- **Alcance**: Modificación de `DishDetailModal.tsx` incorporando selector numérico (1 a stock disponible), ampliación de firma `addItem(dish, quantity)` en `CartContext.tsx` y notificación emergente de confirmación de éxito.
-- **Criterio de Done Verificable**: Comensal añade cantidades arbitrarias válidas en una única acción; platos reiterados acumulan unidades sin duplicar filas; platos agotados se presentan deshabilitados.
+### Phase 3: Dish Detail Quantity Selector (COM-6.1.1)
+- **Scope**: Modify `DishDetailModal.tsx` adding numeric selector (1 to available stock), extend `CartContext.tsx` with `addItem(dish, quantity)` and success toast notification.
+- **Verifiable Done**: Diners add arbitrary valid quantities in one action; repeated dishes accumulate without duplicate rows; out-of-stock dishes disabled.
 
-### Fase 4: Botón Flotante Reactivo y Aritmética Monetaria Exacta (COM-6.1.2)
-- **Alcance**: Utilidad `currencyUtils.ts` basada en centavos enteros, componente `FloatingCartButton.tsx` en `CatalogPage.tsx` con visibilidad condicional biunívoca, y apertura del drawer `CartDrawer.tsx` con detalle completo.
-- **Criterio de Done Verificable**: Botón visible si y solo si $\text{totalCount} \ge 1$ en catálogo; cálculos monetarios exactos sin drift; ocultamiento instantáneo al vaciar el carrito.
+### Phase 4: Reactive Floating Cart Button & Exact Monetary Totals (COM-6.1.2)
+- **Scope**: `currencyUtils.ts` penny arithmetic, `FloatingCartButton.tsx` in `CatalogPage.tsx` with bijective visibility, `CartDrawer.tsx` detailed breakdown.
+- **Verifiable Done**: Button visible strictly when $\text{totalCount} \ge 1$ in catalog; exact monetary calculations; instantaneous hide when cart is emptied.
 
-### Fase 5: Modificación Interactiva, Bloqueo de Stock y Reversión por Falla (COM-6.1.3)
-- **Alcance**: Controles de incremento/decremento en `CartDrawer.tsx`, bloqueo al alcanzar disponibilidad de cocina, hook `useDebouncedCartModifier.ts` (300 ms), endpoint `/api/v1/cart/validate-stock` y mecanismo de rollback ante pérdida de conexión.
-- **Criterio de Done Verificable**: Modificación unitaria funcional; retiro total al restar en cantidad 1; reversión determinista comprobada al cortar la conexión de red.
+### Phase 5: Interactive Cart Modification, Stock Guardrails & Network Rollback (COM-6.1.3)
+- **Scope**: Increment/decrement controls in `CartDrawer.tsx`, stock ceiling disable, `useDebouncedCartModifier.ts` hook (300 ms), `/api/v1/cart/validate-stock` endpoint, deterministic rollback on connection drop.
+- **Verifiable Done**: Unitary modifications operational; removal on quantity 1; deterministic rollback proven upon network failure simulation.
 
 ---
 
-## Resumen Ejecutivo de Cierre de Fase
+## 17. Executive Summary
 
-El presente plan técnico define la arquitectura de implementación para la feature `009-shopping-cart` anclándose estrictamente en el stack verificado del repositorio (Java 21, Spring Boot 3.3.4, PostgreSQL 16 con Flyway, React 18, TypeScript, Tailwind CSS y Vitest). Las decisiones clave adoptadas garantizan precisión decimal monetaria exacta (INV-2), visibilidad biunívoca contextual del carrito (INV-6, INV-7), reversión determinista ante fallos de red con debounce de 300 ms (INV-9), confirmación diferida de eliminación de foto de perfil y almacenamiento seguro de avatares en PostgreSQL BYTEA (INV-4) y rango biológico estricto de edad (INV-5). No existen riesgos técnicos abiertos ni bloqueantes de constitución (Constitution Gate: 10/10 PASS). Se alcanza una cobertura total y exhaustiva de 15/15 Criterios de Aceptación, 9/9 Invariantes de Negocio y 32/32 Requerimientos Funcionales. Se confirma explícitamente que no se han generado tareas de implementación en esta fase, quedando el proyecto listo para la ejecución de `/speckit-tasks`.
+This implementation plan defines the architecture for feature `009-shopping-cart` anchored strictly in the repository's verified stack (Java 21, Spring Boot 3.3.4, PostgreSQL 16 with Flyway, React 18, TypeScript, Tailwind CSS, and Vitest). Key decisions guarantee exact monetary precision (INV-2), bijective contextual cart visibility (INV-6, INV-7), deterministic rollback upon network failure via 300 ms debounce (INV-9), deferred confirmation for avatar removal with secure PostgreSQL BYTEA storage (INV-4), and biological age boundaries (INV-5). No open technical risks or constitutional blockers exist (Constitution Gate: 10/10 PASS). Comprehensive 100% coverage is achieved across 15/15 Acceptance Criteria, 9/9 Business Invariants, and 32/32 Functional Requirements.
