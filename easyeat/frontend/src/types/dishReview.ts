@@ -20,7 +20,7 @@ export type InboxTab = 'PENDING' | 'PUBLISHED' | 'HISTORY';
  * admits only DRAFT and PENDING_PRICE. Widening that union is T079a's job, in US3, where the
  * mismatch becomes observable.
  */
-export type ReviewDishStatus = 'DRAFT' | 'PENDING_PRICE' | 'PUBLISHED';
+export type ReviewDishStatus = 'DRAFT' | 'PENDING_PRICE' | 'PUBLISHED' | 'CANCELLED';
 
 export type PublicationGateCondition =
   | 'RETAIL_PRICE_MISSING'
@@ -29,7 +29,7 @@ export type PublicationGateCondition =
 
 export type AcknowledgementKind = 'UNPRICED_INGREDIENTS' | 'NEGATIVE_MARGIN';
 
-export type ReviewEventType = 'APPROVED' | 'REJECTED';
+export type ReviewEventType = 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 export interface DishReviewInboxItem {
   dishId: string;

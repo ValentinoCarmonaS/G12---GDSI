@@ -78,6 +78,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/dishes/*/photo").permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
                         .requestMatchers(
+                                "/api/v1/establishments",
                                 "/api/v1/establishments/search",
                                 "/api/v1/establishments/*/catalog",
                                 "/api/v1/establishments/*/catalog/availability"

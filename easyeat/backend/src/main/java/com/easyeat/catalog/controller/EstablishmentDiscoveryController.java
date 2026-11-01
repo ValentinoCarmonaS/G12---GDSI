@@ -25,5 +25,11 @@ public class EstablishmentDiscoveryController {
         List<EstablishmentSummaryResponse> results = discoveryService.searchEstablishments(query);
         return ResponseEntity.ok(results);
     }
+
+    @GetMapping
+    public ResponseEntity<List<EstablishmentSummaryResponse>> getAllActiveEstablishments() {
+        List<EstablishmentSummaryResponse> results = discoveryService.getAllActiveEstablishments();
+        return ResponseEntity.ok(results);
+    }
 }
 

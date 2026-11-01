@@ -24,9 +24,18 @@ export const dinerCatalogApi = {
   },
 
   /**
-   * Retrieve live categorized menu catalog for selected establishment (COM-4.1.1, FR-007, FR-026).
-   * Path: GET /establishments/{tenantId}/catalog
+   * Retrieve the complete list of active establishments for the diner discovery screen (Fix C-01).
+   * Path: GET /establishments
    */
+  getAllEstablishments: async (): Promise<EstablishmentSummary[]> => {
+    const response = await apiClient.get<EstablishmentSummary[]>('/establishments');
+    return response.data;
+  },
+
+  /**
+    * Retrieve live categorized menu catalog for selected establishment (COM-4.1.1, FR-007, FR-026).
+    * Path: GET /establishments/{tenantId}/catalog
+    */
   getEstablishmentCatalog: async (tenantId: string): Promise<CatalogResponse> => {
     const response = await apiClient.get<CatalogResponse>(`/establishments/${tenantId}/catalog`);
     return response.data;

@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AdminPricingMigrationTest {
 
     private static final String MIGRATION_DESCRIPTION = "admin dish approval pricing";
+        private static final String CANCELLATION_MIGRATION_DESCRIPTION = "sync ingredient unit purchase cost";
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
@@ -188,8 +189,8 @@ class AdminPricingMigrationTest {
             assertThat(scalar(
                     "SELECT description FROM flyway_schema_history "
                             + "WHERE version IS NOT NULL ORDER BY installed_rank DESC LIMIT 1"))
-                    .describedAs("this feature's migration must be the last versioned one applied")
-                    .isEqualTo(MIGRATION_DESCRIPTION);
+                    .describedAs("C-02's forward migration must be the latest versioned one applied")
+                    .isEqualTo(CANCELLATION_MIGRATION_DESCRIPTION);
         }
 
         @Test
@@ -282,22 +283,24 @@ class AdminPricingMigrationTest {
         }
 
         @Test
-        @DisplayName("spec 005's status constraint is left exactly as it was")
-        void statusConstraintIsUntouched() throws SQLException {
+        @DisplayName("the status constraint preserves existing states and admits C-02 cancellation")
+        void statusConstraintIncludesCancelled() throws SQLException {
             String definition = scalar(
                     "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
                             + "WHERE conname = 'chk_dishes_status'");
             assertThat(definition)
-                    .describedAs("chk_dishes_status belongs to spec 005's V7; this migration must "
-                            + "neither drop nor replace it (D1)")
+                    .describedAs("V10 extends the V7 status domain only by the C-02 terminal value")
                     .isNotNull()
-                    .contains("DRAFT", "PENDING_PRICE", "PUBLISHED");
+                    .contains("DRAFT", "PENDING_PRICE", "PUBLISHED", "CANCELLED");
+
+            execute("UPDATE dishes SET status = 'CANCELLED' WHERE id = '"
+                    + dishWithPositivePrice + "'");
 
             List<String> statusConstraints = column(
                     "SELECT conname FROM pg_constraint WHERE conrelid = 'dishes'::regclass "
                             + "AND conname LIKE '%status%'");
             assertThat(statusConstraints)
-                    .describedAs("exactly one owner of the status domain")
+                    .describedAs("the V10 amendment preserves exactly one owner of the status domain")
                     .containsExactly("chk_dishes_status");
         }
     }
@@ -343,9 +346,11 @@ class AdminPricingMigrationTest {
         }
 
         @Test
-        @DisplayName("event_type admits only APPROVED and REJECTED")
-        void eventTypeIsClosed() {
-            assertThatThrownBy(() -> execute(insertReview(99, "PUBLISHED", null)))
+                @DisplayName("event_type admits APPROVED, REJECTED and CANCELLED only")
+        void eventTypeIsClosed() throws SQLException {
+                        execute(insertReview(99, "CANCELLED", null));
+
+                        assertThatThrownBy(() -> execute(insertReview(100, "PUBLISHED", null)))
                     .hasMessageContaining("chk_drh_event_type");
         }
 

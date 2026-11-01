@@ -45,7 +45,14 @@ export const FoodCostBreakdownTable: React.FC<FoodCostBreakdownTableProps> = ({ 
               <span className="text-gray-900">{line.ingredientName}</span>
               {line.unpricedWarning && <UnpricedIngredientBadge className="ml-2" />}
             </td>
-            <td className="py-2 pr-4 text-gray-700">{quantity.format(line.quantity)}</td>
+            <td className="py-2 pr-4 text-gray-700">
+              {(() => {
+                const rawValue = line.recipeQuantity ?? line.quantity ?? line.grossQuantity ?? line.amount;
+                const numericValue = Number(rawValue);
+                const safeQuantity = isNaN(numericValue) ? 0 : numericValue;
+                return quantity.format(safeQuantity);
+              })()}
+            </td>
             <td className="py-2 pr-4 text-gray-500">{line.unitOfMeasure ?? '—'}</td>
             <td className="py-2 pr-4 text-right text-gray-700">
               ${money.format(line.unitPurchaseCost)}

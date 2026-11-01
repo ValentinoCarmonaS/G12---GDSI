@@ -223,4 +223,27 @@ describe('EstablishmentSearchBar Component Tests (T014, US1, COM-1.5.1, CA 1, CA
     expect(mockNavigate).not.toHaveBeenCalled();
     expect(screen.queryByText(/¿cambiar de restaurante\?/i)).not.toBeInTheDocument();
   });
+
+  it('loads and displays the complete active establishments list when query is empty (Fix C-01, CA 1, CA 3)', async () => {
+    const getAllSpy = vi.spyOn(dinerCatalogApi, 'getAllEstablishments').mockResolvedValue([
+      mockEstablishmentSummaryActive,
+      mockEstablishmentSummaryActive2,
+    ]);
+
+    renderComponent();
+
+    expect(await screen.findByText('La Farola de Palermo')).toBeInTheDocument();
+    expect(screen.getByText('Parrilla Don Julio')).toBeInTheDocument();
+    expect(getAllSpy).toHaveBeenCalled();
+  });
+
+  it('shows informative empty state when the complete listing has no active establishments (Fix C-01, CA 4)', async () => {
+    vi.spyOn(dinerCatalogApi, 'getAllEstablishments').mockResolvedValue([]);
+
+    renderComponent();
+
+    expect(
+      await screen.findByText(/no hay establecimientos activos en este momento/i)
+    ).toBeInTheDocument();
+  });
 });

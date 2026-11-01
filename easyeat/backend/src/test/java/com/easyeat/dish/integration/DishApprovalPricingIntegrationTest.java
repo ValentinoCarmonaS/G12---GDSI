@@ -46,7 +46,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * T100 (Phase 7): the audit and arithmetic invariants of {@link DishGovernanceService}'s three
+ * T100 (Phase 7): the audit and arithmetic invariants of {@link DishGovernanceService}'s decision
  * transitions that no single unit test proves against a real database and a real clock —
  * {@code cycle_number} across repeated reject/resubmit rounds (FR-022), a repricing of an
  * already-{@code PUBLISHED} dish leaving status, recipe and visibility untouched (FR-011), the
@@ -166,6 +166,28 @@ class DishApprovalPricingIntegrationTest {
         assertThat(history.get(1).getEventType()).isEqualTo(ReviewEventType.REJECTED);
         assertThat(history.get(2).getCycleNumber()).isEqualTo(3);
         assertThat(history.get(2).getEventType()).isEqualTo(ReviewEventType.APPROVED);
+    }
+
+    @Test
+    @DisplayName("C-02 cancellation is persisted as a terminal soft-delete with an audit cycle")
+    void shouldCancelPendingDishAndPersistCancellationEvent() {
+        Dish dish = gateReadyDish("Propuesta cancelada", admin.getId());
+
+        governanceService.cancel(dish.getId());
+
+        Dish cancelled = dishRepository.findByIdAndTenantId(dish.getId(), tenantId).orElseThrow();
+        assertThat(cancelled.getStatus()).isEqualTo(DishStatus.CANCELLED);
+        assertThat(cancelled.getIsActive()).isFalse();
+        assertThat(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(
+                tenantId, DishStatus.CANCELLED)).isEmpty();
+
+        List<DishReviewHistory> history = reviewHistoryRepository
+                .findByDishIdAndTenantIdOrderByCreatedAtAsc(dish.getId(), tenantId);
+        assertThat(history).hasSize(1);
+        assertThat(history.getFirst().getEventType()).isEqualTo(ReviewEventType.CANCELLED);
+        assertThat(history.getFirst().getCycleNumber()).isEqualTo(1);
+        assertThat(history.getFirst().getAdminId()).isEqualTo(admin.getId());
+        assertThat(history.getFirst().getComment()).isNull();
     }
 
     @Test

@@ -45,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * T102 (Phase 7): asserts the seven operations {@code contracts/openapi.yaml} publishes for this
+ * T102 (Phase 7): asserts the eight operations {@code contracts/openapi.yaml} publishes for this
  * feature all exist in the file and that each has a representative implementation whose
  * status/shape/content-type matches what the contract describes — mirroring {@code
  * auth/contract/OpenApiContractTest}'s level of rigor (path strings plus one request/response
@@ -77,8 +77,8 @@ class AdminDishApprovalOpenApiContractTest extends DishControllerTestBase {
     }
 
     @Test
-    @DisplayName("The OpenAPI contract file exists and defines all seven of this feature's operations")
-    void shouldVerifyOpenApiContractFileDefinesAllSevenOperations() throws Exception {
+        @DisplayName("The OpenAPI contract file exists and defines all eight of this feature's operations")
+        void shouldVerifyOpenApiContractFileDefinesAllEightOperations() throws Exception {
         Path contractPath = Paths.get("../../specs/007-admin-dish-approval-pricing/contracts/openapi.yaml")
                 .toAbsolutePath().normalize();
         if (!Files.exists(contractPath)) {
@@ -97,6 +97,7 @@ class AdminDishApprovalOpenApiContractTest extends DishControllerTestBase {
         assertThat(contractYaml).contains("/admin/dishes/{id}/retail-price:");
         assertThat(contractYaml).contains("/admin/dishes/{id}/approval:");
         assertThat(contractYaml).contains("/admin/dishes/{id}/rejection:");
+        assertThat(contractYaml).contains("/admin/dishes/{id}/cancel:");
         assertThat(contractYaml).contains("/admin/dishes/{id}/review-history:");
         assertThat(contractYaml).contains("/dishes/{id}/review-feedback:");
     }
@@ -178,6 +179,14 @@ class AdminDishApprovalOpenApiContractTest extends DishControllerTestBase {
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$.cycleNumber").value(1));
     }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRADOR")
+        @DisplayName("POST /admin/dishes/{id}/cancel matches the contract's 204 response")
+        void shouldConformToCancellationContract() throws Exception {
+                mockMvc.perform(post("/api/v1/admin/dishes/{id}/cancel", dishId))
+                                .andExpect(status().isNoContent());
+        }
 
     @Test
     @WithMockUser(roles = "ADMINISTRADOR")
