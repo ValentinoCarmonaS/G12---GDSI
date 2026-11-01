@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCart } from '../../hooks/useCart';
 import { CartItemWithBadge } from './CartItemWithBadge';
+import { formatCurrency } from '../../utils/currencyUtils';
 
 export interface CartDrawerProps {
   isOpen: boolean;
@@ -106,7 +107,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
                 <span>Total a pagar:</span>
                 <span data-testid="cart-total-amount" className="text-lg font-bold text-amber-700">
-                  ${totalAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                  {formatCurrency(totalAmount)}
                 </span>
               </div>
 

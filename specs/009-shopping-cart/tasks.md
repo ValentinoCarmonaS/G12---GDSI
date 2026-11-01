@@ -88,16 +88,16 @@
 
 ### Tests for User Story 2 (TDD - Write First) ⚠️
 
-- [ ] T024 [P] [US2] Write unit tests in `currencyUtils.test.ts` in `easyeat/frontend/tests/utils/` verifying fixed-point integer cent arithmetic (INV-2), ensuring zero floating-point rounding drift across multi-item multiplications and additions
-- [ ] T025 [P] [US2] Write component tests in `FloatingCartButton.test.tsx` in `easyeat/frontend/tests/components/` verifying strict bijective visibility (visible if totalCount >= 1 and in catalog view, hidden otherwise, INV-6, INV-7) and click dispatch
-- [ ] T026 [P] [US2] Write component tests in `CartDrawer.test.tsx` in `easyeat/frontend/tests/components/` verifying detailed breakdown rendering (item name, unit price, quantity, line subtotal, and exact total)
+- [X] T024 [P] [US2] Write unit tests in `currencyUtils.test.ts` in `easyeat/frontend/tests/utils/` verifying fixed-point integer cent arithmetic (INV-2), ensuring zero floating-point rounding drift across multi-item multiplications and additions
+- [X] T025 [P] [US2] Write component tests in `FloatingCartButton.test.tsx` in `easyeat/frontend/tests/components/` verifying strict bijective visibility (visible if totalCount >= 1 and in catalog view, hidden otherwise, INV-6, INV-7) and click dispatch
+- [X] T026 [P] [US2] Write component tests in `CartDrawer.test.tsx` in `easyeat/frontend/tests/components/` verifying detailed breakdown rendering (item name, unit price, quantity, line subtotal, and exact total)
 
 ### Implementation for User Story 2
 
-- [ ] T027 [P] [US2] Implement `currencyUtils.ts` in `easyeat/frontend/src/utils/` providing `toCents`, `fromCents`, `formatCurrency`, and exact line/cart sum calculators (INV-2)
-- [ ] T028 [US2] Implement `FloatingCartButton.tsx` in `easyeat/frontend/src/components/cart/` with responsive placement, total items badge, exact monetary subtotal, and click-to-open handler (depends on T027)
-- [ ] T029 [US2] Integrate `FloatingCartButton.tsx` into `CatalogPage.tsx` in `easyeat/frontend/src/pages/` with route-conditional visibility (depends on T028)
-- [ ] T030 [US2] Update `CartDrawer.tsx` in `easyeat/frontend/src/components/cart/` using `currencyUtils` for exact financial display and styling per design system (depends on T027)
+- [X] T027 [P] [US2] Implement `currencyUtils.ts` in `easyeat/frontend/src/utils/` providing `toCents`, `fromCents`, `formatCurrency`, and exact line/cart sum calculators (INV-2)
+- [X] T028 [US2] Implement `FloatingCartButton.tsx` in `easyeat/frontend/src/components/cart/` with responsive placement, total items badge, exact monetary subtotal, and click-to-open handler (depends on T027)
+- [X] T029 [US2] Integrate `FloatingCartButton.tsx` into `CatalogPage.tsx` in `easyeat/frontend/src/pages/` with route-conditional visibility (depends on T028)
+- [X] T030 [US2] Update `CartDrawer.tsx` in `easyeat/frontend/src/components/cart/` using `currencyUtils` for exact financial display and styling per design system (depends on T027)
 
 **Checkpoint**: Botón flotante reactivo y precisión monetaria exacta operativos y testeables independientemente.
 
