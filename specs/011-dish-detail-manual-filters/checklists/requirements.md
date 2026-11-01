@@ -32,6 +32,12 @@
 ## Notes
 
 - 01/11/2026: Verificación de calidad completada y aprobada en la primera iteración.
+- 01/11/2026: Sesión de clarificación (/speckit-clarify y /grill-me) completada con 5 preguntas resueltas e incorporadas a spec.md:
+  1. Composición de filtros manuales con búsqueda de texto bajo semántica conjuntiva (AND) y limpieza unificada.
+  2. Estimación libre en selector de cantidad del modal ($n \ge 1$) con validación estricta de stock remanente al confirmar incorporación al carrito.
+  3. Persistencia de filtros manuales durante la sesión en el establecimiento al transitar entre vistas (perfil/carrito/catálogo).
+  4. Visualización de alérgenos estándar y neutra en el modal de detalle para todos los comensales.
+  5. Deshabilitación reactiva en el modal abierto ante cancelación/despublicación administrativa en tiempo real ($\le 3$ s).
 - La especificación funcional es 100% agnóstica a la tecnología y está redactada en español neutro, dando estricto cumplimiento a las reglas base del proyecto y a la constitución SDD.
 - Cubre exhaustivamente las 4 historias de usuario aprobadas (COM-5.1.1, COM-5.1.2, COM-5.1.3 y COM-4.2.2) y sus 20 criterios de aceptación (AC-1.1 a AC-1.6, AC-2.1 a AC-2.3, AC-3.1 a AC-3.5, AC-4.1 a AC-4.6).
 - Se formalizaron 17 invariantes de negocio (INV-1 a INV-17) con formulación lógica y ejemplos observables, 22 casos borde (EC-001 a EC-022) y 14 criterios de éxito medibles (SC-001 a SC-014).

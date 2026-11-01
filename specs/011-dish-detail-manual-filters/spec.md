@@ -10,6 +10,17 @@
 
 ---
 
+## Clarifications
+
+### Session 2026-11-01
+- Q: ¿Cómo deben combinarse los filtros manuales (categoría y precio) con la barra de búsqueda de texto del catálogo (COM-4.2.3) cuando ambos están activos simultáneamente? → A: Acumulativa conjuntiva (AND) con limpieza unificada: la búsqueda por texto y los filtros manuales operan en conjunto mediante una intersección lógica AND ($(\text{Categorías}) \land (\text{Rango de precio}) \land (\text{Texto de búsqueda})$). Al presionar el botón de limpiar filtros, se restablecen de forma unificada tanto los filtros manuales de la barra lateral (categorías y rango de precios) como el término ingresado en la barra de búsqueda de texto del catálogo.
+- Q: Con el selector de cantidad ubicado en el modal de detalle del plato (AC-3.5): ¿cómo debe limitarse la cantidad máxima si el comensal ya tiene unidades de ese plato en su carrito? → A: Sin tope artificial en el selector del modal: el selector permite elegir libremente cualquier número entero positivo ($n \ge 1$) para estimar y calcular el subtotal provisorio; la validación de inventario frente al stock de cocina remanente se realiza al presionar "Agregar al Carrito", bloqueando la acción e informando al comensal si la cantidad acumulada excede la disponibilidad real.
+- Q: ¿Cómo deben persistir los filtros manuales de la barra lateral (categorías y precio) si el comensal navega a otra sección (como su perfil o el carrito) y luego regresa al catálogo del mismo restaurante? → A: Persistentes durante la sesión en el establecimiento: los filtros manuales aplicados se conservan en la sesión local mientras el comensal permanezca navegando en el mismo establecimiento, permitiéndole ir a su perfil o carrito y regresar al catálogo con sus filtros intactos. Los filtros se restablecen únicamente al accionar el botón "Limpiar filtros" o al cambiar de establecimiento gastronómico (spec 008).
+- Q: En el modal de detalle del plato: ¿cómo deben visualizarse los alérgenos cuando coinciden con restricciones alimentarias del perfil del comensal autenticado (spec 003)? → A: Etiquetas neutras estándar: el modal de detalle expone las etiquetas de alérgenos y la lista de componentes del plato de forma objetiva, uniforme e idéntica para todos los comensales, sin aplicar resaltes condicionales ni alertas preventivas personalizadas basadas en el perfil dietario en esta vista informativa.
+- Q: ¿Cómo debe reaccionar el modal de detalle abierto si el Administrador cancela o despublica el plato mientras el comensal lo está visualizando? → A: Deshabilitación en tiempo real en el modal: el panel actualiza su vista a "Plato no disponible", inhabilita los controles de compra en tiempo real (lapso $\le 3$ segundos) sin cerrar intempestivamente el panel, y al cerrar el modal, el plato se oculta o actualiza correspondientemente en el catálogo.
+
+---
+
 ## Invariantes de Negocio
 
 Los siguientes invariantes definen las reglas funcionales y operativas inviolables de la experiencia de catálogo para el comensal:
@@ -31,13 +42,13 @@ Los siguientes invariantes definen las reglas funcionales y operativas inviolabl
   $$\text{longitud\_texto} > \text{límite\_visual} \implies \text{desplazamiento\_interno\_activo} \land \text{estructura\_panel\_intacta}$$  
   Descripciones comerciales extensas activan barras de desplazamiento vertical interno dentro del panel, garantizando que los contenedores, botones de acción y títulos mantengan su integridad visual sin desbordamientos de pantalla.
 
-- **INV-5: Invalidación reactiva de disponibilidad ante agotamiento de stock**  
-  $$\text{stock\_insumo\_principal} = 0 \implies (\text{plato\_marcado\_no\_disponible}) \land (\text{acción\_compra\_deshabilitada}) \land \neg\,\text{requiere\_recarga\_manual}$$  
-  Si el insumo principal de un plato se agota por una orden concurrente mientras el panel está abierto, en un lapso no superior a 3 segundos el panel refleja la indisponibilidad e inactiva los controles de compra de manera automática.
+- **INV-5: Invalidación reactiva de disponibilidad ante agotamiento de stock o baja administrativa**  
+  $$(\text{stock\_insumo\_principal} = 0) \lor \text{plato\_cancelado\_o\_despublicado} \implies (\text{plato\_marcado\_no\_disponible}) \land (\text{acción\_compra\_deshabilitada}) \land \neg\,\text{requiere\_recarga\_manual}$$  
+  Si el insumo principal de un plato se agota por una orden concurrente o el administrador cancela/despublica el plato mientras el panel está abierto, en un lapso no superior a 3 segundos el panel refleja la indisponibilidad ("Plato no disponible") e inactiva los controles de compra de manera automática sin forzar el cierre del panel; al cerrarlo, la vista del catálogo se actualiza ocultando o inhabilitando el plato.
 
-- **INV-6: Integridad de información nutricional y alérgenos**  
-  $$\text{alérgenos\_configurados}(\text{plato}) \implies \text{lista\_completa\_ingredientes} \land \text{etiquetas\_alérgenos\_visibles}$$  
-  Todo plato con alérgenos asociados expone obligatoriamente su desglose completo de ingredientes y las etiquetas identificatorias correspondientes.
+- **INV-6: Integridad y neutralidad de información nutricional y alérgenos**  
+  $$\text{alérgenos\_configurados}(\text{plato}) \implies \text{lista\_completa\_ingredientes} \land \text{etiquetas\_alérgenos\_neutras\_visibles}$$  
+  Todo plato con alérgenos asociados expone obligatoriamente su desglose completo de ingredientes y las etiquetas identificatorias correspondientes de forma estándar, objetiva y uniforme para todos los comensales, sin aplicar resaltes ni alertas personalizadas basadas en el perfil del usuario en esta vista informativa.
 
 - **INV-7: Reflejo de modificaciones de receta en cocina**  
   $$\text{receta\_modificada} \implies \text{siguiente\_apertura\_muestra\_ingredientes\_actualizados}$$  
@@ -63,23 +74,23 @@ Los siguientes invariantes definen las reglas funcionales y operativas inviolabl
   $$\text{stock}(\text{plato}) = 0 \implies \text{precio\_visible\_como\_referencia} \land \text{controles\_cantidad\_y\_confirmación\_deshabilitados}$$  
   Un plato sin stock conserva legible su precio final histórico a título informativo, pero inhabilita la selección de unidades y el botón de agregar al pedido.
 
-- **INV-13: Cálculo dinámico de subtotal provisorio**  
-  $$\text{subtotal\_provisorio} = \text{precio\_unitario\_mostrado} \times \text{cantidad\_seleccionada}$$  
-  Cada interacción con el selector numérico de unidades en el panel recalcula inmediatamente el subtotal proyectado.  
-  *Ejemplo observable*: A un precio unitario de `$ 4.000`, al cambiar la cantidad a 3 unidades, el subtotal provisorio exhibe instantáneamente `$ 12.000`.
+- **INV-13: Cálculo dinámico de subtotal provisorio y libertad de estimación**  
+  $$\text{subtotal\_provisorio} = \text{precio\_unitario\_mostrado} \times \text{cantidad\_seleccionada} \quad (\text{para toda cantidad } n \in \mathbb{N}^+)$$  
+  Cada interacción con el selector numérico de unidades en el panel recalcula inmediatamente el subtotal proyectado sin imponer un tope artificial en la fase de estimación; la validación de inventario frente al stock de cocina remanente se efectúa al confirmar la acción de agregar al carrito.  
+  *Ejemplo observable*: A un precio unitario de `$ 4.000`, al cambiar la cantidad a 3 unidades, el subtotal provisorio exhibe instantáneamente `$ 12.000`. Si el comensal intenta agregar una cantidad que sumada a su carrito supere el stock disponible, la acción de compra se bloquea informando el límite de disponibilidad.
 
-- **INV-14: Álgebra de combinación de filtros manuales**  
-  $$\text{coincidencia} \iff \left(\bigvee_{c \in C_{\text{sel}}} \text{pertenece}(p, c)\right) \land \left(P_{\min} \le \text{precio}(p) \le P_{\max}\right)$$  
-  Los filtros manuales aplican una unión lógica (OR) entre opciones de la misma dimensión (múltiples categorías) y una intersección lógica (AND) entre dimensiones heterogéneas (categorías y rango de precio).  
-  *Ejemplo observable*: Si se seleccionan categorías "Pastas" y "Pizzas" con precio entre `$ 5.000` y `$ 10.000`, se muestran los platos que pertenezcan a Pastas o Pizzas y cuyo precio final se ubique en el intervalo `[$ 5.000, $ 10.000]` inclusive.
+- **INV-14: Álgebra de combinación de filtros manuales e interoperabilidad con búsqueda por texto**  
+  $$\text{coincidencia} \iff \left(\bigvee_{c \in C_{\text{sel}}} \text{pertenece}(p, c)\right) \land \left(P_{\min} \le \text{precio}(p) \le P_{\max}\right) \land \text{coincide\_búsqueda\_texto}(p, T_{\text{busq}})$$  
+  Los filtros manuales aplican una unión lógica (OR) entre opciones de la misma dimensión (múltiples categorías) y una intersección lógica (AND) entre dimensiones heterogéneas (categorías y rango de precio). Cuando además existe un término activo en la barra de búsqueda de texto del catálogo (COM-4.2.3), este se compone conjuntivamente con lógica AND sobre los filtros manuales.  
+  *Ejemplo observable*: Si se seleccionan categorías "Pastas" y "Pizzas" con precio entre `$ 5.000` y `$ 10.000` y en la búsqueda de texto figura "casero", se muestran únicamente los platos que pertenezcan a Pastas o Pizzas, cuyo precio final se ubique en `[$ 5.000, $ 10.000]` y cuyo título o ingredientes contengan el término "casero".
 
 - **INV-15: Manejo explícito de combinaciones sin resultados**  
   $$\text{resultados} = \emptyset \implies \text{aviso\_falta\_resultados} \land \text{botón\_limpiar\_filtros\_disponible}$$  
   Cuando ningún plato cumple las condiciones de filtrado, el sistema despliega un mensaje explicativo y provee una acción visible para limpiar los filtros aplicados.
 
-- **INV-16: Reversibilidad de filtros manuales**  
-  $$\text{limpiar\_filtros} \implies \text{catálogo\_en\_estado\_original\_completo}$$  
-  Al activar la acción de limpiar o restablecer filtros, se remueven todas las selecciones de categorías y rangos de precio, restaurando la totalidad del menú disponible. Pero manteniendo los filtros de alérgenos y estilo de vida del perfil del comensal.
+- **INV-16: Reversibilidad de filtros manuales, persistencia en sesión y limpieza unificada**  
+  $$\text{limpiar\_filtros} \implies (\text{categorías\_desmarcadas}) \land (\text{rango\_precio\_vaciado}) \land (\text{texto\_búsqueda\_vaciado}) \land (\text{catálogo\_restaurado})$$  
+  Los filtros manuales aplicados se conservan en la sesión local mientras el comensal permanezca navegando en el mismo establecimiento gastronómico (incluso si transita hacia su perfil o al carrito de compras). Al activar la acción de limpiar o restablecer filtros, o al cambiar de establecimiento (spec 008), se remueven todas las selecciones de categorías y rangos de precio en la barra lateral y se vacía simultáneamente el término de búsqueda de texto del catálogo, restaurando la totalidad del menú disponible en su estado inicial.
 
 - **INV-17: Visibilidad no excluyente de productos agotados bajo filtros activos**  
   $$(\text{stock}(p) = 0) \land \text{cumple\_filtros}(p) \implies \text{visible\_en\_resultados} \land \text{estado\_deshabilitado}$$  
@@ -166,21 +177,21 @@ Los siguientes invariantes definen las reglas funcionales y operativas inviolabl
 - **EC-001**: Administrador no cargó fotografía del plato (AC-1.2) → El panel superpuesto presenta exclusivamente el nombre y la descripción en la parte superior, sin reservar espacio vacío ni renderizar íconos rotos.
 - **EC-002**: Conexión de red lenta o intermitente al abrir el panel superpuesto (AC-1.4) → El texto descriptivo y el nombre se exhiben de forma inmediata mientras un indicador visual de carga informa la transferencia de la imagen hasta su renderizado final.
 - **EC-003**: Nombre comercial o descripción excesivamente largos (AC-1.5) → El panel contiene el texto habilitando barras de desplazamiento vertical interno sin alterar sus límites ni romper los elementos de la interfaz.
-- **EC-004**: Agotamiento del insumo principal mientras el panel está abierto (AC-1.6) → El sistema actualiza en tiempo real (lapso ≤ 3 segundos) el estado del plato a no disponible y deshabilita la compra.
+- **EC-004**: Agotamiento del insumo principal o cancelación/despublicación del plato mientras el panel está abierto (AC-1.6) → El sistema actualiza en tiempo real (lapso ≤ 3 segundos) el estado del plato a no disponible en el panel y deshabilita la compra sin forzar el cierre del modal; al cerrar el panel, el plato se oculta o actualiza en la grilla del catálogo.
 - **EC-005**: Reabastecimiento del insumo principal mientras el panel está abierto → El panel reactiva automáticamente los controles de compra y remueve el distintivo de agotado sin requerir recarga manual.
 - **EC-006**: Modificación o reemplazo de ingredientes en receta de cocina mientras el comensal interactúa → La siguiente apertura de la ficha del plato presenta la lista actualizada de insumos y alérgenos.
 - **EC-007**: Plato sin información de ingredientes registrada (AC-2.3) → Se exhibe un mensaje explícito indicando "Lista de componentes no disponible" en lugar de un listado vacío o un mensaje de error genérico.
 - **EC-008**: Plato sin alérgenos configurados pero con ingredientes registrados → Se presenta la lista completa de ingredientes y se omite la sección de sellos o se informa que no contiene alérgenos declarados.
 - **EC-009**: Modificación de precio administrativo mientras el comensal navega el menú (AC-3.3) → El nuevo valor se refleja en la siguiente recarga o reapertura de la ficha sin exigir un nuevo inicio de sesión.
 - **EC-010**: Apertura del detalle de un plato sin stock (AC-3.4) → El precio histórico final se visualiza a título informativo pero los botones de suma de unidades y de agregar al pedido se presentan deshabilitados.
-- **EC-011**: Modificación de cantidad a $N$ unidades y posterior cierre del panel sin confirmar compra → El subtotal provisorio calculado se descarta y, ante una futura apertura, el selector reinicia en 1 unidad.
+- **EC-011**: Modificación de cantidad en el selector y validación de inventario al agregar → El comensal puede modificar la cantidad a $N$ unidades para estimar subtotales; al presionar "Agregar al Carrito", si $N$ más lo ya existente en el carrito supera el stock disponible en cocina, el sistema rechaza la incorporación y notifica el límite de disponibilidad. Si se cierra el panel sin confirmar, el subtotal se descarta y el selector reinicia en 1 para aperturas posteriores.
 - **EC-012**: Selección simultánea de múltiples categorías en el filtro manual (AC-4.1) → El sistema aplica la unión lógica de categorías (OR), exhibiendo platos que correspondan a cualquiera de las seleccionadas.
-- **EC-013**: Aplicación concurrente de filtro de categoría y de rango de precio (AC-4.3) → El sistema aplica la intersección lógica (AND entre dimensiones), mostrando solo platos que cumplan la categoría y se encuentren dentro del rango de precio.
+- **EC-013**: Aplicación concurrente de filtro de categoría, rango de precio y búsqueda por texto (AC-4.3, COM-4.2.3) → El sistema aplica la intersección lógica (AND entre todas las dimensiones activas), mostrando solo platos que cumplan la categoría, se encuentren dentro del rango de precio y contengan el término ingresado en la búsqueda de texto.
 - **EC-014**: Filtro de rango de precio con valor mínimo estrictamente mayor al máximo ($P_{\min} > P_{\max}$) → El sistema despliega un mensaje explicativo de validación ("El precio mínimo no puede superar al precio máximo") y bloquea la aplicación del filtro hasta que los valores sean corregidos (`[SUPUESTO]`).
 - **EC-015**: Filtro de rango de precio con valor mínimo idéntico al valor máximo ($P_{\min} = P_{\max}$) → El sistema filtra evaluando la igualdad estricta, exhibiendo platos cuyo precio final coincida exactamente con dicho valor o mostrando el mensaje de falta de resultados si no hubiera coincidencias.
 - **EC-016**: Plato cuyo precio final coincide exactamente con el límite inferior o superior del rango de precio → Semántica inclusiva en ambos extremos: el plato se considera dentro del margen y se exhibe en los resultados (`[SUPUESTO]`).
 - **EC-017**: Combinación de filtros manuales sin ningún producto coincidente (AC-4.4) → La grilla se sustituye por un aviso visible de ausencia de resultados junto a un botón interactivo para limpiar los filtros.
-- **EC-018**: Limpieza de filtros cuando múltiples criterios están activos (AC-4.5) → La acción de limpiar desmarca todas las casillas de categorías, vacía los límites de precio y restablece el catálogo en su estado completo.
+- **EC-018**: Limpieza de filtros cuando múltiples criterios y búsqueda por texto están activos (AC-4.5) → La acción de limpiar desmarca todas las casillas de categorías, vacía los límites de precio y vacía simultáneamente la barra de búsqueda de texto, restableciendo el catálogo a su estado completo.
 - **EC-019**: Platos sin stock dentro de los resultados de una categoría filtrada (AC-4.6) → Permanecen visibles en la lista filtrada pero exhibiendo el distintivo de agotado y sus botones de compra deshabilitados.
 - **EC-020**: Variación de stock mientras la grilla tiene filtros manuales activos → Los platos que se agotan o reponen actualizan su estado en la grilla filtrada en tiempo real sin reiniciar la búsqueda ni alterar los filtros seleccionados.
 - **EC-021**: Cierre del panel mediante clic en el fondo exterior (AC-1.3) → El panel se oculta inmediatamente y el catálogo conserva la posición de desplazamiento vertical previa sin salto visual.
@@ -198,23 +209,24 @@ Los siguientes invariantes definen las reglas funcionales y operativas inviolabl
 - **FR-004**: Al presionar el botón de cierre del panel o al hacer clic fuera de sus límites visuales, el sistema DEBE cerrar el panel y retornar al comensal a la vista del catálogo conservando la coordenada exacta de desplazamiento vertical que tenía previa a la apertura (cubre AC-1.3, INV-1).
 - **FR-005**: Ante conexiones de red lentas o intermitentes, el sistema DEBE visualizar de inmediato el nombre y la descripción textual del plato junto con un indicador de carga temporal, sustituyéndolo por la fotografía cuando esta complete su transferencia (cubre AC-1.4, INV-3).
 - **FR-006**: Cuando el nombre o la descripción del plato excedan las dimensiones predeterminadas del contenedor, el sistema DEBE incorporar barras de desplazamiento vertical interno dentro del panel para preservar la integridad visual de la interfaz (cubre AC-1.5, INV-4).
-- **FR-007**: Si el stock del insumo principal se agota debido a un pedido concurrente mientras el panel está abierto, el sistema DEBE actualizar la vista en tiempo real (en un tiempo $\le 3$ segundos) marcando el plato como no disponible e inhabilitando las acciones de compra sin exigir el cierre o reapertura manual (cubre AC-1.6, INV-5).
-- **FR-008**: Al consultar la información nutricional de un plato configurado con alérgenos, el sistema DEBE presentar la lista completa de ingredientes y las etiquetas identificadoras de alérgenos (cubre AC-2.1, INV-6).
+- **FR-007**: Si el stock del insumo principal se agota debido a un pedido concurrente o el administrador cancela/despublica el plato mientras el panel está abierto, el sistema DEBE actualizar la vista en tiempo real (en un tiempo $\le 3$ segundos) marcando el plato como no disponible e inhabilitando las acciones de compra sin exigir el cierre o reapertura manual (cubre AC-1.6, INV-5).
+- **FR-008**: Al consultar la información nutricional de un plato configurado con alérgenos, el sistema DEBE presentar la lista completa de ingredientes y las etiquetas identificadoras de alérgenos de forma neutra y estándar para todos los comensales (cubre AC-2.1, INV-6).
 - **FR-009**: Cuando se registre un cambio o reemplazo de ingredientes en la receta de cocina, el sistema DEBE reflejar los componentes actualizados dinámicamente en la siguiente visualización del panel (cubre AC-2.2, INV-7).
 - **FR-010**: Si un plato carece de información de ingredientes registrada, el sistema DEBE exhibir un mensaje explícito indicando que la lista de componentes no se encuentra disponible, evitando mostrar secciones vacías o mensajes de error del sistema (cubre AC-2.3, INV-8).
 - **FR-011**: El sistema DEBE exhibir el precio final unitario con impuestos incluidos en un tamaño destacado dentro del panel junto al botón de agregar al pedido (cubre AC-3.1, INV-9).
 - **FR-012**: El precio del plato DEBE formatearse aplicando las reglas de la configuración regional vigente del establecimiento, contemplando el símbolo monetario, el separador de miles y la precisión de decimales (cubre AC-3.2, INV-10).
 - **FR-013**: Cuando la administración modifique el precio de un plato, el sistema DEBE reflejar el nuevo valor comercial en la siguiente recarga del catálogo o reapertura del panel sin requerir que el comensal inicie una nueva sesión (cubre AC-3.3, INV-11).
 - **FR-014**: Si un plato se encuentra sin stock, el sistema DEBE mantener visible su precio final de referencia pero DEBE desactivar los controles de cantidad y el botón de confirmación de compra (cubre AC-3.4, INV-12).
-- **FR-015**: El panel DEBE proveer un selector numérico de cantidad que recalcule dinámicamente un subtotal provisorio en pantalla como el producto del precio unitario por las unidades seleccionadas (cubre AC-3.5, INV-13).
+- **FR-015**: El panel DEBE proveer un selector numérico de cantidad que recalcule dinámicamente un subtotal provisorio en pantalla como el producto del precio unitario por las unidades seleccionadas ($n \ge 1$), permitiendo libre estimación sin bloqueo previo de cantidad; al presionar el botón de agregar al pedido, el sistema DEBE validar la disponibilidad contra el stock remanente de cocina (descontando unidades ya existentes en el carrito) y bloquear la incorporación si la cantidad excede el inventario (cubre AC-3.5, INV-13).
 - **FR-016**: La barra lateral de filtros manuales DEBE permitir la selección de una o más categorías simultáneamente, actualizando la grilla del catálogo de inmediato para exhibir platos que pertenezcan a cualquiera de las categorías marcadas mediante semántica de unión lógica (OR) (cubre AC-4.1, INV-14).
 - **FR-017**: El filtro manual DEBE permitir fijar un rango de precios mediante valores mínimo y máximo, ajustando la grilla para exhibir exclusivamente productos cuyo precio final se ubique dentro de dicho intervalo cerrado e inclusivo (cubre AC-4.2, INV-14).
-- **FR-018**: Cuando el comensal combine filtros de categorías y de rango de precios en forma simultánea, el sistema DEBE aplicar una intersección lógica (AND entre dimensiones), mostrando platos que pertenezcan a las categorías marcadas Y cuyo precio esté dentro del margen fijado (cubre AC-4.3, INV-14).
+- **FR-018**: Cuando el comensal combine filtros de categorías y de rango de precios en forma simultánea (y eventualmente con un término en la barra de búsqueda de texto del catálogo), el sistema DEBE aplicar una intersección lógica (AND entre todas las dimensiones activas), mostrando platos que pertenezcan a las categorías marcadas, cuyo precio esté dentro del margen fijado y coincidan con el término buscado (cubre AC-4.3, INV-14).
 - **FR-019**: Cuando ninguna opción del catálogo cumpla con las condiciones de los filtros aplicados, el sistema DEBE desplegar un aviso explícito de falta de resultados y proveer una acción visible para limpiar los filtros (cubre AC-4.4, INV-15).
-- **FR-020**: Al presionar la acción de restablecer o limpiar filtros, el sistema DEBE remover todas las opciones seleccionadas y restablecer el catálogo a su estado original completo (cubre AC-4.5, INV-16).
+- **FR-020**: Al presionar la acción de restablecer o limpiar filtros, el sistema DEBE remover todas las opciones seleccionadas en la barra lateral (categorías y rango de precios) y DEBE vaciar simultáneamente el término activo en la barra de búsqueda de texto, restableciendo el catálogo a su estado original completo (cubre AC-4.5, INV-16).
 - **FR-021**: Cuando se aplique un filtro manual por categoría, los platos pertenecientes a dicha sección que no cuenten con stock DEBEN continuar mostrándose dentro de los resultados filtrados pero en estado visual atenuado y deshabilitado (cubre AC-4.6, INV-17).
 - **FR-022**: Si el comensal ingresa un valor de precio mínimo estrictamente mayor al precio máximo, el sistema DEBE desplegar una advertencia de validación y bloquear la aplicación del filtro hasta su corrección (cubre EC-014).
 - **FR-023**: Las variaciones de inventario ocurridas en cocina DEBEN actualizar la disponibilidad de los platos en la grilla filtrada en tiempo real sin remover los filtros manuales activos (cubre EC-020).
+- **FR-024**: El sistema DEBE preservar los filtros manuales activos (categorías y rango de precio) en la sesión local del comensal cuando este navega hacia otras vistas de la aplicación (como el perfil o el carrito) y regresa al catálogo del mismo establecimiento, restableciéndolos exclusivamente ante la acción de limpiar filtros o al cambiar de establecimiento (cubre INV-16).
 
 ---
 
