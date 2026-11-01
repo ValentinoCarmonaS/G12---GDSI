@@ -78,4 +78,21 @@ class GlobalExceptionHandlerProfileTest {
         assertThat(response.getBody().getTitle()).isEqualTo("Dish Not Found");
         assertThat(response.getBody().getDetail()).contains(dishId.toString());
     }
+
+    @Test
+    @DisplayName("Should map MaxUploadSizeExceededException to 400 Bad Request ProblemDetail")
+    void handleMaxUploadSizeExceededException() {
+        org.springframework.web.multipart.MaxUploadSizeExceededException ex =
+                new org.springframework.web.multipart.MaxUploadSizeExceededException(10485760);
+        org.springframework.web.context.request.ServletWebRequest webRequest =
+                new org.springframework.web.context.request.ServletWebRequest(request);
+        ResponseEntity<Object> response = exceptionHandler.handleMaxUploadSizeExceededException(
+                ex, new org.springframework.http.HttpHeaders(), HttpStatus.BAD_REQUEST, webRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        ProblemDetail body = (ProblemDetail) response.getBody();
+        assertThat(body.getTitle()).isEqualTo("Maximum Upload Size Exceeded");
+        assertThat(body.getDetail()).isEqualTo("El archivo supera el tamaño máximo permitido de 5 MB.");
+    }
 }
