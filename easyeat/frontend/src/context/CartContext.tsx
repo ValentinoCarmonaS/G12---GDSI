@@ -1,13 +1,18 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { CartItem } from '../types/cart';
 import { EnrichedDish } from '../types/catalog';
+import { DishCatalogItem } from '../types/dinerCatalog';
 import { catalogApi } from '../api/catalogApi';
 
 const CART_STORAGE_KEY = 'easyeat_cart';
 
 export interface CartContextType {
   items: CartItem[];
-  addItem: (dish: EnrichedDish, riskConfirmed?: boolean) => void;
+  addItem: (
+    dish: EnrichedDish | DishCatalogItem | { id: string; name: string; price: number; [key: string]: any },
+    quantityOrRiskConfirmed?: number | boolean,
+    riskConfirmed?: boolean
+  ) => void;
   removeItem: (dishId: string) => void;
   updateQuantity: (dishId: string, quantity: number) => void;
   clearCart: () => void;
@@ -15,6 +20,7 @@ export interface CartContextType {
   totalAmount: number;
   totalCount: number;
   hasConflictingItems: boolean;
+  toastMessage?: string | null;
 }
 
 export const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -29,41 +35,105 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | number | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current as any);
+    }
+    setToastMessage(msg);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+      toastTimeoutRef.current = null;
+    }, 3000);
+  }, []);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current as any);
+      }
+    };
+  }, []);
+
   // Sync to sessionStorage
   useEffect(() => {
     try {
-      sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+      if (items.length > 0) {
+        sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+      } else {
+        sessionStorage.removeItem(CART_STORAGE_KEY);
+      }
     } catch (e) {
       console.error('Failed to persist cart to sessionStorage', e);
     }
   }, [items]);
 
-  const addItem = useCallback((dish: EnrichedDish, riskConfirmed: boolean = false) => {
-    setItems((prev) => {
-      const existing = prev.find((item) => item.dishId === dish.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.dishId === dish.id
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-                riskConfirmed: item.riskConfirmed || riskConfirmed,
-              }
-            : item
-        );
+  const addItem = useCallback(
+    (
+      dish: EnrichedDish | DishCatalogItem | { id: string; name: string; price: number; [key: string]: any },
+      quantityOrRiskConfirmed: number | boolean = 1,
+      riskConfirmedParam: boolean = false
+    ) => {
+      let quantity = 1;
+      let riskConfirmed = false;
+
+      if (typeof quantityOrRiskConfirmed === 'number') {
+        quantity = quantityOrRiskConfirmed > 0 ? quantityOrRiskConfirmed : 1;
+        riskConfirmed = Boolean(riskConfirmedParam);
+      } else if (typeof quantityOrRiskConfirmed === 'boolean') {
+        quantity = 1;
+        riskConfirmed = quantityOrRiskConfirmed;
       }
-      const newItem: CartItem = {
-        dishId: dish.id,
-        name: dish.name,
-        price: dish.price,
-        quantity: 1,
-        isCompliant: dish.isCompliant,
-        conflictingRestrictions: dish.conflictingRestrictions,
-        riskConfirmed,
-      };
-      return [...prev, newItem];
-    });
-  }, []);
+
+      const availableStock: number | undefined = (dish as any).availableStock;
+
+      setItems((prev) => {
+        const existing = prev.find((item) => item.dishId === dish.id);
+        if (existing) {
+          let newQuantity = existing.quantity + quantity;
+          const maxStock = availableStock !== undefined ? availableStock : existing.availableStock;
+          if (maxStock !== undefined && newQuantity > maxStock) {
+            newQuantity = maxStock;
+          }
+          return prev.map((item) =>
+            item.dishId === dish.id
+              ? {
+                  ...item,
+                  quantity: newQuantity,
+                  availableStock: maxStock !== undefined ? maxStock : item.availableStock,
+                  riskConfirmed: item.riskConfirmed || riskConfirmed,
+                }
+              : item
+          );
+        }
+
+        let initialQuantity = quantity;
+        if (availableStock !== undefined && initialQuantity > availableStock) {
+          initialQuantity = availableStock;
+        }
+
+        const newItem: CartItem = {
+          dishId: dish.id,
+          tenantId: (dish as any).tenantId,
+          name: dish.name,
+          price: dish.price,
+          quantity: initialQuantity,
+          availableStock,
+          isCompliant: (dish as any).isCompliant,
+          conflictingRestrictions: (dish as any).conflictingRestrictions,
+          riskConfirmed,
+        };
+        return [...prev, newItem];
+      });
+
+      const unitLabel = quantity === 1 ? '1 unidad' : `${quantity} unidades`;
+      showToast(`Se agregaron ${unitLabel} de ${dish.name} al carrito`);
+    },
+    [showToast]
+  );
 
   const removeItem = useCallback((dishId: string) => {
     setItems((prev) => prev.filter((item) => item.dishId !== dishId));
@@ -82,6 +152,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearCart = useCallback(() => {
     setItems([]);
+    try {
+      sessionStorage.removeItem(CART_STORAGE_KEY);
+    } catch (e) {
+      console.error('Failed to clear cart in sessionStorage', e);
+    }
   }, []);
 
   // FR-015: Proactive cart re-evaluation upon dietary profile changes
@@ -138,9 +213,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         totalAmount,
         totalCount,
         hasConflictingItems,
+        toastMessage,
       }}
     >
       {children}
+      {toastMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="cart-toast"
+          className="fixed bottom-6 right-6 z-50 bg-gray-900/95 text-white text-xs sm:text-sm font-medium px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 animate-in fade-in"
+        >
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </CartContext.Provider>
   );
 };

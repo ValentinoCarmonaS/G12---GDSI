@@ -97,7 +97,13 @@ export const EstablishmentSearchBar: React.FC<EstablishmentSearchBarProps> = ({
 
   const handleSelectEstablishment = (est: EstablishmentSummary) => {
     // Check if cart has items from different establishment (COM-1.5.1 CA 5)
-    if (cartItems.length > 0 && (!tenant || tenant.id !== est.id)) {
+    const hasItemsFromOtherEstablishment =
+      cartItems.length > 0 &&
+      (!tenant ||
+        tenant.id !== est.id ||
+        cartItems.some((item) => item.tenantId && item.tenantId !== est.id));
+
+    if (hasItemsFromOtherEstablishment) {
       setPendingEstablishment(est);
       setIsSwitchModalOpen(true);
       setIsDropdownOpen(false);
