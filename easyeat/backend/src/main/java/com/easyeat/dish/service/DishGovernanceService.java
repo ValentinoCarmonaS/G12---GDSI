@@ -306,6 +306,30 @@ public class DishGovernanceService {
         return new DishRejectionResponse(dishId, DishStatus.DRAFT, cycleNumber, entry.getId());
     }
 
+    @Transactional
+    public void cancel(UUID dishId) {
+        UUID tenantId = TenantContextHolder.getRequiredTenantId();
+        Dish dish = accessGuard.requireOwnedByTenant(dishId, tenantId);
+
+        if (dish.getStatus() != DishStatus.PENDING_PRICE) {
+            throw new DishStateConflictException(dishId, dish.getStatus().name(),
+                    "PENDING_PRICE");
+        }
+
+        int updated = dishRepository.updateCancellationIfPending(dishId, tenantId);
+        if (updated == 0) {
+            String currentStatus = dishRepository.findByIdAndTenantId(dishId, tenantId)
+                    .map(d -> d.getStatus().name())
+                    .orElse(dish.getStatus().name());
+            throw new DishAlreadyDecidedException(dishId, currentStatus, Instant.now());
+        }
+
+        int cycleNumber = reviewHistoryRepository.findMaxCycleNumberByDishId(dishId).orElse(0) + 1;
+        DishReviewHistory entry = DishReviewHistory.cancelled(dishId, tenantId, cycleNumber,
+            resolveCurrentUserId(), null);
+        reviewHistoryRepository.save(entry);
+    }
+
     /**
      * FR-012: derived from the Food Cost just read, never from anything persisted. {@code
      * retailPrice} is always non-null here — {@link #setRetailPrice} rejects a null one before

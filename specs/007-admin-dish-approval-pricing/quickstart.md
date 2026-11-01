@@ -9,7 +9,6 @@ Runnable validation of the feature end to end. Schemas are **not** duplicated he
 409 taxonomy, and [data-model.md](./data-model.md) for the DDL, the state machine and the margin
 invariants.
 
----
 
 ## 0. Upstream readiness gate — run this before anything else
 
@@ -31,7 +30,6 @@ spec 005 on 2026-10-27 (issue #137, PR #138), so the degraded FIFO fallback that
 withdrawn — if the column is missing, the branch simply lacks 005's work and you stop. `DishStatus`
 without `PUBLISHED` is also a stop condition: it is R-005-3, pending a decision on who owns that enum.
 
----
 
 ## 1. Prerequisites
 
@@ -65,7 +63,6 @@ curl -s -X POST $API/admin/staff -H "Authorization: Bearer $ADMIN_TOKEN" \
   -d '{"fullName":"Chef QA","email":"chef.qa@easyeat.com","role":"CHEF"}'
 ```
 
----
 
 ## 2. Automated verification
 
@@ -74,7 +71,7 @@ curl -s -X POST $API/admin/staff -H "Authorization: Bearer $ADMIN_TOKEN" \
 cd easyeat/backend && mvn test
 
 # Only this feature's suites
-mvn test -Dtest='RetailPricingCalculatorTest,MarginRoundTripToleranceTest,AdminDishReviewControllerTest,AdminDishPricingControllerTest,AdminDishDecisionControllerTest,ChefReviewFeedbackControllerTest,DishApprovalConcurrencyTest,DishApprovalPricingIntegrationTest,DishReviewInboxIntegrationTest,AdminPricingMigrationTest,DevSeedDishesMigrationTest'
+mvn test -Dtest='RetailPricingCalculatorTest,MarginRoundTripToleranceTest,AdminDishReviewControllerTest,AdminDishDecisionControllerTest,DishGovernanceServiceTest,AdminDishApprovalOpenApiContractTest,AdminPricingMigrationTest,DevSeedDishesMigrationTest'
 
 # Frontend
 cd easyeat/frontend && npm test
@@ -85,7 +82,6 @@ Expected: all green, including `MarginRoundTripToleranceTest`, which asserts the
 `3.33 @ 60% → 8.33` (0.0240 pp), `1.25 @ 70% → 4.17` (0.0240 pp) and `0.07 @ 60% → 0.18` (1.1111 pp)
 as expected behaviour.
 
----
 
 ## 3. Scenario A — submit, audit, price, approve, verify publication (US1, US2, US3)
 
@@ -119,7 +115,6 @@ as expected behaviour.
 9. **Idempotent approval (FR-018).** Approve again: expect `200`, `alreadyPublished: true`, the
    **original** `publishedAt`, `reviewHistoryEntryId: null`, and no new audit row.
 
----
 
 ## 4. Scenario B — reject, and verify the Chef sees feedback but no costs (US4, FR-023)
 
@@ -141,7 +136,6 @@ as expected behaviour.
    `isResubmission: true` and `reviewCycleCount: 1`, and `GET .../review-history` returning cycle 1
    `REJECTED` in chronological order.
 
----
 
 ## 5. Scenario C — reprice a published dish and verify the audit trail (US2, FR-011, SC-008)
 
@@ -163,33 +157,67 @@ as expected behaviour.
    `PUT $API/admin/ingredients/{ingredientId}`, then re-read `review-detail`: `margin.marginPct`
    changed while `retailPrice` did not.
 
----
 
-## 6. Frontend validation
+## 6. Scenario D — Administrator cancels a dish under review (C-02, FR-038..FR-042)
+
+1. As a Chef, submit a complete dish and capture its id as `$DISH_ID`. Confirm it appears as
+   `PENDING_PRICE` in the Administrator's pending inbox.
+2. Verify role ownership: `POST $API/admin/dishes/$DISH_ID/cancel` with `$CHEF_TOKEN` returns `403`.
+   A Chef's legacy `DELETE $API/dishes/$DISH_ID` is only for `DRAFT`; against this submitted dish it
+   returns `409` and leaves it pending. Spec 005's separate deletion of a Chef-owned draft remains
+   unchanged.
+3. As the Administrator, open `/admin/dishes`, open the pending dish and select "Borrar". Cancel
+   the confirmation dialog: the route remains `/admin/dishes`, the dish remains pending, and no
+   cancellation history event is written.
+4. Reopen the confirmation and confirm it. Expect `204`; the UI remains on `/admin/dishes`, clears
+   the terminal detail and refreshes the inbox. The dish no longer appears in the `PENDING` tab.
+5. Read the audit trail. Expect exactly one `CANCELLED` event with the Administrator, tenant,
+   timestamp and next cycle number; a free-text comment is not required. The Chef list shows the
+   dish as read-only "Cancelado" with no edit/delete actions. Diner catalog queries exclude it.
+6. Attempt cancellation again, or race it against another terminal decision. Expect `409`; no
+   second `CANCELLED` event is recorded. An unknown event type remains rejected by the database's
+   closed `chk_drh_event_type` domain.
+
+## 7. Frontend validation
 
 With both servers running, log in as `admin@easyeat.com` and open `/admin/dishes`
 (reachable from the Administration panel hub):
 
 - the three tabs render with the pending badge, FIFO order, 20-per-page controls and distinct empty
-  states;
-- the audit panel shows the itemized Food Cost, the amber unpriced-ingredient badge and the
-  bidirectional margin ↔ PVP calculator; editing one field drives the other, and reformatting to two
-  decimals happens on blur, never mid-keystroke;
-- with Food Cost `0.00` the margin input is disabled and the direct-price path is required;
-- margins at `≥ 100%` show a boundary advisory and block derivation (the `≤ −500%` floor named here
-  was withdrawn by `spec.md`'s own clarification log, CHK014, before Phase 4 began — only the 100%
-  upper bound has mathematical grounding, since it divides by zero; a negative margin of any size is
-  a legitimate commercial decision gated by FR-014's confirmation, not refused here — see `tasks.md`
-  T069's correction note for the same stale wording caught earlier in this delivery);
-- a PVP below the tolerance threshold shows the achievable precision instead of claiming ±0.01 pp;
-- saving a negative margin and publishing with advisories each require a second confirmation;
-- the rejection dialog enforces 10–1000 characters with a live counter and a disabled submit;
-- `403`, each flavour of `409` and `400` surface distinct messages, and a stale decision refreshes
-  the list instead of leaving a phantom row.
+   states;
+- the audit panel shows itemized Food Cost, unpriced-ingredient warnings, the calculator and gate
+   state; editing either calculator input derives the other without reformatting the active field;
+- a Food Cost of `0.00` disables margin-to-price derivation and requires direct price entry;
+- margins at or above 100% show a boundary advisory; negative margins remain valid but require the
+   FR-014 confirmation before saving;
+- a price below the round-trip precision threshold shows its achievable deviation instead of
+   claiming the ±0.01 pp bound;
+- approval acknowledgements and rejection require their explicit confirmation/dialog flows;
+- cancellation of a pending dish opens a confirmation dialog. Abandoning it sends no request;
+   confirming keeps the Administrator at `/admin/dishes`, clears the terminal detail and refreshes
+   the inbox;
+- the Chef dish list shows cancelled dishes with the "Cancelado" badge and no edit or delete action;
+- `403`, each flavour of `409` and `400` surface actionable messages, and stale decisions refresh
+   the list instead of leaving a phantom row.
 
----
+**Correction, found 2026-10-31 during manual UI testing after this feature was fully merged to
+`main` (recorded in `HANDOFF-post-merge-ui-gap.md`).** When T103 executed this section, every
+bullet above was true of `MarginPriceCalculator`, `PublicationConfirmModal` and `RejectionDialog`
+**in isolation**, which is as far as that task's own note (`tasks.md` T103) honestly scoped its
+check — "referenced against the existing component/page test suites... rather than a fabricated
+manual-browser narrative". What neither that check nor the suite caught: none of the three
+components was imported by `AdminDishReviewPage` or `DishAuditPanel`. `/admin/dishes` rendered the
+publication gate's status and nothing to act on it — no price field, no "Aprobar y Publicar", no
+"Rechazar / Devolver a cocina" — because no task in Phases 3-7 wired them in, and no page-level
+test asserted they were reachable. Closed in Phase 8 (`tasks.md` T105-T110): `dishReviewApi`
+gained its three missing write methods, a new `DishDecisionActions` component composes the three
+UI pieces against them, and it is now rendered on `/admin/dishes` beside `DishAuditPanel`. Every
+bullet above is now additionally backed by a page-level test (`AdminDishReviewPage.test.tsx`), not
+only a component-level one — see T109. Full frontend suite verified green after the wiring: 587 of
+587 across 91 files, `tsc --noEmit` clean.
 
-## 7. Execution record (T103/T104, 2026-10-30)
+
+## 8. Execution record (T103/T104, 2026-10-30)
 
 ### Scenarios A, B and C — executed end to end against a live instance
 
@@ -198,21 +226,21 @@ PostgreSQL 16 container, with real `curl` requests driving every step — not in
 suites, though the suites already cover the same ground (`DishApprovalPricingIntegrationTest`,
 `DishVisibilityPredicateIntegrationTest`, `DishReviewInboxIntegrationTest`, every controller test).
 
-- **Scenario A** (§3): all 9 steps reproduced exactly as written, including step 8's diner-visibility
-  check — confirmed with a real `GET /establishments/{tenantId}/dishes` call that only the
-  `PUBLISHED` dish is visible and its `price` field carries the `retail_price` value (`1500.0`),
-  which is this phase's own T096-T098 exercised against a running server, not just the test suite.
+- **Scenario A** (§3): all 9 steps reproduced exactly, including step 8's diner-visibility check —
+   confirmed with a real `GET /establishments/{tenantId}/dishes` call that only the `PUBLISHED` dish
+   is visible and its `price` field carries the `retail_price` value (`1500.0`), exercised against a
+   running server, not just the test suite.
 - **Scenario B** (§4): all 5 steps reproduced exactly. Step 4's "same for `ENCARGADO` and `COMENSAL`
-  tokens" was not separately driven by `curl` — the `CHEF`-vs-anonymous pair already demonstrates the
-  role gate, and every other role is already covered by `ChefDishReviewFeedbackControllerTest`'s own
-  RBAC matrix; repeating it by hand here would not add evidence the suite doesn't already carry.
-- **Scenario C** (§5): all 7 steps reproduced exactly, including the live-margin check (step 7): after
-  raising the one recipe ingredient's `unitPurchaseCost` from 1200 to 2000, `review-detail` reported
-  `foodCost` moving from 600 to 1000 and `marginPct` from −20% to −100% while `retailPrice` stayed at
-  500 — the margin is recomputed live, never read from a stored value.
+   tokens" was not separately driven by `curl` — the `CHEF`-vs-anonymous pair already demonstrates
+   the role gate, and the other roles are covered by `ChefDishReviewFeedbackControllerTest`'s RBAC
+   matrix.
+- **Scenario C** (§5): all 7 steps reproduced exactly, including the live-margin check (step 7):
+   after raising the one recipe ingredient's `unitPurchaseCost` from 1200 to 2000, `review-detail`
+   reported `foodCost` moving from 600 to 1000 and `marginPct` from −20% to −100% while
+   `retailPrice` stayed at 500 — the margin is recomputed live, never read from a stored value.
 
 Every response body, status code and error type matched what this document already specified; no
-corrections were needed to §3, §4 or §5. The one correction this execution did produce is §6's
+corrections were needed to §3, §4 or §5. The one correction this execution did produce is §7's
 `≤ −500%` line, recorded above with T103.
 
 ### SC-006 (T104) — what could and could not be verified here
