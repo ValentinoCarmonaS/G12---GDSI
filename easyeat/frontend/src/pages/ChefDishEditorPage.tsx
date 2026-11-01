@@ -23,7 +23,7 @@ export const ChefDishEditorPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const isReadOnly = dish !== null && dish.status !== 'DRAFT';
+  const isReadOnly = Boolean(dish && dish.status !== 'DRAFT');
 
   const fetchDish = useCallback(async (dishId: string) => {
     setIsLoading(true);
