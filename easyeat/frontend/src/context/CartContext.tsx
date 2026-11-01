@@ -61,7 +61,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sync to sessionStorage
   useEffect(() => {
     try {
-      sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+      if (items.length > 0) {
+        sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+      } else {
+        sessionStorage.removeItem(CART_STORAGE_KEY);
+      }
     } catch (e) {
       console.error('Failed to persist cart to sessionStorage', e);
     }
@@ -113,6 +117,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const newItem: CartItem = {
           dishId: dish.id,
+          tenantId: (dish as any).tenantId,
           name: dish.name,
           price: dish.price,
           quantity: initialQuantity,
@@ -147,6 +152,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearCart = useCallback(() => {
     setItems([]);
+    try {
+      sessionStorage.removeItem(CART_STORAGE_KEY);
+    } catch (e) {
+      console.error('Failed to clear cart in sessionStorage', e);
+    }
   }, []);
 
   // FR-015: Proactive cart re-evaluation upon dietary profile changes

@@ -6,7 +6,7 @@ import { useProfile } from '../hooks/useProfile';
 import { useCatalog } from '../hooks/useCatalog';
 import { TenantContext, TenantProvider } from '../context/TenantContext';
 import { CatalogFilterContext, CatalogFilterProvider, useCatalogFilter } from '../context/CatalogFilterContext';
-import { CartProvider } from '../context/CartContext';
+import { CartContext, CartProvider } from '../context/CartContext';
 import { useCart } from '../hooks/useCart';
 import { useRealtimeAvailability } from '../hooks/useRealtimeAvailability';
 import { dinerCatalogApi } from '../api/dinerCatalogApi';
@@ -528,6 +528,7 @@ export const CatalogView: React.FC = () => {
 export const CatalogPage: React.FC = () => {
   const existingTenantContext = useContext(TenantContext);
   const existingFilterContext = useContext(CatalogFilterContext);
+  const existingCartContext = useContext(CartContext);
 
   let content = <CatalogView />;
 
@@ -535,7 +536,9 @@ export const CatalogPage: React.FC = () => {
     content = <CatalogFilterProvider>{content}</CatalogFilterProvider>;
   }
 
-  content = <CartProvider>{content}</CartProvider>;
+  if (!existingCartContext) {
+    content = <CartProvider>{content}</CartProvider>;
+  }
 
   if (!existingTenantContext) {
     content = <TenantProvider>{content}</TenantProvider>;

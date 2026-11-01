@@ -52,6 +52,7 @@ describe('CartContext & useCart (T055, US3, FR-015, FR-021, FR-022)', () => {
     });
 
     expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0].tenantId).toBe('tenant-1');
     expect(result.current.totalCount).toBe(1);
     expect(result.current.totalAmount).toBe(4500);
     expect(result.current.hasConflictingItems).toBe(false);
@@ -194,6 +195,7 @@ describe('CartContext & useCart (T055, US3, FR-015, FR-021, FR-022)', () => {
       result.current.clearCart();
     });
     expect(result.current.items).toHaveLength(0);
+    expect(sessionStorage.getItem('easyeat_cart')).toBeNull();
   });
 
   it('proactively re-evaluates compliance against backend API (FR-015)', async () => {
