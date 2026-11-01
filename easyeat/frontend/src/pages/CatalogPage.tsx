@@ -142,7 +142,7 @@ export const CatalogView: React.FC = () => {
     return catalogHook.dishes.filter((dish) => dish.isCompliant !== false);
   }, [catalogHook.dishes, isFilterActive, isAuthenticated, activeRestrictionsCount]);
 
-  const handleAddToCart = (dish: DishCatalogItem | EnrichedDish) => {
+  const handleAddToCart = (dish: DishCatalogItem | EnrichedDish, quantity: number = 1) => {
     const isAvailable =
       'isAvailable' in dish
         ? (availability[dish.id] !== undefined ? availability[dish.id] : dish.isAvailable !== false)
@@ -163,7 +163,9 @@ export const CatalogView: React.FC = () => {
           isActive: true,
           isCompliant: dish.isCompliant,
           conflictingRestrictions: dish.conflictingRestrictions,
+          availableStock: (dish as any).availableStock,
         },
+        quantity,
         false
       );
     }
@@ -459,7 +461,7 @@ export const CatalogView: React.FC = () => {
         )}
       </div>
 
-      {/* Informational Dish Detail Modal (FR-007, FR-012, FR-014) */}
+      {/* Informational Dish Detail Modal (FR-007, FR-012, FR-014, COM-6.1.1) */}
       <DishDetailModal
         dish={
           selectedDish
@@ -476,6 +478,9 @@ export const CatalogView: React.FC = () => {
         onClose={() => setSelectedDish(null)}
         isReadOnly={isReadOnly}
         nextOpeningSchedule={catalogData?.establishment?.nextOpeningSchedule}
+        onAddToCart={(dish, quantity) => {
+          handleAddToCart(dish, quantity);
+        }}
       />
 
       {/* Preventive Risk Modal (FR-021, spec 003) */}
