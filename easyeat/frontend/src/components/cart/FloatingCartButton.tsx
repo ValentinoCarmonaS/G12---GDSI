@@ -38,25 +38,27 @@ export const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
       data-testid="floating-cart-button"
       className={`fixed bottom-6 right-6 z-40 inline-flex items-center gap-3 px-5 py-3.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-2xl shadow-xl shadow-amber-600/30 transition-all duration-200 cursor-pointer animate-in fade-in slide-in-from-bottom-3 focus:outline-none focus:ring-4 focus:ring-amber-500/30 ${className}`}
     >
-      {/* Icon with Counter Badge */}
-      <div className="relative flex items-center justify-center">
-        <ShoppingBag className="w-5 h-5 text-white" />
-        <span
-          data-testid="cart-badge-count"
-          className="absolute -top-2.5 -right-2.5 min-w-5 h-5 px-1 bg-white text-amber-900 text-2xs font-extrabold rounded-full flex items-center justify-center shadow-xs"
-        >
-          {totalCount}
-        </span>
-      </div>
+      <span data-testid="open-cart-button" className="contents">
+        {/* Icon with Counter Badge */}
+        <div className="relative flex items-center justify-center">
+          <ShoppingBag className="w-5 h-5 text-white" />
+          <span
+            data-testid="cart-badge-count"
+            className="absolute -top-2.5 -right-2.5 min-w-5 h-5 px-1 bg-white text-amber-900 text-2xs font-extrabold rounded-full flex items-center justify-center shadow-xs"
+          >
+            {totalCount}
+          </span>
+        </div>
 
-      {/* Label and Subtotal Separator */}
-      <div className="flex items-center gap-2 text-sm">
-        <span className="hidden sm:inline font-semibold text-amber-100">Ver Carrito</span>
-        <span className="hidden sm:inline text-amber-300 font-light">•</span>
-        <span data-testid="floating-cart-subtotal" className="text-white font-extrabold tracking-tight">
-          {formattedSubtotal}
-        </span>
-      </div>
+        {/* Label and Subtotal Separator */}
+        <div className="flex items-center gap-2 text-sm">
+          <span className="hidden sm:inline font-semibold text-amber-100">Ver Carrito</span>
+          <span className="hidden sm:inline text-amber-300 font-light">•</span>
+          <span data-testid="floating-cart-subtotal" className="text-white font-extrabold tracking-tight">
+            {formattedSubtotal}
+          </span>
+        </div>
+      </span>
     </button>
   );
 };

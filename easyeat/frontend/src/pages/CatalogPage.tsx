@@ -19,6 +19,7 @@ import { DishDetailModal } from '../components/catalog/DishDetailModal';
 import { CatalogMasterToggle } from '../components/catalog/CatalogMasterToggle';
 import { EmptyCatalogDietaryState } from '../components/catalog/EmptyCatalogDietaryState';
 import { AddToCartRiskModal } from '../components/cart/AddToCartRiskModal';
+import { FloatingCartButton } from '../components/cart/FloatingCartButton';
 import { CartDrawer } from '../components/cart/CartDrawer';
 import {
   CatalogSearchFilter,
@@ -225,32 +226,6 @@ export const CatalogView: React.FC = () => {
           ) : (
             <div />
           )}
-
-          {/* Floating Cart Button */}
-          <button
-            type="button"
-            onClick={() => setIsCartOpen(true)}
-            data-testid="open-cart-button"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all focus:ring-2 focus:ring-amber-500 cursor-pointer"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-            <span>Ver Carrito</span>
-            {totalCount > 0 && (
-              <span
-                data-testid="cart-badge-count"
-                className="ml-1 px-1.5 py-0.5 text-2xs bg-white text-amber-800 rounded-full font-extrabold"
-              >
-                {totalCount}
-              </span>
-            )}
-          </button>
         </div>
 
         {/* Guest Banner (FR-026, spec 003) */}
@@ -514,6 +489,9 @@ export const CatalogView: React.FC = () => {
         onConfirm={handleConfirmRisk}
         onCancel={handleCancelRisk}
       />
+
+      {/* Floating Cart Button (COM-6.1.2, FR-005, FR-008, INV-6, INV-7) */}
+      <FloatingCartButton onClick={() => setIsCartOpen(true)} />
 
       {/* Cart Drawer */}
       <CartDrawer
