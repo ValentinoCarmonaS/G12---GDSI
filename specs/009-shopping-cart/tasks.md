@@ -22,7 +22,7 @@
 - [X] T002 [P] Create migration test `FlywayMigrationV10Test.java` in `easyeat/backend/src/test/java/com/easyeat/profile/migration/` validating Flyway V10 execution and database CHECK constraints on PostgreSQL
 - [X] T003 [P] Implement `Gender.java` enum in `easyeat/backend/src/main/java/com/easyeat/profile/domain/` with standard values `FEMALE`, `MALE`, `NON_BINARY`, and `PREFER_NOT_TO_SAY`
 - [X] T004 Extend `User.java` domain entity in `easyeat/backend/src/main/java/com/easyeat/auth/domain/` with `age`, `gender`, and `address` persistent fields
-- [ ] T005 [P] Implement `UserPhoto.java` JPA entity in `easyeat/backend/src/main/java/com/easyeat/profile/domain/` mapping `user_photos` table with `userId`, `data`, `contentType`, `fileSize`, `fileName`, and timestamps
+- [X] T005 [P] Implement `UserPhoto.java` JPA entity in `easyeat/backend/src/main/java/com/easyeat/profile/domain/` mapping `user_photos` table with `userId`, `data`, `contentType`, `fileSize`, `fileName`, and timestamps
 - [ ] T006 [P] Implement `UserPhotoRepository.java` interface in `easyeat/backend/src/main/java/com/easyeat/profile/repository/` providing photo persistence and lookup methods
 
 **Checkpoint**: Core persistence layer ready. Demographic and avatar features can now be implemented.
