@@ -2,9 +2,9 @@
 
 **Feature Branch**: `011-dish-detail-manual-filters`
 
-**Created**: 01/11/2026
+**Created**: 01/11/2026 | **Approved**: 01/11/2026
 
-**Status**: Draft
+**Status**: Approved (Audited via grill-me & speckit-checklist)
 
 **Input**: User description: "Sistema web de pedidos de comida. Iteración actual extiende la experiencia del comensal sobre el catálogo existente: detalle de plato, ingredientes/alérgenos, precio y filtros manuales de búsqueda. Cuatro historias de usuario aprobadas y cerradas: COM-5.1.1 (Visualizar multimedia y nombre), COM-5.1.2 (Ver ingredientes y alérgenos), COM-5.1.3 (Ver precio) y COM-4.2.2 (Búsqueda por filtros manuales)."
 
