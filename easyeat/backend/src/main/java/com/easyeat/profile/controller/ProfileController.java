@@ -23,12 +23,23 @@ public class ProfileController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ProfileResponse> getProfile(@AuthenticationPrincipal User user) {
+    public ResponseEntity<ExtendedProfileResponse> getProfile(@AuthenticationPrincipal User user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        ProfileResponse profile = profileService.getProfile(user);
+        ExtendedProfileResponse profile = profileService.getExtendedProfile(user);
         return ResponseEntity.ok(profile);
+    }
+
+    @PutMapping("/demographics")
+    public ResponseEntity<ExtendedProfileResponse> updateDemographics(
+            @AuthenticationPrincipal User user,
+            @RequestBody DemographicsRequest request) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        ExtendedProfileResponse updated = profileService.updateDemographics(user, request);
+        return ResponseEntity.ok(updated);
     }
 
     @PutMapping("/personal-data")
