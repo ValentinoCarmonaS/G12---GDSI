@@ -36,7 +36,7 @@ export const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
       role="button"
       aria-label="Ver carrito de compras"
       data-testid="floating-cart-button"
-      className={`fixed bottom-6 right-6 z-40 inline-flex items-center gap-3 px-5 py-3.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-2xl shadow-xl shadow-amber-600/30 transition-all duration-200 cursor-pointer animate-in fade-in slide-in-from-bottom-3 focus:outline-none focus:ring-4 focus:ring-amber-500/30 ${className}`}
+      className={`fixed bottom-20 right-6 z-40 inline-flex items-center gap-3 px-5 py-3.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-2xl shadow-xl shadow-amber-600/30 transition-all duration-200 cursor-pointer animate-in fade-in slide-in-from-bottom-3 focus:outline-none focus:ring-4 focus:ring-amber-500/30 ${className}`}
     >
       <span data-testid="open-cart-button" className="contents">
         {/* Icon with Counter Badge */}
