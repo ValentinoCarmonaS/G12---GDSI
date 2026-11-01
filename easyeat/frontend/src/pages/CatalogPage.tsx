@@ -120,6 +120,14 @@ export const CatalogView: React.FC = () => {
       })
       .map((group) => {
         const matchingDishes = group.dishes.filter((dish) => {
+          if (
+            isAuthenticated &&
+            activeRestrictionsCount > 0 &&
+            isFilterActive &&
+            dish.isCompliant === false
+          ) {
+            return false;
+          }
           if (!isQueryActive) return true;
           return matchesDishQuery(dish, searchQuery);
         });
@@ -129,7 +137,15 @@ export const CatalogView: React.FC = () => {
         };
       })
       .filter((group) => group.dishes.length > 0);
-  }, [catalogData, activeCategory, searchQuery, isQueryActive]);
+  }, [
+    catalogData,
+    activeCategory,
+    searchQuery,
+    isQueryActive,
+    isAuthenticated,
+    activeRestrictionsCount,
+    isFilterActive,
+  ]);
 
 
 
@@ -368,37 +384,41 @@ export const CatalogView: React.FC = () => {
                 </p>
               </div>
             ) : filteredCategoryGroups.length === 0 ? (
-              <div
-                data-testid="catalog-empty-search"
-                className="py-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200 px-6 space-y-4"
-              >
-                <div className="mx-auto w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
+              !isQueryActive && isAuthenticated && activeRestrictionsCount > 0 && isFilterActive ? (
+                <EmptyCatalogDietaryState onViewFullMenu={() => setIsFilterActive(false)} />
+              ) : (
+                <div
+                  data-testid="catalog-empty-search"
+                  className="py-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200 px-6 space-y-4"
+                >
+                  <div className="mx-auto w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-base font-bold text-gray-800">No se encontraron platos</p>
+                    <p className="text-sm text-gray-500 max-w-md mx-auto">
+                      No encontramos resultados para tu búsqueda. Verificá la ortografía o probá con otros términos o ingredientes.
+                    </p>
+                  </div>
+                  {isQueryActive && (
+                    <button
+                      type="button"
+                      data-testid="clear-empty-search-btn"
+                      onClick={() => setSearchQuery('')}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Limpiar búsqueda
+                    </button>
+                  )}
                 </div>
-                <div className="space-y-1">
-                  <p className="text-base font-bold text-gray-800">No se encontraron platos</p>
-                  <p className="text-sm text-gray-500 max-w-md mx-auto">
-                    No encontramos resultados para tu búsqueda. Verificá la ortografía o probá con otros términos o ingredientes.
-                  </p>
-                </div>
-                {isQueryActive && (
-                  <button
-                    type="button"
-                    data-testid="clear-empty-search-btn"
-                    onClick={() => setSearchQuery('')}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                  >
-                    Limpiar búsqueda
-                  </button>
-                )}
-              </div>
+              )
             ) : (
               /* Categorized Sections (FR-007, FR-009, FR-020, FR-022) */
               <div className="space-y-10">
@@ -432,6 +452,7 @@ export const CatalogView: React.FC = () => {
                           isReadOnly={isReadOnly}
                           onSelectDish={setSelectedDish}
                           onAddToCart={handleAddToCart}
+                          showWarnings={isAuthenticated && activeRestrictionsCount > 0 && !isFilterActive}
                         />
                       ))}
                     </div>
