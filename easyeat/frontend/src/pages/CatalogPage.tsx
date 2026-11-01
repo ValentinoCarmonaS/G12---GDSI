@@ -43,6 +43,7 @@ export const CatalogView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedDish, setSelectedDish] = useState<DishCatalogItem | null>(null);
   const [dishToConfirm, setDishToConfirm] = useState<EnrichedDish | null>(null);
+  const [pendingQuantity, setPendingQuantity] = useState<number>(1);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -150,36 +151,37 @@ export const CatalogView: React.FC = () => {
 
     if (isReadOnly || !isAvailable) return;
 
+    const itemToAdd: EnrichedDish = {
+      id: dish.id,
+      tenantId: tenant?.id || ('tenantId' in dish ? dish.tenantId : ''),
+      name: dish.name,
+      price: dish.price,
+      description: dish.description ?? null,
+      isActive: true,
+      isCompliant: dish.isCompliant,
+      conflictingRestrictions: dish.conflictingRestrictions,
+      availableStock: (dish as any).availableStock,
+    };
+
     if (isAuthenticated && activeRestrictionsCount > 0 && dish.isCompliant === false) {
-      setDishToConfirm(dish as EnrichedDish);
+      setDishToConfirm(itemToAdd);
+      setPendingQuantity(quantity);
     } else {
-      addItem(
-        {
-          id: dish.id,
-          tenantId: tenant?.id || ('tenantId' in dish ? dish.tenantId : ''),
-          name: dish.name,
-          price: dish.price,
-          description: dish.description ?? null,
-          isActive: true,
-          isCompliant: dish.isCompliant,
-          conflictingRestrictions: dish.conflictingRestrictions,
-          availableStock: (dish as any).availableStock,
-        },
-        quantity,
-        false
-      );
+      addItem(itemToAdd, quantity, false);
     }
   };
 
   const handleConfirmRisk = () => {
     if (dishToConfirm) {
-      addItem(dishToConfirm, true);
+      addItem(dishToConfirm, pendingQuantity, true);
       setDishToConfirm(null);
+      setPendingQuantity(1);
     }
   };
 
   const handleCancelRisk = () => {
     setDishToConfirm(null);
+    setPendingQuantity(1);
   };
 
   const pageTitle = catalogData?.establishment?.name || tenant?.name || 'Catálogo de Productos';
