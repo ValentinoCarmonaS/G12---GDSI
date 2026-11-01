@@ -42,7 +42,6 @@ describe('PhotoUploadAndRemoval Component Tests (T011, FR-024, FR-025, COM-1.4.2
   });
 
   it('rejects file with unsupported MIME format', async () => {
-    const user = userEvent.setup();
     render(
       <PersonalDataForm
         initialData={sampleDataWithPhoto}
@@ -55,7 +54,8 @@ describe('PhotoUploadAndRemoval Component Tests (T011, FR-024, FR-025, COM-1.4.2
     const pdfFile = new File(['sample'], 'document.pdf', { type: 'application/pdf' });
 
     const fileInput = screen.getByLabelText(/subir foto|cambiar foto/i);
-    await user.upload(fileInput, pdfFile);
+    const { fireEvent } = await import('@testing-library/react');
+    fireEvent.change(fileInput, { target: { files: [pdfFile] } });
 
     expect(await screen.findByText(/formato no soportado/i)).toBeInTheDocument();
     expect(mockOnUploadAvatar).not.toHaveBeenCalled();
@@ -103,7 +103,7 @@ describe('PhotoUploadAndRemoval Component Tests (T011, FR-024, FR-025, COM-1.4.2
     await user.click(deleteBtn);
 
     // 2. Confirm in modal
-    const confirmModalBtn = screen.getByRole('button', { name: /confirmar|eliminar/i });
+    const confirmModalBtn = screen.getByRole('button', { name: /confirmar eliminación/i });
     await user.click(confirmModalBtn);
 
     // 3. Deletion is provisional (not immediately called to backend)
