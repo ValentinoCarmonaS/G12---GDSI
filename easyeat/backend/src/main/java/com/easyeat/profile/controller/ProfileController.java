@@ -28,6 +28,26 @@ public class ProfileController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         ExtendedProfileResponse profile = profileService.getExtendedProfile(user);
+        if (profile == null) {
+            ProfileResponse base = profileService.getProfile(user);
+            if (base != null) {
+                profile = new ExtendedProfileResponse(
+                        base.id(),
+                        base.firstName(),
+                        base.lastName(),
+                        base.fullName(),
+                        base.phone(),
+                        base.email(),
+                        base.pendingEmail(),
+                        base.emailVerificationPending(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        base.dietaryRestrictions()
+                );
+            }
+        }
         return ResponseEntity.ok(profile);
     }
 
