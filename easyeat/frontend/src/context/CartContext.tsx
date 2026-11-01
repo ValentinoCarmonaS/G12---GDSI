@@ -3,6 +3,7 @@ import { CartItem } from '../types/cart';
 import { EnrichedDish } from '../types/catalog';
 import { DishCatalogItem } from '../types/dinerCatalog';
 import { catalogApi } from '../api/catalogApi';
+import { calculateCartTotal } from '../utils/currencyUtils';
 
 const CART_STORAGE_KEY = 'easyeat_cart';
 
@@ -190,7 +191,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [items]);
 
   const totalAmount = useMemo(() => {
-    return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return calculateCartTotal(items);
   }, [items]);
 
   const totalCount = useMemo(() => {

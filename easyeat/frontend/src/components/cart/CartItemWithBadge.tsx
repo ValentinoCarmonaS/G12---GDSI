@@ -1,6 +1,7 @@
 import React from 'react';
 import { CartItem } from '../../types/cart';
 import { AllergenWarningBadge } from '../catalog/AllergenWarningBadge';
+import { formatCurrency, calculateLineTotal } from '../../utils/currencyUtils';
 
 export interface CartItemWithBadgeProps {
   item: CartItem;
@@ -14,6 +15,7 @@ export const CartItemWithBadge: React.FC<CartItemWithBadgeProps> = ({
   onRemove,
 }) => {
   const hasConflicts = item.isCompliant === false && item.conflictingRestrictions && item.conflictingRestrictions.length > 0;
+  const lineSubtotal = calculateLineTotal(item.price, item.quantity);
 
   return (
     <div
@@ -25,9 +27,14 @@ export const CartItemWithBadge: React.FC<CartItemWithBadgeProps> = ({
       }`}
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
-        <h5 className="text-sm font-semibold text-gray-900 leading-snug">{item.name}</h5>
+        <div>
+          <h5 className="text-sm font-semibold text-gray-900 leading-snug">{item.name}</h5>
+          <span className="text-xs text-gray-500 font-medium">
+            {formatCurrency(item.price)} c/u
+          </span>
+        </div>
         <span className="text-sm font-bold text-gray-900 whitespace-nowrap">
-          ${(item.price * item.quantity).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+          {formatCurrency(lineSubtotal)}
         </span>
       </div>
 

@@ -36,7 +36,7 @@ export const CatalogView: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const { profile } = useProfile();
   const { isFilterActive, setIsFilterActive } = useCatalogFilter();
-  const { addItem, totalCount } = useCart();
+  const { addItem } = useCart();
   const catalogHook = useCatalog();
 
   const [catalogData, setCatalogData] = useState<CatalogResponse | null>(null);
