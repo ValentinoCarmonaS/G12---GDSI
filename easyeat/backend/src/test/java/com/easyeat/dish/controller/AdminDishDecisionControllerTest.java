@@ -632,4 +632,45 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
             verify(governanceService).reject(eq(dishId), eq(withMarkup));
         }
     }
+
+        @Nested
+        @DisplayName("cancellation of a dish under review (C-02, FR-001, FR-038 to FR-041)")
+        class Cancellation {
+
+                private String cancellationUrl() {
+                        return "/api/v1/admin/dishes/" + dishId + "/cancel";
+                }
+
+                @Test
+                @WithMockUser(roles = "ADMINISTRADOR")
+                @DisplayName("the Administrator can cancel and receives 204")
+                void administratorCanCancel() throws Exception {
+                        mockMvc.perform(post(cancellationUrl()))
+                                        .andExpect(status().isNoContent());
+
+                        verify(governanceService).cancel(dishId);
+                }
+
+                @Test
+                @WithMockUser(roles = "CHEF")
+                @DisplayName("a Chef cannot invoke the Administrator cancellation endpoint")
+                void chefCannotCancel() throws Exception {
+                        mockMvc.perform(post(cancellationUrl()))
+                                        .andExpect(status().isForbidden());
+                }
+
+                @Test
+                @WithMockUser(roles = "ADMIN")
+                @DisplayName("a dish already decided by another Administrator returns 409")
+                void concurrentDecisionReturnsConflict() throws Exception {
+                        org.mockito.Mockito.doThrow(new DishAlreadyDecidedException(
+                                                        dishId, "PUBLISHED", Instant.now()))
+                                        .when(governanceService).cancel(dishId);
+
+                        mockMvc.perform(post(cancellationUrl()))
+                                        .andExpect(status().isConflict())
+                                        .andExpect(jsonPath("$.type")
+                                                        .value("https://easyeat.com/errors/dish-already-decided"));
+                }
+        }
 }

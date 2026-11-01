@@ -14,7 +14,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * One administrative decision on a dish: an approval or a rejection (FR-034, FR-035).
+ * One administrative decision on a dish: approval, rejection, or cancellation (FR-034, FR-035,
+ * FR-041).
  *
  * <p>Immutable, and structurally so. {@code @Immutable} stops Hibernate emitting an UPDATE for
  * this mapping at all; there are no setters and no {@code @PreUpdate}; and the repository that
@@ -24,10 +25,10 @@ import java.util.UUID;
  * <p>There is no {@code updated_at}: a row that cannot change has nothing to say about when it
  * last did.
  *
- * <p>Construction goes through {@link #approved} and {@link #rejected} rather than a public
- * constructor, which makes FR-021's rule part of the type. A rejection cannot exist without a
- * usable comment because {@code rejected} demands one, and a comment cannot be attached to an
- * approval by mistake because {@code approved} has no parameter for it.
+ * <p>Construction goes through the named decision factories rather than a public constructor,
+ * which makes FR-021's rejection rule part of the type. A rejection cannot exist without a usable
+ * comment because {@code rejected} demands one; approval and cancellation do not accept a
+ * required feedback comment.
  */
 @Entity
 @Immutable
@@ -103,6 +104,12 @@ public class DishReviewHistory {
                                               UUID adminId, String comment) {
         return new DishReviewHistory(dishId, tenantId, cycleNumber, ReviewEventType.REJECTED,
                 adminId, requireUsableComment(comment));
+    }
+
+    public static DishReviewHistory cancelled(UUID dishId, UUID tenantId, Integer cycleNumber,
+                                               UUID adminId, String comment) {
+        return new DishReviewHistory(dishId, tenantId, cycleNumber, ReviewEventType.CANCELLED,
+                adminId, comment);
     }
 
     private static String requireUsableComment(String raw) {

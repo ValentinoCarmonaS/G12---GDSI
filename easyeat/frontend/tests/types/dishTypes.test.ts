@@ -47,6 +47,7 @@ describe('Dish Types and Validation (T006)', () => {
     // the backend's DishStatus enum admitted the constant under T005's D1 amendment, and this
     // union disagreed with it until now.
     expect(isDishStatus('PUBLISHED')).toBe(true);
+    expect(isDishStatus('CANCELLED')).toBe(true);
     expect(isDishStatus('')).toBe(false);
     expect(isDishStatus('ACTIVE')).toBe(false);
     expect(isDishStatus(null)).toBe(false);

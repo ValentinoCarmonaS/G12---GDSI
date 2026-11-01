@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Testcontainers
-@DisplayName("Flyway V10 Migration and Demographics/Avatar Schema Integration Test (T002)")
-class FlywayMigrationV10Test {
+@DisplayName("Flyway V12 Migration and Demographics/Avatar Schema Integration Test")
+class DemographicsAvatarMigrationTest {
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")

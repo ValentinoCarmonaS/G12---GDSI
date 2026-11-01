@@ -126,4 +126,233 @@ describe('dishReviewApi', () => {
       expect(apiClient.get).toHaveBeenCalledTimes(1);
     });
   });
+
+  /**
+   * T105/T106: the three write operations the contract defines
+   * (`contracts/openapi.yaml`) for which no client method existed until now, which is why
+   * `/admin/dishes` could render the publication gate's status but offered nothing to act on it
+   * (HANDOFF-post-merge-ui-gap.md §2).
+   */
+  describe('setRetailPrice (FR-009, FR-013, FR-025)', () => {
+    it('calls PUT /admin/dishes/:id/retail-price with the id in the path and the body verbatim', async () => {
+      vi.mocked(apiClient.put).mockResolvedValue({ data: { dishId: 'dish-1' } });
+
+      await dishReviewApi.setRetailPrice('dish-1', {
+        retailPrice: 11250,
+        expectedRetailPrice: null,
+      });
+
+      expect(apiClient.put).toHaveBeenCalledWith('/admin/dishes/dish-1/retail-price', {
+        retailPrice: 11250,
+        expectedRetailPrice: null,
+      });
+    });
+
+    it('sends expectedRetailPrice as null rather than omitting it, which asserts the dish was unpriced', async () => {
+      vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
+
+      await dishReviewApi.setRetailPrice('dish-1', {
+        retailPrice: 5000,
+        expectedRetailPrice: null,
+      });
+
+      expect(apiClient.put).toHaveBeenCalledWith(
+        '/admin/dishes/dish-1/retail-price',
+        expect.objectContaining({ expectedRetailPrice: null })
+      );
+    });
+
+    it('forwards acknowledgeNegativeMargin when the Administrator confirmed the advisory', async () => {
+      vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
+
+      await dishReviewApi.setRetailPrice('dish-1', {
+        retailPrice: 100,
+        expectedRetailPrice: 4500,
+        acknowledgeNegativeMargin: true,
+      });
+
+      expect(apiClient.put).toHaveBeenCalledWith(
+        '/admin/dishes/dish-1/retail-price',
+        expect.objectContaining({ acknowledgeNegativeMargin: true })
+      );
+    });
+
+    it('encodes the identifier, so a malformed one cannot alter the path', async () => {
+      vi.mocked(apiClient.put).mockResolvedValue({ data: {} });
+
+      await dishReviewApi.setRetailPrice('../../auth/users', {
+        retailPrice: 100,
+        expectedRetailPrice: null,
+      });
+
+      expect(apiClient.put).toHaveBeenCalledWith(
+        '/admin/dishes/..%2F..%2Fauth%2Fusers/retail-price',
+        expect.anything()
+      );
+    });
+
+    it('returns the pricing result body unwrapped', async () => {
+      const result = { dishId: 'dish-1', status: 'PENDING_PRICE', priceHistoryEntryId: 'h-1' };
+      vi.mocked(apiClient.put).mockResolvedValue({ data: result });
+
+      await expect(
+        dishReviewApi.setRetailPrice('dish-1', { retailPrice: 100, expectedRetailPrice: null })
+      ).resolves.toEqual(result);
+    });
+
+    it('propagates a 409 dish-stale-price conflict rather than swallowing it', async () => {
+      const error = Object.assign(new Error('Conflict'), {
+        response: {
+          status: 409,
+          data: { type: 'https://easyeat.com/errors/dish-stale-price', currentRetailPrice: 120 },
+        },
+      });
+      vi.mocked(apiClient.put).mockRejectedValue(error);
+
+      await expect(
+        dishReviewApi.setRetailPrice('dish-1', { retailPrice: 100, expectedRetailPrice: null })
+      ).rejects.toBe(error);
+    });
+  });
+
+  describe('approve (FR-015 to FR-019)', () => {
+    it('calls POST /admin/dishes/:id/approval with the body verbatim', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({ data: { dishId: 'dish-1' } });
+
+      await dishReviewApi.approve('dish-1', { acknowledgeUnpricedIngredients: true });
+
+      expect(apiClient.post).toHaveBeenCalledWith('/admin/dishes/dish-1/approval', {
+        acknowledgeUnpricedIngredients: true,
+      });
+    });
+
+    it('sends an empty body when no acknowledgement is required, never omitting the call', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
+
+      await dishReviewApi.approve('dish-1', {});
+
+      expect(apiClient.post).toHaveBeenCalledWith('/admin/dishes/dish-1/approval', {});
+    });
+
+    it('encodes the identifier, so a malformed one cannot alter the path', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
+
+      await dishReviewApi.approve('../../auth/users', {});
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/admin/dishes/..%2F..%2Fauth%2Fusers/approval',
+        {}
+      );
+    });
+
+    it('returns the approval result body unwrapped, including alreadyPublished (FR-018)', async () => {
+      const result = {
+        dishId: 'dish-1',
+        status: 'PUBLISHED',
+        alreadyPublished: true,
+        publishedAt: '2026-10-01T10:00:00Z',
+        reviewHistoryEntryId: null,
+      };
+      vi.mocked(apiClient.post).mockResolvedValue({ data: result });
+
+      await expect(dishReviewApi.approve('dish-1', {})).resolves.toEqual(result);
+    });
+
+    it('propagates a 422 publication-gate-failed rather than swallowing it', async () => {
+      const error = Object.assign(new Error('Unprocessable'), {
+        response: {
+          status: 422,
+          data: {
+            type: 'https://easyeat.com/errors/publication-gate-failed',
+            unmetConditions: ['EMPTY_RECIPE'],
+          },
+        },
+      });
+      vi.mocked(apiClient.post).mockRejectedValue(error);
+
+      await expect(dishReviewApi.approve('dish-1', {})).rejects.toBe(error);
+    });
+
+    it('propagates a 409 dish-already-decided conflict rather than swallowing it', async () => {
+      const error = Object.assign(new Error('Conflict'), {
+        response: {
+          status: 409,
+          data: { type: 'https://easyeat.com/errors/dish-already-decided', currentStatus: 'DRAFT' },
+        },
+      });
+      vi.mocked(apiClient.post).mockRejectedValue(error);
+
+      await expect(dishReviewApi.approve('dish-1', {})).rejects.toBe(error);
+    });
+  });
+
+  describe('reject (FR-020 to FR-022)', () => {
+    it('calls POST /admin/dishes/:id/rejection with the comment verbatim, never pre-trimmed', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({ data: { dishId: 'dish-1' } });
+
+      await dishReviewApi.reject('dish-1', { comment: '  Falta la foto del plato  ' });
+
+      expect(apiClient.post).toHaveBeenCalledWith('/admin/dishes/dish-1/rejection', {
+        comment: '  Falta la foto del plato  ',
+      });
+    });
+
+    it('encodes the identifier, so a malformed one cannot alter the path', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({ data: {} });
+
+      await dishReviewApi.reject('../../auth/users', { comment: 'x'.repeat(10) });
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        '/admin/dishes/..%2F..%2Fauth%2Fusers/rejection',
+        expect.anything()
+      );
+    });
+
+    it('returns the rejection result body unwrapped', async () => {
+      const result = {
+        dishId: 'dish-1',
+        status: 'DRAFT',
+        cycleNumber: 1,
+        reviewHistoryEntryId: 'h-1',
+      };
+      vi.mocked(apiClient.post).mockResolvedValue({ data: result });
+
+      await expect(
+        dishReviewApi.reject('dish-1', { comment: 'x'.repeat(10) })
+      ).resolves.toEqual(result);
+    });
+
+    it('propagates a 409 dish-already-decided conflict rather than swallowing it', async () => {
+      const error = Object.assign(new Error('Conflict'), {
+        response: {
+          status: 409,
+          data: { type: 'https://easyeat.com/errors/dish-already-decided', currentStatus: 'PUBLISHED' },
+        },
+      });
+      vi.mocked(apiClient.post).mockRejectedValue(error);
+
+      await expect(
+        dishReviewApi.reject('dish-1', { comment: 'x'.repeat(10) })
+      ).rejects.toBe(error);
+    });
+  });
+
+  describe('cancel (C-02)', () => {
+    it('calls POST /admin/dishes/:id/cancel with an encoded dish id', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({ data: undefined });
+
+      await dishReviewApi.cancel('dish-1');
+
+      expect(apiClient.post).toHaveBeenCalledWith('/admin/dishes/dish-1/cancel');
+    });
+
+    it('propagates cancellation failures so the page can show the conflict', async () => {
+      const error = Object.assign(new Error('Conflict'), {
+        response: { status: 409, data: { type: 'https://easyeat.com/errors/dish-already-decided' } },
+      });
+      vi.mocked(apiClient.post).mockRejectedValue(error);
+
+      await expect(dishReviewApi.cancel('dish-1')).rejects.toBe(error);
+    });
+  });
 });

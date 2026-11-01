@@ -1,0 +1,603 @@
+openapi: 3.0.3
+info:
+  title: EasyEat Restaurant Operation Configuration API
+  description: Administrative Back-Office configuration for schedules, slot capacities, and payment methods, along with diner slot selection and checkout visibility.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Production & Development API Gateway
+
+paths:
+  # ==========================================
+  # ADMIN: HORARIOS COMERCIALES
+  # ==========================================
+  /admin/operating-schedules:
+    get:
+      summary: Consultar horarios comerciales semanales del establecimiento
+      operationId: getOperatingSchedules
+      tags:
+        - Admin Operating Configuration
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado de horarios configurados para los días de la semana
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OperatingScheduleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    put:
+      summary: Actualizar horarios comerciales semanales del establecimiento
+      operationId: updateOperatingSchedules
+      tags:
+        - Admin Operating Configuration
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/UpdateScheduleRequest'
+      responses:
+        '200':
+          description: Horarios actualizados exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OperatingScheduleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ==========================================
+  # ADMIN: CAPACIDAD POR FRANJA HORARIA
+  # ==========================================
+  /admin/slot-capacities:
+    get:
+      summary: Consultar matriz de capacidad de franjas horarias para una fecha
+      operationId: getSlotCapacities
+      tags:
+        - Admin Operating Configuration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2026-11-01'
+      responses:
+        '200':
+          description: Matriz de franjas de 15 minutos con capacidad y pedidos aprobados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SlotCapacityAdminResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    put:
+      summary: Configurar capacidad máxima para una o más franjas horarias
+      operationId: updateSlotCapacities
+      tags:
+        - Admin Operating Configuration
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/UpdateSlotCapacityRequest'
+      responses:
+        '200':
+          description: Capacidades persistidas exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SlotCapacityAdminResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ==========================================
+  # ADMIN: MÉTODOS DE PAGO ONLINE
+  # ==========================================
+  /admin/payment-methods:
+    get:
+      summary: Consultar estado de los métodos de pago online del establecimiento
+      operationId: getAdminPaymentMethods
+      tags:
+        - Admin Operating Configuration
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado de pasarelas de pago con su bandera de habilitación
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentMethodResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/payment-methods/{paymentMethod}:
+    put:
+      summary: Habilitar o deshabilitar un método de pago online
+      operationId: togglePaymentMethod
+      tags:
+        - Admin Operating Configuration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentMethod
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PaymentMethodEnum'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TogglePaymentMethodRequest'
+      responses:
+        '200':
+          description: Estado del método de pago actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ==========================================
+  # DINER: SELECTOR DE FRANJAS HORARIAS
+  # ==========================================
+  /establishments/{tenantId}/time-slots:
+    get:
+      summary: Consultar franjas horarias y disponibilidad para el comensal
+      operationId: getDinerTimeSlots
+      tags:
+        - Diner Operating Flow
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2026-11-01'
+      responses:
+        '200':
+          description: Lista de franjas del día con estado DISPONIBLE o AGOTADA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DinerTimeSlotsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==========================================
+  # DINER: MÉTODOS DE PAGO EN CHECKOUT
+  # ==========================================
+  /establishments/{tenantId}/payment-methods:
+    get:
+      summary: Consultar métodos de pago online habilitados para el checkout
+      operationId: getDinerPaymentMethods
+      tags:
+        - Diner Operating Flow
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de métodos habilitados (excluye métodos apagados)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DinerPaymentMethodResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /establishments/{tenantId}/checkout/validate-payment:
+    post:
+      summary: Revalidación en tiempo real del método de pago seleccionado al confirmar
+      operationId: validatePaymentMethodAtConfirmation
+      tags:
+        - Diner Operating Flow
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paymentMethod
+              properties:
+                paymentMethod:
+                  $ref: '#/components/schemas/PaymentMethodEnum'
+      responses:
+        '200':
+          description: Método válido y activo para procesar la orden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: El método de pago fue deshabilitado mientras se navegaba en el checkout
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PaymentMethodEnum:
+      type: string
+      enum:
+        - MERCADO_PAGO
+        - STRIPE
+
+    DayOfWeekEnum:
+      type: string
+      enum:
+        - MONDAY
+        - TUESDAY
+        - WEDNESDAY
+        - THURSDAY
+        - FRIDAY
+        - SATURDAY
+        - SUNDAY
+
+    OperatingScheduleResponse:
+      type: object
+      required:
+        - id
+        - dayOfWeek
+        - openingTime
+        - closingTime
+        - isClosed
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        dayOfWeek:
+          $ref: '#/components/schemas/DayOfWeekEnum'
+        openingTime:
+          type: string
+          example: '11:00:00'
+        closingTime:
+          type: string
+          example: '16:00:00'
+        isClosed:
+          type: boolean
+          example: false
+        version:
+          type: integer
+          format: int64
+
+    UpdateScheduleRequest:
+      type: object
+      required:
+        - dayOfWeek
+        - openingTime
+        - closingTime
+        - isClosed
+      properties:
+        dayOfWeek:
+          $ref: '#/components/schemas/DayOfWeekEnum'
+        openingTime:
+          type: string
+          example: '11:00:00'
+        closingTime:
+          type: string
+          example: '16:00:00'
+        isClosed:
+          type: boolean
+          example: false
+        expectedVersion:
+          type: integer
+          format: int64
+          nullable: true
+
+    SlotCapacityAdminResponse:
+      type: object
+      required:
+        - id
+        - slotDate
+        - startTime
+        - endTime
+        - maxCapacity
+        - approvedOrdersCount
+        - isSoldOut
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        slotDate:
+          type: string
+          format: date
+        startTime:
+          type: string
+          example: '12:00:00'
+        endTime:
+          type: string
+          example: '12:15:00'
+        maxCapacity:
+          type: integer
+          minimum: 0
+          example: 50
+        approvedOrdersCount:
+          type: integer
+          minimum: 0
+          example: 49
+        isSoldOut:
+          type: boolean
+          example: false
+        version:
+          type: integer
+          format: int64
+
+    UpdateSlotCapacityRequest:
+      type: object
+      required:
+        - slotDate
+        - startTime
+        - maxCapacity
+      properties:
+        slotDate:
+          type: string
+          format: date
+        startTime:
+          type: string
+          example: '12:00:00'
+        maxCapacity:
+          type: integer
+          minimum: 0
+          example: 50
+        expectedVersion:
+          type: integer
+          format: int64
+          nullable: true
+
+    PaymentMethodResponse:
+      type: object
+      required:
+        - id
+        - paymentMethod
+        - displayName
+        - isEnabled
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethodEnum'
+        displayName:
+          type: string
+          example: 'Mercado Pago'
+        isEnabled:
+          type: boolean
+          example: true
+        version:
+          type: integer
+          format: int64
+
+    TogglePaymentMethodRequest:
+      type: object
+      required:
+        - isEnabled
+      properties:
+        isEnabled:
+          type: boolean
+          example: false
+        expectedVersion:
+          type: integer
+          format: int64
+          nullable: true
+
+    DinerTimeSlotItem:
+      type: object
+      required:
+        - startTime
+        - endTime
+        - status
+      properties:
+        startTime:
+          type: string
+          example: '12:00:00'
+        endTime:
+          type: string
+          example: '12:15:00'
+        status:
+          type: string
+          enum:
+            - AVAILABLE
+            - SOLD_OUT
+          example: 'AVAILABLE'
+
+    DinerTimeSlotsResponse:
+      type: object
+      required:
+        - date
+        - isClosed
+        - timezone
+        - slots
+      properties:
+        date:
+          type: string
+          format: date
+        isClosed:
+          type: boolean
+          example: false
+        closureReason:
+          type: string
+          nullable: true
+          example: 'Cocina cerrada para el día de hoy'
+        timezone:
+          type: string
+          example: 'America/Argentina/Buenos_Aires'
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/DinerTimeSlotItem'
+
+    DinerPaymentMethodResponse:
+      type: object
+      required:
+        - paymentMethod
+        - displayName
+      properties:
+        paymentMethod:
+          $ref: '#/components/schemas/PaymentMethodEnum'
+        displayName:
+          type: string
+          example: 'Mercado Pago'
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          example: 'about:blank'
+        title:
+          type: string
+          example: 'Bad Request'
+        status:
+          type: integer
+          example: 400
+        detail:
+          type: string
+          example: 'La hora de apertura debe ser estrictamente anterior a la hora de cierre.'
+        instance:
+          type: string
+          example: '/api/v1/admin/operating-schedules'
+
+  responses:
+    BadRequest:
+      description: Parámetros inválidos o violación de invariante de entrada
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Unauthorized:
+      description: Sesión expirada o credenciales no provistas
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Forbidden:
+      description: Privilegios insuficientes (requiere rol específico)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    NotFound:
+      description: Establecimiento o recurso no encontrado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Conflict:
+      description: Conflicto de concurrencia o saturación de cupo
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
