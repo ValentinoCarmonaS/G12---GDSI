@@ -68,13 +68,13 @@
 
 ### Tests for User Story 1 (TDD - Write First) ⚠️
 
-- [ ] T020 [P] [US1] Write component tests in `DishDetailModal.test.tsx` in `easyeat/frontend/tests/components/` verifying numeric selector bounds (1 to availableStock), disabled state when out of stock (INV-3), and add action dispatch
-- [ ] T021 [P] [US1] Write context tests in `CartContext.test.tsx` in `easyeat/frontend/tests/context/` verifying `addItem(dish, quantity)` accumulating existing items without duplicate rows (INV-1, INV-3) and persisting in `sessionStorage`
+- [X] T020 [P] [US1] Write component tests in `DishDetailModal.test.tsx` in `easyeat/frontend/tests/components/` verifying numeric selector bounds (1 to availableStock), disabled state when out of stock (INV-3), and add action dispatch
+- [X] T021 [P] [US1] Write context tests in `CartContext.test.tsx` in `easyeat/frontend/tests/context/` verifying `addItem(dish, quantity)` accumulating existing items without duplicate rows (INV-1, INV-3) and persisting in `sessionStorage`
 
 ### Implementation for User Story 1
 
-- [ ] T022 [US1] Extend `CartContext.tsx` in `easyeat/frontend/src/context/` updating `addItem` signature to accept `quantity` (default 1), accumulating quantities for existing dishes and broadcasting success toast feedback
-- [ ] T023 [US1] Extend `DishDetailModal.tsx` in `easyeat/frontend/src/components/catalog/` adding numeric quantity selector (increment/decrement buttons bounded between 1 and remaining stock) and wiring to `addItem` (depends on T022)
+- [X] T022 [US1] Extend `CartContext.tsx` in `easyeat/frontend/src/context/` updating `addItem` signature to accept `quantity` (default 1), accumulating quantities for existing dishes and broadcasting success toast feedback
+- [X] T023 [US1] Extend `DishDetailModal.tsx` in `easyeat/frontend/src/components/catalog/` adding numeric quantity selector (increment/decrement buttons bounded between 1 and remaining stock) and wiring to `addItem` (depends on T022)
 
 **Checkpoint**: Incorporación de platos con selector numérico funcional y testeable independientemente.
 
