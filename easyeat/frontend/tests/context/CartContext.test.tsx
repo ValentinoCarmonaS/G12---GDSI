@@ -85,6 +85,78 @@ describe('CartContext & useCart (T055, US3, FR-015, FR-021, FR-022)', () => {
     expect(result.current.totalAmount).toBe(9000);
   });
 
+  it('adds items with specific quantity and accumulates onto existing dish without duplicate rows (T021, INV-1, INV-3)', () => {
+    const { result } = renderHook(() => useCart(), { wrapper });
+
+    act(() => {
+      // Add 3 units of mockCompliantDish
+      result.current.addItem(mockCompliantDish, 3);
+    });
+
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0].quantity).toBe(3);
+    expect(result.current.totalCount).toBe(3);
+    expect(result.current.totalAmount).toBe(4500 * 3);
+
+    // Accumulate 2 more units of the same dish
+    act(() => {
+      result.current.addItem(mockCompliantDish, 2);
+    });
+
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0].quantity).toBe(5);
+    expect(result.current.totalCount).toBe(5);
+    expect(result.current.totalAmount).toBe(4500 * 5);
+
+    // Verify sessionStorage persists the accumulated quantity
+    const stored = JSON.parse(sessionStorage.getItem('easyeat_cart') || '[]');
+    expect(stored).toHaveLength(1);
+    expect(stored[0].dishId).toBe(mockCompliantDish.id);
+    expect(stored[0].quantity).toBe(5);
+  });
+
+  it('broadcasts auto-dismissing toast feedback when item is added (T021, COM-6.1.1 AC-1.1)', () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useCart(), { wrapper });
+
+    act(() => {
+      result.current.addItem(mockCompliantDish, 2);
+    });
+
+    expect(result.current.toastMessage).toBeDefined();
+    expect(result.current.toastMessage).toContain('Ensalada César');
+    expect(result.current.toastMessage).toContain('2');
+
+    // Auto-dismiss after 3000ms
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    expect(result.current.toastMessage).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('enforces availableStock upper bound when accumulating quantity (T021, INV-3)', () => {
+    const { result } = renderHook(() => useCart(), { wrapper });
+    const dishWithStock: EnrichedDish & { availableStock?: number } = {
+      ...mockCompliantDish,
+      availableStock: 4,
+    };
+
+    act(() => {
+      result.current.addItem(dishWithStock, 3);
+    });
+    expect(result.current.items[0].quantity).toBe(3);
+
+    // Attempting to add 3 more when stock is 4 should clamp to availableStock (4)
+    act(() => {
+      result.current.addItem(dishWithStock, 3);
+    });
+
+    expect(result.current.items[0].quantity).toBe(4);
+    expect(result.current.totalCount).toBe(4);
+  });
+
   it('updates quantity and removes item when quantity reaches 0', () => {
     const { result } = renderHook(() => useCart(), { wrapper });
 
