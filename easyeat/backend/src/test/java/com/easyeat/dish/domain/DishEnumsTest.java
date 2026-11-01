@@ -121,12 +121,14 @@ class DishEnumsTest {
         assertThat(DishStatus.values()).containsExactly(
                 DishStatus.DRAFT,
                 DishStatus.PENDING_PRICE,
-                DishStatus.PUBLISHED
+                DishStatus.PUBLISHED,
+                DishStatus.CANCELLED
         );
 
         assertThat(DishStatus.valueOf("DRAFT")).isEqualTo(DishStatus.DRAFT);
         assertThat(DishStatus.valueOf("PENDING_PRICE")).isEqualTo(DishStatus.PENDING_PRICE);
         assertThat(DishStatus.valueOf("PUBLISHED")).isEqualTo(DishStatus.PUBLISHED);
+        assertThat(DishStatus.valueOf("CANCELLED")).isEqualTo(DishStatus.CANCELLED);
     }
 
     @Test
@@ -134,7 +136,7 @@ class DishEnumsTest {
     void dishStatusNamesMatchDatabaseDomain() {
         assertThat(DishStatus.values())
                 .extracting(Enum::name)
-                .containsExactly("DRAFT", "PENDING_PRICE", "PUBLISHED");
+                .containsExactly("DRAFT", "PENDING_PRICE", "PUBLISHED", "CANCELLED");
     }
 
     @Test
@@ -148,5 +150,7 @@ class DishEnumsTest {
 
         assertThat(objectMapper.writeValueAsString(DishStatus.PUBLISHED)).isEqualTo("\"PUBLISHED\"");
         assertThat(objectMapper.readValue("\"PUBLISHED\"", DishStatus.class)).isEqualTo(DishStatus.PUBLISHED);
+        assertThat(objectMapper.writeValueAsString(DishStatus.CANCELLED)).isEqualTo("\"CANCELLED\"");
+        assertThat(objectMapper.readValue("\"CANCELLED\"", DishStatus.class)).isEqualTo(DishStatus.CANCELLED);
     }
 }

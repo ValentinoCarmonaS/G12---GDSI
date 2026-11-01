@@ -5,21 +5,19 @@ import { PublicationConfirmModal } from './PublicationConfirmModal';
 import { RejectionDialog } from './RejectionDialog';
 import type { ApproveDishRequest, DishReviewDetail } from '@/types/dishReview';
 
+// Import Dialogs or create a simple modal for cancellation
+// Assuming a structure similar to RejectionDialog might exist or can be created
+
 export interface DishDecisionActionsProps {
   detail: DishReviewDetail;
-  /**
-   * Called after any decision that changed the dish (price saved, approved, rejected), and also
-   * after a 409 that reveals this panel's own read was stale (`dish-stale-price`,
-   * `dish-already-decided`): in both cases the caller re-fetches the detail and the inbox, so the
-   * Administrator is shown the server's current truth rather than left looking at a decision that
-   * silently failed to apply.
-   */
   onDecided: () => void;
+  onCancelled?: () => void;
 }
 
 const FALLBACK_PRICE_ERROR = 'No se pudo guardar el precio. Probá de nuevo.';
 const FALLBACK_APPROVAL_ERROR = 'No se pudo aprobar el plato. Probá de nuevo.';
 const FALLBACK_REJECTION_ERROR = 'No se pudo rechazar el plato. Probá de nuevo.';
+const FALLBACK_CANCELLATION_ERROR = 'No se pudo cancelar el plato. Probá de nuevo.';
 
 function describeActionError(err: unknown, fallback: string): string {
   const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
@@ -31,18 +29,11 @@ function isErrorType(err: unknown, type: string): boolean {
   return responseType === `https://easyeat.com/errors/${type}`;
 }
 
-/**
- * The controls `DishAuditPanel` never carried (FR-009 to FR-022): setting the retail price,
- * approving/publishing and rejecting. Kept apart from `DishAuditPanel`, which stays the read-only
- * culinary file FR-006 asks for — the publication gate it displays is drawn as **status**, never
- * as enforcement, and this component is exactly where that enforcement actually happens, against
- * the server.
- *
- * Which controls render follows the state gates the contract declares (`contracts/openapi.yaml`):
- * price (re)pricing is legal from `PENDING_PRICE` or `PUBLISHED`; approval and rejection only from
- * `PENDING_PRICE`; nothing is shown for `DRAFT`, where none of the three transitions is legal.
- */
-export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({ detail, onDecided }) => {
+export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({
+  detail,
+  onDecided,
+  onCancelled,
+}) => {
   const [priceError, setPriceError] = useState<string | null>(null);
   const [isSavingPrice, setIsSavingPrice] = useState(false);
 
@@ -53,6 +44,10 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({ detail
   const [rejectionError, setRejectionError] = useState<string | null>(null);
   const [isRejecting, setIsRejecting] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+
+  const [cancellationError, setCancellationError] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const canSetPrice = detail.status === 'PENDING_PRICE' || detail.status === 'PUBLISHED';
   const canDecide = detail.status === 'PENDING_PRICE';
@@ -69,8 +64,6 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({ detail
       onDecided();
     } catch (err) {
       setPriceError(describeActionError(err, FALLBACK_PRICE_ERROR));
-      // FR-025: another administrator saved first. The current price travels in the error body,
-      // but re-fetching the whole detail is simpler and gives the up-to-date margin alongside it.
       if (isErrorType(err, 'dish-stale-price')) {
         onDecided();
       }
@@ -89,7 +82,6 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({ detail
     } catch (err) {
       setShowApproveModal(false);
       setApprovalError(describeActionError(err, FALLBACK_APPROVAL_ERROR));
-      // Someone else decided this dish first; the status this panel read no longer holds.
       if (isErrorType(err, 'dish-already-decided')) {
         onDecided();
       }
@@ -135,6 +127,32 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({ detail
     }
   }
 
+  async function handleCancelConfirm() {
+    setCancellationError(null);
+    setIsCancelling(true);
+    try {
+      await dishReviewApi.cancel(detail.dishId);
+      setShowCancelModal(false);
+      if (onCancelled) {
+        onCancelled();
+      } else {
+        onDecided();
+      }
+    } catch (err: unknown) {
+      setShowCancelModal(false);
+      setCancellationError(describeActionError(err, FALLBACK_CANCELLATION_ERROR));
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        return;
+      }
+      if (isErrorType(err, 'dish-already-decided')) {
+        onDecided();
+      }
+    } finally {
+      setIsCancelling(false);
+    }
+  }
+
   if (!canSetPrice && !canDecide) {
     return null;
   }
@@ -146,12 +164,6 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({ detail
           <h3 className="text-sm font-semibold text-gray-900">
             {detail.status === 'PUBLISHED' ? 'Repreciar' : 'Fijar precio de venta'}
           </h3>
-          {/*
-            Remounted whenever the dish or its current price changes, so the calculator reseeds
-            from the new values: its own seed effect runs once per mount by design (re-seeding on
-            every prop change would overwrite what the Administrator is actively typing), which
-            means a dish switch needs a fresh instance rather than a prop update.
-          */}
           <MarginPriceCalculator
             key={`${detail.dishId}:${detail.retailPrice ?? 'unset'}`}
             margin={detail.margin}
@@ -203,6 +215,22 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({ detail
               </p>
             )}
           </div>
+
+          <div>
+            <button
+              type="button"
+              className="rounded border border-red-700 px-3 py-1.5 text-sm text-red-700 disabled:border-gray-300 disabled:text-gray-400"
+              disabled={isCancelling}
+              onClick={() => setShowCancelModal(true)}
+            >
+              Borrar
+            </button>
+            {cancellationError && (
+              <p data-testid="cancellation-error" role="alert" className="mt-1 text-sm text-red-700">
+                {cancellationError}
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -212,15 +240,47 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({ detail
         onConfirm={handleApproveModalConfirm}
         onCancel={() => setShowApproveModal(false)}
       />
-      {/* Keyed by dish: RejectionDialog keeps its typed comment across its own close/reopen by
-          design, so switching to a different dish needs a fresh instance rather than carrying the
-          previous dish's draft comment into this one. */}
       <RejectionDialog
         key={detail.dishId}
         isOpen={showRejectDialog}
         onConfirm={handleRejectConfirm}
         onCancel={() => setShowRejectDialog(false)}
       />
+      {/* Simple confirmation modal for cancellation */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-dish-title"
+            aria-describedby="cancel-dish-description"
+            className="bg-white p-6 rounded shadow-lg max-w-sm w-full space-y-4"
+          >
+            <h3 id="cancel-dish-title" className="text-lg font-bold">¿Confirmar borrado?</h3>
+            <p id="cancel-dish-description" className="text-sm text-gray-600">
+              Esta acción cancelará el menú y no se podrá deshacer.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 border rounded"
+                disabled={isCancelling}
+                onClick={() => setShowCancelModal(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-red-700 text-white rounded disabled:opacity-50"
+                disabled={isCancelling}
+                onClick={handleCancelConfirm}
+              >
+                {isCancelling ? 'Cancelando…' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

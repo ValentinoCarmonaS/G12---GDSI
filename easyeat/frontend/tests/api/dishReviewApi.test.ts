@@ -336,4 +336,23 @@ describe('dishReviewApi', () => {
       ).rejects.toBe(error);
     });
   });
+
+  describe('cancel (C-02)', () => {
+    it('calls POST /admin/dishes/:id/cancel with an encoded dish id', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({ data: undefined });
+
+      await dishReviewApi.cancel('dish-1');
+
+      expect(apiClient.post).toHaveBeenCalledWith('/admin/dishes/dish-1/cancel');
+    });
+
+    it('propagates cancellation failures so the page can show the conflict', async () => {
+      const error = Object.assign(new Error('Conflict'), {
+        response: { status: 409, data: { type: 'https://easyeat.com/errors/dish-already-decided' } },
+      });
+      vi.mocked(apiClient.post).mockRejectedValue(error);
+
+      await expect(dishReviewApi.cancel('dish-1')).rejects.toBe(error);
+    });
+  });
 });

@@ -816,4 +816,58 @@ class DishGovernanceServiceTest {
                     .isInstanceOf(TenantViolationException.class);
         }
     }
+
+    @Nested
+    @DisplayName("cancel: soft-delete pending dish (FR-038 to FR-042)")
+    class Cancellation {
+
+        @Test
+        @DisplayName("a pending dish is cancelled by status change and review-history entry, not by deleting the row")
+        void pendingDishCancelledWithoutHardDelete() {
+            when(dishRepository.updateCancellationIfPending(dish.getId(), TENANT)).thenReturn(1);
+
+            service.cancel(dish.getId());
+
+            ArgumentCaptor<DishReviewHistory> captor = ArgumentCaptor.forClass(DishReviewHistory.class);
+            verify(reviewHistoryRepository).save(captor.capture());
+            DishReviewHistory entry = captor.getValue();
+                        verify(dishRepository).updateCancellationIfPending(dish.getId(), TENANT);
+            assertThat(entry.getEventType()).isEqualTo(ReviewEventType.CANCELLED);
+            assertThat(entry.getCycleNumber()).isEqualTo(1);
+            assertThat(entry.getDishId()).isEqualTo(dish.getId());
+                        assertThat(entry.getTenantId()).isEqualTo(TENANT);
+            assertThat(entry.getAdminId()).isEqualTo(ADMIN_ID);
+                        assertThat(entry.getComment()).isNull();
+            verify(dishRepository, never()).delete(any(Dish.class));
+        }
+
+        @Test
+        @DisplayName("only pending dishes can be cancelled; anything else is a 409 state conflict")
+        void nonPendingDishRejected() {
+            dish.setStatus(DishStatus.PUBLISHED);
+
+            assertThatThrownBy(() -> service.cancel(dish.getId()))
+                    .isInstanceOf(DishStateConflictException.class);
+        }
+
+        @Test
+        @DisplayName("a concurrent decision prevents both cancellation and its audit event")
+        void lostRaceDoesNotWriteCancellationHistory() {
+            Dish racedDish = new Dish();
+            racedDish.setId(dish.getId());
+            racedDish.setTenantId(TENANT);
+            racedDish.setStatus(DishStatus.PUBLISHED);
+            when(dishRepository.updateCancellationIfPending(dish.getId(), TENANT)).thenReturn(0);
+            when(dishRepository.findByIdAndTenantId(dish.getId(), TENANT))
+                    .thenReturn(Optional.of(racedDish));
+
+            assertThatThrownBy(() -> service.cancel(dish.getId()))
+                    .isInstanceOf(DishAlreadyDecidedException.class)
+                    .satisfies(ex -> assertThat(
+                            ((DishAlreadyDecidedException) ex).getCurrentStatus())
+                            .isEqualTo("PUBLISHED"));
+            verifyNoInteractions(reviewHistoryRepository);
+            verify(dishRepository, never()).delete(any(Dish.class));
+        }
+    }
 }

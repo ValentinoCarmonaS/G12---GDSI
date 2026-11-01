@@ -59,7 +59,7 @@ public class ChefReviewFeedbackService {
 
         List<DishReviewHistory> rejections = reviewHistoryRepository
                 .findByDishIdAndTenantIdOrderByCreatedAtAsc(dishId, tenantId).stream()
-                .filter(row -> row.getEventType() == ReviewEventType.REJECTED)
+                .filter(row -> row.getEventType() == ReviewEventType.REJECTED || row.getEventType() == ReviewEventType.CANCELLED)
                 .toList();
 
         Set<UUID> reviewerIds = new HashSet<>();

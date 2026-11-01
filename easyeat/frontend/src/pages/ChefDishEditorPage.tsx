@@ -7,18 +7,23 @@ import { AllergenStep } from '@/components/dish/AllergenStep';
 import { ReviewSubmitStep } from '@/components/dish/ReviewSubmitStep';
 import { DishStepper, type DishEditorTab } from '@/components/dish/DishStepper';
 import { DishStatusBadge } from '@/components/dish/DishStatusBadge';
+import { DishRejectionFeedbackBanner } from '@/components/chef/DishRejectionFeedbackBanner';
 import type { DishDetailResponse, CreateDishRequest, RecipeIngredientItem, RecipeUpdateRequest } from '@/types/dish';
+import type { ChefReviewFeedback } from '@/types/dishReview';
+import { chefReviewFeedbackApi } from '@/api/chefReviewFeedbackApi';
 
 export const ChefDishEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [dish, setDish] = useState<DishDetailResponse | null>(null);
+  const [feedback, setFeedback] = useState<ChefReviewFeedback | null>(null);
   const [activeTab, setActiveTab] = useState<DishEditorTab>('identity');
   const [isLoading, setIsLoading] = useState<boolean>(!!id);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const isReadOnly = dish !== null && dish.status !== 'DRAFT';
 
   const fetchDish = useCallback(async (dishId: string) => {
     setIsLoading(true);
@@ -26,6 +31,16 @@ export const ChefDishEditorPage: React.FC = () => {
     try {
       const data = await dishApi.getDishDetail(dishId);
       setDish(data);
+      if (data.status === 'DRAFT') {
+        try {
+          const fb = await chefReviewFeedbackApi.getFeedback(dishId);
+          setFeedback(fb);
+        } catch {
+          setFeedback(null);
+        }
+      } else {
+        setFeedback(null);
+      }
     } catch (err: unknown) {
       setErrorMessage('No se pudo cargar la información del plato.');
     } finally {
@@ -220,10 +235,25 @@ export const ChefDishEditorPage: React.FC = () => {
         onTabChange={setActiveTab}
         hasDishId={Boolean(id)}
         status={dish?.status}
-        isLocked={dish ? dish.status === 'PENDING_PRICE' : false}
+        isLocked={isReadOnly}
       />
 
-      {/* Notifications */}
+      {dish?.status === 'CANCELLED' && (
+        <div
+          data-testid="cancelled-dish-readonly"
+          role="status"
+          className="mb-6 rounded border border-zinc-300 bg-zinc-100 px-4 py-3 text-sm text-zinc-700"
+        >
+          Este plato fue cancelado por administración y está disponible solo para consulta.
+        </div>
+      )}
+
+       {/* Notifications */}
+      {feedback && feedback.entries.length > 0 && (
+        <div className="mb-6">
+          <DishRejectionFeedbackBanner entries={feedback.entries} />
+        </div>
+      )}
       {errorMessage && (
         <div className="p-4 mb-6 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-sm text-red-700 dark:text-red-400">
           {errorMessage}
@@ -250,7 +280,7 @@ export const ChefDishEditorPage: React.FC = () => {
           }
           onSave={handleSaveIdentity}
           onPhotoDelete={handlePhotoDelete}
-          isReadOnly={dish ? dish.status === 'PENDING_PRICE' : false}
+          isReadOnly={isReadOnly}
           isSaving={isSaving}
         />
       )}
@@ -260,7 +290,7 @@ export const ChefDishEditorPage: React.FC = () => {
           initialRecipe={dish?.recipe || []}
           onSaveRecipe={handleSaveRecipe}
           onRemoveIngredient={handleRemoveRecipeIngredient}
-          isReadOnly={dish ? dish.status === 'PENDING_PRICE' : false}
+          isReadOnly={isReadOnly}
           isSaving={isSaving}
         />
       )}
@@ -270,7 +300,7 @@ export const ChefDishEditorPage: React.FC = () => {
           initialRestrictions={dish?.restrictionCodes || []}
           initialConfirmed={dish?.allergensConfirmed || false}
           onSaveAllergens={handleSaveAllergens}
-          isReadOnly={dish ? dish.status === 'PENDING_PRICE' : false}
+          isReadOnly={isReadOnly}
           isSaving={isSaving}
         />
       )}
@@ -278,7 +308,7 @@ export const ChefDishEditorPage: React.FC = () => {
         <ReviewSubmitStep
           dish={dish}
           onSubmitForReview={handleSaveSubmitForReview}
-          isReadOnly={dish.status === 'PENDING_PRICE'}
+          isReadOnly={isReadOnly}
           isSubmitting={isSaving}
         />
       )}
