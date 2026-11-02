@@ -323,22 +323,32 @@ export const CatalogView: React.FC = () => {
         {catalogData?.establishment && (
           <OperatingHoursBanner
             isOpen={catalogData.establishment.isOpen}
-            isPaused={catalogData.establishment.isPaused}
             nextOpeningSchedule={catalogData.establishment.nextOpeningSchedule}
           />
         )}
 
         {/* Master Dietary Toggle (Spec 003) */}
         {isAuthenticated && activeRestrictionsCount > 0 && (
-          <CatalogMasterToggle
-            isActive={isFilterActive}
-            onToggle={() => setIsFilterActive(!isFilterActive)}
-            restrictionsCount={activeRestrictionsCount}
-          />
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs mb-6">
+            <CatalogMasterToggle
+              activeRestrictionsCount={activeRestrictionsCount}
+              isFilterActive={isFilterActive}
+              onToggle={setIsFilterActive}
+            />
+          </div>
         )}
 
         {/* Loading State */}
-        {isLoading && (
+        {(isLoading || catalogHook.isLoading) && !catalogData && (
+          <div
+            data-testid="catalog-loading"
+            className="py-16 text-center text-gray-500 space-y-3"
+          >
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent" />
+            <p className="text-sm font-medium">Cargando menú del comedor...</p>
+          </div>
+        )}
+        {isLoading && catalogData && (
           <div
             data-testid="catalog-loading-skeleton"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse"
@@ -350,7 +360,26 @@ export const CatalogView: React.FC = () => {
         )}
 
         {/* Error State with Retry Button (Spec 008, COM-1.5.1 Edge Case, FR-013) */}
-        {!isLoading && error && (
+        {!isLoading && !catalogHook.isLoading && (error || catalogHook.error) && !catalogData && (
+          <div
+            data-testid="catalog-error"
+            className="p-6 bg-red-50 border border-red-200 rounded-2xl text-center space-y-3"
+          >
+            <p className="text-sm font-semibold text-red-800">{error || catalogHook.error}</p>
+            <button
+              type="button"
+              onClick={() => {
+                loadCatalog();
+                catalogHook.refetch();
+              }}
+              data-testid="catalog-retry-button"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+        {!isLoading && error && catalogData && (
           <div
             data-testid="catalog-error-state"
             className="p-6 bg-red-50 border border-red-200 rounded-2xl text-center space-y-3"
