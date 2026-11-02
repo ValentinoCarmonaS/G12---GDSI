@@ -47,7 +47,8 @@ export const FoodCostBreakdownTable: React.FC<FoodCostBreakdownTableProps> = ({ 
             </td>
             <td className="py-2 pr-4 text-gray-700">
               {(() => {
-                const rawValue = line.recipeQuantity ?? line.quantity ?? line.grossQuantity ?? line.amount;
+                const lineAny = line as unknown as Record<string, unknown>;
+                const rawValue = (lineAny.recipeQuantity ?? lineAny.quantity ?? lineAny.grossQuantity ?? lineAny.amount) as number | undefined;
                 const numericValue = Number(rawValue);
                 const safeQuantity = isNaN(numericValue) ? 0 : numericValue;
                 return quantity.format(safeQuantity);

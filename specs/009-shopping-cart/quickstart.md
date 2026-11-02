@@ -1,33 +1,33 @@
 # Quickstart & End-to-End Validation Guide: Shopping Cart & Diner Demographics
 
 **Feature Branch**: `009-shopping-cart`  
-**Fecha**: 31/10/2026  
-**Estado**: Completado  
-**Referencia de Especificación**: [spec.md](./spec.md) | [data-model.md](./data-model.md) | [contracts/openapi.yaml](./contracts/openapi.yaml)
+**Date**: 2026-10-31  
+**Status**: Completed  
+**Specification Reference**: [spec.md](./spec.md) | [data-model.md](./data-model.md) | [contracts/openapi.yaml](./contracts/openapi.yaml)
 
 ---
 
-## 1. Prerrequisitos y Configuración del Entorno
+## 1. Prerequisites & Environment Setup
 
-### 1.1. Prerrequisitos Técnicos
-- Java 21 JDK instalado y configurado en el PATH.
-- Node.js 18+ y npm instalados.
-- Docker y Docker Compose activos (para la instancia de base de datos PostgreSQL 16 con Flyway).
-- Repositorio ubicado en rama `009-shopping-cart`.
+### 1.1. Technical Prerequisites
+- Java 21 JDK installed and configured in PATH.
+- Node.js 18+ and npm installed.
+- Docker and Docker Compose active (for local PostgreSQL 16 database with Flyway).
+- Git repository checked out on branch `009-shopping-cart`.
 
-### 1.2. Inicialización de Servicios
+### 1.2. Service Initialization
 ```bash
-# 1. Iniciar la base de datos PostgreSQL local
+# 1. Start local PostgreSQL database container
 cd easyeat/backend
 docker compose up -d postgres
 
-# 2. Compilar el backend y ejecutar migraciones Flyway (incluyendo V10)
+# 2. Build backend and run Flyway migrations (including V12)
 ./mvnw clean compile flyway:migrate
 
-# 3. Iniciar el servidor backend Spring Boot (puerto 8080)
+# 3. Start Spring Boot backend server (port 8080)
 ./mvnw spring-boot:run
 
-# 4. En otra terminal, instalar dependencias y levantar el frontend SPA (puerto 5173)
+# 4. In a separate terminal, install dependencies and start frontend SPA (port 5173 or 3000)
 cd ../frontend
 npm install
 npm run dev
@@ -35,119 +35,102 @@ npm run dev
 
 ---
 
-## 2. Escenarios de Validación End-to-End
+## 2. End-to-End Validation Scenarios
 
-### Escenario 1: Selector Previo de Cantidad y Agregar al Carrito (COM-6.1.1)
-*Objetivo*: Validar selector en detalle de plato, adición a sesión local y notificación visible (AC-1.1, AC-1.2, FR-001, FR-002, SC-001).
+### Scenario 1: Quantity Selector in Dish Detail & Add to Cart (COM-6.1.1)
+*Objective*: Validate quantity selector in dish detail view, local session addition, and visible toast notification (AC-1.1, AC-1.2, FR-001, FR-002, SC-001).
 
-1. Iniciar sesión como comensal (`comensal@easyeat.com` / `Password123!`).
-2. Seleccionar un restaurante activo en `/descubrimiento` y navegar a `/catalogo`.
-3. Hacer click sobre la tarjeta de un plato con stock disponible (ej. "Milanesa Napolitana").
-4. **Verificación visual**: En el modal de detalle (`DishDetailModal`), verificar la presencia del selector numérico con valor predeterminado en `1` y botones `+` y `-`.
-5. Ajustar el selector a `3` unidades y presionar "Agregar al Carrito".
-6. **Resultado esperado**:
-   - Se despliega una notificación visible de éxito confirmando la adición de 3 unidades.
-   - En la esquina inferior derecha aparece de inmediato el botón flotante del carrito exhibiendo `3` ítems y el subtotal exacto (INV-1, INV-2, INV-7).
-   - Reabrir el detalle del mismo plato, seleccionar `1` unidad adicional y presionar "Agregar al Carrito": la cantidad total se incrementa a `4` sin duplicar filas (AC-1.2).
-
----
-
-### Escenario 2: Visibilidad Biunívoca del Botón Flotante y Apertura de Modal (COM-6.1.2)
-*Objetivo*: Validar visibilidad condicional, actualización reactiva y precisión decimal monetaria (AC-2.1 a AC-2.4, INV-1, INV-2, INV-6, INV-7).
-
-1. Con productos en el carrito, navegar entre categorías del catálogo ("Entradas", "Platos principales", "Postres").
-2. **Verificación visual**: El botón flotante permanece fijo en la esquina inferior derecha mostrando el acumulado de unidades y el subtotal en tiempo real.
-3. Navegar a la pantalla `/perfil`.
-4. **Resultado esperado**: El botón flotante se oculta automáticamente para no interferir con los formularios (INV-7, FR-005).
-5. Volver a `/catalogo` y hacer click sobre el botón flotante.
-6. **Resultado esperado**: Se abre el modal/drawer (`CartDrawer`) desplegando el desglose íntegro: nombre de cada plato, precio unitario, cantidad asignada y subtotal por línea exacto.
+1. Log in as diner (`comensal@easyeat.com` / `Password123!`).
+2. Select an active establishment on `/descubrimiento` and navigate to `/catalogo`.
+3. Click on a dish card with available stock (e.g., "Milanesa Napolitana").
+4. **Visual Verification**: In the detail modal (`DishDetailModal`), verify the numeric quantity selector defaulting to `1` with `+` and `-` buttons.
+5. Set the selector to `3` units and click "Add to Cart".
+6. **Expected Result**:
+   - A visible success toast is displayed confirming the addition of 3 units.
+   - The floating cart button appears in the bottom-right corner showing `3` items and the exact subtotal (INV-1, INV-2, INV-7).
+   - Opening the same dish and adding `2` more units increments the total to `5` without duplicating line items (FR-003).
 
 ---
 
-### Escenario 3: Modificación Interactiva, Bloqueo de Stock y Reversión ante Falla (COM-6.1.3)
-*Objetivo*: Probar suma/resta, límite de inventario y rollback determinista por desconexión (AC-3.1 a AC-3.5, INV-3, INV-9, SC-003, SC-004).
+### Scenario 2: Reactive Floating Cart Button & Exact Monetary Totals (COM-6.1.2)
+*Objective*: Verify bijective contextual visibility of the floating button, exact penny currency arithmetic, and detailed drawer rendering (AC-2.1 to AC-2.4, INV-2, INV-6, INV-7, SC-002, SC-007).
 
-1. Abrir el modal del carrito.
-2. Presionar el control `+` en una línea: la cantidad sube inmediatamente en 1 unidad y los totales se recalculan al instante (AC-3.1, SC-002).
-3. Continuar incrementando hasta alcanzar el stock real disponible en cocina para dicho plato.
-4. **Resultado esperado**: El control `+` se deshabilita visualmente y aparece la advertencia de stock máximo alcanzado (AC-3.3, INV-3).
-5. Simular fallo de conectividad (desconectar red o simular error de red en DevTools "Offline").
-6. Presionar rápidamente modificaciones de cantidad.
-7. **Resultado esperado**: Al transcurrir la ventana de debounce de 300 ms, el sistema detecta la falla de comunicación, retrotrae deterministamente el contador al último valor sincronizado confirmado y presenta una notificación emergente de error de conexión (AC-3.5, INV-9).
-
----
-
-### Escenario 4: Eliminación Total al Restar Última Unidad (COM-6.1.3)
-*Objetivo*: Validar remoción total de ítem y ocultamiento inmediato del botón flotante (AC-3.4, INV-6).
-
-1. Dejar el carrito con un único plato cuya cantidad sea `1`.
-2. Abrir el modal del carrito y presionar el botón `-` sobre dicho plato.
-3. **Resultado esperado**:
-   - El plato se elimina completamente de la orden (no queda en 0 ni negativo).
-   - El modal refleja el estado de "Tu carrito está vacío".
-   - Al cerrar el modal, el botón flotante exterior ha desaparecido de inmediato de la pantalla (INV-6, SC-009).
+1. With items in the cart, navigate between different catalog categories.
+2. **Visual Verification**: The floating button remains visible with updated total item count and exact subtotal (e.g. `5 items | $45.50`).
+3. Navigate to `/perfil`.
+4. **Visual Verification**: The floating button hides immediately upon entering the profile view.
+5. Return to `/catalogo` and click the floating button.
+6. **Expected Result**:
+   - The cart drawer (`CartDrawer`) slides open displaying the full order breakdown: dish name, unit retail price, line subtotal, and consolidated total.
+   - Subtotals strictly match $\text{unit\_price} \times \text{quantity}$ without floating-point rounding drift (INV-2).
 
 ---
 
-### Escenario 5: Carga de Foto de Perfil y Actualización de Avatar en Navbar (COM-1.4.2)
-*Objetivo*: Validar subida de imagen $\le 5$ MB y reflejo inmediato en barra superior (AC-4.1, INV-4, SC-008).
+### Scenario 3: Modify Quantities, Stock Guardrails & Network Rollback (COM-6.1.3)
+*Objective*: Validate unitary increment/decrement, visual block on kitchen stock limit, complete removal on quantity 1, and debounced rollback on network drop (AC-3.1 to AC-3.5, INV-3, INV-9, SC-003, SC-004).
 
-1. Navegar a `/perfil` y situarse en la sección "Datos Demográficos".
-2. Seleccionar un archivo JPEG, PNG o WEBP con tamaño menor o igual a 5 MB (ej. 1,2 MB).
-3. Presionar "Guardar cambios".
-4. **Resultado esperado**:
-   - La imagen se persiste en el backend (`POST /api/v1/profile/avatar`).
-   - El avatar en la barra de navegación superior (`WorkspaceLayout.tsx`) se actualiza inmediatamente mostrando la nueva fotografía sin requerir recargar la página.
-
----
-
-### Escenario 6: Rechazo de Imagen > 5 MB y Formatos No Soportados (COM-1.4.2)
-*Objetivo*: Probar validaciones de tamaño y formato con mensajes explicativos (AC-4.2, AC-4.3, INV-4, SC-005).
-
-1. En el selector de foto de perfil, intentar cargar un archivo de 5,5 MB (5.767.168 bytes).
-2. **Resultado esperado**: La carga se bloquea inmediatamente en cliente, mostrando el mensaje de error: `"El archivo supera el tamaño máximo permitido de 5 MB."`. La foto previa permanece intacta.
-3. Intentar seleccionar un archivo con formato `.pdf` o `.gif`.
-4. **Resultado esperado**: El sistema rechaza el archivo y despliega el mensaje: `"Formato no soportado. Debe ser JPEG, PNG o WebP."`.
+1. In the open cart drawer, click `+` on an item.
+2. **Verification**: Quantity increases by 1 and totals recalculate immediately.
+3. Click `+` until reaching the available kitchen stock.
+4. **Verification**: The `+` control disables visually and further clicks are ignored, displaying an inventory limit indicator (INV-3).
+5. Click `-` until reaching quantity 1, then click `-` once more.
+6. **Verification**: The item is completely removed from the cart without leaving 0 or negative quantities (FR-015).
+7. If the cart is now empty, the drawer reflects an empty state and the outer floating button hides immediately (INV-6, SC-009).
+8. Add an item, open developer tools Network tab, simulate "Offline", and click `+`.
+9. **Expected Result**: The counter updates optimistically, but upon the 300 ms debounce timeout failing, the counter deterministically reverts to the last confirmed count with an error alert toast (INV-9).
 
 ---
 
-### Escenario 7: Validación de Rango de Edad y Domicilio Aislado (COM-1.4.2)
-*Objetivo*: Probar validación de edad (14 a 120 años) y almacenamiento de domicilio (AC-4.4, AC-4.6, INV-5, INV-8, SC-006).
+### Scenario 4: Edit Diner Demographics & Avatar Upload (COM-1.4.2)
+*Objective*: Validate demographic fields (age 14..120, gender taxonomy, address $\le 255$) and avatar upload up to 5 MB with immediate navbar reflection (AC-4.1 to AC-4.4, INV-4, INV-5, SC-005, SC-006).
 
-1. En el campo de edad ingresar valores inválidos: `-5`, `13`, `125`, `25.5` o `treinta`.
-2. **Resultado esperado**: El formulario resalta el campo en rojo, bloquea el guardado y muestra `"La edad debe ser un número entero entre 14 y 120 años."` (AC-4.4, INV-5).
-3. Ingresar `29`, seleccionar género `"No binario"`, ingresar domicilio `"Av. Callao 450, Piso 3, CABA"` y presionar "Guardar cambios".
-4. **Resultado esperado**:
-   - Los datos se guardan exitosamente (`PUT /api/v1/profile/demographics`).
-   - En la base de datos se verifica que el domicilio se guarda exclusivamente como dato de texto informativo, sin disparar llamadas a motores de ruteo externos (INV-8).
+1. Navigate to `/perfil` and locate the demographic editing section.
+2. Test age validation:
+   - Enter `12` or `125` $\to$ field is marked invalid with an inline error message (INV-5).
+   - Enter `28` $\to$ field is marked valid.
+3. Select gender (`"Non-binary"` or `"Femenino"`) and enter contact address (e.g., `"Av. Paseo Colón 850, CABA"`).
+4. Test profile photo upload:
+   - Select a `.pdf` file $\to$ blocked immediately with invalid MIME format error (FR-020).
+   - Select a 6 MB image $\to$ blocked with size exceeded error (FR-022, INV-4).
+   - Select a valid JPEG/PNG image of 1.5 MB $\to$ preview renders immediately.
+5. Click "Save changes".
+6. **Expected Result**:
+   - Form saves successfully via `PUT /api/v1/profile/demographics` and `POST /api/v1/profile/avatar`.
+   - The top navigation bar (`WorkspaceLayout`) reactively reflects the new avatar image without page reload (SC-008).
+   - Verify PostgreSQL database:
+     ```bash
+     docker exec -it easyeat-postgres psql -U postgres -d easyeat_db -c "SELECT u.age, u.gender, u.address, p.file_size, p.content_type FROM users u LEFT JOIN user_photos p ON u.id = p.user_id WHERE u.email = 'comensal@easyeat.com';"
+     ```
 
 ---
 
-### Escenario 8: Eliminación Diferida de Foto de Perfil (COM-1.4.2)
-*Objetivo*: Validar diálogo de confirmación diferido y avatar por defecto (AC-4.5, FR-024, FR-025, SC-008).
+### Scenario 5: Deferred Avatar Deletion (COM-1.4.2 AC-4.5)
+*Objective*: Validate confirmation dialog and deferred deletion on form submission (FR-024, FR-025, SC-008).
 
-1. Teniendo una foto de perfil personalizada configurada, presionar "Eliminar foto".
-2. En el diálogo de confirmación emergente, pulsar "Confirmar eliminación".
-3. **Verificación visual provisional**: La vista previa del formulario muestra provisionalmente el avatar genérico, pero la barra de navegación superior AÚN conserva la foto original.
-4. Presionar "Cancelar" o recargar la página: la foto original se conserva intacta.
-5. Volver a presionar "Eliminar foto", confirmar en el diálogo y esta vez presionar "Guardar cambios".
-6. **Resultado esperado**: Se consolida la remoción en el servidor (`DELETE /api/v1/profile/avatar`), y tanto el perfil como la barra de navegación superior restablecen de inmediato el avatar predeterminado de la plataforma (SC-008).
+1. In `/perfil`, click the "Delete photo" button on the custom avatar.
+2. **Verification**: A verification modal (`PhotoDeleteConfirmModal`) appears.
+3. Confirm deletion in the modal.
+4. **Verification**: Form preview provisionally displays the default institutional avatar.
+5. Cancel the form or navigate to `/catalogo` without clicking "Save changes".
+6. Return to `/perfil` $\to$ previous custom photo is preserved intact.
+7. Repeat the delete flow, confirm in modal, and click "Save changes".
+8. **Expected Result**:
+   - `DELETE /api/v1/profile/avatar` executes on the backend.
+   - The default SVG avatar is restored across the navbar and profile header (SC-008).
 
 ---
 
-## 3. Comandos de Verificación Automatizada
+## 3. Automated Test Verification Commands
 
-### 3.1. Tests Unitarios y de Integración Backend (JUnit 5 + MockMvc)
 ```bash
+# 1. Run all backend slice, contract, and migration tests for profile and cart
 cd easyeat/backend
-./mvnw test -Dtest=ProfileControllerTest,UserPhotoServiceTest,DemographicsValidationTest
-```
+mvn test -Dtest="DemographicsAvatarMigrationTest,ProfileControllerTest,UserPhotoServiceTest,DemographicsValidationTest,GlobalExceptionHandlerProfileTest,JwtAuthenticationFilterTest"
 
-### 3.2. Tests de Componentes y Contexto Frontend (Vitest + React Testing Library)
-```bash
-cd easyeat/frontend
-npm test src/test/cart/CartContext.test.tsx
-npm test src/test/cart/FloatingCartButton.test.tsx
-npm test src/test/cart/DishDetailModal.test.tsx
-npm test src/test/profile/PersonalDataForm.test.tsx
+# 2. Run all frontend unit and component tests
+cd ../frontend
+npm test -- PersonalDataForm.test.tsx PhotoUploadAndRemoval.test.tsx --run
+
+# 3. Verify TypeScript compilation
+npx tsc --noEmit
 ```

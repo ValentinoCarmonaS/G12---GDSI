@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCart } from '../../hooks/useCart';
 import { CartItemWithBadge } from './CartItemWithBadge';
+import { formatCurrency } from '../../utils/currencyUtils';
 
 export interface CartDrawerProps {
   isOpen: boolean;
@@ -22,6 +23,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     totalCount,
     hasConflictingItems,
   } = useCart();
+
+  const hasInsufficientStock = items.some(
+    (item) => item.availableStock !== undefined && item.quantity > item.availableStock
+  );
 
   if (!isOpen) {
     return null;
@@ -67,6 +72,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            {/* FR-014a: Warning banner on insufficient kitchen stock blocking checkout */}
+            {hasInsufficientStock && (
+              <div
+                data-testid="cart-insufficient-stock-banner"
+                className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-900 flex items-start gap-2"
+              >
+                <span className="text-base leading-none">⚠️</span>
+                <p>
+                  <strong>Atención:</strong> Uno o más platos en tu orden exceden el stock disponible
+                  en cocina. Ajustá las cantidades antes de continuar al checkout.
+                </p>
+              </div>
+            )}
+
             {/* FR-022: Permanent visible banner without redundant blocking modal at checkout */}
             {hasConflictingItems && (
               <div
@@ -106,7 +125,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
                 <span>Total a pagar:</span>
                 <span data-testid="cart-total-amount" className="text-lg font-bold text-amber-700">
-                  ${totalAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                  {formatCurrency(totalAmount)}
                 </span>
               </div>
 
@@ -122,8 +141,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <button
                   type="button"
                   onClick={onCheckout}
+                  disabled={hasInsufficientStock}
                   data-testid="cart-checkout-button"
-                  className="flex-1 py-2.5 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg shadow-sm transition-colors text-center"
+                  className={`flex-1 py-2.5 px-4 text-white text-sm font-bold rounded-lg shadow-sm transition-colors text-center ${
+                    hasInsufficientStock
+                      ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                      : 'bg-green-600 hover:bg-green-700 cursor-pointer'
+                  }`}
                 >
                   Continuar al checkout
                 </button>

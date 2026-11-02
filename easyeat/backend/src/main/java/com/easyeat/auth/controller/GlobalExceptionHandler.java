@@ -537,6 +537,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
 
+    @Override
+    public ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "El archivo supera el tamaño máximo permitido de 5 MB."
+        );
+        problem.setType(URI.create("https://easyeat.com/errors/photo-storage-failed"));
+        problem.setTitle("Maximum Upload Size Exceeded");
+        if (request instanceof ServletWebRequest servletWebRequest) {
+            problem.setInstance(URI.create(servletWebRequest.getRequest().getRequestURI()));
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
     /** The errors[] entry shape already emitted for bean validation failures. */
     private static Map<String, String> fieldError(String field, String message) {
         Map<String, String> error = new HashMap<>();

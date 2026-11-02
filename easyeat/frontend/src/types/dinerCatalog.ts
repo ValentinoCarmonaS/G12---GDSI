@@ -49,6 +49,7 @@ export interface DishCatalogItem {
   price: number;
   photoUrl: string | null;
   isAvailable: boolean;
+  availableStock?: number;
   isCompliant: boolean;
   conflictingRestrictions: string[];
   recipeIngredients: string[];

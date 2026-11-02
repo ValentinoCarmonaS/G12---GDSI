@@ -52,7 +52,7 @@ describe('dishReviewApi', () => {
 
       // The server answers 400 for a tab outside the enum. The client must not silently
       // normalise it, or a bug in the caller would look like a working default view.
-      await dishReviewApi.getInbox({ tab: 'HISTORY' });
+      await dishReviewApi.getInbox({ tab: 'HISTORY' as any });
 
       expect(apiClient.get).toHaveBeenCalledWith(
         '/admin/dishes/review-inbox',

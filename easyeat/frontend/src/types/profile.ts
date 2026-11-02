@@ -14,7 +14,25 @@ export interface ProfileResponse {
   email: string;
   pendingEmail?: string | null;
   emailVerificationPending?: boolean;
+  age?: number | null;
+  gender?: string | null;
+  address?: string | null;
+  avatarUrl?: string | null;
   dietaryRestrictions: DietaryRestrictionItem[];
+}
+
+export interface DemographicsRequest {
+  age?: number | null;
+  gender?: string | null;
+  address?: string | null;
+}
+
+export interface AvatarUploadResponse {
+  userId: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+  avatarUrl: string;
 }
 
 export interface PersonalDataRequest {

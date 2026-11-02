@@ -12,7 +12,7 @@
 4. A claim marked *in flight* is a courtesy, not a reservation. If two branches hold the same claim, the one that merges first keeps it and the other renumbers.
 5. Tests must not carry a version number in their class name, so an upstream renumbering cannot invalidate them.
 
-## Consumed — present on `develop/sprint-2`
+## Consumed — present on `develop/sprint-3`
 
 | Version | File | Spec | Landed via |
 |---|---|---|---|
@@ -26,6 +26,8 @@
 | V8 | `V8__create_establishments.sql` | 008 | merged into `develop/sprint-2` ahead of spec 007 (exact PR not confirmed from this integration; present on `develop/sprint-2` when spec 007 was integrated 2026-10-31) |
 | V9 | `V9__admin_dish_approval_pricing.sql` | 007 | renumbered from `V8` during the `007-admin-dish-approval-pricing` → `develop/sprint-2` integration (PR #182), per rule 4: spec 008 merged first and kept `V8` |
 | V10 | `V10__support_admin_dish_cancellation.sql` | 007 / C-02 | adds `CANCELLED` to the dish-status and immutable review-event CHECK constraints; V7/V9 remain unchanged |
+| V11 | `V11__sync_ingredient_unit_purchase_cost.sql` | 006 / C-03 | backfills ingredient master unit_purchase_cost from latest batch |
+| V12 | `V12__extend_user_demographics_and_avatar.sql` | 009 | adds age, gender, address to users and creates user_photos (BYTEA avatar storage) |
 
 Spec 006 (`006-recipe-food-cost`, PR #170, merged 2026-10-28) added **no** migration: its recipe model reuses `dish_recipe_ingredients` from 005's `V7`. A feature that needs no schema change takes no version, and that is worth recording so nobody looks for a missing version from it.
 
