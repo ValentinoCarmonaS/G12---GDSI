@@ -161,7 +161,8 @@ The repo has **no orders / checkout / slot-selector backend**. This feature buil
 
 ### Implementation — service
 
-- [ ] T040 [US3] Implement `easyeat/backend/src/main/java/com/easyeat/operations/service/PaymentMethodService.java` (list admin view, toggle with version check, diner list = enabled only, `validateEnabled(method)` throwing `PaymentMethodUnavailableException` in `easyeat/backend/src/main/java/com/easyeat/operations/exception/PaymentMethodUnavailableException.java`). Turn T039 GREEN.
+- [x] T040 [US3] Implement `easyeat/backend/src/main/java/com/easyeat/operations/service/PaymentMethodService.java` (list admin view, toggle with version check, diner list = enabled only, `validateEnabled(method)` throwing `PaymentMethodUnavailableException` in `easyeat/backend/src/main/java/com/easyeat/operations/exception/PaymentMethodUnavailableException.java`). Turn T039 GREEN.
+  - **DONE 2026-11-02**: T039 GREEN (8 of 8) plus `PaymentMethodServiceTest` (2 of 2). Coverage: PaymentMethodService 100%, PaymentMethodUnavailableException 100%. **Option 1 implemented**: `getAdminView` always lists both methods and a method without a row is enabled with `id` and `version` null; `validateEnabled` treats a missing row as enabled; `toggle` creates the row on the first call (no `expectedVersion`) and a unique-constraint race maps to the same conflict as a stale version. `PaymentMethod` gained `displayName()`. `getEnabledMethods` re-reads on every call, nothing is cached (INV-9).
 
 ### Tests / implementation — endpoints
 
