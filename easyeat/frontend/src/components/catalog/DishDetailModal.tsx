@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import type { DishCatalogItem } from '@/types/dinerCatalog';
-import { AllergenWarningBadge } from './AllergenWarningBadge';
+import { AllergenNeutralPill } from './AllergenNeutralPill';
 import { CartContext } from '@/context/CartContext';
 import { formatCurrency, calculateLineTotal } from '@/utils/currencyUtils';
 
@@ -99,7 +99,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
 
   const provisionalSubtotal = calculateLineTotal(dish.price, selectedQuantity);
 
-  const hasConflicts = dish.isCompliant === false && (dish.conflictingRestrictions?.length ?? 0) > 0;
 
   const handleAddToCart = () => {
     if (!canAddToCart) return;
@@ -257,27 +256,45 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             </p>
           )}
 
-          {/* Recipe Ingredients (COM-4.1.1, FR-007, FR-014) */}
-          {dish.recipeIngredients && dish.recipeIngredients.length > 0 && (
-            <div className="pt-2 border-t border-gray-100">
-              <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5">
-                Ingredientes
-              </h4>
+          {/* Recipe Ingredients & Components (COM-4.1.1, COM-5.1.2, INV-6, INV-8, AC-2.1, AC-2.3, EC-007) */}
+          <div className="pt-2 border-t border-gray-100">
+            <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5">
+              Ingredientes
+            </h4>
+            {dish.recipeIngredients && dish.recipeIngredients.length > 0 ? (
               <p className="text-xs text-gray-600 leading-relaxed">
                 {dish.recipeIngredients.join(', ')}
               </p>
-            </div>
-          )}
+            ) : (
+              <p
+                data-testid="missing-ingredients-notice"
+                className="text-xs text-gray-500 italic bg-gray-50 px-3 py-2 rounded-xl border border-gray-100"
+              >
+                Lista de componentes no disponible
+              </p>
+            )}
+          </div>
 
-          {/* Dietary Compliance */}
-          {hasConflicts && (
-            <div className="pt-2 border-t border-gray-100">
-              <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider mb-1.5">
-                Advertencia Dietaria
-              </h4>
-              <AllergenWarningBadge conflicts={dish.conflictingRestrictions} size="sm" />
-            </div>
-          )}
+          {/* Neutral Allergen Labels (COM-5.1.2, INV-6, AC-2.1, EC-008, Clarification #4) */}
+          <div className="pt-2 border-t border-gray-100">
+            <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5">
+              Alérgenos
+            </h4>
+            {dish.allergens && dish.allergens.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {dish.allergens.map((allergen) => (
+                  <AllergenNeutralPill key={allergen} allergen={allergen} />
+                ))}
+              </div>
+            ) : (
+              <p
+                data-testid="no-allergens-declared-notice"
+                className="text-xs text-gray-500 italic"
+              >
+                No contiene alérgenos declarados
+              </p>
+            )}
+          </div>
 
           {/* Quantity Selector & Provisional Subtotal Section (INV-13, AC-3.5, SC-011, EC-011) */}
           <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
