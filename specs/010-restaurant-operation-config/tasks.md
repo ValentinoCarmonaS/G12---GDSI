@@ -72,7 +72,8 @@ The repo has **no orders / checkout / slot-selector backend**. This feature buil
 
 ### Implementation — services
 
-- [ ] T018 [US1] Implement `easyeat/backend/src/main/java/com/easyeat/operations/service/OperatingScheduleService.java` (upsert week with INV-7 check, unconfigured day ⇒ closed, optimistic version handling) and `easyeat/backend/src/main/java/com/easyeat/operations/service/DinerTimeSlotService.java` (15-min partition over `[opening, closing)`, drops expired slots of today using `EstablishmentTimeProvider`, admits future dates, same rule for pickup and delivery). Turn T017 GREEN.
+- [x] T018 [US1] Implement `easyeat/backend/src/main/java/com/easyeat/operations/service/OperatingScheduleService.java` (upsert week with INV-7 check, unconfigured day ⇒ closed, optimistic version handling) and `easyeat/backend/src/main/java/com/easyeat/operations/service/DinerTimeSlotService.java` (15-min partition over `[opening, closing)`, drops expired slots of today using `EstablishmentTimeProvider`, admits future dates, same rule for pickup and delivery). Turn T017 GREEN.
+  - **DONE 2026-11-02**: T017 GREEN (16 of 16) plus `OperatingScheduleServiceTest` (6 of 6). Per-class coverage: DinerTimeSlotService 100%, OperatingScheduleService 100%, InvalidScheduleException 100%, OperatingConfigConflictException 100%. Decisions: only configured days are stored and returned (the contract makes `id` and `version` required, so an unconfigured day is not synthesised; consumers read a missing day as closed, EC-008); a stale or missing `expectedVersion` raises `OperatingConfigConflictException` (mapped to 409 in T022) and a write race at flush is mapped to the same exception; the slot rule is `start >= opening and start < closing`, as in FR-004.
 
 ### Tests — controllers (RED first)
 

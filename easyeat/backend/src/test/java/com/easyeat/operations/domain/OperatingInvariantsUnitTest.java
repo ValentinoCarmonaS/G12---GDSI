@@ -187,7 +187,7 @@ class OperatingInvariantsUnitTest {
         void shouldNotValidateTimesOfAClosedDay() {
             var repository = mock(OperatingScheduleRepository.class);
             when(repository.findByEstablishmentIdAndDayOfWeek(eq(ESTABLISHMENT), any())).thenReturn(Optional.empty());
-            when(repository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+            when(repository.saveAllAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
             var service = new OperatingScheduleService(repository);
 
             var closed = new ScheduleChange(DayOfWeek.SUNDAY, LocalTime.of(0, 0), LocalTime.of(0, 0), true, null);
