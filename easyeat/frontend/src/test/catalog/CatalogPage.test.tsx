@@ -279,4 +279,116 @@ describe('CatalogPage Component Tests (T026, US2, COM-4.1.1, FR-007, FR-008, FR-
       });
     });
   });
+
+  describe('Manual Filters and Conjunctive AND Search Integration (T035, US4, COM-4.2.2, AC-4.1 to AC-4.6, INV-14 to INV-17, FR-016 to FR-021, SC-012 to SC-014)', () => {
+    it('composes category OR, price range AND, and text search AND conjunctively', async () => {
+      vi.spyOn(dinerCatalogApi, 'getEstablishmentCatalog').mockResolvedValueOnce(mockCatalogData);
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
+        expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
+      });
+
+      // Filter by category Postres
+      const postresCheckbox = screen.getByLabelText('Postres');
+      fireEvent.click(postresCheckbox);
+
+      await waitFor(() => {
+        expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
+        expect(screen.queryByText('Milanesa Napolitana con Papas Fritas')).not.toBeInTheDocument();
+      });
+
+      // Also filter by price range min 2000, max 4000
+      const minPriceInput = screen.getByLabelText(/precio mínimo/i);
+      const maxPriceInput = screen.getByLabelText(/precio máximo/i);
+      fireEvent.change(minPriceInput, { target: { value: '2000' } });
+      fireEvent.change(maxPriceInput, { target: { value: '4000' } });
+
+      await waitFor(() => {
+        // Flan Casero has price 3200 (in [2000, 4000])
+        expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
+      });
+
+      // Text search casero
+      const searchInput = screen.getByTestId('catalog-search-input');
+      fireEvent.change(searchInput, { target: { value: 'casero' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
+      });
+
+      // Tighten price range to max 3000 -> Flan (3200) no longer matches
+      fireEvent.change(maxPriceInput, { target: { value: '3000' } });
+
+      await waitFor(() => {
+        expect(screen.queryByText('Flan Casero con Dulce de Leche')).not.toBeInTheDocument();
+        expect(screen.getByTestId('empty-filter-results-notice')).toBeInTheDocument();
+      });
+    });
+
+    it('keeps out-of-stock dishes visible and disabled under active manual filters (AC-4.6, INV-17, FR-021, SC-014)', async () => {
+      const catalogWithOutOfStock: CatalogResponse = {
+        ...mockCatalogData,
+        categories: [
+          {
+            category: 'Platos Principales',
+            dishes: [
+              mockDishAvailableItem,
+              {
+                ...mockDishOutOfStockItem,
+                category: 'Platos Principales',
+                price: 12000,
+              },
+            ],
+          },
+        ],
+      };
+
+      vi.spyOn(dinerCatalogApi, 'getEstablishmentCatalog').mockResolvedValueOnce(catalogWithOutOfStock);
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText(mockDishAvailableItem.name)).toBeInTheDocument();
+        expect(screen.getByText(mockDishOutOfStockItem.name)).toBeInTheDocument();
+      });
+
+      // Select category Platos Principales
+      const catCheckbox = screen.getByLabelText('Platos Principales');
+      fireEvent.click(catCheckbox);
+
+      await waitFor(() => {
+        expect(screen.getByText(mockDishAvailableItem.name)).toBeInTheDocument();
+        const outOfStockDish = screen.getByText(mockDishOutOfStockItem.name);
+        expect(outOfStockDish).toBeInTheDocument();
+      });
+    });
+
+    it('displays EmptyFilterResultsNotice and performs unified clear resetting categories, price, and text (AC-4.4, AC-4.5, INV-15, INV-16, FR-019, FR-020, SC-013)', async () => {
+      vi.spyOn(dinerCatalogApi, 'getEstablishmentCatalog').mockResolvedValueOnce(mockCatalogData);
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
+        expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
+      });
+
+      const minPriceInput = screen.getByLabelText(/precio mínimo/i);
+      fireEvent.change(minPriceInput, { target: { value: '999999' } });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('empty-filter-results-notice')).toBeInTheDocument();
+        expect(screen.getByText(/no encontramos platos que coincidan con los filtros aplicados/i)).toBeInTheDocument();
+      });
+
+      const clearBtn = screen.getByTestId('empty-filter-clear-btn');
+      fireEvent.click(clearBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
+        expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
+        expect(screen.queryByTestId('empty-filter-results-notice')).not.toBeInTheDocument();
+      });
+    });
+  });
 });
