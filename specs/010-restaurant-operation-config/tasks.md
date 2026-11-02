@@ -77,7 +77,8 @@ The repo has **no orders / checkout / slot-selector backend**. This feature buil
 
 ### Tests — controllers (RED first)
 
-- [ ] T019 [US1] Create `easyeat/backend/src/test/java/com/easyeat/operations/controller/AdminOperationsControllerTest.java` (MockMvc, schedule section; later stories add sections): unauthenticated → 401, non-admin → 403, `shouldSaveSchedule` 200, opening ≥ closing → 400 ProblemDetail "Parámetros de horario inválidos", stale `version` → 409 "Conflicto de concurrencia" (`shouldFailOnOptimisticLockConflict`, EC-012), GET returns the week with unconfigured days closed. Also a diner `GET /time-slots` test (public/diner access, only admissible slots). Run RED.
+- [x] T019 [US1] Create `easyeat/backend/src/test/java/com/easyeat/operations/controller/AdminOperationsControllerTest.java` (MockMvc, schedule section; later stories add sections): unauthenticated → 401, non-admin → 403, `shouldSaveSchedule` 200, opening ≥ closing → 400 ProblemDetail "Parámetros de horario inválidos", stale `version` → 409 "Conflicto de concurrencia" (`shouldFailOnOptimisticLockConflict`, EC-012), GET returns the week with unconfigured days closed. Also a diner `GET /time-slots` test (public/diner access, only admissible slots). Run RED.
+  - **DONE 2026-11-02**: RED observed as a compilation failure (AdminOperatingScheduleController and DinerTimeSlotController do not exist; 14 tests written). The web test imports the real services over mocked repositories and `EstablishmentTimeProvider`, so the 400 and 409 are produced end to end. Corrections: `GET /time-slots` requires a JWT of any role (401 without one), following the OpenAPI contract instead of the word "public" in this task; the JSON keys `isClosed` are asserted exactly, with `closed` absent; GET /operating-schedules returns only configured days because the contract makes `id` and `version` required, a missing day is closed (EC-008) and the form fills it in.
 
 ### Implementation — endpoints
 
