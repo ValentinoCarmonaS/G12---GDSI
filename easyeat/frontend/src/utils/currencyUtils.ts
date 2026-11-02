@@ -1,5 +1,5 @@
 /**
- * Currency utilities enforcing fixed-point integer cent arithmetic (INV-2).
+ * Currency utilities enforcing fixed-point integer cent arithmetic (INV-2, INV-10).
  * Eliminates IEEE-754 floating-point drift across multi-item multiplications and summations.
  */
 
@@ -55,7 +55,7 @@ export function calculateCartTotal(items: Array<{ price: number; quantity: numbe
 
 /**
  * Formats a monetary amount for user display in Argentine Pesos (es-AR locale).
- * Guarantees exactly 2 decimal digits and currency prefix.
+ * Guarantees regional format "$ 12.500,00" (symbol, space, dot thousand, comma decimal).
  */
 export function formatCurrency(
   amountOrCents: number,
@@ -63,7 +63,7 @@ export function formatCurrency(
 ): string {
   const decimalAmount = options.isCents ? fromCents(amountOrCents) : amountOrCents;
   const safeValue = isNaN(decimalAmount) ? 0 : decimalAmount;
-  return `$${safeValue.toLocaleString('es-AR', {
+  return `$ ${safeValue.toLocaleString('es-AR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

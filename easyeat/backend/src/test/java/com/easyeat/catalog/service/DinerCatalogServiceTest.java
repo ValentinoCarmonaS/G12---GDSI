@@ -291,6 +291,34 @@ class DinerCatalogServiceTest {
             DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
             assertThat(item.getRecipeIngredients()).containsExactlyInAnyOrder("Lechuga Capuchina", "Queso Parmesano");
         }
+
+        @Test
+        @DisplayName("Should populate neutral common allergens for dishes having restriction codes (T005, INV-6, AC-2.1)")
+        void shouldPopulateNeutralAllergens() {
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(activeEstablishment));
+
+            Dish dish = CatalogTestFixtures.catalogDishBuilder()
+                    .tenantId(tenantId)
+                    .name("Pasta Alfredo")
+                    .category(DishCategory.PLATOS_PRINCIPALES)
+                    .status(DishStatus.PUBLISHED)
+                    .build();
+            dish.setRestrictionCodes(Set.of("DAIRY", "WHEAT", "VEGAN"));
+
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+                    .thenReturn(List.of(dish));
+
+            when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
+                    .thenReturn(List.of(
+                            new EnrichedDishResponse(dish.getId(), tenantId, dish.getName(), null, dish.getPrice(), true, true, List.of())
+                    ));
+
+            DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
+
+            DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
+            assertThat(item.getAllergens()).containsExactlyInAnyOrder("Lácteos / Lactosa", "Trigo / Gluten");
+        }
+
     }
 
     @Nested
