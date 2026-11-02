@@ -2,7 +2,9 @@ package com.easyeat.catalog.repository;
 
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.domain.EstablishmentStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -22,4 +24,8 @@ public interface EstablishmentRepository extends JpaRepository<Establishment, UU
     boolean existsByIdAndStatus(UUID id, EstablishmentStatus status);
 
     List<Establishment> findAllByStatus(EstablishmentStatus status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT e FROM Establishment e WHERE e.id = :id")
+    Optional<Establishment> findByIdForUpdate(@Param("id") UUID id);
 }
