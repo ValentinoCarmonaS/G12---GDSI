@@ -195,6 +195,10 @@ public class DinerCatalogService {
                 ? dishAvailabilityEngine.isDishAvailable(dish.getId(), tenantId)
                 : (dish.getIsActive() != null && dish.getIsActive());
 
+        Integer availableStock = dishAvailabilityEngine != null
+                ? dishAvailabilityEngine.calculateAvailableStock(dish.getId(), tenantId)
+                : null;
+
         return new DishCatalogItemDto(
                 dish.getId(),
                 dish.getName(),
@@ -203,6 +207,7 @@ public class DinerCatalogService {
                 price,
                 photoUrl,
                 isAvailable,
+                availableStock,
                 isCompliant,
                 conflictingRestrictions,
                 recipeIngredients
