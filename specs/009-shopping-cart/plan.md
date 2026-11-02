@@ -421,6 +421,10 @@ All backend errors follow RFC 7807 `ProblemDetail` standardized in `GlobalExcept
 - **Scope**: Increment/decrement controls in `CartDrawer.tsx`, stock ceiling disable, `useDebouncedCartModifier.ts` hook (300 ms), `/api/v1/cart/validate-stock` endpoint, deterministic rollback on connection drop.
 - **Verifiable Done**: Unitary modifications operational; removal on quantity 1; deterministic rollback proven upon network failure simulation.
 
+### Phase 6: Polish, End-to-End Validation & Cross-Cutting Verification
+- **Scope**: E2E integration test `ShoppingCartAndDemographicsQuickstartIntegrationTest.java` verifying all 5 quickstart scenarios, OpenAPI synchronization, full regression test execution, and documentation updates.
+- **Verifiable Done**: All 5 quickstart scenarios pass cleanly with Testcontainers; full regression test suites pass with zero failures.
+
 ---
 
 ## 17. Executive Summary
