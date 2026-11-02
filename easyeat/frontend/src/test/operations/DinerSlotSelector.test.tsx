@@ -27,7 +27,7 @@ describe('DinerSlotSelector (INV-3, EC-007, EC-013)', () => {
     setup();
 
     expect(screen.getByText('Agotada')).toBeInTheDocument();
-    const soldOut = screen.getByRole('button', { name: /12:15/ });
+    const soldOut = screen.getByRole('button', { name: /^12:15 - / });
     expect(soldOut).toBeDisabled();
     await userEvent.click(soldOut);
     expect(screen.getByRole('button', { name: /confirmar/i })).toBeDisabled();
@@ -36,8 +36,8 @@ describe('DinerSlotSelector (INV-3, EC-007, EC-013)', () => {
   it('an available slot can be selected and confirmed with its start time', async () => {
     const props = setup();
 
-    await userEvent.click(screen.getByRole('button', { name: /12:30/ }));
-    expect(screen.getByRole('button', { name: /12:30/ })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(screen.getByRole('button', { name: /^12:30 - / }));
+    expect(screen.getByRole('button', { name: /^12:30 - / })).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(screen.getByRole('button', { name: /confirmar/i }));
 
     await waitFor(() => expect(props.onConfirm).toHaveBeenCalledWith('12:30:00'));
@@ -53,7 +53,7 @@ describe('DinerSlotSelector (INV-3, EC-007, EC-013)', () => {
     });
     setup({ revalidate, onConfirm });
 
-    await userEvent.click(screen.getByRole('button', { name: /12:00/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^12:00 - / }));
     await userEvent.click(screen.getByRole('button', { name: /confirmar/i }));
 
     await waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
@@ -65,7 +65,7 @@ describe('DinerSlotSelector (INV-3, EC-007, EC-013)', () => {
     const revalidate = vi.fn().mockRejectedValue({ response: { status: 409 } });
     const props = setup({ revalidate });
 
-    await userEvent.click(screen.getByRole('button', { name: /12:00/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^12:00 - / }));
     await userEvent.click(screen.getByRole('button', { name: /confirmar/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -78,7 +78,7 @@ describe('DinerSlotSelector (INV-3, EC-007, EC-013)', () => {
   it('shows a generic message for any other revalidation failure and does not confirm', async () => {
     const props = setup({ revalidate: vi.fn().mockRejectedValue(new Error('network')) });
 
-    await userEvent.click(screen.getByRole('button', { name: /12:00/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^12:00 - / }));
     await userEvent.click(screen.getByRole('button', { name: /confirmar/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo verificar la franja. Intente nuevamente.');
