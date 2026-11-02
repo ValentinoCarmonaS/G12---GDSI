@@ -99,7 +99,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 ### Tests for User Story 3 (TDD RED) ⚠️
 > **NOTE: Write these tests FIRST and ensure they FAIL before implementation.**
 
-- [ ] T027 [P] [US3] Unit & Integration tests (RED) in backend for dynamic recipe reflection and empty ingredients handling in `easyeat/backend/src/test/java/com/easyeat/catalog/service/DinerCatalogServiceTest.java`
+- [X] T027 [P] [US3] Unit & Integration tests (RED) in backend for dynamic recipe reflection and empty ingredients handling in `easyeat/backend/src/test/java/com/easyeat/catalog/service/DinerCatalogServiceTest.java`
 - [ ] T028 [P] [US3] Component tests (RED) for neutral allergen pills rendering and explicit `"Lista de componentes no disponible"` notice in `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
 
 ### Implementation for User Story 3 (GREEN)

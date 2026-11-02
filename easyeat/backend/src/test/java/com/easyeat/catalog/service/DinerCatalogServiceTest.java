@@ -293,6 +293,86 @@ class DinerCatalogServiceTest {
         }
 
         @Test
+        @DisplayName("Should return empty ingredients list when dish has no recipe lines registered (T027, US3, INV-8, AC-2.3)")
+        void shouldReturnEmptyIngredientsWhenDishHasNoRecipe() {
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(activeEstablishment));
+
+            Dish dish = CatalogTestFixtures.catalogDishBuilder()
+                    .tenantId(tenantId)
+                    .name("Plato Sin Receta")
+                    .category(DishCategory.PLATOS_PRINCIPALES)
+                    .status(DishStatus.PUBLISHED)
+                    .build();
+
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+                    .thenReturn(List.of(dish));
+            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
+                    .thenReturn(List.of());
+
+            when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
+                    .thenReturn(List.of(
+                            new EnrichedDishResponse(dish.getId(), tenantId, dish.getName(), null, dish.getPrice(), true, true, List.of())
+                    ));
+
+            DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
+
+            DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
+            assertThat(item.getRecipeIngredients()).isNotNull().isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should dynamically reflect recipe modifications on subsequent call (T027, US3, INV-7, AC-2.2)")
+        void shouldDynamicallyReflectRecipeModifications() {
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(activeEstablishment));
+
+            Dish dish = CatalogTestFixtures.catalogDishBuilder()
+                    .tenantId(tenantId)
+                    .name("Plato Modificable")
+                    .category(DishCategory.PLATOS_PRINCIPALES)
+                    .status(DishStatus.PUBLISHED)
+                    .build();
+
+            UUID ingIdInitial = UUID.randomUUID();
+            UUID ingIdUpdated = UUID.randomUUID();
+
+            DishRecipeIngredient lineInitial = CatalogTestFixtures.createRecipeIngredientLine(dish.getId(), ingIdInitial, BigDecimal.valueOf(0.100));
+            DishRecipeIngredient lineUpdated = CatalogTestFixtures.createRecipeIngredientLine(dish.getId(), ingIdUpdated, BigDecimal.valueOf(0.150));
+
+            Ingredient ingInitial = new Ingredient();
+            ingInitial.setName("Ingrediente Original");
+            Ingredient ingUpdated = new Ingredient();
+            ingUpdated.setName("Ingrediente Reemplazo");
+
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+                    .thenReturn(List.of(dish));
+
+            when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
+                    .thenReturn(List.of(
+                            new EnrichedDishResponse(dish.getId(), tenantId, dish.getName(), null, dish.getPrice(), true, true, List.of())
+                    ));
+
+            // First call: Original recipe
+            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
+                    .thenReturn(List.of(lineInitial));
+            when(ingredientRepository.findByIdAndTenantId(ingIdInitial, tenantId))
+                    .thenReturn(Optional.of(ingInitial));
+
+            DinerCatalogResponse response1 = dinerCatalogService.getCatalog(tenantId, mockUser);
+            assertThat(response1.getCategories().get(0).getDishes().get(0).getRecipeIngredients())
+                    .containsExactly("Ingrediente Original");
+
+            // Second call: Kitchen replaced recipe with updated ingredient
+            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
+                    .thenReturn(List.of(lineUpdated));
+            when(ingredientRepository.findByIdAndTenantId(ingIdUpdated, tenantId))
+                    .thenReturn(Optional.of(ingUpdated));
+
+            DinerCatalogResponse response2 = dinerCatalogService.getCatalog(tenantId, mockUser);
+            assertThat(response2.getCategories().get(0).getDishes().get(0).getRecipeIngredients())
+                    .containsExactly("Ingrediente Reemplazo");
+        }
+
+        @Test
         @DisplayName("Should populate neutral common allergens for dishes having restriction codes (T005, INV-6, AC-2.1)")
         void shouldPopulateNeutralAllergens() {
             when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(activeEstablishment));
