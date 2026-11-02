@@ -25,7 +25,7 @@
 - [x] T002 [P] Create `OrderStatus.java` enum in `easyeat/backend/src/main/java/com/easyeat/order/domain/OrderStatus.java` with values `PENDING_PAYMENT`, `PAID`, `CONFIRMED`, `CANCELLED`, `EXPIRED`.
 - [x] T003 [P] Create `FulfillmentMode.java` enum in `easyeat/backend/src/main/java/com/easyeat/order/domain/FulfillmentMode.java` with values `IMMEDIATE`, `SCHEDULED`.
 - [x] T004 [P] Extend `Establishment.java` entity in `easyeat/backend/src/main/java/com/easyeat/catalog/domain/Establishment.java` with fields `leadTimeMinutes`, `maxCapacityPerSlot`, and `operatingDays` (with defaults 30 min, 10 orders, and Monday-Sunday).
-- [ ] T005 [P] Create `OrderItem.java` JPA entity in `easyeat/backend/src/main/java/com/easyeat/order/domain/OrderItem.java` mapping table `order_items` with immutable dish snapshot and exact decimal pricing.
+- [x] T005 [P] Create `OrderItem.java` JPA entity in `easyeat/backend/src/main/java/com/easyeat/order/domain/OrderItem.java` mapping table `order_items` with immutable dish snapshot and exact decimal pricing.
 - [ ] T006 Create `Order.java` JPA entity in `easyeat/backend/src/main/java/com/easyeat/order/domain/Order.java` mapping table `orders` with relationship to `OrderItem`, `FulfillmentMode`, `OrderStatus`, slot window bounds, and TTL expiration timestamp.
 - [ ] T007 [P] Extend `EstablishmentRepository.java` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/EstablishmentRepository.java` adding `@Lock(LockModeType.PESSIMISTIC_WRITE)` method `findByIdForUpdate(UUID id)` for atomic concurrency serialization.
 - [ ] T008 [P] Create `OrderItemRepository.java` in `easyeat/backend/src/main/java/com/easyeat/order/repository/OrderItemRepository.java` extending `JpaRepository<OrderItem, UUID>`.
