@@ -83,6 +83,7 @@ describe('CatalogPage Component Tests (T026, US2, COM-4.1.1, FR-007, FR-008, FR-
 
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
   });
 
   const renderComponent = (
@@ -318,8 +319,8 @@ describe('CatalogPage Component Tests (T026, US2, COM-4.1.1, FR-007, FR-008, FR-
         expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
       });
 
-      // Tighten price range to max 3000 -> Flan (3200) no longer matches
-      fireEvent.change(maxPriceInput, { target: { value: '3000' } });
+      // Tighten price range to max 2000 -> Flan (2500) no longer matches
+      fireEvent.change(maxPriceInput, { target: { value: '2000' } });
 
       await waitFor(() => {
         expect(screen.queryByText('Flan Casero con Dulce de Leche')).not.toBeInTheDocument();
