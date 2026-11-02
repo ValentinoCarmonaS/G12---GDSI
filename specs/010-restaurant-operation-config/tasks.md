@@ -82,7 +82,8 @@ The repo has **no orders / checkout / slot-selector backend**. This feature buil
 
 ### Implementation — endpoints
 
-- [ ] T020 [P] [US1] Create DTOs `easyeat/backend/src/main/java/com/easyeat/operations/dto/UpdateScheduleRequest.java`, `OperatingScheduleResponse.java`, `DinerTimeSlotsResponse.java` (Bean Validation + cross-field INV-7 check).
+- [x] T020 [P] [US1] Create DTOs `easyeat/backend/src/main/java/com/easyeat/operations/dto/UpdateScheduleRequest.java`, `OperatingScheduleResponse.java`, `DinerTimeSlotsResponse.java` (Bean Validation + cross-field INV-7 check).
+  - **DONE 2026-11-02**: compiles; exercised by T019, which turns GREEN in T022. Correction: the cross-field INV-7 check is not duplicated in the DTO, `OperatingScheduleService` is the only place that applies it because it also knows whether the day is closed (a closed day keeps no meaningful times, as `chk_schedule_times` allows). `isClosed` is a record component so the JSON key is exactly the contract name; times are written as `HH:mm:ss`.
 - [ ] T021 [US1] Create `easyeat/backend/src/main/java/com/easyeat/operations/controller/AdminOperatingScheduleController.java` (`PUT`/`GET /api/v1/admin/operating-schedules`, admin-only `@PreAuthorize` like `AdminIngredientController`, tenant from `TenantContextHolder`) and `easyeat/backend/src/main/java/com/easyeat/operations/controller/DinerTimeSlotController.java` (`GET /api/v1/establishments/{tenantId}/time-slots`).
 - [ ] T022 [US1] Add RFC 7807 mapping for INV-7 (400) and optimistic-lock (409) for the operations controllers in `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` (respect the comment near line 431; scope by exception type/package if required). Turn T019 GREEN.
 
