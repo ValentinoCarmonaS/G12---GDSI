@@ -180,8 +180,11 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           </div>
         )}
 
-        {/* Modal Scrollable Content */}
-        <div className="p-6 overflow-y-auto space-y-4">
+        {/* Modal Scrollable Content (INV-4, FR-006, SC-005, EC-003) */}
+        <div
+          data-testid="dish-detail-scrollable-content"
+          className="p-6 overflow-y-auto space-y-4 max-h-[85vh]"
+        >
           {/* Outside Hours Notice */}
           {isReadOnly && (
             <div
@@ -214,7 +217,10 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
 
           {/* Description */}
           {dish.description && (
-            <p className="text-sm text-gray-700 leading-relaxed">
+            <p
+              data-testid="dish-detail-description"
+              className="text-sm text-gray-700 leading-relaxed break-words"
+            >
               {dish.description}
             </p>
           )}
