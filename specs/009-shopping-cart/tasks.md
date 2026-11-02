@@ -131,11 +131,11 @@
 
 **Purpose**: Verificación de escenarios quickstart, documentación técnica, y ejecución de suites de regresión completas.
 
-- [ ] T039 [P] Implement end-to-end integration test `ShoppingCartAndDemographicsQuickstartIntegrationTest.java` in `easyeat/backend/src/test/java/com/easyeat/` verifying all 5 quickstart scenarios from `quickstart.md`
-- [ ] T040 [P] Update OpenAPI specification in `specs/009-shopping-cart/contracts/openapi.yaml` and verify contract synchronization with MockMvc tests
-- [ ] T041 [P] Update feature documentation in `specs/009-shopping-cart/plan.md` and `README.md` reflecting Flyway V12 and shopping cart capabilities
-- [ ] T042 Execute full backend regression test suite (`./mvnw clean test`) ensuring 0 failures across all modules
-- [ ] T043 Execute full frontend verification suite (`npx tsc --noEmit && npm test && npm run build`) ensuring clean compilation, type check, and zero failing tests
+- [X] T039 [P] Implement end-to-end integration test `ShoppingCartAndDemographicsQuickstartIntegrationTest.java` in `easyeat/backend/src/test/java/com/easyeat/cart/` verifying all 5 quickstart scenarios from `quickstart.md`
+- [X] T040 [P] Update OpenAPI specification in `specs/009-shopping-cart/contracts/openapi.yaml` and verify contract synchronization with MockMvc tests
+- [X] T041 [P] Update feature documentation in `specs/009-shopping-cart/plan.md` and `README.md` reflecting Flyway V12 and shopping cart capabilities
+- [X] T042 Execute full backend regression test suite (`mvn clean test`) ensuring 0 failures across all modules
+- [X] T043 Execute full frontend verification suite (`npx tsc --noEmit && npm test && npm run build`) ensuring clean compilation, type check, and zero failing tests
 
 ---
 
