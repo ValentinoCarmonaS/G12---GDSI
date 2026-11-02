@@ -115,57 +115,55 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
         className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-gray-100 flex flex-col max-h-[90vh] animate-in zoom-in-95"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header Image */}
-        <div className="relative w-full h-56 bg-gray-100 flex items-center justify-center overflow-hidden">
-          {dish.photoUrl && !imageError ? (
+        {/* Modal Header Image (INV-2, FR-003, EC-001) - Completely omitted if no photoUrl or error */}
+        {dish.photoUrl && !imageError ? (
+          <div
+            data-testid="dish-detail-photo-container"
+            className="relative w-full h-56 bg-gray-100 flex items-center justify-center overflow-hidden"
+          >
             <img
               src={dish.photoUrl}
               alt={dish.name}
               onError={() => setImageError(true)}
               className="w-full h-full object-cover"
             />
-          ) : (
-            <div
-              data-testid={`modal-placeholder-${dish.id}`}
-              className="w-full h-full flex flex-col items-center justify-center bg-linear-to-br from-amber-50 to-orange-50 text-amber-800/40 p-4"
+
+            {/* Close button inside image header */}
+            <button
+              type="button"
+              onClick={handleClose}
+              data-testid="modal-close-btn"
+              className="absolute top-3 right-3 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors cursor-pointer"
+              aria-label="Cerrar modal"
             >
-              <svg
-                className="w-16 h-16 mb-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-              <span className="text-xs font-semibold text-amber-900/60">EasyEat Gastronomía</span>
-            </div>
-          )}
+            </button>
 
-          {/* Close button */}
-          <button
-            type="button"
-            onClick={handleClose}
-            data-testid="modal-close-btn"
-            className="absolute top-3 right-3 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors cursor-pointer"
-            aria-label="Cerrar modal"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-
-          {/* Availability badge */}
-          {isOutOfStock && (
-            <div className="absolute top-3 left-3 bg-gray-900/90 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              Agotado
-            </div>
-          )}
-        </div>
+            {/* Availability badge */}
+            {isOutOfStock && (
+              <div className="absolute top-3 left-3 bg-gray-900/90 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                Agotado
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Header close button when photo container is omitted */
+          <div className="relative w-full flex justify-end p-4 pb-0">
+            <button
+              type="button"
+              onClick={handleClose}
+              data-testid="modal-close-btn"
+              className="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full p-2 transition-colors cursor-pointer"
+              aria-label="Cerrar modal"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* Modal Scrollable Content */}
         <div className="p-6 overflow-y-auto space-y-4">
