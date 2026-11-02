@@ -27,7 +27,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 [P] Unit tests (RED) for regional currency formatting (`$ 12.500,00`) and exact integer cent arithmetic in `easyeat/frontend/src/test/utils/currencyUtils.test.ts`
+- [X] T003 [P] Unit tests (RED) for regional currency formatting (`$ 12.500,00`) and exact integer cent arithmetic in `easyeat/frontend/src/test/utils/currencyUtils.test.ts`
 - [ ] T004 [P] Implementation (GREEN) of regional currency formatting and cents arithmetic in `easyeat/frontend/src/utils/currencyUtils.ts`
 - [ ] T005 [P] Unit & Integration tests (RED) for neutral allergens mapping and catalog item DTO in `easyeat/backend/src/test/java/com/easyeat/catalog/service/DinerCatalogServiceTest.java`
 - [ ] T006 [P] Implementation (GREEN) extending `DishCatalogItemDto` with `allergens: List<String>` in `easyeat/backend/src/main/java/com/easyeat/catalog/dto/DishCatalogItemDto.java` and neutral mapping in `easyeat/backend/src/main/java/com/easyeat/catalog/service/DinerCatalogService.java`
