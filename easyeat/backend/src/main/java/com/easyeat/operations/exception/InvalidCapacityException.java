@@ -10,6 +10,7 @@ public class InvalidCapacityException extends RuntimeException {
         super(message);
     }
 
+    /** Also used for a value that is not a whole number (FR-007). */
     public static InvalidCapacityException negative() {
         return new InvalidCapacityException("La capacidad máxima por franja debe ser un número entero mayor o igual a 0.");
     }
