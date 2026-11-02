@@ -118,7 +118,8 @@ The repo has **no orders / checkout / slot-selector backend**. This feature buil
 
 ### Implementation — services
 
-- [ ] T029 [US2] Add the atomic conditional update to `easyeat/backend/src/main/java/com/easyeat/operations/repository/SlotCapacityRepository.java`: `@Modifying @Query("UPDATE … SET approvedOrdersCount = approvedOrdersCount + 1 WHERE establishment = :e AND slotDate = :d AND startTime = :t AND approvedOrdersCount < maxCapacity")` returning affected rows.
+- [x] T029 [US2] Add the atomic conditional update to `easyeat/backend/src/main/java/com/easyeat/operations/repository/SlotCapacityRepository.java`: `@Modifying @Query("UPDATE … SET approvedOrdersCount = approvedOrdersCount + 1 WHERE establishment = :e AND slotDate = :d AND startTime = :t AND approvedOrdersCount < maxCapacity")` returning affected rows.
+  - **DONE 2026-11-02**: `SlotCapacityRepositoryTest` gained 4 tests for the conditional update (below capacity, at capacity, capacity 0 or no row, only the requested slot). The first run with the query in place failed 4 of 4 with "no transaction" for a `@Modifying` call, fixed with `@Transactional` on the method; final 6 of 6. The statement does not bump `version`: the version guards the admin edits, and an approval must not make an admin save fail. The T027/T028 classes were set aside while running it because they still do not compile until T030.
 - [ ] T030 [US2] Implement `easyeat/backend/src/main/java/com/easyeat/operations/service/SlotCapacityService.java`: list/upsert capacities (INV-6, never touches `approvedOrdersCount`, INV-8), `isSoldOut` projection (unconfigured ⇒ capacity 0), and `consumeSlot(...)` using T029 (0 rows ⇒ slot-exhausted exception). Create `easyeat/backend/src/main/java/com/easyeat/operations/exception/SlotSoldOutException.java`. Turn T027/T028 GREEN. Extend `DinerTimeSlotService` so each slot carries `SOLD_OUT`/`AVAILABLE` status.
 
 ### Tests / implementation — endpoints
