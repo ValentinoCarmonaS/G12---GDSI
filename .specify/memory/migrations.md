@@ -25,6 +25,7 @@
 | V7 | `V7__chef_dish_management.sql` | 005 | PR #160 |
 | V8 | `V8__create_establishments.sql` | 008 | merged into `develop/sprint-2` ahead of spec 007 (exact PR not confirmed from this integration; present on `develop/sprint-2` when spec 007 was integrated 2026-10-31) |
 | V9 | `V9__admin_dish_approval_pricing.sql` | 007 | renumbered from `V8` during the `007-admin-dish-approval-pricing` → `develop/sprint-2` integration (PR #182), per rule 4: spec 008 merged first and kept `V8` |
+| V12 | `V12__restaurant_operation_config.sql` | 010 | in flight on `010-restaurant-operation-config`. `V10` and `V11` are consumed on `develop/sprint-3` (not yet on this branch), so `V12` is the next free number there. Test `OperationConfigMigrationTest` locates it by Flyway description, so a renumbering touches only the filename and this row (rule 5). |
 
 Spec 006 (`006-recipe-food-cost`, PR #170, merged 2026-10-28) added **no** migration: its recipe model reuses `dish_recipe_ingredients` from 005's `V7`. A feature that needs no schema change takes no version, and that is worth recording so nobody looks for a missing version from it.
 
