@@ -32,8 +32,8 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 - [X] T005 [P] Unit & Integration tests (RED) for neutral allergens mapping and catalog item DTO in `easyeat/backend/src/test/java/com/easyeat/catalog/service/DinerCatalogServiceTest.java`
 - [X] T006 [P] Implementation (GREEN) extending `DishCatalogItemDto` with `allergens: List<String>` in `easyeat/backend/src/main/java/com/easyeat/catalog/dto/DishCatalogItemDto.java` and neutral mapping in `easyeat/backend/src/main/java/com/easyeat/catalog/service/DinerCatalogService.java`
 - [X] T007 [P] Extend frontend TypeScript types with neutral allergens array in `easyeat/frontend/src/types/dinerCatalog.ts`
-- [ ] T008 [P] Contract tests (RED) for catalog detail and availability endpoints with neutral allergens in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/DinerCatalogControllerTest.java`
-- [ ] T009 Verify MockMvc contract tests pass (GREEN) for catalog controller in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/DinerCatalogControllerTest.java`
+- [X] T008 [P] Contract tests (RED) for catalog detail and availability endpoints with neutral allergens in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/DinerCatalogControllerTest.java`
+- [X] T009 Verify MockMvc contract tests pass (GREEN) for catalog controller in `easyeat/backend/src/test/java/com/easyeat/catalog/controller/DinerCatalogControllerTest.java`
 
 **Checkpoint**: Foundation ready — domain models, currency utilities, and neutral catalog contracts are verified. User story implementation can now begin.
 
