@@ -209,7 +209,7 @@ TimeSlotAvailability {
 
 ## 5. Esquema Relacional de Base de Datos (DDL Flyway Preview)
 
-Script de migración `easyeat/backend/src/main/resources/db/migration/V12__add_time_slot_and_order_fulfillment.sql`:
+Script de migración `easyeat/backend/src/main/resources/db/migration/V13__add_time_slot_and_order_fulfillment.sql` (sucede a `V12__extend_user_demographics_and_avatar.sql`):
 
 ```sql
 -- 1. Extender tabla establishments con parámetros operativos

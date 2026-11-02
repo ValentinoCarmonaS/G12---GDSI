@@ -86,8 +86,8 @@ Se adopta una arquitectura de liberación híbrida en dos niveles:
 La especificación exige restringir las reservas a horarios hábiles, validar lead times de preparación de 30 minutos y computar capacidades por franja (por defecto 10 pedidos por turno). Spec 008 introdujo en `establishments` las columnas `opening_time`, `closing_time` y `timezone`. Paralelamente, Spec 010 define el back-office administrativo para configurar horarios semanales (`establishment_operating_schedules`) y capacidades específicas (`establishment_slot_capacities`).
 
 ### Decisión técnica
-1. **Extensión base del establecimiento (Flyway `V12`)**:
-   Se extiende la tabla `establishments` con los parámetros operacionales por defecto:
+1. **Extensión base del establecimiento (Flyway `V13`)**:
+   Se extiende la tabla `establishments` mediante la migración `V13__add_time_slot_and_order_fulfillment.sql` (que sucede a `V12` de demográficos y avatares):
    - `lead_time_minutes`: `INTEGER NOT NULL DEFAULT 30` (buffer mínimo para reservas del día)
    - `max_capacity_per_slot`: `INTEGER NOT NULL DEFAULT 10` (capacidad de contingencia por franja)
    - `operating_days`: `VARCHAR(100) NOT NULL DEFAULT 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY'`

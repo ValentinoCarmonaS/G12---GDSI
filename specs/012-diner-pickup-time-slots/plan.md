@@ -25,7 +25,7 @@ En articulación con el resto del sistema:
 
 **Lenguaje/Versión**: Java 21 (Backend) | TypeScript 5.x / React 18 (Frontend)  
 **Dependencias principales**:
-- Backend: Spring Boot 3.3.4 (`spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `spring-boot-starter-security`, `spring-boot-starter-validation`), Flyway Core & PostgreSQL (`V12`), Lombok, Jackson Problem (`problem-spring-web`), Testcontainers (`1.21.4`).
+- Backend: Spring Boot 3.3.4 (`spring-boot-starter-web`, `spring-boot-starter-data-jpa`, `spring-boot-starter-security`, `spring-boot-starter-validation`), Flyway Core & PostgreSQL (`V13`), Lombok, Jackson Problem (`problem-spring-web`), Testcontainers (`1.21.4`).
 - Frontend: React 18, React Router v6, Tailwind CSS, Lucide icons, Axios / native Fetch API.  
 **Almacenamiento**: PostgreSQL 16 (tablas relacionales: `establishments`, `orders`, `order_items`, `users`, `dishes`).  
 **Testing**:
@@ -58,13 +58,13 @@ En articulación con el resto del sistema:
 | **I. The Specification Is the Source of Truth** | **PASS** | El diseño responde con fidelidad a los 29 requerimientos funcionales (FR-001 a FR-029) y 7 invariantes de `spec.md`. No se introducen pagos ni descuentos de stock adelantados. |
 | **II. Specification Before Implementation** | **PASS** | Especificación formal completada y aprobada; artefactos de diseño técnico (`research.md`, `data-model.md`, `contracts/openapi.yaml`, `quickstart.md`, `plan.md`) elaborados y validados antes de generar tareas o código. |
 | **III. Layered Verification Proportional to Risk** | **PASS** | Estrategia de prueba en tres niveles: (1) Unit tests puros de proyección de franjas y lead time; (2) Integration & Concurrency Stress Tests con Testcontainers simulando 20 hilos disputando el último cupo; (3) Component & State tests en Vitest para frontend. |
-| **IV. Simple, Cohesive, and Justified Design** | **PASS** | Se extiende la tabla `establishments` en Flyway `V12` sin crear tablas auxiliares 1:1; se utiliza proyección efímera en memoria para franjas horarias; se aplica bloqueo pesimista estándar de JPA sobre la entidad raíz. |
+| **IV. Simple, Cohesive, and Justified Design** | **PASS** | Se extiende la tabla `establishments` en Flyway `V13` sin crear tablas auxiliares 1:1; se utiliza proyección efímera en memoria para franjas horarias; se aplica bloqueo pesimista estándar de JPA sobre la entidad raíz. |
 | **V. Bounded Scope** | **PASS** | Limitado estrictamente a selección de modalidad, cálculo de franjas, reserva atómica con TTL y pantalla de espera. Pagos y stock ACID se difieren formalmente a Sprint 4. |
-| **VI. Controlled Technical Debt** | **PASS** | Migración limpia y secuencial `V12__add_time_slot_and_order_fulfillment.sql` siguiendo `V11`. Sin modificaciones destructivas sobre esquemas previos. |
+| **VI. Controlled Technical Debt** | **PASS** | Migración limpia y secuencial `V13__add_time_slot_and_order_fulfillment.sql` siguiendo `V12` (Spec 009). Sin modificaciones destructivas sobre esquemas previos. |
 | **VII. Traceability & Documentation** | **PASS** | Trazabilidad bidireccional exhaustiva entre requerimientos funcionales, esquema relacional, contratos OpenAPI y escenarios ejecutables de `quickstart.md`. |
 | **VIII. Evidence Over Assumption & Escalation** | **PASS** | Sesión de `grill-me` completada con el usuario, alineando la tecnología (Java 21 / Spring Boot 3.3.4), estrategia de bloqueo pesimista, persistencia de ítems y ruta `/checkout`. |
 | **IX. Engineering Over Convenience** | **PASS** | Manejo riguroso de concurrencia y serialización en base de datos en lugar de validaciones optimistas frágiles en memoria. Manejo de errores RFC 7807 uniforme. |
-| **X. Full-Stack End-to-End Integrity (Vertical Slices)** | **PASS** | Entrega un vertical slice completo: migración DDL `V12`, entidades JPA y repositorios, controladores REST, servicios de dominio, ruta frontend `/checkout`, hooks y componentes UI interactivos. |
+| **X. Full-Stack End-to-End Integrity (Vertical Slices)** | **PASS** | Entrega un vertical slice completo: migración DDL `V13`, entidades JPA y repositorios, controladores REST, servicios de dominio, ruta frontend `/checkout`, hooks y componentes UI interactivos. |
 
 ---
 
@@ -126,7 +126,7 @@ easyeat/
 │   │   │   │   │       └── OrderExpirationScheduler.java       # Tarea @Scheduled para barrido periódico
 │   │   │   ├── resources/
 │   │   │   │   └── db/migration/
-│   │   │   │       └── V12__add_time_slot_and_order_fulfillment.sql # DDL de establishments, orders y order_items
+│   │   │   │       └── V13__add_time_slot_and_order_fulfillment.sql # DDL de establishments, orders y order_items
 │   │   └── test/
 │   │       └── java/com/easyeat/order/
 │   │           ├── PickupSlotServiceTest.java                  # Pruebas unitarias de proyección y lead time
@@ -188,4 +188,4 @@ Para garantizar la no superposición de responsabilidades y la compatibilidad es
 | **010 (Operation Config)** | Pantallas administrativas para horarios semanales (`establishment_operating_schedules`) y cupos (`establishment_slot_capacities`). | `PickupSlotService` proyecta los turnos consultando los horarios y capacidades configurados por 010. | **Jerarquía y fallback**: Si 010 definió horarios o cupos, 012 los respeta; si no están configurados, 012 recurre a defaults seguros en `Establishment` (`maxCapacity = 10`, `leadTime = 30m`). Se unifica endpoint `/pickup-slots` con alias `/time-slots`. |
 | **011 (Dish Detail & Filters)** | Modal de detalle con ingredientes, alérgenos neutros, precios y filtros manuales de catálogo en sesión. | Los platos agregados al carrito desde el modal de 011 se transfieren a la orden de 012. | **Aritmética y consistencia**: Se preserva la aritmética decimal exacta de centavos en `total_amount` y snapshots inmutables en `order_items`. |
 | **013 (Critical Stock & Chef Pause)** | Umbrales de stock crítico en inventario y toggle de pausa manual por el chef (`dishes.paused_by_chef`). | Al enviar `POST /orders`, el backend de 012 valida que ningún ítem esté pausado por cocina. | **Bloqueo preventivo de checkout**: Si `paused_by_chef == true`, se aborta la transacción con HTTP 422 (`DISH_PAUSED_BY_CHEF`, Spec 013 FR-019), protegiendo la cocina de órdenes inviables. |
-| **Esquema Flyway** | `V8` a `V11` existentes en repositorio. | Spec 012 introduce exclusivamente `V12__add_time_slot_and_order_fulfillment.sql`. | **Secuencialidad estricta**: `V12` crea `orders`, `order_items` y extiende `establishments` sin modificar ni pisar tablas culinarias, de usuarios ni operacionales previas. |
+| **Esquema Flyway** | `V8` a `V12` existentes en develop (`V12` demográficos). | Spec 012 introduce exclusivamente `V13__add_time_slot_and_order_fulfillment.sql`. | **Secuencialidad estricta**: `V13` crea `orders`, `order_items` y extiende `establishments` sin modificar ni pisar tablas culinarias, de usuarios ni operacionales previas. |
