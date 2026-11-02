@@ -23,14 +23,14 @@ public record DinerTimeSlotsResponse(
             @JsonFormat(pattern = "HH:mm:ss") LocalTime endTime,
             SlotStatus status
     ) {
-        static Slot available(TimeSlot slot) {
-            return new Slot(slot.startTime(), slot.endTime(), SlotStatus.AVAILABLE);
+        static Slot of(TimeSlot slot, boolean soldOut) {
+            return new Slot(slot.startTime(), slot.endTime(), soldOut ? SlotStatus.SOLD_OUT : SlotStatus.AVAILABLE);
         }
     }
 
     public static DinerTimeSlotsResponse from(Availability availability) {
         return new DinerTimeSlotsResponse(availability.date(), availability.closed(),
                 availability.closureReason(), availability.timezone().getId(),
-                availability.slots().stream().map(Slot::available).toList());
+                availability.slots().stream().map(slot -> Slot.of(slot, availability.soldOut().contains(slot))).toList());
     }
 }

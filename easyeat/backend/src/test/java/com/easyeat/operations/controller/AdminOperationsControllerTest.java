@@ -8,7 +8,10 @@ import com.easyeat.common.filter.TenantContextFilter;
 import com.easyeat.config.MethodSecurityConfig;
 import com.easyeat.config.SecurityConfig;
 import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
+import com.easyeat.operations.domain.EstablishmentSlotCapacity;
+import com.easyeat.operations.domain.TimeSlot;
 import com.easyeat.operations.repository.OperatingScheduleRepository;
+import com.easyeat.operations.repository.SlotCapacityRepository;
 import com.easyeat.operations.service.DinerTimeSlotService;
 import com.easyeat.operations.service.EstablishmentTimeProvider;
 import com.easyeat.operations.service.OperatingScheduleService;
@@ -30,6 +33,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -78,6 +82,9 @@ class AdminOperationsControllerTest {
 
     @MockBean
     private OperatingScheduleRepository scheduleRepository;
+
+    @MockBean
+    private SlotCapacityRepository capacityRepository;
 
     @MockBean
     private EstablishmentTimeProvider timeProvider;
@@ -223,6 +230,12 @@ class AdminOperationsControllerTest {
             when(timeProvider.nowAt(TENANT)).thenReturn(now);
             when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.TUESDAY)).thenReturn(Optional.of(
                     new EstablishmentOperatingSchedule(TENANT, DayOfWeek.TUESDAY, LocalTime.of(11, 0), LocalTime.of(16, 0), false)));
+            // US2: a slot is offered as AVAILABLE only if it has capacity (EC-007)
+            LocalDate today = LocalDate.of(2026, 11, 10);
+            when(capacityRepository.findByEstablishmentIdAndSlotDateBetweenOrderBySlotDateAscStartTimeAsc(TENANT, today, today))
+                    .thenReturn(List.of(
+                            new EstablishmentSlotCapacity(TENANT, new TimeSlot(today, LocalTime.of(15, 30)), 10),
+                            new EstablishmentSlotCapacity(TENANT, new TimeSlot(today, LocalTime.of(15, 45)), 10)));
         }
 
         @Test

@@ -66,13 +66,14 @@ class OperatingInvariantsUnitTest {
 
         private final OperatingScheduleRepository scheduleRepository = mock(OperatingScheduleRepository.class);
         private final EstablishmentRepository establishmentRepository = mock(EstablishmentRepository.class);
+        private final SlotCapacityRepository capacityRepository = mock(SlotCapacityRepository.class);
 
         private DinerTimeSlotService serviceAt(Instant now, String timezone) {
             var establishment = new Establishment(ESTABLISHMENT, "Cafe", EstablishmentStatus.ACTIVE,
                     LocalTime.of(11, 0), LocalTime.of(23, 0), timezone);
             when(establishmentRepository.findById(ESTABLISHMENT)).thenReturn(Optional.of(establishment));
             var timeProvider = new EstablishmentTimeProvider(Clock.fixed(now, ZoneOffset.UTC), establishmentRepository);
-            return new DinerTimeSlotService(scheduleRepository, timeProvider);
+            return new DinerTimeSlotService(scheduleRepository, capacityRepository, timeProvider);
         }
 
         private void schedule(DayOfWeek day, int openingHour, int closingHour) {
