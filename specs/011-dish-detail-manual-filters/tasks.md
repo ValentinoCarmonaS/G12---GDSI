@@ -6,12 +6,13 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 
 **Input**: Design documents from `/specs/011-dish-detail-manual-filters/` (`spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/behavioral-contracts.md`, `contracts/openapi.yaml`, `quickstart.md`).  
 **Prerequisites**: `plan.md` (required), `spec.md` (required for user stories), `research.md`, `data-model.md`, `contracts/`.  
+**GitHub Issues**: [#222](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/222), [#223](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/223), [#224](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/224), [#225](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/225), [#226](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/226), [#227](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/227), [#228](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/228)  
 **Tests**: Strict TDD methodology required. For every capability, RED test tasks are written first and must fail before the implementation tasks turn them GREEN. Target coverage is $\ge 80\%$.  
 **Organization**: Tasks are grouped by phase and user story to enable independent implementation, testing, and MVP delivery.
 
 ---
 
-## Phase 1: Setup (Shared Infrastructure)
+## Phase 1: Setup (Shared Infrastructure) - [Issue #222](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/222)
 
 **Purpose**: Verification of the local execution environment, baseline test suites, and test fixtures.
 
@@ -20,7 +21,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 
 ---
 
-## Phase 2: Foundational (Blocking Prerequisites)
+## Phase 2: Foundational (Blocking Prerequisites) - [Issue #223](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/223)
 
 **Purpose**: Core utilities, domain models, and API contracts that MUST be complete before ANY user story can be implemented.
 
@@ -38,7 +39,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 
 ---
 
-## Phase 3: User Story 1 - Visualizar multimedia y nombre (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Visualizar multimedia y nombre (Priority: P1) 🎯 MVP - [Issue #224](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/224)
 
 **Goal (COM-5.1.1)**: Display overlaid dish detail panel with high-resolution photo, commercial name, and detailed description without leaving catalog. Preserve exact vertical scroll position (`window.scrollY`) on close (button or backdrop click). Support graceful degradation on slow network (immediate text + skeleton), omit container when no photo exists without empty placeholders, accommodate long descriptions with internal vertical scroll, and reactively reflect stock exhaustion or administrative cancellation in $\le 3\text{ s}$ without closing the modal.
 
@@ -64,7 +65,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 
 ---
 
-## Phase 4: User Story 2 - Ver precio final y subtotal provisorio (Priority: P1)
+## Phase 4: User Story 2 - Ver precio final y subtotal provisorio (Priority: P1) - [Issue #225](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/225)
 
 **Goal (COM-5.1.3)**: Prominently display retail price with taxes included in regional format (`$ 12.500,00`) next to action buttons. Reflect administrative price changes upon next reload or reopen without requiring re-login. Provide quantity selector $N \ge 1$ with dynamic subtotal recalculation without artificial cap on estimation; enforce strict inventory validation against remaining kitchen stock (deducting quantities already in cart) when clicking "Agregar al Carrito". Ensure out-of-stock dishes display referential price with disabled actions.
 
@@ -89,7 +90,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 
 ---
 
-## Phase 5: User Story 3 - Ver ingredientes y alérgenos (Priority: P2)
+## Phase 5: User Story 3 - Ver ingredientes y alérgenos (Priority: P2) - [Issue #226](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/226)
 
 **Goal (COM-5.1.2)**: Display complete ingredient breakdown and neutral, uniform allergen identifier pills for all diners without personalized dietary warnings or red alert badges (per Clarification #4). Dynamically reflect kitchen recipe modifications upon next load. Display explicit notice `"Lista de componentes no disponible"` when dishes have no registered ingredients.
 
@@ -113,7 +114,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 
 ---
 
-## Phase 6: User Story 4 - Búsqueda por filtros manuales (Priority: P2)
+## Phase 6: User Story 4 - Búsqueda por filtros manuales (Priority: P2) - [Issue #227](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/227)
 
 **Goal (COM-4.2.2)**: Provide manual filter sidebar with multiple category selection (OR semantics) and closed price range interval ($[P_{\min}, P_{\max}]$) with validation ($P_{\min} > P_{\max}$ blocks application). Compose with existing fast text search (COM-4.2.3) via conjunctive AND intersection. Provide empty results state with unified "Limpiar filtros" action that resets categories, price range, and search text simultaneously. Persist filters in `sessionStorage` partitioned by `tenantId` (surviving navigation to profile/cart, resetting upon restaurant switch). Ensure out-of-stock dishes matching filters remain visible in dimmed, disabled state.
 
@@ -139,7 +140,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 
 ---
 
-## Phase 7: Polish & Cross-Cutting Concerns
+## Phase 7: Polish & Cross-Cutting Concerns - [Issue #228](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/228)
 
 **Purpose**: End-to-end scenario validation, full suite coverage verification ($\ge 80\%$), code quality audit, and documentation review.
 
