@@ -16,7 +16,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 
 **Purpose**: Verification of the local execution environment, baseline test suites, and test fixtures.
 
-- [ ] T001 Verify backend and frontend test environments (`mvn test-compile` in `easyeat/backend` and `npm run test -- --run` in `easyeat/frontend`)
+- [X] T001 Verify backend and frontend test environments (`mvn test-compile` in `easyeat/backend` and `npm run test -- --run` in `easyeat/frontend`)
 - [ ] T002 [P] Setup test fixtures and MSW mocks for catalog dish detail, allergens, and availability in `easyeat/frontend/src/test/mocks/dinerCatalogHandlers.ts`
 
 ---
