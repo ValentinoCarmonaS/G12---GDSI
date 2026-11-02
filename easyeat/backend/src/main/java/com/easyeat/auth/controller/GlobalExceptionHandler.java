@@ -45,7 +45,9 @@ import com.easyeat.catalog.exception.InvalidSearchQueryException;
 import com.easyeat.dish.exception.*;
 import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.inventory.exception.NegativeStockException;
+import com.easyeat.operations.exception.InvalidCapacityException;
 import com.easyeat.operations.exception.InvalidScheduleException;
+import com.easyeat.operations.exception.SlotSoldOutException;
 import com.easyeat.operations.exception.OperatingConfigConflictException;
 import com.easyeat.profile.exception.CooldownRateLimitException;
 import com.easyeat.profile.exception.DietaryTaxonomyException;
@@ -557,6 +559,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setTitle("Parámetros de horario inválidos");
         problem.setInstance(URI.create(request.getRequestURI()));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    /** 400: negative capacity (INV-6) or a slot start off the 15-minute grid (INV-5). */
+    @ExceptionHandler(InvalidCapacityException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidCapacity(InvalidCapacityException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-capacity"));
+        problem.setTitle("Capacidad inválida");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    /** 409: the slot reached its capacity, also when a concurrent approval took the last place (INV-2, EC-016). */
+    @ExceptionHandler(SlotSoldOutException.class)
+    public ResponseEntity<ProblemDetail> handleSlotSoldOut(SlotSoldOutException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/slot-sold-out"));
+        problem.setTitle("Franja horaria agotada");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }
 
     /** 409: the configuration was changed by another administrator since it was loaded (EC-012). */

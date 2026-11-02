@@ -3,15 +3,20 @@ package com.easyeat.operations.domain;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.domain.EstablishmentStatus;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.operations.exception.InvalidCapacityException;
 import com.easyeat.operations.exception.InvalidScheduleException;
+import com.easyeat.operations.exception.SlotSoldOutException;
 import com.easyeat.operations.repository.OperatingScheduleRepository;
+import com.easyeat.operations.repository.SlotCapacityRepository;
 import com.easyeat.operations.service.DinerTimeSlotService;
 import com.easyeat.operations.service.DinerTimeSlotService.Availability;
 import com.easyeat.operations.service.EstablishmentTimeProvider;
 import com.easyeat.operations.service.OperatingScheduleService;
+import com.easyeat.operations.service.SlotCapacityService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Method;
 import java.time.Clock;
@@ -32,6 +37,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -59,13 +66,14 @@ class OperatingInvariantsUnitTest {
 
         private final OperatingScheduleRepository scheduleRepository = mock(OperatingScheduleRepository.class);
         private final EstablishmentRepository establishmentRepository = mock(EstablishmentRepository.class);
+        private final SlotCapacityRepository capacityRepository = mock(SlotCapacityRepository.class);
 
         private DinerTimeSlotService serviceAt(Instant now, String timezone) {
             var establishment = new Establishment(ESTABLISHMENT, "Cafe", EstablishmentStatus.ACTIVE,
                     LocalTime.of(11, 0), LocalTime.of(23, 0), timezone);
             when(establishmentRepository.findById(ESTABLISHMENT)).thenReturn(Optional.of(establishment));
             var timeProvider = new EstablishmentTimeProvider(Clock.fixed(now, ZoneOffset.UTC), establishmentRepository);
-            return new DinerTimeSlotService(scheduleRepository, timeProvider);
+            return new DinerTimeSlotService(scheduleRepository, capacityRepository, timeProvider);
         }
 
         private void schedule(DayOfWeek day, int openingHour, int closingHour) {
@@ -291,6 +299,157 @@ class OperatingInvariantsUnitTest {
             // so an approval at 16:02 never consults the schedule again.
             assertThat(Arrays.stream(DinerTimeSlotService.class.getDeclaredMethods())
                     .map(Method::getName)).noneMatch(name -> name.toLowerCase().contains("approv"));
+        }
+    }
+
+    @Nested
+    @DisplayName("US2 - Slot capacity (ADM-2.2.2)")
+    class SlotCapacity {
+
+        private final SlotCapacityRepository capacityRepository = mock(SlotCapacityRepository.class);
+        private final OperatingScheduleRepository scheduleRepository = mock(OperatingScheduleRepository.class);
+        private final SlotCapacityService service = new SlotCapacityService(capacityRepository, scheduleRepository);
+
+        private final TimeSlot noon = new TimeSlot(WEDNESDAY, LocalTime.of(12, 0));
+        private final TimeSlot quarterPast = new TimeSlot(WEDNESDAY, LocalTime.of(12, 15));
+
+        private EstablishmentSlotCapacity row(TimeSlot slot, int max, int approved, long version) {
+            var capacity = new EstablishmentSlotCapacity(ESTABLISHMENT, slot, max, approved);
+            ReflectionTestUtils.setField(capacity, "version", version);
+            return capacity;
+        }
+
+        private void stored(EstablishmentSlotCapacity capacity) {
+            when(capacityRepository.findByEstablishmentIdAndSlotDateAndStartTime(
+                    ESTABLISHMENT, capacity.getSlotDate(), capacity.getStartTime())).thenReturn(Optional.of(capacity));
+        }
+
+        @Test
+        @DisplayName("INV-2: an order enters only while the approved count is below the capacity")
+        void shouldAdmitOnlyWhenApprovedBelowCapacity() {
+            when(capacityRepository.incrementIfBelowCapacity(ESTABLISHMENT, WEDNESDAY, LocalTime.of(12, 0))).thenReturn(1);
+            service.consumeSlot(ESTABLISHMENT, noon);
+
+            when(capacityRepository.incrementIfBelowCapacity(ESTABLISHMENT, WEDNESDAY, LocalTime.of(12, 15))).thenReturn(0);
+            stored(row(quarterPast, 50, 50, 0));
+            assertThatThrownBy(() -> service.consumeSlot(ESTABLISHMENT, quarterPast))
+                    .isInstanceOf(SlotSoldOutException.class)
+                    .hasMessage("La franja seleccionada ha alcanzado su capacidad máxima permitida (50 pedidos).");
+        }
+
+        @Test
+        @DisplayName("INV-3: sold out as soon as approved reaches or exceeds the capacity")
+        void shouldMarkSoldOutWhenCapacityReachedOrExceeded() {
+            stored(row(noon, 50, 50, 0));
+            stored(row(quarterPast, 30, 45, 0));
+
+            assertThat(service.isSoldOut(ESTABLISHMENT, noon)).isTrue();
+            assertThat(service.isSoldOut(ESTABLISHMENT, quarterPast)).isTrue();
+        }
+
+        @Test
+        @DisplayName("US2-AC1: the 49th approval leaves the slot available, the 50th sells it out")
+        void shouldMarkSoldOutAtOrder50() {
+            stored(row(noon, 50, 49, 0));
+            assertThat(service.isSoldOut(ESTABLISHMENT, noon)).isFalse();
+
+            stored(row(noon, 50, 50, 0));
+            assertThat(service.isSoldOut(ESTABLISHMENT, noon)).isTrue();
+        }
+
+        @Test
+        @DisplayName("INV-6: a negative capacity is rejected and nothing is saved")
+        void shouldRejectNegativeCapacity() {
+            var negative = new SlotCapacityChange(WEDNESDAY, LocalTime.of(12, 0), -1, null);
+
+            assertThatThrownBy(() -> service.saveCapacities(ESTABLISHMENT, List.of(negative)))
+                    .isInstanceOf(InvalidCapacityException.class)
+                    .hasMessage("La capacidad máxima por franja debe ser un número entero mayor o igual a 0.");
+            verify(capacityRepository, never()).saveAllAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("INV-5: a start that is not aligned to 15 minutes is rejected")
+        void shouldRejectMisalignedSlotStart() {
+            var misaligned = new SlotCapacityChange(WEDNESDAY, LocalTime.of(12, 7), 10, null);
+
+            assertThatThrownBy(() -> service.saveCapacities(ESTABLISHMENT, List.of(misaligned)))
+                    .isInstanceOf(InvalidCapacityException.class)
+                    .hasMessageContaining("12:07");
+            verify(capacityRepository, never()).saveAllAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("INV-8 / EC-005: reducing 50 to 30 with 40 approved keeps the 40 and sells the slot out")
+        void shouldPreserveApprovedOrdersWhenCapacityReduced() {
+            var existing = row(noon, 50, 40, 2);
+            stored(existing);
+            when(capacityRepository.saveAllAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+            List<EstablishmentSlotCapacity> saved = service.saveCapacities(ESTABLISHMENT,
+                    List.of(new SlotCapacityChange(WEDNESDAY, LocalTime.of(12, 0), 30, 2L)));
+
+            assertThat(saved).singleElement().satisfies(capacity -> {
+                assertThat(capacity.getMaxCapacity()).isEqualTo(30);
+                assertThat(capacity.getApprovedOrdersCount()).isEqualTo(40);
+                assertThat(capacity.isSoldOut()).isTrue();
+            });
+        }
+
+        @Test
+        @DisplayName("EC-004: raising the capacity of a sold-out slot reopens it")
+        void shouldReopenSlotWhenCapacityIncreased() {
+            var existing = row(noon, 50, 50, 0);
+            stored(existing);
+            when(capacityRepository.saveAllAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+            service.saveCapacities(ESTABLISHMENT, List.of(new SlotCapacityChange(WEDNESDAY, LocalTime.of(12, 0), 60, 0L)));
+
+            assertThat(existing.isSoldOut()).isFalse();
+            assertThat(existing.getApprovedOrdersCount()).isEqualTo(50);
+        }
+
+        @Test
+        @DisplayName("EC-006: capacity 0 is permanently sold out and never admits an order")
+        void shouldTreatZeroCapacityAsPermanentlySoldOut() {
+            stored(row(noon, 0, 0, 0));
+            when(capacityRepository.incrementIfBelowCapacity(any(), any(), any())).thenReturn(0);
+
+            assertThat(service.isSoldOut(ESTABLISHMENT, noon)).isTrue();
+            assertThatThrownBy(() -> service.consumeSlot(ESTABLISHMENT, noon))
+                    .isInstanceOf(SlotSoldOutException.class)
+                    .hasMessageContaining("(0 pedidos)");
+        }
+
+        @Test
+        @DisplayName("EC-007: a slot without configured capacity behaves as capacity 0")
+        void shouldDefaultUnconfiguredSlotToZeroCapacity() {
+            when(capacityRepository.findByEstablishmentIdAndSlotDateAndStartTime(any(), any(), any()))
+                    .thenReturn(Optional.empty());
+            when(capacityRepository.incrementIfBelowCapacity(any(), any(), any())).thenReturn(0);
+
+            assertThat(service.isSoldOut(ESTABLISHMENT, noon)).isTrue();
+            assertThatThrownBy(() -> service.consumeSlot(ESTABLISHMENT, noon)).isInstanceOf(SlotSoldOutException.class);
+        }
+
+        @Test
+        @DisplayName("EC-015: adjacent slots are independent of each other")
+        void shouldKeepAdjacentSlotsIndependent() {
+            stored(row(noon, 50, 50, 0));
+            stored(row(quarterPast, 10, 3, 0));
+
+            assertThat(service.isSoldOut(ESTABLISHMENT, noon)).isTrue();
+            assertThat(service.isSoldOut(ESTABLISHMENT, quarterPast)).isFalse();
+        }
+
+        @Test
+        @DisplayName("EC-003 / INV-8: changing the schedule has no access to approved orders at all")
+        void shouldPreservePendingOrdersOnScheduleChange() {
+            boolean touchesCapacity = Arrays.stream(OperatingScheduleService.class.getDeclaredConstructors())
+                    .flatMap(constructor -> Arrays.stream(constructor.getParameterTypes()))
+                    .anyMatch(SlotCapacityRepository.class::equals);
+
+            assertThat(touchesCapacity).isFalse();
         }
     }
 }

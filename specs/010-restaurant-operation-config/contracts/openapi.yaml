@@ -404,6 +404,8 @@ components:
         id:
           type: string
           format: uuid
+          nullable: true
+          description: Null for a slot that has no capacity configured yet (EC-007).
         slotDate:
           type: string
           format: date
@@ -427,6 +429,8 @@ components:
         version:
           type: integer
           format: int64
+          nullable: true
+          description: Null for a slot that has no capacity configured yet; send no expectedVersion to create it.
 
     UpdateSlotCapacityRequest:
       type: object

@@ -1,6 +1,7 @@
 package com.easyeat.operations.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.DynamicUpdate;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -13,6 +14,7 @@ import java.util.UUID;
  * update of the repository, never by changing the capacity (INV-8).
  */
 @Entity
+@DynamicUpdate
 @Table(name = "establishment_slot_capacities")
 public class EstablishmentSlotCapacity {
 

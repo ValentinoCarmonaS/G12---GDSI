@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '@/router/AppRoutes';
@@ -9,13 +9,15 @@ import { operationsApi } from '@/api/operationsApi';
 import { authApi } from '@/api/authApi';
 import * as AuthModule from '@/hooks/useAuth';
 import type { Role } from '@/types/auth';
-import type { OperatingSchedule } from '@/types/operations';
+import type { OperatingSchedule, SlotCapacity } from '@/types/operations';
 
 vi.mock('@/hooks/useAuth');
 vi.mock('@/api/operationsApi', () => ({
   operationsApi: {
     getSchedules: vi.fn(),
     updateSchedules: vi.fn(),
+    getSlotCapacities: vi.fn(),
+    updateSlotCapacities: vi.fn(),
   },
 }));
 vi.mock('@/api/staffApi', () => ({
@@ -49,6 +51,11 @@ const monday: OperatingSchedule = {
   version: 0,
 };
 
+const capacityMatrix: SlotCapacity[] = [
+  { id: null, slotDate: '2026-11-11', startTime: '12:00:00', endTime: '12:15:00', maxCapacity: 0, approvedOrdersCount: 0, isSoldOut: true, version: null },
+  { id: 'c-2', slotDate: '2026-11-11', startTime: '12:15:00', endTime: '12:30:00', maxCapacity: 20, approvedOrdersCount: 5, isSoldOut: false, version: 3 },
+];
+
 const HUB_SUBTITLE = 'Configuración global del establecimiento, usuarios y auditoría';
 
 function authenticateAs(role: Role) {
@@ -67,6 +74,7 @@ describe('AdminOperationsPage (US1)', () => {
     vi.clearAllMocks();
     vi.spyOn(authApi, 'me').mockResolvedValue(undefined);
     vi.mocked(operationsApi.getSchedules).mockResolvedValue([monday]);
+    vi.mocked(operationsApi.getSlotCapacities).mockResolvedValue(capacityMatrix);
   });
 
   it('loads the schedules through operationsApi and renders the schedule section', async () => {
@@ -93,7 +101,7 @@ describe('AdminOperationsPage (US1)', () => {
     );
 
     await userEvent.click(await screen.findByLabelText('Cerrado Lunes'));
-    await userEvent.click(screen.getByRole('button', { name: /guardar/i }));
+    await userEvent.click(screen.getByRole('button', { name: /guardar horarios/i }));
 
     await waitFor(() =>
       expect(operationsApi.updateSchedules).toHaveBeenCalledWith([
@@ -115,6 +123,55 @@ describe('AdminOperationsPage (US1)', () => {
     expect(await screen.findByText('No se pudieron cargar los horarios. Intente nuevamente.')).toBeInTheDocument();
   });
 
+  it('US2: renders the capacity section and loads the matrix of the chosen date', async () => {
+    authenticateAs('ADMINISTRADOR');
+    render(
+      <MemoryRouter>
+        <AdminOperationsPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('heading', { name: /capacidad por franja/i })).toBeInTheDocument();
+    expect(await screen.findByLabelText('Capacidad 12:15')).toHaveValue(20);
+    const today = vi.mocked(operationsApi.getSlotCapacities).mock.calls[0][0];
+    expect(today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-11-11' } });
+    await waitFor(() => expect(operationsApi.getSlotCapacities).toHaveBeenCalledWith('2026-11-11'));
+  });
+
+  it('US2: saves the capacity list in one call and reloads the matrix', async () => {
+    authenticateAs('ADMINISTRADOR');
+    vi.mocked(operationsApi.updateSlotCapacities).mockResolvedValue(capacityMatrix);
+    render(
+      <MemoryRouter>
+        <AdminOperationsPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(await screen.findByLabelText('Capacidad para todas las franjas'), { target: { value: '30' } });
+    await userEvent.click(screen.getByRole('button', { name: /aplicar a todas/i }));
+    await userEvent.click(screen.getByRole('button', { name: /guardar capacidad/i }));
+
+    await waitFor(() => expect(operationsApi.updateSlotCapacities).toHaveBeenCalledTimes(1));
+    const sent = vi.mocked(operationsApi.updateSlotCapacities).mock.calls[0][0];
+    expect(sent).toHaveLength(2);
+    expect(sent.map((change) => change.maxCapacity)).toEqual([30, 30]);
+    await waitFor(() => expect(operationsApi.getSlotCapacities).toHaveBeenCalledTimes(2));
+  });
+
+  it('US2: shows a load error for the capacity matrix', async () => {
+    authenticateAs('ADMINISTRADOR');
+    vi.mocked(operationsApi.getSlotCapacities).mockRejectedValue(new Error('boom'));
+    render(
+      <MemoryRouter>
+        <AdminOperationsPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('No se pudo cargar la capacidad por franja. Intente nuevamente.')).toBeInTheDocument();
+  });
+
   it('is linked from the administration hub', async () => {
     authenticateAs('ADMINISTRADOR');
     render(
@@ -133,6 +190,7 @@ describe('route /admin/operations (guard and order)', () => {
     vi.clearAllMocks();
     vi.spyOn(authApi, 'me').mockResolvedValue(undefined);
     vi.mocked(operationsApi.getSchedules).mockResolvedValue([monday]);
+    vi.mocked(operationsApi.getSlotCapacities).mockResolvedValue(capacityMatrix);
   });
 
   it('renders the page for an ADMINISTRADOR, not the /admin/* hub that follows it', async () => {
