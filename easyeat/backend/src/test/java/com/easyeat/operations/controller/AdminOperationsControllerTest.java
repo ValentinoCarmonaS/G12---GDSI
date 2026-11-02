@@ -16,6 +16,11 @@ import com.easyeat.operations.service.DinerTimeSlotService;
 import com.easyeat.operations.service.EstablishmentTimeProvider;
 import com.easyeat.operations.service.OperatingScheduleService;
 import com.easyeat.operations.service.SlotCapacityService;
+import com.easyeat.operations.service.PaymentMethodService;
+import com.easyeat.operations.domain.EstablishmentPaymentMethod;
+import com.easyeat.operations.domain.PaymentMethod;
+import com.easyeat.operations.repository.PaymentMethodRepository;
+import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.operations.exception.SlotSoldOutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -49,6 +54,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -59,7 +65,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * the capacity and payment sections are added by US2 and US3, which is why it is one class and
  * not one per story.
  */
-@WebMvcTest({AdminOperatingScheduleController.class, AdminSlotCapacityController.class, DinerTimeSlotController.class})
+@WebMvcTest({AdminOperatingScheduleController.class, AdminSlotCapacityController.class, DinerTimeSlotController.class,
+        AdminPaymentMethodController.class, DinerPaymentMethodController.class})
 @Import({
         SecurityConfig.class,
         MethodSecurityConfig.class,
@@ -68,6 +75,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         TenantContextFilter.class,
         OperatingScheduleService.class,
         SlotCapacityService.class,
+        PaymentMethodService.class,
         DinerTimeSlotService.class
 })
 @DisplayName("Admin operations controllers")
@@ -90,6 +98,12 @@ class AdminOperationsControllerTest {
 
     @MockBean
     private SlotCapacityRepository capacityRepository;
+
+    @MockBean
+    private PaymentMethodRepository paymentMethodRepository;
+
+    @MockBean
+    private EstablishmentRepository establishmentRepository;
 
     @MockBean
     private EstablishmentTimeProvider timeProvider;
@@ -480,6 +494,195 @@ class AdminOperationsControllerTest {
             org.assertj.core.api.Assertions.assertThat(response.getBody().getTitle()).isEqualTo("Franja horaria agotada");
             org.assertj.core.api.Assertions.assertThat(response.getBody().getDetail())
                     .isEqualTo("La franja seleccionada ha alcanzado su capacidad máxima permitida (50 pedidos).");
+        }
+    }
+
+    @Nested
+    @DisplayName("US3 - online payment method toggles")
+    class Payments {
+
+        private static final String ADMIN_PAYMENTS = "/api/v1/admin/payment-methods";
+        private final String dinerPayments = "/api/v1/establishments/" + TENANT + "/payment-methods";
+        private final String validatePayment = "/api/v1/establishments/" + TENANT + "/checkout/validate-payment";
+
+        private EstablishmentPaymentMethod stored(PaymentMethod method, boolean enabled, long version) {
+            var row = new EstablishmentPaymentMethod(TENANT, method, enabled);
+            ReflectionTestUtils.setField(row, "id", UUID.randomUUID());
+            ReflectionTestUtils.setField(row, "version", version);
+            return row;
+        }
+
+        private void rows(EstablishmentPaymentMethod... rows) {
+            when(paymentMethodRepository.findByEstablishmentId(TENANT)).thenReturn(List.of(rows));
+            for (EstablishmentPaymentMethod row : rows) {
+                when(paymentMethodRepository.findByEstablishmentIdAndPaymentMethod(TENANT, row.getPaymentMethod()))
+                        .thenReturn(Optional.of(row));
+            }
+        }
+
+        @BeforeEach
+        void establishmentExists() {
+            when(establishmentRepository.existsById(TENANT)).thenReturn(true);
+        }
+
+        @Test
+        @DisplayName("an unauthenticated request is refused with 401")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            mockMvc.perform(get(ADMIN_PAYMENTS)).andExpect(status().isUnauthorized());
+            mockMvc.perform(put(ADMIN_PAYMENTS + "/STRIPE").contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"isEnabled\":false}")).andExpect(status().isUnauthorized());
+            mockMvc.perform(get(dinerPayments)).andExpect(status().isUnauthorized());
+            mockMvc.perform(post(validatePayment).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"paymentMethod\":\"STRIPE\"}")).andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("a non-admin role is refused with 403 on the admin endpoints")
+        void shouldReturn403ForNonAdmin() throws Exception {
+            mockMvc.perform(get(ADMIN_PAYMENTS).with(as("CHEF"))).andExpect(status().isForbidden());
+            mockMvc.perform(put(ADMIN_PAYMENTS + "/STRIPE").with(as("COMENSAL")).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"isEnabled\":false}")).andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("GET lists both methods; a method without a row is enabled with null id and version")
+        void shouldListBothMethodsWithMissingRowsEnabled() throws Exception {
+            rows(stored(PaymentMethod.STRIPE, false, 2));
+
+            mockMvc.perform(get(ADMIN_PAYMENTS).with(as("ADMIN")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(2))
+                    .andExpect(jsonPath("$[0].paymentMethod").value("MERCADO_PAGO"))
+                    .andExpect(jsonPath("$[0].displayName").value("Mercado Pago"))
+                    .andExpect(jsonPath("$[0].isEnabled").value(true))
+                    .andExpect(jsonPath("$[0].id").value(org.hamcrest.Matchers.nullValue()))
+                    .andExpect(jsonPath("$[0].version").value(org.hamcrest.Matchers.nullValue()))
+                    .andExpect(jsonPath("$[1].paymentMethod").value("STRIPE"))
+                    .andExpect(jsonPath("$[1].isEnabled").value(false))
+                    .andExpect(jsonPath("$[1].enabled").doesNotExist())
+                    .andExpect(jsonPath("$[1].version").value(2));
+        }
+
+        @Test
+        @DisplayName("toggle persists: PUT answers 200 with the contract keys and creates the row on the first toggle")
+        void shouldTogglePaymentMethod() throws Exception {
+            when(paymentMethodRepository.findByEstablishmentIdAndPaymentMethod(TENANT, PaymentMethod.STRIPE))
+                    .thenReturn(Optional.empty());
+            when(paymentMethodRepository.saveAndFlush(any())).thenAnswer(invocation -> {
+                EstablishmentPaymentMethod saved = invocation.getArgument(0);
+                ReflectionTestUtils.setField(saved, "id", UUID.randomUUID());
+                ReflectionTestUtils.setField(saved, "version", 0L);
+                return saved;
+            });
+
+            mockMvc.perform(put(ADMIN_PAYMENTS + "/STRIPE").with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"isEnabled\":false,\"expectedVersion\":null}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.paymentMethod").value("STRIPE"))
+                    .andExpect(jsonPath("$.displayName").value("Stripe"))
+                    .andExpect(jsonPath("$.isEnabled").value(false))
+                    .andExpect(jsonPath("$.version").value(0))
+                    .andExpect(jsonPath("$.id").exists());
+        }
+
+        @Test
+        @DisplayName("EC-012: a stale version is a 409 'Conflicto de concurrencia'")
+        void shouldFailOnStaleVersion() throws Exception {
+            rows(stored(PaymentMethod.STRIPE, true, 4));
+
+            mockMvc.perform(put(ADMIN_PAYMENTS + "/STRIPE").with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"isEnabled\":false,\"expectedVersion\":3}"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.title").value("Conflicto de concurrencia"));
+        }
+
+        @Test
+        @DisplayName("an unknown method, or a body without isEnabled, is a 400")
+        void shouldRejectUnknownMethodAndMissingFlag() throws Exception {
+            mockMvc.perform(put(ADMIN_PAYMENTS + "/PAYPAL").with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"isEnabled\":false}")).andExpect(status().isBadRequest());
+            mockMvc.perform(put(ADMIN_PAYMENTS + "/STRIPE").with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
+                    .content("{}")).andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("INV-4: the diner endpoint returns only the enabled methods, without ids or versions")
+        void shouldReturnOnlyEnabledToDiner() throws Exception {
+            rows(stored(PaymentMethod.MERCADO_PAGO, true, 0), stored(PaymentMethod.STRIPE, false, 0));
+
+            mockMvc.perform(get(dinerPayments).with(as("COMENSAL")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(1))
+                    .andExpect(jsonPath("$[0].paymentMethod").value("MERCADO_PAGO"))
+                    .andExpect(jsonPath("$[0].displayName").value("Mercado Pago"))
+                    .andExpect(jsonPath("$[0].version").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("EC-009: with every method disabled the diner list is empty")
+        void shouldReturnEmptyListWhenAllDisabled() throws Exception {
+            rows(stored(PaymentMethod.MERCADO_PAGO, false, 1), stored(PaymentMethod.STRIPE, false, 1));
+
+            mockMvc.perform(get(dinerPayments).with(as("COMENSAL")))
+                    .andExpect(status().isOk())
+                    .andExpect(content().json("[]"));
+        }
+
+        @Test
+        @DisplayName("an establishment without any row offers both methods (missing row means enabled)")
+        void shouldOfferBothWhenNoRows() throws Exception {
+            when(paymentMethodRepository.findByEstablishmentId(TENANT)).thenReturn(List.of());
+
+            mockMvc.perform(get(dinerPayments).with(as("COMENSAL")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(2));
+        }
+
+        @Test
+        @DisplayName("an unknown establishment is a 404 on both diner endpoints")
+        void shouldReturn404ForUnknownEstablishment() throws Exception {
+            UUID unknown = UUID.randomUUID();
+            when(establishmentRepository.existsById(unknown)).thenReturn(false);
+
+            mockMvc.perform(get("/api/v1/establishments/" + unknown + "/payment-methods").with(as("COMENSAL")))
+                    .andExpect(status().isNotFound());
+            mockMvc.perform(post("/api/v1/establishments/" + unknown + "/checkout/validate-payment").with(as("COMENSAL"))
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"paymentMethod\":\"STRIPE\"}"))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("INV-9: validate-payment is 200 valid while the method is enabled")
+        void shouldValidateEnabledMethod() throws Exception {
+            rows(stored(PaymentMethod.MERCADO_PAGO, true, 0));
+
+            mockMvc.perform(post(validatePayment).with(as("COMENSAL")).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"paymentMethod\":\"MERCADO_PAGO\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.valid").value(true));
+        }
+
+        @Test
+        @DisplayName("INV-9 / EC-010: validate-payment is a 409 'Método de pago no disponible' once the method was disabled")
+        void shouldRejectDisabledMethodAtConfirmation() throws Exception {
+            rows(stored(PaymentMethod.STRIPE, false, 1));
+
+            mockMvc.perform(post(validatePayment).with(as("COMENSAL")).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"paymentMethod\":\"STRIPE\"}"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.title").value("Método de pago no disponible"))
+                    .andExpect(jsonPath("$.status").value(409))
+                    .andExpect(jsonPath("$.detail").value(
+                            "El método de pago 'STRIPE' ha sido deshabilitado por el restaurante. Por favor seleccione otra opción."));
+        }
+
+        @Test
+        @DisplayName("validate-payment with an unknown or missing method is a 400")
+        void shouldRejectUnknownMethodAtConfirmation() throws Exception {
+            mockMvc.perform(post(validatePayment).with(as("COMENSAL")).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"paymentMethod\":\"PAYPAL\"}")).andExpect(status().isBadRequest());
+            mockMvc.perform(post(validatePayment).with(as("COMENSAL")).contentType(MediaType.APPLICATION_JSON)
+                    .content("{}")).andExpect(status().isBadRequest());
         }
     }
 }
