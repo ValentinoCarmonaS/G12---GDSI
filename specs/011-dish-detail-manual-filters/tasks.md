@@ -123,18 +123,18 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 ### Tests for User Story 4 (TDD RED) ⚠️
 > **NOTE: Write these tests FIRST and ensure they FAIL before implementation.**
 
-- [ ] T034 [P] [US4] Component tests (RED) for `ManualFiltersSidebar` category OR selection, price range closed interval, and $P_{\min} > P_{\max}$ validation block in `easyeat/frontend/src/test/catalog/ManualFiltersSidebar.test.tsx`
-- [ ] T035 [P] [US4] Integration tests (RED) for conjunctive AND filtering, out-of-stock visibility under filters, empty results state notice, and unified clear in `easyeat/frontend/src/test/catalog/CatalogPage.test.tsx`
-- [ ] T036 [P] [US4] Unit tests (RED) for `CatalogFilterContext` session persistence in `sessionStorage` per `tenantId` in `easyeat/frontend/src/test/context/CatalogFilterContext.test.tsx`
+- [X] T034 [P] [US4] Component tests (RED) for `ManualFiltersSidebar` category OR selection, price range closed interval, and $P_{\min} > P_{\max}$ validation block in `easyeat/frontend/src/test/catalog/ManualFiltersSidebar.test.tsx`
+- [X] T035 [P] [US4] Integration tests (RED) for conjunctive AND filtering, out-of-stock visibility under filters, empty results state notice, and unified clear in `easyeat/frontend/src/test/catalog/CatalogPage.test.tsx`
+- [X] T036 [P] [US4] Unit tests (RED) for `CatalogFilterContext` session persistence in `sessionStorage` per `tenantId` in `easyeat/frontend/src/test/context/CatalogFilterContext.test.tsx`
 
 ### Implementation for User Story 4 (GREEN)
 
-- [ ] T037 [US4] Implement `ManualFiltersSidebar.tsx` with canonical category checkboxes, min/max price inputs, and inline validation for $P_{\min} > P_{\max}$ in `easyeat/frontend/src/components/catalog/ManualFiltersSidebar.tsx`
-- [ ] T038 [US4] Implement `EmptyFilterResultsNotice.tsx` component with informative empty state message and unified "Limpiar filtros" button in `easyeat/frontend/src/components/catalog/EmptyFilterResultsNotice.tsx`
-- [ ] T039 [US4] Extend `CatalogFilterContext.tsx` to manage `selectedCategories`, `minPrice`, `maxPrice`, `searchQuery`, unified reset, and `sessionStorage` persistence under `easyeat_catalog_filters_{tenantId}`
-- [ ] T040 [US4] Integrate manual filters sidebar and unified predicate logic into `CatalogPage.tsx` composing categories OR, price range AND, text search AND, and unified clear
-- [ ] T041 [US4] Ensure out-of-stock dishes remain visible and disabled under active manual filters in `CatalogPage.tsx`
-- [ ] T042 [US4] Verify all tests pass (GREEN) for User Story 4 in `ManualFiltersSidebar.test.tsx`, `CatalogPage.test.tsx`, and `CatalogFilterContext.test.tsx`
+- [X] T037 [US4] Implement `ManualFiltersSidebar.tsx` with canonical category checkboxes, min/max price inputs, and inline validation for $P_{\min} > P_{\max}$ in `easyeat/frontend/src/components/catalog/ManualFiltersSidebar.tsx`
+- [X] T038 [US4] Implement `EmptyFilterResultsNotice.tsx` component with informative empty state message and unified "Limpiar filtros" button in `easyeat/frontend/src/components/catalog/EmptyFilterResultsNotice.tsx`
+- [X] T039 [US4] Extend `CatalogFilterContext.tsx` to manage `selectedCategories`, `minPrice`, `maxPrice`, `searchQuery`, unified reset, and `sessionStorage` persistence under `easyeat_catalog_filters_{tenantId}`
+- [X] T040 [US4] Integrate manual filters sidebar and unified predicate logic into `CatalogPage.tsx` composing categories OR, price range AND, text search AND, and unified clear
+- [X] T041 [US4] Ensure out-of-stock dishes remain visible and disabled under active manual filters in `CatalogPage.tsx`
+- [X] T042 [US4] Verify all tests pass (GREEN) for User Story 4 in `ManualFiltersSidebar.test.tsx`, `CatalogPage.test.tsx`, and `CatalogFilterContext.test.tsx`
 
 **Checkpoint**: All User Stories (1, 2, 3, 4) are fully functional, integrated, and independently testable.
 
