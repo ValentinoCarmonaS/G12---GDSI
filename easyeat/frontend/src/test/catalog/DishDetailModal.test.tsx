@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DishDetailModal } from '@/components/catalog/DishDetailModal';
+import { CartContext } from '@/context/CartContext';
 import type { DishCatalogItem } from '@/types/dinerCatalog';
 
 const mockDish: DishCatalogItem = {
@@ -346,6 +347,79 @@ describe('DishDetailModal Component Tests (T034, US2, COM-4.1.1, FR-007, FR-012,
       rerender(<DishDetailModal dish={mockDish} isOpen={true} onClose={vi.fn()} />);
       expect(screen.getByTestId('quantity-value')).toHaveTextContent('1');
       expect(screen.getByTestId('dish-detail-subtotal')).toHaveTextContent('$ 5.500,00');
+    });
+
+    it('validates kitchen inventory on "Agregar al Carrito" and displays insufficient stock warning when N + q_en_carrito > availableStock (T023, INV-13, EC-011, Clarification #2, SC-011)', () => {
+      const onAddToCart = vi.fn();
+      const dishWithStock = {
+        ...mockDish,
+        availableStock: 3,
+      };
+
+      // Mock CartContext where 1 unit is already in cart -> remainingStock = 2
+      const mockCart = {
+        items: [
+          {
+            dishId: mockDish.id,
+            name: mockDish.name,
+            price: mockDish.price,
+            quantity: 1,
+            availableStock: 3,
+          },
+        ],
+        addItem: vi.fn(),
+        removeItem: vi.fn(),
+        updateQuantity: vi.fn(),
+        clearCart: vi.fn(),
+        reEvaluateCompliance: vi.fn(),
+        totalAmount: mockDish.price,
+        totalCount: 1,
+        hasConflictingItems: false,
+      };
+
+      const onClose = vi.fn();
+      render(
+        <CartContext.Provider value={mockCart as any}>
+          <DishDetailModal
+            dish={dishWithStock}
+            isOpen={true}
+            onClose={onClose}
+            onAddToCart={onAddToCart}
+          />
+        </CartContext.Provider>
+      );
+
+      const incBtn = screen.getByTestId('quantity-increment-btn');
+      const addBtn = screen.getByTestId('add-to-cart-btn');
+
+      // Select N = 3 (3 + 1 = 4 > availableStock=3)
+      fireEvent.click(incBtn);
+      fireEvent.click(incBtn);
+      expect(screen.getByTestId('quantity-value')).toHaveTextContent('3');
+
+      // Click "Agregar al Carrito"
+      fireEvent.click(addBtn);
+
+      // Must NOT add to cart and must NOT close modal
+      expect(onAddToCart).not.toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+
+      // Must display explicit warning notice with remaining stock (2 disponibles) and kitchen stock (3 en cocina)
+      const warning = screen.getByTestId('stock-insufficient-warning');
+      expect(warning).toBeInTheDocument();
+      expect(warning).toHaveTextContent(/2 unidades disponibles/i);
+      expect(warning).toHaveTextContent(/3 en cocina/i);
+
+      // Comensal reduces quantity to N = 2 (2 + 1 = 3 <= availableStock=3)
+      const decBtn = screen.getByTestId('quantity-decrement-btn');
+      fireEvent.click(decBtn);
+      expect(screen.getByTestId('quantity-value')).toHaveTextContent('2');
+
+      // Try adding again with valid amount
+      fireEvent.click(addBtn);
+      expect(onAddToCart).toHaveBeenCalledTimes(1);
+      expect(onAddToCart).toHaveBeenCalledWith(dishWithStock, 2);
+      expect(onClose).toHaveBeenCalledTimes(1);
     });
   });
 });
