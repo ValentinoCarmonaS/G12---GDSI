@@ -149,13 +149,14 @@ describe('CartContext & useCart (T055, US3, FR-015, FR-021, FR-022)', () => {
     });
     expect(result.current.items[0].quantity).toBe(3);
 
-    // Attempting to add 3 more when stock is 4 should clamp to availableStock (4)
+    // Attempting to add 3 more when stock is 4 exceeds remaining stock (3 + 3 = 6 > 4), so addition is rejected (INV-13, EC-011)
     act(() => {
       result.current.addItem(dishWithStock, 3);
     });
 
-    expect(result.current.items[0].quantity).toBe(4);
-    expect(result.current.totalCount).toBe(4);
+    expect(result.current.items[0].quantity).toBe(3);
+    expect(result.current.totalCount).toBe(3);
+    expect(result.current.toastMessage).toMatch(/insuficiente|disponibilidad|4 en cocina/i);
   });
 
   it('updates quantity and removes item when quantity reaches 0', () => {
@@ -225,5 +226,52 @@ describe('CartContext & useCart (T055, US3, FR-015, FR-021, FR-022)', () => {
     });
     expect(result.current.items[0].isCompliant).toBe(false);
     expect(result.current.items[0].conflictingRestrictions).toEqual(['CELIAC']);
+  });
+
+  describe('User Story 2 - Stock guardrails and validation (T021, INV-13, Clarification #2, AC-3.5, SC-011, EC-011)', () => {
+    it('validates stock before adding N units when cart already has existing quantity (rejects when N + q_en_carrito > availableStock)', () => {
+      const { result } = renderHook(() => useCart(), { wrapper });
+
+      const dishWithStock: EnrichedDish & { availableStock: number } = {
+        ...mockCompliantDish,
+        id: 'dish-stock-1',
+        availableStock: 5,
+      };
+
+      // Add 3 units to cart initially
+      act(() => {
+        result.current.addItem(dishWithStock, 3);
+      });
+      expect(result.current.items[0].quantity).toBe(3);
+
+      // Now comensal selects N = 3 in modal (3 + 3 = 6 > availableStock=5)
+      // CartContext must reject addition, keep previous quantity 3, and display toast warning with availableStock
+      act(() => {
+        result.current.addItem(dishWithStock, 3);
+      });
+
+      // Cart item must remain at 3 (not partially clamped to 5 or mutated unexpectedly)
+      expect(result.current.items[0].quantity).toBe(3);
+      expect(result.current.toastMessage).toMatch(/insuficiente|disponibilidad|5 en cocina/i);
+    });
+
+    it('rejects adding N units if single addition N > availableStock on empty cart', () => {
+      const { result } = renderHook(() => useCart(), { wrapper });
+
+      const dishWithStock: EnrichedDish & { availableStock: number } = {
+        ...mockCompliantDish,
+        id: 'dish-stock-2',
+        availableStock: 2,
+      };
+
+      // Try to add N = 4 when availableStock = 2
+      act(() => {
+        result.current.addItem(dishWithStock, 4);
+      });
+
+      // Nothing added to cart, items remain empty
+      expect(result.current.items).toHaveLength(0);
+      expect(result.current.toastMessage).toMatch(/insuficiente|disponibilidad/i);
+    });
   });
 });
