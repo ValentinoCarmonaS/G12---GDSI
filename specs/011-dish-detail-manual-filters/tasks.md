@@ -105,7 +105,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 ### Implementation for User Story 3 (GREEN)
 
 - [X] T029 [P] [US3] Create `AllergenNeutralPill.tsx` component for objective, uniform allergen rendering in `easyeat/frontend/src/components/catalog/AllergenNeutralPill.tsx`
-- [ ] T030 [US3] Replace `AllergenWarningBadge` in `DishDetailModal.tsx` with `AllergenNeutralPill`, removing all personalized profile warnings per Clarification #4
+- [X] T030 [US3] Replace `AllergenWarningBadge` in `DishDetailModal.tsx` with `AllergenNeutralPill`, removing all personalized profile warnings per Clarification #4
 - [ ] T031 [US3] Implement explicit notice `"Lista de componentes no disponible"` for dishes without ingredients in `DishDetailModal.tsx`
 - [ ] T032 [US3] Implement neutral informative notice for dishes with ingredients but no declared allergens in `DishDetailModal.tsx`
 - [ ] T033 [US3] Verify all unit and component tests pass (GREEN) for User Story 3 in `DinerCatalogServiceTest.java` and `DishDetailModal.test.tsx`

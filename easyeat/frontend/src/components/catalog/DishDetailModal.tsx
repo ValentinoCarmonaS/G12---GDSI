@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import type { DishCatalogItem } from '@/types/dinerCatalog';
-import { AllergenWarningBadge } from './AllergenWarningBadge';
+import { AllergenNeutralPill } from './AllergenNeutralPill';
 import { CartContext } from '@/context/CartContext';
 import { formatCurrency, calculateLineTotal } from '@/utils/currencyUtils';
 
@@ -99,7 +99,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
 
   const provisionalSubtotal = calculateLineTotal(dish.price, selectedQuantity);
 
-  const hasConflicts = dish.isCompliant === false && (dish.conflictingRestrictions?.length ?? 0) > 0;
 
   const handleAddToCart = () => {
     if (!canAddToCart) return;
@@ -269,13 +268,17 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             </div>
           )}
 
-          {/* Dietary Compliance */}
-          {hasConflicts && (
+          {/* Neutral Allergen Labels (COM-5.1.2, INV-6, AC-2.1, Clarification #4) */}
+          {dish.allergens && dish.allergens.length > 0 && (
             <div className="pt-2 border-t border-gray-100">
-              <h4 className="text-xs font-bold text-red-800 uppercase tracking-wider mb-1.5">
-                Advertencia Dietaria
+              <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5">
+                Alérgenos
               </h4>
-              <AllergenWarningBadge conflicts={dish.conflictingRestrictions} size="sm" />
+              <div className="flex flex-wrap gap-1.5">
+                {dish.allergens.map((allergen) => (
+                  <AllergenNeutralPill key={allergen} allergen={allergen} />
+                ))}
+              </div>
             </div>
           )}
 
