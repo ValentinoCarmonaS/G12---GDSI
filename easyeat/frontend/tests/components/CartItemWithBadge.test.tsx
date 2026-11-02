@@ -24,9 +24,9 @@ describe('CartItemWithBadge Component (T033, US3, COM-6.1.3, INV-3, AC-3.3, FR-0
 
     expect(screen.getByText('Bife de Chorizo')).toBeInTheDocument();
     expect(screen.getByTestId('item-qty-dish-1')).toHaveTextContent('2');
-    // Unit price ($15.50) and Line total ($31.00)
-    expect(screen.getByText(/\$15\.50|\$ 15,50/)).toBeInTheDocument();
-    expect(screen.getByText(/\$31\.00|\$ 31,00/)).toBeInTheDocument();
+    // Unit price ($15.50 c/u) and Line total ($31.00)
+    expect(screen.getByText(/\$15[,.]50/)).toBeInTheDocument();
+    expect(screen.getByText(/\$31[,.]00/)).toBeInTheDocument();
   });
 
   it('dispatches onUpdateQuantity with quantity + 1 when increment button is clicked', () => {
