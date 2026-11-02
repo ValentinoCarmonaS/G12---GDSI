@@ -123,7 +123,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 ### Tests for User Story 4 (TDD RED) ⚠️
 > **NOTE: Write these tests FIRST and ensure they FAIL before implementation.**
 
-- [ ] T034 [P] [US4] Component tests (RED) for `ManualFiltersSidebar` category OR selection, price range closed interval, and $P_{\min} > P_{\max}$ validation block in `easyeat/frontend/src/test/catalog/ManualFiltersSidebar.test.tsx`
+- [X] T034 [P] [US4] Component tests (RED) for `ManualFiltersSidebar` category OR selection, price range closed interval, and $P_{\min} > P_{\max}$ validation block in `easyeat/frontend/src/test/catalog/ManualFiltersSidebar.test.tsx`
 - [ ] T035 [P] [US4] Integration tests (RED) for conjunctive AND filtering, out-of-stock visibility under filters, empty results state notice, and unified clear in `easyeat/frontend/src/test/catalog/CatalogPage.test.tsx`
 - [ ] T036 [P] [US4] Unit tests (RED) for `CatalogFilterContext` session persistence in `sessionStorage` per `tenantId` in `easyeat/frontend/src/test/context/CatalogFilterContext.test.tsx`
 
