@@ -5,13 +5,17 @@ import com.easyeat.catalog.domain.EstablishmentStatus;
 import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.operations.exception.InvalidCapacityException;
 import com.easyeat.operations.exception.InvalidScheduleException;
+import com.easyeat.operations.exception.OperatingConfigConflictException;
+import com.easyeat.operations.exception.PaymentMethodUnavailableException;
 import com.easyeat.operations.exception.SlotSoldOutException;
 import com.easyeat.operations.repository.OperatingScheduleRepository;
+import com.easyeat.operations.repository.PaymentMethodRepository;
 import com.easyeat.operations.repository.SlotCapacityRepository;
 import com.easyeat.operations.service.DinerTimeSlotService;
 import com.easyeat.operations.service.DinerTimeSlotService.Availability;
 import com.easyeat.operations.service.EstablishmentTimeProvider;
 import com.easyeat.operations.service.OperatingScheduleService;
+import com.easyeat.operations.service.PaymentMethodService;
 import com.easyeat.operations.service.SlotCapacityService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -450,6 +454,136 @@ class OperatingInvariantsUnitTest {
                     .anyMatch(SlotCapacityRepository.class::equals);
 
             assertThat(touchesCapacity).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("US3 - Online payment method toggles (ADM-2.2.3)")
+    class PaymentMethodToggles {
+
+        private final PaymentMethodRepository repository = mock(PaymentMethodRepository.class);
+        private final PaymentMethodService service = new PaymentMethodService(repository);
+
+        private EstablishmentPaymentMethod row(PaymentMethod method, boolean enabled, long version) {
+            var payment = new EstablishmentPaymentMethod(ESTABLISHMENT, method, enabled);
+            ReflectionTestUtils.setField(payment, "id", UUID.randomUUID());
+            ReflectionTestUtils.setField(payment, "version", version);
+            return payment;
+        }
+
+        private void stored(EstablishmentPaymentMethod... rows) {
+            when(repository.findByEstablishmentId(ESTABLISHMENT)).thenReturn(List.of(rows));
+            for (EstablishmentPaymentMethod row : rows) {
+                when(repository.findByEstablishmentIdAndPaymentMethod(ESTABLISHMENT, row.getPaymentMethod()))
+                        .thenReturn(Optional.of(row));
+            }
+        }
+
+        @Test
+        @DisplayName("INV-4: the diner is offered only the enabled methods")
+        void shouldExposeOnlyEnabledPaymentMethods() {
+            stored(row(PaymentMethod.MERCADO_PAGO, true, 0), row(PaymentMethod.STRIPE, false, 0));
+
+            assertThat(service.getEnabledMethods(ESTABLISHMENT)).containsExactly(PaymentMethod.MERCADO_PAGO);
+        }
+
+        @Test
+        @DisplayName("INV-4: a disabled method is hidden even though its row exists")
+        void shouldHideDisabledPaymentMethod() {
+            stored(row(PaymentMethod.MERCADO_PAGO, false, 0), row(PaymentMethod.STRIPE, true, 0));
+
+            assertThat(service.getEnabledMethods(ESTABLISHMENT)).doesNotContain(PaymentMethod.MERCADO_PAGO);
+        }
+
+        @Test
+        @DisplayName("INV-4 / EC-011: a method that is enabled again is offered again")
+        void shouldShowReenabledPaymentMethod() {
+            var stripe = row(PaymentMethod.STRIPE, false, 1);
+            stored(row(PaymentMethod.MERCADO_PAGO, true, 0), stripe);
+            when(repository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+            assertThat(service.getEnabledMethods(ESTABLISHMENT)).doesNotContain(PaymentMethod.STRIPE);
+
+            service.toggle(ESTABLISHMENT, PaymentMethod.STRIPE, true, 1L);
+
+            assertThat(service.getEnabledMethods(ESTABLISHMENT)).contains(PaymentMethod.STRIPE);
+        }
+
+        @Test
+        @DisplayName("A missing row means enabled, so a new establishment is never read as 'all disabled' (EC-009)")
+        void shouldTreatMissingPaymentRowAsEnabled() {
+            when(repository.findByEstablishmentId(ESTABLISHMENT)).thenReturn(List.of());
+            when(repository.findByEstablishmentIdAndPaymentMethod(any(), any())).thenReturn(Optional.empty());
+
+            assertThat(service.getEnabledMethods(ESTABLISHMENT))
+                    .containsExactly(PaymentMethod.MERCADO_PAGO, PaymentMethod.STRIPE);
+            service.validateEnabled(ESTABLISHMENT, PaymentMethod.STRIPE);
+            assertThat(service.getAdminView(ESTABLISHMENT)).hasSize(2).allSatisfy(view -> {
+                assertThat(view.enabled()).isTrue();
+                assertThat(view.id()).isNull();
+                assertThat(view.version()).isNull();
+            });
+        }
+
+        @Test
+        @DisplayName("The first toggle of a method without a row creates the row")
+        void shouldCreateTheRowOnTheFirstToggle() {
+            when(repository.findByEstablishmentIdAndPaymentMethod(ESTABLISHMENT, PaymentMethod.STRIPE))
+                    .thenReturn(Optional.empty());
+            when(repository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+            var view = service.toggle(ESTABLISHMENT, PaymentMethod.STRIPE, false, null);
+
+            assertThat(view.enabled()).isFalse();
+            assertThat(view.paymentMethod()).isEqualTo(PaymentMethod.STRIPE);
+            assertThat(view.displayName()).isEqualTo("Stripe");
+        }
+
+        @Test
+        @DisplayName("INV-9 / EC-010: confirming with a method disabled meanwhile is rejected")
+        void shouldRejectConfirmationIfPaymentMethodDisabled() {
+            stored(row(PaymentMethod.MERCADO_PAGO, true, 0), row(PaymentMethod.STRIPE, false, 2));
+
+            service.validateEnabled(ESTABLISHMENT, PaymentMethod.MERCADO_PAGO);
+            assertThatThrownBy(() -> service.validateEnabled(ESTABLISHMENT, PaymentMethod.STRIPE))
+                    .isInstanceOf(PaymentMethodUnavailableException.class)
+                    .hasMessage("El método de pago 'STRIPE' ha sido deshabilitado por el restaurante. Por favor seleccione otra opción.");
+        }
+
+        @Test
+        @DisplayName("EC-012: a stale version, or a version for a method without a row, is a conflict")
+        void shouldFailOnStaleToggle() {
+            stored(row(PaymentMethod.MERCADO_PAGO, true, 4));
+            when(repository.findByEstablishmentIdAndPaymentMethod(ESTABLISHMENT, PaymentMethod.STRIPE)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.toggle(ESTABLISHMENT, PaymentMethod.MERCADO_PAGO, false, 3L))
+                    .isInstanceOf(OperatingConfigConflictException.class);
+            assertThatThrownBy(() -> service.toggle(ESTABLISHMENT, PaymentMethod.MERCADO_PAGO, false, null))
+                    .isInstanceOf(OperatingConfigConflictException.class);
+            assertThatThrownBy(() -> service.toggle(ESTABLISHMENT, PaymentMethod.STRIPE, false, 1L))
+                    .isInstanceOf(OperatingConfigConflictException.class);
+        }
+
+        @Test
+        @DisplayName("A-005: no payment gateway SDK, credential or token is on the classpath of the module")
+        void shouldOperateOfflineWithoutExternalGateways() throws Exception {
+            for (String gatewayClass : List.of("com.stripe.Stripe", "com.mercadopago.MercadoPagoConfig")) {
+                assertThatThrownBy(() -> Class.forName(gatewayClass)).isInstanceOf(ClassNotFoundException.class);
+            }
+
+            var root = java.nio.file.Path.of(EstablishmentPaymentMethod.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI()).resolve("com/easyeat/operations");
+            try (var files = java.nio.file.Files.walk(root)) {
+                List<String> offending = files.filter(path -> path.toString().endsWith(".class"))
+                        .map(path -> path.getFileName().toString())
+                        .filter(name -> name.matches("(?i).*(credential|apikey|secret|token|gateway|stripeclient).*"))
+                        .toList();
+                assertThat(offending).isEmpty();
+            }
+
+            Set<String> fields = Arrays.stream(EstablishmentPaymentMethod.class.getDeclaredFields())
+                    .map(java.lang.reflect.Field::getName).collect(java.util.stream.Collectors.toSet());
+            assertThat(fields).containsExactlyInAnyOrder("id", "establishmentId", "paymentMethod", "enabled",
+                    "version", "createdAt", "updatedAt");
         }
     }
 }

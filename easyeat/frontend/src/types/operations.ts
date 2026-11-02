@@ -58,12 +58,13 @@ export interface UpdateSlotCapacityRequest {
   expectedVersion?: number | null;
 }
 
+/** `id` and `version` are null for a method that has no row yet; such a method is enabled. */
 export interface AdminPaymentMethod {
-  id: string;
+  id: string | null;
   paymentMethod: PaymentMethod;
   displayName: string;
   isEnabled: boolean;
-  version: number;
+  version: number | null;
 }
 
 export interface TogglePaymentMethodRequest {

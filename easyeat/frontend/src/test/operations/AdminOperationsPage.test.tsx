@@ -9,7 +9,7 @@ import { operationsApi } from '@/api/operationsApi';
 import { authApi } from '@/api/authApi';
 import * as AuthModule from '@/hooks/useAuth';
 import type { Role } from '@/types/auth';
-import type { OperatingSchedule, SlotCapacity } from '@/types/operations';
+import type { AdminPaymentMethod, OperatingSchedule, SlotCapacity } from '@/types/operations';
 
 vi.mock('@/hooks/useAuth');
 vi.mock('@/api/operationsApi', () => ({
@@ -18,6 +18,8 @@ vi.mock('@/api/operationsApi', () => ({
     updateSchedules: vi.fn(),
     getSlotCapacities: vi.fn(),
     updateSlotCapacities: vi.fn(),
+    getAdminPaymentMethods: vi.fn(),
+    togglePaymentMethod: vi.fn(),
   },
 }));
 vi.mock('@/api/staffApi', () => ({
@@ -56,6 +58,11 @@ const capacityMatrix: SlotCapacity[] = [
   { id: 'c-2', slotDate: '2026-11-11', startTime: '12:15:00', endTime: '12:30:00', maxCapacity: 20, approvedOrdersCount: 5, isSoldOut: false, version: 3 },
 ];
 
+const paymentMethods: AdminPaymentMethod[] = [
+  { id: 'pm-1', paymentMethod: 'MERCADO_PAGO', displayName: 'Mercado Pago', isEnabled: true, version: 4 },
+  { id: null, paymentMethod: 'STRIPE', displayName: 'Stripe', isEnabled: true, version: null },
+];
+
 const HUB_SUBTITLE = 'Configuración global del establecimiento, usuarios y auditoría';
 
 function authenticateAs(role: Role) {
@@ -75,6 +82,7 @@ describe('AdminOperationsPage (US1)', () => {
     vi.spyOn(authApi, 'me').mockResolvedValue(undefined);
     vi.mocked(operationsApi.getSchedules).mockResolvedValue([monday]);
     vi.mocked(operationsApi.getSlotCapacities).mockResolvedValue(capacityMatrix);
+    vi.mocked(operationsApi.getAdminPaymentMethods).mockResolvedValue(paymentMethods);
   });
 
   it('loads the schedules through operationsApi and renders the schedule section', async () => {
@@ -172,6 +180,48 @@ describe('AdminOperationsPage (US1)', () => {
     expect(await screen.findByText('No se pudo cargar la capacidad por franja. Intente nuevamente.')).toBeInTheDocument();
   });
 
+  it('US3: renders the payment section with one switch per method', async () => {
+    authenticateAs('ADMINISTRADOR');
+    render(
+      <MemoryRouter>
+        <AdminOperationsPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('heading', { name: /métodos de pago online/i })).toBeInTheDocument();
+    expect(await screen.findByRole('switch', { name: 'Mercado Pago' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('switch', { name: 'Stripe' })).toBeInTheDocument();
+  });
+
+  it('US3: toggling sends the method, the flag and the version, then reloads the list', async () => {
+    authenticateAs('ADMINISTRADOR');
+    vi.mocked(operationsApi.togglePaymentMethod).mockResolvedValue({ ...paymentMethods[0], isEnabled: false, version: 5 });
+    render(
+      <MemoryRouter>
+        <AdminOperationsPage />
+      </MemoryRouter>
+    );
+
+    await userEvent.click(await screen.findByRole('switch', { name: 'Mercado Pago' }));
+
+    await waitFor(() =>
+      expect(operationsApi.togglePaymentMethod).toHaveBeenCalledWith('MERCADO_PAGO', { isEnabled: false, expectedVersion: 4 })
+    );
+    await waitFor(() => expect(operationsApi.getAdminPaymentMethods).toHaveBeenCalledTimes(2));
+  });
+
+  it('US3: shows a load error for the payment methods', async () => {
+    authenticateAs('ADMINISTRADOR');
+    vi.mocked(operationsApi.getAdminPaymentMethods).mockRejectedValue(new Error('boom'));
+    render(
+      <MemoryRouter>
+        <AdminOperationsPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('No se pudieron cargar los métodos de pago. Intente nuevamente.')).toBeInTheDocument();
+  });
+
   it('is linked from the administration hub', async () => {
     authenticateAs('ADMINISTRADOR');
     render(
@@ -191,6 +241,7 @@ describe('route /admin/operations (guard and order)', () => {
     vi.spyOn(authApi, 'me').mockResolvedValue(undefined);
     vi.mocked(operationsApi.getSchedules).mockResolvedValue([monday]);
     vi.mocked(operationsApi.getSlotCapacities).mockResolvedValue(capacityMatrix);
+    vi.mocked(operationsApi.getAdminPaymentMethods).mockResolvedValue(paymentMethods);
   });
 
   it('renders the page for an ADMINISTRADOR, not the /admin/* hub that follows it', async () => {

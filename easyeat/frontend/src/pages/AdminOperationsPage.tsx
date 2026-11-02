@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { WeeklyScheduleManager } from '../components/operations/WeeklyScheduleManager';
 import { SlotCapacityGrid } from '../components/operations/SlotCapacityGrid';
+import { PaymentMethodToggles } from '../components/operations/PaymentMethodToggles';
 import { operationsApi } from '../api/operationsApi';
 import type {
+  AdminPaymentMethod,
   OperatingSchedule,
+  PaymentMethod,
   SlotCapacity,
   UpdateScheduleRequest,
   UpdateSlotCapacityRequest,
@@ -19,8 +22,8 @@ const todayAsIsoDate = (): string => {
 };
 
 /**
- * Restaurant operation configuration. Hosts the weekly schedule (US1) and the slot capacity
- * (US2); the payment method section (US3) is added to this page by its own phase.
+ * Restaurant operation configuration: the weekly schedule (US1), the slot capacity (US2) and the
+ * online payment method switches (US3).
  */
 export const AdminOperationsPage: React.FC = () => {
   const [schedules, setSchedules] = useState<OperatingSchedule[]>([]);
@@ -63,6 +66,31 @@ export const AdminOperationsPage: React.FC = () => {
   useEffect(() => {
     fetchCapacities();
   }, [fetchCapacities]);
+
+  const [paymentMethods, setPaymentMethods] = useState<AdminPaymentMethod[]>([]);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(true);
+  const [paymentLoadError, setPaymentLoadError] = useState<string | null>(null);
+
+  const fetchPaymentMethods = useCallback(async () => {
+    setIsLoadingPayments(true);
+    setPaymentLoadError(null);
+    try {
+      setPaymentMethods(await operationsApi.getAdminPaymentMethods());
+    } catch {
+      setPaymentLoadError('No se pudieron cargar los métodos de pago. Intente nuevamente.');
+    } finally {
+      setIsLoadingPayments(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPaymentMethods();
+  }, [fetchPaymentMethods]);
+
+  const handleTogglePayment = async (method: PaymentMethod, enabled: boolean, version: number | null) => {
+    await operationsApi.togglePaymentMethod(method, { isEnabled: enabled, expectedVersion: version });
+    await fetchPaymentMethods();
+  };
 
   const handleSaveCapacities = async (changes: UpdateSlotCapacityRequest[]) => {
     await operationsApi.updateSlotCapacities(changes);
@@ -118,6 +146,26 @@ export const AdminOperationsPage: React.FC = () => {
                 onSave={handleSaveCapacities}
                 loadDay={operationsApi.getSlotCapacities}
                 onReload={fetchCapacities}
+              />
+            )
+          )}
+        </section>
+
+        <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Métodos de pago online</h2>
+          {paymentLoadError && (
+            <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+              {paymentLoadError}
+            </div>
+          )}
+          {isLoadingPayments ? (
+            <p className="text-sm text-gray-500">Cargando métodos de pago...</p>
+          ) : (
+            !paymentLoadError && (
+              <PaymentMethodToggles
+                methods={paymentMethods}
+                onToggle={handleTogglePayment}
+                onReload={fetchPaymentMethods}
               />
             )
           )}
