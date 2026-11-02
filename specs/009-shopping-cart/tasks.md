@@ -111,17 +111,17 @@
 
 ### Tests for User Story 3 (TDD - Write First) ⚠️
 
-- [ ] T031 [P] [US3] Write integration test in `CartValidationIntegrationTest.java` in `easyeat/backend/src/test/java/com/easyeat/cart/` for `POST /api/v1/cart/validate-stock` verifying batch stock availability evaluation
-- [ ] T032 [P] [US3] Write unit test in `useDebouncedCartModifier.test.ts` in `easyeat/frontend/tests/hooks/` verifying 300 ms debounce window, optimistic UI counter, cancellation of trailing timers, and deterministic rollback on simulated network failure (INV-9)
-- [ ] T033 [P] [US3] Write component test in `CartItemWithBadge.test.tsx` in `easyeat/frontend/tests/components/` verifying +/- controls, disabled `+` at max available stock (INV-3), and complete item removal when decrementing quantity 1 (AC-3.3)
+- [X] T031 [P] [US3] Write integration test in `CartValidationIntegrationTest.java` in `easyeat/backend/src/test/java/com/easyeat/cart/` for `POST /api/v1/cart/validate-stock` verifying batch stock availability evaluation
+- [X] T032 [P] [US3] Write unit test in `useDebouncedCartModifier.test.ts` in `easyeat/frontend/tests/hooks/` verifying 300 ms debounce window, optimistic UI counter, cancellation of trailing timers, and deterministic rollback on simulated network failure (INV-9)
+- [X] T033 [P] [US3] Write component test in `CartItemWithBadge.test.tsx` in `easyeat/frontend/tests/components/` verifying +/- controls, disabled `+` at max available stock (INV-3), and complete item removal when decrementing quantity 1 (AC-3.3)
 
 ### Implementation for User Story 3
 
-- [ ] T034 [P] [US3] Implement `CartStockValidationRequest.java` and `CartStockValidationResponse.java` DTOs in `easyeat/backend/src/main/java/com/easyeat/cart/dto/`
-- [ ] T035 [US3] Implement `CartValidationController.java` in `easyeat/backend/src/main/java/com/easyeat/cart/controller/` validating real available stock for dishes in restaurant context
-- [ ] T036 [P] [US3] Implement `cartValidationApi.ts` in `easyeat/frontend/src/api/` for stock synchronization calls
-- [ ] T037 [US3] Implement custom hook `useDebouncedCartModifier.ts` in `easyeat/frontend/src/hooks/` managing 300 ms debounce, local state buffer, and error rollback (depends on T036)
-- [ ] T038 [US3] Update `CartItemWithBadge.tsx` and `CartDrawer.tsx` in `easyeat/frontend/src/components/cart/` integrating `useDebouncedCartModifier`, disabling `+` on stock limit, removing item on decrement from 1, and displaying warning badge on insufficient stock (depends on T037)
+- [X] T034 [P] [US3] Implement `CartStockValidationRequest.java` and `CartStockValidationResponse.java` DTOs in `easyeat/backend/src/main/java/com/easyeat/cart/dto/`
+- [X] T035 [US3] Implement `CartValidationController.java` in `easyeat/backend/src/main/java/com/easyeat/cart/controller/` validating real available stock for dishes in restaurant context
+- [X] T036 [P] [US3] Implement `cartValidationApi.ts` in `easyeat/frontend/src/api/` for stock synchronization calls
+- [X] T037 [US3] Implement custom hook `useDebouncedCartModifier.ts` in `easyeat/frontend/src/hooks/` managing 300 ms debounce, local state buffer, and error rollback (depends on T036)
+- [X] T038 [US3] Update `CartItemWithBadge.tsx` and `CartDrawer.tsx` in `easyeat/frontend/src/components/cart/` integrating `useDebouncedCartModifier`, disabling `+` on stock limit, removing item on decrement from 1, and displaying warning badge on insufficient stock (depends on T037)
 
 **Checkpoint**: Modificación interactiva de cantidades con debounce, guardas de stock y rollback 100% operativos.
 
