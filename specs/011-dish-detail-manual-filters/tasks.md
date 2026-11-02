@@ -80,7 +80,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 
 ### Implementation for User Story 2 (GREEN)
 
-- [ ] T022 [US2] Refactor quantity selector in `DishDetailModal.tsx` to remove artificial cap on increment and implement dynamic subtotal calculation using `currencyUtils.ts`
+- [X] T022 [US2] Refactor quantity selector in `DishDetailModal.tsx` to remove artificial cap on increment and implement dynamic subtotal calculation using `currencyUtils.ts`
 - [ ] T023 [US2] Implement inventory validation on "Agregar al carrito" in `DishDetailModal.tsx` displaying insufficient stock warning when $N + q_{\text{en\_carrito}} > \text{stockDisponible}$
 - [ ] T024 [US2] Extend `CartContext.tsx` to validate available stock against accumulated cart quantities before appending items to cart state
 - [ ] T025 [US2] Update `DishCard.tsx` to ensure out-of-stock dishes display referential price and disable action buttons
