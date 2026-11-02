@@ -177,6 +177,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CartStockValidationResponse'
+        '400':
+          description: Validation error or invalid payload
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '401':
           description: Unauthenticated client
           content:
