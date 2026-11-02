@@ -108,4 +108,75 @@ describe('DishDetailModal Component Tests (T034, US2, COM-4.1.1, FR-007, FR-012,
       window.scrollTo = originalScrollTo;
     });
   });
+
+  describe('T011 [US1] - Conditional photo omission, progressive image loading with skeleton, and long text scroll', () => {
+    it('completely omits image container without placeholder or blank box when dish has no photoUrl (INV-2, FR-003, EC-001)', () => {
+      const dishWithoutPhoto: DishCatalogItem = {
+        ...mockDish,
+        photoUrl: null,
+      };
+
+      render(<DishDetailModal dish={dishWithoutPhoto} isOpen={true} onClose={vi.fn()} />);
+
+      // The image element and any broken image placeholder must NOT exist
+      expect(screen.queryByRole('img')).toBeNull();
+      expect(screen.queryByTestId(`modal-placeholder-${dishWithoutPhoto.id}`)).toBeNull();
+      expect(screen.queryByTestId('dish-detail-photo-container')).toBeNull();
+
+      // Title and description must render directly
+      expect(screen.getByText('Milanesa Napolitana')).toBeInTheDocument();
+      expect(screen.getByText('Carne con salsa y queso.')).toBeInTheDocument();
+    });
+
+    it('renders animated skeleton during image loading and replaces it once loaded, hiding skeleton on error (INV-3, FR-005, SC-004, EC-002)', () => {
+      render(<DishDetailModal dish={mockDish} isOpen={true} onClose={vi.fn()} />);
+
+      // Initially, image skeleton loader must be visible while image loads
+      const skeleton = screen.getByTestId('dish-detail-image-skeleton');
+      expect(skeleton).toBeInTheDocument();
+
+      const img = screen.getByRole('img', { name: mockDish.name });
+      expect(img).toBeInTheDocument();
+
+      // Simulate successful image load
+      fireEvent.load(img);
+
+      // Skeleton should be removed or hidden
+      expect(screen.queryByTestId('dish-detail-image-skeleton')).toBeNull();
+    });
+
+    it('handles image loading error gracefully by omitting photo container without broken placeholders (INV-2, INV-3, EC-002)', () => {
+      render(<DishDetailModal dish={mockDish} isOpen={true} onClose={vi.fn()} />);
+
+      const img = screen.getByRole('img', { name: mockDish.name });
+      expect(img).toBeInTheDocument();
+
+      // Simulate network error on image loading
+      fireEvent.error(img);
+
+      // Photo container and broken placeholders must be removed
+      expect(screen.queryByTestId(`modal-placeholder-${mockDish.id}`)).toBeNull();
+      expect(screen.queryByTestId('dish-detail-photo-container')).toBeNull();
+    });
+
+    it('accommodates long commercial descriptions inside internal vertical scroll container with word breaking (INV-4, FR-006, SC-005, EC-003)', () => {
+      const veryLongDescription = 'Descripción gourmet extremadamente detallada. '.repeat(50);
+      const dishWithLongText: DishCatalogItem = {
+        ...mockDish,
+        description: veryLongDescription,
+      };
+
+      render(<DishDetailModal dish={dishWithLongText} isOpen={true} onClose={vi.fn()} />);
+
+      const contentContainer = screen.getByTestId('dish-detail-scrollable-content');
+      expect(contentContainer).toBeInTheDocument();
+      // Must contain classes for max height and overflow scroll
+      expect(contentContainer.className).toMatch(/overflow-y-auto/);
+      expect(contentContainer.className).toMatch(/max-h-/);
+
+      const descriptionElement = screen.getByTestId('dish-detail-description');
+      expect(descriptionElement).toBeInTheDocument();
+      expect(descriptionElement.className).toMatch(/break-words/);
+    });
+  });
 });

@@ -49,7 +49,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 > **NOTE: Write these tests FIRST and ensure they FAIL before implementation.**
 
 - [X] T010 [P] [US1] Component tests (RED) for modal opening and scroll coordinate capture/restoration on close (button and backdrop click) in `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
-- [ ] T011 [P] [US1] Component tests (RED) for conditional photo omission without broken placeholders, progressive image loading with skeleton, and long text internal scroll in `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
+- [X] T011 [P] [US1] Component tests (RED) for conditional photo omission without broken placeholders, progressive image loading with skeleton, and long text internal scroll in `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
 - [ ] T012 [P] [US1] Integration tests (RED) for real-time availability polling invalidation ($\le 3\text{ s}$) in open modal without forced close and restock rehabilitation in `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
 
 ### Implementation for User Story 1 (GREEN)
