@@ -275,19 +275,26 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             )}
           </div>
 
-          {/* Neutral Allergen Labels (COM-5.1.2, INV-6, AC-2.1, Clarification #4) */}
-          {dish.allergens && dish.allergens.length > 0 && (
-            <div className="pt-2 border-t border-gray-100">
-              <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5">
-                Alérgenos
-              </h4>
+          {/* Neutral Allergen Labels (COM-5.1.2, INV-6, AC-2.1, EC-008, Clarification #4) */}
+          <div className="pt-2 border-t border-gray-100">
+            <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5">
+              Alérgenos
+            </h4>
+            {dish.allergens && dish.allergens.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {dish.allergens.map((allergen) => (
                   <AllergenNeutralPill key={allergen} allergen={allergen} />
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <p
+                data-testid="no-allergens-declared-notice"
+                className="text-xs text-gray-500 italic"
+              >
+                No contiene alérgenos declarados
+              </p>
+            )}
+          </div>
 
           {/* Quantity Selector & Provisional Subtotal Section (INV-13, AC-3.5, SC-011, EC-011) */}
           <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
