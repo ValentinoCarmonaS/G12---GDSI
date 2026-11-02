@@ -147,7 +147,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 - [X] T043 [P] Execute end-to-end quickstart validation scenarios (1 to 7) against `specs/011-dish-detail-manual-filters/quickstart.md`
 - [X] T044 [P] Run full backend test suite (`mvn clean test`) and verify $\ge 80\%$ line and branch coverage in `easyeat/backend`
 - [X] T045 [P] Run full frontend test suite (`npm run test -- --run --coverage`) and verify $\ge 80\%$ line and branch coverage in `easyeat/frontend`
-- [ ] T046 Code cleanup, formatting, and technical debt audit across all modified backend and frontend files
+- [X] T046 Code cleanup, formatting, and technical debt audit across all modified backend and frontend files
 
 ---
 
