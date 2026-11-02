@@ -96,7 +96,8 @@ The repo has **no orders / checkout / slot-selector backend**. This feature buil
 - [x] T024 [US1] Implement `easyeat/frontend/src/components/operations/WeeklyScheduleManager.tsx` (turns T023 GREEN).
   - **DONE 2026-11-02**: T023 GREEN (7 of 7); `tsc --noEmit` clean. Coverage of `WeeklyScheduleManager.tsx`: statements 100%, branches 97.5%, functions 100%, lines 100%. An unconfigured day starts closed with 09:00-17:00 as the values it takes if the admin opens it; the save button stays disabled until a day changes.
 - [ ] T025 [US1] Create `easyeat/frontend/src/pages/AdminOperationsPage.tsx` (hosts WeeklyScheduleManager now; capacity and payment sections added in US2/US3 tasks), register route `/admin/operations` in `easyeat/frontend/src/router/AppRoutes.tsx` under the same `RoleRouteGuard` as the other `/admin/*` routes **before** the `/admin/*` catch-all, and add a navigation `Link` in `easyeat/frontend/src/pages/AdminWorkspacePage.tsx`.
-- [ ] T026 [P] [US1] Write `easyeat/frontend/src/test/operations/AdminOperationsPage.test.tsx` (renders schedule section with mocked `operationsApi`, route guarded for ADMIN).
+- [x] T026 [P] [US1] Write `easyeat/frontend/src/test/operations/AdminOperationsPage.test.tsx` (renders schedule section with mocked `operationsApi`, route guarded for ADMIN).
+  - **DONE 2026-11-02**: written and committed before T025 so that TDD holds (the page is the unit under test); RED observed, the suite fails to load (0 of 9 tests run, `AdminOperationsPage` does not exist). Covers the page with a mocked `operationsApi`, the hub link, the `/admin/operations` route for ADMINISTRADOR (and that the `/admin/*` hub does not answer first) and its refusal for COMENSAL, CHEF and ENCARGADO.
 
 **Checkpoint**: US1 independently deliverable (MVP).
 
