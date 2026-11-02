@@ -19,9 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -44,10 +42,6 @@ class FoodCostAuditServiceTest {
     @Mock
     private IngredientRepository ingredientRepository;
 
-    @Spy
-    private FoodCostEngine foodCostEngine = new FoodCostEngine();
-
-    @InjectMocks
     private FoodCostAuditService auditService;
 
     private final UUID tenantId = UUID.randomUUID();
@@ -55,6 +49,13 @@ class FoodCostAuditServiceTest {
 
     @BeforeEach
     void setUp() {
+        // A real FoodCostEngine instance is used instead of a Mockito @Spy: inline class mocking is
+        // not supported on JDK 27, and the engine is a pure function that needs no stubbing here.
+        auditService = new FoodCostAuditService(
+                dishRepository,
+                dishRecipeIngredientRepository,
+                ingredientRepository,
+                new FoodCostEngine());
         TenantContextHolder.setTenantId(tenantId);
     }
 
@@ -172,5 +173,33 @@ class FoodCostAuditServiceTest {
         assertThat(response.warningNotes()).hasSize(1);
         assertThat(response.warningNotes().get(0)).contains("Agua Filtrada");
         assertThat(response.items().get(0).unpricedWarning()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Applies purchase-presentation conversion to the audit unit cost and line subtotal")
+    void shouldApplyPackageConversion_whenIngredientHasPurchasePresentation() {
+        Dish dish = createDish("Revuelto de huevos", DishCategory.PLATOS_PRINCIPALES);
+        dish.setStatus(DishStatus.PENDING_PRICE);
+
+        UUID eggsId = UUID.randomUUID();
+        DishRecipeIngredient line = new DishRecipeIngredient(dishId, eggsId, new BigDecimal("2.0000"));
+
+        Ingredient eggs = new Ingredient(
+                tenantId, "Huevos", IngredientCategory.DAIRY, UnitOfMeasure.U, new BigDecimal("3600.0000"));
+        eggs.setId(eggsId);
+        eggs.setPackageCost(new BigDecimal("3600.0000"));
+        eggs.setUnitsPerPackage(12);
+
+        when(dishRepository.findByIdAndTenantId(dishId, tenantId)).thenReturn(Optional.of(dish));
+        when(dishRecipeIngredientRepository.findByIdDishId(dishId)).thenReturn(List.of(line));
+        when(ingredientRepository.findAllById(List.of(eggsId))).thenReturn(List.of(eggs));
+
+        FoodCostAuditResponse response = auditService.auditDishCost(dishId);
+
+        assertThat(response.items()).hasSize(1);
+        // 3,600 / 12 = 300 per base unit; 2 units -> 600.00. The package total never leaks.
+        assertThat(response.items().get(0).unitPurchaseCost()).isEqualByComparingTo(new BigDecimal("300.0000"));
+        assertThat(response.items().get(0).lineSubtotal()).isEqualByComparingTo(new BigDecimal("600.00"));
+        assertThat(response.totalFoodCost()).isEqualByComparingTo(new BigDecimal("600.00"));
     }
 }

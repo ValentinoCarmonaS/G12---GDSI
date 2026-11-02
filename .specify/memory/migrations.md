@@ -35,7 +35,11 @@ Repeatable migrations carry no version and are re-applied whenever their content
 
 ## In flight — claimed but not yet merged
 
-None. The `V8` contest between specs 007 and 008 (below) is resolved: 008 merged first and kept `V8`; 007 renumbered to `V9` per rule 4. C-02's schema extension is recorded as V10 because V9 is already applied and immutable.
+**C-07 (`007-admin-dish-approval-pricing`, backend portion) claims `V13__dish_review_history_snapshot.sql`** (renumbered from V12 upon merging `develop/sprint-3` with Feature 009's `V12__extend_user_demographics_and_avatar.sql`). Adds `dish_review_history.proposed_changes_json` JSONB, the immutable store for the Administrator's proposed-edition snapshot (FR-042, FR-043).
+
+**C-08 (`007-admin-dish-approval-pricing`, ingredient purchase-presentation cost) claims `V14__add_units_per_package_to_ingredients.sql`** (renumbered from V13). Adds nullable `package_cost` (the purchase-presentation total) and `units_per_package INTEGER NOT NULL DEFAULT 1` to `ingredients`, with `package_cost >= 0` and `units_per_package >= 1`. Direct units (kg, l, loose `u`) keep the default `1`. The Food Cost engine derives the effective base unit cost as `package_cost / units_per_package` before each line subtotal (spec 004 FR-015d, spec 006 FR-005/FR-006). No existing column changes; ingredients without a recorded `package_cost` keep the direct `unit_purchase_cost` equivalence.
+
+The `V8` contest between specs 007 and 008 (below) is resolved: 008 merged first and kept `V8`; 007 renumbered to `V9` per rule 4. C-02's schema extension is recorded as V10 because V9 is already applied and immutable.
 
 **Renumbering either was cheap, and that was by design.** Spec 007's migration test is named `AdminPricingMigrationTest` and **nothing inside it hardcodes a version**: it locates the migration by its Flyway description and reads the preceding version from `flyway.info()`. A rename changes the filename and this table, nothing else. Spec 005's `V7MigrationAndSeedDevTest` does carry its version in the class name, which rule 5 exists to prevent; it is noted for that spec's owner.
 

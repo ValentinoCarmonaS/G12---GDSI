@@ -547,7 +547,7 @@ class DishReviewDetailServiceTest {
             when(userRepository.findAllById(any())).thenReturn(List.of(admin));
 
             DishReviewHistory rejected = DishReviewHistory.rejected(dish.getId(), TENANT, 1,
-                    adminId, "Faltan las fotos del plato, por favor adjuntalas.");
+                    adminId, "Faltan las fotos del plato, por favor adjuntalas.", null);
             when(reviewHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(dish.getId(), TENANT))
                     .thenReturn(List.of(rejected));
 

@@ -42,6 +42,9 @@ describe('CostAuditPanel Component (ADM-5.1.2)', () => {
     expect(screen.getByText('$2050.00')).toBeInTheDocument();
     expect(screen.getByText('CELIAC')).toBeInTheDocument();
     expect(screen.getByText('DAIRY')).toBeInTheDocument();
+    // Quantity column reads `recipeQuantity` and keeps the decimal with es-AR formatting.
+    expect(screen.getByText('0,3')).toBeInTheDocument();
+    expect(screen.getByText('0,2')).toBeInTheDocument();
   });
 
   it('displays warning alert when hasUnpricedIngredients is true', () => {

@@ -16,6 +16,7 @@ import com.easyeat.dish.domain.ReviewEventType;
 import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
 import com.easyeat.dish.dto.DishRejectionResponse;
+import com.easyeat.dish.dto.RejectDishRequest;
 import com.easyeat.dish.repository.DishPriceHistoryRepository;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
 import com.easyeat.dish.repository.DishReviewHistoryRepository;
@@ -145,11 +146,11 @@ class DishApprovalPricingIntegrationTest {
     void shouldIncrementCycleNumberAcrossRepeatedRounds() {
         Dish dish = gateReadyDish("Empanadas", admin.getId());
 
-        DishRejectionResponse firstRejection = governanceService.reject(dish.getId(), "Falta aclarar el relleno exacto.");
+        DishRejectionResponse firstRejection = governanceService.reject(dish.getId(), new RejectDishRequest("Falta aclarar el relleno exacto.", null));
         assertThat(firstRejection.cycleNumber()).isEqualTo(1);
 
         resubmit(dish.getId());
-        DishRejectionResponse secondRejection = governanceService.reject(dish.getId(), "El precio sugerido sigue sin cerrar el margen.");
+        DishRejectionResponse secondRejection = governanceService.reject(dish.getId(), new RejectDishRequest("El precio sugerido sigue sin cerrar el margen.", null));
         assertThat(secondRejection.cycleNumber()).isEqualTo(2);
 
         resubmit(dish.getId());
@@ -256,7 +257,7 @@ class DishApprovalPricingIntegrationTest {
         assertThat(approval.status()).isEqualTo(DishStatus.PUBLISHED);
 
         Dish rejectedPath = gateReadyDish("Pure de Papas", chef.getId());
-        DishRejectionResponse rejection = governanceService.reject(rejectedPath.getId(), "Falta especificar la guarnición.");
+        DishRejectionResponse rejection = governanceService.reject(rejectedPath.getId(), new RejectDishRequest("Falta especificar la guarnición.", null));
         assertThat(rejection.status()).isEqualTo(DishStatus.DRAFT);
     }
 

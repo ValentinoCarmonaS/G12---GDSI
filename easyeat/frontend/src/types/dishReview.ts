@@ -62,7 +62,11 @@ export interface DishReviewInboxPage {
 export interface RecipeItemAudit {
   ingredientId: string;
   ingredientName: string;
-  quantity: number;
+  /**
+   * Spec 006's name for the recipe quantity. The backend serializes `recipeQuantity`; reading any
+   * other key here silently renders every line as zero, so this must mirror the contract exactly.
+   */
+  recipeQuantity: number;
   unitOfMeasure: string | null;
   unitPurchaseCost: number;
   lineSubtotal: number;
@@ -161,6 +165,37 @@ export interface DishApprovalResult {
 /** US4 */
 export interface RejectDishRequest {
   comment: string;
+  /**
+   * The Administrator's proposed edition of the dish (FR-042). Optional: a rejection may carry
+   * none, and the backend stores `null` then. Culinary-only by type — see
+   * {@link DishProposedChanges}.
+   */
+  proposedChanges?: DishProposedChanges | null;
+}
+
+/**
+ * One proposed ingredient line: the master-catalog identifier and the quantity the Administrator
+ * proposes (FR-042). Deliberately carries no unit cost, Food Cost or margin.
+ */
+export interface DishProposedIngredient {
+  ingredientId: string;
+  quantity: number;
+}
+
+/**
+ * The Administrator's proposed edition of a dish (FR-042), preloaded into the rejection dialog and
+ * read back by the Chef.
+ *
+ * Culinary-only payload: title, description, allergen codes, lifestyle codes and proposed
+ * ingredient quantities. No cost, Food Cost, margin or retail price property exists on this type,
+ * which is what keeps the Chef-facing projection financially blind by construction.
+ */
+export interface DishProposedChanges {
+  title?: string | null;
+  description?: string | null;
+  allergenCodes?: string[] | null;
+  dietaryLifestyleCodes?: string[] | null;
+  ingredients?: DishProposedIngredient[] | null;
 }
 
 export interface DishRejectionResult {
@@ -175,6 +210,8 @@ export interface ChefReviewFeedbackEntry {
   cycleNumber: number;
   reviewerName: string | null;
   comment: string | null;
+  /** The Administrator's culinary-only proposed edition, when the rejection carried one (FR-042). */
+  proposedChanges?: DishProposedChanges | null;
   createdAt: string;
 }
 

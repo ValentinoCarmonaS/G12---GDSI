@@ -32,6 +32,14 @@ public class Ingredient {
     @Column(name = "unit_purchase_cost", nullable = false, precision = 12, scale = 4)
     private BigDecimal unitPurchaseCost;
 
+    /** Total cost of the purchase presentation (package), when the ingredient is acquired packaged. */
+    @Column(name = "package_cost", precision = 12, scale = 4)
+    private BigDecimal packageCost;
+
+    /** Base units contained in one purchase presentation; defaults to 1. */
+    @Column(name = "units_per_package", nullable = false)
+    private Integer unitsPerPackage = 1;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
     private IngredientStatus status = IngredientStatus.ACTIVE;
@@ -80,6 +88,12 @@ public class Ingredient {
         } else {
             unitPurchaseCost = unitPurchaseCost.setScale(4, java.math.RoundingMode.HALF_UP);
         }
+        if (packageCost != null) {
+            packageCost = packageCost.setScale(4, java.math.RoundingMode.HALF_UP);
+        }
+        if (unitsPerPackage != null) {
+            // No scale needed for integer
+        }
     }
 
     @PreUpdate
@@ -90,6 +104,12 @@ public class Ingredient {
         }
         if (unitPurchaseCost != null) {
             unitPurchaseCost = unitPurchaseCost.setScale(4, java.math.RoundingMode.HALF_UP);
+        }
+        if (packageCost != null) {
+            packageCost = packageCost.setScale(4, java.math.RoundingMode.HALF_UP);
+        }
+        if (unitsPerPackage == null) {
+            unitsPerPackage = 1;
         }
     }
 
@@ -139,6 +159,22 @@ public class Ingredient {
 
     public void setUnitPurchaseCost(BigDecimal unitPurchaseCost) {
         this.unitPurchaseCost = unitPurchaseCost != null ? unitPurchaseCost.setScale(4, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(4);
+    }
+
+    public BigDecimal getPackageCost() {
+        return packageCost;
+    }
+
+    public void setPackageCost(BigDecimal packageCost) {
+        this.packageCost = packageCost != null ? packageCost.setScale(4, java.math.RoundingMode.HALF_UP) : null;
+    }
+
+    public Integer getUnitsPerPackage() {
+        return unitsPerPackage != null ? unitsPerPackage : 1;
+    }
+
+    public void setUnitsPerPackage(Integer unitsPerPackage) {
+        this.unitsPerPackage = unitsPerPackage != null ? unitsPerPackage : 1;
     }
 
     public IngredientStatus getStatus() {
