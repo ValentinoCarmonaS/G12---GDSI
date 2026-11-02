@@ -21,6 +21,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   onAddToCart,
 }) => {
   const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
   const cartContext = useContext(CartContext);
   const savedScrollYRef = useRef<number>(0);
@@ -58,6 +59,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   useEffect(() => {
     setSelectedQuantity(1);
     setImageError(false);
+    setImageLoaded(false);
   }, [dish?.id, isOpen]);
 
   if (!isOpen || !dish) {
@@ -115,17 +117,30 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
         className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-gray-100 flex flex-col max-h-[90vh] animate-in zoom-in-95"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header Image (INV-2, FR-003, EC-001) - Completely omitted if no photoUrl or error */}
+        {/* Modal Header Image (INV-2, INV-3, FR-003, FR-005, SC-004, EC-001, EC-002) - Completely omitted if no photoUrl or error */}
         {dish.photoUrl && !imageError ? (
           <div
             data-testid="dish-detail-photo-container"
             className="relative w-full h-56 bg-gray-100 flex items-center justify-center overflow-hidden"
           >
+            {/* Animated Skeleton while downloading image in slow networks */}
+            {!imageLoaded && (
+              <div
+                data-testid="dish-detail-image-skeleton"
+                className="absolute inset-0 w-full h-full bg-linear-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse flex items-center justify-center"
+              >
+                <div className="w-8 h-8 rounded-full border-2 border-amber-600 border-t-transparent animate-spin" />
+              </div>
+            )}
+
             <img
               src={dish.photoUrl}
               alt={dish.name}
+              onLoad={() => setImageLoaded(true)}
               onError={() => setImageError(true)}
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover transition-opacity duration-300 ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
             />
 
             {/* Close button inside image header */}
@@ -133,7 +148,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               type="button"
               onClick={handleClose}
               data-testid="modal-close-btn"
-              className="absolute top-3 right-3 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors cursor-pointer"
+              className="absolute top-3 right-3 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors cursor-pointer z-10"
               aria-label="Cerrar modal"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,7 +158,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
 
             {/* Availability badge */}
             {isOutOfStock && (
-              <div className="absolute top-3 left-3 bg-gray-900/90 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+              <div className="absolute top-3 left-3 bg-gray-900/90 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider z-10">
                 Agotado
               </div>
             )}
