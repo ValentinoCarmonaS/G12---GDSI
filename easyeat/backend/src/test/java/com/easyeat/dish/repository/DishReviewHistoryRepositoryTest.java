@@ -201,15 +201,15 @@ class DishReviewHistoryRepositoryTest {
             UUID tenant = UUID.randomUUID();
             UUID admin = UUID.randomUUID();
 
-            assertThatThrownBy(() -> DishReviewHistory.rejected(dish, tenant, 1, admin, null))
+            assertThatThrownBy(() -> DishReviewHistory.rejected(dish, tenant, 1, admin, null, null))
                     .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> DishReviewHistory.rejected(dish, tenant, 1, admin, "   "))
+            assertThatThrownBy(() -> DishReviewHistory.rejected(dish, tenant, 1, admin, "   ", null))
                     .as("FR-021 measures length after trimming, so whitespace is not a comment")
                     .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> DishReviewHistory.rejected(dish, tenant, 1, admin, "too short"))
+            assertThatThrownBy(() -> DishReviewHistory.rejected(dish, tenant, 1, admin, "too short", null))
                     .isInstanceOf(IllegalArgumentException.class);
             assertThatThrownBy(() -> DishReviewHistory.rejected(dish, tenant, 1, admin,
-                    "x".repeat(1001)))
+                    "x".repeat(1001), null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -220,12 +220,12 @@ class DishReviewHistoryRepositoryTest {
             UUID tenant = UUID.randomUUID();
             UUID admin = UUID.randomUUID();
 
-            assertThat(DishReviewHistory.rejected(dish, tenant, 1, admin, "x".repeat(10))
+            assertThat(DishReviewHistory.rejected(dish, tenant, 1, admin, "x".repeat(10), null)
                     .getComment()).hasSize(10);
-            assertThat(DishReviewHistory.rejected(dish, tenant, 1, admin, "x".repeat(1000))
+            assertThat(DishReviewHistory.rejected(dish, tenant, 1, admin, "x".repeat(1000), null)
                     .getComment()).hasSize(1000);
             assertThat(DishReviewHistory.rejected(dish, tenant, 1, admin,
-                    "  " + "x".repeat(10) + "  ").getComment())
+                    "  " + "x".repeat(10) + "  ", null).getComment())
                     .as("FR-021 stores the comment trimmed, and measures length after trimming")
                     .hasSize(10);
         }
@@ -304,11 +304,29 @@ class DishReviewHistoryRepositoryTest {
         @DisplayName("a rejection reports its event type and its trimmed comment")
         void rejectionCarriesItsData() {
             DishReviewHistory entry = DishReviewHistory.rejected(dish, tenant, 2, admin,
-                    "  El costo del salmon dispara el food cost.  ");
+                    "  El costo del salmon dispara el food cost.  ", null);
 
             assertThat(entry.getEventType()).isEqualTo(ReviewEventType.REJECTED);
             assertThat(entry.getComment())
                     .isEqualTo("El costo del salmon dispara el food cost.");
+        }
+
+        @Test
+        @DisplayName("a rejection carries the proposed-edition snapshot it was built with (FR-042)")
+        void rejectionCarriesItsProposalSnapshot() {
+            DishReviewHistory entry = DishReviewHistory.rejected(dish, tenant, 2, admin,
+                    "Reemplazá la proteína por merluza.", "{\"title\":\"Pure de Papas\"}");
+
+            assertThat(entry.getProposedChangesJson()).isEqualTo("{\"title\":\"Pure de Papas\"}");
+        }
+
+        @Test
+        @DisplayName("an approval carries no comment and no proposal, by construction")
+        void approvalCarriesNoCommentOrProposal() {
+            DishReviewHistory approval = DishReviewHistory.approved(dish, tenant, 1, admin);
+
+            assertThat(approval.getComment()).isNull();
+            assertThat(approval.getProposedChangesJson()).isNull();
         }
 
         @Test
@@ -330,7 +348,7 @@ class DishReviewHistoryRepositoryTest {
         @DisplayName("toString names the dish, cycle and event, for a readable log line")
         void toStringIsUseful() {
             String text = DishReviewHistory.rejected(dish, tenant, 4, admin,
-                    "Reemplazalo por merluza y reenvia.").toString();
+                    "Reemplazalo por merluza y reenvia.", null).toString();
 
             assertThat(text).contains(dish.toString(), "4", "REJECTED");
         }

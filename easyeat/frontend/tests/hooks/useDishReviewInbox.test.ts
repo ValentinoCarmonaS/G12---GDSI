@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDishReviewInbox } from '../../src/hooks/useDishReviewInbox';
 import { dishReviewApi } from '../../src/api/dishReviewApi';
-import type { DishReviewInboxItem, DishReviewInboxPage } from '../../src/types/dishReview';
+import type {
+  DishReviewInboxItem,
+  DishReviewInboxPage,
+  InboxTab,
+} from '../../src/types/dishReview';
 
 vi.mock('../../src/api/dishReviewApi', () => ({
   dishReviewApi: {
@@ -91,7 +95,7 @@ describe('useDishReviewInbox', () => {
         )
       );
 
-      act(() => result.current.setTab('PUBLISHED'));
+      act(() => result.current.setTab('PUBLISHED' as InboxTab));
 
       await waitFor(() =>
         expect(dishReviewApi.getInbox).toHaveBeenLastCalledWith({
@@ -122,7 +126,7 @@ describe('useDishReviewInbox', () => {
       const { result } = renderHook(() => useDishReviewInbox());
       await waitFor(() => expect(result.current.pendingCount).toBe(37));
 
-      act(() => result.current.setTab('HISTORY'));
+      act(() => result.current.setTab('HISTORY' as InboxTab));
       await waitFor(() => expect(result.current.tab).toBe('HISTORY'));
 
       expect(result.current.pendingCount).toBe(37);

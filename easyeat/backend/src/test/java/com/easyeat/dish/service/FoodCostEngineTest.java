@@ -82,6 +82,38 @@ class FoodCostEngineTest {
     }
 
     @Test
+    @DisplayName("Derives base unit cost from purchase presentation before computing the subtotal (dozen at 3600)")
+    void shouldConvertPackageCostToBaseUnitBeforeSubtotal() {
+        FoodCostEngine.IngredientCostItem item = new FoodCostEngine.IngredientCostItem(
+                new BigDecimal("2.0000"),   // recipe quantity: 2 base units
+                null,                       // no per-base-unit price recorded
+                new BigDecimal("3600.0000"),// package cost: ARS 3,600
+                12                          // 12 base units per package
+        );
+
+        FoodCostEngine.CalculationResult result = engine.calculate(List.of(item));
+
+        assertThat(item.effectiveUnitCost()).isEqualByComparingTo(new BigDecimal("300.0000"));
+        assertThat(result.lineSubtotals().get(0)).isEqualByComparingTo(new BigDecimal("600.00"));
+        assertThat(result.totalCost()).isEqualByComparingTo(new BigDecimal("600.00"));
+        assertThat(result.hasUnpricedIngredients()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Keeps the direct unit cost when no purchase presentation is recorded (kg/l equivalence)")
+    void shouldKeepDirectUnitCost_whenNoPresentationIsRecorded() {
+        FoodCostEngine.IngredientCostItem direct = new FoodCostEngine.IngredientCostItem(
+                new BigDecimal("0.5000"),
+                new BigDecimal("5000.0000")
+        );
+
+        FoodCostEngine.CalculationResult result = engine.calculate(List.of(direct));
+
+        assertThat(direct.effectiveUnitCost()).isEqualByComparingTo(new BigDecimal("5000.0000"));
+        assertThat(result.lineSubtotals().get(0)).isEqualByComparingTo(new BigDecimal("2500.00"));
+    }
+
+    @Test
     @DisplayName("Throws IllegalArgumentException if item list is empty or null")
     void shouldThrowException_whenItemListIsEmptyOrNull() {
         assertThatThrownBy(() -> engine.calculate(null))

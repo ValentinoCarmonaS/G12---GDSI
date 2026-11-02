@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { COMMON_ALLERGENS, DIETARY_LIFESTYLES } from '@/constants/allergenTaxonomy';
 
 export interface AllergenStepProps {
   dishId?: string;
@@ -8,97 +9,6 @@ export interface AllergenStepProps {
   isReadOnly?: boolean;
   isSaving?: boolean;
 }
-
-interface TaxonomyItem {
-  code: string;
-  name: string;
-  description: string;
-  isPositive: boolean;
-  warningLabel: string;
-}
-
-const DIETARY_LIFESTYLES: TaxonomyItem[] = [
-  {
-    code: 'VEGAN',
-    name: 'Vegano',
-    description: 'No contiene ingredientes de origen animal.',
-    isPositive: true,
-    warningLabel: 'Cumplimiento positivo (Apto)',
-  },
-  {
-    code: 'VEGETARIAN',
-    name: 'Vegetariano',
-    description: 'No contiene carne ni pescado.',
-    isPositive: true,
-    warningLabel: 'Cumplimiento positivo (Apto)',
-  },
-  {
-    code: 'CELIAC',
-    name: 'Celíaco',
-    description: 'Contiene gluten o trazas. No apto sin TACC.',
-    isPositive: false,
-    warningLabel: 'Advertencia preventiva (Contiene)',
-  },
-];
-
-const COMMON_ALLERGENS: TaxonomyItem[] = [
-  {
-    code: 'DAIRY',
-    name: 'Lácteos',
-    description: 'Contiene leche o derivados lácteos.',
-    isPositive: false,
-    warningLabel: 'Advertencia de alérgeno',
-  },
-  {
-    code: 'PEANUTS',
-    name: 'Maní',
-    description: 'Contiene maní o trazas de maní.',
-    isPositive: false,
-    warningLabel: 'Advertencia de alérgeno',
-  },
-  {
-    code: 'TREE_NUTS',
-    name: 'Frutos Secos',
-    description: 'Contiene nueces, almendras, castañas u otros frutos secos.',
-    isPositive: false,
-    warningLabel: 'Advertencia de alérgeno',
-  },
-  {
-    code: 'EGGS',
-    name: 'Huevos',
-    description: 'Contiene huevos o derivados.',
-    isPositive: false,
-    warningLabel: 'Advertencia de alérgeno',
-  },
-  {
-    code: 'FISH',
-    name: 'Pescado',
-    description: 'Contiene pescado o derivados marinos.',
-    isPositive: false,
-    warningLabel: 'Advertencia de alérgeno',
-  },
-  {
-    code: 'SHELLFISH',
-    name: 'Mariscos',
-    description: 'Contiene mariscos, moluscos o crustáceos.',
-    isPositive: false,
-    warningLabel: 'Advertencia de alérgeno',
-  },
-  {
-    code: 'SOY',
-    name: 'Soja',
-    description: 'Contiene soja o lecitina de soja.',
-    isPositive: false,
-    warningLabel: 'Advertencia de alérgeno',
-  },
-  {
-    code: 'WHEAT',
-    name: 'Trigo',
-    description: 'Contiene trigo, avena, cebada o centeno.',
-    isPositive: false,
-    warningLabel: 'Advertencia de alérgeno',
-  },
-];
 
 export const AllergenStep: React.FC<AllergenStepProps> = ({
   initialRestrictions = [],

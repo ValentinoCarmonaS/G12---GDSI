@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { dishReviewApi } from '@/api/dishReviewApi';
 import { MarginPriceCalculator } from './MarginPriceCalculator';
 import { PublicationConfirmModal } from './PublicationConfirmModal';
-import { RejectionDialog } from './RejectionDialog';
-import type { ApproveDishRequest, DishReviewDetail } from '@/types/dishReview';
+import { RejectionDialog, type RejectionIngredientOption } from './RejectionDialog';
+import { readAuditQuantity } from '@/utils/foodCostAudit';
+import type {
+  ApproveDishRequest,
+  DishProposedChanges,
+  DishReviewDetail,
+} from '@/types/dishReview';
 
 // Import Dialogs or create a simple modal for cancellation
 // Assuming a structure similar to RejectionDialog might exist or can be created
@@ -51,6 +56,28 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({
 
   const canSetPrice = detail.status === 'PENDING_PRICE' || detail.status === 'PUBLISHED';
   const canDecide = detail.status === 'PENDING_PRICE';
+
+  /** The proposal dialog opens on the dish's current culinary file, ready to be edited (FR-042). */
+  const initialProposal = useMemo<DishProposedChanges>(() => ({
+    title: detail.name,
+    description: detail.description,
+    allergenCodes: [],
+    dietaryLifestyleCodes: [],
+    ingredients: (detail.foodCostAudit?.items ?? []).map((item) => ({
+      ingredientId: item.ingredientId,
+      quantity: readAuditQuantity(item),
+    })),
+  }), [detail.name, detail.description, detail.foodCostAudit]);
+
+  const knownIngredients = useMemo<RejectionIngredientOption[]>(
+    () =>
+      (detail.foodCostAudit?.items ?? []).map((item) => ({
+        ingredientId: item.ingredientId,
+        ingredientName: item.ingredientName,
+        unitOfMeasure: item.unitOfMeasure ?? undefined,
+      })),
+    [detail.foodCostAudit]
+  );
 
   async function handlePriceConfirm(retailPrice: number, acknowledgeNegativeMargin: boolean) {
     setPriceError(null);
@@ -109,11 +136,17 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({
     });
   }
 
-  async function handleRejectConfirm(comment: string) {
+  async function handleRejectConfirm(
+    comment: string,
+    proposedChanges: DishProposedChanges | null
+  ) {
     setRejectionError(null);
     setIsRejecting(true);
     try {
-      await dishReviewApi.reject(detail.dishId, { comment });
+      await dishReviewApi.reject(detail.dishId, {
+        comment,
+        ...(proposedChanges ? { proposedChanges } : {}),
+      });
       setShowRejectDialog(false);
       onDecided();
     } catch (err) {
@@ -243,6 +276,8 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({
       <RejectionDialog
         key={detail.dishId}
         isOpen={showRejectDialog}
+        initialProposal={initialProposal}
+        knownIngredients={knownIngredients}
         onConfirm={handleRejectConfirm}
         onCancel={() => setShowRejectDialog(false)}
       />

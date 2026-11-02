@@ -741,6 +741,18 @@ components:
           format: double
           minimum: 0.0000
           example: 1250.5000
+        packageCost:
+          type: number
+          format: double
+          minimum: 0.0000
+          description: Total cost of the purchase presentation (package), combined with unitsPerPackage.
+          example: 3600.0000
+        unitsPerPackage:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Base units contained in one package; 1 for direct units (kg, l, loose u).
+          example: 12
 
     UpdateIngredientRequest:
       type: object
@@ -760,6 +772,15 @@ components:
         unitPurchaseCost:
           type: number
           minimum: 0.0000
+        packageCost:
+          type: number
+          minimum: 0.0000
+          description: Total cost of the purchase presentation (package), combined with unitsPerPackage.
+        unitsPerPackage:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Base units contained in one package; 1 for direct units (kg, l, loose u).
 
     AdminIngredientDetailResponse:
       type: object
@@ -779,6 +800,15 @@ components:
         unitPurchaseCost:
           type: number
           format: double
+        packageCost:
+          type: number
+          format: double
+          nullable: true
+          description: Total cost of the purchase presentation (package), when recorded.
+        unitsPerPackage:
+          type: integer
+          minimum: 1
+          description: Base units contained in one package; 1 for direct units and when no presentation is recorded.
         status:
           $ref: '#/components/schemas/IngredientStatus'
         currentStock:

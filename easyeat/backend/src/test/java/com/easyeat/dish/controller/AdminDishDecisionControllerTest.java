@@ -6,6 +6,7 @@ import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
 import com.easyeat.dish.dto.DishRejectionResponse;
 import com.easyeat.dish.dto.MarginSummary;
+import com.easyeat.dish.dto.RejectDishRequest;
 import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.dish.exception.AcknowledgementRequiredException;
@@ -17,11 +18,15 @@ import com.easyeat.dish.exception.InvalidRetailPriceException;
 import com.easyeat.dish.exception.PublicationGateException;
 import com.easyeat.dish.exception.StaleDishPriceException;
 import com.easyeat.dish.service.DishGovernanceService;
+import com.easyeat.dish.dto.DishProposedChanges;
+import com.easyeat.dish.dto.DishProposedIngredient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -32,6 +37,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -538,7 +544,7 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
         @Test
         @DisplayName("a valid comment rejects the dish and returns the new cycle")
         void validRejectionSucceeds() throws Exception {
-            when(governanceService.reject(eq(dishId), eq(VALID_COMMENT)))
+            when(governanceService.reject(eq(dishId), eq(new RejectDishRequest(VALID_COMMENT, null))))
                     .thenReturn(rejectionResponse());
 
             mockMvc.perform(post(rejectionUrl())
@@ -548,6 +554,36 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
                     .andExpect(jsonPath("$.status").value("DRAFT"));
         }
 
+        @Test
+        @DisplayName("a rejection carrying a proposed edition forwards comment and proposal to the "
+                + "service, and the response reports the new cycle (FR-042, FR-043)")
+        void rejectionCarriesProposedChanges() throws Exception {
+            DishProposedChanges proposal = new DishProposedChanges("Milanesa de ternera",
+                    "Cambia la carne por ternera.", List.of("GLUTEN"), null,
+                    List.of(new DishProposedIngredient(UUID.randomUUID(), new BigDecimal("200"))));
+            when(governanceService.reject(eq(dishId), any(RejectDishRequest.class)))
+                    .thenReturn(rejectionResponse());
+
+            String body = "{\"comment\": \"" + VALID_COMMENT + "\", \"proposedChanges\": {"
+                    + "\"title\": \"Milanesa de ternera\", \"description\": \"Cambia la carne por ternera.\", "
+                    + "\"allergenCodes\": [\"GLUTEN\"], \"dietaryLifestyleCodes\": null, "
+                    + "\"ingredients\": [{\"ingredientId\": \"" + UUID.randomUUID()
+                    + "\", \"quantity\": 200}]}}";
+
+            mockMvc.perform(post(rejectionUrl())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("DRAFT"));
+
+            ArgumentCaptor<RejectDishRequest> captor = ArgumentCaptor.forClass(RejectDishRequest.class);
+            verify(governanceService).reject(eq(dishId), captor.capture());
+            assertThat(captor.getValue().comment()).isEqualTo(VALID_COMMENT);
+            assertThat(captor.getValue().proposedChanges()).isNotNull();
+            assertThat(captor.getValue().proposedChanges().title()).isEqualTo("Milanesa de ternera");
+            assertThat(captor.getValue().proposedChanges().description()).isEqualTo("Cambia la carne por ternera.");
+        }
+
         @ParameterizedTest
         @ValueSource(strings = {
                 "123456789",
@@ -555,7 +591,7 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
         })
         @DisplayName("a comment at 9 characters or whitespace-only is a 400")
         void shortOrBlankCommentRejected(String comment) throws Exception {
-            when(governanceService.reject(eq(dishId), eq(comment)))
+            when(governanceService.reject(eq(dishId), eq(new RejectDishRequest(comment, null))))
                     .thenThrow(new InvalidRejectionCommentException(comment));
 
             mockMvc.perform(post(rejectionUrl())
@@ -570,7 +606,7 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
         @DisplayName("a comment at exactly 10 characters is accepted")
         void tenCharacterCommentAccepted() throws Exception {
             String tenChars = "1234567890";
-            when(governanceService.reject(eq(dishId), eq(tenChars)))
+            when(governanceService.reject(eq(dishId), eq(new RejectDishRequest(tenChars, null))))
                     .thenReturn(rejectionResponse());
 
             mockMvc.perform(post(rejectionUrl())
@@ -583,7 +619,7 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
         @DisplayName("a comment at exactly 1000 characters is accepted")
         void thousandCharacterCommentAccepted() throws Exception {
             String thousandChars = "a".repeat(1000);
-            when(governanceService.reject(eq(dishId), eq(thousandChars)))
+            when(governanceService.reject(eq(dishId), eq(new RejectDishRequest(thousandChars, null))))
                     .thenReturn(rejectionResponse());
 
             mockMvc.perform(post(rejectionUrl())
@@ -596,7 +632,7 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
         @DisplayName("a comment at 1001 characters is a 400")
         void tooLongCommentRejected() throws Exception {
             String tooLong = "a".repeat(1001);
-            when(governanceService.reject(eq(dishId), eq(tooLong)))
+            when(governanceService.reject(eq(dishId), eq(new RejectDishRequest(tooLong, null))))
                     .thenThrow(new InvalidRejectionCommentException(tooLong));
 
             mockMvc.perform(post(rejectionUrl())
@@ -608,7 +644,7 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
         @Test
         @DisplayName("rejecting a PUBLISHED dish is a 409")
         void publishedDishYields409() throws Exception {
-            when(governanceService.reject(eq(dishId), eq(VALID_COMMENT)))
+            when(governanceService.reject(eq(dishId), eq(new RejectDishRequest(VALID_COMMENT, null))))
                     .thenThrow(new DishStateConflictException(dishId, "PUBLISHED", "PENDING_PRICE"));
 
             mockMvc.perform(post(rejectionUrl())
@@ -621,7 +657,7 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
         @DisplayName("markup in the comment is forwarded verbatim, never stripped at this layer")
         void markupStoredVerbatim() throws Exception {
             String withMarkup = "<b>urgente</b> revisar el costo del salmón antes de reenviar";
-            when(governanceService.reject(eq(dishId), eq(withMarkup)))
+            when(governanceService.reject(eq(dishId), eq(new RejectDishRequest(withMarkup, null))))
                     .thenReturn(rejectionResponse());
 
             mockMvc.perform(post(rejectionUrl())
@@ -629,7 +665,7 @@ class AdminDishDecisionControllerTest extends DishControllerTestBase {
                             .content(rejectionBody(withMarkup)))
                     .andExpect(status().isOk());
 
-            verify(governanceService).reject(eq(dishId), eq(withMarkup));
+            verify(governanceService).reject(eq(dishId), eq(new RejectDishRequest(withMarkup, null)));
         }
     }
 

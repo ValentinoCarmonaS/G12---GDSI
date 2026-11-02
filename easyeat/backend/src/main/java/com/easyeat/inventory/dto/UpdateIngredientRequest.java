@@ -19,9 +19,20 @@ public record UpdateIngredientRequest(
         UnitOfMeasure unitOfMeasure,
 
         @DecimalMin(value = "0.0000", message = "Unit purchase cost must be non-negative")
-        BigDecimal unitPurchaseCost
+        BigDecimal unitPurchaseCost,
+
+        @DecimalMin(value = "0.0000", message = "Package cost must be non-negative")
+        BigDecimal packageCost,
+
+        @jakarta.validation.constraints.Min(value = 1, message = "Units per package must be at least 1")
+        Integer unitsPerPackage
 ) {
     public UpdateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure) {
-        this(name, category, unitOfMeasure, null);
+        this(name, category, unitOfMeasure, null, null, 1);
+    }
+
+    public UpdateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure,
+                                   BigDecimal unitPurchaseCost) {
+        this(name, category, unitOfMeasure, unitPurchaseCost, null, 1);
     }
 }

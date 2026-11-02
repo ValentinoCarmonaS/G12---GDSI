@@ -41,7 +41,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AdminPricingMigrationTest {
 
     private static final String MIGRATION_DESCRIPTION = "admin dish approval pricing";
-        private static final String CANCELLATION_MIGRATION_DESCRIPTION = "sync ingredient unit purchase cost";
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
@@ -107,6 +106,20 @@ class AdminPricingMigrationTest {
             out.add(info.getVersion() + " -> " + info.getDescription());
         }
         return out;
+    }
+
+    private static List<String> discoveredMigrationVersions() {
+        return java.util.Arrays.stream(Flyway.configure()
+                        .dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
+                        .locations("classpath:db/migration")
+                        .load()
+                        .info()
+                        .all())
+                .map(MigrationInfo::getVersion)
+                .filter(java.util.Objects::nonNull)
+                .sorted()
+                .map(MigrationVersion::getVersion)
+                .toList();
     }
 
     private static void migrateTo(MigrationVersion target) {
@@ -186,11 +199,11 @@ class AdminPricingMigrationTest {
                     "SELECT version FROM flyway_schema_history WHERE version IS NOT NULL "
                             + "ORDER BY installed_rank");
             assertThat(versions).isNotEmpty();
-            assertThat(scalar(
-                    "SELECT description FROM flyway_schema_history "
-                            + "WHERE version IS NOT NULL ORDER BY installed_rank DESC LIMIT 1"))
-                    .describedAs("C-02's forward migration must be the latest versioned one applied")
-                    .isEqualTo(CANCELLATION_MIGRATION_DESCRIPTION);
+            // Discovered from db/migration rather than hardcoded: this feature's migration is not
+            // the last word in the project, and a later spec's migration must not break this test.
+            assertThat(versions)
+                    .describedAs("every migration on the classpath must be applied, in version order")
+                    .containsExactlyElementsOf(discoveredMigrationVersions());
         }
 
         @Test

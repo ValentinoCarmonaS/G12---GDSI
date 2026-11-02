@@ -11,11 +11,14 @@ import com.easyeat.dish.domain.DishPriceHistory;
 import com.easyeat.dish.domain.DishReviewHistory;
 import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.domain.PublicationGateCondition;
+import com.easyeat.dish.dto.ApproveDishRequest;
 import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
+import com.easyeat.dish.dto.DishProposedChanges;
 import com.easyeat.dish.dto.DishRejectionResponse;
 import com.easyeat.dish.dto.FoodCostAuditResponse;
 import com.easyeat.dish.dto.MarginSummary;
+import com.easyeat.dish.dto.RejectDishRequest;
 import com.easyeat.dish.exception.AcknowledgementRequiredException;
 import com.easyeat.dish.exception.DishAlreadyDecidedException;
 import com.easyeat.dish.exception.DishStateConflictException;
@@ -257,8 +260,8 @@ public class DishGovernanceService {
     }
 
     /**
-     * Returns a dish to the kitchen with mandatory feedback (FR-020 through FR-022, FR-024,
-     * FR-025).
+     * Returns a dish to the kitchen with mandatory feedback and, optionally, the Administrator's
+     * proposed edition of it (FR-020 through FR-022, FR-024, FR-025, FR-042, FR-043).
      *
      * <p>The comment is validated before any database access, the same posture {@link
      * #setRetailPrice} takes for its own input. The conditional {@code UPDATE} this issues names
@@ -266,6 +269,12 @@ public class DishGovernanceService {
      * retail price MUST be preserved across the rejection" is kept true: there is no write path
      * here that could touch it, and no {@code dish_price_history} row is written either, since a
      * rejection is not a price change.
+     *
+     * <p>The proposal snapshot travels as JSON inside the immutable audit row: a rejection that
+     * carries one stores it alongside the comment, a first rejection that does not stores {@code
+     * null}, and the serialized culinary fields (title, description, allergen codes, lifestyle
+     * codes, proposed ingredient quantities) never include a cost, margin or price — those are
+     * computed, never stored, on the proposal path.
      *
      * @throws InvalidRejectionCommentException the comment is absent, blank, or outside 10 to
      *     1000 characters after trimming (FR-021).
@@ -275,7 +284,8 @@ public class DishGovernanceService {
      *     (FR-025); carries the status that now prevails.
      */
     @Transactional
-    public DishRejectionResponse reject(UUID dishId, String comment) {
+    public DishRejectionResponse reject(UUID dishId, RejectDishRequest request) {
+        String comment = request.comment();
         String trimmed = comment == null ? null : comment.trim();
         if (trimmed == null || trimmed.isEmpty() || trimmed.length() < 10 || trimmed.length() > 1000) {
             throw new InvalidRejectionCommentException(comment);
@@ -298,12 +308,25 @@ public class DishGovernanceService {
             throw new DishAlreadyDecidedException(dishId, currentStatus, Instant.now());
         }
 
+        String proposedChangesJson = serializeProposedChanges(request.proposedChanges());
+
         int cycleNumber = reviewHistoryRepository.findMaxCycleNumberByDishId(dishId).orElse(0) + 1;
         DishReviewHistory entry = DishReviewHistory.rejected(dishId, tenantId, cycleNumber,
-                resolveCurrentUserId(), trimmed);
+                resolveCurrentUserId(), trimmed, proposedChangesJson);
         reviewHistoryRepository.save(entry);
 
         return new DishRejectionResponse(dishId, DishStatus.DRAFT, cycleNumber, entry.getId());
+    }
+
+    private String serializeProposedChanges(DishProposedChanges changes) {
+        if (changes == null) {
+            return null;
+        }
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(changes);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Transactional

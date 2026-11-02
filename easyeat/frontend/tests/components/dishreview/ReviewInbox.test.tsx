@@ -97,7 +97,7 @@ describe('the review inbox surface', () => {
     });
 
     it('marks the active tab for assistive technology, not only visually', () => {
-      renderInbox({ tab: 'PUBLISHED' });
+      renderInbox({ tab: 'PUBLISHED' as InboxTab });
 
       expect(screen.getByRole('tab', { name: /publicados/i })).toHaveAttribute(
         'aria-selected',
@@ -114,11 +114,11 @@ describe('the review inbox surface', () => {
 
       await userEvent.click(screen.getByRole('tab', { name: /historial/i }));
 
-      expect(onTabChange).toHaveBeenCalledWith('HISTORY');
+      expect(onTabChange).toHaveBeenCalledWith('HISTORY' as InboxTab);
     });
 
     it('shows the pending badge on every tab, including the published one', () => {
-      renderInbox({ tab: 'PUBLISHED', pendingCount: 37 });
+      renderInbox({ tab: 'PUBLISHED' as InboxTab, pendingCount: 37 });
 
       expect(screen.getByTestId('pending-count-badge')).toHaveTextContent('37');
     });
@@ -220,7 +220,7 @@ describe('the review inbox surface', () => {
       unmount();
 
       render(
-        <ReviewInboxList items={[]} tab="HISTORY" isLoading={false} error={null}
+        <ReviewInboxList items={[]} tab={'HISTORY' as InboxTab} isLoading={false} error={null}
           onSelect={vi.fn()} onRetry={vi.fn()} />
       );
       const historyText = screen.getByTestId('inbox-empty-state').textContent;

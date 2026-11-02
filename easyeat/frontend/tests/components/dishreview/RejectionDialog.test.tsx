@@ -76,7 +76,95 @@ describe('RejectionDialog', () => {
     });
     await user.click(screen.getByRole('button', { name: /rechazar/i }));
 
-    expect(onConfirm).toHaveBeenCalledWith('Falta la foto del plato, por favor adjuntala.');
+    expect(onConfirm).toHaveBeenCalledWith(
+      'Falta la foto del plato, por favor adjuntala.',
+      null
+    );
+  });
+
+  it('preloads the dish’s current culinary file into the editable proposal (FR-042)', () => {
+    render(
+      <RejectionDialog
+        isOpen
+        initialProposal={{
+          title: 'Milanesa de ternera',
+          description: 'Cambiá la carne por ternera.',
+          allergenCodes: ['GLUTEN'],
+          dietaryLifestyleCodes: ['CELIAC'],
+          ingredients: [{ ingredientId: 'ing-1', quantity: 200 }],
+        }}
+        knownIngredients={[{ ingredientId: 'ing-1', ingredientName: 'Ternera' }]}
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText(/incluir propuesta de cambios/i));
+
+    expect(screen.getByLabelText(/título propuesto/i)).toHaveValue('Milanesa de ternera');
+    expect(screen.getByLabelText(/descripción propuesta/i)).toHaveValue(
+      'Cambiá la carne por ternera.'
+    );
+    expect(screen.getByText('Ternera')).toBeInTheDocument();
+    expect(screen.getByLabelText(/cantidad de ternera/i)).toHaveValue(200);
+  });
+
+  it('sends the edited proposal with the comment when the Administrator includes it', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(
+      <RejectionDialog
+        isOpen
+        initialProposal={{
+          title: 'Milanesa de ternera',
+          description: null,
+          allergenCodes: [],
+          dietaryLifestyleCodes: [],
+          ingredients: [],
+        }}
+        onConfirm={onConfirm}
+        onCancel={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/comentario/i), {
+      target: { value: 'Revisá la propuesta y reenviá la ficha.' },
+    });
+    fireEvent.click(screen.getByLabelText(/incluir propuesta de cambios/i));
+    fireEvent.change(screen.getByLabelText(/título propuesto/i), {
+      target: { value: 'Milanesa de pollo' },
+    });
+    fireEvent.click(screen.getByLabelText('Lácteos'));
+    fireEvent.click(screen.getByLabelText('Vegano'));
+    await user.click(screen.getByRole('button', { name: /rechazar/i }));
+
+    expect(onConfirm).toHaveBeenCalledWith('Revisá la propuesta y reenviá la ficha.', {
+      title: 'Milanesa de pollo',
+      description: null,
+      allergenCodes: ['DAIRY'],
+      dietaryLifestyleCodes: ['VEGAN'],
+      ingredients: [],
+    });
+  });
+
+  it('sends no proposal when the Administrator leaves the checkbox off', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(
+      <RejectionDialog
+        isOpen
+        initialProposal={{ title: 'Milanesa de ternera' }}
+        onConfirm={onConfirm}
+        onCancel={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/comentario/i), {
+      target: { value: 'Solo devuelvo con este comentario.' },
+    });
+    await user.click(screen.getByRole('button', { name: /rechazar/i }));
+
+    expect(onConfirm).toHaveBeenCalledWith('Solo devuelvo con este comentario.', null);
   });
 
   it('renders markup in the comment as literal text, never interpreted', () => {

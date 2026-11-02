@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { dishApi } from '@/api/dishApi';
 import { BasicIdentityStep } from '@/components/dish/BasicIdentityStep';
@@ -23,7 +23,63 @@ export const ChefDishEditorPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const isReadOnly = dish !== null && dish.status !== 'DRAFT';
+  const isReadOnly = dish != null && dish.status !== 'DRAFT';
+
+  /**
+   * FR-042: the newest rejection's proposed edition, when the Administrator sent one. The backend
+   * returns entries newest-cycle-first, so the first entry is the current cycle.
+   */
+  const latestProposal = feedback?.entries[0]?.proposedChanges ?? null;
+
+  const ingredientNames = useMemo<Record<string, string>>(
+    () =>
+      Object.fromEntries(
+        (dish?.recipe ?? []).map((item) => [item.ingredientId, item.ingredientName])
+      ),
+    [dish?.recipe]
+  );
+
+  /** Identity step preloaded with the Administrator's proposed title/description (FR-042, T126). */
+  const identityInitialData = useMemo(() => {
+    if (!dish) return undefined;
+    return {
+      name: latestProposal?.title ?? dish.name,
+      category: dish.category,
+      description: latestProposal?.description ?? dish.description,
+      photoUrl: dish.photoUrl,
+    };
+  }, [dish, latestProposal]);
+
+  /** Recipe step preloaded with the proposed quantities; proposal lines win over current ones. */
+  const recipeInitial = useMemo<RecipeIngredientItem[]>(() => {
+    if (!dish) return [];
+    const proposed = latestProposal?.ingredients;
+    if (!proposed || proposed.length === 0) return dish.recipe;
+
+    const currentById = new Map(dish.recipe.map((item) => [item.ingredientId, item]));
+    return proposed.map((line) => {
+      const current = currentById.get(line.ingredientId);
+      return current
+        ? { ...current, quantity: line.quantity }
+        : {
+            ingredientId: line.ingredientId,
+            ingredientName:
+              ingredientNames[line.ingredientId] ?? `Ingrediente ${line.ingredientId.slice(0, 8)}`,
+            quantity: line.quantity,
+            unitOfMeasure: 'u' as const,
+          };
+    });
+  }, [dish, latestProposal, ingredientNames]);
+
+  /** Allergen step preloaded with the proposal's codes, or the dish's own when none was sent. */
+  const allergenInitialRestrictions = useMemo<string[]>(() => {
+    if (!dish) return [];
+    if (!latestProposal) return dish.restrictionCodes;
+    return [
+      ...(latestProposal.allergenCodes ?? []),
+      ...(latestProposal.dietaryLifestyleCodes ?? []),
+    ];
+  }, [dish, latestProposal]);
 
   const fetchDish = useCallback(async (dishId: string) => {
     setIsLoading(true);
@@ -251,7 +307,10 @@ export const ChefDishEditorPage: React.FC = () => {
        {/* Notifications */}
       {feedback && feedback.entries.length > 0 && (
         <div className="mb-6">
-          <DishRejectionFeedbackBanner entries={feedback.entries} />
+          <DishRejectionFeedbackBanner
+            entries={feedback.entries}
+            ingredientNames={ingredientNames}
+          />
         </div>
       )}
       {errorMessage && (
@@ -268,16 +327,7 @@ export const ChefDishEditorPage: React.FC = () => {
       {/* Tab Panels */}
       {activeTab === 'identity' && (
         <BasicIdentityStep
-          initialData={
-            dish
-              ? {
-                  name: dish.name,
-                  category: dish.category,
-                  description: dish.description,
-                  photoUrl: dish.photoUrl,
-                }
-              : undefined
-          }
+          initialData={identityInitialData}
           onSave={handleSaveIdentity}
           onPhotoDelete={handlePhotoDelete}
           isReadOnly={isReadOnly}
@@ -287,7 +337,7 @@ export const ChefDishEditorPage: React.FC = () => {
       {activeTab === 'recipe' && (
         <RecipeBOMStep
           dishId={id}
-          initialRecipe={dish?.recipe || []}
+          initialRecipe={recipeInitial}
           onSaveRecipe={handleSaveRecipe}
           onRemoveIngredient={handleRemoveRecipeIngredient}
           isReadOnly={isReadOnly}
@@ -297,7 +347,7 @@ export const ChefDishEditorPage: React.FC = () => {
       {activeTab === 'allergens' && (
         <AllergenStep
           dishId={id}
-          initialRestrictions={dish?.restrictionCodes || []}
+          initialRestrictions={allergenInitialRestrictions}
           initialConfirmed={dish?.allergensConfirmed || false}
           onSaveAllergens={handleSaveAllergens}
           isReadOnly={isReadOnly}

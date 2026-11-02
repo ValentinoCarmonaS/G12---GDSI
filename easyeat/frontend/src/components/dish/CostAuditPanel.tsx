@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatAuditQuantity } from '@/utils/foodCostAudit';
 import { FoodCostAuditResponse } from '@/types/dish';
 
 interface CostAuditPanelProps {
@@ -63,12 +64,7 @@ export const CostAuditPanel: React.FC<CostAuditPanelProps> = ({ auditData, onRef
                     )}
                   </td>
                   <td className="px-4 py-2 text-right text-gray-700">
-                    {(() => {
-                      const rawValue = item.recipeQuantity ?? item.quantity ?? item.grossQuantity ?? item.amount;
-                      const numericValue = Number(rawValue);
-                      const safeQuantity = isNaN(numericValue) ? 0 : numericValue;
-                      return safeQuantity.toFixed(4);
-                    })()}
+                    {formatAuditQuantity(item)}
                   </td>
                   <td className="px-4 py-2 text-gray-700">{item.unitOfMeasure}</td>
                   <td className="px-4 py-2 text-right text-gray-700">

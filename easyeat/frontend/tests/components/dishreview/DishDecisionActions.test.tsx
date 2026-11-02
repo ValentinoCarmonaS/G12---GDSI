@@ -377,6 +377,68 @@ describe('DishDecisionActions', () => {
       expect(dishReviewApi.reject).not.toHaveBeenCalled();
     });
 
+    it('preloads the dish and forwards the edited proposal when the Administrator includes it (FR-042)', async () => {
+      const user = userEvent.setup();
+      vi.mocked(dishReviewApi.reject).mockResolvedValue({
+        dishId: 'dish-1',
+        status: 'DRAFT',
+        cycleNumber: 1,
+        reviewHistoryEntryId: 'h-1',
+      });
+      render(
+        <DishDecisionActions
+          detail={detail({
+            foodCostAudit: {
+              dishId: 'dish-1',
+              dishName: 'Risotto de Hongos',
+              totalFoodCost: 4500,
+              hasUnpricedIngredients: false,
+              warningNotes: [],
+              requiredDietaryRestrictions: [],
+              items: [
+                {
+                  ingredientId: 'ing-1',
+                  ingredientName: 'Arroz Carnaroli',
+                  recipeQuantity: 250,
+                  unitOfMeasure: 'g',
+                  unitPurchaseCost: 2,
+                  lineSubtotal: 500,
+                  unpricedWarning: false,
+                },
+              ],
+            },
+          })}
+          onDecided={vi.fn()}
+        />
+      );
+
+      await user.click(screen.getByRole('button', { name: /rechazar \/ devolver a cocina/i }));
+      const dialog = screen.getByRole('dialog');
+      await user.type(within(dialog).getByLabelText(/comentario/i), 'Ajustá la propuesta y reenviá.');
+      await user.click(within(dialog).getByLabelText(/incluir propuesta de cambios/i));
+
+      expect(within(dialog).getByLabelText(/título propuesto/i)).toHaveValue('Risotto de Hongos');
+      expect(within(dialog).getByText('Arroz Carnaroli')).toBeInTheDocument();
+      // The proposal prefill reads the audit line's `recipeQuantity`; a stale `quantity` key
+      // would seed the input with 0 or NaN instead of the real amount.
+      expect(within(dialog).getByLabelText(/cantidad de arroz carnaroli/i)).toHaveValue(250);
+
+      await user.click(within(dialog).getByRole('button', { name: 'Rechazar' }));
+
+      await waitFor(() =>
+        expect(dishReviewApi.reject).toHaveBeenCalledWith('dish-1', {
+          comment: 'Ajustá la propuesta y reenviá.',
+          proposedChanges: {
+            title: 'Risotto de Hongos',
+            description: null,
+            allergenCodes: [],
+            dietaryLifestyleCodes: [],
+            ingredients: [{ ingredientId: 'ing-1', quantity: 250 }],
+          },
+        })
+      );
+    });
+
     it('a dish-already-decided conflict is shown and triggers a refresh', async () => {
       const user = userEvent.setup();
       const error = Object.assign(new Error('Conflict'), {
@@ -420,7 +482,8 @@ describe('DishDecisionActions', () => {
       const user = userEvent.setup();
       vi.mocked(dishReviewApi.cancel).mockResolvedValue(undefined);
       const onCancelled = vi.fn();
-      render(<DishDecisionActions detail={detail()} onDecided={vi.fn()} onCancelled={onCancelled} />);
+      const onDecided = vi.fn();
+      render(<DishDecisionActions detail={detail()} onDecided={onDecided} onCancelled={onCancelled} />);
 
       await user.click(screen.getByRole('button', { name: /borrar/i }));
       const dialog = screen.getByRole('dialog', { name: /confirmar borrado/i });

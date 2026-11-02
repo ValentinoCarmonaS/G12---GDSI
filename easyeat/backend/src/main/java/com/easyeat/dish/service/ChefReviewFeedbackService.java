@@ -8,8 +8,9 @@ import com.easyeat.dish.domain.DishReviewHistory;
 import com.easyeat.dish.domain.ReviewEventType;
 import com.easyeat.dish.dto.ChefReviewFeedbackEntry;
 import com.easyeat.dish.dto.ChefReviewFeedbackResponse;
-import com.easyeat.dish.repository.DishReviewHistoryRepository;
-import org.springframework.stereotype.Service;
+import com.easyeat.dish.dto.DishProposedChanges;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.easyeat.dish.repository.DishReviewHistoryRepository;import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
@@ -27,7 +28,8 @@ import java.util.stream.Collectors;
  * <p>This class is injected with none of {@code FoodCostAuditService}, {@code
  * RetailPricingCalculator} or {@code DishPriceHistoryRepository} — there is no field through
  * which a cost, margin or price could reach a response built here, which is the structural
- * guarantee {@code ChefReviewFeedbackResponse}'s own Javadoc states.
+ * guarantee {@code ChefReviewFeedbackResponse}'s own Javadoc states. The proposal snapshot carried
+ * by an entry (FR-042) is culinary-only by construction, so nothing financial travels here either.
  */
 @Service
 public class ChefReviewFeedbackService {
@@ -73,9 +75,18 @@ public class ChefReviewFeedbackService {
                         row.getCycleNumber(),
                         namesById.getOrDefault(row.getAdminId(), "Administrador"),
                         row.getComment(),
+                        row.getProposedChangesJson() != null ? deserializeProposedChanges(row.getProposedChangesJson()) : null,
                         row.getCreatedAt()))
                 .toList();
 
         return new ChefReviewFeedbackResponse(dishId, dish.getStatus(), entries);
+    }
+
+    private DishProposedChanges deserializeProposedChanges(String json) {
+        try {
+            return new ObjectMapper().readValue(json, DishProposedChanges.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

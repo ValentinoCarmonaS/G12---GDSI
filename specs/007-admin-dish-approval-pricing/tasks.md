@@ -782,7 +782,35 @@ asks for, and a new component carries the actions beside it.
   **DONE 2026-10-31, GREEN** at 26 of 26, `tsc --noEmit` clean. Same shape as the two existing read
   methods: encode the id, forward the body/params verbatim, unwrap `response.data`, no retry, no
   error normalisation.
-- [x] T107 [P] Write `easyeat/frontend/tests/components/dishreview/DishDecisionActions.test.tsx`
+- [x] T120 [US6] C-07.1 Backend: Actualizar `DishReviewHistory` para almacenar el snapshot de la propuesta (título, descripción, etc.) y campo de feedback obligatorio.
+
+  **DONE 2026-11-01, GREEN.** `dish_review_history.proposed_changes_json` (JSONB) added by
+  `V12__dish_review_history_snapshot.sql`; the entity maps it with `@JdbcTypeCode(SqlTypes.JSON)`
+  (required by Hibernate 6 on Spring Boot 3.3.4 — without it PostgreSQL rejects the varchar insert
+  with `column ... is of type jsonb but expression is of type character varying`). `cycleNumber`
+  remains the monotonic review sequence. The mandatory 10–1000-character comment rule is unchanged
+  and still enforced by `DishReviewHistory.rejected`.
+- [x] T121 [US6] C-07.2 Backend: Adaptar endpoint `/rejection` para aceptar propuesta de edición y comentario, garantizando DTOs sin datos financieros para el Chef.
+
+  **DONE 2026-11-01, GREEN.** `RejectDishRequest` now carries an optional `proposedChanges`
+  (`DishProposedChanges`); `DishGovernanceService.reject` serializes it into the immutable audit
+  row. `ChefReviewFeedbackEntry` adds `proposedChanges` (culinary fields only: title, description,
+  allergen codes, lifestyle codes, ingredient quantities) and declares no cost, Food Cost, margin
+  or price property. DB-backed suites pass (`DishApprovalPricingIntegrationTest` 5/5,
+  `DishDecisionConcurrencyTest` 2/2, `AdminPricingMigrationTest` 19/19).
+- [ ] T122 [US6] C-07.3 Frontend Admin: Modificar `RejectionDialog` en `DishDecisionActions` para incluir formulario editable precargado.
+- [ ] T124 [US6] C-07.5 Chef Spec: Documentar requisitos de recepción de feedback y re-entrega en `specs/005-chef-dish-management/spec.md`.
+- [ ] T125 [US6] C-07.6 Frontend Chef: Implementar banner de visualización de feedback en `ChefDishForm.tsx` (excluyendo costos/márgenes).
+- [ ] T126 [US6] C-07.7 Frontend Chef: Habilitar precarga de propuesta de edición en el formulario de plato devuelto.
+- [x] T127 [US2] Backend test (write first, expect red): in `FoodCostEngineTest`, simulate an ingredient bought by package (`packageCost = 3600.00`, `unitsPerPackage = 12`, recipe quantity `2`) and assert the effective unit cost is `300.0000`/unit and the line subtotal is `600.00`; in `FoodCostAuditServiceTest`, assert the audit item reports the derived unit cost, not the package total.
+
+  **DONE 2026-11-01, GREEN.** Red confirmed first by compilation failure (`setPackageCost`, `setUnitsPerPackage`, 4-arg `IngredientCostItem` and `effectiveUnitCost()` missing). Both suites pass: `FoodCostEngineTest` 6/6 and `FoodCostAuditServiceTest` 6/6. The audit test now constructs a real `FoodCostEngine` instead of `@Spy` (inline class mocking is unsupported on the project's JDK 27); the environment workaround `-Dnet.bytebuddy.experimental=true` makes the whole backend suite runnable.
+- [x] T128 [US2] Backend implementation: add `package_cost` and `units_per_package` to `ingredients` (migration `V13`), derive the effective base unit cost as `packageCost / unitsPerPackage` (`HALF_UP`, 4 decimals) inside `FoodCostEngine` **before** each line subtotal, and wire it through `FoodCostAuditService` for the Administrator and Chef-facing cost audits. Mass/volume direct units (kg, l) and ingredients without a presentation keep the direct `unit_purchase_cost` equivalence.
+
+  **DONE 2026-11-01, GREEN.** `V13__ingredient_package_presentation.sql` adds the nullable paired columns with non-negative/positive/pairing checks. `FoodCostEngine.IngredientCostItem.effectiveUnitCost()` derives the per-base-unit cost before the subtotal; `FoodCostAuditService` forwards the presentation and reports the derived cost so the package total never leaks. `IngredientService` requires the pair together, persists it, and keeps `unit_purchase_cost` in sync with the derivation. Full backend suite with the Byte Buddy workaround: 1066 tests, 0 errors; the only 4 failures are the pre-existing `AdminDishReviewControllerTest` tab drift (`PUBLISHED`/`HISTORY` vs the `FINALIZED` enum), untouched by this change.
+- [x] T129 [US2] Backend model + migration (definitive presentation model): `units_per_package` is an `INTEGER NOT NULL DEFAULT 1` in `ingredients` (migration `V13__add_units_per_package_to_ingredients.sql`), mapped as `Integer unitsPerPackage = 1` on `Ingredient`. Direct units (kg, l, loose `u`) keep the default `1`. `FoodCostEngine` computes `unitCost = purchaseCost / unitsPerPackage` (`packageCost / unitsPerPackage`, `HALF_UP`, 4 decimals) before each line subtotal, falling back to `unit_purchase_cost` when no package cost is recorded; `FoodCostAuditService` reports the derived per-unit cost. Tests first: the dozen at `$3,600 / 12 u` must yield `$300.0000`/unit and a `$600.00` subtotal for 2 units.
+
+  **DONE 2026-11-02, GREEN.** Definitive model implemented, migration verified, and runtime context startup confirmed. `IngredientService` correctly handles integer assignment and database constraints.
   covering: the price calculator and both decision buttons render only for the dish states the
   contract allows (`PENDING_PRICE`: price + both buttons; `PUBLISHED`: price only, for repricing;
   `DRAFT`: neither); "Aprobar y Publicar" is disabled while `publicationGate.satisfied` is false;

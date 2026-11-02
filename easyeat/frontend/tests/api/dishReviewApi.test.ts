@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { dishReviewApi } from '../../src/api/dishReviewApi';
 import { apiClient } from '../../src/api/apiClient';
-import type { DishReviewInboxPage, DishReviewDetail } from '../../src/types/dishReview';
+import type { DishReviewInboxPage, DishReviewDetail, InboxTab } from '../../src/types/dishReview';
 
 vi.mock('../../src/api/apiClient', () => ({
   apiClient: {
@@ -52,7 +52,7 @@ describe('dishReviewApi', () => {
 
       // The server answers 400 for a tab outside the enum. The client must not silently
       // normalise it, or a bug in the caller would look like a working default view.
-      await dishReviewApi.getInbox({ tab: 'HISTORY' });
+      await dishReviewApi.getInbox({ tab: 'HISTORY' as InboxTab });
 
       expect(apiClient.get).toHaveBeenCalledWith(
         '/admin/dishes/review-inbox',
