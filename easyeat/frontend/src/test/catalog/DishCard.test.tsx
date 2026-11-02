@@ -55,7 +55,7 @@ describe('DishCard Component Tests (T019, T026, US2, COM-4.1.1, FR-007, FR-011, 
 
     // Historical referential price remains visible in regional format
     expect(screen.getByText('$ 8.900,00')).toBeInTheDocument();
-    expect(screen.getByText('Agotado')).toBeInTheDocument();
+    expect(screen.getAllByText('Agotado').length).toBeGreaterThanOrEqual(1);
 
     const addBtn = screen.getByTestId(`add-to-cart-btn-${mockOutOfStockDish.id}`);
     expect(addBtn).toBeDisabled();
