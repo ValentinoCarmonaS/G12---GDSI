@@ -134,7 +134,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 - [X] T039 [US4] Extend `CatalogFilterContext.tsx` to manage `selectedCategories`, `minPrice`, `maxPrice`, `searchQuery`, unified reset, and `sessionStorage` persistence under `easyeat_catalog_filters_{tenantId}`
 - [X] T040 [US4] Integrate manual filters sidebar and unified predicate logic into `CatalogPage.tsx` composing categories OR, price range AND, text search AND, and unified clear
 - [X] T041 [US4] Ensure out-of-stock dishes remain visible and disabled under active manual filters in `CatalogPage.tsx`
-- [ ] T042 [US4] Verify all tests pass (GREEN) for User Story 4 in `ManualFiltersSidebar.test.tsx`, `CatalogPage.test.tsx`, and `CatalogFilterContext.test.tsx`
+- [X] T042 [US4] Verify all tests pass (GREEN) for User Story 4 in `ManualFiltersSidebar.test.tsx`, `CatalogPage.test.tsx`, and `CatalogFilterContext.test.tsx`
 
 **Checkpoint**: All User Stories (1, 2, 3, 4) are fully functional, integrated, and independently testable.
 
