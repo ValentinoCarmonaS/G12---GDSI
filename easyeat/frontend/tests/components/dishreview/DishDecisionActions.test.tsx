@@ -420,7 +420,8 @@ describe('DishDecisionActions', () => {
       const user = userEvent.setup();
       vi.mocked(dishReviewApi.cancel).mockResolvedValue(undefined);
       const onCancelled = vi.fn();
-      render(<DishDecisionActions detail={detail()} onDecided={vi.fn()} onCancelled={onCancelled} />);
+      const onDecided = vi.fn();
+      render(<DishDecisionActions detail={detail()} onDecided={onDecided} onCancelled={onCancelled} />);
 
       await user.click(screen.getByRole('button', { name: /borrar/i }));
       const dialog = screen.getByRole('dialog', { name: /confirmar borrado/i });

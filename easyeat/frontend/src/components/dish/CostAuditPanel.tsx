@@ -64,7 +64,8 @@ export const CostAuditPanel: React.FC<CostAuditPanelProps> = ({ auditData, onRef
                   </td>
                   <td className="px-4 py-2 text-right text-gray-700">
                     {(() => {
-                      const rawValue = item.recipeQuantity ?? item.quantity ?? item.grossQuantity ?? item.amount;
+                      const itemAny = item as unknown as Record<string, unknown>;
+                      const rawValue = (itemAny.recipeQuantity ?? itemAny.quantity ?? itemAny.grossQuantity ?? itemAny.amount) as number | undefined;
                       const numericValue = Number(rawValue);
                       const safeQuantity = isNaN(numericValue) ? 0 : numericValue;
                       return safeQuantity.toFixed(4);

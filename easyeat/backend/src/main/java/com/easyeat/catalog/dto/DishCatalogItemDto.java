@@ -19,6 +19,8 @@ public class DishCatalogItemDto {
     @JsonProperty("isAvailable")
     private Boolean isAvailable;
 
+    private Integer availableStock;
+
     @JsonProperty("isCompliant")
     private Boolean isCompliant;
 
@@ -39,6 +41,21 @@ public class DishCatalogItemDto {
             Boolean isCompliant,
             List<String> conflictingRestrictions,
             List<String> recipeIngredients) {
+        this(id, name, description, category, price, photoUrl, isAvailable, null, isCompliant, conflictingRestrictions, recipeIngredients);
+    }
+
+    public DishCatalogItemDto(
+            UUID id,
+            String name,
+            String description,
+            String category,
+            BigDecimal price,
+            String photoUrl,
+            Boolean isAvailable,
+            Integer availableStock,
+            Boolean isCompliant,
+            List<String> conflictingRestrictions,
+            List<String> recipeIngredients) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -46,6 +63,7 @@ public class DishCatalogItemDto {
         this.price = price;
         this.photoUrl = photoUrl;
         this.isAvailable = isAvailable;
+        this.availableStock = availableStock;
         this.isCompliant = isCompliant;
         this.conflictingRestrictions = conflictingRestrictions != null ? conflictingRestrictions : new ArrayList<>();
         this.recipeIngredients = recipeIngredients != null ? recipeIngredients : new ArrayList<>();
@@ -105,6 +123,14 @@ public class DishCatalogItemDto {
 
     public void setIsAvailable(Boolean available) {
         isAvailable = available;
+    }
+
+    public Integer getAvailableStock() {
+        return availableStock;
+    }
+
+    public void setAvailableStock(Integer availableStock) {
+        this.availableStock = availableStock;
     }
 
     public Boolean getIsCompliant() {
