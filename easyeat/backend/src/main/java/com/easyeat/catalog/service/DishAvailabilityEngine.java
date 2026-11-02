@@ -92,6 +92,61 @@ public class DishAvailabilityEngine {
     }
 
     /**
+     * Calculates the maximum integer portions/stock available for a dish based on
+     * the limiting ingredient in its recipe and live kitchen inventory (INV-3).
+     * Returns 0 if dishId/tenantId is null, dish has no recipe, or any ingredient is inactive/insufficient.
+     */
+    public int calculateAvailableStock(UUID dishId, UUID tenantId) {
+        if (dishId == null || tenantId == null) {
+            return 0;
+        }
+
+        List<DishRecipeIngredient> recipeLines = dishRecipeIngredientRepository.findByIdDishId(dishId);
+        if (recipeLines == null || recipeLines.isEmpty()) {
+            return 0;
+        }
+
+        int maxPortions = Integer.MAX_VALUE;
+
+        for (DishRecipeIngredient line : recipeLines) {
+            if (line.getId() == null || line.getId().getIngredientId() == null || line.getQuantity() == null) {
+                return 0;
+            }
+
+            BigDecimal lineQuantity = line.getQuantity();
+            if (lineQuantity.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            Optional<Ingredient> ingredientOpt = ingredientRepository.findByIdAndTenantId(
+                    line.getId().getIngredientId(), tenantId);
+
+            if (ingredientOpt.isEmpty()) {
+                return 0;
+            }
+
+            Ingredient ingredient = ingredientOpt.get();
+
+            if (ingredient.getStatus() != IngredientStatus.ACTIVE) {
+                return 0;
+            }
+
+            BigDecimal currentStock = ingredient.getCurrentStock();
+            if (currentStock == null || currentStock.compareTo(BigDecimal.ZERO) <= 0) {
+                return 0;
+            }
+
+            BigDecimal portions = currentStock.divide(lineQuantity, 0, java.math.RoundingMode.FLOOR);
+            int portionCount = portions.intValue();
+            if (portionCount < maxPortions) {
+                maxPortions = portionCount;
+            }
+        }
+
+        return maxPortions == Integer.MAX_VALUE ? 0 : maxPortions;
+    }
+
+    /**
      * Computes the availability map { [dishId]: boolean } for all published active dishes of an establishment.
      */
     public Map<UUID, Boolean> computeAvailabilityMap(UUID tenantId) {

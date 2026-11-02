@@ -113,7 +113,7 @@ class CartValidationIntegrationTest {
         ingActive.setStatus(IngredientStatus.ACTIVE);
         ingActive = ingredientRepository.save(ingActive);
 
-        Ingredient ingEmpty = new Ingredient(tenantId, "Pan Brioche", IngredientCategory.PRODUCE, UnitOfMeasure.UNITS, BigDecimal.valueOf(500));
+        Ingredient ingEmpty = new Ingredient(tenantId, "Pan Brioche", IngredientCategory.PRODUCE, UnitOfMeasure.U, BigDecimal.valueOf(500));
         ingEmpty.setCurrentStock(BigDecimal.ZERO);
         ingEmpty.setStatus(IngredientStatus.ACTIVE);
         ingEmpty = ingredientRepository.save(ingEmpty);

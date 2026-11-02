@@ -1,10 +1,13 @@
 package com.easyeat.cart.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 import java.util.UUID;
 
 public class CartStockValidationResponse {
 
+    @JsonProperty("isValid")
     private boolean isValid;
     private List<ItemResponse> items;
 
@@ -16,10 +19,12 @@ public class CartStockValidationResponse {
         this.items = items;
     }
 
+    @JsonProperty("isValid")
     public boolean isValid() {
         return isValid;
     }
 
+    @JsonProperty("isValid")
     public void setValid(boolean valid) {
         isValid = valid;
     }
@@ -35,6 +40,8 @@ public class CartStockValidationResponse {
     public static class ItemResponse {
 
         private UUID dishId;
+
+        @JsonProperty("isAvailable")
         private boolean isAvailable;
         private int availableStock;
         private int requestedQuantity;
@@ -57,10 +64,12 @@ public class CartStockValidationResponse {
             this.dishId = dishId;
         }
 
+        @JsonProperty("isAvailable")
         public boolean isAvailable() {
             return isAvailable;
         }
 
+        @JsonProperty("isAvailable")
         public void setAvailable(boolean available) {
             isAvailable = available;
         }
