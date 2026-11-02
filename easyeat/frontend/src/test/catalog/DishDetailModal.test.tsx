@@ -256,4 +256,35 @@ describe('DishDetailModal Component Tests (T034, US2, COM-4.1.1, FR-007, FR-012,
       expect(screen.getByTestId('add-to-cart-btn')).not.toBeDisabled();
     });
   });
+
+  describe('User Story 2 - Ver precio final y subtotal provisorio (T019, T020, COM-5.1.3, AC-3.1 to AC-3.5, SC-007, SC-009, SC-011)', () => {
+    it('prominently displays retail price with taxes in regional format ($ 5.500,00) next to action buttons (T019, INV-9, INV-10, AC-3.1, AC-3.2, FR-011, FR-012)', () => {
+      render(<DishDetailModal dish={mockDish} isOpen={true} onClose={vi.fn()} />);
+
+      // Price formatted in regional Argentine Pesos ($ 5.500,00)
+      const priceElement = screen.getByTestId('dish-detail-price');
+      expect(priceElement).toBeInTheDocument();
+      expect(priceElement).toHaveTextContent('$ 5.500,00');
+    });
+
+    it('displays historical referential price with purchase actions disabled when dish is out of stock (T019, INV-12, AC-3.4, FR-014, SC-009, EC-010)', () => {
+      const outOfStockDish: DishCatalogItem & { availableStock?: number } = {
+        ...mockDish,
+        isAvailable: false,
+        availableStock: 0,
+      };
+
+      render(<DishDetailModal dish={outOfStockDish} isOpen={true} onClose={vi.fn()} />);
+
+      // Referential price is still visible
+      const priceElement = screen.getByTestId('dish-detail-price');
+      expect(priceElement).toBeInTheDocument();
+      expect(priceElement).toHaveTextContent('$ 5.500,00');
+
+      // Actions and quantity selector disabled
+      expect(screen.getByTestId('add-to-cart-btn')).toBeDisabled();
+      expect(screen.getByTestId('quantity-decrement-btn')).toBeDisabled();
+      expect(screen.getByTestId('quantity-increment-btn')).toBeDisabled();
+    });
+  });
 });

@@ -74,7 +74,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 ### Tests for User Story 2 (TDD RED) ⚠️
 > **NOTE: Write these tests FIRST and ensure they FAIL before implementation.**
 
-- [ ] T019 [P] [US2] Component tests (RED) for prominent final price with taxes, regional formatting, and out-of-stock referential price with disabled actions in `easyeat/frontend/src/test/catalog/DishCard.test.tsx` and `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
+- [X] T019 [P] [US2] Component tests (RED) for prominent final price with taxes, regional formatting, and out-of-stock referential price with disabled actions in `easyeat/frontend/src/test/catalog/DishCard.test.tsx` and `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
 - [ ] T020 [P] [US2] Component tests (RED) for quantity selector without artificial cap, dynamic subtotal calculation, and estimation reset on close in `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
 - [ ] T021 [P] [US2] Unit tests (RED) for `CartContext.addItem` inventory validation against remaining stock (deducting existing cart quantity) in `easyeat/frontend/src/test/cart/CartContext.test.tsx`
 

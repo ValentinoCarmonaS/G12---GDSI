@@ -29,17 +29,37 @@ const mockOutOfStockDish: DishCatalogItem = {
   recipeIngredients: ['Bife de chorizo', 'Sal parrillera'],
 };
 
-describe('DishCard Component Tests (T026, US2, COM-4.1.1, FR-007, FR-011, FR-012, FR-014)', () => {
-  it('renders dish name, formatted price, description and photo when available', () => {
+describe('DishCard Component Tests (T019, T026, US2, COM-4.1.1, FR-007, FR-011, FR-012, FR-014)', () => {
+  it('renders prominent final price with regional format ($ 5.500,00) and taxes (INV-9, INV-10, AC-3.1, AC-3.2, FR-011, FR-012)', () => {
     const onSelectDish = vi.fn();
     render(<DishCard dish={mockAvailableDish} onSelectDish={onSelectDish} />);
 
     expect(screen.getByText('Milanesa Napolitana con Fritas')).toBeInTheDocument();
-    expect(screen.getByText(/5\.500|5,500/)).toBeInTheDocument();
+    // Regional format Argentine Pesos: $ 5.500,00
+    expect(screen.getByText('$ 5.500,00')).toBeInTheDocument();
     expect(screen.getByText('Carne con salsa, jamón y queso con guarnición de papas.')).toBeInTheDocument();
 
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', mockAvailableDish.photoUrl);
+  });
+
+  it('renders referential price for out-of-stock dish while disabling action buttons (INV-12, AC-3.4, FR-014)', () => {
+    const onAddToCart = vi.fn();
+    render(
+      <DishCard
+        dish={mockOutOfStockDish}
+        onAddToCart={onAddToCart}
+        onSelectDish={vi.fn()}
+      />
+    );
+
+    // Historical referential price remains visible in regional format
+    expect(screen.getByText('$ 8.900,00')).toBeInTheDocument();
+    expect(screen.getByText('Agotado')).toBeInTheDocument();
+
+    const addBtn = screen.getByTestId(`add-to-cart-btn-${mockOutOfStockDish.id}`);
+    expect(addBtn).toBeDisabled();
+    expect(addBtn).toHaveTextContent('Agotado');
   });
 
   it('renders placeholder image fallback when photoUrl is null', () => {
