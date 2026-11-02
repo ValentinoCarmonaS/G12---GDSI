@@ -54,4 +54,58 @@ describe('DishDetailModal Component Tests (T034, US2, COM-4.1.1, FR-007, FR-012,
     fireEvent.click(screen.getByTestId('modal-close-btn'));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  describe('T010 [US1] - Modal opening and scroll coordinate capture/restoration on close', () => {
+    it('captures window.scrollY upon opening and restores it with instant behavior upon close via button', () => {
+      const originalScrollTo = window.scrollTo;
+      const scrollToMock = vi.fn();
+      window.scrollTo = scrollToMock;
+
+      // Simulate user scrolled down 1200px in the catalog grid (INV-1, SC-002)
+      Object.defineProperty(window, 'scrollY', { value: 1200, writable: true });
+
+      const onClose = vi.fn();
+      const { rerender } = render(
+        <DishDetailModal dish={mockDish} isOpen={true} onClose={onClose} />
+      );
+
+      // Verify modal is open
+      expect(screen.getByTestId('dish-detail-modal')).toBeInTheDocument();
+
+      // Click close button
+      fireEvent.click(screen.getByTestId('modal-close-btn'));
+      expect(onClose).toHaveBeenCalledTimes(1);
+
+      // Rerender with isOpen=false simulating parent closing the modal
+      rerender(<DishDetailModal dish={mockDish} isOpen={false} onClose={onClose} />);
+
+      // Verify scrollTo was called with exact vertical coordinate and instant behavior (INV-1, SC-002)
+      expect(scrollToMock).toHaveBeenCalledWith({ top: 1200, behavior: 'instant' });
+
+      window.scrollTo = originalScrollTo;
+    });
+
+    it('restores window.scrollY coordinate when modal is closed by clicking the backdrop outside', () => {
+      const originalScrollTo = window.scrollTo;
+      const scrollToMock = vi.fn();
+      window.scrollTo = scrollToMock;
+
+      Object.defineProperty(window, 'scrollY', { value: 850, writable: true });
+
+      const onClose = vi.fn();
+      const { rerender } = render(
+        <DishDetailModal dish={mockDish} isOpen={true} onClose={onClose} />
+      );
+
+      // Click on backdrop outside modal container
+      fireEvent.click(screen.getByTestId('dish-detail-modal'));
+      expect(onClose).toHaveBeenCalledTimes(1);
+
+      rerender(<DishDetailModal dish={mockDish} isOpen={false} onClose={onClose} />);
+
+      expect(scrollToMock).toHaveBeenCalledWith({ top: 850, behavior: 'instant' });
+
+      window.scrollTo = originalScrollTo;
+    });
+  });
 });
