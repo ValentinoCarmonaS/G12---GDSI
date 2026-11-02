@@ -108,7 +108,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 - [X] T030 [US3] Replace `AllergenWarningBadge` in `DishDetailModal.tsx` with `AllergenNeutralPill`, removing all personalized profile warnings per Clarification #4
 - [X] T031 [US3] Implement explicit notice `"Lista de componentes no disponible"` for dishes without ingredients in `DishDetailModal.tsx`
 - [X] T032 [US3] Implement neutral informative notice for dishes with ingredients but no declared allergens in `DishDetailModal.tsx`
-- [ ] T033 [US3] Verify all unit and component tests pass (GREEN) for User Story 3 in `DinerCatalogServiceTest.java` and `DishDetailModal.test.tsx`
+- [X] T033 [US3] Verify all unit and component tests pass (GREEN) for User Story 3 in `DinerCatalogServiceTest.java` and `DishDetailModal.test.tsx`
 
 **Checkpoint**: User Stories 1, 2, AND 3 are fully functional and independently testable.
 
