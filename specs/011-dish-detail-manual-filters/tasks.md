@@ -54,7 +54,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 
 ### Implementation for User Story 1 (GREEN)
 
-- [ ] T013 [US1] Implement scroll coordinate capture (`window.scrollY`) and instant restoration on modal close (button and backdrop) in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx`
+- [X] T013 [US1] Implement scroll coordinate capture (`window.scrollY`) and instant restoration on modal close (button and backdrop) in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx`
 - [ ] T014 [US1] Implement conditional photo container omission (completely omit container when `!photoUrl`, removing placeholders) in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx`
 - [ ] T015 [US1] Implement progressive image loading with animated skeleton and load error handling in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx`
 - [ ] T016 [US1] Implement internal vertical scroll container (`max-h-[85vh]`, `overflow-y-auto break-words`) for long descriptions in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx`

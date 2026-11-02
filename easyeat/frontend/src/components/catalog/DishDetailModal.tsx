@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import type { DishCatalogItem } from '@/types/dinerCatalog';
 import { AllergenWarningBadge } from './AllergenWarningBadge';
 import { CartContext } from '@/context/CartContext';
@@ -23,6 +23,37 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   const [imageError, setImageError] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
   const cartContext = useContext(CartContext);
+  const savedScrollYRef = useRef<number>(0);
+
+  // Capture window.scrollY upon modal opening and restore it upon close (INV-1, FR-004, SC-002, EC-021)
+  useEffect(() => {
+    if (isOpen) {
+      if (typeof window !== 'undefined') {
+        savedScrollYRef.current = window.scrollY;
+      }
+    }
+  }, [isOpen]);
+
+  const safelyRestoreScroll = () => {
+    try {
+      if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: savedScrollYRef.current, behavior: 'instant' });
+      }
+    } catch {
+      // Ignore environments where window.scrollTo is not implemented (e.g. jsdom)
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      safelyRestoreScroll();
+    };
+  }, []);
+
+  const handleClose = () => {
+    safelyRestoreScroll();
+    onClose();
+  };
 
   useEffect(() => {
     setSelectedQuantity(1);
@@ -78,7 +109,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
     <div
       data-testid="dish-detail-modal"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-gray-100 flex flex-col max-h-[90vh] animate-in zoom-in-95"
@@ -118,7 +149,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           {/* Close button */}
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             data-testid="modal-close-btn"
             className="absolute top-3 right-3 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors cursor-pointer"
             aria-label="Cerrar modal"
