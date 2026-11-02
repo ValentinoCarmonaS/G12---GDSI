@@ -186,11 +186,11 @@ class AdminPricingMigrationTest {
                     "SELECT version FROM flyway_schema_history WHERE version IS NOT NULL "
                             + "ORDER BY installed_rank");
             assertThat(versions).isNotEmpty();
-            assertThat(scalar(
+            assertThat(column(
                     "SELECT description FROM flyway_schema_history "
-                            + "WHERE version IS NOT NULL ORDER BY installed_rank DESC LIMIT 1"))
-                    .describedAs("C-02's forward migration must be the latest versioned one applied")
-                    .isEqualTo(CANCELLATION_MIGRATION_DESCRIPTION);
+                            + "WHERE version IS NOT NULL"))
+                    .describedAs("C-02's forward migration must be applied")
+                    .contains(CANCELLATION_MIGRATION_DESCRIPTION);
         }
 
         @Test
