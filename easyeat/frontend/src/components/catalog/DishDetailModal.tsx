@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import type { DishCatalogItem } from '@/types/dinerCatalog';
 import { AllergenWarningBadge } from './AllergenWarningBadge';
 import { CartContext } from '@/context/CartContext';
+import { formatCurrency, calculateLineTotal } from '@/utils/currencyUtils';
 
 export interface DishDetailModalProps {
   dish: (DishCatalogItem & { availableStock?: number }) | null;
@@ -23,6 +24,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
+  const [stockErrorWarning, setStockErrorWarning] = useState<string | null>(null);
   const cartContext = useContext(CartContext);
   const savedScrollYRef = useRef<number>(0);
 
@@ -58,6 +60,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
 
   useEffect(() => {
     setSelectedQuantity(1);
+    setStockErrorWarning(null);
     setImageError(false);
     setImageLoaded(false);
   }, [dish?.id, isOpen]);
@@ -89,16 +92,29 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   const canAddToCart = !isReadOnly && !isOutOfStock && !isMaxStockReached;
 
   const minQuantity = 1;
-  const maxQuantity = remainingStock !== undefined ? Math.max(minQuantity, remainingStock) : 99;
 
+  // In estimation phase, selector has NO artificial cap (Clarification #2, INV-13, AC-3.5)
   const isDecrementDisabled = selectedQuantity <= minQuantity || !canAddToCart;
-  const isIncrementDisabled =
-    !canAddToCart || (remainingStock !== undefined && selectedQuantity >= remainingStock);
+  const isIncrementDisabled = !canAddToCart;
+
+  const provisionalSubtotal = calculateLineTotal(dish.price, selectedQuantity);
 
   const hasConflicts = dish.isCompliant === false && (dish.conflictingRestrictions?.length ?? 0) > 0;
 
   const handleAddToCart = () => {
     if (!canAddToCart) return;
+
+    // Validate inventory: N + q_en_carrito <= stockDisponible (INV-13, EC-011, Clarification #2)
+    if (remainingStock !== undefined && selectedQuantity > remainingStock) {
+      setStockErrorWarning(
+        `Disponibilidad insuficiente: solo quedan ${remainingStock} unidad${
+          remainingStock === 1 ? '' : 'es'
+        } disponible${remainingStock === 1 ? '' : 's'} (${effectiveAvailableStock} en cocina)`
+      );
+      return;
+    }
+
+    setStockErrorWarning(null);
     if (onAddToCart) {
       onAddToCart(dish, selectedQuantity);
     } else if (cartContext) {
@@ -215,7 +231,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             </div>
           )}
 
-          {/* Title and Price */}
+          {/* Title and Price (INV-9, INV-10, AC-3.1, AC-3.2, FR-011, FR-012) */}
           <div className="flex items-start justify-between gap-3">
             <div>
               <span className="text-2xs font-bold tracking-wider text-amber-700 uppercase">
@@ -223,8 +239,11 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               </span>
               <h3 className="text-xl font-bold text-gray-900">{dish.name}</h3>
             </div>
-            <span className="text-xl font-extrabold text-amber-900 whitespace-nowrap">
-              ${dish.price.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <span
+              data-testid="dish-detail-price"
+              className="text-xl font-extrabold text-amber-900 whitespace-nowrap"
+            >
+              {formatCurrency(dish.price)}
             </span>
           </div>
 
@@ -260,7 +279,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             </div>
           )}
 
-          {/* Quantity Selector Section */}
+          {/* Quantity Selector & Provisional Subtotal Section (INV-13, AC-3.5, SC-011, EC-011) */}
           <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
@@ -271,7 +290,10 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                   type="button"
                   data-testid="quantity-decrement-btn"
                   disabled={isDecrementDisabled}
-                  onClick={() => setSelectedQuantity((q) => Math.max(minQuantity, q - 1))}
+                  onClick={() => {
+                    setSelectedQuantity((q) => Math.max(minQuantity, q - 1));
+                    setStockErrorWarning(null);
+                  }}
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-bold text-base cursor-pointer"
                   aria-label="Disminuir cantidad"
                 >
@@ -287,11 +309,10 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                   type="button"
                   data-testid="quantity-increment-btn"
                   disabled={isIncrementDisabled}
-                  onClick={() =>
-                    setSelectedQuantity((q) =>
-                      remainingStock !== undefined ? Math.min(maxQuantity, q + 1) : q + 1
-                    )
-                  }
+                  onClick={() => {
+                    setSelectedQuantity((q) => q + 1);
+                    setStockErrorWarning(null);
+                  }}
                   className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-bold text-base cursor-pointer"
                   aria-label="Aumentar cantidad"
                 >
@@ -300,6 +321,27 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               </div>
             </div>
 
+            {/* Dynamic Provisional Subtotal Calculation (INV-13, AC-3.5) */}
+            <div className="flex items-center justify-between py-1 px-3 bg-gray-50 rounded-xl border border-gray-100">
+              <span className="text-xs font-medium text-gray-600">Subtotal provisorio:</span>
+              <span
+                data-testid="dish-detail-subtotal"
+                className="text-sm font-extrabold text-amber-900"
+              >
+                {formatCurrency(provisionalSubtotal)}
+              </span>
+            </div>
+
+            {/* Stock Insufficient Error Warning on Add Attempt (Clarification #2, INV-13, EC-011) */}
+            {stockErrorWarning && (
+              <div
+                data-testid="stock-insufficient-warning"
+                className="text-xs font-semibold text-red-800 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200"
+              >
+                {stockErrorWarning}
+              </div>
+            )}
+
             {/* Stock Limit Warning */}
             {isMaxStockReached && (
               <div
@@ -307,14 +349,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 className="text-xs font-semibold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200"
               >
                 Límite de disponibilidad alcanzado ({effectiveAvailableStock} en cocina)
-              </div>
-            )}
-            {!isMaxStockReached && remainingStock !== undefined && selectedQuantity >= remainingStock && (
-              <div
-                data-testid="stock-limit-warning"
-                className="text-xs font-semibold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200"
-              >
-                Máxima disponibilidad seleccionada ({remainingStock} disponible{remainingStock === 1 ? '' : 's'})
               </div>
             )}
           </div>

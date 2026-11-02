@@ -74,17 +74,17 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 ### Tests for User Story 2 (TDD RED) ⚠️
 > **NOTE: Write these tests FIRST and ensure they FAIL before implementation.**
 
-- [ ] T019 [P] [US2] Component tests (RED) for prominent final price with taxes, regional formatting, and out-of-stock referential price with disabled actions in `easyeat/frontend/src/test/catalog/DishCard.test.tsx` and `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
-- [ ] T020 [P] [US2] Component tests (RED) for quantity selector without artificial cap, dynamic subtotal calculation, and estimation reset on close in `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
-- [ ] T021 [P] [US2] Unit tests (RED) for `CartContext.addItem` inventory validation against remaining stock (deducting existing cart quantity) in `easyeat/frontend/src/test/cart/CartContext.test.tsx`
+- [X] T019 [P] [US2] Component tests (RED) for prominent final price with taxes, regional formatting, and out-of-stock referential price with disabled actions in `easyeat/frontend/src/test/catalog/DishCard.test.tsx` and `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
+- [X] T020 [P] [US2] Component tests (RED) for quantity selector without artificial cap, dynamic subtotal calculation, and estimation reset on close in `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
+- [X] T021 [P] [US2] Unit tests (RED) for `CartContext.addItem` inventory validation against remaining stock (deducting existing cart quantity) in `easyeat/frontend/src/test/cart/CartContext.test.tsx`
 
 ### Implementation for User Story 2 (GREEN)
 
-- [ ] T022 [US2] Refactor quantity selector in `DishDetailModal.tsx` to remove artificial cap on increment and implement dynamic subtotal calculation using `currencyUtils.ts`
-- [ ] T023 [US2] Implement inventory validation on "Agregar al carrito" in `DishDetailModal.tsx` displaying insufficient stock warning when $N + q_{\text{en\_carrito}} > \text{stockDisponible}$
-- [ ] T024 [US2] Extend `CartContext.tsx` to validate available stock against accumulated cart quantities before appending items to cart state
-- [ ] T025 [US2] Update `DishCard.tsx` to ensure out-of-stock dishes display referential price and disable action buttons
-- [ ] T026 [US2] Verify all component, unit, and integration tests pass (GREEN) for User Story 2 in `DishCard.test.tsx`, `DishDetailModal.test.tsx`, and `CartContext.test.tsx`
+- [X] T022 [US2] Refactor quantity selector in `DishDetailModal.tsx` to remove artificial cap on increment and implement dynamic subtotal calculation using `currencyUtils.ts`
+- [X] T023 [US2] Implement inventory validation on "Agregar al carrito" in `DishDetailModal.tsx` displaying insufficient stock warning when $N + q_{\text{en\_carrito}} > \text{stockDisponible}$
+- [X] T024 [US2] Extend `CartContext.tsx` to validate available stock against accumulated cart quantities before appending items to cart state
+- [X] T025 [US2] Update `DishCard.tsx` to ensure out-of-stock dishes display referential price and disable action buttons
+- [X] T026 [US2] Verify all component, unit, and integration tests pass (GREEN) for User Story 2 in `DishCard.test.tsx`, `DishDetailModal.test.tsx`, and `CartContext.test.tsx`
 
 **Checkpoint**: User Stories 1 AND 2 are fully functional and independently testable.
 

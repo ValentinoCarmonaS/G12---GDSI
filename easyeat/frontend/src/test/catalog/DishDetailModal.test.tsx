@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { DishDetailModal } from '@/components/catalog/DishDetailModal';
+import { CartContext } from '@/context/CartContext';
 import type { DishCatalogItem } from '@/types/dinerCatalog';
 
 const mockDish: DishCatalogItem = {
@@ -254,6 +255,171 @@ describe('DishDetailModal Component Tests (T034, US2, COM-4.1.1, FR-007, FR-012,
       expect(screen.getByTestId('dish-detail-modal')).toBeInTheDocument();
       expect(screen.queryByTestId('dish-unavailable-banner')).toBeNull();
       expect(screen.getByTestId('add-to-cart-btn')).not.toBeDisabled();
+    });
+  });
+
+  describe('User Story 2 - Ver precio final y subtotal provisorio (T019, T020, COM-5.1.3, AC-3.1 to AC-3.5, SC-007, SC-009, SC-011)', () => {
+    it('prominently displays retail price with taxes in regional format ($ 5.500,00) next to action buttons (T019, INV-9, INV-10, AC-3.1, AC-3.2, FR-011, FR-012)', () => {
+      render(<DishDetailModal dish={mockDish} isOpen={true} onClose={vi.fn()} />);
+
+      // Price formatted in regional Argentine Pesos ($ 5.500,00)
+      const priceElement = screen.getByTestId('dish-detail-price');
+      expect(priceElement).toBeInTheDocument();
+      expect(priceElement).toHaveTextContent('$ 5.500,00');
+    });
+
+    it('displays historical referential price with purchase actions disabled when dish is out of stock (T019, INV-12, AC-3.4, FR-014, SC-009, EC-010)', () => {
+      const outOfStockDish: DishCatalogItem & { availableStock?: number } = {
+        ...mockDish,
+        isAvailable: false,
+        availableStock: 0,
+      };
+
+      render(<DishDetailModal dish={outOfStockDish} isOpen={true} onClose={vi.fn()} />);
+
+      // Referential price is still visible
+      const priceElement = screen.getByTestId('dish-detail-price');
+      expect(priceElement).toBeInTheDocument();
+      expect(priceElement).toHaveTextContent('$ 5.500,00');
+
+      // Actions and quantity selector disabled
+      expect(screen.getByTestId('add-to-cart-btn')).toBeDisabled();
+      expect(screen.getByTestId('quantity-decrement-btn')).toBeDisabled();
+      expect(screen.getByTestId('quantity-increment-btn')).toBeDisabled();
+    });
+
+    it('allows selecting quantity without artificial cap and dynamically updates provisional subtotal (T020, INV-13, AC-3.5, SC-011, EC-011)', () => {
+      // Dish with price 5500.0, availableStock 3
+      const dishWithStock = {
+        ...mockDish,
+        price: 5500.0,
+        availableStock: 3,
+      };
+
+      render(<DishDetailModal dish={dishWithStock} isOpen={true} onClose={vi.fn()} />);
+
+      const incBtn = screen.getByTestId('quantity-increment-btn');
+      const decBtn = screen.getByTestId('quantity-decrement-btn');
+      const qtyValue = screen.getByTestId('quantity-value');
+      const subtotalElement = screen.getByTestId('dish-detail-subtotal');
+
+      // Initial state: N = 1, subtotal = $ 5.500,00
+      expect(qtyValue).toHaveTextContent('1');
+      expect(subtotalElement).toHaveTextContent('$ 5.500,00');
+
+      // Comensal can increment beyond kitchen stock without artificial cap in estimation phase (Clarification #2, INV-13)
+      // Increment to N = 2 -> subtotal = $ 11.000,00
+      fireEvent.click(incBtn);
+      expect(qtyValue).toHaveTextContent('2');
+      expect(subtotalElement).toHaveTextContent('$ 11.000,00');
+
+      // Increment to N = 3 -> subtotal = $ 16.500,00
+      fireEvent.click(incBtn);
+      expect(qtyValue).toHaveTextContent('3');
+      expect(subtotalElement).toHaveTextContent('$ 16.500,00');
+
+      // Increment to N = 5 (exceeding availableStock=3, estimation allowed!) -> subtotal = $ 27.500,00
+      fireEvent.click(incBtn);
+      fireEvent.click(incBtn);
+      expect(qtyValue).toHaveTextContent('5');
+      expect(subtotalElement).toHaveTextContent('$ 27.500,00');
+      expect(incBtn).not.toBeDisabled();
+
+      // Decrement back to N = 4 -> subtotal = $ 22.000,00
+      fireEvent.click(decBtn);
+      expect(qtyValue).toHaveTextContent('4');
+      expect(subtotalElement).toHaveTextContent('$ 22.000,00');
+    });
+
+    it('resets quantity selector to 1 and discards subtotal calculation upon closing and reopening (T020, INV-13, EC-011, Clarification #2)', () => {
+      const { rerender } = render(<DishDetailModal dish={mockDish} isOpen={true} onClose={vi.fn()} />);
+
+      const incBtn = screen.getByTestId('quantity-increment-btn');
+      fireEvent.click(incBtn);
+      fireEvent.click(incBtn);
+      expect(screen.getByTestId('quantity-value')).toHaveTextContent('3');
+      expect(screen.getByTestId('dish-detail-subtotal')).toHaveTextContent('$ 16.500,00');
+
+      // Close modal
+      rerender(<DishDetailModal dish={mockDish} isOpen={false} onClose={vi.fn()} />);
+
+      // Reopen modal
+      rerender(<DishDetailModal dish={mockDish} isOpen={true} onClose={vi.fn()} />);
+      expect(screen.getByTestId('quantity-value')).toHaveTextContent('1');
+      expect(screen.getByTestId('dish-detail-subtotal')).toHaveTextContent('$ 5.500,00');
+    });
+
+    it('validates kitchen inventory on "Agregar al Carrito" and displays insufficient stock warning when N + q_en_carrito > availableStock (T023, INV-13, EC-011, Clarification #2, SC-011)', () => {
+      const onAddToCart = vi.fn();
+      const dishWithStock = {
+        ...mockDish,
+        availableStock: 3,
+      };
+
+      // Mock CartContext where 1 unit is already in cart -> remainingStock = 2
+      const mockCart = {
+        items: [
+          {
+            dishId: mockDish.id,
+            name: mockDish.name,
+            price: mockDish.price,
+            quantity: 1,
+            availableStock: 3,
+          },
+        ],
+        addItem: vi.fn(),
+        removeItem: vi.fn(),
+        updateQuantity: vi.fn(),
+        clearCart: vi.fn(),
+        reEvaluateCompliance: vi.fn(),
+        totalAmount: mockDish.price,
+        totalCount: 1,
+        hasConflictingItems: false,
+      };
+
+      const onClose = vi.fn();
+      render(
+        <CartContext.Provider value={mockCart as any}>
+          <DishDetailModal
+            dish={dishWithStock}
+            isOpen={true}
+            onClose={onClose}
+            onAddToCart={onAddToCart}
+          />
+        </CartContext.Provider>
+      );
+
+      const incBtn = screen.getByTestId('quantity-increment-btn');
+      const addBtn = screen.getByTestId('add-to-cart-btn');
+
+      // Select N = 3 (3 + 1 = 4 > availableStock=3)
+      fireEvent.click(incBtn);
+      fireEvent.click(incBtn);
+      expect(screen.getByTestId('quantity-value')).toHaveTextContent('3');
+
+      // Click "Agregar al Carrito"
+      fireEvent.click(addBtn);
+
+      // Must NOT add to cart and must NOT close modal
+      expect(onAddToCart).not.toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+
+      // Must display explicit warning notice with remaining stock (2 disponibles) and kitchen stock (3 en cocina)
+      const warning = screen.getByTestId('stock-insufficient-warning');
+      expect(warning).toBeInTheDocument();
+      expect(warning).toHaveTextContent(/2 unidades disponibles/i);
+      expect(warning).toHaveTextContent(/3 en cocina/i);
+
+      // Comensal reduces quantity to N = 2 (2 + 1 = 3 <= availableStock=3)
+      const decBtn = screen.getByTestId('quantity-decrement-btn');
+      fireEvent.click(decBtn);
+      expect(screen.getByTestId('quantity-value')).toHaveTextContent('2');
+
+      // Try adding again with valid amount
+      fireEvent.click(addBtn);
+      expect(onAddToCart).toHaveBeenCalledTimes(1);
+      expect(onAddToCart).toHaveBeenCalledWith(dishWithStock, 2);
+      expect(onClose).toHaveBeenCalledTimes(1);
     });
   });
 });
