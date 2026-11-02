@@ -49,6 +49,7 @@ import com.easyeat.operations.exception.InvalidCapacityException;
 import com.easyeat.operations.exception.InvalidScheduleException;
 import com.easyeat.operations.exception.SlotSoldOutException;
 import com.easyeat.operations.exception.OperatingConfigConflictException;
+import com.easyeat.operations.exception.PaymentMethodUnavailableException;
 import com.easyeat.profile.exception.CooldownRateLimitException;
 import com.easyeat.profile.exception.DietaryTaxonomyException;
 import com.easyeat.profile.exception.EmailVerificationException;
@@ -577,6 +578,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         problem.setType(URI.create("https://easyeat.com/errors/slot-sold-out"));
         problem.setTitle("Franja horaria agotada");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    /** 409: the payment method was disabled before the order was confirmed (INV-9, EC-010). */
+    @ExceptionHandler(PaymentMethodUnavailableException.class)
+    public ResponseEntity<ProblemDetail> handlePaymentMethodUnavailable(PaymentMethodUnavailableException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/payment-method-unavailable"));
+        problem.setTitle("Método de pago no disponible");
         problem.setInstance(URI.create(request.getRequestURI()));
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }

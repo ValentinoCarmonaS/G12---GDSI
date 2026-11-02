@@ -1,10 +1,13 @@
 package com.easyeat.operations.dto;
 
 import com.easyeat.operations.domain.PaymentMethod;
-import jakarta.validation.constraints.NotNull;
 
-public record ValidatePaymentRequest(
-        @NotNull(message = "paymentMethod is required")
-        PaymentMethod paymentMethod
-) {
+import java.util.Objects;
+
+/** A missing or unknown method is a 400, see {@link TogglePaymentMethodRequest}. */
+public record ValidatePaymentRequest(PaymentMethod paymentMethod) {
+
+    public ValidatePaymentRequest {
+        Objects.requireNonNull(paymentMethod, "paymentMethod is required");
+    }
 }
