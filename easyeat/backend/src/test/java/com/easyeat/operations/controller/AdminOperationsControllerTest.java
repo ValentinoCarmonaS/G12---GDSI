@@ -49,6 +49,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -145,7 +146,7 @@ class AdminOperationsControllerTest {
         }
 
         @Test
-                @DisplayName("a non-admin role is refused with 403")
+        @DisplayName("a non-admin role is refused with 403")
         void shouldReturn403ForNonAdmin() throws Exception {
             mockMvc.perform(get(SCHEDULES).with(as("CHEF"))).andExpect(status().isForbidden());
             mockMvc.perform(put(SCHEDULES).with(as("CHEF")).contentType(MediaType.APPLICATION_JSON)
@@ -153,7 +154,7 @@ class AdminOperationsControllerTest {
         }
 
         @Test
-                @DisplayName("shouldSaveSchedule: PUT stores the week and answers 200 with the contract keys")
+        @DisplayName("shouldSaveSchedule: PUT stores the week and answers 200 with the contract keys")
         void shouldSaveSchedule() throws Exception {
             when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.MONDAY)).thenReturn(Optional.empty());
             when(scheduleRepository.saveAllAndFlush(any())).thenAnswer(invocation -> {
@@ -176,7 +177,7 @@ class AdminOperationsControllerTest {
         }
 
         @Test
-                @DisplayName("the ADMINISTRADOR alias is admitted")
+        @DisplayName("the ADMINISTRADOR alias is admitted")
         void shouldAdmitAdministradorAlias() throws Exception {
             when(scheduleRepository.findByEstablishmentId(TENANT)).thenReturn(List.of());
 
@@ -186,7 +187,7 @@ class AdminOperationsControllerTest {
         }
 
         @Test
-                @DisplayName("INV-7: opening not before closing is a 400 ProblemDetail")
+        @DisplayName("INV-7: opening not before closing is a 400 ProblemDetail")
         void shouldRejectOpeningAfterClosing() throws Exception {
             mockMvc.perform(put(SCHEDULES).with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
                             .content(body("17:00:00", "15:00:00", false, "null")))
@@ -199,7 +200,7 @@ class AdminOperationsControllerTest {
         }
 
         @Test
-                @DisplayName("a body missing a required field is a 400")
+        @DisplayName("a body missing a required field is a 400")
         void shouldRejectMissingFields() throws Exception {
             mockMvc.perform(put(SCHEDULES).with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
                             .content("[{\"dayOfWeek\":\"MONDAY\"}]"))
@@ -207,7 +208,18 @@ class AdminOperationsControllerTest {
         }
 
         @Test
-                @DisplayName("EC-012: a stale version is a 409 ProblemDetail")
+        @DisplayName("SC-009: a time that is not a valid HH:mm:ss is a 400 and nothing is saved")
+        void shouldRejectInvalidTimeFormats() throws Exception {
+            for (String invalid : List.of("25:00:00", "11:61:00", "eleven", "")) {
+                mockMvc.perform(put(SCHEDULES).with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
+                                .content(body(invalid, "16:00:00", false, "null")))
+                        .andExpect(status().isBadRequest());
+            }
+            verify(scheduleRepository, never()).saveAllAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("EC-012: a stale version is a 409 ProblemDetail")
         void shouldFailOnOptimisticLockConflict() throws Exception {
             when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.MONDAY))
                     .thenReturn(Optional.of(monday(4L)));
@@ -222,7 +234,7 @@ class AdminOperationsControllerTest {
         }
 
         @Test
-                @DisplayName("GET returns the configured days, scoped to the tenant of the session")
+        @DisplayName("GET returns the configured days, scoped to the tenant of the session")
         void shouldReturnConfiguredWeek() throws Exception {
             when(scheduleRepository.findByEstablishmentId(TENANT)).thenReturn(List.of(monday(2L)));
 
@@ -264,7 +276,7 @@ class AdminOperationsControllerTest {
         }
 
         @Test
-                @DisplayName("any authenticated role gets only the admissible slots of today")
+        @DisplayName("any authenticated role gets only the admissible slots of today")
         void shouldReturnOnlyAdmissibleSlots() throws Exception {
             mockMvc.perform(get(slotsUrl(TENANT)).with(as("COMENSAL")).param("date", "2026-11-10"))
                     .andExpect(status().isOk())
@@ -280,7 +292,7 @@ class AdminOperationsControllerTest {
         }
 
         @Test
-                @DisplayName("an unconfigured day answers 200 isClosed with no slots")
+        @DisplayName("an unconfigured day answers 200 isClosed with no slots")
         void shouldReturnClosedForUnconfiguredDay() throws Exception {
             when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.THURSDAY)).thenReturn(Optional.empty());
 
@@ -292,14 +304,14 @@ class AdminOperationsControllerTest {
         }
 
         @Test
-                @DisplayName("a missing or malformed date is a 400")
+        @DisplayName("a missing or malformed date is a 400")
         void shouldRejectBadDate() throws Exception {
             mockMvc.perform(get(slotsUrl(TENANT)).with(as("COMENSAL"))).andExpect(status().isBadRequest());
             mockMvc.perform(get(slotsUrl(TENANT)).with(as("COMENSAL")).param("date", "10/11/2026")).andExpect(status().isBadRequest());
         }
 
         @Test
-                @DisplayName("an unknown establishment is a 404")
+        @DisplayName("an unknown establishment is a 404")
         void shouldReturn404ForUnknownEstablishment() throws Exception {
             UUID unknown = UUID.randomUUID();
             when(timeProvider.nowAt(unknown)).thenThrow(new com.easyeat.catalog.exception.EstablishmentNotFoundException(unknown));
