@@ -3,6 +3,7 @@ import type { DishCatalogItem } from '@/types/dinerCatalog';
 import type { EnrichedDish } from '@/types/catalog';
 import { AllergenWarningBadge } from './AllergenWarningBadge';
 import { CartContext } from '@/context/CartContext';
+import { formatCurrency } from '@/utils/currencyUtils';
 
 export interface DishCardProps {
   dish: DishCatalogItem | EnrichedDish;
@@ -98,10 +99,10 @@ export const DishCard: React.FC<DishCardProps> = ({
           </div>
         )}
 
-        {/* Price Tag Overlay on Image */}
+        {/* Price Tag Overlay on Image (INV-9, INV-10, INV-12, AC-3.1, AC-3.2, AC-3.4) */}
         <div className="absolute bottom-2.5 right-2.5 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-lg shadow-sm border border-gray-100">
           <span className="text-sm font-extrabold text-amber-900">
-            ${dish.price.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(dish.price)}
           </span>
         </div>
       </div>
