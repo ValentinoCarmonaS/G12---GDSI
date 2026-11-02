@@ -156,7 +156,8 @@ The repo has **no orders / checkout / slot-selector backend**. This feature buil
 
 ### Tests (RED first)
 
-- [ ] T039 [US3] Add the US3 nested class to `easyeat/backend/src/test/java/com/easyeat/operations/domain/OperatingInvariantsUnitTest.java`: `shouldExposeOnlyEnabledPaymentMethods` / `shouldHideDisabledPaymentMethod` / `shouldShowReenabledPaymentMethod` (INV-4), `shouldRejectConfirmationIfPaymentMethodDisabled` (INV-9, EC-010), `shouldOperateOfflineWithoutExternalGateways` (no gateway SDK or credential class on the classpath of `com.easyeat.operations`, A-005). Record RED.
+- [x] T039 [US3] Add the US3 nested class to `easyeat/backend/src/test/java/com/easyeat/operations/domain/OperatingInvariantsUnitTest.java`: `shouldExposeOnlyEnabledPaymentMethods` / `shouldHideDisabledPaymentMethod` / `shouldShowReenabledPaymentMethod` (INV-4), `shouldRejectConfirmationIfPaymentMethodDisabled` (INV-9, EC-010), `shouldOperateOfflineWithoutExternalGateways` (no gateway SDK or credential class on the classpath of `com.easyeat.operations`, A-005). Record RED.
+  - **DONE 2026-11-02**: RED observed as a compilation failure (PaymentMethodService and PaymentMethodUnavailableException do not exist; 8 tests written). **Decision taken with the user earlier (Option 1): a missing payment-method row means ENABLED.** V12 seeds rows only for establishments that existed when it ran, so a later-created establishment has none; `PaymentMethodService` must read a missing row as enabled and create the row on the first admin toggle. Tests `shouldTreatMissingPaymentRowAsEnabled` and `shouldCreateTheRowOnTheFirstToggle` pin it, so "no row" can never be read as "all disabled" and trigger the EC-009 block. A-005 is asserted by classpath: no Stripe or Mercado Pago SDK class, no class in `com.easyeat.operations` named after credentials, tokens or gateways, and the entity holds only the flag fields.
 
 ### Implementation — service
 
