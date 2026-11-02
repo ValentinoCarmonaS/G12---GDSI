@@ -32,7 +32,7 @@ The repo has **no orders / checkout / slot-selector backend**. This feature buil
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirm the module directories listed under "Path Conventions" do not exist yet (`easyeat/backend/src/main/java/com/easyeat/operations`, `easyeat/backend/src/test/java/com/easyeat/operations`); they are created by the first files in Phase 2. No new package-info or placeholder classes.
+- [x] T001 Confirm the module directories listed under "Path Conventions" do not exist yet (`easyeat/backend/src/main/java/com/easyeat/operations`, `easyeat/backend/src/test/java/com/easyeat/operations`); they are created by the first files in Phase 2. No new package-info or placeholder classes.
 - [ ] T002 [P] Create `easyeat/frontend/src/test/operations/` and confirm Vitest picks it up via the existing config in `easyeat/frontend/vite.config.ts` (or `vitest.config.ts`); no new dependency allowed.
 
 ---
