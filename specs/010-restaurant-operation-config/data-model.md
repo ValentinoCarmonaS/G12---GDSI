@@ -148,7 +148,7 @@ erDiagram
 
 ## 3. Esquema Relacional de Base de Datos (DDL Flyway Preview)
 
-El script de migración Flyway se ubicará en `easyeat/backend/src/main/resources/db/migration/V10__restaurant_operation_config.sql`:
+El script de migración Flyway se ubicará en `easyeat/backend/src/main/resources/db/migration/V12__restaurant_operation_config.sql`:
 
 ```sql
 -- 1. Tabla de Horarios Comerciales Semanales

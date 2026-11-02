@@ -119,6 +119,12 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   Panel
                 </Link>
                 <Link
+                  to="/admin/dishes"
+                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-purple-700 font-semibold"
+                >
+                  Auditoría
+                </Link>
+                <Link
                   to="/admin/staff"
                   className="px-2.5 py-1 rounded hover:bg-gray-100 text-purple-700 font-semibold"
                 >

@@ -15,7 +15,7 @@ Se inspeccionó el repositorio para validar las premisas tecnológicas y reutili
 | **Manejo de Zonas Horarias** | `Establishment.java` ya posee campo `timezone VARCHAR(50) DEFAULT 'America/Argentina/Buenos_Aires'` y métodos de dominio `isOpen(LocalTime now)` y `isOpen()` empleando `java.time.ZoneId` y `java.time.LocalTime`. | **Autoridad horaria exclusiva en servidor**: Todas las evaluaciones temporales se computan contra el reloj del servidor proyectado al `ZoneId` del establecimiento comercial (`Establishment.timezone`). Se ignora por completo la zona horaria reportada por el navegador del cliente. |
 | **Multi-Tenancy** | `TenantContextHolder.java` (ThreadLocal con UUID de establecimiento) y `TenantContextFilter.java`. | Aislamiento multi-tenant nativo por `establishment_id` en todas las consultas y mutaciones de configuración y disponibilidad. |
 | **Manejo de Errores** | `GlobalExceptionHandler.java` y `ProblemDetail` (RFC 7807, `application/problem+json`). | Usar `ProblemDetail` para todas las respuestas de error de validación (400 Bad Request, 403 Forbidden, 404 Not Found, 409 Conflict). |
-| **Migraciones Flyway** | `db/migration/V1` a `V9` presentes en `easyeat/backend/src/main/resources/db/migration/`. | La siguiente migración libre en el repositorio es `V10__restaurant_operation_config.sql`. |
+| **Migraciones Flyway** | `db/migration/V1` a `V9` en esta rama y `V1` a `V11` en `develop/sprint-3` (`V10__support_admin_dish_cancellation`, `V11__sync_ingredient_unit_purchase_cost`). | La siguiente migración libre al integrar es `V12__restaurant_operation_config.sql`. |
 
 ---
 

@@ -23,7 +23,7 @@ Implementar la arquitectura técnica full-stack para la configuración operativa
 - **Primary Dependencies**:
   - *Backend*: Spring Boot 3.3.4 (Spring Web, Spring Data JPA, Spring Security, Spring Validation), Flyway Core 10.x, PostgreSQL Driver (`42.7.4`), JJWT (`0.12.5`), Lombok, Jackson Problem (`problem-spring-web` RFC 7807), Testcontainers (`1.20.1`).
   - *Frontend*: React 18.3.1, React Router v6 (`react-router-dom`), Tailwind CSS v4, Lucide React, Axios (`apiClient.ts`).
-- **Storage**: PostgreSQL 16; Flyway versioned migrations. Siguiente migración libre en el repositorio: `V10__restaurant_operation_config.sql`. Tablas nuevas: `establishment_operating_schedules`, `establishment_slot_capacities`, `establishment_payment_methods`.
+- **Storage**: PostgreSQL 16; Flyway versioned migrations. Siguiente migración libre tras `V11` de `develop/sprint-3` (esta rama parte de `V9`; `V10` y `V11` ya existen en develop, por lo que se numera `V12` para evitar colisión al integrar): `V12__restaurant_operation_config.sql`. Tablas nuevas: `establishment_operating_schedules`, `establishment_slot_capacities`, `establishment_payment_methods`.
 - **Testing**:
   - *Backend*: JUnit 5, Mockito, MockMvc, AssertJ, Testcontainers (PostgreSQL 16 real).
   - *Frontend*: Vitest 2, React Testing Library, jsdom, `@testing-library/user-event`.
@@ -47,10 +47,10 @@ Implementar la arquitectura técnica full-stack para la configuración operativa
 |---|---|---|
 | **I. The Specification Is the Source of Truth** | **PASS** | El plan cubre con exactitud los 19 criterios de aceptación, 18 casos borde, 10 invariantes, 17 requerimientos funcionales y 11 criterios de éxito de `specs/010-restaurant-operation-config/spec.md`. No se añade funcionalidad fuera del spec. |
 | **II. Specification Before Implementation** | **PASS** | `spec.md` ratificado previamente sin marcadores pendientes. Se produjeron los artefactos de diseño requeridos (`research.md`, `data-model.md`, `contracts/`, `quickstart.md`, `plan.md`) antes de cualquier codificación o generación de tareas. |
-| **III. Layered Verification Proportional to Risk** | **PASS** | Estrategia de pruebas en 4 capas: unitarias (invariantes y cálculo de horas), integración con Testcontainers (DDL Flyway `V10`, constraints, atomicidad condicional), contratos de API y pruebas de componentes frontend (RTL) para selector de franjas y checkout. |
+| **III. Layered Verification Proportional to Risk** | **PASS** | Estrategia de pruebas en 4 capas: unitarias (invariantes y cálculo de horas), integración con Testcontainers (DDL Flyway `V12`, constraints, atomicidad condicional), contratos de API y pruebas de componentes frontend (RTL) para selector de franjas y checkout. |
 | **IV. Simple, Cohesive, and Justified Design** | **PASS** | Se reutiliza `Establishment.timezone` y `LocalTime`, evitando dependencias externas complejas. El control de cupos se realiza con una actualización condicional nativa en SQL (`approvedOrdersCount < maxCapacity`), sin introducir locks distribuidos innecesarios. |
 | **V. Bounded Scope** | **PASS** | Alcance rigurosamente delimitado a horarios, matriz de capacidad por franja y visibilidad de métodos de pago. Pasarelas reales, comisiones, cuentas bancarias, hardware fiscal, reportes y reservas de salón quedan explícitamente excluidos en Out of Scope. |
-| **VI. Controlled Technical Debt** | **PASS** | Migración limpia `V10` sin tocar tablas previas incompatibles. Se preserva la compatibilidad con el modelo de establecimientos de `V8`. |
+| **VI. Controlled Technical Debt** | **PASS** | Migración limpia `V12` sin tocar tablas previas incompatibles. Se preserva la compatibilidad con el modelo de establecimientos de `V8`. |
 | **VII. Traceability, Consistency, and Documentation** | **PASS** | Matriz de trazabilidad bidireccional completa documentada: 19/19 ACs, 18/18 ECs, 10/10 INVs, 17/17 FRs y 11/11 SCs mapeados a decisiones, contratos y pruebas. |
 | **VIII. Evidence Over Assumption and Human Escalation** | **PASS** | Decisiones ancladas en código verificado del repositorio (`Establishment.java`, `TenantContextHolder`, `SecurityConfig`). Se documentan 11 supuestos explícitos (`A-001` a `A-011`) con defaults razonables acordados en el grill-me. |
 | **IX. Engineering Over Convenience** | **PASS** | Validación atómica en base de datos para prevenir sobreventa concurrente en lugar de chequear en memoria. Formato estructurado RFC 7807 para todos los errores. |
@@ -123,7 +123,7 @@ easyeat/
 │   │   │   │   │       └── DinerTimeSlotService.java             # Genera grilla de 15 min y evalúa INV-1 a INV-3
 │   │   │   ├── resources/
 │   │   │   │   └── db/migration/
-│   │   │   │       └── V10__restaurant_operation_config.sql     # Migración DDL Flyway
+│   │   │   │       └── V12__restaurant_operation_config.sql     # Migración DDL Flyway
 │   │   └── test/
 │   │       └── java/com/easyeat/operations/
 │   │           ├── domain/OperatingInvariantsUnitTest.java      # Tests unitarios puros de INV-1 a INV-10
@@ -336,7 +336,7 @@ Pruebas Unitarias de Dominio e Invariantes (JUnit 5 + AssertJ)
 | **EC-017** | Caso Borde | D-001, US1-AC7 | `OperatingInvariantsUnitTest.shouldAdmitFutureReservationWhenClosedToday` |
 | **EC-018** | Caso Borde | D-001 | `OperatingInvariantsUnitTest.shouldIgnoreClientClockDrift` |
 | **INV-1…INV-10** | Invariantes | D-001…D-006, Tabla §7 | Cobertura en `OperatingInvariantsUnitTest.java` |
-| **FR-001…FR-017** | Requerimientos | D-001…D-008, DDL V10 | Cobertura en controladores, servicios y repositorios |
+| **FR-001…FR-017** | Requerimientos | D-001…D-008, DDL V12 | Cobertura en controladores, servicios y repositorios |
 | **SC-001…SC-011** | Criterios Éxito | D-001…D-008, Quickstart | Verificados en suites unitarias, e2e y quickstart |
 
 ---
@@ -391,7 +391,7 @@ Pruebas Unitarias de Dominio e Invariantes (JUnit 5 + AssertJ)
 ## 14. Fases de Implementación (Alto Nivel)
 
 1. **Fase 1 — Migración de Base de Datos y Entidades de Dominio**:
-   - Creación de `V10__restaurant_operation_config.sql`.
+   - Creación de `V12__restaurant_operation_config.sql`.
    - Entidades JPA: `EstablishmentOperatingSchedule`, `EstablishmentSlotCapacity`, `EstablishmentPaymentMethod`.
    - Repositorios Spring Data con query atómica de cupos.
 2. **Fase 2 — Lógica de Horarios y Admisión Temporal**:
@@ -415,7 +415,7 @@ Pruebas Unitarias de Dominio e Invariantes (JUnit 5 + AssertJ)
 
 ## 15. Resumen Ejecutivo de Cierre
 
-- **Stack Verificado**: Java 21, Spring Boot 3.3.4, PostgreSQL 16 (Flyway V10), React 18.3.1, TypeScript 5.6, Tailwind CSS.
+- **Stack Verificado**: Java 21, Spring Boot 3.3.4, PostgreSQL 16 (Flyway V12), React 18.3.1, TypeScript 5.6, Tailwind CSS.
 - **Decisiones Clave**: Autoridad horaria del servidor con `Establishment.timezone`, incremento condicional atómico para cupos (`EC-016`), evaluación dinámica de pagos (`INV-9`), desacoplamiento a costo cero (`A-005`), control de concurrencia optimista (`@Version`).
 - **Cobertura Total**: 19/19 Acceptance Scenarios, 18/18 Edge Cases, 10/10 Invariantes de Negocio, 17/17 Requerimientos Funcionales, 11/11 Criterios de Éxito.
 - **Garantía**: Cero marcadores `[NEEDS CLARIFICATION]` pendientes. **NO se generaron tareas de implementación** (reservadas para `/speckit-tasks`).

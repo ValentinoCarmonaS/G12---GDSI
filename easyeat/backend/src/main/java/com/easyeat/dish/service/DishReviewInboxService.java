@@ -105,9 +105,7 @@ public class DishReviewInboxService {
         return switch (tab) {
             case PENDING -> inboxRepository.findPendingInbox(tenantId,
                     withSort(pageable, Sort.by(Sort.Direction.ASC, "submittedAt")));
-            case PUBLISHED -> inboxRepository.findPublishedInbox(tenantId,
-                    withSort(pageable, Sort.by(Sort.Direction.DESC, "publishedAt")));
-            case HISTORY -> inboxRepository.findReviewedInbox(tenantId, pageable);
+            case FINALIZED -> inboxRepository.findFinalizedInbox(tenantId, pageable);
         };
     }
 

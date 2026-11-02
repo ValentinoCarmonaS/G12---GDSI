@@ -69,8 +69,7 @@ class DishReviewInboxServiceTest {
         TenantContextHolder.setTenantId(TENANT);
 
         when(inboxRepository.findPendingInbox(any(), any())).thenReturn(Page.empty());
-        when(inboxRepository.findPublishedInbox(any(), any())).thenReturn(Page.empty());
-        when(inboxRepository.findReviewedInbox(any(), any())).thenReturn(Page.empty());
+        when(inboxRepository.findFinalizedInbox(any(), any())).thenReturn(Page.empty());
         when(inboxRepository.countPending(any())).thenReturn(0L);
         when(reviewHistoryRepository.countRejectionsByDishIds(any(), anyList()))
                 .thenReturn(List.of());
@@ -111,7 +110,7 @@ class DishReviewInboxServiceTest {
     // ------------------------------------------------------------- tests
 
     @Nested
-    @DisplayName("tab filtering: three views that are not a partition (FR-002)")
+    @DisplayName("tab filtering: two views (C-05)")
     class TabFiltering {
 
         @Test
@@ -120,44 +119,16 @@ class DishReviewInboxServiceTest {
             service.getInbox(InboxTab.PENDING, 0, 20);
 
             Mockito.verify(inboxRepository).findPendingInbox(eq(TENANT), any());
-            Mockito.verify(inboxRepository, Mockito.never()).findPublishedInbox(any(), any());
-            Mockito.verify(inboxRepository, Mockito.never()).findReviewedInbox(any(), any());
+            Mockito.verify(inboxRepository, Mockito.never()).findFinalizedInbox(any(), any());
         }
 
         @Test
-        @DisplayName("PUBLISHED reads the published query and no other")
-        void publishedTab() {
-            service.getInbox(InboxTab.PUBLISHED, 0, 20);
+        @DisplayName("FINALIZED reads the finalized query and no other")
+        void finalizedTab() {
+            service.getInbox(InboxTab.FINALIZED, 0, 20);
 
-            Mockito.verify(inboxRepository).findPublishedInbox(eq(TENANT), any());
+            Mockito.verify(inboxRepository).findFinalizedInbox(eq(TENANT), any());
             Mockito.verify(inboxRepository, Mockito.never()).findPendingInbox(any(), any());
-        }
-
-        @Test
-        @DisplayName("HISTORY reads the review-history query, which selects by history not status")
-        void historyTab() {
-            service.getInbox(InboxTab.HISTORY, 0, 20);
-
-            Mockito.verify(inboxRepository).findReviewedInbox(eq(TENANT), any());
-            Mockito.verify(inboxRepository, Mockito.never()).findPendingInbox(any(), any());
-            Mockito.verify(inboxRepository, Mockito.never()).findPublishedInbox(any(), any());
-        }
-
-        @Test
-        @DisplayName("HISTORY may return a PUBLISHED dish: the views overlap on purpose")
-        void historyOverlapsPublished() {
-            Dish republished = dish("Risotto", DishStatus.PUBLISHED, Instant.now(), null);
-            when(inboxRepository.findReviewedInbox(eq(TENANT), any()))
-                    .thenReturn(pageOf(List.of(republished), PageRequest.of(0, 20), 1));
-
-            DishReviewInboxPageResponse response = service.getInbox(InboxTab.HISTORY, 0, 20);
-
-            assertThat(response.items())
-                    .as("FR-002: a dish rejected once and later published appears in both views, "
-                            + "and the service must not filter it out to make them disjoint")
-                    .singleElement()
-                    .extracting(DishReviewInboxItemResponse::status)
-                    .isEqualTo(DishStatus.PUBLISHED);
         }
 
         @ParameterizedTest
@@ -217,26 +188,9 @@ class DishReviewInboxServiceTest {
                     .containsExactly("Alfajor", "Budin");
         }
 
-        @Test
-        @DisplayName("the published page is requested with published_at descending")
-        void publishedNewestFirst() {
-            service.getInbox(InboxTab.PUBLISHED, 0, 20);
-
-            Pageable requested = capturePublishedPageable();
-            assertThat(requested.getSort().getOrderFor("publishedAt"))
-                    .isNotNull()
-                    .satisfies(order -> assertThat(order.isDescending()).isTrue());
-        }
-
         private Pageable capturePendingPageable() {
             var captor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
             Mockito.verify(inboxRepository).findPendingInbox(any(), captor.capture());
-            return captor.getValue();
-        }
-
-        private Pageable capturePublishedPageable() {
-            var captor = org.mockito.ArgumentCaptor.forClass(Pageable.class);
-            Mockito.verify(inboxRepository).findPublishedInbox(any(), captor.capture());
             return captor.getValue();
         }
     }

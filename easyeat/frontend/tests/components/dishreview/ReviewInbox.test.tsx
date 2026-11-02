@@ -87,23 +87,22 @@ function renderInbox(options: {
 
 describe('the review inbox surface', () => {
   describe('the three tabs and the badge (FR-002, FR-003)', () => {
-    it('offers exactly the three views FR-002 defines', () => {
+    it('offers exactly the views FR-039 defines', () => {
       renderInbox();
 
-      expect(screen.getByRole('tab', { name: /pendientes/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /publicados/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /historial/i })).toBeInTheDocument();
-      expect(screen.getAllByRole('tab')).toHaveLength(3);
+      expect(screen.getByRole('tab', { name: /en espera/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /finalizados/i })).toBeInTheDocument();
+      expect(screen.getAllByRole('tab')).toHaveLength(2);
     });
 
     it('marks the active tab for assistive technology, not only visually', () => {
-      renderInbox({ tab: 'PUBLISHED' });
+      renderInbox({ tab: 'FINALIZED' });
 
-      expect(screen.getByRole('tab', { name: /publicados/i })).toHaveAttribute(
+      expect(screen.getByRole('tab', { name: /finalizados/i })).toHaveAttribute(
         'aria-selected',
         'true'
       );
-      expect(screen.getByRole('tab', { name: /pendientes/i })).toHaveAttribute(
+      expect(screen.getByRole('tab', { name: /en espera/i })).toHaveAttribute(
         'aria-selected',
         'false'
       );
@@ -112,13 +111,13 @@ describe('the review inbox surface', () => {
     it('reports the tab the Administrator chose', async () => {
       const { onTabChange } = renderInbox();
 
-      await userEvent.click(screen.getByRole('tab', { name: /historial/i }));
+      await userEvent.click(screen.getByRole('tab', { name: /finalizados/i }));
 
-      expect(onTabChange).toHaveBeenCalledWith('HISTORY');
+      expect(onTabChange).toHaveBeenCalledWith('FINALIZED');
     });
 
-    it('shows the pending badge on every tab, including the published one', () => {
-      renderInbox({ tab: 'PUBLISHED', pendingCount: 37 });
+    it('shows the pending badge on every tab, including the finalized one', () => {
+      renderInbox({ tab: 'FINALIZED', pendingCount: 37 });
 
       expect(screen.getByTestId('pending-count-badge')).toHaveTextContent('37');
     });
@@ -220,7 +219,7 @@ describe('the review inbox surface', () => {
       unmount();
 
       render(
-        <ReviewInboxList items={[]} tab="HISTORY" isLoading={false} error={null}
+        <ReviewInboxList items={[]} tab="FINALIZED" isLoading={false} error={null}
           onSelect={vi.fn()} onRetry={vi.fn()} />
       );
       const historyText = screen.getByTestId('inbox-empty-state').textContent;

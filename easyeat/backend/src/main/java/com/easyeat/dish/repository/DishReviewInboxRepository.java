@@ -41,32 +41,22 @@ public interface DishReviewInboxRepository
             """)
     Page<Dish> findPendingInbox(@Param("tenantId") UUID tenantId, Pageable pageable);
 
-    /** The "Publicados" view: most recently published first. */
-    @Query("""
-            SELECT d FROM Dish d
-             WHERE d.tenantId = :tenantId
-               AND d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED
-             ORDER BY d.publishedAt DESC
-            """)
-    Page<Dish> findPublishedInbox(@Param("tenantId") UUID tenantId, Pageable pageable);
-
     /**
-     * The "Historial / Rechazados" view: dishes with at least one review entry, <b>whatever their
-     * current status</b>.
-     *
-     * <p>Selects by history rather than by status, so it overlaps the other two views on purpose
-     * (FR-002). A dish rejected once and later published appears here and in "Publicados" at the
-     * same time, and a dish returned to {@code DRAFT} appears only here.
+     * The "Finalizados" view: dishes that have received a decision.
      */
     @Query("""
             SELECT d FROM Dish d
              WHERE d.tenantId = :tenantId
-               AND EXISTS (SELECT 1 FROM DishReviewHistory h
-                            WHERE h.dishId = d.id AND h.tenantId = :tenantId)
-             ORDER BY (SELECT MAX(h2.createdAt) FROM DishReviewHistory h2
-                        WHERE h2.dishId = d.id AND h2.tenantId = :tenantId) DESC
+               AND (
+                   d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED
+                   OR d.status = com.easyeat.dish.domain.DishStatus.CANCELLED
+                   OR (d.status = com.easyeat.dish.domain.DishStatus.DRAFT AND EXISTS (
+                       SELECT 1 FROM DishReviewHistory h WHERE h.dishId = d.id AND h.tenantId = :tenantId
+                   ))
+               )
+             ORDER BY d.id DESC
             """)
-    Page<Dish> findReviewedInbox(@Param("tenantId") UUID tenantId, Pageable pageable);
+    Page<Dish> findFinalizedInbox(@Param("tenantId") UUID tenantId, Pageable pageable);
 
     /** The badge of FR-003, returned on every tab so it never depends on the active view. */
     @Query("""
