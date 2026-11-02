@@ -127,7 +127,7 @@ describe('SlotCapacityGrid (ADM-2.2.2, INV-3, INV-6, EC-007, SC-005)', () => {
     await waitFor(() => expect(props.onSave).toHaveBeenCalledTimes(1));
     expect(loadDay).toHaveBeenCalledTimes(1);
     expect(loadDay).toHaveBeenCalledWith('2026-11-12');
-    const sent = props.onSave.mock.calls[0][0];
+    const sent = vi.mocked(props.onSave).mock.calls[0][0];
     expect(sent).toHaveLength(matrix.length + nextDay.length);
     expect(sent).toContainEqual({ slotDate: '2026-11-12', startTime: '12:15:00', maxCapacity: 40, expectedVersion: 6 });
     expect(sent).toContainEqual({ slotDate: '2026-11-12', startTime: '12:00:00', maxCapacity: 40, expectedVersion: null });

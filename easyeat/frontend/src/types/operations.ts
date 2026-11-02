@@ -38,15 +38,16 @@ export interface UpdateScheduleRequest {
   expectedVersion?: number | null;
 }
 
+/** `id` and `version` are null for a slot that has no capacity configured yet (EC-007). */
 export interface SlotCapacity {
-  id: string;
+  id: string | null;
   slotDate: string;
   startTime: string;
   endTime: string;
   maxCapacity: number;
   approvedOrdersCount: number;
   isSoldOut: boolean;
-  version: number;
+  version: number | null;
 }
 
 /** One entry of the PUT list; a bulk apply is the same list with one entry per 15-minute slot. */
