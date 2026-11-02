@@ -179,4 +179,81 @@ describe('DishDetailModal Component Tests (T034, US2, COM-4.1.1, FR-007, FR-012,
       expect(descriptionElement.className).toMatch(/break-words/);
     });
   });
+
+  describe('T012 [US1] - Integration tests for real-time availability polling invalidation (<= 3 s) without forced close', () => {
+    it('reactively marks dish as "Plato no disponible" and disables add-to-cart button within <= 3 s without closing modal when stock is exhausted (INV-5, FR-007, SC-010, EC-004)', () => {
+      const { rerender } = render(
+        <DishDetailModal
+          dish={mockDish}
+          isOpen={true}
+          onClose={vi.fn()}
+        />
+      );
+
+      // Initially dish is available
+      expect(screen.queryByTestId('dish-unavailable-banner')).toBeNull();
+      const addBtn = screen.getByTestId('add-to-cart-btn');
+      expect(addBtn).not.toBeDisabled();
+
+      // Simulate stock exhaustion or administrative cancellation arriving via availability update (<= 3 s)
+      const exhaustedDish: DishCatalogItem = {
+        ...mockDish,
+        isAvailable: false,
+      };
+
+      rerender(
+        <DishDetailModal
+          dish={exhaustedDish}
+          isOpen={true}
+          onClose={vi.fn()}
+        />
+      );
+
+      // Modal must remain open and visible without being forced shut
+      expect(screen.getByTestId('dish-detail-modal')).toBeInTheDocument();
+
+      // UI must reactively display unavailable notice / out of stock badge
+      expect(screen.getByTestId('dish-unavailable-banner')).toBeInTheDocument();
+      expect(screen.getByText(/Plato no disponible|Agotado/i)).toBeInTheDocument();
+
+      // Purchase button must be disabled
+      expect(screen.getByTestId('add-to-cart-btn')).toBeDisabled();
+    });
+
+    it('re-enables purchase controls dynamically when dish is restocked while modal is open (INV-5, EC-005)', () => {
+      const outOfStockDish: DishCatalogItem = {
+        ...mockDish,
+        isAvailable: false,
+      };
+
+      const { rerender } = render(
+        <DishDetailModal
+          dish={outOfStockDish}
+          isOpen={true}
+          onClose={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId('add-to-cart-btn')).toBeDisabled();
+
+      // Kitchen restocks the item
+      const restockedDish: DishCatalogItem = {
+        ...mockDish,
+        isAvailable: true,
+      };
+
+      rerender(
+        <DishDetailModal
+          dish={restockedDish}
+          isOpen={true}
+          onClose={vi.fn()}
+        />
+      );
+
+      // Modal remains open and button is rehabilitated
+      expect(screen.getByTestId('dish-detail-modal')).toBeInTheDocument();
+      expect(screen.queryByTestId('dish-unavailable-banner')).toBeNull();
+      expect(screen.getByTestId('add-to-cart-btn')).not.toBeDisabled();
+    });
+  });
 });
