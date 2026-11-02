@@ -422,4 +422,61 @@ describe('DishDetailModal Component Tests (T034, US2, COM-4.1.1, FR-007, FR-012,
       expect(onClose).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('User Story 3 - Ver ingredientes y alérgenos (T028, COM-5.1.2, INV-6, INV-8, AC-2.1, AC-2.3, EC-007, EC-008, Clarification #4)', () => {
+    it('renders neutral allergen pills without personalized profile warnings when allergens are present', () => {
+      const dishWithAllergens: DishCatalogItem = {
+        ...mockDish,
+        isCompliant: false, // In spec 003 this caused red warning badge
+        conflictingRestrictions: ['Trigo / Gluten'],
+        allergens: ['Lácteos / Lactosa', 'Trigo / Gluten'],
+        recipeIngredients: ['Harina de trigo', 'Leche entera', 'Manteca'],
+      };
+
+      render(<DishDetailModal dish={dishWithAllergens} isOpen={true} onClose={vi.fn()} />);
+
+      // Section header for allergens
+      expect(screen.getByText(/Alérgenos/i)).toBeInTheDocument();
+
+      // Neutral allergen pills rendered with data-testid="allergen-neutral-pill"
+      const pills = screen.getAllByTestId('allergen-neutral-pill');
+      expect(pills.length).toBe(2);
+      expect(pills[0]).toHaveTextContent('Lácteos / Lactosa');
+      expect(pills[1]).toHaveTextContent('Trigo / Gluten');
+
+      // Crucial (Clarification #4 & INV-6): NO red warning badges or "Advertencia Dietaria"
+      expect(screen.queryByText(/Advertencia Dietaria/i)).not.toBeInTheDocument();
+      expect(screen.queryByTestId('allergen-warning-badge')).not.toBeInTheDocument();
+    });
+
+    it('displays explicit notice "Lista de componentes no disponible" when dish has no ingredients registered (INV-8, AC-2.3, EC-007)', () => {
+      const dishNoRecipe: DishCatalogItem = {
+        ...mockDish,
+        recipeIngredients: [],
+        allergens: [],
+      };
+
+      render(<DishDetailModal dish={dishNoRecipe} isOpen={true} onClose={vi.fn()} />);
+
+      // Must display explicit notice instead of blank section
+      const notice = screen.getByTestId('missing-ingredients-notice');
+      expect(notice).toBeInTheDocument();
+      expect(notice).toHaveTextContent('Lista de componentes no disponible');
+    });
+
+    it('displays neutral notice when dish has ingredients but no allergens declared (EC-008)', () => {
+      const dishNoAllergens: DishCatalogItem = {
+        ...mockDish,
+        recipeIngredients: ['Papas', 'Aceite de girasol', 'Sal'],
+        allergens: [],
+      };
+
+      render(<DishDetailModal dish={dishNoAllergens} isOpen={true} onClose={vi.fn()} />);
+
+      expect(screen.getByText('Papas, Aceite de girasol, Sal')).toBeInTheDocument();
+      const noAllergensNotice = screen.getByTestId('no-allergens-declared-notice');
+      expect(noAllergensNotice).toBeInTheDocument();
+      expect(noAllergensNotice).toHaveTextContent(/No contiene alérgenos declarados/i);
+    });
+  });
 });
