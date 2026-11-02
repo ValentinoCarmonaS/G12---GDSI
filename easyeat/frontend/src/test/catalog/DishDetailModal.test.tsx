@@ -286,5 +286,66 @@ describe('DishDetailModal Component Tests (T034, US2, COM-4.1.1, FR-007, FR-012,
       expect(screen.getByTestId('quantity-decrement-btn')).toBeDisabled();
       expect(screen.getByTestId('quantity-increment-btn')).toBeDisabled();
     });
+
+    it('allows selecting quantity without artificial cap and dynamically updates provisional subtotal (T020, INV-13, AC-3.5, SC-011, EC-011)', () => {
+      // Dish with price 5500.0, availableStock 3
+      const dishWithStock = {
+        ...mockDish,
+        price: 5500.0,
+        availableStock: 3,
+      };
+
+      render(<DishDetailModal dish={dishWithStock} isOpen={true} onClose={vi.fn()} />);
+
+      const incBtn = screen.getByTestId('quantity-increment-btn');
+      const decBtn = screen.getByTestId('quantity-decrement-btn');
+      const qtyValue = screen.getByTestId('quantity-value');
+      const subtotalElement = screen.getByTestId('dish-detail-subtotal');
+
+      // Initial state: N = 1, subtotal = $ 5.500,00
+      expect(qtyValue).toHaveTextContent('1');
+      expect(subtotalElement).toHaveTextContent('$ 5.500,00');
+
+      // Comensal can increment beyond kitchen stock without artificial cap in estimation phase (Clarification #2, INV-13)
+      // Increment to N = 2 -> subtotal = $ 11.000,00
+      fireEvent.click(incBtn);
+      expect(qtyValue).toHaveTextContent('2');
+      expect(subtotalElement).toHaveTextContent('$ 11.000,00');
+
+      // Increment to N = 3 -> subtotal = $ 16.500,00
+      fireEvent.click(incBtn);
+      expect(qtyValue).toHaveTextContent('3');
+      expect(subtotalElement).toHaveTextContent('$ 16.500,00');
+
+      // Increment to N = 5 (exceeding availableStock=3, estimation allowed!) -> subtotal = $ 27.500,00
+      fireEvent.click(incBtn);
+      fireEvent.click(incBtn);
+      expect(qtyValue).toHaveTextContent('5');
+      expect(subtotalElement).toHaveTextContent('$ 27.500,00');
+      expect(incBtn).not.toBeDisabled();
+
+      // Decrement back to N = 4 -> subtotal = $ 22.000,00
+      fireEvent.click(decBtn);
+      expect(qtyValue).toHaveTextContent('4');
+      expect(subtotalElement).toHaveTextContent('$ 22.000,00');
+    });
+
+    it('resets quantity selector to 1 and discards subtotal calculation upon closing and reopening (T020, INV-13, EC-011, Clarification #2)', () => {
+      const { rerender } = render(<DishDetailModal dish={mockDish} isOpen={true} onClose={vi.fn()} />);
+
+      const incBtn = screen.getByTestId('quantity-increment-btn');
+      fireEvent.click(incBtn);
+      fireEvent.click(incBtn);
+      expect(screen.getByTestId('quantity-value')).toHaveTextContent('3');
+      expect(screen.getByTestId('dish-detail-subtotal')).toHaveTextContent('$ 16.500,00');
+
+      // Close modal
+      rerender(<DishDetailModal dish={mockDish} isOpen={false} onClose={vi.fn()} />);
+
+      // Reopen modal
+      rerender(<DishDetailModal dish={mockDish} isOpen={true} onClose={vi.fn()} />);
+      expect(screen.getByTestId('quantity-value')).toHaveTextContent('1');
+      expect(screen.getByTestId('dish-detail-subtotal')).toHaveTextContent('$ 5.500,00');
+    });
   });
 });
