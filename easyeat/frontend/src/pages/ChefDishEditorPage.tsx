@@ -23,7 +23,7 @@ export const ChefDishEditorPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const isReadOnly = dish != null && dish.status !== 'DRAFT';
+  const isReadOnly = Boolean(dish && dish.status !== 'DRAFT');
 
   /**
    * FR-042: the newest rejection's proposed edition, when the Administrator sent one. The backend

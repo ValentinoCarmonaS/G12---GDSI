@@ -5,7 +5,6 @@ import { dishReviewApi } from '../../src/api/dishReviewApi';
 import type {
   DishReviewInboxItem,
   DishReviewInboxPage,
-  InboxTab,
 } from '../../src/types/dishReview';
 
 vi.mock('../../src/api/dishReviewApi', () => ({
@@ -95,11 +94,11 @@ describe('useDishReviewInbox', () => {
         )
       );
 
-      act(() => result.current.setTab('PUBLISHED' as InboxTab));
+      act(() => result.current.setTab('FINALIZED'));
 
       await waitFor(() =>
         expect(dishReviewApi.getInbox).toHaveBeenLastCalledWith({
-          tab: 'PUBLISHED',
+          tab: 'FINALIZED',
           page: 0,
           size: 20,
         })
@@ -126,8 +125,8 @@ describe('useDishReviewInbox', () => {
       const { result } = renderHook(() => useDishReviewInbox());
       await waitFor(() => expect(result.current.pendingCount).toBe(37));
 
-      act(() => result.current.setTab('HISTORY' as InboxTab));
-      await waitFor(() => expect(result.current.tab).toBe('HISTORY'));
+      act(() => result.current.setTab('FINALIZED'));
+      await waitFor(() => expect(result.current.tab).toBe('FINALIZED'));
 
       expect(result.current.pendingCount).toBe(37);
     });

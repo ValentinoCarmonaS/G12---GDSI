@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { User as UserIcon } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { profileApi } from '../../api/profileApi';
 import { adminNotificationApi } from '../../api/adminNotificationApi';
 import { AdminNotificationBell } from '../notification/AdminNotificationBell';
+import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
 import type { AdminNotificationResponse } from '../../types/notification';
 
 interface WorkspaceLayoutProps {
@@ -28,6 +31,31 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   const [notifications, setNotifications] = useState<AdminNotificationResponse[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  const fetchAvatar = useCallback(async () => {
+    if (!user) {
+      setAvatarUrl(null);
+      return;
+    }
+    try {
+      const data = await profileApi.getProfile();
+      setAvatarUrl(data?.avatarUrl || null);
+    } catch {
+      setAvatarUrl(null);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchAvatar();
+    const handleAvatarUpdate = () => {
+      fetchAvatar();
+    };
+    window.addEventListener('easyeat:avatar-changed', handleAvatarUpdate);
+    return () => {
+      window.removeEventListener('easyeat:avatar-changed', handleAvatarUpdate);
+    };
+  }, [fetchAvatar]);
 
   const fetchNotifications = useCallback(async () => {
     if (user?.role !== 'ADMINISTRADOR') return;
@@ -149,6 +177,24 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   )}
 
                   <span className="text-sm text-gray-600 hidden md:inline">{user.email}</span>
+
+                  {/* Reactive user avatar with institutional fallback */}
+                  <Link
+                    to="/perfil"
+                    title="Mi perfil"
+                    aria-label="Avatar de usuario"
+                    className="flex items-center justify-center w-8 h-8 rounded-full overflow-hidden border border-gray-200 bg-gray-100 hover:ring-2 hover:ring-amber-500 transition-all shrink-0"
+                  >
+                    {avatarUrl ? (
+                      <img
+                        src={getAuthenticatedAvatarUrl(avatarUrl)}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <UserIcon className="w-4 h-4 text-gray-500" />
+                    )}
+                  </Link>
 
                   {user.role === 'ADMINISTRADOR' && (
                     <AdminNotificationBell

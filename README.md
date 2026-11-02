@@ -76,3 +76,12 @@ El entorno de desarrollo (`dev`) inicializa automáticamente los siguientes usua
 | ENCARGADO | `maria.encargada@laesquina.com` | `Password123` | Encargado de salón y mostrador (La Esquina) |
 | CHEF | `carlos.chef@comedorcentral.com` | `Password123` | Personal de cocina (Comedor Central) |
 | COMENSAL | `juan.comensal@gmail.com` | `Password123` | Usuario comensal |
+
+## Carrito de compras y datos demográficos del comensal (Feature 009)
+
+Módulo implementado con arquitectura Spec-Driven Development (SDD):
+
+- **Selector numérico acotado al stock real en cocina (COM-6.1.1)**: Permite seleccionar cantidades en el modal de detalle del plato e incorporar órdenes acumulando ítems sin duplicar filas.
+- **Botón flotante reactivo y cálculo monetario exacto en centavos (COM-6.1.2)**: Visibilidad biyectiva contextual (visible sólo si hay ítems en el catálogo), cálculo aritmético en centavos enteros para eliminar drift de punto flotante IEEE 754.
+- **Modificación interactiva, guardas de stock y rollback ante fallos de red (COM-6.1.3)**: Modificación con debounce de 300 ms, bloqueo visual al alcanzar stock límite de cocina (`POST /api/v1/cart/validate-stock`), remoción en cantidad 1 y reversión optimista determinista ante desconexión o errores del servidor.
+- **Datos demográficos y avatar de perfil (COM-1.4.2)**: Edición de edad biológica (14 a 120 años), género y domicilio de contacto (`PUT /api/v1/profile/demographics`). Carga de avatar JPEG/PNG/WebP de hasta 5 MB persistido en base de datos PostgreSQL mediante Flyway `V12__extend_user_demographics_and_avatar.sql` (`BYTEA`), con eliminación diferida sujeta a confirmación en formulario.

@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import type { DishCatalogItem } from '@/types/dinerCatalog';
 import { AllergenWarningBadge } from './AllergenWarningBadge';
+import { CartContext } from '@/context/CartContext';
 
 export interface DishDetailModalProps {
-  dish: DishCatalogItem | null;
+  dish: (DishCatalogItem & { availableStock?: number }) | null;
   isOpen: boolean;
   onClose: () => void;
   isReadOnly?: boolean;
   nextOpeningSchedule?: string | null;
+  onAddToCart?: (dish: DishCatalogItem, quantity: number) => void;
 }
 
 export const DishDetailModal: React.FC<DishDetailModalProps> = ({
@@ -16,15 +18,61 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   onClose,
   isReadOnly = false,
   nextOpeningSchedule,
+  onAddToCart,
 }) => {
   const [imageError, setImageError] = useState(false);
+  const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
+  const cartContext = useContext(CartContext);
+
+  useEffect(() => {
+    setSelectedQuantity(1);
+    setImageError(false);
+  }, [dish?.id, isOpen]);
 
   if (!isOpen || !dish) {
     return null;
   }
 
-  const isOutOfStock = dish.isAvailable === false && !isReadOnly;
+  const existingCartItem = cartContext?.items.find((item) => item.dishId === dish.id);
+  const quantityInCart = existingCartItem ? existingCartItem.quantity : 0;
+
+  const effectiveAvailableStock: number | undefined =
+    dish.availableStock !== undefined
+      ? dish.availableStock
+      : dish.isAvailable === false
+      ? 0
+      : undefined;
+
+  const remainingStock: number | undefined =
+    effectiveAvailableStock !== undefined
+      ? Math.max(0, effectiveAvailableStock - quantityInCart)
+      : undefined;
+
+  const isOutOfStock =
+    dish.isAvailable === false ||
+    (effectiveAvailableStock !== undefined && effectiveAvailableStock <= 0);
+
+  const isMaxStockReached = remainingStock !== undefined && remainingStock <= 0;
+  const canAddToCart = !isReadOnly && !isOutOfStock && !isMaxStockReached;
+
+  const minQuantity = 1;
+  const maxQuantity = remainingStock !== undefined ? Math.max(minQuantity, remainingStock) : 99;
+
+  const isDecrementDisabled = selectedQuantity <= minQuantity || !canAddToCart;
+  const isIncrementDisabled =
+    !canAddToCart || (remainingStock !== undefined && selectedQuantity >= remainingStock);
+
   const hasConflicts = dish.isCompliant === false && (dish.conflictingRestrictions?.length ?? 0) > 0;
+
+  const handleAddToCart = () => {
+    if (!canAddToCart) return;
+    if (onAddToCart) {
+      onAddToCart(dish, selectedQuantity);
+    } else if (cartContext) {
+      cartContext.addItem(dish, selectedQuantity);
+    }
+    onClose();
+  };
 
   return (
     <div
@@ -148,16 +196,92 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               <AllergenWarningBadge conflicts={dish.conflictingRestrictions} size="sm" />
             </div>
           )}
+
+          {/* Quantity Selector Section */}
+          <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                Cantidad
+              </span>
+              <div data-testid="quantity-selector" className="flex items-center gap-2">
+                <button
+                  type="button"
+                  data-testid="quantity-decrement-btn"
+                  disabled={isDecrementDisabled}
+                  onClick={() => setSelectedQuantity((q) => Math.max(minQuantity, q - 1))}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-bold text-base cursor-pointer"
+                  aria-label="Disminuir cantidad"
+                >
+                  -
+                </button>
+                <span
+                  data-testid="quantity-value"
+                  className="w-8 text-center font-bold text-gray-900 text-sm"
+                >
+                  {selectedQuantity}
+                </span>
+                <button
+                  type="button"
+                  data-testid="quantity-increment-btn"
+                  disabled={isIncrementDisabled}
+                  onClick={() =>
+                    setSelectedQuantity((q) =>
+                      remainingStock !== undefined ? Math.min(maxQuantity, q + 1) : q + 1
+                    )
+                  }
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-bold text-base cursor-pointer"
+                  aria-label="Aumentar cantidad"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Stock Limit Warning */}
+            {isMaxStockReached && (
+              <div
+                data-testid="stock-limit-warning"
+                className="text-xs font-semibold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200"
+              >
+                Límite de disponibilidad alcanzado ({effectiveAvailableStock} en cocina)
+              </div>
+            )}
+            {!isMaxStockReached && remainingStock !== undefined && selectedQuantity >= remainingStock && (
+              <div
+                data-testid="stock-limit-warning"
+                className="text-xs font-semibold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200"
+              >
+                Máxima disponibilidad seleccionada ({remainingStock} disponible{remainingStock === 1 ? '' : 's'})
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+        <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-semibold rounded-xl transition-colors cursor-pointer"
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-semibold rounded-xl transition-colors cursor-pointer"
           >
             Cerrar
+          </button>
+          <button
+            type="button"
+            data-testid="add-to-cart-btn"
+            disabled={!canAddToCart}
+            onClick={handleAddToCart}
+            className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-xl transition-all shadow-xs disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            <span>Agregar al Carrito</span>
           </button>
         </div>
       </div>
