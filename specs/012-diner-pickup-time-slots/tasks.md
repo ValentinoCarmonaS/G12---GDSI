@@ -30,7 +30,7 @@
 - [x] T007 [P] Extend `EstablishmentRepository.java` in `easyeat/backend/src/main/java/com/easyeat/catalog/repository/EstablishmentRepository.java` adding `@Lock(LockModeType.PESSIMISTIC_WRITE)` method `findByIdForUpdate(UUID id)` for atomic concurrency serialization.
 - [x] T008 [P] Create `OrderItemRepository.java` in `easyeat/backend/src/main/java/com/easyeat/order/repository/OrderItemRepository.java` extending `JpaRepository<OrderItem, UUID>`.
 - [x] T009 Create `OrderRepository.java` in `easyeat/backend/src/main/java/com/easyeat/order/repository/OrderRepository.java` with queries for counting active bookings by slot (`countActiveOrdersBySlot`), checking active diner reservation (`hasActivePendingOrder`), and finding expired pending orders (`findExpiredPendingOrders`).
-- [ ] T010 [P] Create TypeScript domain interfaces and enums in `easyeat/frontend/src/types/order.ts` defining `FulfillmentMode`, `OrderStatus`, `TimeSlotAvailability`, `PickupSlotCatalogResponse`, `CreateOrderRequest`, `OrderCreatedResponse`, `OrderDetailResponse`, and RFC 7807 `OrderErrorProblemDetail`.
+- [x] T010 [P] Create TypeScript domain interfaces and enums in `easyeat/frontend/src/types/order.ts` defining `FulfillmentMode`, `OrderStatus`, `TimeSlotAvailability`, `PickupSlotCatalogResponse`, `CreateOrderRequest`, `OrderCreatedResponse`, `OrderDetailResponse`, and RFC 7807 `OrderErrorProblemDetail`.
 - [ ] T011 [P] Configure PostgreSQL Testcontainers base test fixture in `easyeat/backend/src/test/java/com/easyeat/order/BaseIntegrationTest.java` for transactional and concurrency integration tests.
 
 **Checkpoint**: Foundation and schema ready — all domain models, repositories, and test fixtures are compiled and verified.
