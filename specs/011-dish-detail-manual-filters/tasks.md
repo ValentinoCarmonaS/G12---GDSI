@@ -58,7 +58,7 @@ description: "Task list for Feature 011: Detalle de Plato, Información Nutricio
 - [X] T014 [US1] Implement conditional photo container omission (completely omit container when `!photoUrl`, removing placeholders) in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx`
 - [X] T015 [US1] Implement progressive image loading with animated skeleton and load error handling in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx`
 - [X] T016 [US1] Implement internal vertical scroll container (`max-h-[85vh]`, `overflow-y-auto break-words`) for long descriptions in `easyeat/frontend/src/components/catalog/DishDetailModal.tsx`
-- [ ] T017 [US1] Integrate `useRealtimeAvailability` in `DishDetailModal.tsx` to handle reactive invalidation ($\le 3\text{ s}$) to "Plato no disponible" and restock rehabilitation without closing the modal
+- [X] T017 [US1] Integrate `useRealtimeAvailability` in `DishDetailModal.tsx` to handle reactive invalidation ($\le 3\text{ s}$) to "Plato no disponible" and restock rehabilitation without closing the modal
 - [ ] T018 [US1] Verify all component and integration tests pass (GREEN) for User Story 1 in `easyeat/frontend/src/test/catalog/DishDetailModal.test.tsx`
 
 **Checkpoint**: User Story 1 (MVP) is fully functional, reactive, and independently testable.

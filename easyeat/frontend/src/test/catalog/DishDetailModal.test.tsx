@@ -214,7 +214,7 @@ describe('DishDetailModal Component Tests (T034, US2, COM-4.1.1, FR-007, FR-012,
 
       // UI must reactively display unavailable notice / out of stock badge
       expect(screen.getByTestId('dish-unavailable-banner')).toBeInTheDocument();
-      expect(screen.getByText(/Plato no disponible|Agotado/i)).toBeInTheDocument();
+      expect(screen.getByText('Plato no disponible')).toBeInTheDocument();
 
       // Purchase button must be disabled
       expect(screen.getByTestId('add-to-cart-btn')).toBeDisabled();
