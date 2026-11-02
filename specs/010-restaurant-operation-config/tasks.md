@@ -125,7 +125,8 @@ The repo has **no orders / checkout / slot-selector backend**. This feature buil
 
 ### Tests / implementation — endpoints
 
-- [ ] T031 [US2] Add the capacity section to `easyeat/backend/src/test/java/com/easyeat/operations/controller/AdminOperationsControllerTest.java`: 401/403 RBAC, `shouldUpdateCapacity`, negative capacity → 400 "Capacidad inválida", stale version → 409, list upsert accepts many slots in one PUT, diner time-slots show `SOLD_OUT`. Record RED.
+- [x] T031 [US2] Add the capacity section to `easyeat/backend/src/test/java/com/easyeat/operations/controller/AdminOperationsControllerTest.java`: 401/403 RBAC, `shouldUpdateCapacity`, negative capacity → 400 "Capacidad inválida", stale version → 409, list upsert accepts many slots in one PUT, diner time-slots show `SOLD_OUT`. Record RED.
+  - **DONE 2026-11-02**: RED observed as a compilation failure (AdminSlotCapacityController and GlobalExceptionHandler.handleSlotSoldOut do not exist; 13 tests written in a new `Capacity` nested class). Beyond the task text: the day matrix GET, non-integer capacity (FR-007), a start not on a 15-minute boundary (INV-5), a missing field, and a direct test of the `SlotSoldOutException` mapping because no endpoint consumes a slot (there is no orders module).
 - [ ] T032 [P] [US2] Create DTOs `easyeat/backend/src/main/java/com/easyeat/operations/dto/UpdateSlotCapacityRequest.java` (list contract, `@Min(0)`) and `easyeat/backend/src/main/java/com/easyeat/operations/dto/SlotCapacityAdminResponse.java`.
 - [ ] T033 [US2] Create `easyeat/backend/src/main/java/com/easyeat/operations/controller/AdminSlotCapacityController.java` (`PUT`/`GET /api/v1/admin/slot-capacities`) and map `SlotSoldOutException` → 409 "Franja horaria agotada" in `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java`. Turn T031 GREEN.
 

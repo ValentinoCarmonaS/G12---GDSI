@@ -15,6 +15,8 @@ import com.easyeat.operations.repository.SlotCapacityRepository;
 import com.easyeat.operations.service.DinerTimeSlotService;
 import com.easyeat.operations.service.EstablishmentTimeProvider;
 import com.easyeat.operations.service.OperatingScheduleService;
+import com.easyeat.operations.service.SlotCapacityService;
+import com.easyeat.operations.exception.SlotSoldOutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -42,6 +44,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -55,7 +59,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * the capacity and payment sections are added by US2 and US3, which is why it is one class and
  * not one per story.
  */
-@WebMvcTest({AdminOperatingScheduleController.class, DinerTimeSlotController.class})
+@WebMvcTest({AdminOperatingScheduleController.class, AdminSlotCapacityController.class, DinerTimeSlotController.class})
 @Import({
         SecurityConfig.class,
         MethodSecurityConfig.class,
@@ -63,6 +67,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         JwtAuthenticationFilter.class,
         TenantContextFilter.class,
         OperatingScheduleService.class,
+        SlotCapacityService.class,
         DinerTimeSlotService.class
 })
 @DisplayName("Admin operations controllers")
@@ -286,6 +291,195 @@ class AdminOperationsControllerTest {
             when(timeProvider.nowAt(unknown)).thenThrow(new com.easyeat.catalog.exception.EstablishmentNotFoundException(unknown));
 
             mockMvc.perform(get(slotsUrl(unknown)).with(as("COMENSAL")).param("date", "2026-11-10")).andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("US2 - slot capacity")
+    class Capacity {
+
+        private static final String CAPACITIES = "/api/v1/admin/slot-capacities";
+        private static final LocalDate WEDNESDAY = LocalDate.of(2026, 11, 11);
+
+        private String slot(String start, String maxCapacity, String expectedVersion) {
+            return """
+                    {"slotDate":"2026-11-11","startTime":"%s","maxCapacity":%s,"expectedVersion":%s}""".formatted(start, maxCapacity, expectedVersion);
+        }
+
+        private EstablishmentSlotCapacity stored(LocalTime start, int max, int approved, long version) {
+            var capacity = new EstablishmentSlotCapacity(TENANT, new TimeSlot(WEDNESDAY, start), max, approved);
+            ReflectionTestUtils.setField(capacity, "id", UUID.randomUUID());
+            ReflectionTestUtils.setField(capacity, "version", version);
+            return capacity;
+        }
+
+        @Test
+        @DisplayName("an unauthenticated request is refused with 401")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            mockMvc.perform(get(CAPACITIES).param("date", "2026-11-11")).andExpect(status().isUnauthorized());
+            mockMvc.perform(put(CAPACITIES).contentType(MediaType.APPLICATION_JSON).content("[" + slot("12:00:00", "5", "null") + "]"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("a non-admin role is refused with 403")
+        void shouldReturn403ForNonAdmin() throws Exception {
+            mockMvc.perform(get(CAPACITIES).param("date", "2026-11-11").with(as("CHEF"))).andExpect(status().isForbidden());
+            mockMvc.perform(put(CAPACITIES).with(as("COMENSAL")).contentType(MediaType.APPLICATION_JSON)
+                    .content("[" + slot("12:00:00", "5", "null") + "]")).andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("shouldUpdateCapacity: PUT stores the slot and answers 200 with the contract keys")
+        void shouldUpdateCapacity() throws Exception {
+            when(capacityRepository.findByEstablishmentIdAndSlotDateAndStartTime(any(), any(), any())).thenReturn(Optional.empty());
+            when(capacityRepository.saveAllAndFlush(any())).thenAnswer(invocation -> {
+                List<EstablishmentSlotCapacity> saved = invocation.getArgument(0);
+                saved.forEach(c -> ReflectionTestUtils.setField(c, "id", UUID.randomUUID()));
+                saved.forEach(c -> ReflectionTestUtils.setField(c, "version", 0L));
+                return saved;
+            });
+
+            mockMvc.perform(put(CAPACITIES).with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
+                            .content("[" + slot("12:00:00", "50", "null") + "]"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].slotDate").value("2026-11-11"))
+                    .andExpect(jsonPath("$[0].startTime").value("12:00:00"))
+                    .andExpect(jsonPath("$[0].endTime").value("12:15:00"))
+                    .andExpect(jsonPath("$[0].maxCapacity").value(50))
+                    .andExpect(jsonPath("$[0].approvedOrdersCount").value(0))
+                    .andExpect(jsonPath("$[0].isSoldOut").value(false))
+                    .andExpect(jsonPath("$[0].soldOut").doesNotExist())
+                    .andExpect(jsonPath("$[0].version").value(0));
+        }
+
+        @Test
+        @DisplayName("SC-005: one PUT carries many slots (bulk apply) and they are saved together")
+        void shouldAcceptManySlotsInOnePut() throws Exception {
+            when(capacityRepository.findByEstablishmentIdAndSlotDateAndStartTime(any(), any(), any())).thenReturn(Optional.empty());
+            when(capacityRepository.saveAllAndFlush(any())).thenAnswer(invocation -> {
+                List<EstablishmentSlotCapacity> saved = invocation.getArgument(0);
+                saved.forEach(c -> ReflectionTestUtils.setField(c, "version", 0L));
+                return saved;
+            });
+            String body = "[" + slot("12:00:00", "20", "null") + "," + slot("12:15:00", "20", "null") + ","
+                    + slot("12:30:00", "20", "null") + "," + slot("12:45:00", "20", "null") + "]";
+
+            mockMvc.perform(put(CAPACITIES).with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(4));
+            verify(capacityRepository, times(1)).saveAllAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("INV-6: a negative capacity is a 400 'Capacidad inválida'")
+        void shouldRejectNegativeCapacity() throws Exception {
+            mockMvc.perform(put(CAPACITIES).with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
+                            .content("[" + slot("12:00:00", "-1", "null") + "]"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.title").value("Capacidad inválida"))
+                    .andExpect(jsonPath("$.status").value(400))
+                    .andExpect(jsonPath("$.detail").value("La capacidad máxima por franja debe ser un número entero mayor o igual a 0."));
+        }
+
+        @Test
+        @DisplayName("FR-007: a non-integer capacity is a 400")
+        void shouldRejectNonIntegerCapacity() throws Exception {
+            mockMvc.perform(put(CAPACITIES).with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
+                            .content("[" + slot("12:00:00", "5.5", "null") + "]"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("INV-5: a start that is not on a 15-minute boundary is a 400 'Capacidad inválida'")
+        void shouldRejectMisalignedStart() throws Exception {
+            mockMvc.perform(put(CAPACITIES).with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
+                            .content("[" + slot("12:07:00", "5", "null") + "]"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.title").value("Capacidad inválida"));
+        }
+
+        @Test
+        @DisplayName("a body missing a required field is a 400")
+        void shouldRejectMissingFields() throws Exception {
+            mockMvc.perform(put(CAPACITIES).with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
+                            .content("[{\"slotDate\":\"2026-11-11\"}]"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("EC-012: a stale version is a 409 'Conflicto de concurrencia'")
+        void shouldFailOnStaleVersion() throws Exception {
+            when(capacityRepository.findByEstablishmentIdAndSlotDateAndStartTime(TENANT, WEDNESDAY, LocalTime.of(12, 0)))
+                    .thenReturn(Optional.of(stored(LocalTime.of(12, 0), 50, 0, 4)));
+
+            mockMvc.perform(put(CAPACITIES).with(as("ADMIN")).contentType(MediaType.APPLICATION_JSON)
+                            .content("[" + slot("12:00:00", "30", "3") + "]"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.title").value("Conflicto de concurrencia"));
+        }
+
+        @Test
+        @DisplayName("GET returns the day matrix: unconfigured slots are capacity 0, sold out, without id or version")
+        void shouldReturnDayMatrix() throws Exception {
+            when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.WEDNESDAY)).thenReturn(Optional.of(
+                    new EstablishmentOperatingSchedule(TENANT, DayOfWeek.WEDNESDAY, LocalTime.of(12, 0), LocalTime.of(13, 0), false)));
+            when(capacityRepository.findByEstablishmentIdAndSlotDateBetweenOrderBySlotDateAscStartTimeAsc(TENANT, WEDNESDAY, WEDNESDAY))
+                    .thenReturn(List.of(stored(LocalTime.of(12, 15), 20, 20, 2)));
+
+            mockMvc.perform(get(CAPACITIES).param("date", "2026-11-11").with(as("ADMIN")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(4))
+                    .andExpect(jsonPath("$[0].startTime").value("12:00:00"))
+                    .andExpect(jsonPath("$[0].id").value(org.hamcrest.Matchers.nullValue()))
+                    .andExpect(jsonPath("$[0].version").value(org.hamcrest.Matchers.nullValue()))
+                    .andExpect(jsonPath("$[0].maxCapacity").value(0))
+                    .andExpect(jsonPath("$[0].isSoldOut").value(true))
+                    .andExpect(jsonPath("$[1].maxCapacity").value(20))
+                    .andExpect(jsonPath("$[1].approvedOrdersCount").value(20))
+                    .andExpect(jsonPath("$[1].isSoldOut").value(true))
+                    .andExpect(jsonPath("$[1].version").value(2));
+        }
+
+        @Test
+        @DisplayName("GET without a valid date is a 400")
+        void shouldRejectBadDate() throws Exception {
+            mockMvc.perform(get(CAPACITIES).with(as("ADMIN"))).andExpect(status().isBadRequest());
+            mockMvc.perform(get(CAPACITIES).param("date", "11-11-2026").with(as("ADMIN"))).andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("INV-3 / EC-007: the diner endpoint shows SOLD_OUT for a full slot and for a slot without capacity")
+        void shouldShowSoldOutToDiner() throws Exception {
+            LocalDate today = LocalDate.of(2026, 11, 10);
+            ZonedDateTime now = ZonedDateTime.of(2026, 11, 10, 15, 0, 0, 0, ZoneId.of("America/Argentina/Buenos_Aires"));
+            when(timeProvider.nowAt(TENANT)).thenReturn(now);
+            when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.TUESDAY)).thenReturn(Optional.of(
+                    new EstablishmentOperatingSchedule(TENANT, DayOfWeek.TUESDAY, LocalTime.of(11, 0), LocalTime.of(16, 0), false)));
+            when(capacityRepository.findByEstablishmentIdAndSlotDateBetweenOrderBySlotDateAscStartTimeAsc(TENANT, today, today))
+                    .thenReturn(List.of(
+                            new EstablishmentSlotCapacity(TENANT, new TimeSlot(today, LocalTime.of(15, 0)), 10, 10),
+                            new EstablishmentSlotCapacity(TENANT, new TimeSlot(today, LocalTime.of(15, 15)), 10, 9)));
+
+            mockMvc.perform(get("/api/v1/establishments/" + TENANT + "/time-slots").param("date", "2026-11-10").with(as("COMENSAL")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.slots[0].startTime").value("15:00:00"))
+                    .andExpect(jsonPath("$.slots[0].status").value("SOLD_OUT"))
+                    .andExpect(jsonPath("$.slots[1].status").value("AVAILABLE"))
+                    .andExpect(jsonPath("$.slots[2].startTime").value("15:30:00"))
+                    .andExpect(jsonPath("$.slots[2].status").value("SOLD_OUT"));
+        }
+
+        @Test
+        @DisplayName("INV-2 / EC-016: SlotSoldOutException is a 409 'Franja horaria agotada'")
+        void shouldMapSoldOutTo409() {
+            var request = new org.springframework.mock.web.MockHttpServletRequest("POST", "/api/v1/orders");
+            var response = new GlobalExceptionHandler().handleSlotSoldOut(new SlotSoldOutException(50), request);
+
+            org.assertj.core.api.Assertions.assertThat(response.getStatusCode().value()).isEqualTo(409);
+            org.assertj.core.api.Assertions.assertThat(response.getBody().getTitle()).isEqualTo("Franja horaria agotada");
+            org.assertj.core.api.Assertions.assertThat(response.getBody().getDetail())
+                    .isEqualTo("La franja seleccionada ha alcanzado su capacidad máxima permitida (50 pedidos).");
         }
     }
 }
