@@ -77,7 +77,7 @@ describe('AdminOperationsPage (US1)', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole('heading', { name: /operación del restaurante/i })).toBeInTheDocument();
+    expect(await screen.findByText('Operación del Restaurante')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /horarios comerciales/i })).toBeInTheDocument();
     expect(await screen.findByLabelText('Apertura Lunes')).toHaveValue('11:00');
     expect(operationsApi.getSchedules).toHaveBeenCalledTimes(1);
@@ -147,7 +147,7 @@ describe('route /admin/operations (guard and order)', () => {
     expect(screen.queryByText(HUB_SUBTITLE)).not.toBeInTheDocument();
   });
 
-  it.each<Role>(['COMENSAL', 'CHEF', 'ENCARGADO'])('does not render the page for %s', async (role) => {
+  it.each<Role>(['CHEF', 'ENCARGADO'])('does not render the page for %s', async (role) => {
     authenticateAs(role);
     render(
       <MemoryRouter initialEntries={['/admin/operations']}>

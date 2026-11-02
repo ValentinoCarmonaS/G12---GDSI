@@ -20,6 +20,7 @@ import { FirstLoginPasswordPage } from '../pages/FirstLoginPasswordPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { DishCostAuditPage } from '../pages/DishCostAuditPage';
 import { AdminDishReviewPage } from '../pages/AdminDishReviewPage';
+import { AdminOperationsPage } from '../pages/AdminOperationsPage';
 import { VerifyEmailPage } from '../pages/VerifyEmailPage';
 import { EstablishmentDiscoveryPage } from '../pages/EstablishmentDiscoveryPage';
 
@@ -181,6 +182,14 @@ export const AppRoutes: React.FC = () => {
         element={
           <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
             <AdminDishReviewPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/operations"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <AdminOperationsPage />
           </RoleRouteGuard>
         }
       />
