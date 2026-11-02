@@ -1,0 +1,541 @@
+openapi: 3.0.3
+info:
+  title: EasyEat - Motor de Reservas y Modalidad de Retiro (COM-6.2.x)
+  version: 1.0.0
+  description: >
+    API REST para la selección de modalidad de retiro ("Lo antes posible" / "Para más tarde"),
+    consulta de disponibilidad de franjas horarias de 15 minutos con indicador de demanda,
+    reserva atómica con garantía Zero Overbooking (FCFS) y ciclo de vida TTL de 15 minutos.
+servers:
+  - url: /api/v1
+    description: Servidor de aplicación EasyEat
+
+paths:
+  /establishments/{establishmentId}/pickup-slots:
+    get:
+      summary: Consulta disponibilidad de franjas horarias de retiro
+      description: >
+        Retorna la grilla completa de turnos de 15 minutos para la fecha especificada
+        (restringida a los próximos 7 días operativos), indicando el nivel de saturación,
+        marca de alta demanda y seleccionabilidad.
+      operationId: getPickupSlots
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: establishmentId
+          in: path
+          required: true
+          description: Identificador único del establecimiento.
+          schema:
+            type: string
+            format: uuid
+        - name: date
+          in: query
+          required: false
+          description: Fecha de consulta en formato YYYY-MM-DD. Si se omite, utiliza la fecha actual del servidor.
+          schema:
+            type: string
+            format: date
+            example: "2026-11-02"
+      responses:
+        '200':
+          description: Grilla de turnos y estado comercial obtenido exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupSlotCatalogResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '422':
+          description: Fecha fuera de la ventana operativa de 7 días o día no comercial.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /orders:
+    post:
+      summary: Creación de pedido en checkout y reserva atómica de franja horaria
+      description: >
+        Crea la orden comercial en estado PENDING_PAYMENT reservando atómicamente un (1) cupo
+        en la franja horaria seleccionada. Aplica bloqueo pesimista y política FCFS garantizando
+        cero sobreventa ante alta concurrencia.
+      operationId: createOrder
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Orden creada exitosamente en estado PENDING_PAYMENT con cupo asegurado por 15 minutos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderCreatedResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          description: Conflicto de concurrencia o infracción del límite de reservas activas.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              examples:
+                SlotSoldOut:
+                  summary: Franja horaria agotada por colisión concurrente (FCFS)
+                  value:
+                    type: "https://easyeat.com/errors/slot-sold-out"
+                    title: "Conflict"
+                    status: 409
+                    detail: "La franja horaria seleccionada acaba de agotarse. Por favor, seleccioná una nueva franja para continuar."
+                    instance: "/api/v1/orders"
+                    code: "SLOT_SOLD_OUT"
+                ActiveReservationExists:
+                  summary: Comensal con reserva pendiente activa en curso
+                  value:
+                    type: "https://easyeat.com/errors/active-reservation-exists"
+                    title: "Conflict"
+                    status: 409
+                    detail: "Ya poseés una orden pendiente de confirmación. Por favor, completá o cancelá tu reserva actual para continuar."
+                    instance: "/api/v1/orders"
+                    code: "ACTIVE_RESERVATION_EXISTS"
+        '422':
+          description: Infracción de lead time (menos de 30 minutos de antelación), local cerrado o día no operativo.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /orders/{orderId}:
+    get:
+      summary: Consulta de estado de orden y vigencia del TTL de reserva
+      description: >
+        Devuelve el estado actualizado de la orden, su plazo de expiración (expiresAt)
+        y la hora actual del servidor para sincronizar el cronómetro regresivo.
+      operationId: getOrderById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: Identificador único de la orden.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Información y estado del pedido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetailResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /orders/{orderId}/cancel:
+    post:
+      summary: Cancelación voluntaria de reserva pendiente
+      description: >
+        Transiciona la orden de PENDING_PAYMENT a CANCELLED y libera de forma inmediata el cupo asignado
+        a la franja horaria sin esperar los 15 minutos de vencimiento.
+      operationId: cancelPendingOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: Identificador único de la orden a cancelar.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Orden cancelada y cupo liberado inmediatamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSummaryResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: La orden no se encuentra en estado cancelable (ya confirmada, expirada o cancelada previamente).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    FulfillmentMode:
+      type: string
+      enum: [IMMEDIATE, SCHEDULED]
+      example: "SCHEDULED"
+
+    SlotStatus:
+      type: string
+      enum: [AVAILABLE, HIGH_DEMAND, SOLD_OUT, EXPIRED_OR_LEAD_TIME]
+      example: "AVAILABLE"
+
+    OrderStatus:
+      type: string
+      enum: [PENDING_PAYMENT, CONFIRMED, PAID, CANCELLED, EXPIRED]
+      example: "PENDING_PAYMENT"
+
+    TimeSlotAvailability:
+      type: object
+      required:
+        - startTime
+        - endTime
+        - maxCapacity
+        - bookedCount
+        - occupancyPercentage
+        - status
+        - isSelectable
+      properties:
+        startTime:
+          type: string
+          format: time
+          example: "13:00:00"
+        endTime:
+          type: string
+          format: time
+          example: "13:15:00"
+        maxCapacity:
+          type: integer
+          example: 10
+        bookedCount:
+          type: integer
+          example: 8
+        occupancyPercentage:
+          type: number
+          format: double
+          example: 80.0
+        status:
+          $ref: '#/components/schemas/SlotStatus'
+        isSelectable:
+          type: boolean
+          example: true
+
+    PickupSlotCatalogResponse:
+      type: object
+      required:
+        - establishmentId
+        - date
+        - serverTime
+        - timezone
+        - isEstablishmentOpen
+        - slots
+      properties:
+        establishmentId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+          example: "2026-11-02"
+        serverTime:
+          type: string
+          format: date-time
+          example: "2026-11-02T12:15:00Z"
+        timezone:
+          type: string
+          example: "America/Argentina/Buenos_Aires"
+        isEstablishmentOpen:
+          type: boolean
+          example: true
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSlotAvailability'
+
+    CreateOrderItemRequest:
+      type: object
+      required:
+        - dishId
+        - quantity
+      properties:
+        dishId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+
+    CreateOrderRequest:
+      type: object
+      required:
+        - establishmentId
+        - fulfillmentMode
+        - items
+      properties:
+        establishmentId:
+          type: string
+          format: uuid
+        fulfillmentMode:
+          $ref: '#/components/schemas/FulfillmentMode'
+        pickupDate:
+          type: string
+          format: date
+          description: Requerido si fulfillmentMode es SCHEDULED.
+          example: "2026-11-02"
+        timeSlotStart:
+          type: string
+          format: time
+          description: Requerido si fulfillmentMode es SCHEDULED.
+          example: "13:00:00"
+        timeSlotEnd:
+          type: string
+          format: time
+          description: Opcional (se infiere como timeSlotStart + 15 minutos).
+          example: "13:15:00"
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CreateOrderItemRequest'
+
+    OrderCreatedResponse:
+      type: object
+      required:
+        - id
+        - establishmentId
+        - fulfillmentMode
+        - pickupDate
+        - timeSlotStart
+        - timeSlotEnd
+        - status
+        - totalAmount
+        - expiresAt
+        - remainingSeconds
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        establishmentId:
+          type: string
+          format: uuid
+        fulfillmentMode:
+          $ref: '#/components/schemas/FulfillmentMode'
+        pickupDate:
+          type: string
+          format: date
+          example: "2026-11-02"
+        timeSlotStart:
+          type: string
+          format: time
+          example: "13:00:00"
+        timeSlotEnd:
+          type: string
+          format: time
+          example: "13:15:00"
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        totalAmount:
+          type: number
+          format: double
+          example: 18500.00
+        expiresAt:
+          type: string
+          format: date-time
+          example: "2026-11-02T12:30:00Z"
+        remainingSeconds:
+          type: integer
+          example: 900
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-11-02T12:15:00Z"
+
+    OrderItemDetail:
+      type: object
+      required:
+        - id
+        - dishId
+        - dishName
+        - unitPrice
+        - quantity
+        - subtotal
+      properties:
+        id:
+          type: string
+          format: uuid
+        dishId:
+          type: string
+          format: uuid
+        dishName:
+          type: string
+          example: "Bife de Chorizo con Papas Rústicas"
+        unitPrice:
+          type: number
+          format: double
+          example: 9250.00
+        quantity:
+          type: integer
+          example: 2
+        subtotal:
+          type: number
+          format: double
+          example: 18500.00
+
+    OrderDetailResponse:
+      type: object
+      required:
+        - id
+        - establishmentId
+        - fulfillmentMode
+        - pickupDate
+        - timeSlotStart
+        - timeSlotEnd
+        - status
+        - totalAmount
+        - serverTime
+        - items
+      properties:
+        id:
+          type: string
+          format: uuid
+        establishmentId:
+          type: string
+          format: uuid
+        fulfillmentMode:
+          $ref: '#/components/schemas/FulfillmentMode'
+        pickupDate:
+          type: string
+          format: date
+          example: "2026-11-02"
+        timeSlotStart:
+          type: string
+          format: time
+          example: "13:00:00"
+        timeSlotEnd:
+          type: string
+          format: time
+          example: "13:15:00"
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        totalAmount:
+          type: number
+          format: double
+          example: 18500.00
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-11-02T12:30:00Z"
+        remainingSeconds:
+          type: integer
+          nullable: true
+          example: 840
+        serverTime:
+          type: string
+          format: date-time
+          example: "2026-11-02T12:16:00Z"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemDetail'
+
+    OrderSummaryResponse:
+      type: object
+      required:
+        - id
+        - status
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+          example: "about:blank"
+        title:
+          type: string
+          example: "Conflict"
+        status:
+          type: integer
+          example: 409
+        detail:
+          type: string
+          example: "La franja horaria seleccionada acaba de agotarse."
+        instance:
+          type: string
+          example: "/api/v1/orders"
+        code:
+          type: string
+          example: "SLOT_SOLD_OUT"
+        updated_slots:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/TimeSlotAvailability'
+
+  responses:
+    UnauthorizedError:
+      description: Credenciales de autenticación ausentes o token JWT inválido/expirado.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    ForbiddenError:
+      description: Acceso no autorizado para el rol del usuario (requiere ROLE_COMENSAL).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    NotFoundError:
+      description: Recurso no encontrado (establecimiento u orden inexistente).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    ValidationError:
+      description: Datos de solicitud con formato inválido o violaciones de validación Jakarta.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
