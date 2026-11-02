@@ -90,21 +90,25 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const availableStock: number | undefined = (dish as any).availableStock;
-      let effectiveAddedQuantity = quantity;
 
       setItems((prev) => {
         const existing = prev.find((item) => item.dishId === dish.id);
-        if (existing) {
-          const maxStock = availableStock !== undefined ? availableStock : existing.availableStock;
-          if (maxStock !== undefined && existing.quantity >= maxStock) {
-            effectiveAddedQuantity = 0;
+        const maxStock = availableStock !== undefined ? availableStock : existing?.availableStock;
+
+        // If kitchen stock constraint is exceeded (N + existing > maxStock or initial N > maxStock), reject addition (INV-13, Clarification #2, EC-011)
+        if (maxStock !== undefined) {
+          const currentQty = existing ? existing.quantity : 0;
+          if (currentQty + quantity > maxStock) {
+            showToast(`Disponibilidad insuficiente para ${dish.name} (${maxStock} en cocina)`);
             return prev;
           }
-          let newQuantity = existing.quantity + quantity;
-          if (maxStock !== undefined && newQuantity > maxStock) {
-            effectiveAddedQuantity = maxStock - existing.quantity;
-            newQuantity = maxStock;
-          }
+        }
+
+        const unitLabel = quantity === 1 ? '1 unidad' : `${quantity} unidades`;
+        showToast(`Se agregaron ${unitLabel} de ${dish.name} al carrito`);
+
+        if (existing) {
+          const newQuantity = existing.quantity + quantity;
           return prev.map((item) =>
             item.dishId === dish.id
               ? {
@@ -117,22 +121,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           );
         }
 
-        let initialQuantity = quantity;
-        if (availableStock !== undefined && initialQuantity > availableStock) {
-          initialQuantity = availableStock;
-        }
-
-        if (initialQuantity <= 0) {
-          effectiveAddedQuantity = 0;
-          return prev;
-        }
-
         const newItem: CartItem = {
           dishId: dish.id,
           tenantId: (dish as any).tenantId,
           name: dish.name,
           price: dish.price,
-          quantity: initialQuantity,
+          quantity,
           availableStock,
           isCompliant: (dish as any).isCompliant,
           conflictingRestrictions: (dish as any).conflictingRestrictions,
@@ -140,14 +134,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         return [...prev, newItem];
       });
-
-      if (effectiveAddedQuantity <= 0) {
-        showToast(`Límite de disponibilidad alcanzado para ${dish.name}`);
-        return;
-      }
-
-      const unitLabel = effectiveAddedQuantity === 1 ? '1 unidad' : `${effectiveAddedQuantity} unidades`;
-      showToast(`Se agregaron ${unitLabel} de ${dish.name} al carrito`);
     },
     [showToast]
   );

@@ -149,13 +149,14 @@ describe('CartContext & useCart (T055, US3, FR-015, FR-021, FR-022)', () => {
     });
     expect(result.current.items[0].quantity).toBe(3);
 
-    // Attempting to add 3 more when stock is 4 should clamp to availableStock (4)
+    // Attempting to add 3 more when stock is 4 exceeds remaining stock (3 + 3 = 6 > 4), so addition is rejected (INV-13, EC-011)
     act(() => {
       result.current.addItem(dishWithStock, 3);
     });
 
-    expect(result.current.items[0].quantity).toBe(4);
-    expect(result.current.totalCount).toBe(4);
+    expect(result.current.items[0].quantity).toBe(3);
+    expect(result.current.totalCount).toBe(3);
+    expect(result.current.toastMessage).toMatch(/insuficiente|disponibilidad|4 en cocina/i);
   });
 
   it('updates quantity and removes item when quantity reaches 0', () => {
