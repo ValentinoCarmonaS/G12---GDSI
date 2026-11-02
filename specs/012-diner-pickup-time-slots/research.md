@@ -80,56 +80,46 @@ Se adopta una arquitectura de liberación híbrida en dos niveles:
 
 ---
 
-## 3. Modelo de configuración operativa de establecimientos
+## 3. Modelo de configuración operativa de establecimientos y articulación con Spec 010
 
 ### Contexto y problema
-La especificación exige restringir las reservas a horarios hábiles, validar lead times de preparación de 30 minutos y computar capacidades por franja (por defecto 10 pedidos por turno). Spec 008 ya introdujo en `establishments` las columnas `opening_time`, `closing_time` y `timezone`.
+La especificación exige restringir las reservas a horarios hábiles, validar lead times de preparación de 30 minutos y computar capacidades por franja (por defecto 10 pedidos por turno). Spec 008 introdujo en `establishments` las columnas `opening_time`, `closing_time` y `timezone`. Paralelamente, Spec 010 define el back-office administrativo para configurar horarios semanales (`establishment_operating_schedules`) y capacidades específicas (`establishment_slot_capacities`).
 
 ### Decisión técnica
-Se extiende la tabla `establishments` existente mediante la migración Flyway `V12__add_time_slot_and_order_fulfillment.sql`:
-- `lead_time_minutes`: `INTEGER NOT NULL DEFAULT 30`
-- `max_capacity_per_slot`: `INTEGER NOT NULL DEFAULT 10`
-- `operating_days`: `VARCHAR(100) NOT NULL DEFAULT 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY'`
-
-En la entidad `Establishment`, el campo `operating_days` se mapea bidireccionalmente utilizando un JPA `AttributeConverter<Set<DayOfWeek>, String>`, permitiendo validar de forma idiomática en Java si el local opera en un día determinado (`establishment.isOpenOn(dayOfWeek)`).
+1. **Extensión base del establecimiento (Flyway `V12`)**:
+   Se extiende la tabla `establishments` con los parámetros operacionales por defecto:
+   - `lead_time_minutes`: `INTEGER NOT NULL DEFAULT 30` (buffer mínimo para reservas del día)
+   - `max_capacity_per_slot`: `INTEGER NOT NULL DEFAULT 10` (capacidad de contingencia por franja)
+   - `operating_days`: `VARCHAR(100) NOT NULL DEFAULT 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY'`
+2. **Articulación y jerarquía con Spec 010**:
+   - *Horarios comerciales*: El servicio `PickupSlotService` consulta prioritariamente `establishment_operating_schedules` (Spec 010) para el `day_of_week` de la fecha solicitada. Si existe un horario específico configurado por el Administrador y no está marcado como `is_closed = true`, se utiliza ese rango; en ausencia de configuración en 010, se recurre a `opening_time` y `closing_time` de la entidad `Establishment`.
+   - *Capacidad por franja*: Para cada franja de 15 minutos en una fecha $D$, si existe un registro en `establishment_slot_capacities` (Spec 010), se toma su `max_capacity`; caso contrario, se aplica el valor general `establishment.max_capacity_per_slot` (10 pedidos).
+   - *Cómputo de saturación atómica*: Spec 012 no depende de un contador estático susceptible de desincronización (`approved_orders_count`), sino que computa de forma atómica y reactiva las órdenes vivas en la tabla `orders` filtrando por el TTL de 15 minutos.
 
 ### Justificación
-- Respeta la estructura de datos existente sin crear tablas 1:1 adicionales redundantes.
-- Proporciona valores por defecto consistentes con el dominio que permiten que los locales previamente sembrados sigan funcionando sin regresiones.
+- Elimina cualquier conflicto o duplicación entre 010 y 012: 010 es el panel de parametrización administrativa, y 012 es el motor transaccional de consumo del comensal.
+- Permite que el sistema funcione de manera autónoma con valores seguros por defecto incluso si el local aún no configuró horarios detallados en 010.
 
 ---
 
-## 4. Persistencia de la orden comercial y detalle de platos
+## 4. Persistencia de la orden comercial y validación cruzada (Specs 009, 011 y 013)
 
 ### Contexto y problema
-Aunque la pasarela de pagos se incorpora formalmente en Sprint 4, la orden debe registrarse con su detalle de platos e importes correspondientes para que en la próxima iteración el checkout pueda transicionar fluidamente a `PAID` sin redefinir la arquitectura.
+Al completar el checkout, la orden debe registrarse con su detalle de platos e importes correspondientes. La orden proviene del carrito (`CartContext` de Spec 009, enriquecido por Spec 011), y debe someterse a las restricciones de servicio de cocina introducidas en Spec 013 (platos pausados por el chef).
 
 ### Decisión técnica
-Se definen dos entidades relacionales:
-1. `Order`:
-   - `id`: UUID (PK)
-   - `establishment_id`: UUID (FK a `establishments`, índice para consultas multi-tenant)
-   - `user_id`: UUID (FK a `users`, comensal autenticado)
-   - `fulfillment_mode`: `VARCHAR(30)` (`IMMEDIATE` o `SCHEDULED`)
-   - `pickup_date`: `DATE NOT NULL`
-   - `time_slot_start`: `TIME NOT NULL`
-   - `time_slot_end`: `TIME NOT NULL`
-   - `status`: `VARCHAR(30)` (`PENDING_PAYMENT`, `CONFIRMED`, `PAID`, `CANCELLED`, `EXPIRED`)
-   - `total_amount`: `DECIMAL(12, 2) NOT NULL`
-   - `expires_at`: `TIMESTAMPTZ` (obligatorio para `PENDING_PAYMENT`)
-   - `created_at`, `updated_at`: `TIMESTAMPTZ`
-2. `OrderItem`:
-   - `id`: UUID (PK)
-   - `order_id`: UUID (FK a `orders`, cascade all)
-   - `dish_id`: UUID (FK a `dishes`)
-   - `dish_name`: `VARCHAR(150) NOT NULL` (snapshot inmutable del nombre)
-   - `unit_price`: `DECIMAL(10, 2) NOT NULL` (snapshot inmutable del precio)
-   - `quantity`: `INTEGER NOT NULL`
-   - `subtotal`: `DECIMAL(12, 2) NOT NULL`
+1. **Validaciones cruzadas pre-reserva en backend (`OrderService.createPendingOrder`)**:
+   - *Pausa manual de platos (Spec 013 FR-019)*: Verifica en `dishes` que ningún plato contenga `paused_by_chef == true`. Si se detecta un plato pausado, aborta la transacción y retorna `HTTP 422 Unprocessable Entity` con código `DISH_PAUSED_BY_CHEF`.
+   - *Inventario en cocina (Spec 009 FR-014a)*: Verifica que cada plato posea stock suficiente para cubrir la cantidad demandada. Si no hay stock, retorna `HTTP 422` con código `DISH_OUT_OF_STOCK`.
+   - *Contexto de tenant (Spec 008)*: Todos los platos deben pertenecer al `establishment_id` autenticado.
+2. **Estructura de persistencia relacional (`Order` y `OrderItem`)**:
+   - `Order`: Encabezado comercial con `establishment_id`, `user_id`, `fulfillment_mode`, `pickup_date`, `time_slot_start`, `time_slot_end`, `status = PENDING_PAYMENT`, `total_amount`, y `expires_at = NOW() + 15 min`.
+   - `OrderItem`: Snapshot inmutable de cada ítem (`dish_id`, `dish_name`, `unit_price`, `quantity`, `subtotal`).
 
 ### Justificación
-- Los snapshots de nombre y precio garantizan que eventuales variaciones de carta o precios posteriores no alteren el histórico contable de la orden reservada.
-- No introduce tablas temporales descartables y se integra de forma directa con `CartItem` de `CartContext`.
+- Los snapshots de nombre y precio garantizan que eventuales variaciones de carta de cocina no alteren el histórico contable de la orden reservada.
+- Resuelve estrictamente el requerimiento de bloqueo de checkout por platos pausados (013) y stock insuficiente (009).
+- Deja la base de datos 100% preparada para el cobro transaccional en el Sprint 4 (`COM-7.x`).
 
 ---
 

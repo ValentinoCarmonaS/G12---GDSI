@@ -57,6 +57,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
+  /establishments/{establishmentId}/time-slots:
+    get:
+      summary: Alias interoperable para consulta de franjas horarias (compatibilidad Spec 010)
+      description: Redirecciona o atiende la misma proyección de franjas horarias que pickup-slots.
+      operationId: getTimeSlotsAlias
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: establishmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Grilla de turnos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PickupSlotCatalogResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
   /orders:
     post:
       summary: Creación de pedido en checkout y reserva atómica de franja horaria
@@ -112,11 +144,48 @@ paths:
                     instance: "/api/v1/orders"
                     code: "ACTIVE_RESERVATION_EXISTS"
         '422':
-          description: Infracción de lead time (menos de 30 minutos de antelación), local cerrado o día no operativo.
+          description: Infracción de reglas de negocio en checkout (lead time, local cerrado, plato pausado por chef o stock insuficiente).
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+              examples:
+                DishPausedByChef:
+                  summary: Plato en carrito pausado por contingencia de cocina (Spec 013 FR-019)
+                  value:
+                    type: "https://easyeat.com/errors/dish-paused-by-chef"
+                    title: "Unprocessable Entity"
+                    status: 422
+                    detail: "El plato 'Bife de Chorizo' ha sido pausado temporalmente por la cocina. Por favor, retiralo del carrito para continuar."
+                    instance: "/api/v1/orders"
+                    code: "DISH_PAUSED_BY_CHEF"
+                DishOutOfStock:
+                  summary: Stock insuficiente en cocina (Spec 009 FR-014a)
+                  value:
+                    type: "https://easyeat.com/errors/dish-out-of-stock"
+                    title: "Unprocessable Entity"
+                    status: 422
+                    detail: "No hay stock suficiente para cubrir la cantidad solicitada de 'Ensalada César'."
+                    instance: "/api/v1/orders"
+                    code: "DISH_OUT_OF_STOCK"
+                LeadTimeViolation:
+                  summary: Franja horaria con anticipación inferior a 30 minutos (Spec 012 FR-009)
+                  value:
+                    type: "https://easyeat.com/errors/lead-time-violation"
+                    title: "Unprocessable Entity"
+                    status: 422
+                    detail: "La franja seleccionada debe contar con al menos 30 minutos de anticipación respecto de la hora actual."
+                    instance: "/api/v1/orders"
+                    code: "LEAD_TIME_VIOLATION"
+                EstablishmentClosed:
+                  summary: Establecimiento cerrado para pedidos inmediatos (Spec 008 / 010)
+                  value:
+                    type: "https://easyeat.com/errors/establishment-closed"
+                    title: "Unprocessable Entity"
+                    status: 422
+                    detail: "El establecimiento se encuentra fuera de su horario comercial de atención. Seleccioná una reserva programada."
+                    instance: "/api/v1/orders"
+                    code: "ESTABLISHMENT_CLOSED"
 
   /orders/{orderId}:
     get:

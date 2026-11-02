@@ -114,6 +114,38 @@ npm test src/test/checkout/
 
 ---
 
+### Escenario 6: Validación cruzada de platos pausados por chef y stock (Specs 009 y 013)
+
+Valida que el checkout en backend rechace pedidos si un plato fue pausado por la cocina o no cuenta con inventario suficiente.
+
+```bash
+cd easyeat/backend
+mvn test -Dtest=OrderCheckoutValidationIntegrationTest
+```
+
+**Criterios de éxito esperados**:
+- Si un plato del carrito tiene `paused_by_chef = true` (Spec 013), `POST /api/v1/orders` retorna `HTTP 422 Unprocessable Entity` con código `DISH_PAUSED_BY_CHEF`.
+- Si un plato no tiene stock suficiente en cocina (Spec 009), retorna `HTTP 422` con código `DISH_OUT_OF_STOCK`.
+- La transacción aborta limpiamente sin reservar cupo ni persistir la orden.
+
+---
+
+### Escenario 7: Articulación con horarios y capacidades de operaciones (Spec 010)
+
+Valida que `PickupSlotService` respete las tablas de Spec 010 cuando estén presentes o aplique los valores por defecto del establecimiento.
+
+```bash
+cd easyeat/backend
+mvn test -Dtest=PickupSlotOperationsIntegrationTest
+```
+
+**Criterios de éxito esperados**:
+- Si `establishment_operating_schedules` tiene configurado un día como cerrado (`is_closed = true`), ese día se reporta como no operativo.
+- Si una franja tiene un cupo personalizado en `establishment_slot_capacities` (ej. `max_capacity = 5`), la saturación se evalúa sobre 5 en lugar del default de 10.
+- Si no existen filas en las tablas de 010, el servicio aplica fluidamente `opening_time`, `closing_time` y `max_capacity_per_slot = 10` de `establishments`.
+
+---
+
 ## 4. Validación manual end-to-end (Flujo visual)
 
 1. **Iniciar el backend localmente**:

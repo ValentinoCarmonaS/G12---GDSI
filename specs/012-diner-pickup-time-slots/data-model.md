@@ -11,7 +11,9 @@ erDiagram
     ESTABLISHMENTS ||--o{ ORDERS : "recibe pedidos (tenant)"
     USERS ||--o{ ORDERS : "realiza pedidos (comensal)"
     ORDERS ||--|{ ORDER_ITEMS : "contiene ítems"
-    DISHES ||--o{ ORDER_ITEMS : "referenciado en"
+    DISHES ||--o{ ORDER_ITEMS : "referenciado en (con paused_by_chef de 013)"
+    ESTABLISHMENTS ||--o{ ESTABLISHMENT_OPERATING_SCHEDULES : "horarios semanales (010, opcional)"
+    ESTABLISHMENTS ||--o{ ESTABLISHMENT_SLOT_CAPACITIES : "cupos por franja (010, opcional)"
 
     ESTABLISHMENTS {
         uuid id PK
@@ -50,6 +52,14 @@ erDiagram
         numeric unit_price "Snapshot inmutable"
         int quantity
         numeric subtotal
+    }
+
+    DISHES {
+        uuid id PK
+        varchar name
+        numeric price
+        boolean paused_by_chef "Spec 013"
+        varchar status
     }
 ```
 
@@ -127,6 +137,21 @@ Persiste el detalle inmutable de cada plato contenido en el carrito de compras d
 
 ---
 
+### 2.4. Articulación con modelos de datos de Specs 009, 010, 011 y 013
+
+1. **Spec 009 (Shopping Cart)**:
+   - Los ítems del carrito (`CartItem`: `dishId`, `quantity`) se reciben en el request de checkout (`CreateOrderRequest.items`).
+   - Se revalida stock remanente en cocina (`currentStock >= quantity`, Spec 009 FR-014a) antes de persistir la orden.
+2. **Spec 010 (Restaurant Operation Config)**:
+   - *Horarios*: Si existen registros en `establishment_operating_schedules`, se respetan sus franjas de apertura/cierre y el flag `is_closed` para el día de la semana correspondiente; si no, se recurre a `Establishment` (`opening_time`, `closing_time`).
+   - *Capacidades*: Si existe configuración en `establishment_slot_capacities` para la fecha y franja horaria, se adopta su `max_capacity`; caso contrario, se aplica la capacidad por defecto `establishment.max_capacity_per_slot` (10 órdenes).
+3. **Spec 011 (Dish Detail & Manual Filters)**:
+   - Los precios unitarios y subtotales se procesan con aritmética exacta de dos decimales (BigInteger/BigDecimal), congelándose como snapshots inmutables en `order_items`.
+4. **Spec 013 (Critical Stock & Chef Pause)**:
+   - Al recibir la solicitud de checkout, el backend consulta `dishes.paused_by_chef`. Si algún plato tiene `paused_by_chef == true`, se aborta la creación de la orden (`DISH_PAUSED_BY_CHEF`, Spec 013 FR-019).
+
+---
+
 ## 3. Máquina de estados y ciclo de vida de la orden
 
 ```mermaid
@@ -179,4 +204,68 @@ TimeSlotAvailability {
 | `HIGH_DEMAND` | `80% <= occupancy < 100%` y cumple lead time | `true` | Botón ámbar con badge "Alta Demanda". Dispara aviso en resumen de checkout. |
 | `SOLD_OUT` | `occupancy >= 100%` y dentro de horario | `false` | Botón gris deshabilitado con badge "Agotado". |
 | `EXPIRED_OR_LEAD_TIME` | Franja pasada o `startTime < NOW() + 30m` en día actual | `false` | Botón gris atenuado no clickeable. |
+
+---
+
+## 5. Esquema Relacional de Base de Datos (DDL Flyway Preview)
+
+Script de migración `easyeat/backend/src/main/resources/db/migration/V12__add_time_slot_and_order_fulfillment.sql`:
+
+```sql
+-- 1. Extender tabla establishments con parámetros operativos
+ALTER TABLE establishments
+    ADD COLUMN IF NOT EXISTS lead_time_minutes INTEGER NOT NULL DEFAULT 30,
+    ADD COLUMN IF NOT EXISTS max_capacity_per_slot INTEGER NOT NULL DEFAULT 10,
+    ADD COLUMN IF NOT EXISTS operating_days VARCHAR(100) NOT NULL DEFAULT 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY';
+
+ALTER TABLE establishments
+    ADD CONSTRAINT chk_establishment_lead_time CHECK (lead_time_minutes > 0),
+    ADD CONSTRAINT chk_establishment_slot_capacity CHECK (max_capacity_per_slot > 0);
+
+-- 2. Crear tabla orders
+CREATE TABLE IF NOT EXISTS orders (
+    id                UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
+    establishment_id  UUID           NOT NULL REFERENCES establishments(id) ON DELETE RESTRICT,
+    user_id           UUID           NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    fulfillment_mode  VARCHAR(30)    NOT NULL,
+    pickup_date       DATE           NOT NULL,
+    time_slot_start   TIME           NOT NULL,
+    time_slot_end     TIME           NOT NULL,
+    status            VARCHAR(30)    NOT NULL DEFAULT 'PENDING_PAYMENT',
+    total_amount      DECIMAL(12, 2) NOT NULL,
+    expires_at        TIMESTAMPTZ    NULL,
+    created_at        TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    updated_at        TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_order_fulfillment_mode CHECK (fulfillment_mode IN ('IMMEDIATE', 'SCHEDULED')),
+    CONSTRAINT chk_order_status CHECK (status IN ('PENDING_PAYMENT', 'CONFIRMED', 'PAID', 'CANCELLED', 'EXPIRED')),
+    CONSTRAINT chk_order_total_amount CHECK (total_amount >= 0),
+    CONSTRAINT chk_order_slot_times CHECK (time_slot_start < time_slot_end)
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_slot_capacity
+    ON orders(establishment_id, pickup_date, time_slot_start, status, expires_at);
+
+CREATE INDEX IF NOT EXISTS idx_orders_user_pending
+    ON orders(user_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_orders_expires_sweep
+    ON orders(status, expires_at);
+
+-- 3. Crear tabla order_items
+CREATE TABLE IF NOT EXISTS order_items (
+    id          UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id    UUID           NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    dish_id     UUID           NOT NULL REFERENCES dishes(id) ON DELETE RESTRICT,
+    dish_name   VARCHAR(150)   NOT NULL,
+    unit_price  DECIMAL(10, 2) NOT NULL,
+    quantity    INTEGER        NOT NULL,
+    subtotal    DECIMAL(12, 2) NOT NULL,
+    CONSTRAINT chk_order_item_quantity CHECK (quantity > 0),
+    CONSTRAINT chk_order_item_unit_price CHECK (unit_price > 0),
+    CONSTRAINT chk_order_item_subtotal CHECK (subtotal > 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id
+    ON order_items(order_id);
+```
 

@@ -41,6 +41,20 @@
 - **Q10: Visualización de vigencia y cuenta regresiva del TTL**: Para que el comensal conozca el tiempo disponible antes de que expire su reserva (TTL de 15 minutos), ¿cómo debe presentarse la vigencia en la pantalla de espera de pago?  
   → **A10**: Se incorpora un contador regresivo dinámico en pantalla (de 15:00 a 00:00) sincronizado con la hora del servidor, que despliega una alerta visual de expiración inminente cuando restan menos de 2 minutos para garantizar transparencia al comensal antes de la liberación automática del cupo.
 
+### Session 02/11/2026 (Alineación Integral con Especificaciones 009, 010, 011 y 013)
+
+- **Q11: Coexistencia con la configuración de horarios y capacidades de Spec 010 (ADM-2.2.1, ADM-2.2.2)**: Dado que Spec 010 define las pantallas administrativas de horarios comerciales semanales (`establishment_operating_schedules`) y cupos específicos por franja (`establishment_slot_capacities`), ¿cómo interactúa el motor de reservas de Spec 012 con dichos datos?  
+  → **A11**: Spec 012 consume de forma prioritaria los horarios y capacidades parametrizados por la administración si existen en el sistema. Si un local aún no configuró horarios o capacidades personalizadas, Spec 012 adopta como valores predeterminados seguros los datos base del establecimiento (`opening_time`, `closing_time` de Spec 008 y una capacidad por defecto de 10 pedidos por franja), garantizando funcionamiento inmediato y cero inconsistencias de esquema.
+
+- **Q12: Integración con la pausa manual de platos por el chef de Spec 013 (CHF-2.2.5, FR-019)**: Si un comensal tiene en su carrito un plato que el chef pausó manualmente (`paused_by_chef = true`), ¿cómo responde el motor de checkout de Spec 012?  
+  → **A12**: En estricto cumplimiento de Spec 013 (FR-019), el checkout valida en el backend al momento de confirmación que ningún plato del pedido se encuentre en estado pausado por cocina. Si se detecta un plato pausado, la confirmación se rechaza con `HTTP 422 Unprocessable Entity` (`DISH_PAUSED_BY_CHEF`), impidiendo la reserva del cupo hasta que el ítem sea retirado del carrito.
+
+- **Q13: Coherencia con el carrito de compras (Spec 009) y detalle de catálogo (Spec 011)**: ¿Cómo se validan los precios y el stock de los ítems del carrito al confirmar la orden en checkout?  
+  → **A13**: Spec 012 recibe los ítems consolidados en `CartContext` (Spec 009, derivados de las selecciones de Spec 011), revalida que cada plato pertenezca al local activo (`tenant_id`), que cuente con stock suficiente en cocina (Spec 009 FR-014a), y congela un snapshot inmutable de precios y nombres en `order_items`, preservando la consistencia contable frente a posteriores modificaciones en la carta.
+
+- **Q14: Unificación de endpoints de franjas horarias**: ¿Qué convención de ruta REST expone la disponibilidad de turnos para el comensal?  
+  → **A14**: Se adopta formalmente `GET /api/v1/establishments/{establishmentId}/pickup-slots?date=YYYY-MM-DD` como el contrato principal para comensales, proveyendo proyección completa de turnos con porcentaje de demanda, lead time y estado operativo, admitiendo `/time-slots` como alias para plena interoperabilidad con Spec 010.
+
 ---
 
 ## Sprint Scope Delimitation Matrix
@@ -229,6 +243,10 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 - **FR-027**: El sistema DEBE restringir a un máximo de una (1) orden activa en estado 'PENDING_PAYMENT' simultánea por comensal, impidiendo confirmar un nuevo checkout si el comensal ya cuenta con una reserva pendiente no resuelta.
 - **FR-028**: La pantalla de la orden en estado 'PENDING_PAYMENT' DEBE exhibir un contador regresivo dinámico (desde 15:00 hasta 00:00) sincronizado con el reloj del servidor, advirtiendo de forma visualmente destacada cuando resten menos de 2 minutos de vigencia antes de la expiración.
 - **FR-029**: Si el contador regresivo alcanza 00:00 sin confirmación de pago, el frontend DEBE desplegar una notificación informando que la reserva expiró por inactividad y redirigir al comensal al catálogo con la grilla de franjas horarias actualizada.
+- **FR-030**: Al procesar la confirmación del pedido en el checkout, el sistema DEBE verificar que ninguno de los platos contenidos en la orden se encuentre en estado de pausa manual por cocina (`paused_by_chef == true`), rechazando la creación de la orden con código de error explicativo si se detecta un plato pausado en cumplimiento de Spec 013 (FR-019).
+- **FR-031**: Al procesar la confirmación del pedido, el sistema DEBE verificar que todos los platos pertenezcan al establecimiento seleccionado (`tenant_id`) y cuenten con disponibilidad de stock suficiente en cocina, rechazando la creación de la orden si se detecta insuficiencia de inventario en consistencia con Spec 009 (FR-014a).
+- **FR-032**: Para la determinación de horarios comerciales y capacidades de franjas horarias, el sistema DEBE consumir de manera prioritaria las configuraciones registradas en el módulo de operaciones (Spec 010) si estuvieren presentes, o aplicar los valores por defecto del establecimiento (`lead_time_minutes = 30`, `max_capacity_per_slot = 10`, `opening_time`, `closing_time`) si no hubieran sido personalizados.
+- **FR-033**: El sistema DEBE exponer el endpoint de disponibilidad de turnos bajo `GET /api/v1/establishments/{establishmentId}/pickup-slots`, manteniendo plena interoperabilidad y alias con la ruta `/time-slots` de Spec 010.
 
 ### Invariants
 
