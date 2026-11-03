@@ -22,9 +22,9 @@
 
 **Purpose**: Inicialización del branch de trabajo y estructura de proyecto para la feature 013.
 
-- [ ] T001 Crear el branch de trabajo `013-critical-stock-chef-pause` a partir de `feat/012/phase-6-polish` con `git checkout -b 013-critical-stock-chef-pause`
-- [ ] T002 Verificar que la migración Flyway predecesora `V10__support_admin_dish_cancellation.sql` existe en `easyeat/backend/src/main/resources/db/migration/` y que la secuencia no tiene huecos
-- [ ] T003 Crear el archivo de migración Flyway `easyeat/backend/src/main/resources/db/migration/V11__critical_stock_and_chef_pause.sql` con el DDL completo definido en `data-model.md §3.1`: columna `ingredients.critical_stock_threshold INTEGER NULL CHECK (IS NULL OR >= 0)`, columna `dishes.paused_by_chef BOOLEAN NOT NULL DEFAULT FALSE`, e índices `idx_ingredients_critical_alert` e `idx_dishes_catalog_visibility`
+- [X] T001 Crear el branch de trabajo `013-critical-stock-chef-pause` a partir de `feat/012/phase-6-polish` con `git checkout -b 013-critical-stock-chef-pause`
+- [X] T002 Verificar que la migración Flyway predecesora `V10__support_admin_dish_cancellation.sql` existe en `easyeat/backend/src/main/resources/db/migration/` y que la secuencia no tiene huecos
+- [X] T003 Crear el archivo de migración Flyway `easyeat/backend/src/main/resources/db/migration/V11__critical_stock_and_chef_pause.sql` con el DDL completo definido en `data-model.md §3.1`: columna `ingredients.critical_stock_threshold INTEGER NULL CHECK (IS NULL OR >= 0)`, columna `dishes.paused_by_chef BOOLEAN NOT NULL DEFAULT FALSE`, e índices `idx_ingredients_critical_alert` e `idx_dishes_catalog_visibility`
 
 ---
 
