@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatAuditQuantity } from '@/utils/foodCostAudit';
 import { UnpricedIngredientBadge } from './UnpricedIngredientBadge';
 import type { FoodCostAudit } from '@/types/dishReview';
 
@@ -9,11 +10,6 @@ export interface FoodCostBreakdownTableProps {
 const money = new Intl.NumberFormat('es-AR', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
-});
-
-const quantity = new Intl.NumberFormat('es-AR', {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 4,
 });
 
 /**
@@ -45,15 +41,7 @@ export const FoodCostBreakdownTable: React.FC<FoodCostBreakdownTableProps> = ({ 
               <span className="text-gray-900">{line.ingredientName}</span>
               {line.unpricedWarning && <UnpricedIngredientBadge className="ml-2" />}
             </td>
-            <td className="py-2 pr-4 text-gray-700">
-              {(() => {
-                const lineAny = line as unknown as Record<string, unknown>;
-                const rawValue = (lineAny.recipeQuantity ?? lineAny.quantity ?? lineAny.grossQuantity ?? lineAny.amount) as number | undefined;
-                const numericValue = Number(rawValue);
-                const safeQuantity = isNaN(numericValue) ? 0 : numericValue;
-                return quantity.format(safeQuantity);
-              })()}
-            </td>
+            <td className="py-2 pr-4 text-gray-700">{formatAuditQuantity(line)}</td>
             <td className="py-2 pr-4 text-gray-500">{line.unitOfMeasure ?? '—'}</td>
             <td className="py-2 pr-4 text-right text-gray-700">
               ${money.format(line.unitPurchaseCost)}

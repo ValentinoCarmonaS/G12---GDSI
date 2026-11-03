@@ -26,6 +26,8 @@ import {
   matchesDishQuery,
   normalizeSearchTerm,
 } from '../components/catalog/CatalogSearchFilter';
+import { ManualFiltersSidebar } from '../components/catalog/ManualFiltersSidebar';
+import { EmptyFilterResultsNotice } from '../components/catalog/EmptyFilterResultsNotice';
 
 export const CatalogView: React.FC = () => {
   const navigate = useNavigate();
@@ -35,7 +37,20 @@ export const CatalogView: React.FC = () => {
 
   const { isAuthenticated } = useAuth();
   const { profile } = useProfile();
-  const { isFilterActive, setIsFilterActive } = useCatalogFilter();
+  const {
+    isFilterActive,
+    setIsFilterActive,
+    selectedCategories,
+    minPrice,
+    maxPrice,
+    searchQuery,
+    toggleCategory,
+    setMinPrice,
+    setMaxPrice,
+    setSearchQuery,
+    clearAllFilters,
+    setActiveTenantId,
+  } = useCatalogFilter();
   const { addItem } = useCart();
   const catalogHook = useCatalog();
 
@@ -47,7 +62,11 @@ export const CatalogView: React.FC = () => {
   const [pendingQuantity, setPendingQuantity] = useState<number>(1);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
-  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Sync activeTenantId with CatalogFilterContext
+  useEffect(() => {
+    setActiveTenantId(tenant?.id || null);
+  }, [tenant?.id, setActiveTenantId]);
 
   // Real-time stock-based dish availability polling (COM-4.1.2, FR-016)
   const { availability, isConnectionLost } = useRealtimeAvailability({
@@ -106,8 +125,15 @@ export const CatalogView: React.FC = () => {
     return catalogData.categories.map((c) => c.category);
   }, [catalogData]);
 
-
   const isQueryActive = normalizeSearchTerm(searchQuery).length > 0;
+  const isCategoryFilterActive = selectedCategories.length > 0;
+  const minPriceNum = minPrice.trim() !== '' ? Number(minPrice) : null;
+  const maxPriceNum = maxPrice.trim() !== '' ? Number(maxPrice) : null;
+  const isPriceFilterValid =
+    !(minPriceNum !== null && maxPriceNum !== null && !isNaN(minPriceNum) && !isNaN(maxPriceNum) && minPriceNum > maxPriceNum);
+
+  const isAnyManualFilterActive =
+    isCategoryFilterActive || minPrice.trim() !== '' || maxPrice.trim() !== '' || isQueryActive;
 
   const filteredCategoryGroups = useMemo(() => {
     if (!catalogData?.categories) return [];
@@ -121,6 +147,7 @@ export const CatalogView: React.FC = () => {
       })
       .map((group) => {
         const matchingDishes = group.dishes.filter((dish) => {
+          // Dietary restriction filter
           if (
             isAuthenticated &&
             activeRestrictionsCount > 0 &&
@@ -129,8 +156,30 @@ export const CatalogView: React.FC = () => {
           ) {
             return false;
           }
-          if (!isQueryActive) return true;
-          return matchesDishQuery(dish, searchQuery);
+
+          // Manual category filter: OR disjunction between selected categories
+          if (isCategoryFilterActive && !selectedCategories.includes(group.category)) {
+            return false;
+          }
+
+          // Price range filter: closed inclusive interval [min, max]
+          if (isPriceFilterValid) {
+            const price = dish.price;
+            if (minPriceNum !== null && !isNaN(minPriceNum) && price < minPriceNum) {
+              return false;
+            }
+            if (maxPriceNum !== null && !isNaN(maxPriceNum) && price > maxPriceNum) {
+              return false;
+            }
+          }
+
+          // Text search filter: AND intersection
+          if (isQueryActive && !matchesDishQuery(dish, searchQuery)) {
+            return false;
+          }
+
+          // Out-of-stock dishes (INV-17, FR-021) remain visible under filters
+          return true;
         });
         return {
           ...group,
@@ -143,13 +192,15 @@ export const CatalogView: React.FC = () => {
     activeCategory,
     searchQuery,
     isQueryActive,
+    selectedCategories,
+    isCategoryFilterActive,
+    minPriceNum,
+    maxPriceNum,
+    isPriceFilterValid,
     isAuthenticated,
     activeRestrictionsCount,
     isFilterActive,
   ]);
-
-
-
 
   const isReadOnly = catalogData?.establishment?.isOpen === false;
 
@@ -201,6 +252,11 @@ export const CatalogView: React.FC = () => {
     setPendingQuantity(1);
   };
 
+  const handleClearUnifiedFilters = () => {
+    clearAllFilters();
+    setActiveCategory(undefined);
+  };
+
   const pageTitle = catalogData?.establishment?.name || tenant?.name || 'Catálogo de Productos';
 
   return (
@@ -248,14 +304,14 @@ export const CatalogView: React.FC = () => {
               <Link
                 to="/login"
                 data-testid="guest-login-link"
-                className="flex-1 sm:flex-initial text-center px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg shadow-xs"
+                className="px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-200 hover:bg-amber-300 rounded-lg transition-colors text-center shrink-0"
               >
                 Iniciar sesión
               </Link>
               <Link
                 to="/register"
                 data-testid="guest-register-link"
-                className="flex-1 sm:flex-initial text-center px-3.5 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-semibold rounded-lg shadow-xs"
+                className="px-3 py-1.5 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg transition-colors text-center shrink-0"
               >
                 Registrarse
               </Link>
@@ -263,9 +319,17 @@ export const CatalogView: React.FC = () => {
           </div>
         )}
 
-        {/* Master Dietary Toggle (FR-023, spec 003) */}
+        {/* Operating Hours Banner (Spec 008, FR-003, FR-015) */}
+        {catalogData?.establishment && (
+          <OperatingHoursBanner
+            isOpen={catalogData.establishment.isOpen}
+            nextOpeningSchedule={catalogData.establishment.nextOpeningSchedule}
+          />
+        )}
+
+        {/* Master Dietary Toggle (Spec 003) */}
         {isAuthenticated && activeRestrictionsCount > 0 && (
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs">
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs mb-6">
             <CatalogMasterToggle
               activeRestrictionsCount={activeRestrictionsCount}
               isFilterActive={isFilterActive}
@@ -274,25 +338,33 @@ export const CatalogView: React.FC = () => {
           </div>
         )}
 
-        {/* Operating Hours Schedule Banner (FR-012, spec 008) */}
-        {catalogData?.establishment && (
-          <OperatingHoursBanner
-            isOpen={catalogData.establishment.isOpen}
-            nextOpeningSchedule={catalogData.establishment.nextOpeningSchedule}
-          />
-        )}
-
         {/* Loading State */}
         {(isLoading || catalogHook.isLoading) && !catalogData && (
-          <div data-testid="catalog-loading" className="py-20 text-center text-gray-500 space-y-3">
+          <div
+            data-testid="catalog-loading"
+            className="py-16 text-center text-gray-500 space-y-3"
+          >
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent" />
             <p className="text-sm font-medium">Cargando menú del comedor...</p>
           </div>
         )}
+        {isLoading && catalogData && (
+          <div
+            data-testid="catalog-loading-skeleton"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse"
+          >
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <div key={n} className="bg-white rounded-2xl h-72 border border-gray-100 shadow-2xs" />
+            ))}
+          </div>
+        )}
 
-        {/* Error State */}
-        {(error || catalogHook.error) && !isLoading && !catalogHook.isLoading && !catalogData && (
-          <div data-testid="catalog-error" className="p-6 bg-red-50 border border-red-200 rounded-2xl text-center space-y-3">
+        {/* Error State with Retry Button (Spec 008, COM-1.5.1 Edge Case, FR-013) */}
+        {!isLoading && !catalogHook.isLoading && (error || catalogHook.error) && !catalogData && (
+          <div
+            data-testid="catalog-error"
+            className="p-6 bg-red-50 border border-red-200 rounded-2xl text-center space-y-3"
+          >
             <p className="text-sm font-semibold text-red-800">{error || catalogHook.error}</p>
             <button
               type="button"
@@ -307,8 +379,27 @@ export const CatalogView: React.FC = () => {
             </button>
           </div>
         )}
+        {!isLoading && error && catalogData && (
+          <div
+            data-testid="catalog-error-state"
+            className="p-6 bg-red-50 border border-red-200 rounded-2xl text-center space-y-3"
+          >
+            <p className="text-sm font-semibold text-red-800">{error}</p>
+            <button
+              type="button"
+              onClick={() => {
+                loadCatalog();
+                catalogHook.refetch();
+              }}
+              data-testid="catalog-retry-button"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
 
-        {/* Categorized Catalog Content (Spec 008) */}
+        {/* Categorized Catalog Content with Sidebar Layout */}
         {!isLoading && !error && catalogData && (
           <>
             {/* Kitchen Connection Lost Warning Banner (COM-4.1.2 Edge Case, FR-019) */}
@@ -347,94 +438,113 @@ export const CatalogView: React.FC = () => {
               />
             )}
 
-            {/* Empty Categories View or Empty Search View */}
-            {catalogData.categories.length === 0 ? (
-              <div
-                data-testid="catalog-empty-store"
-                className="py-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200"
-              >
-                <p className="text-base font-semibold text-gray-700">No hay platos publicados</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  El menú de este establecimiento se encuentra en preparación.
-                </p>
-              </div>
-            ) : filteredCategoryGroups.length === 0 ? (
-              !isQueryActive && isAuthenticated && activeRestrictionsCount > 0 && isFilterActive ? (
-                <EmptyCatalogDietaryState onViewFullMenu={() => setIsFilterActive(false)} />
-              ) : (
-                <div
-                  data-testid="catalog-empty-search"
-                  className="py-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200 px-6 space-y-4"
-                >
-                  <div className="mx-auto w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-base font-bold text-gray-800">No se encontraron platos</p>
-                    <p className="text-sm text-gray-500 max-w-md mx-auto">
-                      No encontramos resultados para tu búsqueda. Verificá la ortografía o probá con otros términos o ingredientes.
+            {/* Layout with Sidebar + Catalog Grid */}
+            <div className="flex flex-col lg:flex-row gap-6 items-start">
+              {/* Manual Filters Sidebar (COM-4.2.2, FR-016, FR-017, FR-022) */}
+              {categories.length > 0 && (
+                <ManualFiltersSidebar
+                  categories={categories}
+                  selectedCategories={selectedCategories}
+                  onCategoryToggle={toggleCategory}
+                  minPrice={minPrice}
+                  maxPrice={maxPrice}
+                  onMinPriceChange={setMinPrice}
+                  onMaxPriceChange={setMaxPrice}
+                  onClearFilters={handleClearUnifiedFilters}
+                />
+              )}
+
+              {/* Main Catalog View Container */}
+              <div className="flex-1 w-full space-y-6">
+                {catalogData.categories.length === 0 ? (
+                  <div
+                    data-testid="catalog-empty-store"
+                    className="py-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200"
+                  >
+                    <p className="text-base font-semibold text-gray-700">No hay platos publicados</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      El menú de este establecimiento se encuentra en preparación.
                     </p>
                   </div>
-                  {isQueryActive && (
-                    <button
-                      type="button"
-                      data-testid="clear-empty-search-btn"
-                      onClick={() => setSearchQuery('')}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                    >
-                      Limpiar búsqueda
-                    </button>
-                  )}
-                </div>
-              )
-            ) : (
-              /* Categorized Sections (FR-007, FR-009, FR-020, FR-022) */
-              <div className="space-y-10">
-                {filteredCategoryGroups.map((group) => (
-                  <section
-                    key={group.category}
-                    id={`category-section-${encodeURIComponent(group.category)}`}
-                    className="space-y-4 scroll-mt-20"
-                  >
-                    <div className="border-b border-gray-200 pb-2">
-                      <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">
-                        {group.category}
-                      </h3>
-                      <p className="text-xs text-gray-500">
-                        {group.dishes.length} {group.dishes.length === 1 ? 'plato disponible' : 'platos disponibles'}
-                      </p>
-                    </div>
-
+                ) : filteredCategoryGroups.length === 0 ? (
+                  !isAnyManualFilterActive && isAuthenticated && activeRestrictionsCount > 0 && isFilterActive ? (
+                    <EmptyCatalogDietaryState onViewFullMenu={() => setIsFilterActive(false)} />
+                  ) : (isCategoryFilterActive || minPrice.trim() !== '' || maxPrice.trim() !== '') ? (
+                    <EmptyFilterResultsNotice onClearFilters={handleClearUnifiedFilters} />
+                  ) : (
                     <div
-                      data-testid={`category-grid-${group.category}`}
-                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                      data-testid="catalog-empty-search"
+                      className="py-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200 px-6 space-y-4"
                     >
-                      {group.dishes.map((dish) => (
-                        <DishCard
-                          key={dish.id}
-                          dish={{
-                            ...dish,
-                            isAvailable:
-                              availability[dish.id] !== undefined ? availability[dish.id] : dish.isAvailable,
-                          }}
-                          isReadOnly={isReadOnly}
-                          onSelectDish={setSelectedDish}
-                          onAddToCart={handleAddToCart}
-                          showWarnings={isAuthenticated && activeRestrictionsCount > 0 && !isFilterActive}
-                        />
-                      ))}
+                      <div className="mx-auto w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-base font-bold text-gray-800">No se encontraron platos</p>
+                        <p className="text-sm text-gray-500 max-w-md mx-auto">
+                          No encontramos resultados para tu búsqueda. Verificá la ortografía o probá con otros términos o ingredientes.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        data-testid="clear-empty-search-btn"
+                        onClick={handleClearUnifiedFilters}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                      >
+                        Limpiar filtros
+                      </button>
                     </div>
-                  </section>
-                ))}
+                  )
+                ) : (
+                  /* Categorized Sections (FR-007, FR-009, FR-020, FR-022, AC-4.6, INV-17) */
+                  <div className="space-y-10">
+                    {filteredCategoryGroups.map((group) => (
+                      <section
+                        key={group.category}
+                        id={`category-section-${encodeURIComponent(group.category)}`}
+                        className="space-y-4 scroll-mt-20"
+                      >
+                        <div className="border-b border-gray-200 pb-2">
+                          <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">
+                            {group.category}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {group.dishes.length} {group.dishes.length === 1 ? 'plato disponible' : 'platos disponibles'}
+                          </p>
+                        </div>
+
+                        <div
+                          data-testid={`category-grid-${group.category}`}
+                          className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"
+                        >
+                          {group.dishes.map((dish) => (
+                            <DishCard
+                              key={dish.id}
+                              dish={{
+                                ...dish,
+                                isAvailable:
+                                  availability[dish.id] !== undefined ? availability[dish.id] : dish.isAvailable,
+                              }}
+                              isReadOnly={isReadOnly}
+                              onSelectDish={setSelectedDish}
+                              onAddToCart={handleAddToCart}
+                              showWarnings={isAuthenticated && activeRestrictionsCount > 0 && !isFilterActive}
+                            />
+                          ))}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </>
         )}
 

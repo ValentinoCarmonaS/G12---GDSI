@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDishReviewInbox } from '../../src/hooks/useDishReviewInbox';
 import { dishReviewApi } from '../../src/api/dishReviewApi';
-import type { DishReviewInboxItem, DishReviewInboxPage } from '../../src/types/dishReview';
+import type {
+  DishReviewInboxItem,
+  DishReviewInboxPage,
+} from '../../src/types/dishReview';
 
 vi.mock('../../src/api/dishReviewApi', () => ({
   dishReviewApi: {

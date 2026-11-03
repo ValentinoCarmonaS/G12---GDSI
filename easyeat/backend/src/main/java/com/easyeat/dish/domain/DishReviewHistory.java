@@ -8,6 +8,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.Immutable;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -29,6 +31,11 @@ import java.util.UUID;
  * which makes FR-021's rejection rule part of the type. A rejection cannot exist without a usable
  * comment because {@code rejected} demands one; approval and cancellation do not accept a
  * required feedback comment.
+ *
+ * <p>A rejection additionally carries the Administrator's proposed edition of the dish, stored as
+ * a JSON snapshot ({@code proposed_changes_json}, FR-042) — the culinary fields of {@link
+ * com.easyeat.dish.dto.DishProposedChanges} only. A first rejection may carry none, and the column
+ * is {@code null} then; FR-043 makes the cycle number the sequence over these immutable rows.
  */
 @Entity
 @Immutable
@@ -67,6 +74,10 @@ public class DishReviewHistory {
     @Column(name = "comment", updatable = false)
     private String comment;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "proposed_changes_json", columnDefinition = "jsonb", updatable = false)
+    private String proposedChangesJson;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -75,13 +86,14 @@ public class DishReviewHistory {
     }
 
     private DishReviewHistory(UUID dishId, UUID tenantId, Integer cycleNumber,
-                              ReviewEventType eventType, UUID adminId, String comment) {
+                              ReviewEventType eventType, UUID adminId, String comment, String proposedChangesJson) {
         this.dishId = requireId(dishId, "dishId");
         this.tenantId = requireId(tenantId, "tenantId");
         this.cycleNumber = requirePositiveCycle(cycleNumber);
         this.eventType = Objects.requireNonNull(eventType, "eventType");
         this.adminId = requireId(adminId, "adminId");
         this.comment = comment;
+        this.proposedChangesJson = proposedChangesJson;
         this.createdAt = Instant.now();
     }
 
@@ -92,24 +104,28 @@ public class DishReviewHistory {
     public static DishReviewHistory approved(UUID dishId, UUID tenantId, Integer cycleNumber,
                                              UUID adminId) {
         return new DishReviewHistory(dishId, tenantId, cycleNumber, ReviewEventType.APPROVED,
-                adminId, null);
+                adminId, null, null);
     }
 
     /**
      * A rejection, which FR-020 and FR-021 make inseparable from its feedback: 10 to 1000
      * characters measured <em>after</em> trimming, never blank. The comment is stored trimmed and
      * verbatim — any markup it contains is never interpreted, it is escaped on output.
+     *
+     * <p>The proposal snapshot is the Administrator's culinary-only edition of the dish
+     * (FR-042); it travels as a JSON string and is {@code null} for a first rejection that carries
+     * none.
      */
     public static DishReviewHistory rejected(UUID dishId, UUID tenantId, Integer cycleNumber,
-                                              UUID adminId, String comment) {
+                                              UUID adminId, String comment, String proposedChangesJson) {
         return new DishReviewHistory(dishId, tenantId, cycleNumber, ReviewEventType.REJECTED,
-                adminId, requireUsableComment(comment));
+                adminId, requireUsableComment(comment), proposedChangesJson);
     }
 
     public static DishReviewHistory cancelled(UUID dishId, UUID tenantId, Integer cycleNumber,
                                                UUID adminId, String comment) {
         return new DishReviewHistory(dishId, tenantId, cycleNumber, ReviewEventType.CANCELLED,
-                adminId, comment);
+                adminId, comment, null);
     }
 
     private static String requireUsableComment(String raw) {
@@ -165,6 +181,10 @@ public class DishReviewHistory {
 
     public String getComment() {
         return comment;
+    }
+
+    public String getProposedChangesJson() {
+        return proposedChangesJson;
     }
 
     public Instant getCreatedAt() {

@@ -16,7 +16,7 @@ function audit(overrides: Partial<FoodCostAudit> = {}): FoodCostAudit {
       {
         ingredientId: 'ing-1',
         ingredientName: 'Arroz Arborio',
-        quantity: 0.2,
+        recipeQuantity: 0.2,
         unitOfMeasure: 'KG',
         unitPurchaseCost: 7500,
         lineSubtotal: 1500,
@@ -25,7 +25,7 @@ function audit(overrides: Partial<FoodCostAudit> = {}): FoodCostAudit {
       {
         ingredientId: 'ing-2',
         ingredientName: 'Hongos Portobello',
-        quantity: 0.15,
+        recipeQuantity: 0.15,
         unitOfMeasure: 'KG',
         unitPurchaseCost: 20000,
         lineSubtotal: 3000,
@@ -131,7 +131,7 @@ describe('DishAuditPanel', () => {
               {
                 ingredientId: 'ing-3',
                 ingredientName: 'Caldo de Verduras',
-                quantity: 1,
+                recipeQuantity: 1,
                 unitOfMeasure: null,
                 unitPurchaseCost: 900,
                 lineSubtotal: 900,
@@ -168,7 +168,7 @@ describe('DishAuditPanel', () => {
               {
                 ingredientId: 'ing-3',
                 ingredientName: 'Parmesano',
-                quantity: 0.05,
+                recipeQuantity: 0.05,
                 unitOfMeasure: 'KG',
                 unitPurchaseCost: 0,
                 lineSubtotal: 0,
