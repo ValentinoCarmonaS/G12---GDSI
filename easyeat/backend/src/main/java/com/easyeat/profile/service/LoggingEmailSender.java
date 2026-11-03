@@ -6,10 +6,10 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 /**
- * Development and testing stub for {@link EmailSender} that prints raw verification URLs to console logs at INFO level.
+ * Development, local and testing stub for {@link EmailSender} that prints raw verification URLs to console logs at INFO level.
  */
 @Component
-@Profile("dev | test")
+@Profile("dev | local | test")
 public class LoggingEmailSender implements EmailSender {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingEmailSender.class);
