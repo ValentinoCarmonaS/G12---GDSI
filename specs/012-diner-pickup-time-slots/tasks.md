@@ -47,15 +47,15 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T012 [P] [US1] Create unit tests in `easyeat/backend/src/test/java/com/easyeat/order/OrderServiceTest.java` verifying fulfillment mode exclusivity, validation error when mode is null or unrecognized, automatic clearing/omission of time slot when mode is `IMMEDIATE`, and blocking when a dish is paused by chef (`paused_by_chef == true`).
-- [ ] T013 [P] [US1] Create unit and component tests in `easyeat/frontend/src/test/checkout/FulfillmentModeSelector.test.tsx` verifying exclusive toggle selection, immediate clearing of date/slot selections when selecting `IMMEDIATE`, and disabling immediate mode when current slot is at 100% capacity.
+- [x] T012 [P] [US1] Create unit tests in `easyeat/backend/src/test/java/com/easyeat/order/OrderServiceTest.java` verifying fulfillment mode exclusivity, validation error when mode is null or unrecognized, automatic clearing/omission of time slot when mode is `IMMEDIATE`, and blocking when a dish is paused by chef (`paused_by_chef == true`).
+- [x] T013 [P] [US1] Create unit and component tests in `easyeat/frontend/src/test/checkout/FulfillmentModeSelector.test.tsx` verifying exclusive toggle selection, immediate clearing of date/slot selections when selecting `IMMEDIATE`, and disabling immediate mode when current slot is at 100% capacity.
 
 ### Implementation for User Story 1
 
-- [ ] T014 [P] [US1] Create request and response DTOs `CreateOrderRequest.java` and `OrderCreatedResponse.java` in `easyeat/backend/src/main/java/com/easyeat/order/dto/` with Jakarta validation annotations (`@NotNull`, `@Valid`, `@NotEmpty`).
-- [ ] T015 [US1] Implement fulfillment mode validation logic in `OrderService.java` in `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` ensuring mode exclusivity, clearing slot fields when mode is `IMMEDIATE`, and checking chef pause status (`FR-019`).
-- [ ] T016 [P] [US1] Implement checkout fulfillment state hook `useCheckoutFulfillment.ts` in `easyeat/frontend/src/hooks/useCheckoutFulfillment.ts` managing fulfillment mode, selected date, selected slot, and clearing slot when switching to `IMMEDIATE`.
-- [ ] T017 [US1] Implement `FulfillmentModeSelector.tsx` component in `easyeat/frontend/src/components/checkout/FulfillmentModeSelector.tsx` integrating with `useCheckoutFulfillment` and `CartContext` to provide radio toggle cards with icons and immediate capacity alert.
+- [x] T014 [P] [US1] Create request and response DTOs `CreateOrderRequest.java` and `OrderCreatedResponse.java` in `easyeat/backend/src/main/java/com/easyeat/order/dto/` with Jakarta validation annotations (`@NotNull`, `@Valid`, `@NotEmpty`).
+- [x] T015 [US1] Implement fulfillment mode validation logic in `OrderService.java` in `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` ensuring mode exclusivity, clearing slot fields when mode is `IMMEDIATE`, and checking chef pause status (`FR-019`).
+- [x] T016 [P] [US1] Implement checkout fulfillment state hook `useCheckoutFulfillment.ts` in `easyeat/frontend/src/hooks/useCheckoutFulfillment.ts` managing fulfillment mode, selected date, selected slot, and clearing slot when switching to `IMMEDIATE`.
+- [x] T017 [US1] Implement `FulfillmentModeSelector.tsx` component in `easyeat/frontend/src/components/checkout/FulfillmentModeSelector.tsx` integrating with `useCheckoutFulfillment` and `CartContext` to provide radio toggle cards with icons and immediate capacity alert.
 
 **Checkpoint**: User Story 1 is functional and testable independently: diners can toggle fulfillment modes with mutual exclusivity and validated state.
 
