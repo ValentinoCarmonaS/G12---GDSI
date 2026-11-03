@@ -75,6 +75,7 @@ describe('EstablishmentSearchBar Component Tests (T014, US1, COM-1.5.1, CA 1, CA
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(dinerCatalogApi, 'getAllEstablishments').mockResolvedValue([]);
   });
 
   it('renders search input element with correct placeholder and accessible role', () => {

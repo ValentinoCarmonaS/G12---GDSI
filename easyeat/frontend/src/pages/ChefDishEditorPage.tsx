@@ -30,7 +30,7 @@ export const ChefDishEditorPage: React.FC = () => {
    * FR-042: the newest rejection's proposed edition, when the Administrator sent one. The backend
    * returns entries newest-cycle-first, so the first entry is the current cycle.
    */
-  const latestProposal = feedback?.entries[0]?.proposedChanges ?? null;
+  const latestProposal = feedback?.entries?.[0]?.proposedChanges ?? null;
 
   const ingredientNames = useMemo<Record<string, string>>(
     () =>
@@ -309,7 +309,7 @@ export const ChefDishEditorPage: React.FC = () => {
         )}
 
          {/* Notifications */}
-        {feedback && feedback.entries.length > 0 && (
+        {feedback?.entries && feedback.entries.length > 0 && (
           <div className="mb-6">
             <DishRejectionFeedbackBanner
               entries={feedback.entries}

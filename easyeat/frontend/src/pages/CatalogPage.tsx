@@ -607,7 +607,10 @@ export const CatalogView: React.FC = () => {
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
-        onCheckout={() => setIsCartOpen(false)}
+        onCheckout={() => {
+          setIsCartOpen(false);
+          navigate('/checkout');
+        }}
       />
     </WorkspaceLayout>
   );
