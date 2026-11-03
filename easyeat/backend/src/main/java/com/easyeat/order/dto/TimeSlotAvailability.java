@@ -1,5 +1,6 @@
 package com.easyeat.order.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -12,6 +13,7 @@ public class TimeSlotAvailability {
     private Long bookedCount;
     private Double occupancyPercentage;
     private String status; // "AVAILABLE", "HIGH_DEMAND", "SOLD_OUT", "EXPIRED_OR_LEAD_TIME"
+    @JsonProperty("isSelectable")
     private boolean isSelectable;
 
     public TimeSlotAvailability() {

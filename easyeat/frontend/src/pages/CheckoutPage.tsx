@@ -48,8 +48,19 @@ export const CheckoutPage: React.FC = () => {
       typeof window !== 'undefined' && window.localStorage
         ? window.localStorage.getItem('selectedEstablishmentId')
         : null;
+    const fromActiveTenant =
+      typeof window !== 'undefined' && window.sessionStorage
+        ? (() => {
+            try {
+              const active = window.sessionStorage.getItem('easyeat_active_tenant');
+              return active ? JSON.parse(active)?.id : null;
+            } catch {
+              return null;
+            }
+          })()
+        : null;
 
-    return searchParams.get('establishmentId') || items[0]?.tenantId || fromStorage || '';
+    return searchParams.get('establishmentId') || items[0]?.tenantId || fromActiveTenant || fromStorage || '';
   }, [searchParams, items]);
 
   const operatingDays = useMemo(() => generateNext7Days(), []);
