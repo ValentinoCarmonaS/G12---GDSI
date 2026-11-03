@@ -97,15 +97,15 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T026 [P] [US3] Create unit tests in `easyeat/backend/src/test/java/com/easyeat/order/TimeSlotOccupancyTest.java` verifying saturation tier calculation (<80% `NORMAL`, 80-99% `HIGH_DEMAND`, 100% `SOLD_OUT`) and occupancy percentage math.
-- [ ] T027 [P] [US3] Create unit tests in `easyeat/frontend/src/test/checkout/useTimeSlotPolling.test.ts` verifying polling interval execution (5-10s), background refresh without unmounting/flashing, window focus handling, and cleanup on unmount.
+- [x] T026 [P] [US3] Create unit tests in `easyeat/backend/src/test/java/com/easyeat/order/TimeSlotOccupancyTest.java` verifying saturation tier calculation (<80% `NORMAL`, 80-99% `HIGH_DEMAND`, 100% `SOLD_OUT`) and occupancy percentage math.
+- [x] T027 [P] [US3] Create unit tests in `easyeat/frontend/src/test/checkout/useTimeSlotPolling.test.ts` verifying polling interval execution (5-10s), background refresh without unmounting/flashing, window focus handling, and cleanup on unmount.
 
 ### Implementation for User Story 3
 
-- [ ] T028 [P] [US3] Update `PickupSlotService.java` in `easyeat/backend/src/main/java/com/easyeat/order/service/PickupSlotService.java` to compute saturation tier and demand flags in `TimeSlotAvailability`.
-- [ ] T029 [P] [US3] Implement `useTimeSlotPolling.ts` hook in `easyeat/frontend/src/hooks/useTimeSlotPolling.ts` supporting periodic polling (every 5-10 seconds) with window focus awareness and abort controller on unmount.
-- [ ] T030 [US3] Enhance `TimeSlotGrid.tsx` in `easyeat/frontend/src/components/checkout/TimeSlotGrid.tsx` with amber badge styling and "Alta Demanda" badge for 80-99% saturation, and disabled styling for 100% saturation.
-- [ ] T031 [US3] Implement `CheckoutSummary.tsx` in `easyeat/frontend/src/components/checkout/CheckoutSummary.tsx` rendering order items, total amount formatted with 2 decimals, selected fulfillment mode/slot details, and preventive non-blocking amber alert: "Esta franja registra un alto volumen de cocina. Podrían producirse leves demoras en mostrador."
+- [x] T028 [P] [US3] Update `PickupSlotService.java` in `easyeat/backend/src/main/java/com/easyeat/order/service/PickupSlotService.java` to compute saturation tier and demand flags in `TimeSlotAvailability`.
+- [x] T029 [P] [US3] Implement `useTimeSlotPolling.ts` hook in `easyeat/frontend/src/hooks/useTimeSlotPolling.ts` supporting periodic polling (every 5-10 seconds) with window focus awareness and abort controller on unmount.
+- [x] T030 [US3] Enhance `TimeSlotGrid.tsx` in `easyeat/frontend/src/components/checkout/TimeSlotGrid.tsx` with amber badge styling and "Alta Demanda" badge for 80-99% saturation, and disabled styling for 100% saturation.
+- [x] T031 [US3] Implement `CheckoutSummary.tsx` in `easyeat/frontend/src/components/checkout/CheckoutSummary.tsx` rendering order items, total amount formatted with 2 decimals, selected fulfillment mode/slot details, and preventive non-blocking amber alert: "Esta franja registra un alto volumen de cocina. Podrían producirse leves demoras en mostrador."
 
 **Checkpoint**: User Stories 1, 2, and 3 are functional: demand transparency and preventive warnings guide diner decisions without blocking.
 
