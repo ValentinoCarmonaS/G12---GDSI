@@ -27,16 +27,18 @@ export async function fetchPickupSlots(
 export async function createOrder(
   request: CreateOrderRequest
 ): Promise<OrderDetailResponse> {
-  const response = await apiClient.post<OrderDetailResponse>('/orders', request);
-  return response.data;
+  const response = await apiClient.post<any>('/orders', request);
+  const data = response.data;
+  return { ...data, orderId: data.orderId || data.id };
 }
 
 /**
  * Retrieves the details and current TTL countdown status of an order.
  */
 export async function getOrderById(orderId: string): Promise<OrderDetailResponse> {
-  const response = await apiClient.get<OrderDetailResponse>(`/orders/${orderId}`);
-  return response.data;
+  const response = await apiClient.get<any>(`/orders/${orderId}`);
+  const data = response.data;
+  return { ...data, orderId: data.orderId || data.id };
 }
 
 /**
@@ -44,5 +46,6 @@ export async function getOrderById(orderId: string): Promise<OrderDetailResponse
  */
 export async function cancelOrder(orderId: string): Promise<OrderSummaryResponse> {
   const response = await apiClient.post<OrderSummaryResponse>(`/orders/${orderId}/cancel`);
-  return response.data;
+  const data = response.data;
+  return { ...data, orderId: data.orderId || data.id };
 }

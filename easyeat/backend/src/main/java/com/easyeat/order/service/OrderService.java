@@ -46,6 +46,7 @@ public class OrderService {
     private final DishRepository dishRepository;
     private final Clock clock;
 
+    @Autowired
     public OrderService(OrderRepository orderRepository,
                         EstablishmentRepository establishmentRepository,
                         DishRepository dishRepository,

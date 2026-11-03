@@ -1,5 +1,6 @@
 package com.easyeat.order.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -12,7 +13,9 @@ public class PickupSlotCatalogResponse {
     private LocalDate date;
     private Instant serverTime;
     private String timezone;
+    @JsonProperty("isEstablishmentOpen")
     private boolean isEstablishmentOpen;
+    @JsonProperty("isOperatingDay")
     private boolean isOperatingDay;
     private Integer leadTimeMinutes;
     private List<TimeSlotAvailability> slots = new ArrayList<>();

@@ -62,6 +62,7 @@ export interface OrderItemResponse {
 }
 
 export interface OrderCreatedResponse {
+  id?: string;
   orderId: string;
   status: OrderStatus;
   fulfillmentMode: FulfillmentMode;
@@ -74,6 +75,7 @@ export interface OrderCreatedResponse {
 }
 
 export interface OrderDetailResponse {
+  id?: string;
   orderId: string;
   establishmentId: string;
   userId: string;
@@ -91,6 +93,7 @@ export interface OrderDetailResponse {
 }
 
 export interface OrderSummaryResponse {
+  id?: string;
   orderId: string;
   status: OrderStatus;
   message: string;
