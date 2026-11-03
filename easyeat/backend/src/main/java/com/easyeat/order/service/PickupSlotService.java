@@ -97,7 +97,8 @@ public class PickupSlotService {
                 }
 
                 if (isSelectable) {
-                    if (bookedCount >= maxCapacity) {
+                    // Saturation tiers calculation (<80% AVAILABLE, 80-99% HIGH_DEMAND, >=100% SOLD_OUT)
+                    if (bookedCount >= maxCapacity || occupancyPercentage >= 100.0) {
                         isSelectable = false;
                         status = "SOLD_OUT";
                     } else if (occupancyPercentage >= 80.0) {
