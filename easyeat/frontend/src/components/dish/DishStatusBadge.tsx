@@ -32,6 +32,10 @@ const STATUS_CONFIGS: Record<string, StatusConfig> = {
     label: 'Publicado',
     classes: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
   },
+  CANCELLED: {
+    label: 'Cancelado',
+    classes: 'bg-zinc-200 text-zinc-700 border-zinc-400 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-600',
+  },
 };
 
 export const DishStatusBadge: React.FC<DishStatusBadgeProps> = ({ status, className = '' }) => {

@@ -25,6 +25,12 @@ describe('DishStatusBadge', () => {
     expect(badge).toHaveTextContent('Publicado');
   });
 
+  it('renders CANCELLED as the terminal Spanish label', () => {
+    render(<DishStatusBadge status="CANCELLED" />);
+
+    expect(screen.getByTestId('dish-status-badge')).toHaveTextContent('Cancelado');
+  });
+
   it('gives PUBLISHED its own styling rather than the neutral fallback', () => {
     // render()'s returned queries search the whole document, same as `screen`, so each render
     // is scoped through its own `container` to tell the two badges apart.

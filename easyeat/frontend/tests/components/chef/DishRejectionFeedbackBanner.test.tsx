@@ -42,4 +42,59 @@ describe('DishRejectionFeedbackBanner', () => {
     expect(screen.getByText(entry.comment as string)).toBeInTheDocument();
     expect(screen.getByText(second.comment as string)).toBeInTheDocument();
   });
+
+  it('renders the Administrator’s proposed changes with human labels (FR-042)', () => {
+    const withProposal: ChefReviewFeedbackEntry = {
+      cycleNumber: 3,
+      reviewerName: 'Lucía Ferraro',
+      comment: 'Revisá la propuesta adjunta y reenviá la ficha.',
+      proposedChanges: {
+        title: 'Milanesa de merluza',
+        description: 'Cambiar la carne por merluza fresca.',
+        allergenCodes: ['FISH', 'WHEAT'],
+        dietaryLifestyleCodes: ['CELIAC'],
+        ingredients: [{ ingredientId: 'ing-fish', quantity: 300 }],
+      },
+      createdAt: '2026-10-30T10:00:00Z',
+    };
+
+    render(
+      <DishRejectionFeedbackBanner
+        entries={[withProposal]}
+        ingredientNames={{ 'ing-fish': 'Merluza' }}
+      />
+    );
+
+    expect(screen.getByTestId('proposed-changes')).toBeInTheDocument();
+    expect(screen.getByText(/Milanesa de merluza/)).toBeInTheDocument();
+    expect(screen.getByText(/Cambiar la carne por merluza fresca/)).toBeInTheDocument();
+    expect(screen.getByText(/Pescado/)).toBeInTheDocument();
+    expect(screen.getByText(/Trigo/)).toBeInTheDocument();
+    expect(screen.getByText(/Celíaco/)).toBeInTheDocument();
+    expect(screen.getByText(/Merluza — 300/)).toBeInTheDocument();
+  });
+
+  it('never renders a financial figure, even alongside a proposal (SC-003)', () => {
+    const withProposal: ChefReviewFeedbackEntry = {
+      cycleNumber: 3,
+      reviewerName: 'Lucía Ferraro',
+      comment: 'Revisá la propuesta adjunta y reenviá la ficha.',
+      proposedChanges: {
+        title: 'Milanesa de merluza',
+        allergenCodes: ['FISH'],
+        ingredients: [{ ingredientId: 'ing-fish', quantity: 300 }],
+      },
+      createdAt: '2026-10-30T10:00:00Z',
+    };
+
+    render(
+      <DishRejectionFeedbackBanner
+        entries={[withProposal]}
+        ingredientNames={{ 'ing-fish': 'Merluza' }}
+      />
+    );
+
+    // The Chef-facing contract has no cost/margin/price field at all, so no such text can appear.
+    expect(screen.queryByText(/costo|margen|rentabilidad|food cost|precio/i)).not.toBeInTheDocument();
+  });
 });

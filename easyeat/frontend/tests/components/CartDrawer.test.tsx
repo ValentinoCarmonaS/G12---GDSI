@@ -110,4 +110,43 @@ describe('CartDrawer Component', () => {
     fireEvent.click(clearBtn);
     expect(screen.getByTestId('cart-empty-message')).toBeInTheDocument();
   });
+
+  it('renders detailed financial breakdown per line item (name, unit price, quantity, line subtotal) and exact grand total (T026, COM-6.1.2, INV-2, FR-010)', () => {
+    const itemA: CartItem = {
+      dishId: 'dish-A',
+      name: 'Ravioles de Ricota',
+      price: 19.99,
+      quantity: 3,
+      isCompliant: true,
+    };
+
+    const itemB: CartItem = {
+      dishId: 'dish-B',
+      name: 'Tiramisú',
+      price: 14.5,
+      quantity: 2,
+      isCompliant: true,
+    };
+
+    renderWithCart([itemA, itemB], true);
+
+    // Verify item A line item breakdown
+    expect(screen.getByText('Ravioles de Ricota')).toBeInTheDocument();
+    expect(screen.getByTestId('item-qty-dish-A')).toHaveTextContent('3');
+    // Unit price: 19.99
+    expect(screen.getByText(/19,99|19\.99/)).toBeInTheDocument();
+    // Line subtotal: 19.99 * 3 = 59.97
+    expect(screen.getByText(/59,97|59\.97/)).toBeInTheDocument();
+
+    // Verify item B line item breakdown
+    expect(screen.getByText('Tiramisú')).toBeInTheDocument();
+    expect(screen.getByTestId('item-qty-dish-B')).toHaveTextContent('2');
+    // Unit price: 14.50
+    expect(screen.getByText(/14,50|14\.50/)).toBeInTheDocument();
+    // Line subtotal: 14.50 * 2 = 29.00
+    expect(screen.getByText(/29,00|29\.00/)).toBeInTheDocument();
+
+    // Verify exact grand total: 59.97 + 29.00 = 88.97
+    expect(screen.getByTestId('cart-total-amount')).toHaveTextContent(/88,97|88\.97/);
+  });
 });

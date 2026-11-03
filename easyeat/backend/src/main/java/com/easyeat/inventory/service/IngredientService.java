@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -41,6 +42,7 @@ public class IngredientService {
                 request.unitOfMeasure(),
                 cost
         );
+        applyPurchasePresentationIfPresent(ingredient, request.packageCost(), request.unitsPerPackage());
         Ingredient saved = ingredientRepository.save(ingredient);
         return toResponse(saved);
     }
@@ -84,6 +86,9 @@ public class IngredientService {
         ingredient.setCategory(request.category());
         if (request.unitPurchaseCost() != null) {
             ingredient.setUnitPurchaseCost(request.unitPurchaseCost());
+        }
+        if (request.packageCost() != null) {
+            applyPurchasePresentation(ingredient, request.packageCost(), request.unitsPerPackage());
         }
 
         Ingredient updated = ingredientRepository.save(ingredient);
@@ -156,10 +161,39 @@ public class IngredientService {
                 ingredient.getCategory(),
                 ingredient.getUnitOfMeasure(),
                 ingredient.getUnitPurchaseCost(),
+                ingredient.getPackageCost(),
+                ingredient.getUnitsPerPackage(),
                 ingredient.getStatus(),
                 ingredient.getCurrentStock(),
                 ingredient.getCreatedAt(),
                 ingredient.getUpdatedAt()
         );
+    }
+
+    /**
+     * FR-015d: the purchase presentation is a pair. Both fields travel together and describe a
+     * package of {@code unitsPerPackage} base units costing {@code packageCost} in total; the Food
+     * Cost engine derives the per-base-unit cost from them. Storing only one would leave the
+     * conversion ambiguous, so it is rejected instead of silently ignored.
+     */
+    private void applyPurchasePresentationIfPresent(Ingredient ingredient, BigDecimal packageCost,
+                                                    Integer unitsPerPackage) {
+        if (packageCost == null) {
+            return;
+        }
+        applyPurchasePresentation(ingredient, packageCost, unitsPerPackage != null ? unitsPerPackage : 1);
+    }
+
+    private void applyPurchasePresentation(Ingredient ingredient, BigDecimal packageCost,
+                                           Integer unitsPerPackage) {
+        if (packageCost.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Package cost must be non-negative.");
+        }
+        if (unitsPerPackage < 1) {
+            throw new IllegalArgumentException("Units per package must be at least 1.");
+        }
+        ingredient.setPackageCost(packageCost);
+        ingredient.setUnitsPerPackage(unitsPerPackage);
+        ingredient.setUnitPurchaseCost(packageCost.divide(BigDecimal.valueOf(unitsPerPackage), 4, RoundingMode.HALF_UP));
     }
 }

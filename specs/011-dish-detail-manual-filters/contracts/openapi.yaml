@@ -1,0 +1,270 @@
+openapi: 3.0.3
+info:
+  title: EasyEat - Detalle de Plato, Información Nutricional, Precios y Filtros Manuales
+  description: |
+    Contratos OpenAPI para la feature 011: detalle informativo de plato para el comensal,
+    etiquetas neutras de alérgenos, precios con impuestos, disponibilidad en tiempo real
+    y filtros multidimensionales de catálogo.
+  version: 1.0.0
+
+paths:
+  /api/v1/establishments/{tenantId}/catalog:
+    get:
+      summary: Consultar catálogo categorizado del establecimiento
+      description: |
+        Devuelve el menú organizado por categorías canónicas para el comensal autenticado.
+        Incluye detalles de productos: fotografía, nombre, descripción, precio final minorista (retailPrice),
+        ingredientes de la receta activa y etiquetas neutrales de alérgenos.
+      operationId: getEstablishmentCatalog
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: Identificador UUID del establecimiento gastronómico activo
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Catálogo gastronómico del establecimiento recuperado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DinerCatalogResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/ForbiddenInactive'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/establishments/{tenantId}/catalog/availability:
+    get:
+      summary: Polling condicional de disponibilidad de platos en tiempo real
+      description: |
+        Consulta reactiva de existencias de cocina con soporte de cabeceras If-None-Match y ETags
+        para verificación de stock y estados de despublicación/cancelación en lapso <= 3 segundos.
+      operationId: getCatalogAvailability
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: Identificador UUID del establecimiento gastronómico activo
+          schema:
+            type: string
+            format: uuid
+        - name: If-None-Match
+          in: header
+          required: false
+          description: Valor ETag del último mapa de disponibilidad recibido
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Mapa de disponibilidad actualizado
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: Hash SHA-256 determinista del estado de disponibilidad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityMapResponse'
+        '304':
+          description: Sin modificaciones en el inventario de cocina respecto al ETag provisto
+          headers:
+            ETag:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/dishes/{dishId}/photo:
+    get:
+      summary: Obtener archivo binario de la fotografía del plato
+      description: |
+        Transfiere el archivo multimedia del plato en alta resolución (JPEG, PNG o WEBP).
+        Si el plato no posee imagen cargada, retorna HTTP 404 para permitir la degradación
+        limpia del panel sin espacios vacíos.
+      operationId: getDishPhoto
+      parameters:
+        - name: dishId
+          in: path
+          required: true
+          description: Identificador UUID del plato
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Archivo binario multimedia de la imagen
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: El plato no posee fotografía registrada
+
+components:
+  schemas:
+    DinerCatalogResponse:
+      type: object
+      required:
+        - establishment
+        - categories
+      properties:
+        establishment:
+          $ref: '#/components/schemas/EstablishmentDetailDto'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryGroupDto'
+
+    EstablishmentDetailDto:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - isOpen
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED, DISABLED]
+        isOpen:
+          type: boolean
+        nextOpeningSchedule:
+          type: string
+          nullable: true
+
+    CategoryGroupDto:
+      type: object
+      required:
+        - category
+        - dishes
+      properties:
+        category:
+          type: string
+          description: Nombre canónico de la categoría gastronómica
+        dishes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DishCatalogItemDto'
+
+    DishCatalogItemDto:
+      type: object
+      required:
+        - id
+        - name
+        - price
+        - isAvailable
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        category:
+          type: string
+          nullable: true
+        price:
+          type: number
+          format: double
+          description: Precio final unitario minorista con impuestos incluidos (PVP vigente)
+        photoUrl:
+          type: string
+          nullable: true
+          description: Ruta relativa a la imagen o null si no posee foto
+        isAvailable:
+          type: boolean
+          description: Disponibilidad computada en tiempo real según inventario de cocina
+        isCompliant:
+          type: boolean
+          description: Indicador de adecuación dietaria heredado del catálogo general
+        conflictingRestrictions:
+          type: array
+          items:
+            type: string
+        recipeIngredients:
+          type: array
+          items:
+            type: string
+          description: Lista completa de ingredientes que componen la receta activa en cocina
+        allergens:
+          type: array
+          items:
+            type: string
+          description: Etiquetas neutras e idénticas de alérgenos asociados al plato para todos los comensales
+
+    AvailabilityMapResponse:
+      type: object
+      required:
+        - availability
+      properties:
+        availability:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Mapa asociativo de ID de plato a booleano de disponibilidad
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+
+  responses:
+    Unauthorized:
+      description: Autenticación requerida con rol COMENSAL
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    ForbiddenInactive:
+      description: Establecimiento inactivo o pausado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    NotFound:
+      description: Recurso no encontrado (establecimiento o plato inexistente)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+

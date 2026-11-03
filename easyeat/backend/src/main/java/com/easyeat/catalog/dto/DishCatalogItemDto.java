@@ -19,11 +19,14 @@ public class DishCatalogItemDto {
     @JsonProperty("isAvailable")
     private Boolean isAvailable;
 
+    private Integer availableStock;
+
     @JsonProperty("isCompliant")
     private Boolean isCompliant;
 
     private List<String> conflictingRestrictions = new ArrayList<>();
     private List<String> recipeIngredients = new ArrayList<>();
+    private List<String> allergens = new ArrayList<>();
 
     public DishCatalogItemDto() {
     }
@@ -39,6 +42,37 @@ public class DishCatalogItemDto {
             Boolean isCompliant,
             List<String> conflictingRestrictions,
             List<String> recipeIngredients) {
+        this(id, name, description, category, price, photoUrl, isAvailable, null, isCompliant, conflictingRestrictions, recipeIngredients, new ArrayList<>());
+    }
+
+    public DishCatalogItemDto(
+            UUID id,
+            String name,
+            String description,
+            String category,
+            BigDecimal price,
+            String photoUrl,
+            Boolean isAvailable,
+            Integer availableStock,
+            Boolean isCompliant,
+            List<String> conflictingRestrictions,
+            List<String> recipeIngredients) {
+        this(id, name, description, category, price, photoUrl, isAvailable, availableStock, isCompliant, conflictingRestrictions, recipeIngredients, new ArrayList<>());
+    }
+
+    public DishCatalogItemDto(
+            UUID id,
+            String name,
+            String description,
+            String category,
+            BigDecimal price,
+            String photoUrl,
+            Boolean isAvailable,
+            Integer availableStock,
+            Boolean isCompliant,
+            List<String> conflictingRestrictions,
+            List<String> recipeIngredients,
+            List<String> allergens) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -46,9 +80,11 @@ public class DishCatalogItemDto {
         this.price = price;
         this.photoUrl = photoUrl;
         this.isAvailable = isAvailable;
+        this.availableStock = availableStock;
         this.isCompliant = isCompliant;
         this.conflictingRestrictions = conflictingRestrictions != null ? conflictingRestrictions : new ArrayList<>();
         this.recipeIngredients = recipeIngredients != null ? recipeIngredients : new ArrayList<>();
+        this.allergens = allergens != null ? allergens : new ArrayList<>();
     }
 
     public UUID getId() {
@@ -107,6 +143,14 @@ public class DishCatalogItemDto {
         isAvailable = available;
     }
 
+    public Integer getAvailableStock() {
+        return availableStock;
+    }
+
+    public void setAvailableStock(Integer availableStock) {
+        this.availableStock = availableStock;
+    }
+
     public Boolean getIsCompliant() {
         return isCompliant;
     }
@@ -130,5 +174,12 @@ public class DishCatalogItemDto {
     public void setRecipeIngredients(List<String> recipeIngredients) {
         this.recipeIngredients = recipeIngredients != null ? recipeIngredients : new ArrayList<>();
     }
-}
 
+    public List<String> getAllergens() {
+        return allergens;
+    }
+
+    public void setAllergens(List<String> allergens) {
+        this.allergens = allergens != null ? allergens : new ArrayList<>();
+    }
+}

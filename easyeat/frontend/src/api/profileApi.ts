@@ -2,6 +2,8 @@ import { apiClient } from './apiClient';
 import type {
   ProfileResponse,
   PersonalDataRequest,
+  DemographicsRequest,
+  AvatarUploadResponse,
   EmailChangeRequestDto,
   EmailChangeInitiatedResponse,
   EmailConfirmationRequest,
@@ -24,6 +26,35 @@ export const profileApi = {
   async updatePersonalData(request: PersonalDataRequest): Promise<ProfileResponse> {
     const response = await apiClient.put<ProfileResponse>('/profile/personal-data', request);
     return response.data;
+  },
+
+  /**
+   * Updates diner demographic data (age, gender, address).
+   */
+  async updateDemographics(request: DemographicsRequest): Promise<ProfileResponse> {
+    const response = await apiClient.put<ProfileResponse>('/profile/demographics', request);
+    return response.data;
+  },
+
+  /**
+   * Uploads diner profile photo (JPEG/PNG/WebP <= 5 MB).
+   */
+  async uploadAvatar(file: File): Promise<AvatarUploadResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<AvatarUploadResponse>('/profile/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  /**
+   * Deletes custom diner profile photo.
+   */
+  async removeAvatar(): Promise<void> {
+    await apiClient.delete('/profile/avatar');
   },
 
   /**

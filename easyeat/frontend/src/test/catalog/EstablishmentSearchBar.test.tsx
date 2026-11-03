@@ -246,4 +246,36 @@ describe('EstablishmentSearchBar Component Tests (T014, US1, COM-1.5.1, CA 1, CA
       await screen.findByText(/no hay establecimientos activos en este momento/i)
     ).toBeInTheDocument();
   });
+
+  it('triggers switch modal when cart has items with a different tenantId even if active tenant is null', async () => {
+    vi.spyOn(dinerCatalogApi, 'searchEstablishments').mockResolvedValue([
+      mockEstablishmentSummaryActive2,
+    ]);
+
+    renderComponent(
+      { tenant: null },
+      {
+        items: [
+          {
+            dishId: 'dish-1',
+            tenantId: 'other-tenant-id',
+            name: 'Milanesa',
+            price: 5000,
+            quantity: 1,
+            isCompliant: true,
+          },
+        ],
+      }
+    );
+
+    const input = screen.getByPlaceholderText(/buscar restaurante por nombre/i);
+    await userEvent.type(input, 'don julio');
+
+    const resultItem = await screen.findByText('Parrilla Don Julio');
+    fireEvent.click(resultItem);
+
+    expect(
+      await screen.findByText(/¿cambiar de restaurante\?/i)
+    ).toBeInTheDocument();
+  });
 });

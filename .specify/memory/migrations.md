@@ -12,7 +12,7 @@
 4. A claim marked *in flight* is a courtesy, not a reservation. If two branches hold the same claim, the one that merges first keeps it and the other renumbers.
 5. Tests must not carry a version number in their class name, so an upstream renumbering cannot invalidate them.
 
-## Consumed — present on `develop/sprint-2`
+## Consumed — present on `develop/sprint-3`
 
 | Version | File | Spec | Landed via |
 |---|---|---|---|
@@ -25,7 +25,9 @@
 | V7 | `V7__chef_dish_management.sql` | 005 | PR #160 |
 | V8 | `V8__create_establishments.sql` | 008 | merged into `develop/sprint-2` ahead of spec 007 (exact PR not confirmed from this integration; present on `develop/sprint-2` when spec 007 was integrated 2026-10-31) |
 | V9 | `V9__admin_dish_approval_pricing.sql` | 007 | renumbered from `V8` during the `007-admin-dish-approval-pricing` → `develop/sprint-2` integration (PR #182), per rule 4: spec 008 merged first and kept `V8` |
-| V12 | `V12__restaurant_operation_config.sql` | 010 | in flight on `010-restaurant-operation-config`. `V10` and `V11` are consumed on `develop/sprint-3` (not yet on this branch), so `V12` is the next free number there. Test `OperationConfigMigrationTest` locates it by Flyway description, so a renumbering touches only the filename and this row (rule 5). |
+| V10 | `V10__support_admin_dish_cancellation.sql` | 007 / C-02 | adds `CANCELLED` to the dish-status and immutable review-event CHECK constraints; V7/V9 remain unchanged |
+| V11 | `V11__sync_ingredient_unit_purchase_cost.sql` | 006 / C-03 | backfills ingredient master unit_purchase_cost from latest batch |
+| V12 | `V12__extend_user_demographics_and_avatar.sql` | 009 | adds age, gender, address to users and creates user_photos (BYTEA avatar storage) |
 
 Spec 006 (`006-recipe-food-cost`, PR #170, merged 2026-10-28) added **no** migration: its recipe model reuses `dish_recipe_ingredients` from 005's `V7`. A feature that needs no schema change takes no version, and that is worth recording so nobody looks for a missing version from it.
 
@@ -33,7 +35,13 @@ Repeatable migrations carry no version and are re-applied whenever their content
 
 ## In flight — claimed but not yet merged
 
-None. The `V8` contest between specs 007 and 008 (below) is resolved: 008 merged first and kept `V8`; 007 renumbered to `V9` per rule 4, exactly as this table anticipated.
+**C-07 (`007-admin-dish-approval-pricing`, backend portion) claims `V13__dish_review_history_snapshot.sql`** (renumbered from V12 upon merging `develop/sprint-3` with Feature 009's `V12__extend_user_demographics_and_avatar.sql`). Adds `dish_review_history.proposed_changes_json` JSONB, the immutable store for the Administrator's proposed-edition snapshot (FR-042, FR-043).
+
+**C-08 (`007-admin-dish-approval-pricing`, ingredient purchase-presentation cost) claims `V14__add_units_per_package_to_ingredients.sql`** (renumbered from V13). Adds nullable `package_cost` (the purchase-presentation total) and `units_per_package INTEGER NOT NULL DEFAULT 1` to `ingredients`, with `package_cost >= 0` and `units_per_package >= 1`. Direct units (kg, l, loose `u`) keep the default `1`. The Food Cost engine derives the effective base unit cost as `package_cost / units_per_package` before each line subtotal (spec 004 FR-015d, spec 006 FR-005/FR-006). No existing column changes; ingredients without a recorded `package_cost` keep the direct `unit_purchase_cost` equivalence.
+
+**C-10 (`010-restaurant-operation-config`) claims `V15__restaurant_operation_config.sql`** (renumbered from V12 when integrating `develop/sprint-3`, which had already consumed `V12__extend_user_demographics_and_avatar.sql` for spec 009 and holds `V13` and `V14`; rule 4, the branch that merges later renumbers). Creates `establishment_operating_schedules`, `establishment_slot_capacities` and `establishment_payment_methods`, each with a `version` column for optimistic locking, and seeds both payment methods enabled for the establishments that exist when it runs. Its test, `OperationConfigMigrationTest`, locates the migration by Flyway description, so the renumbering touched only the filename and this entry (rule 5).
+
+The `V8` contest between specs 007 and 008 (below) is resolved: 008 merged first and kept `V8`; 007 renumbered to `V9` per rule 4. C-02's schema extension is recorded as V10 because V9 is already applied and immutable.
 
 **Renumbering either was cheap, and that was by design.** Spec 007's migration test is named `AdminPricingMigrationTest` and **nothing inside it hardcodes a version**: it locates the migration by its Flyway description and reads the preceding version from `flyway.info()`. A rename changes the filename and this table, nothing else. Spec 005's `V7MigrationAndSeedDevTest` does carry its version in the class name, which rule 5 exists to prevent; it is noted for that spec's owner.
 

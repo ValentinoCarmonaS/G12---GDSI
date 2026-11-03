@@ -24,10 +24,15 @@ export function isDishCategory(val: unknown): val is DishCategory {
  * union did, which made a published dish render as the raw token 'PUBLISHED' through
  * DishStatusBadge's fallback once T076 could set it.
  */
-export type DishStatus = 'DRAFT' | 'PENDING_PRICE' | 'PUBLISHED';
+export type DishStatus = 'DRAFT' | 'PENDING_PRICE' | 'PUBLISHED' | 'CANCELLED';
 
 export function isDishStatus(val: unknown): val is DishStatus {
-  return val === 'DRAFT' || val === 'PENDING_PRICE' || val === 'PUBLISHED';
+  return (
+    val === 'DRAFT' ||
+    val === 'PENDING_PRICE' ||
+    val === 'PUBLISHED' ||
+    val === 'CANCELLED'
+  );
 }
 
 /**

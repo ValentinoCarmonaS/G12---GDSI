@@ -173,7 +173,9 @@ The Chef views a draft and taps "Send for Review". The system evaluates all comp
 - **FR-021**: All Chefs of the same establishment MUST share visibility and edit rights over all dish drafts belonging to that establishment. The Chef's dish management list MUST display items ordered by last updated timestamp descending (most recently updated first), paginated at 20 items per page with page navigation controls, and MUST provide filtering by status with options: "All" (Todos), "Draft" (Borrador), and "Pending Price" (Pendiente de Precio).
 - **FR-022**: The "Send for Review" action MUST be visually enabled when all completeness conditions are met and visually disabled with an informational indicator when any condition is unmet.
 - **FR-023**: The system MUST validate all input fields in real time on dish forms, highlighting missing required fields and invalid values before submission.
-- **FR-024**: Seed dev data in `R__seed_dev_dishes_and_dietary.sql` MUST be adapted to comply with the schema introduced by this feature if the adaptation is straightforward and non-conflicting. If adaptation would conflict with the new dish lifecycle logic, the conflicting records MUST be removed.
+- **FR-025**: El sistema MUST permitir al Chef recibir un plato devuelto por el Administrador en estado de rechazo, visualizando el comentario explicativo (10-1000 caracteres) y una propuesta de edición precargada (snapshot).
+- **FR-026**: El Chef MUST poder editar libremente la propuesta de edición del Administrador y re-enviar el plato a la bandeja de "En espera" (`PENDING_PRICE`), incrementando el ciclo de revisión sin recibir nunca acceso a costos ni márgenes.
+
 
 ### Key Entities
 

@@ -19,11 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * The Administrator's write surface over a dish's commercial decisions (FR-009 to FR-025):
- * pricing and approval here, rejection added by US4.
+ * The Administrator's write surface over a dish's commercial decisions (FR-009 to FR-025,
+ * FR-038 to FR-041): pricing, approval, rejection and C-02 cancellation.
  *
  * <p>Created separately from {@code AdminDishReviewController} per {@code plan.md}'s source
- * tree, which splits the read surface from the three mutating transitions. The role gate matches
+ * tree, which splits the read surface from the mutating transitions. The role gate matches
  * FR-001 exactly, applied at the class level for the same reason as that controller: a method
  * added later cannot be left unguarded by omission.
  */
@@ -73,7 +73,8 @@ public class AdminDishDecisionController {
     }
 
     /**
-     * Returns the dish to the kitchen with mandatory feedback (FR-020, FR-021, FR-024).
+     * Returns the dish to the kitchen with mandatory feedback and the Administrator's proposed
+     * edition (FR-020, FR-021, FR-024, FR-042).
      *
      * <p>Only legal from {@code PENDING_PRICE}: {@code PUBLISHED} is a 409 (FR-024, catalog
      * unpublishing is out of scope) and so is {@code DRAFT} (FR-019).
@@ -83,6 +84,12 @@ public class AdminDishDecisionController {
             @PathVariable("id") UUID id,
             @RequestBody RejectDishRequest request) {
 
-        return ResponseEntity.ok(governanceService.reject(id, request.comment()));
+        return ResponseEntity.ok(governanceService.reject(id, request));
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancel(@PathVariable("id") UUID id) {
+        governanceService.cancel(id);
+        return ResponseEntity.noContent().build();
     }
 }

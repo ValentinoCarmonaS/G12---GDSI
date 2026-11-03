@@ -2,9 +2,9 @@
 
 **Feature Branch**: `006-recipe-food-cost`
 
-**Created**: 25/10/2026 | **Last Amended**: 28/10/2026
+**Created**: 25/10/2026 | **Last Amended**: 01/11/2026
 
-**Status**: Approved (Reconciled with Specs 005, 007 & Constitution v1.2.0)
+**Status**: Resolved (Bug C-03 Fix Verified)
 
 **Input**: User Story ADM-5.1.2: "Como administrador financiero, quiero leer los ingredientes que el Chef cargó en el plato y analizar su impacto, para entender qué rentabilidad me va a dejar. Criterios de Aceptación: Dado que el admin abre un plato pendiente, Cuando evalúa la receta, Entonces puede visualizar los insumos y etiquetas requeridas."
 
@@ -22,7 +22,7 @@
 
 - Q: ¿Cómo se delimita el alcance de la spec 006 respecto a la historia de usuario CHF-2.2.2? (Constitución Principios V y X) → A: Purga formal. La persistencia y edición de recetas técnicas por parte del Chef (`CHF-2.2.2`, endpoint `PUT /api/v1/dishes/{id}/recipe`) es propiedad exclusiva de la spec 005. La spec 006 se delimita al 100% como un vertical slice enfocado únicamente en **ADM-5.1.2** (Auditoría de Receta y Food Cost para el Administrador).
 - Q: ¿Dónde debe residir la compuerta de estado `PENDING_PRICE`? (`R-006-1`) → A: La validación de estado `PENDING_PRICE` se desacopla y se aplica en el Controller (`AdminDishCostAuditController`), devolviendo HTTP 409 Conflict si un plato no está en revisión. El servicio (`FoodCostAuditService.auditDishCost`) queda liberado para que servicios aguas abajo (como la spec 007 para platos `PUBLISHED`) puedan auditar costos sin duplicar lógica ni DTOs.
-- Q: ¿Cuál es la fuente autoritativa para el costo unitario de adquisición en el Food Cost? (`R-004-1`) → A: El catálogo maestro `ingredients.unit_purchase_cost`. Representa el costo estándar de escandallo gastronómico, permitiendo auditar y presupuestar platos independientemente de la existencia de stock físico transitorio en lotes (`ingredient_batches`). Redondeo exacto a 2 decimales (`HALF_UP`) en subtotales y total.
+- Q: ¿Cuál es la fuente autoritativa para el costo unitario de adquisición en el Food Cost? (`R-004-1`) → A: El catálogo maestro `ingredients.unit_purchase_cost`. Representa el costo estándar o último precio de compra registrado al agregar stock en inventario (actualizado automáticamente por cada recepción de lote con costo > 0), permitiendo auditar y presupuestar platos independientemente de la existencia de stock físico transitorio en lotes (`ingredient_batches`). Redondeo exacto a 2 decimales (`HALF_UP`) en subtotales y total. (Nota: Se enmienda la decisión original del 2026-10-28 que desconectaba el inventario, asegurando la sincronización automática entre ingresos de stock y el costo maestro).
 
 ---
 
@@ -48,6 +48,7 @@ The Financial Administrator accesses the cost audit endpoint and UI panel for a 
 6. **Given** a dish that has no ingredients assigned (empty recipe), **When** a cost audit is requested, **Then** the system returns an informative error (HTTP 400 Bad Request) stating that the dish lacks a defined recipe.
 7. **Given** an authenticated Chef or non-admin user attempting to access the cost audit endpoint, **When** the request is received, **Then** the system denies access with an authorization error (HTTP 403 Forbidden), preserving financial confidentiality.
 8. **Given** an authenticated Administrator on the Back-Office Workspace viewing pending dishes, **When** they click "Auditar Costo" on a pending dish notification, **Then** the interface opens `DishCostAuditPage` displaying the `CostAuditPanel` with full itemized costs, unpriced alerts, and dietary badges.
+9. **Given** an ingredient recorded with a purchase presentation of 12 base units for a package cost of \$3,600.00, **When** the Food Cost audit evaluates a recipe line of 2 units, **Then** the effective unit acquisition cost is \$300.00 per unit, the line subtotal is \$600.00, and the audit item reports \$300.00 as its unit acquisition cost — never the \$3,600.00 package total.
 
 ---
 
@@ -59,14 +60,15 @@ The Financial Administrator accesses the cost audit endpoint and UI panel for a 
 - **FR-002**: The system MUST restrict cost audit queries exclusively to the Administrator (`ADMIN` / `ADMINISTRADOR`) role, returning HTTP 403 Forbidden to non-admin roles (including `CHEF`).
 - **FR-003**: The HTTP endpoint `GET /api/v1/dishes/{id}/cost-audit` MUST enforce at the controller layer that the requested dish is in `PENDING_PRICE` status. Requests for dishes in `DRAFT` status MUST be rejected with HTTP 409 Conflict.
 - **FR-004**: The domain service `FoodCostAuditService` MUST calculate and assemble the audit breakdown independently of dish status gates, allowing internal consumers (such as spec 007 for `PUBLISHED` dishes) to compute food costs without duplicate logic.
-- **FR-005**: The authoritative unit acquisition cost for each ingredient MUST be retrieved from `ingredients.unit_purchase_cost` (the master catalog price).
-- **FR-006**: The system MUST dynamically calculate the total Food Cost per portion as the exact sum of its ingredient line costs:
-  $$\text{Food Cost} = \sum_{i=1}^{n} (\text{quantity}_i \times \text{unit\_purchase\_cost}_i)$$
-  using `java.math.BigDecimal` with `RoundingMode.HALF_UP` rounded to 2 decimal places for each line subtotal and the total cost, guaranteeing zero fractional-cent drift.
+- **FR-005**: The authoritative unit acquisition cost for each ingredient MUST be retrieved from `ingredients.unit_purchase_cost` (the master catalog price), after applying the purchase-presentation conversion of spec 004's FR-015d when `package_cost` is recorded: $\text{effective\_unit\_cost} = \text{package\_cost} / \text{units\_per\_package}$ (`HALF_UP`, 4 decimals), where `units_per_package` is an integer that defaults to `1`. For mass or volume units acquired directly (kg, l, loose `u`) and for ingredients without a recorded presentation, `unit_purchase_cost` is used as-is.
+- **FR-006**: The system MUST dynamically calculate the total Food Cost per portion as the exact sum of its ingredient line costs, applying the presentation conversion **before** each line subtotal:
+  $$\text{line\_subtotal}_i = \text{quantity}_i \times \left(\frac{\text{package\_cost}_i}{\text{units\_per\_package}_i}\right)$$
+  falling back to $\text{quantity}_i \times \text{unit\_purchase\_cost}_i$ when no presentation is recorded, using `java.math.BigDecimal` with `RoundingMode.HALF_UP` rounded to 2 decimal places for each line subtotal and the total cost, guaranteeing zero fractional-cent drift.
 - **FR-007**: If any ingredient in the recipe has zero or unpriced unit cost (`null` or $\le 0$), the system MUST compute that line as 0.00, set `has_unpriced_ingredients = true`, and include a warning note specifying the affected ingredient name without aborting the audit.
 - **FR-008**: The cost audit response MUST include: dish ID, dish name, total Food Cost, `has_unpriced_ingredients` flag, `warningNotes` list, the list of declared dietary restriction codes (`dish_dietary_restrictions`), and an itemized breakdown of ingredients with portion quantity, unit of measure, unit acquisition cost, and line subtotal.
 - **FR-009**: The system MUST reject cost audit requests for dishes that have no assigned recipe with HTTP 400 Bad Request (`EmptyRecipeException`).
 - **FR-010**: The frontend MUST provide a dedicated audit view (`CostAuditPanel` within `DishCostAuditPage`) accessible to Administrators from the workspace pending review tray, displaying the full itemized table, total Food Cost, declared dietary badges, and unpriced warnings.
+- **FR-011**: The frontend UI itemized table MUST explicitly bind the "CANTIDAD" column to the quantity property received from the API audit DTO, ensuring fallback default handling (e.g. `0` or `0.00`) to prevent `NaN` rendering errors.
 
 ---
 

@@ -162,7 +162,7 @@ class QuickstartScenariosTest extends OperationsPostgresTestBase {
 
     /**
      * Switches a method the way the admin screen does: with the version it read, or none while the
-     * method has no row. Establishments that existed when V12 ran already have a row (version 0).
+     * method has no row. Establishments that existed when V15 ran already have a row (version 0).
      */
     private void togglePayment(String method, boolean enabled) throws Exception {
         JsonNode methods = json(mockMvc.perform(get(ADMIN_PAYMENTS).with(admin())).andExpect(status().isOk()));

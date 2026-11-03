@@ -13,7 +13,32 @@ import java.util.Set;
 @Component
 public class FoodCostEngine {
 
-    public record IngredientCostItem(BigDecimal quantity, BigDecimal unitPurchaseCost) {}
+    public record IngredientCostItem(
+            BigDecimal quantity,
+            BigDecimal unitPurchaseCost,
+            BigDecimal packageCost,
+            Integer unitsPerPackage
+    ) {
+        /** Direct base-unit cost: used by kg/l ingredients and anything without a presentation. */
+        public IngredientCostItem(BigDecimal quantity, BigDecimal unitPurchaseCost) {
+            this(quantity, unitPurchaseCost, null, 1);
+        }
+
+        /**
+         * The per-base-unit cost actually applied to the recipe line (FR-015d).
+         *
+         * A purchase presentation (e.g. a dozen at a package price) is converted **before** the
+         * subtotal: {@code packageCost / unitsPerPackage}. Mass/volume and loose ingredients keep
+         * the direct {@code unitPurchaseCost} equivalence (or unitsPerPackage = 1).
+         */
+        public BigDecimal effectiveUnitCost() {
+            if (packageCost != null) {
+                int units = unitsPerPackage != null && unitsPerPackage > 0 ? unitsPerPackage : 1;
+                return packageCost.divide(BigDecimal.valueOf(units), 4, RoundingMode.HALF_UP);
+            }
+            return unitPurchaseCost;
+        }
+    }
 
     public record CalculationResult(
             List<BigDecimal> lineSubtotals,
@@ -34,7 +59,7 @@ public class FoodCostEngine {
         for (int i = 0; i < items.size(); i++) {
             IngredientCostItem item = items.get(i);
             BigDecimal quantity = item.quantity() != null ? item.quantity() : BigDecimal.ZERO;
-            BigDecimal unitPurchaseCost = item.unitPurchaseCost();
+            BigDecimal unitPurchaseCost = item.effectiveUnitCost();
 
             boolean isUnpriced = (unitPurchaseCost == null || unitPurchaseCost.compareTo(BigDecimal.ZERO) <= 0);
             if (isUnpriced) {

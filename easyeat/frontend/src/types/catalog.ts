@@ -7,4 +7,5 @@ export interface EnrichedDish {
   isActive: boolean;
   isCompliant: boolean;
   conflictingRestrictions: string[];
+  availableStock?: number;
 }

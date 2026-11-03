@@ -8,6 +8,7 @@ import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.dish.domain.DishReviewHistory;
 import com.easyeat.dish.domain.DishStatus;
+import com.easyeat.dish.dto.ChefReviewFeedbackEntry;
 import com.easyeat.dish.dto.ChefReviewFeedbackResponse;
 import com.easyeat.dish.repository.DishReviewHistoryRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -76,7 +77,7 @@ class ChefReviewFeedbackServiceTest {
 
         DishReviewHistory approved = DishReviewHistory.approved(dish.getId(), TENANT, 1, adminId);
         DishReviewHistory rejected = DishReviewHistory.rejected(dish.getId(), TENANT, 2, adminId,
-                "Faltan las fotos del plato, por favor adjuntalas.");
+                "Faltan las fotos del plato, por favor adjuntalas.", null);
         when(reviewHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(dish.getId(), TENANT))
                 .thenReturn(List.of(approved, rejected));
 
@@ -94,10 +95,10 @@ class ChefReviewFeedbackServiceTest {
     void entriesOrderedNewestFirst() throws InterruptedException {
         UUID adminId = UUID.randomUUID();
         DishReviewHistory first = DishReviewHistory.rejected(dish.getId(), TENANT, 1, adminId,
-                "Primera observación: faltan las fotos.");
+                "Primera observación: faltan las fotos.", null);
         Thread.sleep(5);
         DishReviewHistory second = DishReviewHistory.rejected(dish.getId(), TENANT, 2, adminId,
-                "Segunda observación: revisá el costo del salmón.");
+                "Segunda observación: revisá el costo del salmón.", null);
         when(reviewHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(dish.getId(), TENANT))
                 .thenReturn(List.of(first, second));
 
@@ -123,7 +124,7 @@ class ChefReviewFeedbackServiceTest {
     void unresolvedReviewerFallsBack() {
         UUID adminId = UUID.randomUUID();
         DishReviewHistory rejected = DishReviewHistory.rejected(dish.getId(), TENANT, 1, adminId,
-                "Faltan las fotos del plato, por favor adjuntalas.");
+                "Faltan las fotos del plato, por favor adjuntalas.", null);
         when(reviewHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(dish.getId(), TENANT))
                 .thenReturn(List.of(rejected));
         when(userRepository.findAllById(any())).thenReturn(List.of());
@@ -151,5 +152,42 @@ class ChefReviewFeedbackServiceTest {
 
         assertThatThrownBy(() -> service.getFeedback(dish.getId()))
                 .isInstanceOf(TenantViolationException.class);
+    }
+
+    @Test
+    @DisplayName("a rejection that carried a proposal surfaces the snapshot to the Chef (FR-042)")
+    void rejectionSurfacesProposedSnapshot() {
+        UUID adminId = UUID.randomUUID();
+        DishReviewHistory rejected = DishReviewHistory.rejected(dish.getId(), TENANT, 2, adminId,
+                "El costo del salmón dispara el food cost.", "{\"title\":\"Milanesa de ternera\","
+                        + "\"description\":\"Cambia la carne por ternera.\",\"allergenCodes\":[\"GLUTEN\"],"
+                        + "\"dietaryLifestyleCodes\":null,\"ingredients\":[{\"ingredientId\":\""
+                        + UUID.randomUUID() + "\",\"quantity\":200}]}");
+        when(reviewHistoryRepository.findByDishIdAndTenantIdOrderByCreatedAtAsc(dish.getId(), TENANT))
+                .thenReturn(List.of(rejected));
+        when(userRepository.findAllById(any())).thenReturn(List.of());
+
+        ChefReviewFeedbackResponse response = service.getFeedback(dish.getId());
+
+        assertThat(response.entries()).hasSize(1);
+        assertThat(response.entries().get(0).cycleNumber()).isEqualTo(2);
+        assertThat(response.entries().get(0).proposedChanges()).isNotNull();
+        assertThat(response.entries().get(0).proposedChanges().title())
+                .isEqualTo("Milanesa de ternera");
+        assertThat(response.entries().get(0).proposedChanges().ingredients()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("the Chef feedback entry declares no financial field at all, by construction "
+            + "(FR-023, SC-003)")
+    void entryDeclaresNoFinancialField() {
+        List<String> names = java.util.Arrays.stream(ChefReviewFeedbackEntry.class.getRecordComponents())
+                .map(java.lang.reflect.RecordComponent::getName)
+                .toList();
+
+        assertThat(names)
+                .as("no cost, Food Cost, margin or price may exist on a Chef-facing entry")
+                .doesNotContainAnyElementsOf(List.of("cost", "foodCost", "food_cost", "margin", "price",
+                        "retailPrice", "unitPurchaseCost"));
     }
 }

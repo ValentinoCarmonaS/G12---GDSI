@@ -51,6 +51,8 @@ The data model extends the foundational authentication and multi-tenant schema b
 │ category : VARCHAR(50)               │                 │ initial_quantity : NUMERIC(12,4)     │     │
 │ unit_of_measure : VARCHAR(20)        │                 │ remaining_quantity : NUMERIC(12,4)   │     │
 │ unit_purchase_cost : NUMERIC(12,4)   │                 │ unit_cost : NUMERIC(12,4)            │     │
+│ package_cost : NUMERIC(12,4) NULL    │                 │ created_at : TIMESTAMPTZ             │     │
+│ units_per_package : INTEGER DEFAULT 1 │                 │                                      │     │
 │ status : VARCHAR(50)                 │                 │ created_at : TIMESTAMPTZ             │     │
 │ current_stock : NUMERIC(12,4)        │◄────────────────┴──────────────────────────────────────┘     │
 │ created_at : TIMESTAMPTZ             │                                                              │
@@ -118,7 +120,9 @@ Represents a raw material in a restaurant's kitchen catalog. Ingredients belong 
 | `name` | `VARCHAR(255)` | NOT NULL | Ingredient name (unique per tenant, case-insensitive). |
 | `category` | `VARCHAR(50)` | NOT NULL | Category: `'Produce'`, `'Meat'`, `'Dairy'`, `'Dry Goods'`, `'Spices'`. |
 | `unit_of_measure` | `VARCHAR(20)` | NOT NULL | Accepted unit of measure: `'g'`, `'kg'`, `'ml'`, `'l'`, `'u'`. |
-| `unit_purchase_cost` | `NUMERIC(12, 4)` | NOT NULL | Unit purchase cost (exact decimal, `>= 0.0000`). |
+| `unit_purchase_cost` | `NUMERIC(12, 4)` | NOT NULL | Effective base-unit acquisition cost (exact decimal, `>= 0.0000`). Derived as `package_cost / units_per_package` when a presentation is recorded; otherwise the direct cost. |
+| `package_cost` | `NUMERIC(12, 4)` | NULLABLE | Total cost of the purchase presentation (package), `>= 0`. |
+| `units_per_package` | `INTEGER` | NOT NULL, DEFAULT `1` | Base units contained in one purchase presentation, `>= 1`. Direct units (kg, l, loose `u`) keep `1`. |
 | `status` | `VARCHAR(50)` | NOT NULL, DEFAULT `'ACTIVE'` | Lifecycle: `'ACTIVE'`, `'DISCONTINUED'`. |
 | `current_stock` | `NUMERIC(12, 4)` | NOT NULL, DEFAULT `0.0000` | Physical stock balance (invariant: `>= 0.0000`). |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Registration timestamp. |
@@ -127,6 +131,8 @@ Represents a raw material in a restaurant's kitchen catalog. Ingredients belong 
 **Integrity Constraints and Indexes**:
 - `uq_ingredient_tenant_lower_name`: `CREATE UNIQUE INDEX uq_ingredient_tenant_lower_name ON ingredients (tenant_id, LOWER(name))` (Enforces unique name per establishment).
 - `chk_ingredient_cost_positive`: `CHECK (unit_purchase_cost >= 0)`.
+- `chk_ingredient_package_cost_non_negative`: `CHECK (package_cost IS NULL OR package_cost >= 0)`.
+- `chk_ingredient_units_per_package_positive`: `CHECK (units_per_package >= 1)`.
 - `chk_ingredient_stock_non_negative`: `CHECK (current_stock >= 0)` (Database-level enforcement of the non-negative stock invariant).
 - `chk_ingredient_category`: `CHECK (category IN ('Produce', 'Meat', 'Dairy', 'Dry Goods', 'Spices'))`.
 - `chk_ingredient_unit`: `CHECK (unit_of_measure IN ('g', 'kg', 'ml', 'l', 'u'))`.

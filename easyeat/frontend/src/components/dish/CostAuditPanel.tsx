@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatAuditQuantity } from '@/utils/foodCostAudit';
 import { FoodCostAuditResponse } from '@/types/dish';
 
 interface CostAuditPanelProps {
@@ -62,7 +63,9 @@ export const CostAuditPanel: React.FC<CostAuditPanelProps> = ({ auditData, onRef
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-right text-gray-700">{item.recipeQuantity}</td>
+                  <td className="px-4 py-2 text-right text-gray-700">
+                    {formatAuditQuantity(item)}
+                  </td>
                   <td className="px-4 py-2 text-gray-700">{item.unitOfMeasure}</td>
                   <td className="px-4 py-2 text-right text-gray-700">
                     ${item.unitPurchaseCost.toFixed(2)}

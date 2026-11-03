@@ -17,6 +17,10 @@ Coverage of `com.easyeat.operations` (JaCoCo, per class): 24 of 25 classes at 10
 
 Abbreviations: **OIU** = `OperatingInvariantsUnitTest` (nested `BusinessSchedules`, `SlotCapacity`, `PaymentMethodToggles`); **AOC** = `AdminOperationsControllerTest` (nested `Schedules`, `DinerTimeSlots`, `Capacity`, `Payments`); **SCC** = `SlotCapacityConcurrencyTest`; **QS** = `QuickstartScenariosTest`; **SCS** = `SlotCapacityServiceTest`; **OSS** = `OperatingScheduleServiceTest`; **PMS** = `PaymentMethodServiceTest`; **SCR** = `SlotCapacityRepositoryTest`. Frontend tests are under `easyeat/frontend/src/test/operations/`.
 
+### Re-run after integrating `develop/sprint-3` (2026-11-02)
+
+Merging `develop/sprint-3` into this branch needed three changes: the migration was renumbered from `V12` to `V15` (sprint-3 already holds `V12` to `V14`), `.specify/memory/migrations.md` was resolved with sprint-3's rows plus the new claim, and `AdminPricingMigrationTest` took sprint-3's version. The merged tree was re-verified: backend `mvn clean verify` **1271 tests, 0 failures, coverage checks met**; frontend **111 files, 779 tests, 0 failures**, `tsc` clean. (A first run without `clean` failed 170 tests on a stale `V12__restaurant_operation_config.sql` left in `target/classes` by the incremental build; the sources never had two `V12`.) The counts in the table above are those of the feature branch before the merge.
+
 ## 2. Invariants
 
 | ID | Verified by |
@@ -86,14 +90,14 @@ Counted on the tests that drive the real components (an interaction is one chang
 
 - **No gateway SDK, credential or token**: neither `pom.xml` nor `package.json` mentions Stripe or Mercado Pago; OIU `shouldOperateOfflineWithoutExternalGateways` asserts the SDK classes are not on the classpath, that no class of `com.easyeat.operations` is named after credentials, tokens or gateways, and that the entity holds only the flag fields (A-005). The only occurrences of the names are the display labels and the `PaymentMethod` enum.
 - **No orders artifact**: the feature adds no order, cart or approval class, endpoint, table or stub. `CheckoutPaymentOptions` and `DinerSlotSelector` are props-driven components that receive `revalidate`, `onConfirm` and `onRefresh` from the caller; the call sites of the future flow are written down in wire-up.md and nowhere else.
-- **Scope of the changes outside the module**: `GlobalExceptionHandler` (a Spec 010 section, nothing existing changed), `AppRoutes` and `AdminWorkspacePage` (route and link), migration `V12`, the migration registry, and one assertion relaxed in spec 007's `AdminPricingMigrationTest`, approved by the user in Phase 2.
+- **Scope of the changes outside the module**: `GlobalExceptionHandler` (a Spec 010 section, nothing existing changed), `AppRoutes` and `AdminWorkspacePage` (route and link), migration `V15` (planned as `V12`, renumbered when integrating `develop/sprint-3`), the migration registry. The assertion relaxed in spec 007's `AdminPricingMigrationTest` during Phase 2 (approved by the user) was dropped when integrating `develop/sprint-3`, which fixed the same assertion its own way (`discoveredMigrationVersions()`); the file is now identical to sprint-3's.
 
 ## 7. Divergences found and how they were resolved
 
 | Divergence | Resolution |
 |---|---|
 | Quickstart scenario 1 expected an order to be rejected with a 400 at 16:01; there is no orders module | `quickstart.md` now states what the module returns (200, `isClosed`, no slots); the rejection is the order flow's job, recorded in wire-up.md §2 |
-| Quickstart scenarios 4 and 5 sent a `PUT` without `expectedVersion`, which is a 409 on an establishment seeded by V12 | `quickstart.md` sends the version read from the `GET` |
+| Quickstart scenarios 4 and 5 sent a `PUT` without `expectedVersion`, which is a 409 on an establishment seeded by V15 | `quickstart.md` sends the version read from the `GET` |
 | Quickstart scenario 7 named `SlotCapacityExceededException`; the class is `SlotSoldOutException` | Corrected in `quickstart.md` |
 | The quickstart filter `-Dtest=*OperationConfig*` matches no class | Replaced by `com.easyeat.operations.**` and `QuickstartScenariosTest` |
 | The global handler answers 422 to a failed Bean Validation of a single body; the contract documents 400 | The two payment request records reject a null in their constructor, so the answer is the contract's 400. The global handler was not changed. |

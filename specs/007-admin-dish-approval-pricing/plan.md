@@ -14,14 +14,15 @@ per-dish audit panel rendering spec 006's itemized Food Cost; a bidirectional ma
 calculator; persistence of the retail price with an immutable price audit trail; an approval action
 gated on price, recipe and allergens that publishes the dish to the diner catalog; and rejection with
 a mandatory 10–1000 character comment that returns the dish to the Chef with traceable, financially
-blind feedback.
+blind feedback; and Administrator-only cancellation of a pending dish into a terminal, inactive
+state with an immutable review-history event and a read-only Chef presentation.
 
 Technical approach: extend — never duplicate — what already exists. The PVP becomes a new
 `dishes.retail_price` owned by this feature; `dishes.price` is deprecated and the diner catalog
 migrates to `retail_price` in the same change that adopts the visibility predicate
 `is_active = true AND status = 'PUBLISHED'`. First-decision-wins is delivered by conditional
-`UPDATE`s that restate the state the Administrator acted upon — the source status for approval and
-rejection, the previously-read price for repricing — each covering a different race and neither
+`UPDATE`s that restate the state the Administrator acted upon — the source status for approval,
+rejection and cancellation, the previously-read price for repricing — each covering a different race and neither
 requiring a version column on an entity three specs write through. The margin is
 never persisted: it is recomputed from the live Food Cost on every consultation. All arithmetic is
 `BigDecimal`/`HALF_UP`, and the round-trip tolerance of FR-008 is replaced by the bound this plan
@@ -33,7 +34,7 @@ derives, because ±0.01 pp is not achievable for low prices.
 
 **Primary Dependencies**: Spring Boot 3.3.x (Web, Data JPA, Security, Validation), Flyway, PostgreSQL 16 driver, Lombok · React 18.3.1 (**not** React 19, which `005/plan.md` claims — `package.json` is authoritative), Vite 5, react-router-dom 6, Tailwind CSS 3, axios 1.7, lucide-react
 
-**Storage**: PostgreSQL 16; Flyway versioned migrations. This feature owns exactly one migration, named for the next free sequential version **at the moment the file is authored**, confirmed against `db/migration/` and never reserved in advance. Queue confirmed 2026-10-28 against the integration branch: `V1`–`V7` present, `V7` from spec 005 → this feature takes **`V8__admin_dish_approval_pricing.sql`**, re-confirmed when the file is authored. Spec 008 holds a competing `V8` on its own branch only; registry rule 4 gives the number to whichever merges first. See [research.md §2(b)](./research.md) and [`.specify/memory/migrations.md`](../../.specify/memory/migrations.md)
+**Storage**: PostgreSQL 16; Flyway versioned migrations. This feature owns V9 (`admin_dish_approval_pricing`), integrated after spec 008 claimed V8, and V10 (`support_admin_dish_cancellation`) to add C-02's `CANCELLED` value to the dish-status and immutable review-event constraints. V7 and V9 are already applied and MUST NOT be edited in place. The narrow D1 amendment authorizing the status-constraint extension is recorded in this plan and the spec clarification log. The registry at [`.specify/memory/migrations.md`](../../.specify/memory/migrations.md) remains authoritative for subsequent numbering.
 
 **Testing**: JUnit 5 + AssertJ + Mockito, Spring MockMvc slice tests, Testcontainers PostgreSQL 16 · Vitest 2 + @testing-library/react + jsdom
 
@@ -45,7 +46,7 @@ derives, because ±0.01 pp is not achievable for low prices.
 
 **Constraints**: exact decimal arithmetic for every monetary and margin value (scale 2 money, scale 4 quantities/unit costs, `HALF_UP`); no financial datum reachable through any Chef-facing payload (FR-023); strict tenant isolation on every query; one `@RestControllerAdvice` in the backend — extend `com.easyeat.auth.controller.GlobalExceptionHandler`, never add a competing advice
 
-**Scale/Scope**: 33 functional requirements (26 original plus FR-027 to FR-033, added 2026-10-28 to bring the interface behaviour and the diner-visibility condition under the specification's authority), 4 user stories, 7 HTTP endpoints, 2 new tables, 3 new columns, 1 migration, ~10 new frontend components across 1 new admin route plus 1 Chef-side banner
+**Scale/Scope (updated 2026-11-01 for C-02)**: 42 functional requirements, 5 user stories, 8 HTTP operations, 2 new tables, 3 new `dishes` columns, and 2 migrations owned by this feature (V9 audit/schema creation; V10 adds `CANCELLED` to both persisted status/event domains without rewriting V7 or V9). Includes the full-stack admin review flow and Chef-side read-only cancelled state. The Chef's separate deletion of a `DRAFT` remains governed by spec 005; a Chef cannot delete a dish in review.
 
 **Sequencing — stated plainly**: spec 005 has delivered `V7__chef_dish_management.sql` and the dish
 domain on `origin/005-chef-dish-management` (issue #137, PR #138, merged 2026-10-27), but that branch
@@ -128,7 +129,7 @@ This requirement asked the owners of specs 003 and 005 to accept `@Version` on
 consolidated onto that shared entity rather than creating a back-office-only one. It is withdrawn
 because its premise — that a version attribute is the only available mechanism — is false.
 
-**What replaces it.** Each of FR-025's three write operations is issued as a single conditional
+**What replaces it.** Each of FR-025's four write operations is issued as a single conditional
 `UPDATE` that restates the state the Administrator acted upon, and the operation is accepted only if
 it affected exactly one row:
 
@@ -140,7 +141,7 @@ it affected exactly one row:
 Zero affected rows means another Administrator committed first — exactly the condition FR-025
 describes — and is surfaced as HTTP 409 Conflict.
 
-**Why this is preferable, not merely cheaper.** It confines the guard to the three operations FR-025
+**Why this is preferable, not merely cheaper.** It confines the guard to the four operations FR-025
 names instead of changing failure behaviour on every write path that touches `dishes`: spec 003's
 catalog writes and spec 005's submit transition keep the semantics their own tests assert. It adds
 no column, so this feature's migration alters the shared table only with its own columns. And it
@@ -317,7 +318,7 @@ specs/007-admin-dish-approval-pricing/
 ├── data-model.md        # Phase 1: entities, migration DDL, state machine, FR traceability
 ├── quickstart.md        # Phase 1: runnable validation guide
 ├── contracts/
-│   └── openapi.yaml     # Phase 1: the 7-endpoint HTTP surface
+│   └── openapi.yaml     # Phase 1: the 8-operation HTTP surface, including C-02 cancellation
 ├── checklists/          # Pre-existing quality checklist
 └── tasks.md             # Phase 2 (/speckit-tasks) - NOT created by this command
 ```
@@ -342,7 +343,7 @@ dish/                                           # package created by spec 005 (e
 │   ├── RetailPricingCalculator.java            # NEW: pure BigDecimal component, Spring-free, no request types
 │   ├── DishReviewInboxService.java             # NEW: tabs, FIFO, pagination, resubmission derivation (2 queries/page)
 │   ├── DishReviewDetailService.java            # NEW: detail + embedded 006 audit + gate evaluation + margin
-│   ├── DishGovernanceService.java              # NEW: price save, approve, reject - the three transactional writes
+│   ├── DishGovernanceService.java              # NEW: price save, approve, reject, cancel - the four transactional writes
 │   └── ChefReviewFeedbackService.java          # NEW: financially blind projection for the Chef
 ├── controller/
 │   ├── AdminDishReviewController.java          # NEW: GET inbox, review-detail, review-history
@@ -412,6 +413,7 @@ matching how `/admin/staff` and `/admin/inventory` are declared today.
 | `PUT /api/v1/admin/dishes/{id}/retail-price` | FR-009..FR-011, FR-013, FR-014, FR-025 | ADMINISTRADOR | `PENDING_PRICE` or `PUBLISHED` | `retailPrice`, **`expectedRetailPrice` (required, nullable)**, `acknowledgeNegativeMargin` | `DishPricingResponse` | 400 price or missing expected price, 401, 403, 404, 409 (invalid-state, stale-price), 422 acknowledgement |
 | `POST /api/v1/admin/dishes/{id}/approval` | FR-015..FR-019, FR-025 | ADMINISTRADOR | `PENDING_PRICE` → `PUBLISHED`; `PUBLISHED` → 200 no-op; `DRAFT` → 409 | 2 acknowledgement flags | `DishApprovalResponse` (`alreadyPublished`) | 401, 403, 404, 409 (invalid-state, already-decided), 422 (publication-gate-failed, acknowledgement) |
 | `POST /api/v1/admin/dishes/{id}/rejection` | FR-020..FR-022, FR-024, FR-025 | ADMINISTRADOR | `PENDING_PRICE` only | `comment` 10..1000 | `DishRejectionResponse` (`cycleNumber`) | 400 comment, 401, 403, 404, 409 (invalid-state, already-decided) |
+| `POST /api/v1/admin/dishes/{id}/cancel` | FR-001, FR-025, FR-038..FR-042, SC-003, SC-009 | ADMINISTRADOR (alias ADMIN) | `PENDING_PRICE` → `CANCELLED` only | no body; UI confirmation precedes request | 204 No Content | 401, 403 (non-admin/cross-tenant), 404, 409 (invalid-state/already-decided) |
 | `GET /api/v1/admin/dishes/{id}/review-history` | FR-010, FR-022, SC-005, SC-008 | ADMINISTRADOR | none | — | `DishAuditHistoryResponse` (review events + price changes, chronological) | 401, 403, 404 |
 | `GET /api/v1/dishes/{id}/review-feedback` | FR-023, SC-003 | CHEF (own establishment) | none | — | `ChefReviewFeedbackResponse` — **no financial property exists on the type** | 401, 403, 404 |
 
@@ -435,19 +437,21 @@ A read-modify-write guarded by a check in Java does **not** deliver first-decisi
 would a `@Version` column by itself. When two administrators open the panel minutes apart, each
 request re-reads the row inside its own transaction, so two *sequential* transactions both load
 current data and both commit happily; and a version check only helps while the two transactions
-genuinely overlap. The mechanism chosen instead is uniform: **every one of FR-025's three operations
+genuinely overlap. The mechanism chosen instead is uniform: **every one of FR-025's four operations
 is a single conditional `UPDATE` that restates the state the Administrator acted upon, and succeeds
 only if it affected exactly one row.** Zero rows is the conflict signal; the handler then re-reads the
 row to report what the current state actually is.
 
-- **Approve and reject** — both are legal only from `PENDING_PRICE`, so the predicate is
+- **Approve, reject and cancel** — all are legal only from `PENDING_PRICE`, so the predicate is
   `AND status = 'PENDING_PRICE'`. This covers the sequential and the overlapping race with the same
   statement, which is why no version column is needed for either. In the overlapping case PostgreSQL's
   default `READ COMMITTED` does the work: the second `UPDATE` blocks on the row lock, and when the
   first commits it re-evaluates its predicate against the updated row, finds `status` no longer
   matches, and affects zero rows. A late rejection of a now-published dish and a late approval of a
   now-`DRAFT` dish both get **409 `dish-already-decided`** with `currentStatus` and `decidedAt`, so
-  the UI can say *"otro administrador ya decidió este plato"*. Approving an already-published dish
+  the UI can say *"otro administrador ya decidió este plato"*. Cancellation sets `is_active = false`
+  and writes its `CANCELLED` history event in the same transaction; if its conditional update loses,
+  no audit event is written. Approving an already-published dish
   remains the one benign case: 200 idempotent, no audit row, no state change (FR-018).
 - **Reprice** — the status predicate **cannot** help, because a price save is legal from the dish's
   current state no matter how stale the panel is. Two concurrent saves would otherwise produce a
@@ -461,12 +465,12 @@ row to report what the current state actually is.
 
 Two alternatives were rejected. `@Version` on `catalog.domain.Dish` was the original design and is
 withdrawn under R-005-4: it would have changed failure behaviour on spec 003's and spec 005's write
-paths in order to guard three operations belonging to this feature. An `If-Match`/`ETag` header was
+paths in order to guard operations belonging to this feature. An `If-Match`/`ETag` header was
 also rejected: the codebase has no ETag infrastructure, and a body field is visible in the OpenAPI
 schema and consistent with existing request DTOs.
 
 **What this mechanism does not cover, stated plainly.** The guard is per-operation, not per-row. A
-write path added later to `dishes` outside these three operations inherits no protection from it,
+write path added later to `dishes` outside these four operations inherits no protection from it,
 whereas a version column would have covered it automatically. That exposure is registered in
 Complexity Tracking alongside the loss of D3's structural guard, and the two share one mitigation:
 any new write path through `catalog/repository/DishRepository` must carry its own predicate.
@@ -653,7 +657,7 @@ services; the publication gate; the audit writes; the conditional-`UPDATE` guard
 criteria: service unit tests pass, including the query-count assertion and `cycle_number` across
 cycles.
 
-**Phase 4 — HTTP surface.** Deliverables: the three controllers, the DTO records, the seven
+**Phase 4 — HTTP surface.** Deliverables: the three controllers, the DTO records, the eight
 exceptions and their handlers in the single `GlobalExceptionHandler`. Exit criteria: MockMvc slices
 and the contract test pass; the full RBAC matrix and the 409 taxonomy are verified.
 
@@ -666,14 +670,15 @@ and types, plus the Chef feedback banner. Exit criteria: the Vitest suites pass 
 [quickstart.md](./quickstart.md) UI checklist is walked end to end.
 
 **Phase 7 — Integration and concurrency.** Deliverables: the Testcontainers suites and
-`DishDecisionConcurrencyTest`. Exit criteria: all three quickstart scenarios reproduce as documented.
+`DishDecisionConcurrencyTest`. Exit criteria: all four quickstart scenarios reproduce as documented.
 
 ## Complexity Tracking
 
 | Violation / debt | Why needed | Simpler alternative rejected because |
 |---|---|---|
-| Extending 005's `com.easyeat.dish.domain.DishStatus` with `PUBLISHED` from this feature — a D1 exception, **decided 2026-10-28** by a recorded amendment granting specs 005 and 007 joint ownership of that one enum (R-005-3) | The database has admitted `PUBLISHED` since PR #138 but the enum does not, so the approval transition has no value to assign; spec 005 asked this feature to make the change and the escalation on issue #133 drew no reply | Waiting for 005 to add the constant remained the cheaper path and was preferred until it stopped arriving; vendoring a second status enum here would create two sources of truth for the dish lifecycle. **Limits of the amendment**: it covers that enum alone, authorises addition only — not reordering, renaming or removal, since the enum is persisted by name — and requires no change in 005. **Owner of the risk**: any future constant added to `DishStatus` by either spec must be reflected in `chk_dishes_status`, which this feature's migration does not touch |
-| ~~`@Version` added to the **shared** `catalog.domain.Dish`~~ — **retired 2026-10-28, not accepted as debt.** FR-025 is satisfied instead by a conditional `UPDATE` in this feature's own repository, guarded on the source status for approval and rejection and on the previously-read price for repricing (**R-005-4**, withdrawn) | The debt as written would have changed failure behaviour on spec 003's and spec 005's write paths in order to guard three operations belonging to this feature | The conditional `UPDATE` is both narrower and simpler, so there is nothing left to accept: it adds no column, needs no agreement from two other owners, and crosses no D1 boundary. **What it does not cover**: a write path added later to `dishes` outside these three operations gets no guard from it — that is the same exposure recorded in the row below |
+| Extending 005's `com.easyeat.dish.domain.DishStatus` with `PUBLISHED` from this feature — a D1 exception, **decided 2026-10-28** by a recorded amendment granting specs 005 and 007 joint ownership of that one enum (R-005-3) | The database has admitted `PUBLISHED` since PR #138 but the enum did not, so the approval transition had no value to assign | The recorded amendment remains narrow: it covers that enum and additive constants only. The C-02 amendment below separately authorizes `CANCELLED`; no other `com.easyeat.dish.domain` object is changed |
+| Extending spec 005's `chk_dishes_status` to admit `CANCELLED` — a narrow D1 exception, **authorized 2026-11-01** by the user's explicit C-02 request and recorded in `spec.md` Clarifications | Applied V7's CHECK rejects `CANCELLED`, so the required conditional update cannot persist the terminal state; changing V7 in place would break existing databases | V10 adds the single enum value to the existing CHECK while preserving `DRAFT`, `PENDING_PRICE` and `PUBLISHED`; it also extends V9's review-event CHECK for `CANCELLED`. V7 and V9 remain immutable and all other spec 005 schema objects stay untouched |
+| ~~`@Version` added to the **shared** `catalog.domain.Dish`~~ — **retired 2026-10-28, not accepted as debt.** FR-025 is satisfied instead by a conditional `UPDATE` in this feature's own repository, guarded on the source status for approval, rejection and cancellation and on the previously-read price for repricing (**R-005-4**, withdrawn) | The debt as written would have changed failure behaviour on spec 003's and spec 005's write paths in order to guard four operations belonging to this feature | The conditional `UPDATE` is both narrower and simpler, so there is nothing left to accept: it adds no column and changes no unrelated writer. **What it does not cover**: a write path added later to `dishes` outside these four operations gets no guard from it — that is the same exposure recorded in the row below |
 | Loss of the structural guard D3 provided: the diner read path stays read-only by **review** rather than by `@Immutable` | There is one entity and it must remain writable, so the annotation that made a bypass impossible cannot be applied | Re-introducing a second mapping would duplicate the aggregate spec 005 just consolidated, and would reopen exactly the two-owner confusion D1 exists to prevent. **Owner of the risk**: any future change that adds a write path through `catalog/repository/DishRepository` must carry the version predicate; today that repository declares only `findByTenantIdAndIsActiveTrue` and `findByIdIn` |
 | Deprecated `dishes.price` kept alongside `retail_price` | Dropping it would break spec 003's tests and the dev seed inside this feature's scope | Reusing `price` as the PVP cannot express "not yet priced" (`NOT NULL`) and contradicts the spec's Key Entities. **Owner of removal**: the Sprint 3 catalog-lifecycle feature (CHF-2.2.5) |
 | ~~Duplicated audit-DTO assembly if R-006-1 is refused~~ — **closed 2026-10-28, never incurred.** Spec 006 moved its status gate into `AdminDishCostAuditController`, so `FoodCostAuditService` is injectable for `PUBLISHED` dishes and nothing is duplicated | FR-011/FR-012 need the Food Cost for published dishes, which 006's previously gated service could not provide | Duplicating the *calculation* was forbidden (006 owns it) and calling 006's HTTP endpoint from the server would have been in-process HTTP; the question became moot once the gate moved |

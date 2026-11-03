@@ -18,7 +18,7 @@ import java.util.UUID;
 /**
  * Visibility switches of the online payment methods (ADM-2.2.3). It stores a boolean per method
  * and nothing else: no gateway, credential or charge (A-005). A method without a row is enabled,
- * because only the establishments that existed when V12 ran were seeded; the row is created by
+ * because only the establishments that existed when V15 ran were seeded; the row is created by
  * the first admin toggle. Reading a missing row as disabled would block the checkout of every new
  * establishment (EC-009).
  */
