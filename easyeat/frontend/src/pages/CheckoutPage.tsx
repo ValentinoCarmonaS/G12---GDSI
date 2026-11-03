@@ -8,7 +8,7 @@ import { TimeSlotGrid } from '../components/checkout/TimeSlotGrid';
 import { CheckoutSummary } from '../components/checkout/CheckoutSummary';
 import { ConflictNotificationModal } from '../components/checkout/ConflictNotificationModal';
 import { PendingOrderCountdown } from '../components/checkout/PendingOrderCountdown';
-import { useCart } from '../hooks/useCart';
+import { useCart } from '../context/CartContext';
 import { useCheckoutFulfillment } from '../hooks/useCheckoutFulfillment';
 import { useTimeSlotPolling } from '../hooks/useTimeSlotPolling';
 import { createOrder, cancelOrder } from '../api/orderApi';
