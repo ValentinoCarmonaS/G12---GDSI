@@ -16,7 +16,7 @@ describe('AdminLogin Component Integration (T033, ADM-1.1.1)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
-    localStorage.clear();
+    window.localStorage?.clear();
     vi.spyOn(authApi, 'me').mockResolvedValue(undefined);
   });
 
