@@ -71,17 +71,17 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T018 [P] [US2] Create unit tests in `easyeat/backend/src/test/java/com/easyeat/order/PickupSlotServiceTest.java` verifying 15-minute slot projection, 7 operating days calculation, exclusion of closed/non-operating days, and 30-minute lead time buffer enforcement in `America/Argentina/Buenos_Aires`.
-- [ ] T019 [P] [US2] Create component tests in `easyeat/frontend/src/test/checkout/TimeSlotGrid.test.tsx` verifying operating date selection, slot grid rendering, disabled visual state for past slots and lead-time violations, and selection callback.
+- [x] T018 [P] [US2] Create unit tests in `easyeat/backend/src/test/java/com/easyeat/order/PickupSlotServiceTest.java` verifying 15-minute slot projection, 7 operating days calculation, exclusion of closed/non-operating days, and 30-minute lead time buffer enforcement in `America/Argentina/Buenos_Aires`.
+- [x] T019 [P] [US2] Create component tests in `easyeat/frontend/src/test/checkout/TimeSlotGrid.test.tsx` verifying operating date selection, slot grid rendering, disabled visual state for past slots and lead-time violations, and selection callback.
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Create DTOs `TimeSlotAvailability.java` and `PickupSlotCatalogResponse.java` in `easyeat/backend/src/main/java/com/easyeat/order/dto/` representing slot intervals (`startTime`, `endTime`), total capacity, reserved count, occupancy rate, and status per `openapi.yaml`.
-- [ ] T021 [US2] Implement slot catalog projection engine in `PickupSlotService.java` in `easyeat/backend/src/main/java/com/easyeat/order/service/PickupSlotService.java` generating daily slots from `Establishment` operating hours, filtering by 30-minute lead time buffer, and calculating booked orders.
-- [ ] T022 [US2] Implement `PickupSlotController.java` in `easyeat/backend/src/main/java/com/easyeat/order/controller/PickupSlotController.java` exposing `GET /api/v1/establishments/{id}/pickup-slots` with alias `/time-slots` (`@GetMapping({"/establishments/{id}/pickup-slots", "/establishments/{id}/time-slots"})` for Spec 010 interoperability) with role security `@PreAuthorize("hasRole('COMENSAL')")` and date parameter validation.
-- [ ] T023 [P] [US2] Implement API client functions in `easyeat/frontend/src/api/orderApi.ts` for `fetchPickupSlots`, `createOrder`, `getOrderById`, and `cancelOrder`.
-- [ ] T024 [US2] Implement `OperatingDatePicker.tsx` component in `easyeat/frontend/src/components/checkout/OperatingDatePicker.tsx` displaying up to 7 operating days horizontally with day/date cards, active state styling, and skipping non-operating days.
-- [ ] T025 [US2] Implement `TimeSlotGrid.tsx` component in `easyeat/frontend/src/components/checkout/TimeSlotGrid.tsx` rendering 15-minute slot chips, disabling unavailable/lead-time-violating slots, and highlighting active selection.
+- [x] T020 [P] [US2] Create DTOs `TimeSlotAvailability.java` and `PickupSlotCatalogResponse.java` in `easyeat/backend/src/main/java/com/easyeat/order/dto/` representing slot intervals (`startTime`, `endTime`), total capacity, reserved count, occupancy rate, and status per `openapi.yaml`.
+- [x] T021 [US2] Implement slot catalog projection engine in `PickupSlotService.java` in `easyeat/backend/src/main/java/com/easyeat/order/service/PickupSlotService.java` generating daily slots from `Establishment` operating hours, filtering by 30-minute lead time buffer, and calculating booked orders.
+- [x] T022 [US2] Implement `PickupSlotController.java` in `easyeat/backend/src/main/java/com/easyeat/order/controller/PickupSlotController.java` exposing `GET /api/v1/establishments/{id}/pickup-slots` with alias `/time-slots` (`@GetMapping({"/establishments/{id}/pickup-slots", "/establishments/{id}/time-slots"})` for Spec 010 interoperability) with role security `@PreAuthorize("hasRole('COMENSAL')")` and date parameter validation.
+- [x] T023 [P] [US2] Implement API client functions in `easyeat/frontend/src/api/orderApi.ts` for `fetchPickupSlots`, `createOrder`, `getOrderById`, and `cancelOrder`.
+- [x] T024 [US2] Implement `OperatingDatePicker.tsx` component in `easyeat/frontend/src/components/checkout/OperatingDatePicker.tsx` displaying up to 7 operating days horizontally with day/date cards, active state styling, and skipping non-operating days.
+- [x] T025 [US2] Implement `TimeSlotGrid.tsx` component in `easyeat/frontend/src/components/checkout/TimeSlotGrid.tsx` rendering 15-minute slot chips, disabling unavailable/lead-time-violating slots, and highlighting active selection.
 
 **Checkpoint**: User Stories 1 AND 2 are functional together: diners can select a valid operating date and 15-minute slot with lead time protection.
 
