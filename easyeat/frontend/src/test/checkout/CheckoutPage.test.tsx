@@ -26,6 +26,16 @@ vi.mock('../../api/orderApi', () => ({
         status: 'AVAILABLE',
         isSelectable: true,
       },
+      {
+        startTime: '13:15:00',
+        endTime: '13:30:00',
+        date: '2026-11-03',
+        maxCapacity: 10,
+        bookedCount: 9,
+        occupancyPercentage: 90,
+        status: 'HIGH_DEMAND',
+        isSelectable: true,
+      },
     ],
   }),
 }));
@@ -37,30 +47,54 @@ vi.mock('../../hooks/useAuth', () => ({
   }),
 }));
 
-describe('CheckoutPage Component (T041 / US4)', () => {
+vi.mock('../../api/profileApi', () => ({
+  profileApi: {
+    getProfile: vi.fn().mockResolvedValue({ avatarUrl: null }),
+  },
+}));
+
+vi.mock('../../api/adminNotificationApi', () => ({
+  adminNotificationApi: {
+    getUnreadCount: vi.fn().mockResolvedValue(0),
+    getNotifications: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+describe('T044: CheckoutPage End-to-End Integration Tests', () => {
+  const clearCartMock = vi.fn();
+
   const mockItems: CartItem[] = [
     {
       dishId: 'dish-1',
       tenantId: 'est-123',
       name: 'Hamburguesa Completa',
       price: 2500,
+      quantity: 2,
+      subtotal: 5000,
+    },
+    {
+      dishId: 'dish-2',
+      tenantId: 'est-123',
+      name: 'Papas Rústicas',
+      price: 1200,
       quantity: 1,
+      subtotal: 1200,
     },
   ];
 
   const renderWithProviders = (items: CartItem[] = mockItems) => {
     return render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/checkout?establishmentId=est-123']}>
         <CartContext.Provider
           value={{
             items,
             addItem: vi.fn(),
             removeItem: vi.fn(),
             updateQuantity: vi.fn(),
-            clearCart: vi.fn(),
+            clearCart: clearCartMock,
             reEvaluateCompliance: vi.fn(),
             totalAmount: items.reduce((acc, i) => acc + i.price * i.quantity, 0),
-            totalCount: items.length,
+            totalCount: items.reduce((acc, i) => acc + i.quantity, 0),
             hasConflictingItems: false,
             toastMessage: null,
           }}
@@ -71,6 +105,10 @@ describe('CheckoutPage Component (T041 / US4)', () => {
     );
   };
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders empty cart state when no items in cart', () => {
     renderWithProviders([]);
 
@@ -78,14 +116,14 @@ describe('CheckoutPage Component (T041 / US4)', () => {
     expect(screen.getByRole('button', { name: /explorar carta/i })).toBeInTheDocument();
   });
 
-  it('renders fulfillment mode selector and checkout summary when cart has items', () => {
+  it('loads cart items from CartContext and displays summary total', () => {
     renderWithProviders();
 
     expect(screen.getByText(/modalidad de entrega/i)).toBeInTheDocument();
-    expect(screen.getByText(/lo antes posible/i)).toBeInTheDocument();
-    expect(screen.getByText(/para más tarde/i)).toBeInTheDocument();
+    expect(screen.getByText('Hamburguesa Completa')).toBeInTheDocument();
+    expect(screen.getByText('Papas Rústicas')).toBeInTheDocument();
     expect(screen.getByText(/resumen del pedido/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /confirmar pedido/i })).toBeDisabled();
+    expect(screen.getByText('$6200.00')).toBeInTheDocument();
   });
 
   it('enables confirm button when IMMEDIATE mode is selected', async () => {
@@ -98,37 +136,77 @@ describe('CheckoutPage Component (T041 / US4)', () => {
     expect(confirmButton).not.toBeDisabled();
   });
 
-  it('successfully creates order and transitions to pending order countdown screen', async () => {
+  it('selects date and 15-minute slot from grid, submits order and transitions to 15:00 countdown timer view', async () => {
     const mockOrderResponse: any = {
       orderId: 'order-999',
       status: 'PENDING_PAYMENT',
-      fulfillmentMode: 'IMMEDIATE',
+      fulfillmentMode: 'SCHEDULED',
       pickupDate: '2026-11-03',
-      timeSlotStart: '12:00:00',
-      timeSlotEnd: '12:30:00',
-      totalAmount: 2500,
+      timeSlotStart: '13:00:00',
+      timeSlotEnd: '13:15:00',
+      totalAmount: 6200,
       expiresAt: new Date(Date.now() + 900000).toISOString(),
       serverTime: new Date().toISOString(),
-      items: [],
+      items: [
+        {
+          dishId: 'dish-1',
+          dishName: 'Hamburguesa Completa',
+          quantity: 2,
+          unitPrice: 2500,
+          subtotal: 5000,
+        },
+      ],
     };
 
     vi.mocked(orderApi.createOrder).mockResolvedValueOnce(mockOrderResponse);
 
     renderWithProviders();
 
-    const immediateOption = screen.getByText(/lo antes posible/i);
-    fireEvent.click(immediateOption);
+    // 1. Select Scheduled Mode ("Para más tarde")
+    const scheduledOption = screen.getByText(/para más tarde/i);
+    fireEvent.click(scheduledOption);
 
+    // 2. Select Date from operating days
+    await waitFor(() => {
+      expect(screen.getByText(/Seleccioná el día de retiro/i)).toBeInTheDocument();
+    });
+
+    const dayButtons = screen.getAllByRole('button').filter((btn) => btn.className.includes('min-w-[70px]'));
+    expect(dayButtons.length).toBeGreaterThan(0);
+    fireEvent.click(dayButtons[0]);
+
+    // 3. Select 15-minute time slot from grid
+    await waitFor(() => {
+      const slotButton = screen.getByText(/13:00\s*-\s*13:15/i);
+      expect(slotButton).toBeInTheDocument();
+      fireEvent.click(slotButton);
+    });
+
+    // 4. Confirm button should now be enabled
     const confirmButton = screen.getByRole('button', { name: /confirmar pedido/i });
+    expect(confirmButton).not.toBeDisabled();
+
+    // 5. Submit order
     fireEvent.click(confirmButton);
 
+    // 6. Smoothly transition to PendingOrderCountdown view
     await waitFor(() => {
+      expect(orderApi.createOrder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          establishmentId: 'est-123',
+          fulfillmentMode: 'SCHEDULED',
+          timeSlotStart: '13:00:00',
+          timeSlotEnd: '13:15:00',
+        })
+      );
+      expect(clearCartMock).toHaveBeenCalled();
       expect(screen.getByText(/reserva en espera de pago/i)).toBeInTheDocument();
       expect(screen.getByText(/#order-99/i)).toBeInTheDocument();
+      expect(screen.getByText(/15:00|14:59/)).toBeInTheDocument();
     });
   });
 
-  it('displays conflict modal when order creation encounters 409 SLOT_SOLD_OUT', async () => {
+  it('receives 409 conflict modal (SLOT_SOLD_OUT) and recovers without losing cart state', async () => {
     const error409 = {
       response: {
         status: 409,
@@ -143,15 +221,48 @@ describe('CheckoutPage Component (T041 / US4)', () => {
 
     renderWithProviders();
 
-    const immediateOption = screen.getByText(/lo antes posible/i);
-    fireEvent.click(immediateOption);
+    // Select Scheduled Mode
+    const scheduledOption = screen.getByText(/para más tarde/i);
+    fireEvent.click(scheduledOption);
 
+    // Select Date
+    await waitFor(() => {
+      expect(screen.getByText(/Seleccioná el día de retiro/i)).toBeInTheDocument();
+    });
+
+    const dayButtons = screen.getAllByRole('button').filter((btn) => btn.className.includes('min-w-[70px]'));
+    fireEvent.click(dayButtons[0]);
+
+    // Select Slot
+    await waitFor(() => {
+      const slotButton = screen.getByText(/13:00\s*-\s*13:15/i);
+      fireEvent.click(slotButton);
+    });
+
+    // Confirm
     const confirmButton = screen.getByRole('button', { name: /confirmar pedido/i });
     fireEvent.click(confirmButton);
 
+    // Modal appears
     await waitFor(() => {
       expect(screen.getByTestId('conflict-notification-modal')).toBeInTheDocument();
       expect(screen.getByText(/franja horaria agotada/i)).toBeInTheDocument();
+      expect(screen.getByText(/La franja horaria seleccionada acaba de agotarse/i)).toBeInTheDocument();
+    });
+
+    // Cart items are preserved
+    expect(clearCartMock).not.toHaveBeenCalled();
+    expect(screen.getByText('Hamburguesa Completa')).toBeInTheDocument();
+    expect(screen.getByText('Papas Rústicas')).toBeInTheDocument();
+
+    // Recover by clicking choose another slot
+    const chooseAnotherButton = screen.getByRole('button', { name: /elegir otra franja/i });
+    fireEvent.click(chooseAnotherButton);
+
+    // Modal closes, cart state is still intact
+    await waitFor(() => {
+      expect(screen.queryByTestId('conflict-notification-modal')).not.toBeInTheDocument();
+      expect(screen.getByText('Hamburguesa Completa')).toBeInTheDocument();
     });
   });
 });
