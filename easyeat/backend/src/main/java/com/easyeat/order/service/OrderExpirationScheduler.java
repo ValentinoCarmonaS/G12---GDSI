@@ -22,6 +22,7 @@ public class OrderExpirationScheduler {
     private final OrderRepository orderRepository;
     private final Clock clock;
 
+    @Autowired
     public OrderExpirationScheduler(OrderRepository orderRepository,
                                     @Autowired(required = false) Clock clock) {
         this.orderRepository = orderRepository;
