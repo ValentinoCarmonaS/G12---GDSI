@@ -11,16 +11,27 @@ import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.dto.CreateOrderItemRequest;
 import com.easyeat.order.dto.CreateOrderRequest;
 import com.easyeat.order.dto.OrderCreatedResponse;
+import com.easyeat.order.dto.OrderDetailResponse;
+import com.easyeat.order.dto.OrderItemDetail;
+import com.easyeat.order.dto.OrderSummaryResponse;
+import com.easyeat.order.exception.ActiveReservationExistsException;
 import com.easyeat.order.exception.DishPausedByChefException;
 import com.easyeat.order.exception.InvalidFulfillmentModeException;
+import com.easyeat.order.exception.InvalidOrderStateException;
+import com.easyeat.order.exception.LeadTimeViolationException;
+import com.easyeat.order.exception.SlotCapacityExceededException;
 import com.easyeat.order.repository.OrderRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +44,22 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final EstablishmentRepository establishmentRepository;
     private final DishRepository dishRepository;
+    private final Clock clock;
+
+    public OrderService(OrderRepository orderRepository,
+                        EstablishmentRepository establishmentRepository,
+                        DishRepository dishRepository,
+                        @Autowired(required = false) Clock clock) {
+        this.orderRepository = orderRepository;
+        this.establishmentRepository = establishmentRepository;
+        this.dishRepository = dishRepository;
+        this.clock = (clock != null) ? clock : Clock.systemDefaultZone();
+    }
 
     public OrderService(OrderRepository orderRepository,
                         EstablishmentRepository establishmentRepository,
                         DishRepository dishRepository) {
-        this.orderRepository = orderRepository;
-        this.establishmentRepository = establishmentRepository;
-        this.dishRepository = dishRepository;
+        this(orderRepository, establishmentRepository, dishRepository, Clock.systemDefaultZone());
     }
 
     @Transactional
@@ -54,14 +74,67 @@ public class OrderService {
             }
         }
 
-        // Check active pending reservation (Anti-acaparamiento: Max 1 pending order per diner)
-        if (orderRepository.hasActivePendingOrder(userId, Instant.now())) {
-            throw new IllegalStateException("El usuario ya posee una orden pendiente de confirmación");
+        Instant nowInstant = clock.instant();
+
+        // Check active pending reservation (Anti-acaparamiento: Max 1 pending order per diner - FR-027)
+        if (orderRepository.hasActivePendingOrder(userId, nowInstant)) {
+            throw new ActiveReservationExistsException("Ya poseés una orden pendiente de confirmación. Por favor, completá o cancelá tu reserva actual para continuar.");
         }
 
         // Lock establishment for atomic serialization (FCFS)
         Establishment establishment = establishmentRepository.findByIdForUpdate(request.getEstablishmentId())
                 .orElseThrow(() -> new IllegalArgumentException("Establecimiento no encontrado"));
+
+        ZoneId zoneId;
+        try {
+            zoneId = ZoneId.of(establishment.getTimezone() != null ? establishment.getTimezone() : "America/Argentina/Buenos_Aires");
+        } catch (Exception e) {
+            zoneId = ZoneId.of("America/Argentina/Buenos_Aires");
+        }
+
+        LocalDate today = LocalDate.ofInstant(nowInstant, zoneId);
+        LocalTime nowTime = LocalTime.ofInstant(nowInstant, zoneId);
+        int maxCapacity = establishment.getMaxCapacityPerSlot() != null ? establishment.getMaxCapacityPerSlot() : 10;
+        int leadTime = establishment.getLeadTimeMinutes() != null ? establishment.getLeadTimeMinutes() : 30;
+
+        // Calculate slot details and clear/omit slot fields when IMMEDIATE
+        LocalDate pickupDate;
+        LocalTime timeSlotStart;
+        LocalTime timeSlotEnd;
+
+        if (request.getFulfillmentMode() == FulfillmentMode.IMMEDIATE) {
+            pickupDate = today;
+            timeSlotStart = nowTime.truncatedTo(ChronoUnit.MINUTES);
+            timeSlotEnd = timeSlotStart.plusMinutes(leadTime);
+
+            LocalTime ongoingSlot = establishment.calculateCurrentOngoingSlot(nowTime);
+            if (ongoingSlot != null) {
+                long ongoingBooked = orderRepository.countActiveOrdersBySlot(establishment.getId(), today, ongoingSlot, nowInstant);
+                if (ongoingBooked >= maxCapacity) {
+                    throw new SlotCapacityExceededException("Cocina al límite de capacidad actual — Seleccioná una reserva programada.");
+                }
+            }
+        } else {
+            pickupDate = request.getPickupDate();
+            timeSlotStart = request.getTimeSlotStart();
+            timeSlotEnd = request.getTimeSlotEnd() != null
+                    ? request.getTimeSlotEnd()
+                    : timeSlotStart.plusMinutes(15);
+
+            // Lead-time validation for today's reservations (FR-009)
+            if (pickupDate.isEqual(today)) {
+                LocalTime minAllowed = nowTime.plusMinutes(leadTime);
+                if (timeSlotStart.isBefore(minAllowed)) {
+                    throw new LeadTimeViolationException("La franja seleccionada debe contar con al menos " + leadTime + " minutos de anticipación respecto de la hora actual.");
+                }
+            }
+
+            // Zero overbooking capacity check (FR-016, FR-017)
+            long currentBooked = orderRepository.countActiveOrdersBySlot(establishment.getId(), pickupDate, timeSlotStart, nowInstant);
+            if (currentBooked >= maxCapacity) {
+                throw new SlotCapacityExceededException("La franja horaria seleccionada acaba de agotarse. Por favor, seleccioná una nueva franja para continuar.");
+            }
+        }
 
         // Validate dishes and chef pause status (FR-019 / Spec 013)
         List<UUID> dishIds = request.getItems().stream()
@@ -78,30 +151,10 @@ public class OrderService {
                 throw new IllegalArgumentException("Plato no encontrado con ID: " + itemReq.getDishId());
             }
 
-            // FR-019: Check if paused by chef (interoperable description check or future-proof flag)
             boolean isPaused = (dish.getDescription() != null && dish.getDescription().contains("[PAUSED_BY_CHEF]"));
             if (isPaused) {
                 throw new DishPausedByChefException("El plato '" + dish.getName() + "' ha sido pausado temporalmente por la cocina. Por favor, retiralo del carrito para continuar.");
             }
-        }
-
-        // Calculate slot details and clear/omit slot fields when IMMEDIATE
-        LocalDate pickupDate;
-        LocalTime timeSlotStart;
-        LocalTime timeSlotEnd;
-
-        if (request.getFulfillmentMode() == FulfillmentMode.IMMEDIATE) {
-            pickupDate = LocalDate.now();
-            LocalTime nowTime = LocalTime.now();
-            int leadTime = establishment.getLeadTimeMinutes() != null ? establishment.getLeadTimeMinutes() : 30;
-            timeSlotStart = nowTime.truncatedTo(ChronoUnit.MINUTES);
-            timeSlotEnd = timeSlotStart.plusMinutes(leadTime);
-        } else {
-            pickupDate = request.getPickupDate();
-            timeSlotStart = request.getTimeSlotStart();
-            timeSlotEnd = request.getTimeSlotEnd() != null
-                    ? request.getTimeSlotEnd()
-                    : timeSlotStart.plusMinutes(15);
         }
 
         // Calculate total and order items
@@ -115,10 +168,9 @@ public class OrderService {
         order.setTimeSlotEnd(timeSlotEnd);
         order.setStatus(OrderStatus.PENDING_PAYMENT);
 
-        Instant now = Instant.now();
-        order.setCreatedAt(now);
-        order.setUpdatedAt(now);
-        order.setExpiresAt(now.plus(15, ChronoUnit.MINUTES));
+        order.setCreatedAt(nowInstant);
+        order.setUpdatedAt(nowInstant);
+        order.setExpiresAt(nowInstant.plus(15, ChronoUnit.MINUTES));
 
         for (CreateOrderItemRequest itemReq : request.getItems()) {
             Dish dish = dishMap.get(itemReq.getDishId());
@@ -158,5 +210,75 @@ public class OrderService {
                 saved.getCreatedAt()
         );
     }
-}
 
+    @Transactional
+    public OrderDetailResponse getOrderById(UUID orderId, UUID userId) {
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada"));
+
+        Instant nowInstant = clock.instant();
+        Long remainingSeconds = null;
+
+        if (order.getStatus() == OrderStatus.PENDING_PAYMENT && order.getExpiresAt() != null) {
+            long rem = Duration.between(nowInstant, order.getExpiresAt()).getSeconds();
+            if (rem <= 0) {
+                order.setStatus(OrderStatus.EXPIRED);
+                order.setUpdatedAt(nowInstant);
+                order = orderRepository.save(order);
+                remainingSeconds = 0L;
+            } else {
+                remainingSeconds = rem;
+            }
+        }
+
+        List<OrderItemDetail> itemDetails = order.getItems().stream()
+                .map(item -> new OrderItemDetail(
+                        item.getId(),
+                        item.getDishId(),
+                        item.getDishName(),
+                        item.getUnitPrice(),
+                        item.getQuantity(),
+                        item.getSubtotal()
+                ))
+                .toList();
+
+        return new OrderDetailResponse(
+                order.getId(),
+                order.getEstablishmentId(),
+                order.getFulfillmentMode(),
+                order.getPickupDate(),
+                order.getTimeSlotStart(),
+                order.getTimeSlotEnd(),
+                order.getStatus(),
+                order.getTotalAmount(),
+                order.getExpiresAt(),
+                remainingSeconds,
+                nowInstant,
+                itemDetails
+        );
+    }
+
+    @Transactional
+    public OrderSummaryResponse cancelOrder(UUID orderId, UUID userId) {
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada"));
+
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new InvalidOrderStateException("La orden no se encuentra en estado cancelable (estado actual: " + order.getStatus() + ")");
+        }
+
+        Instant nowInstant = clock.instant();
+        if (order.getExpiresAt() != null && order.getExpiresAt().isBefore(nowInstant)) {
+            order.setStatus(OrderStatus.EXPIRED);
+            order.setUpdatedAt(nowInstant);
+            orderRepository.save(order);
+            throw new InvalidOrderStateException("La orden ya ha expirado");
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setUpdatedAt(nowInstant);
+        Order saved = orderRepository.save(order);
+
+        return new OrderSummaryResponse(saved.getId(), saved.getStatus(), saved.getUpdatedAt());
+    }
+}
