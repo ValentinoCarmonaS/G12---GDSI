@@ -77,7 +77,6 @@ class PickupSlotServiceTest {
         @DisplayName("Should generate continuous 15-minute intervals between opening and closing time")
         void shouldGenerateContinuousFifteenMinuteIntervals() {
             when(clock.instant()).thenReturn(fixedInstant);
-            when(clock.getZone()).thenReturn(buenosAiresZone);
             when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
 
             LocalDate targetDate = LocalDate.of(2026, 11, 3); // Tuesday (future operating day)
@@ -116,7 +115,6 @@ class PickupSlotServiceTest {
         @DisplayName("Should throw exception when target date is beyond 7 days from today")
         void shouldRejectDateBeyondOperatingWindow() {
             when(clock.instant()).thenReturn(fixedInstant);
-            when(clock.getZone()).thenReturn(buenosAiresZone);
             when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
 
             LocalDate outOfBoundsDate = LocalDate.of(2026, 11, 10); // 8 days later
@@ -130,7 +128,6 @@ class PickupSlotServiceTest {
         @DisplayName("Should throw exception when target date is before today")
         void shouldRejectPastDate() {
             when(clock.instant()).thenReturn(fixedInstant);
-            when(clock.getZone()).thenReturn(buenosAiresZone);
             when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
 
             LocalDate pastDate = LocalDate.of(2026, 11, 1); // Yesterday
@@ -149,7 +146,6 @@ class PickupSlotServiceTest {
         @DisplayName("Should return empty slots list when establishment is closed on that day")
         void shouldReturnEmptySlotsForClosedDay() {
             when(clock.instant()).thenReturn(fixedInstant);
-            when(clock.getZone()).thenReturn(buenosAiresZone);
             when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
 
             LocalDate saturday = LocalDate.of(2026, 11, 7); // Saturday (closed per operatingDays)
@@ -171,7 +167,6 @@ class PickupSlotServiceTest {
             // Fixed time is 12:00:00 on Monday 2026-11-02
             // Lead time is 30 minutes -> cutoff is 12:30:00
             when(clock.instant()).thenReturn(fixedInstant);
-            when(clock.getZone()).thenReturn(buenosAiresZone);
             when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
 
             LocalDate today = LocalDate.of(2026, 11, 2);
@@ -195,3 +190,4 @@ class PickupSlotServiceTest {
         }
     }
 }
+
