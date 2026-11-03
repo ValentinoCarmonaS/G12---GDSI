@@ -52,7 +52,7 @@ Two guarantees still replace the structural one `@Immutable` would have given, a
 | `dish_id` | `UUID` | No | FK → `dishes(id)` `ON DELETE CASCADE` (§4.1). |
 | `tenant_id` | `UUID` | No | Denormalised from the dish so every audit query is tenant-filtered without a join and a cross-tenant read is impossible even if a query forgets the join. |
 | `cycle_number` | `INTEGER` | No | Monotonic from 1 per dish. `CHECK (cycle_number >= 1)`, `UNIQUE (dish_id, cycle_number)` (§4.2). |
-| `event_type` | `VARCHAR(20)` | No | `CHECK (event_type IN ('APPROVED','REJECTED'))` (§4.3). |
+| `event_type` | `VARCHAR(20)` | No | `CHECK (event_type IN ('APPROVED','REJECTED','CANCELLED'))` (§4.3). |
 | `admin_id` | `UUID` | No | FK → `users(id)` `ON DELETE RESTRICT` — an audit row never loses its actor. |
 | `comment` | `TEXT` | Yes | Mandatory for `REJECTED`, 10–1000 characters after trimming, never whitespace-only (FR-021). Optional for `APPROVED`. Enforced in the domain and by a table `CHECK`. Stored as literal text; any HTML/script markup is never interpreted (the frontend renders it as text, React escapes by default). |
 | `created_at` | `TIMESTAMPTZ` | No | `DEFAULT NOW()`. Sole temporal field: a row that cannot change has no `updated_at`. |
@@ -84,7 +84,7 @@ erDiagram
     dishes {
         uuid id PK
         uuid tenant_id
-        varchar_50 status "DRAFT, PENDING_PRICE, PUBLISHED"
+        varchar_50 status "DRAFT, PENDING_PRICE, PUBLISHED, CANCELLED"
         numeric_10_2 retail_price "OWNED BY 007, nullable, > 0"
         timestamptz published_at "OWNED BY 007"
         timestamptz submitted_at "R-005-1, read-only here"
@@ -98,7 +98,7 @@ erDiagram
         uuid dish_id FK
         uuid tenant_id
         int cycle_number
-        varchar_20 event_type "APPROVED, REJECTED"
+        varchar_20 event_type "APPROVED, REJECTED, CANCELLED"
         uuid admin_id FK
         text comment
         timestamptz created_at
@@ -119,7 +119,7 @@ erDiagram
 
 ## 2. Extended state machine (`DishStatus`)
 
-`DRAFT` and `PENDING_PRICE` and their transitions belong to spec 005. This feature adds `PUBLISHED` and the three transitions out of `PENDING_PRICE`.
+`DRAFT` and `PENDING_PRICE` and their transitions belong to spec 005. This feature adds `PUBLISHED`, `CANCELLED`, and the decision transitions out of `PENDING_PRICE`. Chef deletion of a `DRAFT` remains the separate hard-delete operation in spec 005; C-02 cancellation is only for Administrator-owned review decisions.
 
 ```mermaid
 stateDiagram-v2
@@ -127,15 +127,18 @@ stateDiagram-v2
     DRAFT --> PENDING_PRICE : Chef submits for review (005) / writes submitted_at (R-005-1)
     PENDING_PRICE --> PUBLISHED : Administrator approves (007) [publication gate + acknowledgements]
     PENDING_PRICE --> DRAFT : Administrator rejects (007) [comment 10..1000 chars]
+    PENDING_PRICE --> CANCELLED : Administrator cancels (007 / C-02) [confirmation + conditional write]
     PENDING_PRICE --> PENDING_PRICE : Administrator saves retail price (007) [status unchanged]
     PUBLISHED --> PUBLISHED : Administrator reprices (007) [status, recipe, visibility unchanged]
+    CANCELLED --> [*] : terminal soft-delete; read-only, not diner-visible
 ```
 
 | # | Transition | Trigger | Guard (evaluated server-side, inside the transaction) | Effects | Loser / failure |
 |---|---|---|---|---|---|
 | T1 | `PENDING_PRICE → PUBLISHED` | `POST /admin/dishes/{id}/approval` | `status = PENDING_PRICE`; **publication gate** (FR-015): `retail_price > 0` **and** ≥ 1 recipe line whose ingredient is `ACTIVE` **and** `allergens_confirmed = TRUE`; required acknowledgements present (FR-017) | `status = PUBLISHED`, `published_at = NOW()`, `is_active = TRUE` (§3.4), one `dish_review_history` row (`APPROVED`, `cycle_number = MAX+1`). The `UPDATE` carries `AND status = 'PENDING_PRICE'`; zero rows affected → **409** `dish-already-decided` with the prevailing `currentStatus` and `decidedAt` | gate unmet → **422** `publication-gate-failed` with `unmetConditions[]`; missing acknowledgement → **422** `acknowledgement-required`; `status = DRAFT` → **409** `dish-invalid-state` (FR-019); `status = PUBLISHED` → **200 idempotent no-op** (FR-018) |
 | T2 | `PENDING_PRICE → DRAFT` | `POST /admin/dishes/{id}/rejection` | `status = PENDING_PRICE`; comment valid | `status = DRAFT`, one `dish_review_history` row (`REJECTED`, `cycle_number = MAX+1`, comment). `published_at` untouched; recipe, labels and `retail_price` untouched. The `UPDATE` carries `AND status = 'PENDING_PRICE'`; zero rows affected → **409** `dish-already-decided` | invalid comment → **400** `invalid-rejection-comment` (dish stays `PENDING_PRICE`); `status = PUBLISHED` → **409** `dish-invalid-state` (FR-024); `status = DRAFT` → **409** `dish-invalid-state` (FR-019) |
-| T3 | pricing, status-preserving | `PUT /admin/dishes/{id}/retail-price` | `status ∈ {PENDING_PRICE, PUBLISHED}` (FR-009); `expectedRetailPrice` matches the stored value; price valid; negative margin acknowledged (FR-014) | `retail_price` set, one `dish_price_history` row. Status, recipe, `is_active` and `published_at` unchanged (FR-011). The `UPDATE` carries `AND retail_price IS NOT DISTINCT FROM :expectedRetailPrice` — `IS NOT DISTINCT FROM`, not `=`, because the first assignment compares against `NULL` | `status = DRAFT` → **409** `dish-invalid-state`; zero rows affected → **409** `dish-stale-price` with `currentRetailPrice`; `expectedRetailPrice` absent from the body → **400** bound to that field (an explicit `null` is not absence: it asserts "the dish was unpriced when I read it"); invalid price → **400** `invalid-retail-price`; unacknowledged negative margin → **422** `acknowledgement-required` |
+| T3 | `PENDING_PRICE → CANCELLED` | `POST /admin/dishes/{id}/cancel` | Administrator in the owning tenant; `status = PENDING_PRICE`; confirmation completed in the UI | One conditional `UPDATE` sets `status = CANCELLED` and `is_active = FALSE`; one `dish_review_history` row (`CANCELLED`, `cycle_number = MAX+1`, no required comment), in the same transaction. The dish leaves the pending inbox and remains diner-invisible. | Chef/non-admin → **403**; cross-tenant → **403**; `DRAFT`, `PUBLISHED` or `CANCELLED` → **409**; zero rows affected after a concurrent decision → **409** `dish-already-decided`, no audit row |
+| T4 | pricing, status-preserving | `PUT /admin/dishes/{id}/retail-price` | `status ∈ {PENDING_PRICE, PUBLISHED}` (FR-009); `expectedRetailPrice` matches the stored value; price valid; negative margin acknowledged (FR-014) | `retail_price` set, one `dish_price_history` row. Status, recipe, `is_active` and `published_at` unchanged (FR-011). The `UPDATE` carries `AND retail_price IS NOT DISTINCT FROM :expectedRetailPrice` — `IS NOT DISTINCT FROM`, not `=`, because the first assignment compares against `NULL` | `status = DRAFT` → **409** `dish-invalid-state`; zero rows affected → **409** `dish-stale-price` with `currentRetailPrice`; `expectedRetailPrice` absent from the body → **400** bound to that field (an explicit `null` is not absence: it asserts "the dish was unpriced when I read it"); invalid price → **400** `invalid-retail-price`; unacknowledged negative margin → **422** `acknowledgement-required` |
 
 **Idempotent approval (FR-018)**: when `status` is already `PUBLISHED`, the transaction writes nothing — no status change, no audit row — and returns `200 OK` with `alreadyPublished: true` plus the original `publishedAt`, so the UI reports "ya estaba publicado" instead of a fresh publication.
 
@@ -239,25 +242,35 @@ CREATE INDEX IF NOT EXISTS idx_dishes_review_inbox_published
     ON dishes (tenant_id, status, published_at DESC);
 ```
 
-### 3.1. Index justification
+### 3.1. C-02 event-domain extension — V10
+
+V7's `chk_dishes_status` and V9's `chk_drh_event_type` are already applied and MUST NOT be edited
+in place. C-02 requires persisting `CANCELLED` on the dish and in its review event. Under the
+narrow D1 amendment recorded in `spec.md` Clarifications and `plan.md` Complexity Tracking, V10
+(`V10__support_admin_dish_cancellation.sql`) replaces only those two closed constraints, adding
+`CANCELLED` to their existing domains. No other spec 005 schema object is modified. The migration
+registry is updated in the same change. The event shares the existing `dish_review_history` table
+and unique monotonic `(dish_id, cycle_number)` key; it has no mandatory free-text comment.
+
+### 3.2. Index justification
 
 `idx_dishes_tenant (tenant_id, is_active)` (V5) and `idx_dishes_chef_list (tenant_id, status, updated_at DESC)` (005's `V7`) serve neither the FIFO pending query nor the published tab's chronology. Two composite indexes are needed, one per ordering, because a single index cannot serve both sort directions on different columns. **Only one of them is owned here**: `idx_dishes_review_inbox_pending (tenant_id, status, submitted_at)` is created by 005's `V7` (issue #137) and consumed as-is; this feature adds `idx_dishes_review_inbox_published` alone. The history tab needs no new index: it is an `EXISTS` over `dish_review_history` resolved by `uq_drh_dish_cycle`.
 
-### 3.2. `cycle_number` without a race
+### 3.3. `cycle_number` without a race
 
-The value is computed as `COALESCE(MAX(cycle_number), 0) + 1` for the dish **inside the same transaction** that performs the status transition. Two concurrent decisions cannot both commit, because each one also issues the conditional `UPDATE` on the `dishes` row carrying `AND status = 'PENDING_PRICE'`: the second matches zero rows and its transaction is rolled back before its audit row can commit. Under PostgreSQL's default `READ COMMITTED` the second statement blocks on the row lock, then re-evaluates its predicate against the committed row and finds the status no longer matches, so the window where both read `PENDING_PRICE` is closed by the statement itself rather than by a version comparison. `UNIQUE (dish_id, cycle_number)` is therefore the **proof** of the invariant rather than its mechanism: if it is ever violated, a write path exists that bypasses the status predicate, which is exactly the defect we want to fail loudly.
+The value is computed as `COALESCE(MAX(cycle_number), 0) + 1` for the dish **inside the same transaction** that performs the status transition. Approval, rejection, and cancellation each use a conditional `UPDATE` on the `dishes` row carrying `AND status = 'PENDING_PRICE'`: the second concurrent decision matches zero rows and its transaction is rolled back before its audit row can commit. Under PostgreSQL's default `READ COMMITTED` the second statement blocks on the row lock, then re-evaluates its predicate against the committed row and finds the status no longer matches, so the window where both read `PENDING_PRICE` is closed by the statement itself rather than by a version comparison. `UNIQUE (dish_id, cycle_number)` is therefore the **proof** of the invariant rather than its mechanism.
 
-### 3.3. How immutability is actually enforced
+### 3.4. How immutability is actually enforced
 
 Append-only service paths: `DishReviewHistoryRepository` and `DishPriceHistoryRepository` expose only `save` and query methods — no `delete*`, no `@Modifying` update. The entities expose no setters after construction and declare no `@PreUpdate`. Neither table has an `updated_at` column, so an update has nothing to say. **A database trigger or a `REVOKE UPDATE` is deliberately *not* added**: a single application writes this schema with one role, and a rule enforced in two places that can disagree is worse than one enforced where the writes happen (Principle IV). This is recorded as the chosen trade-off, not an oversight.
 
-### 3.4. `is_active` at publication
+### 3.5. `is_active` at publication
 
 The approval transition sets `is_active = TRUE` in the same atomic update, because 005 defaults new drafts to `FALSE` and D4's diner predicate requires both flags. See [research.md §3.9](./research.md). No other path in this feature writes `is_active`; Sprint 3's pause flips it without touching `status`.
 
 ---
 
-### 3.5. A dish with no recipe lines (FR-037)
+### 3.6. A dish with no recipe lines (FR-037)
 
 Spec 006's `FoodCostAuditService.auditDishCost` raises `EmptyRecipeException` when a dish has no rows in `dish_recipe_ingredients`, rather than returning a zero cost. FR-012 recomputes the margin on **every** consultation, so this feature's read paths reach that condition for any dish submitted without a recipe.
 
@@ -265,7 +278,7 @@ Spec 006's `FoodCostAuditService.auditDishCost` raises `EmptyRecipeException` wh
 
 **Why this is not spec 006's defect**: its endpoint answers "itemize this dish's cost", and for a dish with no recipe that request has no answer. This feature's detail view answers a broader question, so the same condition is information rather than an error.
 
-### 3.6. `IngredientStatus` is not in the audit payload (FR-015, condition 2)
+### 3.7. `IngredientStatus` is not in the audit payload (FR-015, condition 2)
 
 `RecipeItemAuditResponse` carries the ingredient's id, name, quantity, unit of measure, unit cost, line subtotal and unpriced flag — but **not** its `IngredientStatus` — and `FoodCostAuditService` does not exclude discontinued lines from the total. FR-015 condition 2 requires at least one recipe line whose ingredient is `ACTIVE`, so **the gate cannot be evaluated from the audit payload**: this feature evaluates it with its own query, counting the dish's recipe lines joined to `ingredients` on `status = 'ACTIVE'`.
 
@@ -279,7 +292,7 @@ Spec 005 permits physical deletion of a dish only while in `DRAFT`. A chef may t
 
 ### 4.2. Event typing, and why price changes are not review events
 
-`dish_review_history.event_type ∈ {APPROVED, REJECTED}` — administrative *decisions* only. Price changes live exclusively in `dish_price_history`. Mixing them would make `cycle_number` mean two different things (a review round and a price revision) and would make the review-cycle chronology unreadable for the Chef-facing feedback view. The two tables are joined only at the presentation layer, in the administrative history view.
+`dish_review_history.event_type ∈ {APPROVED, REJECTED, CANCELLED}` — administrative *decisions* only. Price changes live exclusively in `dish_price_history`. Chef draft deletion is not an event in this log. The three event kinds all consume one monotonic review-cycle number; price revisions do not, so `cycle_number` remains a review-decision sequence and the Chef-facing feedback view can filter to `REJECTED` alone. The two tables are joined only at the presentation layer, in the administrative history view.
 
 ### 4.3. FR-026 — a deactivated author must not invalidate a dish
 
@@ -357,6 +370,11 @@ D5 called for the five seeded dishes to land `status = 'PUBLISHED'` with `retail
 | FR-022 | `dish_review_history` (dish, actor, timestamp, reason, `cycle_number`), append-only (§3.3) |
 | FR-023 | `GET /dishes/{id}/review-feedback` (CHEF) — response type carries **no** financial field at all (structural omission, §contracts) |
 | FR-024 | T2 guard on `PUBLISHED` → 409 `dish-invalid-state` |
-| FR-025 | Conditional `UPDATE` per operation: `AND status = 'PENDING_PRICE'` for T1/T2, `AND retail_price IS NOT DISTINCT FROM :expectedRetailPrice` for T3; zero affected rows → 409 taxonomy |
-| FR-037 | §3.5: `EmptyRecipeException` from 006's audit service is caught on every read path and rendered as the dish's recipe-absent state, never propagated |
+| FR-025 | Conditional `UPDATE` per operation: `AND status = 'PENDING_PRICE'` for T1–T3 (approval, rejection, cancellation), `AND retail_price IS NOT DISTINCT FROM :expectedRetailPrice` for T4 repricing; zero affected rows → 409 taxonomy |
+| FR-037 | §3.6: `EmptyRecipeException` from 006's audit service is caught on every read path and rendered as the dish's recipe-absent state, never propagated |
 | FR-026 | §4.3 — no author-status filter anywhere; FK intact; `RESTRICT` on audit actors |
+| FR-038 | T3 / `POST /admin/dishes/{id}/cancel`; conditional `PENDING_PRICE → CANCELLED`, `is_active = FALSE`, V10 status CHECK extension |
+| FR-039 | T3 permits cancellation only from `PENDING_PRICE`; every other source status returns 409 |
+| FR-040 | Terminal-state rule and diner visibility predicate; cancelled dishes are inactive and not `PUBLISHED` |
+| FR-041 | T3 writes one immutable `CANCELLED` review event in the same transaction, with next `cycle_number`; V10 event CHECK extension |
+| FR-042 | Chef list renders `CANCELLED` as read-only "Cancelado", without edit, submit, or delete actions |

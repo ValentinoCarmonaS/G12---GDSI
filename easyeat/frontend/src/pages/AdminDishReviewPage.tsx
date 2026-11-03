@@ -55,10 +55,12 @@ export const AdminDishReviewPage: React.FC = () => {
 
   const changeTab = useCallback(
     (tab: InboxTab) => {
-      inbox.setTab(tab);
-      // The open dish belonged to the view being left behind.
-      setDetail(null);
-      setDetailError(null);
+      if (inbox.tab !== tab) {
+        inbox.setTab(tab);
+        // The open dish belonged to the view being left behind.
+        setDetail(null);
+        setDetailError(null);
+      }
     },
     [inbox]
   );
@@ -76,6 +78,13 @@ export const AdminDishReviewPage: React.FC = () => {
     }
     inbox.refresh();
   }, [detail, openDish, inbox]);
+
+  const handleCancelled = useCallback(() => {
+    setDetail(null);
+    setDetailError(null);
+    setIsDetailLoading(false);
+    inbox.refresh();
+  }, [inbox]);
 
   return (
     <WorkspaceLayout
@@ -137,7 +146,11 @@ export const AdminDishReviewPage: React.FC = () => {
           {!isDetailLoading && !detailError && detail && (
             <div className="space-y-6">
               <DishAuditPanel detail={detail} />
-              <DishDecisionActions detail={detail} onDecided={handleDecided} />
+              <DishDecisionActions
+                detail={detail}
+                onDecided={handleDecided}
+                onCancelled={handleCancelled}
+              />
             </div>
           )}
 

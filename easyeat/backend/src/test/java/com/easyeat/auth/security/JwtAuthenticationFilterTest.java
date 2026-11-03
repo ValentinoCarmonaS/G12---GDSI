@@ -89,6 +89,39 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
+    @DisplayName("Should authenticate request when token query parameter is provided and header is absent")
+    void shouldAuthenticateWhenTokenQueryParameterProvided() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String token = "valid.jwt.param.token";
+
+        User user = new User("comensal@restaurant.com", "hash", UserRole.COMENSAL);
+        user.setId(userId);
+        user.setStatus(UserStatus.ACTIVE);
+        user.setTokenVersion(1);
+
+        when(jwtService.validateToken(token)).thenReturn(true);
+        when(jwtService.extractUserId(token)).thenReturn(userId);
+        when(jwtService.extractRole(token)).thenReturn(UserRole.COMENSAL);
+        when(jwtService.extractTokenVersion(token)).thenReturn(1);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setParameter("token", token);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+        User principal = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        assertThat(principal.getEmail()).isEqualTo("comensal@restaurant.com");
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getAuthorities())
+                .extracting("authority")
+                .containsExactly("ROLE_COMENSAL");
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
     @DisplayName("Should reject request with HTTP 401 ProblemDetail when token_version is stale (mismatched)")
     void shouldRejectWhenTokenVersionMismatched() throws Exception {
         UUID userId = UUID.randomUUID();

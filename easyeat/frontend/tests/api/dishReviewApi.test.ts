@@ -52,7 +52,7 @@ describe('dishReviewApi', () => {
 
       // The server answers 400 for a tab outside the enum. The client must not silently
       // normalise it, or a bug in the caller would look like a working default view.
-      await dishReviewApi.getInbox({ tab: 'HISTORY' });
+      await dishReviewApi.getInbox({ tab: 'HISTORY' as any });
 
       expect(apiClient.get).toHaveBeenCalledWith(
         '/admin/dishes/review-inbox',
@@ -334,6 +334,25 @@ describe('dishReviewApi', () => {
       await expect(
         dishReviewApi.reject('dish-1', { comment: 'x'.repeat(10) })
       ).rejects.toBe(error);
+    });
+  });
+
+  describe('cancel (C-02)', () => {
+    it('calls POST /admin/dishes/:id/cancel with an encoded dish id', async () => {
+      vi.mocked(apiClient.post).mockResolvedValue({ data: undefined });
+
+      await dishReviewApi.cancel('dish-1');
+
+      expect(apiClient.post).toHaveBeenCalledWith('/admin/dishes/dish-1/cancel');
+    });
+
+    it('propagates cancellation failures so the page can show the conflict', async () => {
+      const error = Object.assign(new Error('Conflict'), {
+        response: { status: 409, data: { type: 'https://easyeat.com/errors/dish-already-decided' } },
+      });
+      vi.mocked(apiClient.post).mockRejectedValue(error);
+
+      await expect(dishReviewApi.cancel('dish-1')).rejects.toBe(error);
     });
   });
 });

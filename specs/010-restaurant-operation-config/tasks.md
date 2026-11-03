@@ -24,7 +24,7 @@ The repo has **no orders / checkout / slot-selector backend**. This feature buil
 
 - A `Clock` bean **already exists** (`easyeat/backend/src/main/java/com/easyeat/config/ClockConfig.java`, `Clock.systemUTC()`). It is reused, not recreated; the foundational task adds the establishment-timezone resolver on top of it.
 - `Establishment` (`easyeat/backend/src/main/java/com/easyeat/catalog/domain/Establishment.java`) already has `timezone`, defaulting to `America/Argentina/Buenos_Aires`.
-- Only `V1`–`V9` exist on this branch; `V12` is used as instructed (V10/V11 land via `develop/sprint-3`). Per `.specify/memory/migrations.md` rules 3 and 5, the migration PR must add a registry row, and **no test class name may carry a version number**.
+- Only `V1`–`V9` exist on this branch; `V12` was used as instructed (V10/V11 land via `develop/sprint-3`). **2026-11-02: renumbered to `V15`** when integrating `develop/sprint-3`, which had consumed `V12` (spec 009) to `V14`; the task entries below keep the number they were done with. Per `.specify/memory/migrations.md` rules 3 and 5, the migration PR must add a registry row, and **no test class name may carry a version number**.
 - `GlobalExceptionHandler` lives at `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java`; it has a deliberate comment (≈line 431) about *not* handling `ObjectOptimisticLockingFailureException` globally — read it before T022 and keep the 409 mapping scoped to the operations controllers if that comment requires it.
 - Existing admin controllers use `@PreAuthorize("hasRole('ADMIN') or hasRole('ADMINISTRADOR')")` under `/api/v1/admin/...`; tenant comes from `TenantContextHolder`.
 

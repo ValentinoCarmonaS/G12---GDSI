@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDishReviewInbox } from '../../src/hooks/useDishReviewInbox';
 import { dishReviewApi } from '../../src/api/dishReviewApi';
-import type { DishReviewInboxItem, DishReviewInboxPage } from '../../src/types/dishReview';
+import type {
+  DishReviewInboxItem,
+  DishReviewInboxPage,
+} from '../../src/types/dishReview';
 
 vi.mock('../../src/api/dishReviewApi', () => ({
   dishReviewApi: {
@@ -91,11 +94,11 @@ describe('useDishReviewInbox', () => {
         )
       );
 
-      act(() => result.current.setTab('PUBLISHED'));
+      act(() => result.current.setTab('FINALIZED'));
 
       await waitFor(() =>
         expect(dishReviewApi.getInbox).toHaveBeenLastCalledWith({
-          tab: 'PUBLISHED',
+          tab: 'FINALIZED',
           page: 0,
           size: 20,
         })
@@ -122,8 +125,8 @@ describe('useDishReviewInbox', () => {
       const { result } = renderHook(() => useDishReviewInbox());
       await waitFor(() => expect(result.current.pendingCount).toBe(37));
 
-      act(() => result.current.setTab('HISTORY'));
-      await waitFor(() => expect(result.current.tab).toBe('HISTORY'));
+      act(() => result.current.setTab('FINALIZED'));
+      await waitFor(() => expect(result.current.tab).toBe('FINALIZED'));
 
       expect(result.current.pendingCount).toBe(37);
     });

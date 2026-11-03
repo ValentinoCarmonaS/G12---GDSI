@@ -3,6 +3,8 @@ import { profileApi } from '../api/profileApi';
 import type {
   ProfileResponse,
   PersonalDataRequest,
+  DemographicsRequest,
+  AvatarUploadResponse,
   EmailChangeInitiatedResponse,
   DietaryRestrictionItem,
 } from '../types/profile';
@@ -58,10 +60,50 @@ export function useProfile() {
     setError(null);
     try {
       const updated = await profileApi.updatePersonalData(data);
-      setProfile(updated);
+      setProfile((prev) => (prev ? { ...prev, ...updated } : updated));
       return updated;
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Error al actualizar datos personales';
+      setError(msg);
+      throw err;
+    }
+  };
+
+  const updateDemographics = async (data: DemographicsRequest): Promise<ProfileResponse> => {
+    setError(null);
+    try {
+      const updated = await profileApi.updateDemographics(data);
+      setProfile((prev) => (prev ? { ...prev, ...updated } : updated));
+      return updated;
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || 'Error al actualizar datos demográficos';
+      setError(msg);
+      throw err;
+    }
+  };
+
+  const uploadAvatar = async (file: File): Promise<AvatarUploadResponse> => {
+    setError(null);
+    try {
+      const response = await profileApi.uploadAvatar(file);
+      setProfile((prev) => (prev ? { ...prev, avatarUrl: response.avatarUrl } : null));
+      await fetchProfile();
+      return response;
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || 'Error al subir foto de perfil';
+      setError(msg);
+      throw err;
+    }
+  };
+
+  const removeAvatar = async (): Promise<void> => {
+    setError(null);
+    try {
+      await profileApi.removeAvatar();
+      setProfile((prev) => (prev ? { ...prev, avatarUrl: null } : null));
+      await fetchProfile();
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || err.message || 'Error al eliminar foto de perfil';
       setError(msg);
       throw err;
     }
@@ -135,6 +177,9 @@ export function useProfile() {
     refreshProfile: fetchProfile,
     refreshTaxonomy: fetchTaxonomy,
     updatePersonalData,
+    updateDemographics,
+    uploadAvatar,
+    removeAvatar,
     updateDietaryRestrictions,
     requestEmailChange,
     resendVerification,

@@ -70,6 +70,8 @@ public class DishController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('CHEF')")
     public ResponseEntity<Void> deleteDishDraft(@PathVariable UUID id) {
+        // Spec 005 permits the Chef to permanently delete their own DRAFT. The service rejects
+        // PENDING_PRICE, which can only be discarded through the Administrator's C-02 cancel flow.
         dishService.deleteDraft(id);
         return ResponseEntity.noContent().build();
     }

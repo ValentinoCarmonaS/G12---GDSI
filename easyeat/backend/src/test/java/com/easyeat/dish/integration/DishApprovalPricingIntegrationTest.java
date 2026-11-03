@@ -16,6 +16,7 @@ import com.easyeat.dish.domain.ReviewEventType;
 import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
 import com.easyeat.dish.dto.DishRejectionResponse;
+import com.easyeat.dish.dto.RejectDishRequest;
 import com.easyeat.dish.repository.DishPriceHistoryRepository;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
 import com.easyeat.dish.repository.DishReviewHistoryRepository;
@@ -46,7 +47,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * T100 (Phase 7): the audit and arithmetic invariants of {@link DishGovernanceService}'s three
+ * T100 (Phase 7): the audit and arithmetic invariants of {@link DishGovernanceService}'s decision
  * transitions that no single unit test proves against a real database and a real clock —
  * {@code cycle_number} across repeated reject/resubmit rounds (FR-022), a repricing of an
  * already-{@code PUBLISHED} dish leaving status, recipe and visibility untouched (FR-011), the
@@ -145,11 +146,11 @@ class DishApprovalPricingIntegrationTest {
     void shouldIncrementCycleNumberAcrossRepeatedRounds() {
         Dish dish = gateReadyDish("Empanadas", admin.getId());
 
-        DishRejectionResponse firstRejection = governanceService.reject(dish.getId(), "Falta aclarar el relleno exacto.");
+        DishRejectionResponse firstRejection = governanceService.reject(dish.getId(), new RejectDishRequest("Falta aclarar el relleno exacto.", null));
         assertThat(firstRejection.cycleNumber()).isEqualTo(1);
 
         resubmit(dish.getId());
-        DishRejectionResponse secondRejection = governanceService.reject(dish.getId(), "El precio sugerido sigue sin cerrar el margen.");
+        DishRejectionResponse secondRejection = governanceService.reject(dish.getId(), new RejectDishRequest("El precio sugerido sigue sin cerrar el margen.", null));
         assertThat(secondRejection.cycleNumber()).isEqualTo(2);
 
         resubmit(dish.getId());
@@ -166,6 +167,28 @@ class DishApprovalPricingIntegrationTest {
         assertThat(history.get(1).getEventType()).isEqualTo(ReviewEventType.REJECTED);
         assertThat(history.get(2).getCycleNumber()).isEqualTo(3);
         assertThat(history.get(2).getEventType()).isEqualTo(ReviewEventType.APPROVED);
+    }
+
+    @Test
+    @DisplayName("C-02 cancellation is persisted as a terminal soft-delete with an audit cycle")
+    void shouldCancelPendingDishAndPersistCancellationEvent() {
+        Dish dish = gateReadyDish("Propuesta cancelada", admin.getId());
+
+        governanceService.cancel(dish.getId());
+
+        Dish cancelled = dishRepository.findByIdAndTenantId(dish.getId(), tenantId).orElseThrow();
+        assertThat(cancelled.getStatus()).isEqualTo(DishStatus.CANCELLED);
+        assertThat(cancelled.getIsActive()).isFalse();
+        assertThat(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(
+                tenantId, DishStatus.CANCELLED)).isEmpty();
+
+        List<DishReviewHistory> history = reviewHistoryRepository
+                .findByDishIdAndTenantIdOrderByCreatedAtAsc(dish.getId(), tenantId);
+        assertThat(history).hasSize(1);
+        assertThat(history.getFirst().getEventType()).isEqualTo(ReviewEventType.CANCELLED);
+        assertThat(history.getFirst().getCycleNumber()).isEqualTo(1);
+        assertThat(history.getFirst().getAdminId()).isEqualTo(admin.getId());
+        assertThat(history.getFirst().getComment()).isNull();
     }
 
     @Test
@@ -234,7 +257,7 @@ class DishApprovalPricingIntegrationTest {
         assertThat(approval.status()).isEqualTo(DishStatus.PUBLISHED);
 
         Dish rejectedPath = gateReadyDish("Pure de Papas", chef.getId());
-        DishRejectionResponse rejection = governanceService.reject(rejectedPath.getId(), "Falta especificar la guarnición.");
+        DishRejectionResponse rejection = governanceService.reject(rejectedPath.getId(), new RejectDishRequest("Falta especificar la guarnición.", null));
         assertThat(rejection.status()).isEqualTo(DishStatus.DRAFT);
     }
 

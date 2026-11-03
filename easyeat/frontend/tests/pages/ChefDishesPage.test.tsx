@@ -125,6 +125,20 @@ describe('ChefDishesPage Component (T024, CHF-2.2.1, CHF-2.2.4)', () => {
     expect(screen.queryByRole('button', { name: /eliminar/i })).not.toBeInTheDocument();
   });
 
+  it('renders cancelled dishes as read-only and exposes no edit or delete action (FR-042)', async () => {
+    mockedDishApi.listDishes.mockResolvedValueOnce(
+      createMockDishPage([{ ...mockDishPendingPriceSummary, status: 'CANCELLED' }])
+    );
+
+    renderComponent();
+
+    expect(await screen.findByText('Pad Thai con Maní')).toBeInTheDocument();
+    expect(screen.getByText('Cancelado')).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Pad Thai con Maní' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /editar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /eliminar/i })).not.toBeInTheDocument();
+  });
+
   it('renders informative empty state when no dishes are returned', async () => {
     mockedDishApi.listDishes.mockResolvedValueOnce(createMockDishPage([]));
 

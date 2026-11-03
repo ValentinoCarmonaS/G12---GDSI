@@ -1,12 +1,13 @@
 package com.easyeat.profile.service;
 
 import com.easyeat.auth.domain.User;
-import com.easyeat.profile.dto.DietaryRestrictionItemDto;
-import com.easyeat.profile.dto.PersonalDataRequest;
-import com.easyeat.profile.dto.ProfileResponse;
+import com.easyeat.profile.domain.DemographicsValidator;
+import com.easyeat.profile.dto.*;
 import com.easyeat.profile.repository.ProfileUserRepository;
+import com.easyeat.profile.repository.UserPhotoRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,13 +23,24 @@ public class ProfileService {
 
     private final ProfileUserRepository profileUserRepository;
     private final DietaryRestrictionService dietaryRestrictionService;
+    private final UserPhotoRepository userPhotoRepository;
+
+    @Autowired
+    public ProfileService(
+            ProfileUserRepository profileUserRepository,
+            DietaryRestrictionService dietaryRestrictionService,
+            @Autowired(required = false) UserPhotoRepository userPhotoRepository
+    ) {
+        this.profileUserRepository = profileUserRepository;
+        this.dietaryRestrictionService = dietaryRestrictionService;
+        this.userPhotoRepository = userPhotoRepository;
+    }
 
     public ProfileService(
             ProfileUserRepository profileUserRepository,
             DietaryRestrictionService dietaryRestrictionService
     ) {
-        this.profileUserRepository = profileUserRepository;
-        this.dietaryRestrictionService = dietaryRestrictionService;
+        this(profileUserRepository, dietaryRestrictionService, null);
     }
 
     @Transactional(readOnly = true)
@@ -105,5 +117,57 @@ public class ProfileService {
                 throw new IllegalArgumentException("El formato del teléfono es inválido");
             }
         }
+    }
+
+    @Transactional
+    public ExtendedProfileResponse updateDemographics(User user, DemographicsRequest request) {
+        if (request != null) {
+            DemographicsValidator.validate(request.age(), request.gender(), request.address());
+        }
+
+        User target = profileUserRepository.findById(user.getId()).orElse(user);
+        if (request != null) {
+            target.setAge(request.age());
+            target.setGender(request.gender() != null && !request.gender().isBlank() ? request.gender().trim() : null);
+            target.setAddress(request.address() != null && !request.address().isBlank() ? request.address().trim() : null);
+            target = profileUserRepository.save(target);
+            log.info("Demographics updated for user ID: {}. age: {}, gender: {}, address: {}",
+                    target.getId(), target.getAge(), target.getGender(), target.getAddress());
+        }
+
+        return toExtendedProfileResponse(target);
+    }
+
+    @Transactional(readOnly = true)
+    public ExtendedProfileResponse getExtendedProfile(User user) {
+        User target = profileUserRepository.findById(user.getId()).orElse(user);
+        return toExtendedProfileResponse(target);
+    }
+
+    private ExtendedProfileResponse toExtendedProfileResponse(User target) {
+        boolean hasPending = target.getPendingEmail() != null && !target.getPendingEmail().isBlank();
+        List<DietaryRestrictionItemDto> dietaryRestrictions = dietaryRestrictionService != null
+                ? dietaryRestrictionService.getUserPreferences(target.getId())
+                : List.of();
+
+        String avatarUrl = (userPhotoRepository != null && userPhotoRepository.existsByUserId(target.getId()))
+                ? "/api/v1/profile/avatar"
+                : null;
+
+        return new ExtendedProfileResponse(
+                target.getId(),
+                target.getFirstName(),
+                target.getLastName(),
+                target.getFullName(),
+                target.getPhone(),
+                target.getEmail(),
+                target.getPendingEmail(),
+                hasPending,
+                target.getAge(),
+                target.getGender(),
+                target.getAddress(),
+                avatarUrl,
+                dietaryRestrictions
+        );
     }
 }

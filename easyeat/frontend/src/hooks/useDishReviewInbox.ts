@@ -80,7 +80,8 @@ export function useDishReviewInbox() {
       }
       // Items are replaced only on success. A list that blanks while a refetch is in flight
       // makes the Administrator lose their place for no benefit.
-      setItems(data.items);
+      const safeItems = Array.isArray(data.items) ? data.items : [];
+      setItems(safeItems);
       setTotalElements(data.totalElements);
       setTotalPages(data.totalPages);
       setHasNext(data.hasNext);

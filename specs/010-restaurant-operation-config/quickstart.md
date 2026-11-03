@@ -118,7 +118,7 @@ Para ejecutar los escenarios de verificación de la feature:
      { "isEnabled": false, "expectedVersion": 0 }
      ```
      `expectedVersion` es el `version` que devolvió `GET /api/v1/admin/payment-methods`; es `null` solo
-     si el método aún no tiene fila (un establecimiento creado después de V12). Sin versión sobre una
+     si el método aún no tiene fila (un establecimiento creado después de V15). Sin versión sobre una
      fila existente la respuesta es 409 "Conflicto de concurrencia".
   2. Como comensal, solicitar los métodos de pago en la vista de checkout:
      ```http

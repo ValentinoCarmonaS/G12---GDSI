@@ -87,6 +87,7 @@ export const ChefDishesPage: React.FC = () => {
             <option value="ALL">All</option>
             <option value="DRAFT">Draft</option>
             <option value="PENDING_PRICE">Pending Price</option>
+            <option value="CANCELLED">Cancelled</option>
           </select>
         </div>
       </div>
@@ -124,12 +125,18 @@ export const ChefDishesPage: React.FC = () => {
                 {dishes.map((dish) => (
                   <tr key={dish.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition">
                     <td className="py-3.5 px-4">
-                      <Link
-                        to={`/cocina/platos/${dish.id}`}
-                        className="font-medium text-zinc-900 dark:text-zinc-100 hover:text-amber-600 dark:hover:text-amber-400 transition"
-                      >
-                        {dish.name}
-                      </Link>
+                      {dish.status === 'CANCELLED' ? (
+                        <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                          {dish.name}
+                        </span>
+                      ) : (
+                        <Link
+                          to={`/cocina/platos/${dish.id}`}
+                          className="font-medium text-zinc-900 dark:text-zinc-100 hover:text-amber-600 dark:hover:text-amber-400 transition"
+                        >
+                          {dish.name}
+                        </Link>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 text-zinc-600 dark:text-zinc-300">
                       {dish.category}
@@ -138,12 +145,14 @@ export const ChefDishesPage: React.FC = () => {
                       <DishStatusBadge status={dish.status} />
                     </td>
                     <td className="py-3.5 px-4 text-right space-x-2">
-                      <Link
-                        to={`/cocina/platos/${dish.id}`}
-                        className="text-xs font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
-                      >
-                        Editar
-                      </Link>
+                      {dish.status !== 'CANCELLED' && (
+                        <Link
+                          to={`/cocina/platos/${dish.id}`}
+                          className="text-xs font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                        >
+                          Editar
+                        </Link>
+                      )}
                       {dish.status === 'DRAFT' && (
                         <button
                           type="button"

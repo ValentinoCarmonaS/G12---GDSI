@@ -10,6 +10,7 @@ import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.dish.domain.DishCategory;
 import com.easyeat.dish.domain.DishRecipeIngredient;
 import com.easyeat.dish.domain.DishStatus;
+import com.easyeat.dish.dto.RejectDishRequest;
 import com.easyeat.dish.exception.DishAlreadyDecidedException;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
 import com.easyeat.dish.repository.DishReviewHistoryRepository;
@@ -153,8 +154,8 @@ class DishDecisionConcurrencyTest {
         UUID dishId = dish.getId();
 
         runConcurrently(
-                () -> governanceService.reject(dishId, "Falta especificar el tipo de salsa."),
-                () -> governanceService.reject(dishId, "El precio sugerido no cierra el margen.")
+                () -> governanceService.reject(dishId, new RejectDishRequest("Falta especificar el tipo de salsa.", null)),
+                () -> governanceService.reject(dishId, new RejectDishRequest("El precio sugerido no cierra el margen.", null))
         );
 
         Dish reloaded = dishRepository.findByIdAndTenantId(dishId, tenantId).orElseThrow();
@@ -170,7 +171,7 @@ class DishDecisionConcurrencyTest {
 
         runConcurrently(
                 () -> governanceService.approve(dishId, false, false),
-                () -> governanceService.reject(dishId, "Falta la ficha de alérgenos actualizada.")
+                () -> governanceService.reject(dishId, new RejectDishRequest("Falta la ficha de alérgenos actualizada.", null))
         );
 
         Dish reloaded = dishRepository.findByIdAndTenantId(dishId, tenantId).orElseThrow();
