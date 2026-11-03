@@ -24,6 +24,10 @@ vi.mock('@/api/dishApi', () => ({
   },
 }));
 
+vi.mock('@/components/common/WorkspaceLayout', () => ({
+  WorkspaceLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
 describe('User Story 1 User Journey Integration Test (T025, CHF-2.2.1)', () => {
   const mockedDishApi = vi.mocked(dishApi);
 

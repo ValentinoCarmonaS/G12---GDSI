@@ -181,15 +181,15 @@
 
 ### Tests for C-08 (TDD — Write First)
 
-- [ ] T077 [P] [C-08] Frontend test `ChefHeaderNavigation` additions in `easyeat/frontend/tests/components/WorkspaceLayout.test.tsx` verifying the three chef sections (`Comandas KDS` → `/cocina`, `Gestionar Platos` → `/cocina/platos`, `Ingredientes` → `/cocina/ingredientes`), `aria-current="page"` on the active link per route, and no `aria-current` on inactive links
-- [ ] T078 [P] [C-08] Frontend test additions in `easyeat/frontend/tests/pages/KitchenWorkspacePage.test.tsx` verifying the KDS view renders no dish-management card while the ingredients card and the four order-statistics cards remain, and that the C-07 `?dishId=` banner tests still pass untouched
+- [X] T077 [P] [C-08] Frontend test `ChefHeaderNavigation` additions in `easyeat/frontend/tests/components/WorkspaceLayout.test.tsx` verifying the three chef sections (`Comandas KDS` → `/cocina`, `Gestionar Platos` → `/cocina/platos`, `Ingredientes` → `/cocina/ingredientes`), `aria-current="page"` on the active link per route, and no `aria-current` on inactive links
+- [X] T078 [P] [C-08] Frontend test additions in `easyeat/frontend/tests/pages/KitchenWorkspacePage.test.tsx` verifying the KDS view renders no dish-management card while the ingredients card and the four order-statistics cards remain, and that the C-07 `?dishId=` banner tests still pass untouched
 
 ### Implementation for C-08
 
-- [ ] T079 [C-08] Update chef navigation in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` adding the "Gestionar Platos" link, route-derived active state via `useLocation()` with `aria-current="page"` (exact match for `/cocina`, prefix match for the other two), and a `min-w-0 overflow-x-auto` container replacing `hidden sm:flex`
-- [ ] T080 [C-08] Remove the "Gestión de Platos y Fichas Técnicas" card from `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`, preserving the ingredients card, the four statistics cards, the `?dishId=` rejection banner and the `authApi.me()` session check
-- [ ] T081 [C-08] Wrap `easyeat/frontend/src/pages/ChefDishesPage.tsx` and `easyeat/frontend/src/pages/ChefDishEditorPage.tsx` in `WorkspaceLayout` (title "Gestión de Platos") dropping the now-redundant outer padding
-- [ ] T082 [C-08] Update affected test scaffolding with the pass-through `WorkspaceLayout` mock in `easyeat/frontend/tests/pages/ChefDishesPage.test.tsx`, `tests/integration/us1_basic_identity.test.tsx`, `us2_recipe_definition.test.tsx`, `us3_allergen_labeling.test.tsx`, and `us4_review_submission.test.tsx`
+- [X] T079 [C-08] Update chef navigation in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` adding the "Gestionar Platos" link, route-derived active state via `useLocation()` with `aria-current="page"` (exact match for `/cocina`, prefix match for the other two), and a `min-w-0 overflow-x-auto` container replacing `hidden sm:flex`
+- [X] T080 [C-08] Remove the "Gestión de Platos y Fichas Técnicas" card from `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`, preserving the ingredients card, the four statistics cards, the `?dishId=` rejection banner and the `authApi.me()` session check
+- [X] T081 [C-08] Wrap `easyeat/frontend/src/pages/ChefDishesPage.tsx` and `easyeat/frontend/src/pages/ChefDishEditorPage.tsx` in `WorkspaceLayout` (title "Gestión de Platos") dropping the now-redundant outer padding
+- [X] T082 [C-08] Update affected test scaffolding: pass-through `WorkspaceLayout` mock in `easyeat/frontend/tests/integration/us1_basic_identity.test.tsx`, `us2_recipe_definition.test.tsx`, `us3_allergen_labeling.test.tsx`, and `us4_review_submission.test.tsx`; Chef session mock (`@/hooks/useAuth`) in `easyeat/frontend/tests/pages/ChefDishesPage.test.tsx` so the real shared header is exercised there
 
 ### Verification for C-08
 

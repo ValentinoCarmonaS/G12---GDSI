@@ -15,8 +15,8 @@
 | `src/pages/KitchenWorkspacePage.tsx` | Se elimina la tarjeta "Gestión de Platos y Fichas Técnicas" (link a `/cocina/platos`). Se conservan: tarjeta de Ingredientes, 4 tarjetas de estadísticas, banner `DishRejectionFeedbackBanner` (`?dishId=`) y `authApi.me()` | FR-028, FR-032 |
 | `src/pages/ChefDishesPage.tsx` | Envuelto en `WorkspaceLayout` (title "Gestión de Platos"); el div raíz pierde el padding redundante (`container ... py-8` → `max-w-6xl`) que ahora aporta el `<main>` del layout | FR-029 |
 | `src/pages/ChefDishEditorPage.tsx` | Envuelto en `WorkspaceLayout` (title "Gestión de Platos"); estados de carga y formulario pierden el padding redundante (`max-w-4xl`) | FR-029 |
-| `tests/pages/ChefDishesPage.test.tsx` | Mock pass-through de `WorkspaceLayout` (patrón de `ChefDishEditorPage.test.tsx`) | FR-029 |
-| `tests/integration/us1_basic_identity.test.tsx`, `us2_recipe_definition.test.tsx`, `us3_allergen_labeling.test.tsx`, `us4_review_submission.test.tsx` | Mock pass-through de `WorkspaceLayout` | FR-029 |
+| `tests/pages/ChefDishesPage.test.tsx` | Mock de sesión Chef (`@/hooks/useAuth`) para renderizar el layout real; tests nuevos de cabecera compartida (FR-029) y sección activa en `/cocina/platos/nuevo` (FR-030) | FR-029, FR-030 |
+| `tests/integration/us1_basic_identity.test.tsx`, `us2_recipe_definition.test.tsx`, `us3_allergen_labeling.test.tsx`, `us4_review_submission.test.tsx` | Mock pass-through de `WorkspaceLayout` (patrón de `ChefDishEditorPage.test.tsx`) para mantener el foco en el recorrido de cada historia | FR-029 |
 | `tests/components/WorkspaceLayout.test.tsx` | Nuevos tests: tres enlaces del chef con `href` correcto, `aria-current="page"` en la sección activa según ruta | FR-027, FR-030 |
 | `tests/pages/KitchenWorkspacePage.test.tsx` | Nuevo test: la vista KDS ya no renderiza la tarjeta de gestión de platos y conserva ingredientes + estadísticas (los tests del banner C-07 permanecen intactos) | FR-028, FR-032 |
 
@@ -38,7 +38,7 @@
 3. **Viewport pequeño**: el nav del chef pasa de `hidden sm:flex` a `flex min-w-0 overflow-x-auto`; el contenedor izquierdo de la cabecera recibe `min-w-0` para permitir que el nav se contraiga y haga scroll en vez de desbordar el header de `h-16`.
 4. **Desacoplamiento KDS**: la vista de comandas deja de ser el intermediario para llegar a la gestión de platos; su único punto de entrada removido es la tarjeta de platos. Banner de rechazo (C-07) y tarjeta de ingredientes quedan fuera de alcance por decisión explícita.
 5. **Envoltura de vistas de platos**: a nivel de página (no de ruta) para no triplicar el `WorkspaceLayout` en las tres rutas y para que cualquier test que renderice la página directamente obtenga el mismo layout que en producción.
-6. **Ajuste de tests**: se usa el mock pass-through ya existente en el repo (`vi.mock('@/components/common/WorkspaceLayout', () => ({ WorkspaceLayout: ({ children }) => <div>{children}</div> })`) en lugar de re-renderizar el layout real, manteniendo el foco de cada test en su historia de usuario. La cabecera en sí se valida en su propio test de componente.
+6. **Ajuste de tests**: los recorridos `us1`–`us4` usan el mock pass-through ya existente en el repo (`vi.mock('@/components/common/WorkspaceLayout', () => ({ WorkspaceLayout: ({ children }) => <div>{children}</div> })`) para mantener el foco en su historia de usuario; `ChefDishesPage.test.tsx` en cambio mockea la sesión (`@/hooks/useAuth`, patrón de `ChefIngredientsPage.test.tsx`) y renderiza el **layout real**, de modo que la presencia de la cabecera y el estado activo queden cubiertos por tests de página. La cabecera en sí se valida además en su propio test de componente.
 
 ## 4. Fuera de alcance (explícito)
 

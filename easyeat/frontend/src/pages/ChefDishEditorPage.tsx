@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { WorkspaceLayout } from '@/components/common/WorkspaceLayout';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { dishApi } from '@/api/dishApi';
 import { BasicIdentityStep } from '@/components/dish/BasicIdentityStep';
@@ -246,123 +247,127 @@ export const ChefDishEditorPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-12 max-w-4xl flex justify-center text-zinc-500">
-        Cargando ficha técnica...
-      </div>
+      <WorkspaceLayout title="Gestión de Platos">
+        <div className="max-w-4xl w-full flex justify-center py-8 text-zinc-500">
+          Cargando ficha técnica...
+        </div>
+      </WorkspaceLayout>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* Navigation & Header */}
-      <div className="mb-6">
-        <Link
-          to="/cocina/platos"
-          className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline mb-2 inline-block"
-        >
-          ← Volver a Platos
-        </Link>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-              {id ? `Ficha Técnica: ${dish?.name || 'Cargando...'}` : 'Nueva Ficha Técnica'}
-            </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              {activeTab === 'identity'
-                ? 'Paso 1: Identidad básica del plato y fotografía.'
-                : activeTab === 'recipe'
-                ? 'Paso 2: Composición de la receta y escandallo de ingredientes (BOM).'
-                : activeTab === 'allergens'
-                ? 'Paso 3: Etiquetado de alérgenos y preferencias dietarias.'
-                : 'Paso 4: Verificación de requisitos y envío para revisión de precios.'}
-            </p>
-          </div>
-          {dish && (
-            <div>
-              <DishStatusBadge status={dish.status} />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Stepper Tabs */}
-      <DishStepper
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        hasDishId={Boolean(id)}
-        status={dish?.status}
-        isLocked={isReadOnly}
-      />
-
-      {dish?.status === 'CANCELLED' && (
-        <div
-          data-testid="cancelled-dish-readonly"
-          role="status"
-          className="mb-6 rounded border border-zinc-300 bg-zinc-100 px-4 py-3 text-sm text-zinc-700"
-        >
-          Este plato fue cancelado por administración y está disponible solo para consulta.
-        </div>
-      )}
-
-       {/* Notifications */}
-      {feedback && feedback.entries.length > 0 && (
+    <WorkspaceLayout title="Gestión de Platos">
+      <div className="max-w-4xl">
+        {/* Navigation & Header */}
         <div className="mb-6">
-          <DishRejectionFeedbackBanner
-            entries={feedback.entries}
-            ingredientNames={ingredientNames}
-          />
+          <Link
+            to="/cocina/platos"
+            className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline mb-2 inline-block"
+          >
+            ← Volver a Platos
+          </Link>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+                {id ? `Ficha Técnica: ${dish?.name || 'Cargando...'}` : 'Nueva Ficha Técnica'}
+              </h1>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                {activeTab === 'identity'
+                  ? 'Paso 1: Identidad básica del plato y fotografía.'
+                  : activeTab === 'recipe'
+                  ? 'Paso 2: Composición de la receta y escandallo de ingredientes (BOM).'
+                  : activeTab === 'allergens'
+                  ? 'Paso 3: Etiquetado de alérgenos y preferencias dietarias.'
+                  : 'Paso 4: Verificación de requisitos y envío para revisión de precios.'}
+              </p>
+            </div>
+            {dish && (
+              <div>
+                <DishStatusBadge status={dish.status} />
+              </div>
+            )}
+          </div>
         </div>
-      )}
-      {errorMessage && (
-        <div className="p-4 mb-6 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-sm text-red-700 dark:text-red-400">
-          {errorMessage}
-        </div>
-      )}
-      {successMessage && (
-        <div className="p-4 mb-6 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-sm text-emerald-700 dark:text-emerald-400">
-          {successMessage}
-        </div>
-      )}
 
-      {/* Tab Panels */}
-      {activeTab === 'identity' && (
-        <BasicIdentityStep
-          initialData={identityInitialData}
-          onSave={handleSaveIdentity}
-          onPhotoDelete={handlePhotoDelete}
-          isReadOnly={isReadOnly}
-          isSaving={isSaving}
+        {/* Stepper Tabs */}
+        <DishStepper
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          hasDishId={Boolean(id)}
+          status={dish?.status}
+          isLocked={isReadOnly}
         />
-      )}
-      {activeTab === 'recipe' && (
-        <RecipeBOMStep
-          dishId={id}
-          initialRecipe={recipeInitial}
-          onSaveRecipe={handleSaveRecipe}
-          onRemoveIngredient={handleRemoveRecipeIngredient}
-          isReadOnly={isReadOnly}
-          isSaving={isSaving}
-        />
-      )}
-      {activeTab === 'allergens' && (
-        <AllergenStep
-          dishId={id}
-          initialRestrictions={allergenInitialRestrictions}
-          initialConfirmed={dish?.allergensConfirmed || false}
-          onSaveAllergens={handleSaveAllergens}
-          isReadOnly={isReadOnly}
-          isSaving={isSaving}
-        />
-      )}
-      {activeTab === 'review' && dish && (
-        <ReviewSubmitStep
-          dish={dish}
-          onSubmitForReview={handleSaveSubmitForReview}
-          isReadOnly={isReadOnly}
-          isSubmitting={isSaving}
-        />
-      )}
-    </div>
+
+        {dish?.status === 'CANCELLED' && (
+          <div
+            data-testid="cancelled-dish-readonly"
+            role="status"
+            className="mb-6 rounded border border-zinc-300 bg-zinc-100 px-4 py-3 text-sm text-zinc-700"
+          >
+            Este plato fue cancelado por administración y está disponible solo para consulta.
+          </div>
+        )}
+
+         {/* Notifications */}
+        {feedback && feedback.entries.length > 0 && (
+          <div className="mb-6">
+            <DishRejectionFeedbackBanner
+              entries={feedback.entries}
+              ingredientNames={ingredientNames}
+            />
+          </div>
+        )}
+        {errorMessage && (
+          <div className="p-4 mb-6 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-sm text-red-700 dark:text-red-400">
+            {errorMessage}
+          </div>
+        )}
+        {successMessage && (
+          <div className="p-4 mb-6 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-sm text-emerald-700 dark:text-emerald-400">
+            {successMessage}
+          </div>
+        )}
+
+        {/* Tab Panels */}
+        {activeTab === 'identity' && (
+          <BasicIdentityStep
+            initialData={identityInitialData}
+            onSave={handleSaveIdentity}
+            onPhotoDelete={handlePhotoDelete}
+            isReadOnly={isReadOnly}
+            isSaving={isSaving}
+          />
+        )}
+        {activeTab === 'recipe' && (
+          <RecipeBOMStep
+            dishId={id}
+            initialRecipe={recipeInitial}
+            onSaveRecipe={handleSaveRecipe}
+            onRemoveIngredient={handleRemoveRecipeIngredient}
+            isReadOnly={isReadOnly}
+            isSaving={isSaving}
+          />
+        )}
+        {activeTab === 'allergens' && (
+          <AllergenStep
+            dishId={id}
+            initialRestrictions={allergenInitialRestrictions}
+            initialConfirmed={dish?.allergensConfirmed || false}
+            onSaveAllergens={handleSaveAllergens}
+            isReadOnly={isReadOnly}
+            isSaving={isSaving}
+          />
+        )}
+        {activeTab === 'review' && dish && (
+          <ReviewSubmitStep
+            dish={dish}
+            onSubmitForReview={handleSaveSubmitForReview}
+            isReadOnly={isReadOnly}
+            isSubmitting={isSaving}
+          />
+        )}
+      </div>
+    </WorkspaceLayout>
   );
 };
 
