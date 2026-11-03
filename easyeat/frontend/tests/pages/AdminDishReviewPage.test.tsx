@@ -162,7 +162,7 @@ describe('AdminDishReviewPage', () => {
       await userEvent.click(await screen.findByTestId('inbox-row'));
       await screen.findByTestId('dietary-labels');
 
-      await userEvent.click(screen.getByRole('tab', { name: /publicados/i }));
+      await userEvent.click(screen.getByRole('tab', { name: /finalizados/i }));
 
       await waitFor(() => expect(screen.getByTestId('detail-placeholder')).toBeInTheDocument());
     });

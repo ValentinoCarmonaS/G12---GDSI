@@ -1,88 +1,88 @@
 # Technical Research & Architectural Decisions: Shopping Cart & Diner Demographics
 
 **Feature Branch**: `009-shopping-cart`  
-**Fecha**: 31/10/2026  
-**Estado**: Completado  
-**Referencia de Especificación**: [spec.md](./spec.md)
+**Date**: 2026-10-31  
+**Status**: Completed  
+**Specification Reference**: [spec.md](./spec.md)
 
 ---
 
-## Resumen de Investigación
+## Research Summary
 
-Esta fase de investigación resuelve las decisiones de diseño arquitectónico y técnico para la extensión de la funcionalidad de carrito de compras y gestión demográfica del perfil de comensal, garantizando compatibilidad absoluta con las especificaciones previas (`001-central-auth-recovery` a `008-diner-catalog-multi-tenant`), el cumplimiento estricto de las 9 invariantes de negocio (INV-1 a INV-9) y los 15 criterios de aceptación (15/15).
+This technical research phase establishes the architectural and technical design decisions for the extension of the shopping cart functionality and diner profile demographic management, ensuring strict compatibility with previous specifications (`001-central-auth-recovery` through `008-diner-catalog-multi-tenant`), complete compliance with all 9 business invariants (INV-1 to INV-9), and full satisfaction of all 15 acceptance criteria (15/15).
 
 ---
 
-## 1. Gestión de Sesión Local del Carrito y Aislamiento Multi-Tenant
+## 1. Local Shopping Cart Session Management & Multi-Tenant Isolation
 
-### Contexto y Problema
-El requerimiento funcional (FR-002, FR-004) y los criterios de aceptación de COM-6.1.1 y COM-6.1.2 exigen que el carrito de compras resida en la sesión local del comensal, manteniéndose reactivo sin recargas de página y estrictamente aislado por establecimiento gastronómico activo (`tenantId`).
+### Context & Problem Statement
+Functional requirements (FR-002, FR-004) and acceptance criteria for COM-6.1.1 and COM-6.1.2 require that the shopping cart reside within the diner's local session, remaining reactive without page reloads, and strictly isolated per active establishment (`tenantId`).
 
-### Decisión Técnica (D-001)
-Reutilizar y extender la infraestructura existente de `CartContext` (`easyeat/frontend/src/context/CartContext.tsx`) respaldada por `sessionStorage` bajo la clave `'easyeat_cart'`, agregando el atributo `tenantId` en la estructura de almacenamiento de la sesión:
-1. `sessionStorage` almacena un objeto serializado estructurado:
+### Technical Decision (D-001)
+Reuse and extend the existing `CartContext` infrastructure (`easyeat/frontend/src/context/CartContext.tsx`) backed by `sessionStorage` under key `'easyeat_cart'`, incorporating `tenantId` into the session schema:
+1. `sessionStorage` holds a structured serialized object:
    ```typescript
    interface StoredCartSession {
      tenantId: string | null;
      items: CartItem[];
    }
    ```
-2. Al cargar o inicializar el contexto, si el `tenantId` del establecimiento activo (obtenido de `TenantContext`) difiere del `tenantId` almacenado y existen ítems, se activa el diálogo de confirmación `EstablishmentSwitchModal` (introducido en la especificación 008, COM-1.5.1 CA 5) antes de purgar la sesión.
-3. Se mantiene el aislamiento respecto a otros usuarios en la misma máquina gracias al alcance por pestaña/ventana de `sessionStorage`.
+2. When loading or initializing the context, if the active establishment's `tenantId` (retrieved from `TenantContext`) differs from the stored `tenantId` and items are present, the system triggers the `EstablishmentSwitchModal` confirmation dialog (introduced in Spec 008, COM-1.5.1 AC 5) before purging the previous cart session.
+3. Isolation across multiple users on the same machine is preserved by the tab/window scope of `sessionStorage`.
 
-### Justificación
-- **Persistencia no invasiva**: `sessionStorage` sobrevive a recargas accidentales de la página (F5) dentro de la misma pestaña, pero se destruye al cerrar la pestaña/navegador, lo que coincide con la semántica de "sesión local de comensal" sin generar basura en bases de datos para pedidos no confirmados.
-- **Consistencia con Spec 008**: Se alinea directamente con `TenantContext` y la regla de negocio que previene mezclar platos de distintos restaurantes en un único pedido.
+### Rationale
+- **Non-Invasive Persistence**: `sessionStorage` survives accidental page reloads (F5) within the same browser tab, but is destroyed when closing the tab/window, exactly matching the semantics of a "diner local session" without cluttering backend databases with unconfirmed abandoned carts.
+- **Consistency with Spec 008**: Aligns directly with `TenantContext` and the business rule preventing dishes from different restaurants from being mixed into a single order.
 
-### Alternativas Descartadas
-- **Persistencia en base de datos en servidor (`carts` / `cart_items` en PostgreSQL)**: Descartada porque el spec declara expresamente el carrito como sesión local (`sessionStorage`); almacenar carritos abandonados en backend introduce sobrecarga de I/O, locks concurrentes y tareas de limpieza (TTL/cron) innecesarias en esta iteración.
-- **`localStorage`**: Descartada porque comparte estado entre múltiples pestañas en segundo plano, lo que generaría conflictos si un comensal explora dos restaurantes diferentes en pestañas simultáneas.
+### Alternatives Considered & Rejected
+- **Relational Database Storage (`carts` / `cart_items` in PostgreSQL)**: Rejected because the specification explicitly defines the cart as a local session (`sessionStorage`); persisting abandoned carts in the database introduces unnecessary I/O overhead, concurrent locks, and cleanup routines (TTL/cron) for this iteration.
+- **`localStorage`**: Rejected because it shares state across multiple tabs, which would cause race conditions and conflicts if a diner browses two different restaurants in parallel tabs.
 
 ---
 
-## 2. Selector Numérico Previo en Detalle de Plato e Incorporación Acumulativa
+## 2. Quantity Selector in Dish Detail & Additive Accumulation
 
-### Contexto y Problema
-COM-6.1.1 (AC-1.1, FR-001, FR-002, FR-003) exige que la vista de detalle de plato (`DishDetailModal.tsx`) proporcione un selector numérico previo de cantidad (con valor por defecto 1) acotado entre 1 y el stock real disponible en cocina, permitiendo incorporar múltiples unidades en una única acción sin generar filas duplicadas para un mismo plato.
+### Context & Problem Statement
+COM-6.1.1 (AC-1.1, FR-001, FR-002, FR-003) requires the dish detail view (`DishDetailModal.tsx`) to provide a numeric quantity selector (defaulting to 1 unit) bounded between 1 and available kitchen stock, allowing diners to add multiple units in a single action without creating duplicate rows for the same dish.
 
-### Decisión Técnica (D-002)
-Modificar `DishDetailModal.tsx` (`easyeat/frontend/src/components/catalog/DishDetailModal.tsx`) para:
-1. Introducir un estado local `selectedQuantity` inicializado en 1 al abrir el modal para un plato determinado.
-2. Determinar la cota superior del selector dinámicamente:
-   $$\text{maxSelectable} = \max(0, \text{stockRealDisponible} - \text{cantidadYaEnCarrito})$$
-3. Deshabilitar los controles de incremento si `selectedQuantity >= maxSelectable` o si `maxSelectable == 0`.
-4. Extender la función `addItem` en `CartContextType` para aceptar la firma:
+### Technical Decision (D-002)
+Modify `DishDetailModal.tsx` (`easyeat/frontend/src/components/catalog/DishDetailModal.tsx`) to:
+1. Introduce a local state `selectedQuantity` initialized to 1 upon opening the modal for a given dish.
+2. Dynamically determine the upper bound for the selector:
+   $$\text{maxSelectable} = \max(0, \text{availableKitchenStock} - \text{quantityAlreadyInCart})$$
+3. Disable increment controls if `selectedQuantity >= maxSelectable` or if `maxSelectable == 0`.
+4. Extend the `addItem` function in `CartContextType` to accept the signature:
    ```typescript
    addItem: (dish: DishCatalogItem | EnrichedDish, quantity?: number, riskConfirmed?: boolean) => void;
    ```
-   Si el plato ya existe con cantidad $k$, la nueva cantidad pasa a ser $k + m$, verificando estrictamente que $k + m \le \text{stockRealDisponible}$ (INV-3).
-5. Desplegar una señal visual de notificación de éxito (toast temporal con auto-cierre de 3 segundos) informando: `"Se agregaron {m} unidad(es) de {plato.name} al carrito"`.
+   If the dish already exists with quantity $k$, the new quantity becomes $k + m$, strictly asserting that $k + m \le \text{availableKitchenStock}$ (INV-3).
+5. Display visual success notification feedback (3-second auto-dismissing toast) stating: `"Added {m} unit(s) of {dish.name} to cart"`.
 
-### Justificación
-- **Cumplimiento estricto del acuerdo**: Resuelve directamente la aclaración de la sesión de grill-me del 31/10/2026.
-- **Protección de stock en el origen**: Previene que el comensal intente añadir más unidades de las disponibles antes de enviar la orden al carrito.
+### Rationale
+- **Strict Compliance with Agreement**: Resolves the clarification from the 2026-10-31 grill-me session.
+- **Front-End Stock Protection**: Prevents diners from attempting to add more units than physically available before sending the items to the cart.
 
-### Alternativas Descartadas
-- **Adición fija de 1 unidad por pulsación sin selector**: Descartada porque contradice explícitamente la aclaración aprobada de COM-6.1.1 en `spec.md`.
+### Alternatives Considered & Rejected
+- **Fixed 1-Unit Addition Without Selector**: Rejected because it directly contradicts approved clarification COM-6.1.1 in `spec.md`.
 
 ---
 
-## 3. Botón Flotante Reactivo, Modal de Carrito y Precisión Monetaria Exacta
+## 3. Reactive Floating Cart Button, Drawer & Exact Monetary Precision
 
-### Contexto y Problema
-COM-6.1.2 (AC-2.1 a AC-2.4, FR-005 a FR-010) e INV-6/INV-7 exigen:
-1. Visibilidad contextual biunívoca: visible si y solo si el carrito tiene $\ge 1$ ítem y el comensal se encuentra en las pantallas de catálogo (`/catalogo`) o detalle de plato. Oculto inmediatamente si el carrito queda vacío o al navegar a `/perfil`.
-2. Exhibición continua de la cantidad total ($\text{cantidad\_total} = \sum q_i$) y subtotal acumulado ($\text{subtotal} = \sum p_i \times q_i$) sin recarga de página.
-3. Precisión decimal monetaria exacta (INV-2) libre de anomalías de punto flotante.
+### Context & Problem Statement
+COM-6.1.2 (AC-2.1 through AC-2.4, FR-005 through FR-010) and INV-6/INV-7 require:
+1. Bijective contextual visibility: visible if and only if the cart has $\ge 1$ item and the diner is on catalog screens (`/catalogo`) or dish detail views. Immediately hidden if the cart is cleared or upon navigating to `/perfil`.
+2. Continuous display of total item count ($\text{total\_count} = \sum q_i$) and accumulated subtotal ($\text{subtotal} = \sum p_i \times q_i$) without page reload.
+3. Exact monetary decimal precision (INV-2) free from floating-point anomalies.
 
-### Decisión Técnica (D-003)
-1. **Componente `FloatingCartButton.tsx`**:
-   Crear `easyeat/frontend/src/components/cart/FloatingCartButton.tsx` ubicado en la esquina inferior derecha (`fixed bottom-6 right-6 z-40`), animado con transiciones suaves (`transition-all duration-300 transform`).
-   - Se renderiza condicionalmente: `totalCount > 0 && isCatalogView`.
-   - Muestra badge con `totalCount` e importe formateado con precisión de 2 decimales.
-   - Al hacer click, dispara la apertura del drawer/modal del carrito (`setIsCartOpen(true)`).
-2. **Aritmética Decimal de Punto Fijo (INV-2)**:
-   Implementar una utilidad de cálculo monetario `currencyUtils.ts`:
+### Technical Decision (D-003)
+1. **Component `FloatingCartButton.tsx`**:
+   Create `easyeat/frontend/src/components/cart/FloatingCartButton.tsx` located in the bottom-right corner (`fixed bottom-6 right-6 z-40`), styled with smooth transitions (`transition-all duration-300 transform`).
+   - Conditionally rendered: `totalCount > 0 && isCatalogView`.
+   - Displays a badge with `totalCount` and formatted subtotal with 2-decimal precision.
+   - Clicking triggers cart drawer opening (`setIsCartOpen(true)`).
+2. **Fixed-Point Decimal Arithmetic (INV-2)**:
+   Implement a financial calculation utility `currencyUtils.ts`:
    ```typescript
    export const toCents = (amount: number): number => Math.round((amount + Number.EPSILON) * 100);
    export const fromCents = (cents: number): number => cents / 100;
@@ -91,66 +91,66 @@ COM-6.1.2 (AC-2.1 a AC-2.4, FR-005 a FR-010) e INV-6/INV-7 exigen:
    export const calculateCartTotal = (items: CartItem[]): number =>
      fromCents(items.reduce((acc, item) => acc + toCents(item.price) * item.quantity, 0));
    ```
-   En `CartContext`, `totalAmount` se computa usando esta aritmética entera basada en centavos, garantizando coincidencia estricta y ausencia de drift (`0.1 + 0.2` o sumas de centavos fraccionarios como \$12,33 × 3 = \$36,99).
-3. **Modal/Drawer Detallado**:
-   Extender `CartDrawer.tsx` (`easyeat/frontend/src/components/cart/CartDrawer.tsx`) para incorporar controles de incremento/decremento unitario, cálculo de subtotales por fila en tiempo real y botón de vaciado rápido.
+   In `CartContext`, `totalAmount` is computed using this integer cent arithmetic, guaranteeing strict precision and eliminating drift (e.g. `0.1 + 0.2` or \$12.33 × 3 = \$36.99).
+3. **Itemized Drawer (`CartDrawer.tsx`)**:
+   Extend `CartDrawer.tsx` (`easyeat/frontend/src/components/cart/CartDrawer.tsx`) to incorporate unitary increment/decrement controls, real-time line subtotal calculations, and a clear cart action.
 
-### Justificación
-- **Cumplimiento de INV-1 e INV-2**: La conversión a centavos enteros elimina cualquier imprecisión de IEEE 754.
-- **Ergonomía de usuario**: El botón flotante no obstruye formularios de perfil y se mantiene accesible en todo el recorrido de compra en el catálogo.
+### Rationale
+- **Compliance with INV-1 and INV-2**: Conversion to integer cents eliminates IEEE 754 precision drift.
+- **User Ergonomics**: The floating button does not obstruct form submissions on profile pages and remains accessible throughout the catalog ordering journey.
 
-### Alternativas Descartadas
-- **Uso directo de `number` con sumas nativas en JavaScript (`price * qty`)**: Descartada porque produce errores de punto flotante conocidos (ej. `36.990000000000006`), violando INV-2.
-- **Botón estático exclusivamente en cabecera**: Descartada porque el spec exige explícitamente botón flotante en pantalla (`COM-6.1.2`, FR-005).
-
----
-
-## 4. Modificación de Cantidades, Bloqueo de Stock y Reversión Determinista con Debounce
-
-### Contexto y Problema
-COM-6.1.3 (AC-3.1 a AC-3.5, FR-011 a FR-016) e INV-3/INV-9 requieren:
-1. Suma/resta unitaria en el modal. Restar sobre cantidad 1 elimina el producto íntegramente.
-2. Deshabilitar suma cuando la cantidad alcance el stock real disponible en cocina.
-3. Ante modificaciones rápidas, actualizar optimistamente la interfaz y consolidar con un debounce de 300 ms contra el backend. Si la red falla o el stock es insuficiente, retrotraer de inmediato al último valor confirmado y notificar al usuario.
-
-### Decisión Técnica (D-004)
-1. **Actualización Optimista y Debounce**:
-   En `CartContext` o un hook dedicado `useCartModifier`, cada pulsación de `+` o `-` actualiza el estado local de forma inmediata. Se mantiene para cada ítem una referencia a `lastSyncedQuantity`.
-2. **Temporizador de Debounce (300 ms)**:
-   Al registrar cambios, se activa un temporizador de 300 ms. Al vencer el lapso, el cliente ejecuta una validación de disponibilidad contra el servicio de catálogo (aprovechando `/api/v1/establishments/{tenantId}/catalog/availability` o el endpoint de validación de ítems).
-3. **Mecanismo de Rollback Determinista**:
-   Si la petición falla por error de red (HTTP 5xx, timeout, pérdida de conexión `TypeError: Failed to fetch`) o por respuesta de stock insuficiente:
-   - Se revierte la cantidad del ítem en `CartContext` a su `lastSyncedQuantity`.
-   - Se recalcula de inmediato el total del pedido.
-   - Se dispara una notificación emergente visible: `"Error de conexión: se restablecieron las cantidades de {plato.name}"`.
-4. **Eliminación Total en Cantidad 1**:
-   Al pulsar `-` sobre un ítem con cantidad 1, se remueve el ítem del arreglo de `items`. Si el carrito queda vacío, se cierra el modal o se muestra el estado vacío y el botón flotante se oculta automáticamente (INV-6).
-
-### Justificación
-- **Experiencia de usuario fluida**: El usuario no experimenta bloqueos ni latencia perceptible en la botonera.
-- **Integridad de datos**: El rollback previene que el comensal crea haber reservado productos inexistentes o que se generen pedidos con cantidades discordantes.
-
-### Alternativas Descartadas
-- **Llamada de red síncrona bloqueante en cada pulsación**: Descartada porque congelaría la UI o generaría race conditions severas ante ráfagas de clicks rápidos.
-- **Ignorar fallo de red y dejar la cantidad modificada localmente**: Descartada porque viola INV-9 y provocaría fallos críticos posteriores en checkout.
+### Alternatives Considered & Rejected
+- **Direct Use of JavaScript `number` Math (`price * qty`)**: Rejected because it produces known floating-point errors (e.g. `36.990000000000006`), violating INV-2.
+- **Static Header-Only Cart Button**: Rejected because the specification explicitly mandates an on-screen floating action button (`COM-6.1.2`, FR-005).
 
 ---
 
-## 5. Edición de Datos Demográficos, Validación y Manejo de Foto de Perfil
+## 4. Quantity Modification, Stock Guardrails & Deterministic Debounced Rollback
 
-### Contexto y Problema
-COM-1.4.2 (AC-4.1 a AC-4.6, FR-018 a FR-032) e INV-4, INV-5, INV-8 requieren:
-1. Foto de perfil: Formatos permitidos JPEG, PNG, WEBP. Tamaño estrictamente mayor a 0 y menor o igual a 5 MB (5.242.880 bytes).
-2. Rechazo con mensajes específicos ante exceso de peso o formato no soportado.
-3. Eliminación de foto con diálogo de confirmación diferido: al confirmar el diálogo, la UI muestra el avatar por defecto provisionalmente, pero la eliminación efectiva en backend y persistencia final se consolida únicamente al presionar "Guardar cambios".
-4. Edad: entero entre 14 y 120 años inclusive. Rechazo estricto de negativos, decimales o alfanuméricos.
-5. Género: opciones "Femenino", "Masculino", "No binario", "Prefiero no responder" (opcional).
-6. Domicilio: texto libre de hasta 255 caracteres, tratado exclusivamente como dato de contacto sin ruteo ni logística.
-7. Reflejo inmediato del avatar actualizado en la barra de navegación superior (`WorkspaceLayout.tsx`).
+### Context & Problem Statement
+COM-6.1.3 (AC-3.1 to AC-3.5, FR-011 to FR-016) and INV-3/INV-9 require:
+1. Unitary increment/decrement in the drawer. Decrementing on quantity 1 removes the product entirely.
+2. Disabling increment when quantity reaches real available kitchen stock.
+3. During rapid modifications, applying optimistic UI updates and batching sync with a 300 ms debounce window to the backend. If network fails or stock is rejected, immediately reverting to the last confirmed count and alerting the user.
 
-### Decisión Técnica (D-005)
-1. **Modelo de Persistencia Relacional (PostgreSQL - Flyway `V10`)**:
-   - Crear tabla `user_photos` idéntica al patrón probado de `dish_photos` (`V7`):
+### Technical Decision (D-004)
+1. **Optimistic Updates & Debounce**:
+   In `CartContext` or a dedicated hook `useDebouncedCartModifier`, each click on `+` or `-` updates local state immediately while preserving `lastSyncedQuantity`.
+2. **Debounce Timer (300 ms)**:
+   Upon registering changes, a 300 ms debounce timer is armed. When it elapses, the client executes inventory validation against the catalog service (`/api/v1/establishments/{tenantId}/catalog/availability` or `/api/v1/cart/validate-stock`).
+3. **Deterministic Rollback Mechanism**:
+   If the network request fails (HTTP 5xx, timeout, connection drop `TypeError: Failed to fetch`) or returns insufficient stock:
+   - The item quantity in `CartContext` reverts to `lastSyncedQuantity`.
+   - Cart grand total is immediately recalculated.
+   - A visible alert toast is triggered: `"Connection error: quantities for {dish.name} were reset"`.
+4. **Complete Removal on Quantity 1**:
+   Clicking `-` on an item with quantity 1 removes the item from the `items` array. If the cart becomes empty, the drawer displays the empty state and the floating button hides automatically (INV-6).
+
+### Rationale
+- **Fluid User Experience**: Diners experience immediate UI responsiveness without button lag or freezing.
+- **Data Integrity**: Rollback prevents diners from assuming unavailable stock was reserved or checking out inconsistent quantities.
+
+### Alternatives Considered & Rejected
+- **Synchronous Blocking Network Call on Each Click**: Rejected because it would freeze the UI and introduce severe race conditions during rapid clicking.
+- **Silently Retaining Modified Quantity on Failure**: Rejected because it violates INV-9 and causes checkout submission failures.
+
+---
+
+## 5. Diner Demographics, Validation & BYTEA Avatar Storage
+
+### Context & Problem Statement
+COM-1.4.2 (AC-4.1 to AC-4.6, FR-018 to FR-032) and INV-4, INV-5, INV-8 require:
+1. Profile photo: Accepted formats JPEG, PNG, WEBP. Size strictly $> 0$ and $\le 5\text{ MB}$ (5,242,880 bytes).
+2. Explicit rejection messages for oversize files or unsupported MIME types.
+3. Photo removal with deferred confirmation: confirming the verification dialog updates the preview to provisionally show the default avatar, but server deletion and navbar update consolidate only upon clicking "Save changes".
+4. Age: integer between 14 and 120 years inclusive. Strict rejection of negative, decimal, or alphanumeric values.
+5. Gender: closed taxonomy ("Female", "Male", "Non-binary", "Prefer not to say").
+6. Address: free-form text up to 255 characters, treated strictly as contact data without routing or external logistics.
+7. Immediate reflection of updated avatar on top navigation bar (`WorkspaceLayout.tsx`).
+
+### Technical Decision (D-005)
+1. **Relational Persistence Model (PostgreSQL - Flyway `V12`)**:
+   - Create `user_photos` table identical to the proven pattern from `dish_photos` (`V7`):
      ```sql
      CREATE TABLE IF NOT EXISTS user_photos (
          user_id      UUID         PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -166,7 +166,7 @@ COM-1.4.2 (AC-4.1 a AC-4.6, FR-018 a FR-032) e INV-4, INV-5, INV-8 requieren:
              CHECK (file_size > 0 AND file_size <= 5242880)
      );
      ```
-   - Extender la tabla `users` mediante columnas y constraints de dominio:
+   - Extend `users` table with domain columns and `CHECK` constraints:
      ```sql
      ALTER TABLE users
          ADD COLUMN IF NOT EXISTS age        INTEGER,
@@ -181,47 +181,47 @@ COM-1.4.2 (AC-4.1 a AC-4.6, FR-018 a FR-032) e INV-4, INV-5, INV-8 requieren:
          ADD CONSTRAINT chk_users_address_length
              CHECK (address IS NULL OR length(address) <= 255);
      ```
-2. **Servicio y Controlador Backend**:
-   - Extender `ProfileController.java` y `ProfileService.java` en `com.easyeat.profile`:
-     - `PUT /api/v1/profile/demographics`: Actualiza `age`, `gender`, `address` y estado de foto de manera transaccional.
-     - `POST /api/v1/profile/avatar`: Valida tamaño ($\le 5.242.880$ bytes) y magic bytes (JPEG/PNG/WEBP) vía `UserPhotoService`, persistiendo el binario en `user_photos`.
-     - `DELETE /api/v1/profile/avatar`: Remueve el registro de `user_photos`.
-     - `GET /api/v1/profile/avatar`: Sirve el stream binario del avatar del usuario autenticado con cabeceras `Content-Type` y `Cache-Control`.
-   - Extender `ProfileResponse` para incluir `age`, `gender`, `address`, `avatarUrl`.
-3. **Flujo de Eliminación Diferida en Frontend (`PersonalDataForm.tsx`)**:
-   - El formulario mantiene estados locales transitorios: `pendingPhotoFile`, `removePhotoPending: boolean`, `previewAvatarUrl`.
-   - Si el comensal confirma la eliminación en el modal, se marca `removePhotoPending = true`, `previewAvatarUrl = null` y se exhibe el avatar institucional genérico.
-   - Solo al pulsar "Guardar cambios", si `removePhotoPending === true`, se ejecuta la llamada a `DELETE /api/v1/profile/avatar`; si hay un `pendingPhotoFile`, se envía a `POST /api/v1/profile/avatar`; y luego se actualiza `PUT /api/v1/profile/demographics`.
-   - Si el comensal navega fuera sin guardar, los estados transitorios se descartan y la foto original permanece intacta.
-4. **Actualización de Avatar en `WorkspaceLayout.tsx`**:
-   - `WorkspaceLayout.tsx` consume el perfil desde `useProfile()` o `useAuth()`. Si `profile.avatarUrl` existe, renderiza `<img>` circular; si es nulo, renderiza el avatar SVG predeterminado con iniciales o silueta.
+2. **Backend Service & Controllers**:
+   - Extend `ProfileController.java` and `ProfileService.java` in `com.easyeat.profile`:
+     - `PUT /api/v1/profile/demographics`: Transactionally updates `age`, `gender`, `address`.
+     - `POST /api/v1/profile/avatar`: Validates size ($\le 5,242,880$ bytes) and magic bytes (JPEG/PNG/WEBP) via `UserPhotoService`, persisting the binary in `user_photos`.
+     - `DELETE /api/v1/profile/avatar`: Removes record from `user_photos`.
+     - `GET /api/v1/profile/avatar`: Streams binary avatar for authenticated user with `Content-Type` and `Cache-Control` headers.
+   - Extend `ProfileResponse` to include `age`, `gender`, `address`, `avatarUrl`.
+3. **Deferred Removal Flow in Frontend (`PersonalDataForm.tsx`)**:
+   - Form maintains transient state: `pendingPhotoFile`, `removePhotoPending: boolean`, `previewAvatarUrl`.
+   - Confirming modal sets `removePhotoPending = true`, `previewAvatarUrl = null`, showing the default avatar.
+   - Clicking "Save changes" executes `DELETE /api/v1/profile/avatar` if `removePhotoPending === true`; uploads `pendingPhotoFile` if present; and updates `PUT /api/v1/profile/demographics`.
+   - Navigating away without saving discards transient state, preserving the previous avatar.
+4. **Navbar Avatar Update in `WorkspaceLayout.tsx`**:
+   - `WorkspaceLayout.tsx` consumes user profile from `useProfile()` or `useAuth()`. Renders circular `<img>` if `avatarUrl` exists, or default institutional SVG avatar if null.
 
-### Justificación
-- **Coherencia arquitectónica**: Reutiliza exactamente el patrón de `DishPhotoService` y `dish_photos` para almacenamiento y validación de cabeceras/magic bytes.
-- **Seguridad en BD**: Las restricciones `CHECK` garantizan que ningún dato corrupto pueda guardarse aún si se esquivaran las validaciones de frontend y Spring Boot.
-- **Aislamiento de Domicilio**: `address` es un simple texto de contacto, sin disparar dependencias con APIs de mapas ni servicios de logística (INV-8).
+### Rationale
+- **Architectural Coherence**: Reuses the exact pattern of `DishPhotoService` and `dish_photos` for BYTEA storage and magic byte validation.
+- **Database-Level Defense**: PostgreSQL `CHECK` constraints prevent corrupt data persistence even if frontend or controller checks are bypassed.
+- **Address Decoupling**: Plain text contact string without external mapping or routing dependencies (INV-8).
 
-### Alternativas Descartadas
-- **Almacenar fotos en un bucket S3 / Cloud Storage externo**: Descartada porque el repositorio EasyEat no cuenta con infraestructura cloud ni credenciales S3 configuradas; el proyecto estandarizó el almacenamiento en PostgreSQL BYTEA (`V7`).
-- **Eliminar la foto inmediatamente al pulsar el diálogo**: Descartada porque viola expresamente el requerimiento de confirmación diferida de la especificación (FR-025).
+### Alternatives Considered & Rejected
+- **External S3 / Cloud Bucket Storage**: Rejected because EasyEat has no cloud bucket infrastructure or S3 credentials; relational BYTEA storage (`V7`) is standardized across the codebase.
+- **Immediate Avatar Deletion Upon Dialog Confirmation**: Rejected because it violates the specification's deferred confirmation requirement (FR-025).
 
 ---
 
-## 6. Coexistencia y Compatibilidad con Especificaciones Previas
+## 6. Coexistence & Compatibility with Previous Specifications
 
-| Especificación | Interfaz / Componente Reutilizado | Estrategia de Compatibilidad |
+| Specification | Reused Interface / Component | Compatibility Strategy |
 |---|---|---|
-| **Spec 001 / 002** | `User`, `UserRole`, `RoleRouteGuard`, `SecurityConfig` | El acceso a `/catalogo`, `/perfil`, endpoints de avatar y carrito continúa restringido a usuarios autenticados con rol `COMENSAL`. Sin alteraciones en login ni tokens JWT. |
-| **Spec 003** | `CartContext`, `AllergenWarningBadge`, `AddToCartRiskModal`, `ProfileResponse` | Los ítems del carrito preservan los indicadores dietarios (`isCompliant`, `conflictingRestrictions`, `riskConfirmed`). `ProfileResponse` se amplía con campos opcionales sin romper consumidores previos. |
-| **Spec 004 / 005 / 006** | `DishRecipeIngredient`, `Ingredient`, `dish_photos` | El cálculo de stock de platos se basa en las recetas y existencias de cocina existentes sin modificar su esquema. |
-| **Spec 007** | `Dish.retail_price` (PVP vigente) | El carrito utiliza estrictamente el precio de venta al público publicado (`retail_price`). |
-| **Spec 008** | `TenantContext`, `EstablishmentSwitchModal`, `dinerCatalogApi`, `useRealtimeAvailability` | El carrito se asocia al `tenantId` activo. Cambiar de restaurante activa el diálogo de advertencia para vaciar la orden (COM-1.5.1 CA 5). |
+| **Spec 001 / 002** | `User`, `UserRole`, `RoleRouteGuard`, `SecurityConfig` | Catalog, profile, and cart endpoints remain restricted to `ROLE_COMENSAL`. No changes to authentication or JWT token infrastructure. |
+| **Spec 003** | `CartContext`, `AllergenWarningBadge`, `AddToCartRiskModal`, `ProfileResponse` | Cart items retain dietary compliance flags. `ProfileResponse` extended with optional demographic fields without breaking existing consumers. |
+| **Spec 004 / 005 / 006** | `DishRecipeIngredient`, `Ingredient`, `dish_photos` | Dish stock calculation relies on existing kitchen BOM inventory without schema modifications. |
+| **Spec 007** | `Dish.retail_price` (active approved PVP) | Shopping cart strictly consumes approved retail price (`retail_price`). |
+| **Spec 008** | `TenantContext`, `EstablishmentSwitchModal`, `dinerCatalogApi`, `useRealtimeAvailability` | Cart is bound to active `tenantId`. Switching restaurants triggers confirmation modal to flush cart (COM-1.5.1 AC 5). |
 
 ---
 
-## Resumen de Resolución de Dudas Técnicas (NEEDS CLARIFICATION)
+## Technical Inquiry Resolution Summary
 
-Todas las áreas técnicas identificadas han sido resueltas a partir de la evidencia observable en el repositorio y la especificación aprobada:
-- **Estado de Clarificaciones**: 0 pendientes.
-- **Alineación con Constitution 2.0.0**: Total.
-- **Próximo Paso**: Avanzar a la Fase 1 (Modelado de datos conceptual, contratos y quickstart).
+All identified architectural and technical areas have been resolved with concrete evidence from the repository and approved specifications:
+- **Pending Clarifications**: 0.
+- **Constitution v2.0.0 Alignment**: 100% PASS.
+- **Next Phase**: Execution of tasks T020–T043.

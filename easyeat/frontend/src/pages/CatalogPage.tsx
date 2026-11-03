@@ -6,7 +6,7 @@ import { useProfile } from '../hooks/useProfile';
 import { useCatalog } from '../hooks/useCatalog';
 import { TenantContext, TenantProvider } from '../context/TenantContext';
 import { CatalogFilterContext, CatalogFilterProvider, useCatalogFilter } from '../context/CatalogFilterContext';
-import { CartProvider } from '../context/CartContext';
+import { CartContext, CartProvider } from '../context/CartContext';
 import { useCart } from '../hooks/useCart';
 import { useRealtimeAvailability } from '../hooks/useRealtimeAvailability';
 import { dinerCatalogApi } from '../api/dinerCatalogApi';
@@ -19,6 +19,7 @@ import { DishDetailModal } from '../components/catalog/DishDetailModal';
 import { CatalogMasterToggle } from '../components/catalog/CatalogMasterToggle';
 import { EmptyCatalogDietaryState } from '../components/catalog/EmptyCatalogDietaryState';
 import { AddToCartRiskModal } from '../components/cart/AddToCartRiskModal';
+import { FloatingCartButton } from '../components/cart/FloatingCartButton';
 import { CartDrawer } from '../components/cart/CartDrawer';
 import {
   CatalogSearchFilter,
@@ -35,7 +36,7 @@ export const CatalogView: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const { profile } = useProfile();
   const { isFilterActive, setIsFilterActive } = useCatalogFilter();
-  const { addItem, totalCount } = useCart();
+  const { addItem } = useCart();
   const catalogHook = useCatalog();
 
   const [catalogData, setCatalogData] = useState<CatalogResponse | null>(null);
@@ -43,6 +44,7 @@ export const CatalogView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedDish, setSelectedDish] = useState<DishCatalogItem | null>(null);
   const [dishToConfirm, setDishToConfirm] = useState<EnrichedDish | null>(null);
+  const [pendingQuantity, setPendingQuantity] = useState<number>(1);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -119,6 +121,14 @@ export const CatalogView: React.FC = () => {
       })
       .map((group) => {
         const matchingDishes = group.dishes.filter((dish) => {
+          if (
+            isAuthenticated &&
+            activeRestrictionsCount > 0 &&
+            isFilterActive &&
+            dish.isCompliant === false
+          ) {
+            return false;
+          }
           if (!isQueryActive) return true;
           return matchesDishQuery(dish, searchQuery);
         });
@@ -128,7 +138,15 @@ export const CatalogView: React.FC = () => {
         };
       })
       .filter((group) => group.dishes.length > 0);
-  }, [catalogData, activeCategory, searchQuery, isQueryActive]);
+  }, [
+    catalogData,
+    activeCategory,
+    searchQuery,
+    isQueryActive,
+    isAuthenticated,
+    activeRestrictionsCount,
+    isFilterActive,
+  ]);
 
 
 
@@ -142,7 +160,7 @@ export const CatalogView: React.FC = () => {
     return catalogHook.dishes.filter((dish) => dish.isCompliant !== false);
   }, [catalogHook.dishes, isFilterActive, isAuthenticated, activeRestrictionsCount]);
 
-  const handleAddToCart = (dish: DishCatalogItem | EnrichedDish) => {
+  const handleAddToCart = (dish: DishCatalogItem | EnrichedDish, quantity: number = 1) => {
     const isAvailable =
       'isAvailable' in dish
         ? (availability[dish.id] !== undefined ? availability[dish.id] : dish.isAvailable !== false)
@@ -150,34 +168,37 @@ export const CatalogView: React.FC = () => {
 
     if (isReadOnly || !isAvailable) return;
 
+    const itemToAdd: EnrichedDish = {
+      id: dish.id,
+      tenantId: tenant?.id || ('tenantId' in dish ? dish.tenantId : ''),
+      name: dish.name,
+      price: dish.price,
+      description: dish.description ?? null,
+      isActive: true,
+      isCompliant: dish.isCompliant,
+      conflictingRestrictions: dish.conflictingRestrictions,
+      availableStock: (dish as any).availableStock,
+    };
+
     if (isAuthenticated && activeRestrictionsCount > 0 && dish.isCompliant === false) {
-      setDishToConfirm(dish as EnrichedDish);
+      setDishToConfirm(itemToAdd);
+      setPendingQuantity(quantity);
     } else {
-      addItem(
-        {
-          id: dish.id,
-          tenantId: tenant?.id || ('tenantId' in dish ? dish.tenantId : ''),
-          name: dish.name,
-          price: dish.price,
-          description: dish.description ?? null,
-          isActive: true,
-          isCompliant: dish.isCompliant,
-          conflictingRestrictions: dish.conflictingRestrictions,
-        },
-        false
-      );
+      addItem(itemToAdd, quantity, false);
     }
   };
 
   const handleConfirmRisk = () => {
     if (dishToConfirm) {
-      addItem(dishToConfirm, true);
+      addItem(dishToConfirm, pendingQuantity, true);
       setDishToConfirm(null);
+      setPendingQuantity(1);
     }
   };
 
   const handleCancelRisk = () => {
     setDishToConfirm(null);
+    setPendingQuantity(1);
   };
 
   const pageTitle = catalogData?.establishment?.name || tenant?.name || 'Catálogo de Productos';
@@ -205,32 +226,6 @@ export const CatalogView: React.FC = () => {
           ) : (
             <div />
           )}
-
-          {/* Floating Cart Button */}
-          <button
-            type="button"
-            onClick={() => setIsCartOpen(true)}
-            data-testid="open-cart-button"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all focus:ring-2 focus:ring-amber-500 cursor-pointer"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-            <span>Ver Carrito</span>
-            {totalCount > 0 && (
-              <span
-                data-testid="cart-badge-count"
-                className="ml-1 px-1.5 py-0.5 text-2xs bg-white text-amber-800 rounded-full font-extrabold"
-              >
-                {totalCount}
-              </span>
-            )}
-          </button>
         </div>
 
         {/* Guest Banner (FR-026, spec 003) */}
@@ -364,37 +359,41 @@ export const CatalogView: React.FC = () => {
                 </p>
               </div>
             ) : filteredCategoryGroups.length === 0 ? (
-              <div
-                data-testid="catalog-empty-search"
-                className="py-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200 px-6 space-y-4"
-              >
-                <div className="mx-auto w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
+              !isQueryActive && isAuthenticated && activeRestrictionsCount > 0 && isFilterActive ? (
+                <EmptyCatalogDietaryState onViewFullMenu={() => setIsFilterActive(false)} />
+              ) : (
+                <div
+                  data-testid="catalog-empty-search"
+                  className="py-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200 px-6 space-y-4"
+                >
+                  <div className="mx-auto w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-base font-bold text-gray-800">No se encontraron platos</p>
+                    <p className="text-sm text-gray-500 max-w-md mx-auto">
+                      No encontramos resultados para tu búsqueda. Verificá la ortografía o probá con otros términos o ingredientes.
+                    </p>
+                  </div>
+                  {isQueryActive && (
+                    <button
+                      type="button"
+                      data-testid="clear-empty-search-btn"
+                      onClick={() => setSearchQuery('')}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Limpiar búsqueda
+                    </button>
+                  )}
                 </div>
-                <div className="space-y-1">
-                  <p className="text-base font-bold text-gray-800">No se encontraron platos</p>
-                  <p className="text-sm text-gray-500 max-w-md mx-auto">
-                    No encontramos resultados para tu búsqueda. Verificá la ortografía o probá con otros términos o ingredientes.
-                  </p>
-                </div>
-                {isQueryActive && (
-                  <button
-                    type="button"
-                    data-testid="clear-empty-search-btn"
-                    onClick={() => setSearchQuery('')}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                  >
-                    Limpiar búsqueda
-                  </button>
-                )}
-              </div>
+              )
             ) : (
               /* Categorized Sections (FR-007, FR-009, FR-020, FR-022) */
               <div className="space-y-10">
@@ -428,6 +427,7 @@ export const CatalogView: React.FC = () => {
                           isReadOnly={isReadOnly}
                           onSelectDish={setSelectedDish}
                           onAddToCart={handleAddToCart}
+                          showWarnings={isAuthenticated && activeRestrictionsCount > 0 && !isFilterActive}
                         />
                       ))}
                     </div>
@@ -459,7 +459,7 @@ export const CatalogView: React.FC = () => {
         )}
       </div>
 
-      {/* Informational Dish Detail Modal (FR-007, FR-012, FR-014) */}
+      {/* Informational Dish Detail Modal (FR-007, FR-012, FR-014, COM-6.1.1) */}
       <DishDetailModal
         dish={
           selectedDish
@@ -476,6 +476,9 @@ export const CatalogView: React.FC = () => {
         onClose={() => setSelectedDish(null)}
         isReadOnly={isReadOnly}
         nextOpeningSchedule={catalogData?.establishment?.nextOpeningSchedule}
+        onAddToCart={(dish, quantity) => {
+          handleAddToCart(dish, quantity);
+        }}
       />
 
       {/* Preventive Risk Modal (FR-021, spec 003) */}
@@ -486,6 +489,9 @@ export const CatalogView: React.FC = () => {
         onConfirm={handleConfirmRisk}
         onCancel={handleCancelRisk}
       />
+
+      {/* Floating Cart Button (COM-6.1.2, FR-005, FR-008, INV-6, INV-7) */}
+      <FloatingCartButton onClick={() => setIsCartOpen(true)} />
 
       {/* Cart Drawer */}
       <CartDrawer
@@ -500,6 +506,7 @@ export const CatalogView: React.FC = () => {
 export const CatalogPage: React.FC = () => {
   const existingTenantContext = useContext(TenantContext);
   const existingFilterContext = useContext(CatalogFilterContext);
+  const existingCartContext = useContext(CartContext);
 
   let content = <CatalogView />;
 
@@ -507,7 +514,9 @@ export const CatalogPage: React.FC = () => {
     content = <CatalogFilterProvider>{content}</CatalogFilterProvider>;
   }
 
-  content = <CartProvider>{content}</CartProvider>;
+  if (!existingCartContext) {
+    content = <CartProvider>{content}</CartProvider>;
+  }
 
   if (!existingTenantContext) {
     content = <TenantProvider>{content}</TenantProvider>;
