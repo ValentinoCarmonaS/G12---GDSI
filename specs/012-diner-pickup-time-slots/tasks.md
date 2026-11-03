@@ -144,9 +144,9 @@
 
 **Purpose**: End-to-end integration tests, edge case verification, and documentation validation across both backend and frontend.
 
-- [ ] T043 [P] Create `OrderControllerIntegrationTest.java` in `easyeat/backend/src/test/java/com/easyeat/order/OrderControllerIntegrationTest.java` verifying MockMvc endpoints with role authorization, 401 unauthenticated, 400 bad request, 409 conflict, and 201 created.
-- [ ] T044 [P] Create end-to-end checkout page integration test in `easyeat/frontend/src/test/checkout/CheckoutPage.test.tsx` verifying full diner checkout flow from cart loading to slot reservation and countdown screen.
-- [ ] T045 Execute and validate quickstart scenarios in `specs/012-diner-pickup-time-slots/quickstart.md` ensuring all curl commands and frontend acceptance criteria pass.
+- [x] T043 [P] Create `OrderControllerIntegrationTest.java` in `easyeat/backend/src/test/java/com/easyeat/order/OrderControllerIntegrationTest.java` verifying MockMvc endpoints with role authorization, 401 unauthenticated, 400 bad request, 409 conflict, and 201 created.
+- [x] T044 [P] Create end-to-end checkout page integration test in `easyeat/frontend/src/test/checkout/CheckoutPage.test.tsx` verifying full diner checkout flow from cart loading to slot reservation and countdown screen.
+- [x] T045 Execute and validate quickstart scenarios in `specs/012-diner-pickup-time-slots/quickstart.md` ensuring all curl commands and frontend acceptance criteria pass.
 
 ---
 
