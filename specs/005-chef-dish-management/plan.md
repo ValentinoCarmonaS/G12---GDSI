@@ -2,7 +2,7 @@
 
 **Branch**: `005-chef-dish-management` | **Date**: 25/10/2026 | **Spec**: [spec.md](file:///f:/ALL/PROGRAMACION/Proyectos/SDD/sdd%20-%20gdsi%20-%20grupo%2012/specs/005-chef-dish-management/spec.md)
 
-**Input**: Feature specification from `/specs/005-chef-dish-management/spec.md` (User stories CHF-2.2.1, CHF-2.2.2, CHF-2.2.3, CHF-2.2.4).
+**Input**: Feature specification from `/specs/005-chef-dish-management/spec.md` (User stories CHF-2.2.1, CHF-2.2.2, CHF-2.2.3, CHF-2.2.4, plus correction C-08 / US5 chef header navigation).
 
 ---
 
@@ -14,7 +14,7 @@ This technical plan details the full-stack end-to-end implementation (vertical s
 - **Persistence and relational model**: Flyway migration `V7__chef_dish_management.sql` evolving the existing `dishes` table (making `price` optional, adding closed category, `DRAFT`/`PENDING_PRICE` status, confirmed allergen flag, creator reference, and whitespace-trimmed case-insensitive name uniqueness per tenant). Relational 3NF storage for recipe lines (`dish_recipe_ingredients` without unit redundancy) and PostgreSQL binary table `dish_photos` (`BYTEA`) for photos up to 5 MB. Administrative alerts in `admin_notifications`.
 - **API and contracts**: Versioned RESTful interface under `/api/v1` (`/api/v1/dishes`, `/api/v1/admin/notifications`) matching OpenAPI 3.0 contracts in `contracts/dishes.yaml` and `contracts/admin-notifications.yaml`, standardized error handling via `ProblemDetail` (RFC 7807), and tenant isolation via `TenantContextFilter`.
 - **Security and immutability**: Strict backend transactional gate evaluating all 4 completeness conditions before transitioning to `PENDING_PRICE`. Absolute locking of any mutation or deletion on dishes in `PENDING_PRICE` status (returning `409 Conflict`).
-- **Frontend**: Kitchen interface (`/cocina/platos`) with paginated list (20 items/page, sorted by `updated_at DESC`, status filters), guided sequential 4-step wizard/Stepper (Identity, Recipe/BOM, Allergens, Review/Submit), real-time validation, and read-only view locking while under review.
+- **Frontend**: Kitchen interface (`/cocina/platos`) with paginated list (20 items/page, sorted by `updated_at DESC`, status filters), guided sequential 4-step wizard/Stepper (Identity, Recipe/BOM, Allergens, Review/Submit), real-time validation, and read-only view locking while under review. **Navigation (C-08)**: dish management is a first-class section of the Chef header (`WorkspaceLayout.tsx`) alongside "Comandas KDS" and "Ingredientes", with route-derived active state (`aria-current`) and a horizontally scrollable nav on small viewports; the dishes views render inside that shared header and the KDS view no longer nests a dish-management card.
 
 ### Seed data audit and notification (CRITICAL REQUIREMENT)
 - **Audit finding**: In `R__seed_dev_dishes_and_dietary.sql`, 5 sample dish records exist for the synthetic administration tenant (`a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11`):
@@ -243,8 +243,9 @@ easyeat/
    - `AllergenStep.tsx`: Allergens and lifestyles grid with explicit confirmation button.
    - `ReviewSubmitStep.tsx`: Technical file summary, pending checklist, and "Send for Review" button.
 3. **Main Views**:
-   - `ChefDishesPage.tsx`: Chef dish catalog with table, status badges, last updated sorting, pagination, and filter.
-   - Link and entry point from `KitchenWorkspacePage.tsx`.
+   - `ChefDishesPage.tsx`: Chef dish catalog with table, status badges, last updated sorting, pagination, and filter. Rendered inside `WorkspaceLayout` (C-08) so the shared header, section navigation and logout are always present.
+   - `ChefDishEditorPage.tsx`: 4-step technical-file wizard, also rendered inside `WorkspaceLayout` (C-08).
+   - Header entry point in `WorkspaceLayout.tsx` — "Gestionar Platos" sits next to "Comandas KDS" and "Ingredientes" (C-08). The former nested entry card in `KitchenWorkspacePage.tsx` is removed; that page keeps its ingredients card, its four order-statistics cards and the C-07 rejection-feedback banner.
    - Notifications in `AdminWorkspacePage.tsx` with unread count badge.
 
 ### Phase 5: Automated testing and verification
@@ -261,3 +262,16 @@ easyeat/
    - Live form validation and character limits (100 and 500).
    - Stepper flow and dynamic enablement of "Send for Review" button.
    - Read-only view rendering for dishes in `PENDING_PRICE`.
+
+### Phase 6: C-08 — Chef header navigation restructure (layout decoupling)
+
+**Goal**: Promote "Gestionar Platos" to a first-class section of the Chef header and decouple it from the KDS view, without touching dish-management behavior, route guards or the C-07 rejection-feedback flow.
+
+1. **Header (`WorkspaceLayout.tsx`)** — the `CHEF` navigation block becomes the single source of truth for kitchen sections:
+   - Three links: "Comandas KDS" → `/cocina`, "Gestionar Platos" → `/cocina/platos`, "Ingredientes" → `/cocina/ingredientes`.
+   - Active state derived from `useLocation()`: exact match for `/cocina`, prefix match for `/cocina/platos` and `/cocina/ingredientes`, `aria-current="page"` on the active link only, shared active/inactive class set (the previous per-link hardcoded orange styling is removed).
+   - Container changed from `hidden sm:flex` to a `min-w-0 overflow-x-auto` flex row so the three links stay reachable below the `sm` breakpoint without wrapping the 16-unit header. Role blocks for ENCARGADO, ADMINISTRADOR and COMENSAL are untouched.
+2. **KDS view (`KitchenWorkspacePage.tsx`)** — remove only the "Gestión de Platos y Fichas Técnicas" card (the `/cocina/platos` entry point). The ingredients card, the four order-statistics cards, the `?dishId=` rejection-feedback banner (FR-025/FR-026) and the `authApi.me()` session check remain unchanged.
+3. **Dishes views** — wrap `ChefDishesPage.tsx` and `ChefDishEditorPage.tsx` in `WorkspaceLayout` (title "Gestión de Platos"), removing the redundant outer `container ... py-8` padding now provided by the layout's `<main>`. Routes in `AppRoutes.tsx`, `RoleRouteGuard` and `postAuthRouting.ts` need no changes: `/cocina/platos*` already sits inside the `CHEF` `/cocina` prefix perimeter.
+4. **Test impact** — page/integration tests that render the dishes views adopt the existing pass-through `WorkspaceLayout` mock (`ChefDishEditorPage.test.tsx` pattern): `ChefDishesPage.test.tsx`, `us1_basic_identity`, `us2_recipe_definition`, `us3_allergen_labeling`, `us4_review_submission`. New assertions: three chef header links with correct `href`s and `aria-current` (`WorkspaceLayout.test.tsx`), and absence of the dish-management card in the KDS view (`KitchenWorkspacePage.test.tsx`).
+5. **Verification gate**: `npm test` and `npm run lint` (`tsc --noEmit`) in `easyeat/frontend`, both green.
