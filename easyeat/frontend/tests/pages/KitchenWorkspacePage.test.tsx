@@ -61,6 +61,35 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
     expect(authApi.me).toHaveBeenCalledTimes(1);
   });
 
+  it('exposes dish management only through the header and keeps the KDS cards intact (C-08, FR-028)', () => {
+    render(
+      <MemoryRouter>
+        <KitchenWorkspacePage />
+      </MemoryRouter>
+    );
+
+    // The dish-management card is no longer nested inside the KDS view...
+    expect(screen.queryByText(/gestión de platos y fichas técnicas/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /gestionar platos →/i })).not.toBeInTheDocument();
+
+    // ...the section itself lives in the shared header...
+    expect(screen.getByRole('link', { name: 'Gestionar Platos' })).toHaveAttribute(
+      'href',
+      '/cocina/platos'
+    );
+
+    // ...and the ingredients card plus the four order-statistics cards are preserved.
+    expect(screen.getByText(/catálogo de ingredientes y materias primas/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ver ingredientes →/i })).toHaveAttribute(
+      'href',
+      '/cocina/ingredientes'
+    );
+    expect(screen.getByText('En Cola')).toBeInTheDocument();
+    expect(screen.getByText('En Preparación')).toBeInTheDocument();
+    expect(screen.getByText('Para Retirar')).toBeInTheDocument();
+    expect(screen.getByText('Completadas hoy')).toBeInTheDocument();
+  });
+
   describe('a draft returned by rejection (FR-020, FR-023)', () => {
     const feedback: ChefReviewFeedback = {
       dishId: 'dish-1',
