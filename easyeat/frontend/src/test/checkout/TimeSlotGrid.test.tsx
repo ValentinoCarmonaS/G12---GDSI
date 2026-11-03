@@ -93,6 +93,42 @@ describe('TimeSlotGrid Component', () => {
     expect(selectableButton).not.toBeDisabled();
   });
 
+  it('renders amber styling and Alta Demanda badge for 80-99% saturation', () => {
+    const handleSelect = vi.fn();
+    render(
+      <TimeSlotGrid
+        slots={mockSlots}
+        selectedSlot={null}
+        onSelectSlot={handleSelect}
+      />
+    );
+
+    const highDemandBadge = screen.getByText('Alta Demanda');
+    expect(highDemandBadge).toBeInTheDocument();
+
+    const highDemandButton = screen.getByText('12:45 - 13:00').closest('button');
+    expect(highDemandButton).not.toBeDisabled();
+    expect(highDemandButton?.className).toContain('border-amber-300');
+  });
+
+  it('renders Agotado badge and disabled state for 100% saturation', () => {
+    const handleSelect = vi.fn();
+    render(
+      <TimeSlotGrid
+        slots={mockSlots}
+        selectedSlot={null}
+        onSelectSlot={handleSelect}
+      />
+    );
+
+    const soldOutBadge = screen.getByText('Agotado');
+    expect(soldOutBadge).toBeInTheDocument();
+
+    const soldOutButton = screen.getByText('13:00 - 13:15').closest('button');
+    expect(soldOutButton).toBeDisabled();
+    expect(soldOutButton?.className).toContain('cursor-not-allowed');
+  });
+
   it('triggers onSelectSlot callback when an available slot is clicked', () => {
     const handleSelect = vi.fn();
     render(
@@ -113,7 +149,7 @@ describe('TimeSlotGrid Component', () => {
 
   it('highlights the selected slot chip', () => {
     const handleSelect = vi.fn();
-    const { rerender } = render(
+    render(
       <TimeSlotGrid
         slots={mockSlots}
         selectedSlot={mockSlots[2]}
