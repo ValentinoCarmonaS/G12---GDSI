@@ -190,8 +190,9 @@ public class DishAvailabilityEngine {
         for (UUID key : sortedKeys) {
             sb.append(key.toString())
                     .append("=")
-                    .append(availabilityMap.get(key))
-                    .append(";");
+                    .append(availabilityMap.get(key));
+            dishRepository.findById(key).ifPresent(d -> sb.append(":paused=").append(Boolean.TRUE.equals(d.getPausedByChef())));
+            sb.append(";");
         }
 
         return hashString(sb.toString());

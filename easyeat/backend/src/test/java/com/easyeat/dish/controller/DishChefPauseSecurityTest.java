@@ -73,3 +73,4 @@ class DishChefPauseSecurityTest {
                 .andExpect(status().isForbidden());
     }
 }
+

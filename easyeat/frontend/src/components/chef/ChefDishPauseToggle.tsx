@@ -67,3 +67,4 @@ export const ChefDishPauseToggle: React.FC<ChefDishPauseToggleProps> = ({
 };
 
 export default ChefDishPauseToggle;
+

@@ -51,3 +51,4 @@ export function useChefDishesSync(enabled = true): UseChefDishesSyncResult {
     refresh: fetchStatus,
   };
 }
+

@@ -7,3 +7,4 @@ public record ToggleChefPauseRequest(
         Boolean paused
 ) {
 }
+
