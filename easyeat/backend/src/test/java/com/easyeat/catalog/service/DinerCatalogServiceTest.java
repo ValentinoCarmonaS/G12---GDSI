@@ -153,7 +153,7 @@ class DinerCatalogServiceTest {
                     .price(BigDecimal.valueOf(2200.00))
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(mainDish, dessert));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
@@ -185,7 +185,7 @@ class DinerCatalogServiceTest {
                     .status(DishStatus.PUBLISHED)
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(publishedDish));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
@@ -225,7 +225,7 @@ class DinerCatalogServiceTest {
                     .status(DishStatus.PUBLISHED)
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(dishWithPhoto, dishWithoutPhoto));
 
             when(dishPhotoRepository.existsByDishId(dishWithPhoto.getId())).thenReturn(true);
@@ -272,7 +272,7 @@ class DinerCatalogServiceTest {
             Ingredient ing2 = new Ingredient();
             ing2.setName("Queso Parmesano");
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(dish));
 
             when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
@@ -304,7 +304,7 @@ class DinerCatalogServiceTest {
                     .status(DishStatus.PUBLISHED)
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(dish));
             when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
                     .thenReturn(List.of());
@@ -343,7 +343,7 @@ class DinerCatalogServiceTest {
             Ingredient ingUpdated = new Ingredient();
             ingUpdated.setName("Ingrediente Reemplazo");
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(dish));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
@@ -385,7 +385,7 @@ class DinerCatalogServiceTest {
                     .build();
             dish.setRestrictionCodes(Set.of("DAIRY", "WHEAT", "VEGAN"));
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(dish));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
@@ -412,7 +412,7 @@ class DinerCatalogServiceTest {
             Establishment alwaysOpen = new Establishment(tenantId, "Siempre Abierto", EstablishmentStatus.ACTIVE,
                     LocalTime.of(0, 0), LocalTime.of(23, 59, 59), "America/Argentina/Buenos_Aires");
             when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(alwaysOpen));
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of());
 
             DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
@@ -428,7 +428,7 @@ class DinerCatalogServiceTest {
             Establishment closedNow = new Establishment(tenantId, "Cerrado Casi Siempre", EstablishmentStatus.ACTIVE,
                     LocalTime.of(4, 0), LocalTime.of(4, 1), "America/Argentina/Buenos_Aires");
             when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(closedNow));
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of());
 
             DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
@@ -467,7 +467,7 @@ class DinerCatalogServiceTest {
                     .status(DishStatus.PUBLISHED)
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(dish));
 
             UUID ingId = UUID.randomUUID();
