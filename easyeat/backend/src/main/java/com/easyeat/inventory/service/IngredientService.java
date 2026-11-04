@@ -63,6 +63,15 @@ public class IngredientService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<AdminIngredientDetailResponse> listIngredients(IngredientCategory category, IngredientStatus status, Boolean criticalOnly) {
+        UUID tenantId = TenantContextHolder.getTenantId();
+        return ingredientRepository.findAllByTenantIdAndFilters(tenantId, category, status, criticalOnly)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public AdminIngredientDetailResponse updateIngredient(UUID id, UpdateIngredientRequest request) {
         UUID tenantId = TenantContextHolder.getTenantId();
         Ingredient ingredient = ingredientRepository.findByIdAndTenantId(id, tenantId)
