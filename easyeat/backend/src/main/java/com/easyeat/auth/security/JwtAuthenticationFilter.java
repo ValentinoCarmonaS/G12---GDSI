@@ -108,12 +108,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             var authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            filterChain.doFilter(request, response);
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
             sendProblemDetail(response, request.getRequestURI(), HttpStatus.UNAUTHORIZED, "Unauthorized", "Tu sesión ha expirado o el token es inválido");
+            return;
         }
+
+        // Outside the try: a failure in the application must not be reported as an authentication failure.
+        filterChain.doFilter(request, response);
     }
 
     private void sendProblemDetail(HttpServletResponse response, String instanceUri, HttpStatus status, String title, String detail) throws IOException {
