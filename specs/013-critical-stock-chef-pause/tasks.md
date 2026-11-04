@@ -161,7 +161,7 @@
 
 #### Frontend
 
-- [ ] T056 [US3] Crear el componente `easyeat/frontend/src/components/chef/ChefDishPauseToggle.tsx`: control de alternancia (toggle) interactivo con actualización optimista del estado visual, llamada a `dishApi.toggleChefPause`, manejo de error con rollback (FR-011, D-010)
+- [X] T056 [US3] Crear el componente `easyeat/frontend/src/components/chef/ChefDishPauseToggle.tsx`: control de alternancia (toggle) interactivo con actualización optimista del estado visual, llamada a `dishApi.toggleChefPause`, manejo de error con rollback (FR-011, D-010)
 - [ ] T057 [US3] Crear el hook `easyeat/frontend/src/hooks/useChefDishesSync.ts`: polling condicional cada 2500 ms con ETag hacia `GET /api/v1/dishes/operational-status`, actualización de estado de los platos en cocina cuando el ETag cambia (FR-022, INV-18, D-006)
 - [ ] T058 [US3] Extender `easyeat/frontend/src/api/dishApi.ts` añadiendo las funciones `toggleChefPause(dishId, paused)` (PATCH) y `getOperationalStatus()` (GET con `If-None-Match`) (plan.md §5.2)
 - [ ] T059 [US3] Extender `easyeat/frontend/src/pages/ChefDishesPage.tsx` para incorporar la columna de estado operativo (pausado/activo/sin stock/desactivado) y el componente `ChefDishPauseToggle` por fila, integrado con `useChefDishesSync` (FR-011, FR-022, INV-18, D-010)
