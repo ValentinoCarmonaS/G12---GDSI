@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ChefDishesPage } from '@/pages/ChefDishesPage';
 import { dishApi } from '@/api/dishApi';
+import * as AuthModule from '@/hooks/useAuth';
 import {
   mockDishDraftSummary,
   mockDishPendingPriceSummary,
@@ -17,16 +18,34 @@ vi.mock('@/api/dishApi', () => ({
   },
 }));
 
+vi.mock('@/hooks/useAuth');
+
 describe('ChefDishesPage Component (T024, CHF-2.2.1, CHF-2.2.4)', () => {
   const mockedDishApi = vi.mocked(dishApi);
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // C-08 (FR-029): the page renders inside the shared WorkspaceLayout, so the
+    // real header is exercised here with a Chef session.
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      user: {
+        id: 'chef-user-1',
+        email: 'carlos.chef@comedorcentral.com',
+        role: 'CHEF',
+        tenantId: 'tenant-comedor-1',
+        tokenVersion: 1,
+      },
+      token: 'jwt-chef-token',
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
   });
 
-  const renderComponent = () =>
+  const renderComponent = (initialEntries: string[] = ['/cocina/platos']) =>
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         <ChefDishesPage />
       </MemoryRouter>
     );
@@ -147,5 +166,32 @@ describe('ChefDishesPage Component (T024, CHF-2.2.1, CHF-2.2.4)', () => {
     await waitFor(() => {
       expect(screen.getByText(/no hay platos registrados/i)).toBeInTheDocument();
     });
+  });
+
+  it('renders the dish list inside the shared workspace header (C-08, FR-029)', async () => {
+    mockedDishApi.listDishes.mockResolvedValueOnce(createMockDishPage([]));
+
+    renderComponent();
+
+    expect(await screen.findByRole('heading', { name: /gestión de platos/i })).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Comandas KDS' })).toHaveAttribute('href', '/cocina');
+    expect(screen.getByRole('link', { name: 'Ingredientes' })).toHaveAttribute(
+      'href',
+      '/cocina/ingredientes'
+    );
+    expect(screen.getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument();
+  });
+
+  it('marks "Gestionar Platos" as the active header section on the dishes routes (C-08, FR-030)', async () => {
+    mockedDishApi.listDishes.mockResolvedValueOnce(createMockDishPage([]));
+
+    renderComponent(['/cocina/platos/nuevo']);
+
+    const active = await screen.findByRole('link', { name: 'Gestionar Platos' });
+    expect(active).toHaveAttribute('href', '/cocina/platos');
+    expect(active).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Comandas KDS' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Ingredientes' })).not.toHaveAttribute('aria-current');
   });
 });

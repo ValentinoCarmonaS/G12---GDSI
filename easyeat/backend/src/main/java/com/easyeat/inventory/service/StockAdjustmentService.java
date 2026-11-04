@@ -93,6 +93,9 @@ public class StockAdjustmentService {
                 IngredientBatch savedBatch = ingredientBatchRepository.save(batch);
                 batchId = savedBatch.getId();
 
+                if (unitCost != null && unitCost.compareTo(BigDecimal.ZERO) > 0) {
+                    ingredient.setUnitPurchaseCost(unitCost);
+                }
                 netDelta = quantity;
                 newStock = previousStock.add(netDelta);
             } else if (request.action() == StockAdjustmentAction.SUBTRACT) {
@@ -140,6 +143,9 @@ public class StockAdjustmentService {
             }
             if (netDelta.compareTo(BigDecimal.ZERO) > 0) {
                 unitCost = request.unitCost() != null ? request.unitCost().setScale(4, RoundingMode.HALF_UP) : ingredient.getUnitPurchaseCost();
+                if (unitCost != null && unitCost.compareTo(BigDecimal.ZERO) > 0) {
+                    ingredient.setUnitPurchaseCost(unitCost);
+                }
                 IngredientBatch batch = new IngredientBatch(tenantId, ingredientId, netDelta, unitCost);
                 IngredientBatch savedBatch = ingredientBatchRepository.save(batch);
                 if (savedBatch != null) {
@@ -158,6 +164,9 @@ public class StockAdjustmentService {
             }
             if (netDelta.compareTo(BigDecimal.ZERO) > 0) {
                 unitCost = request.unitCost() != null ? request.unitCost().setScale(4, RoundingMode.HALF_UP) : ingredient.getUnitPurchaseCost();
+                if (unitCost != null && unitCost.compareTo(BigDecimal.ZERO) > 0) {
+                    ingredient.setUnitPurchaseCost(unitCost);
+                }
                 IngredientBatch batch = new IngredientBatch(tenantId, ingredientId, netDelta, unitCost);
                 IngredientBatch savedBatch = ingredientBatchRepository.save(batch);
                 if (savedBatch != null) {

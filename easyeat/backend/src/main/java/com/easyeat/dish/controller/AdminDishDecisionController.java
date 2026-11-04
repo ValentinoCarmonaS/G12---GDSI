@@ -73,7 +73,8 @@ public class AdminDishDecisionController {
     }
 
     /**
-     * Returns the dish to the kitchen with mandatory feedback (FR-020, FR-021, FR-024).
+     * Returns the dish to the kitchen with mandatory feedback and the Administrator's proposed
+     * edition (FR-020, FR-021, FR-024, FR-042).
      *
      * <p>Only legal from {@code PENDING_PRICE}: {@code PUBLISHED} is a 409 (FR-024, catalog
      * unpublishing is out of scope) and so is {@code DRAFT} (FR-019).
@@ -83,7 +84,7 @@ public class AdminDishDecisionController {
             @PathVariable("id") UUID id,
             @RequestBody RejectDishRequest request) {
 
-        return ResponseEntity.ok(governanceService.reject(id, request.comment()));
+        return ResponseEntity.ok(governanceService.reject(id, request));
     }
 
     @PostMapping("/{id}/cancel")

@@ -15,8 +15,11 @@ import com.easyeat.dish.domain.PublicationGateCondition;
 import com.easyeat.dish.domain.ReviewEventType;
 import com.easyeat.dish.dto.DishApprovalResponse;
 import com.easyeat.dish.dto.DishPricingResponse;
+import com.easyeat.dish.dto.DishProposedChanges;
+import com.easyeat.dish.dto.DishProposedIngredient;
 import com.easyeat.dish.dto.DishRejectionResponse;
 import com.easyeat.dish.dto.FoodCostAuditResponse;
+import com.easyeat.dish.dto.RejectDishRequest;
 import com.easyeat.dish.exception.AcknowledgementRequiredException;
 import com.easyeat.dish.exception.DishAlreadyDecidedException;
 import com.easyeat.dish.exception.DishStateConflictException;
@@ -672,7 +675,7 @@ class DishGovernanceServiceTest {
         void rejectsAndWritesAuditRow() {
             when(dishRepository.updateRejectionIfPending(dish.getId(), TENANT)).thenReturn(1);
 
-            DishRejectionResponse response = service.reject(dish.getId(), VALID_COMMENT);
+            DishRejectionResponse response = service.reject(dish.getId(), new RejectDishRequest(VALID_COMMENT, null));
 
             assertThat(response.status()).isEqualTo(DishStatus.DRAFT);
             assertThat(response.cycleNumber()).isEqualTo(1);
@@ -687,6 +690,44 @@ class DishGovernanceServiceTest {
         }
 
         @Test
+        @DisplayName("a rejection stores the proposed-edition snapshot alongside the mandatory "
+                + "comment in the immutable audit row (FR-042, FR-043)")
+        void rejectionStoresProposalSnapshotAlongsideComment() {
+            DishProposedChanges proposal = new DishProposedChanges("Milanesa de ternera",
+                    "Cambia la carne por ternera y reenviá la ficha.", List.of("GLUTEN"),
+                    List.of("LOW_SODIUM"),
+                    List.of(new DishProposedIngredient(UUID.randomUUID(), new BigDecimal("200"))));
+            when(dishRepository.updateRejectionIfPending(dish.getId(), TENANT)).thenReturn(1);
+
+            DishRejectionResponse response = service.reject(dish.getId(),
+                    new RejectDishRequest(VALID_COMMENT, proposal));
+
+            ArgumentCaptor<DishReviewHistory> captor = ArgumentCaptor.forClass(DishReviewHistory.class);
+            verify(reviewHistoryRepository).save(captor.capture());
+            DishReviewHistory entry = captor.getValue();
+            assertThat(entry.getComment()).isEqualTo(VALID_COMMENT);
+            assertThat(entry.getProposedChangesJson()).isNotNull()
+                    .as("the serialized snapshot keeps the culinary fields of the proposal");
+            assertThat(entry.getProposedChangesJson()).contains("Milanesa de ternera");
+            assertThat(entry.getProposedChangesJson()).contains("Cambia la carne por ternera");
+            assertThat(entry.getProposedChangesJson()).contains("GLUTEN");
+            assertThat(entry.getProposedChangesJson()).contains("200");
+            assertThat(response.cycleNumber()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("a first rejection without a proposal stores no snapshot")
+        void rejectionWithoutProposalStoresNoSnapshot() {
+            when(dishRepository.updateRejectionIfPending(dish.getId(), TENANT)).thenReturn(1);
+
+            service.reject(dish.getId(), new RejectDishRequest(VALID_COMMENT, null));
+
+            ArgumentCaptor<DishReviewHistory> captor = ArgumentCaptor.forClass(DishReviewHistory.class);
+            verify(reviewHistoryRepository).save(captor.capture());
+            assertThat(captor.getValue().getProposedChangesJson()).isNull();
+        }
+
+        @Test
         @DisplayName("the cycle number across repeated reject -> resubmit rounds is the dish's "
                 + "highest recorded cycle plus one")
         void cycleNumberAcrossRepeatedRounds() {
@@ -694,7 +735,7 @@ class DishGovernanceServiceTest {
                     .thenReturn(Optional.of(1));
             when(dishRepository.updateRejectionIfPending(dish.getId(), TENANT)).thenReturn(1);
 
-            DishRejectionResponse response = service.reject(dish.getId(), VALID_COMMENT);
+            DishRejectionResponse response = service.reject(dish.getId(), new RejectDishRequest(VALID_COMMENT, null));
 
             assertThat(response.cycleNumber()).isEqualTo(2);
         }
@@ -706,7 +747,7 @@ class DishGovernanceServiceTest {
             dish.setRetailPrice(new BigDecimal("11250.00"));
             when(dishRepository.updateRejectionIfPending(dish.getId(), TENANT)).thenReturn(1);
 
-            service.reject(dish.getId(), VALID_COMMENT);
+            service.reject(dish.getId(), new RejectDishRequest(VALID_COMMENT, null));
 
             verifyNoInteractions(priceHistoryRepository);
             // "Preserved" means the rejection transition never touches retail_price at all: the
@@ -719,7 +760,7 @@ class DishGovernanceServiceTest {
         @Test
         @DisplayName("a comment shorter than 10 characters is rejected (400)")
         void shortCommentRejected() {
-            assertThatThrownBy(() -> service.reject(dish.getId(), "too short"))
+            assertThatThrownBy(() -> service.reject(dish.getId(), new RejectDishRequest("too short", null)))
                     .isInstanceOf(InvalidRejectionCommentException.class);
         }
 
@@ -727,21 +768,21 @@ class DishGovernanceServiceTest {
         @DisplayName("a comment longer than 1000 characters is rejected (400)")
         void longCommentRejected() {
             String tooLong = "a".repeat(1001);
-            assertThatThrownBy(() -> service.reject(dish.getId(), tooLong))
+            assertThatThrownBy(() -> service.reject(dish.getId(), new RejectDishRequest(tooLong, null)))
                     .isInstanceOf(InvalidRejectionCommentException.class);
         }
 
         @Test
         @DisplayName("a whitespace-only comment is rejected (400)")
         void whitespaceOnlyCommentRejected() {
-            assertThatThrownBy(() -> service.reject(dish.getId(), "          "))
+            assertThatThrownBy(() -> service.reject(dish.getId(), new RejectDishRequest("          ", null)))
                     .isInstanceOf(InvalidRejectionCommentException.class);
         }
 
         @Test
         @DisplayName("a null comment is rejected without reaching the repository")
         void nullCommentRejected() {
-            assertThatThrownBy(() -> service.reject(dish.getId(), null))
+            assertThatThrownBy(() -> service.reject(dish.getId(), new RejectDishRequest(null, null)))
                     .isInstanceOf(InvalidRejectionCommentException.class);
             verifyNoInteractions(dishRepository);
         }
@@ -752,7 +793,7 @@ class DishGovernanceServiceTest {
             String withMarkup = "<script>alert('x')</script> El precio no cierra, revisá el costo.";
             when(dishRepository.updateRejectionIfPending(dish.getId(), TENANT)).thenReturn(1);
 
-            service.reject(dish.getId(), withMarkup);
+            service.reject(dish.getId(), new RejectDishRequest(withMarkup, null));
 
             ArgumentCaptor<DishReviewHistory> captor = ArgumentCaptor.forClass(DishReviewHistory.class);
             verify(reviewHistoryRepository).save(captor.capture());
@@ -764,7 +805,7 @@ class DishGovernanceServiceTest {
         void publishedDishRejected() {
             dish.setStatus(DishStatus.PUBLISHED);
 
-            assertThatThrownBy(() -> service.reject(dish.getId(), VALID_COMMENT))
+            assertThatThrownBy(() -> service.reject(dish.getId(), new RejectDishRequest(VALID_COMMENT, null)))
                     .isInstanceOf(DishStateConflictException.class);
         }
 
@@ -773,7 +814,7 @@ class DishGovernanceServiceTest {
         void draftDishRejected() {
             dish.setStatus(DishStatus.DRAFT);
 
-            assertThatThrownBy(() -> service.reject(dish.getId(), VALID_COMMENT))
+            assertThatThrownBy(() -> service.reject(dish.getId(), new RejectDishRequest(VALID_COMMENT, null)))
                     .isInstanceOf(DishStateConflictException.class);
         }
 
@@ -789,7 +830,7 @@ class DishGovernanceServiceTest {
                     .thenReturn(Optional.of(racedDish));
             when(dishRepository.updateRejectionIfPending(dish.getId(), TENANT)).thenReturn(0);
 
-            assertThatThrownBy(() -> service.reject(dish.getId(), VALID_COMMENT))
+            assertThatThrownBy(() -> service.reject(dish.getId(), new RejectDishRequest(VALID_COMMENT, null)))
                     .isInstanceOf(DishAlreadyDecidedException.class)
                     .satisfies(ex -> assertThat(
                             ((DishAlreadyDecidedException) ex).getCurrentStatus()).isEqualTo("PUBLISHED"));
@@ -802,7 +843,7 @@ class DishGovernanceServiceTest {
             when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT))
                     .thenThrow(new DishNotFoundException(dish.getId()));
 
-            assertThatThrownBy(() -> service.reject(dish.getId(), VALID_COMMENT))
+            assertThatThrownBy(() -> service.reject(dish.getId(), new RejectDishRequest(VALID_COMMENT, null)))
                     .isInstanceOf(DishNotFoundException.class);
         }
 
@@ -812,7 +853,7 @@ class DishGovernanceServiceTest {
             when(accessGuard.requireOwnedByTenant(dish.getId(), TENANT))
                     .thenThrow(new TenantViolationException(TENANT, UUID.randomUUID()));
 
-            assertThatThrownBy(() -> service.reject(dish.getId(), VALID_COMMENT))
+            assertThatThrownBy(() -> service.reject(dish.getId(), new RejectDishRequest(VALID_COMMENT, null)))
                     .isInstanceOf(TenantViolationException.class);
         }
     }

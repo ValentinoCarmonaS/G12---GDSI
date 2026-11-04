@@ -1,7 +1,6 @@
 package com.easyeat.inventory.dto;
 
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -22,14 +21,18 @@ public record CreateIngredientRequest(
         @DecimalMin(value = "0.0000", message = "Unit purchase cost must be non-negative")
         BigDecimal unitPurchaseCost,
 
-        @Min(value = 0, message = "El stock crítico debe ser un número entero mayor o igual a 0")
-        Integer criticalStockThreshold
+        @DecimalMin(value = "0.0000", message = "Package cost must be non-negative")
+        BigDecimal packageCost,
+
+        @jakarta.validation.constraints.Min(value = 1, message = "Units per package must be at least 1")
+        Integer unitsPerPackage
 ) {
     public CreateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure) {
-        this(name, category, unitOfMeasure, null, null);
+        this(name, category, unitOfMeasure, null, null, 1);
     }
 
-    public CreateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure, BigDecimal unitPurchaseCost) {
-        this(name, category, unitOfMeasure, unitPurchaseCost, null);
+    public CreateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure,
+                                   BigDecimal unitPurchaseCost) {
+        this(name, category, unitOfMeasure, unitPurchaseCost, null, 1);
     }
 }

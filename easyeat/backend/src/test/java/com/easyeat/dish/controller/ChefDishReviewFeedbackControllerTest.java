@@ -61,9 +61,12 @@ class ChefDishReviewFeedbackControllerTest extends DishControllerTestBase {
         return new ChefReviewFeedbackResponse(UUID.randomUUID(), com.easyeat.dish.domain.DishStatus.DRAFT, List.of(
                 new ChefReviewFeedbackEntry(2, "Lucía Ferraro",
                         "El costo del salmón dispara el food cost. Usá merluza.",
+                        new com.easyeat.dish.dto.DishProposedChanges("Milanesa de ternera",
+                                "Cambia la carne por ternera.", List.of("GLUTEN"), null, null),
                         Instant.parse("2026-10-29T10:00:00Z")),
                 new ChefReviewFeedbackEntry(1, "Lucía Ferraro",
                         "Faltan las fotos del plato.",
+                        null,
                         Instant.parse("2026-10-20T10:00:00Z"))));
     }
 
@@ -136,6 +139,8 @@ class ChefDishReviewFeedbackControllerTest extends DishControllerTestBase {
                     .andExpect(jsonPath("$.entries[0].cycleNumber").value(2))
                     .andExpect(jsonPath("$.entries[0].reviewerName").value("Lucía Ferraro"))
                     .andExpect(jsonPath("$.entries[0].comment").exists())
+                    .andExpect(jsonPath("$.entries[0].proposedChanges").exists())
+                    .andExpect(jsonPath("$.entries[0].proposedChanges.title").value("Milanesa de ternera"))
                     .andExpect(jsonPath("$.entries[0].createdAt").exists());
         }
 

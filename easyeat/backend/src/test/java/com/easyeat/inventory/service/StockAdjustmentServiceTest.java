@@ -298,6 +298,95 @@ class StockAdjustmentServiceTest {
     }
 
     @Test
+    @DisplayName("adjustStock - ADD action with positive unitCost updates ingredient.unitPurchaseCost")
+    void testAddStockWithPositiveUnitCostUpdatesIngredientPurchaseCost() {
+        UUID ingredientId = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Tomato", IngredientCategory.PRODUCE, UnitOfMeasure.KG, BigDecimal.ZERO);
+        ingredient.setId(ingredientId);
+        ingredient.setCurrentStock(BigDecimal.ZERO);
+
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.ADD,
+                null,
+                new BigDecimal("10.0000"),
+                null,
+                new BigDecimal("2000.0000"),
+                null,
+                "Purchase stock with cost 2000"
+        );
+
+        when(ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)).thenReturn(Optional.of(ingredient));
+        when(ingredientBatchRepository.save(any(IngredientBatch.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(stockAuditEntryRepository.save(any(StockAuditEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        stockAdjustmentService.adjustStock(ingredientId, request);
+
+        assertThat(ingredient.getUnitPurchaseCost()).isEqualByComparingTo(new BigDecimal("2000.0000"));
+    }
+
+    @Test
+    @DisplayName("adjustStock - SUBTRACT action does not modify ingredient.unitPurchaseCost")
+    void testSubtractStockDoesNotModifyIngredientPurchaseCost() {
+        UUID ingredientId = UUID.randomUUID();
+        UUID batchId = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Tomato", IngredientCategory.PRODUCE, UnitOfMeasure.KG, new BigDecimal("1500.0000"));
+        ingredient.setId(ingredientId);
+        ingredient.setCurrentStock(new BigDecimal("10.0000"));
+
+        IngredientBatch batchA = new IngredientBatch(tenantId, ingredientId, new BigDecimal("10.0000"), new BigDecimal("1500.0000"));
+        batchA.setId(batchId);
+        batchA.setRemainingQuantity(new BigDecimal("10.0000"));
+
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.SUBTRACT,
+                null,
+                new BigDecimal("2.0000"),
+                null,
+                null,
+                batchId,
+                "Waste deduction"
+        );
+
+        when(ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)).thenReturn(Optional.of(ingredient));
+        when(ingredientBatchRepository.findByIdAndTenantIdForUpdate(batchId, tenantId)).thenReturn(Optional.of(batchA));
+        when(stockAuditEntryRepository.save(any(StockAuditEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        stockAdjustmentService.adjustStock(ingredientId, request);
+
+        assertThat(ingredient.getUnitPurchaseCost()).isEqualByComparingTo(new BigDecimal("1500.0000"));
+    }
+
+    @Test
+    @DisplayName("adjustStock - ADD action with zero unitCost does not overwrite existing non-zero cost")
+    void testAddStockWithZeroUnitCostDoesNotOverwriteExistingCost() {
+        UUID ingredientId = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Tomato", IngredientCategory.PRODUCE, UnitOfMeasure.KG, new BigDecimal("1500.0000"));
+        ingredient.setId(ingredientId);
+        ingredient.setCurrentStock(new BigDecimal("5.0000"));
+
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.ADD,
+                null,
+                new BigDecimal("5.0000"),
+                null,
+                BigDecimal.ZERO,
+                null,
+                "Donation with zero cost"
+        );
+
+        when(ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)).thenReturn(Optional.of(ingredient));
+        when(ingredientBatchRepository.save(any(IngredientBatch.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(stockAuditEntryRepository.save(any(StockAuditEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        stockAdjustmentService.adjustStock(ingredientId, request);
+
+        assertThat(ingredient.getUnitPurchaseCost()).isEqualByComparingTo(new BigDecimal("1500.0000"));
+    }
+
+    @Test
     @DisplayName("adjustStock - ADD action creates IngredientBatch and increments global stock")
     void adjustStock_addAction_createsBatchAndIncreasesStock() {
         UUID ingredientId = UUID.randomUUID();
