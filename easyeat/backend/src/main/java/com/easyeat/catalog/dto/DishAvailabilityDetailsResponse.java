@@ -13,6 +13,17 @@ public record DishAvailabilityDetailsResponse(
             boolean pausaChef,
             boolean desactivacionAdmin
     ) {
+        public boolean isSinStock() {
+            return sinStock;
+        }
+
+        public boolean isPausaChef() {
+            return pausaChef;
+        }
+
+        public boolean isDesactivacionAdmin() {
+            return desactivacionAdmin;
+        }
     }
 
     public UUID getDishId() {

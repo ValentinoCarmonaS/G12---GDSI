@@ -26,6 +26,12 @@ class DishThreeTierAvailabilityTest {
     @Mock
     private DishRepository dishRepository;
 
+    @Mock
+    private com.easyeat.dish.repository.DishRecipeIngredientRepository dishRecipeIngredientRepository;
+
+    @Mock
+    private com.easyeat.inventory.repository.IngredientRepository ingredientRepository;
+
     @InjectMocks
     private DishService dishService;
 
@@ -133,3 +139,4 @@ class DishThreeTierAvailabilityTest {
         verify(dishRepository).save(dish);
     }
 }
+

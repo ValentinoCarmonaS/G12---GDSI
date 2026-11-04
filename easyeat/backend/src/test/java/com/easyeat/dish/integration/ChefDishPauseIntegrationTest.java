@@ -101,9 +101,9 @@ class ChefDishPauseIntegrationTest {
 
         DinerCatalogResponse catalog = dinerCatalogService.getCatalog(tenantId, null);
 
-        boolean dish1Present = catalog.categories().stream()
-                .flatMap(c -> c.dishes().stream())
-                .anyMatch(d -> d.id().equals(dish1.getId()));
+        boolean dish1Present = catalog.getCategories().stream()
+                .flatMap(c -> c.getDishes().stream())
+                .anyMatch(d -> d.getId().equals(dish1.getId()));
 
         assertThat(dish1Present).isFalse();
     }
@@ -119,9 +119,9 @@ class ChefDishPauseIntegrationTest {
 
         DinerCatalogResponse catalog = dinerCatalogService.getCatalog(tenantId, null);
 
-        boolean dish1Present = catalog.categories().stream()
-                .flatMap(c -> c.dishes().stream())
-                .anyMatch(d -> d.id().equals(dish1.getId()));
+        boolean dish1Present = catalog.getCategories().stream()
+                .flatMap(c -> c.getDishes().stream())
+                .anyMatch(d -> d.getId().equals(dish1.getId()));
 
         assertThat(dish1Present).isTrue();
     }
@@ -136,9 +136,9 @@ class ChefDishPauseIntegrationTest {
 
         DinerCatalogResponse catalog = dinerCatalogService.getCatalog(tenantId, null);
 
-        boolean anyPresent = catalog.categories().stream()
-                .flatMap(c -> c.dishes().stream())
-                .anyMatch(d -> d.id().equals(dish1.getId()) || d.id().equals(dish2.getId()));
+        boolean anyPresent = catalog.getCategories().stream()
+                .flatMap(c -> c.getDishes().stream())
+                .anyMatch(d -> d.getId().equals(dish1.getId()) || d.getId().equals(dish2.getId()));
 
         assertThat(anyPresent).isFalse();
     }

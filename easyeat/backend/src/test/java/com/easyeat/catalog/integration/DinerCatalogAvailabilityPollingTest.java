@@ -78,7 +78,6 @@ class DinerCatalogAvailabilityPollingTest {
         est.setId(tenantId);
         est.setName("Resto Polling");
         est.setStatus(EstablishmentStatus.ACTIVE);
-        est.setAddress("Calle 123");
         establishmentRepository.save(est);
 
         dish = new Dish();
