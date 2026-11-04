@@ -45,10 +45,21 @@ import com.easyeat.catalog.exception.InvalidSearchQueryException;
 import com.easyeat.dish.exception.*;
 import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.inventory.exception.NegativeStockException;
+import com.easyeat.operations.exception.InvalidCapacityException;
+import com.easyeat.operations.exception.InvalidScheduleException;
+import com.easyeat.operations.exception.SlotSoldOutException;
+import com.easyeat.operations.exception.OperatingConfigConflictException;
+import com.easyeat.operations.exception.PaymentMethodUnavailableException;
 import com.easyeat.profile.exception.CooldownRateLimitException;
 import com.easyeat.profile.exception.DietaryTaxonomyException;
 import com.easyeat.profile.exception.EmailVerificationException;
 import com.easyeat.staff.exception.OrphanedAdminException;
+import com.easyeat.order.exception.ActiveReservationExistsException;
+import com.easyeat.order.exception.DishPausedByChefException;
+import com.easyeat.order.exception.InvalidFulfillmentModeException;
+import com.easyeat.order.exception.InvalidOrderStateException;
+import com.easyeat.order.exception.LeadTimeViolationException;
+import com.easyeat.order.exception.SlotCapacityExceededException;
 import org.springframework.security.access.AccessDeniedException;
 
 
@@ -537,7 +548,155 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
     }
 
+    @Override
+    public ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "El archivo supera el tamaño máximo permitido de 5 MB."
+        );
+        problem.setType(URI.create("https://easyeat.com/errors/photo-storage-failed"));
+        problem.setTitle("Maximum Upload Size Exceeded");
+        if (request instanceof ServletWebRequest servletWebRequest) {
+            problem.setInstance(URI.create(servletWebRequest.getRequest().getRequestURI()));
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
     /** The errors[] entry shape already emitted for bean validation failures. */
+    // ================================================================
+    // Spec 010 - Restaurant Operation Configuration.
+    //
+    // The optimistic-lock failure is not mapped here as such: the operations
+    // services translate it into OperatingConfigConflictException, so the 007
+    // decision of having no global ObjectOptimisticLockingFailureException
+    // handler stays untouched.
+    // ================================================================
+
+    /** 400: opening time not strictly before closing time (INV-7). */
+    @ExceptionHandler(InvalidScheduleException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidSchedule(InvalidScheduleException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-schedule"));
+        problem.setTitle("Parámetros de horario inválidos");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    /** 400: negative capacity (INV-6) or a slot start off the 15-minute grid (INV-5). */
+    @ExceptionHandler(InvalidCapacityException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidCapacity(InvalidCapacityException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-capacity"));
+        problem.setTitle("Capacidad inválida");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    /** 409: the slot reached its capacity, also when a concurrent approval took the last place (INV-2, EC-016). */
+    @ExceptionHandler(SlotSoldOutException.class)
+    public ResponseEntity<ProblemDetail> handleSlotSoldOut(SlotSoldOutException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/slot-sold-out"));
+        problem.setTitle("Franja horaria agotada");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    /** 409: the payment method was disabled before the order was confirmed (INV-9, EC-010). */
+    @ExceptionHandler(PaymentMethodUnavailableException.class)
+    public ResponseEntity<ProblemDetail> handlePaymentMethodUnavailable(PaymentMethodUnavailableException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/payment-method-unavailable"));
+        problem.setTitle("Método de pago no disponible");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    /** 409: the configuration was changed by another administrator since it was loaded (EC-012). */
+    @ExceptionHandler(OperatingConfigConflictException.class)
+    public ResponseEntity<ProblemDetail> handleOperatingConfigConflict(OperatingConfigConflictException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/operating-config-conflict"));
+        problem.setTitle("Conflicto de concurrencia");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+
+    // ================================================================
+    // Spec 012 - Diner Order Fulfillment Mode & Pickup Time Slots
+    // ================================================================
+
+    /** 409: slot capacity exceeded / sold out under concurrent FCFS (FR-017, FR-018). */
+    @ExceptionHandler(SlotCapacityExceededException.class)
+    public ResponseEntity<ProblemDetail> handleSlotCapacityExceeded(SlotCapacityExceededException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/slot-sold-out"));
+        problem.setTitle("Conflict");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("code", "SLOT_SOLD_OUT");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    /** 409: diner already has an active pending reservation (FR-027). */
+    @ExceptionHandler(ActiveReservationExistsException.class)
+    public ResponseEntity<ProblemDetail> handleActiveReservationExists(ActiveReservationExistsException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/active-reservation-exists"));
+        problem.setTitle("Conflict");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("code", "ACTIVE_RESERVATION_EXISTS");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    /** 422: selected slot violates minimum lead time (FR-009). */
+    @ExceptionHandler(LeadTimeViolationException.class)
+    public ResponseEntity<ProblemDetail> handleLeadTimeViolation(LeadTimeViolationException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/lead-time-violation"));
+        problem.setTitle("Unprocessable Entity");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("code", "LEAD_TIME_VIOLATION");
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem);
+    }
+
+    /** 422: dish paused by kitchen (FR-030 / Spec 013). */
+    @ExceptionHandler(DishPausedByChefException.class)
+    public ResponseEntity<ProblemDetail> handleDishPausedByChef(DishPausedByChefException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/dish-paused-by-chef"));
+        problem.setTitle("Unprocessable Entity");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("code", "DISH_PAUSED_BY_CHEF");
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problem);
+    }
+
+    /** 400: invalid fulfillment mode payload (FR-001, FR-002). */
+    @ExceptionHandler(InvalidFulfillmentModeException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidFulfillmentMode(InvalidFulfillmentModeException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-fulfillment-mode"));
+        problem.setTitle("Bad Request");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("code", "INVALID_FULFILLMENT_MODE");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    /** 409: invalid order state transition (e.g. cancelling non-pending order). */
+    @ExceptionHandler(InvalidOrderStateException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidOrderState(InvalidOrderStateException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/invalid-order-state"));
+        problem.setTitle("Conflict");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("code", "INVALID_ORDER_STATE");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
     private static Map<String, String> fieldError(String field, String message) {
         Map<String, String> error = new HashMap<>();
         error.put("field", field);

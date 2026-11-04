@@ -1,7 +1,9 @@
 package com.easyeat.catalog.domain;
 
 import jakarta.persistence.*;
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.UUID;
@@ -30,6 +32,15 @@ public class Establishment {
     @Column(name = "timezone", nullable = false, length = 50)
     private String timezone = "America/Argentina/Buenos_Aires";
 
+    @Column(name = "lead_time_minutes", nullable = false)
+    private Integer leadTimeMinutes = 30;
+
+    @Column(name = "max_capacity_per_slot", nullable = false)
+    private Integer maxCapacityPerSlot = 10;
+
+    @Column(name = "operating_days", nullable = false, length = 100)
+    private String operatingDays = "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY";
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -46,6 +57,9 @@ public class Establishment {
         this.openingTime = openingTime != null ? openingTime : LocalTime.of(11, 0);
         this.closingTime = closingTime != null ? closingTime : LocalTime.of(23, 0);
         this.timezone = timezone != null ? timezone : "America/Argentina/Buenos_Aires";
+        this.leadTimeMinutes = 30;
+        this.maxCapacityPerSlot = 10;
+        this.operatingDays = "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY";
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
@@ -113,6 +127,30 @@ public class Establishment {
         this.timezone = timezone;
     }
 
+    public Integer getLeadTimeMinutes() {
+        return leadTimeMinutes;
+    }
+
+    public void setLeadTimeMinutes(Integer leadTimeMinutes) {
+        this.leadTimeMinutes = leadTimeMinutes;
+    }
+
+    public Integer getMaxCapacityPerSlot() {
+        return maxCapacityPerSlot;
+    }
+
+    public void setMaxCapacityPerSlot(Integer maxCapacityPerSlot) {
+        this.maxCapacityPerSlot = maxCapacityPerSlot;
+    }
+
+    public String getOperatingDays() {
+        return operatingDays;
+    }
+
+    public void setOperatingDays(String operatingDays) {
+        this.operatingDays = operatingDays;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -153,5 +191,39 @@ public class Establishment {
             zoneId = ZoneId.of("America/Argentina/Buenos_Aires");
         }
         return isOpen(LocalTime.now(zoneId));
+    }
+
+    public boolean isOpenOn(LocalDate date) {
+        if (date == null) {
+            return false;
+        }
+        return isOpenOn(date.getDayOfWeek());
+    }
+
+    public boolean isOpenOn(DayOfWeek dayOfWeek) {
+        if (dayOfWeek == null || operatingDays == null || operatingDays.isBlank()) {
+            return false;
+        }
+        for (String day : operatingDays.split(",")) {
+            if (day.trim().equalsIgnoreCase(dayOfWeek.name())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isSlotWithinOperatingHours(LocalTime start, LocalTime end) {
+        if (start == null || end == null || openingTime == null || closingTime == null) {
+            return false;
+        }
+        return !start.isBefore(openingTime) && !end.isAfter(closingTime);
+    }
+
+    public LocalTime calculateCurrentOngoingSlot(LocalTime now) {
+        if (now == null) {
+            return null;
+        }
+        int minute = (now.getMinute() / 15) * 15;
+        return LocalTime.of(now.getHour(), minute);
     }
 }

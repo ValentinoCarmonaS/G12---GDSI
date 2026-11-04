@@ -55,10 +55,12 @@ export const AdminDishReviewPage: React.FC = () => {
 
   const changeTab = useCallback(
     (tab: InboxTab) => {
-      inbox.setTab(tab);
-      // The open dish belonged to the view being left behind.
-      setDetail(null);
-      setDetailError(null);
+      if (inbox.tab !== tab) {
+        inbox.setTab(tab);
+        // The open dish belonged to the view being left behind.
+        setDetail(null);
+        setDetailError(null);
+      }
     },
     [inbox]
   );

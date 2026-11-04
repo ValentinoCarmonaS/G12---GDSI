@@ -24,6 +24,10 @@ export interface CreateIngredientRequest {
   category: IngredientCategory;
   unitOfMeasure: UnitOfMeasure;
   unitPurchaseCost?: number;
+  /** Total cost of the purchase presentation (package). Paired with unitsPerPackage. */
+  packageCost?: number;
+  /** Base units contained in one package. Paired with packageCost. */
+  unitsPerPackage?: number;
   criticalStockThreshold?: number | null;
 }
 
@@ -32,6 +36,10 @@ export interface UpdateIngredientRequest {
   category: IngredientCategory;
   unitOfMeasure: UnitOfMeasure;
   unitPurchaseCost?: number;
+  /** Total cost of the purchase presentation (package). Paired with unitsPerPackage. */
+  packageCost?: number;
+  /** Base units contained in one package. Paired with packageCost. */
+  unitsPerPackage?: number;
   criticalStockThreshold?: number | null;
 }
 
@@ -42,6 +50,8 @@ export interface AdminIngredientDetailResponse {
   category: IngredientCategory;
   unitOfMeasure: UnitOfMeasure;
   unitPurchaseCost: number;
+  packageCost?: number;
+  unitsPerPackage?: number;
   status: IngredientStatus;
   currentStock: number;
   criticalStockThreshold?: number | null;

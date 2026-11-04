@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { User as UserIcon } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { profileApi } from '../../api/profileApi';
 import { adminNotificationApi } from '../../api/adminNotificationApi';
 import { AdminNotificationBell } from '../notification/AdminNotificationBell';
+import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
 import type { AdminNotificationResponse } from '../../types/notification';
 
 interface WorkspaceLayoutProps {
@@ -18,16 +21,60 @@ const ROLE_BADGE_COLORS: Record<string, string> = {
   COMENSAL: 'bg-green-100 text-green-800 border-green-200',
 };
 
+/**
+ * C-08 (spec 005 FR-027): the Chef's operational header exposes three first-class
+ * sections. "Gestionar Platos" lives here, no longer nested inside the KDS view.
+ */
+const CHEF_SECTIONS: ReadonlyArray<{ to: string; label: string }> = [
+  { to: '/cocina', label: 'Comandas KDS' },
+  { to: '/cocina/platos', label: 'Gestionar Platos' },
+  { to: '/cocina/ingredientes', label: 'Ingredientes' },
+];
+
+/**
+ * C-08 (spec 005 FR-030): active section derives from the current route. The KDS
+ * section matches exactly so nested dish routes (`/cocina/platos/nuevo`, `/cocina/platos/:id`)
+ * light up "Gestionar Platos" instead of "Comandas KDS".
+ */
+const isChefSectionActive = (pathname: string, to: string): boolean =>
+  to === '/cocina' ? pathname === to : pathname === to || pathname.startsWith(`${to}/`);
+
 export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   title,
   subtitle,
   children,
 }) => {
   const { user, logout } = useAuth();
+  const { pathname } = useLocation();
   const roleColor = user?.role ? ROLE_BADGE_COLORS[user.role] || 'bg-gray-100 text-gray-800' : 'bg-gray-100 text-gray-800';
 
   const [notifications, setNotifications] = useState<AdminNotificationResponse[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  const fetchAvatar = useCallback(async () => {
+    if (!user) {
+      setAvatarUrl(null);
+      return;
+    }
+    try {
+      const data = await profileApi.getProfile();
+      setAvatarUrl(data?.avatarUrl || null);
+    } catch {
+      setAvatarUrl(null);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchAvatar();
+    const handleAvatarUpdate = () => {
+      fetchAvatar();
+    };
+    window.addEventListener('easyeat:avatar-changed', handleAvatarUpdate);
+    return () => {
+      window.removeEventListener('easyeat:avatar-changed', handleAvatarUpdate);
+    };
+  }, [fetchAvatar]);
 
   const fetchNotifications = useCallback(async () => {
     if (user?.role !== 'ADMINISTRADOR') return;
@@ -62,24 +109,32 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       {/* Top operational navigation bar */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <span className="font-extrabold text-xl text-gray-900 tracking-tight">EasyEat</span>
             <span className="text-gray-300">|</span>
             <span className="font-medium text-gray-700">{title}</span>
             {user?.role === 'CHEF' && (
-              <nav className="ml-4 hidden sm:flex items-center space-x-2 text-xs">
-                <Link
-                  to="/cocina"
-                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-gray-700 font-medium"
-                >
-                  Comandas KDS
-                </Link>
-                <Link
-                  to="/cocina/ingredientes"
-                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-orange-700 font-semibold"
-                >
-                  Ingredientes
-                </Link>
+              <nav
+                aria-label="Secciones de cocina"
+                className="ml-2 flex min-w-0 items-center gap-1 overflow-x-auto text-xs"
+              >
+                {CHEF_SECTIONS.map((section) => {
+                  const active = isChefSectionActive(pathname, section.to);
+                  return (
+                    <Link
+                      key={section.to}
+                      to={section.to}
+                      aria-current={active ? 'page' : undefined}
+                      className={`px-2.5 py-1 rounded whitespace-nowrap ${
+                        active
+                          ? 'bg-orange-50 text-orange-700 font-semibold'
+                          : 'hover:bg-gray-100 text-gray-700 font-medium'
+                      }`}
+                    >
+                      {section.label}
+                    </Link>
+                  );
+                })}
               </nav>
             )}
             {user?.role === 'ADMINISTRADOR' && (
@@ -89,6 +144,12 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   className="px-2.5 py-1 rounded hover:bg-gray-100 text-gray-700 font-medium"
                 >
                   Panel
+                </Link>
+                <Link
+                  to="/admin/dishes"
+                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-purple-700 font-semibold"
+                >
+                  Auditoría
                 </Link>
                 <Link
                   to="/admin/staff"
@@ -143,6 +204,24 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                   )}
 
                   <span className="text-sm text-gray-600 hidden md:inline">{user.email}</span>
+
+                  {/* Reactive user avatar with institutional fallback */}
+                  <Link
+                    to="/perfil"
+                    title="Mi perfil"
+                    aria-label="Avatar de usuario"
+                    className="flex items-center justify-center w-8 h-8 rounded-full overflow-hidden border border-gray-200 bg-gray-100 hover:ring-2 hover:ring-amber-500 transition-all shrink-0"
+                  >
+                    {avatarUrl ? (
+                      <img
+                        src={getAuthenticatedAvatarUrl(avatarUrl)}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <UserIcon className="w-4 h-4 text-gray-500" />
+                    )}
+                  </Link>
 
                   {user.role === 'ADMINISTRADOR' && (
                     <AdminNotificationBell

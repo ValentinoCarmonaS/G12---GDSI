@@ -88,9 +88,28 @@ Cinco decisiones de redacción que cierran los 31 ítems que el checklist `appro
 - Q: The Chef's `DELETE /dishes/{id}` is a spec 005 operation for `DRAFT`, while C-02 is cancellation of a `PENDING_PRICE` proposal. Does C-02 remove the Chef's separate draft-delete permission? → A: No. C-02 is Administrator-only for review-pending dishes; Chef deletion of a `DRAFT` remains governed by spec 005. The Chef endpoint's state guard returns 409 for `PENDING_PRICE`, and the Administrator cancellation endpoint returns 403 to the Chef role.
 - Q: The applied spec 005 `chk_dishes_status` constraint allows `DRAFT`, `PENDING_PRICE`, and `PUBLISHED`, but not C-02's `CANCELLED`. May the implementation alter the applied V7 migration or omit the required terminal state? → A: Neither. The user's explicit request to complete C-02 authorizes the narrow D1 amendment: a new forward-only V10 migration may replace only `chk_dishes_status` with the same three values plus `CANCELLED`, and replace `chk_drh_event_type` with `APPROVED`, `REJECTED`, and `CANCELLED`. Applied V7 and V9 remain unchanged; no other spec 005 schema object is modified. This authorization and its exact bounds are recorded in `plan.md` Complexity Tracking.
 
+### Session 2026-11-01 (C-05: Sección exclusiva de auditoría en la cabecera)
+
+- Q: ¿Se requiere un punto de entrada dedicado a la auditoría en el `Navbar`? → A: Sí. La auditoría se consolida como una funcionalidad de primer nivel.
+- Q: ¿Cómo se estructura la vista de auditoría? → A: Switch de dos pestañas: "En espera" (`PENDING_PRICE`) y "Finalizados" (aprobados, rechazados, cancelados).
+- Q: ¿Qué comportamiento tienen las pestañas? → A: Reactivas, sin recarga completa de página. El filtro de estado se aplica mediante navegación de pestañas internas.
+
 ---
 
 ## User Scenarios & Testing *(mandatory)*
+
+### User Story 6 — Administrative Navigation for Dish Audit (C-05) (Priority: P2)
+
+**C-05**: Como administrador, quiero acceder a la auditoría de platos directamente desde la cabecera, y filtrar rápidamente entre platos pendientes y decididos, para optimizar el flujo de trabajo administrativo.
+
+**Acceptance Scenarios**:
+1. **Given** an authenticated Administrator, **When** they view the site header, **Then** an "Auditoría" link is visible, alongside "Panel", "Personal" e "Inventario".
+2. **Given** the Administrator navigates to the "Auditoría" section, **When** rendered, **Then** a tab-switch control displays "En espera" and "Finalizados".
+3. **Given** "En espera" is selected, **When** the page loads, **Then** only dishes with `PENDING_PRICE` status are displayed in the inbox list, ordered FIFO.
+4. **Given** "Finalizados" is selected, **When** the page loads, **Then** only dishes with `PUBLISHED`, `REJECTED`, or `CANCELLED` status are displayed.
+5. **Given** an Administrator switching between "En espera" and "Finalizados", **When** switched, **Then** the inbox content refreshes reactively, maintaining the current UI session and clearing any stale detail panel selection.
+
+---
 
 ### User Story 1 — Administrative Inbox of Dishes Pending Review (ADM-5.1.1) (Priority: P1)
 
@@ -242,7 +261,7 @@ When a submitted dish proposal is fundamentally flawed or unsuitable, only the A
 - **FR-003**: The "Pendientes" inbox view MUST display the total count badge of dishes awaiting decision, order items in FIFO sequence (submission timestamp ascending, oldest first), and paginate results with a default page size of 20 items per page with navigation controls.
 - **FR-004**: Each dish entry in the review inbox list MUST display: dish ID, name, category, author Chef name, submission timestamp, current review status, and an indicator distinguishing initial submissions from resubmissions following a past rejection.
 - **FR-005**: If no dishes match the criteria of an inbox view, the system MUST render an informative empty state instead of a blank page or error.
-- **FR-006**: Opening an inbox entry MUST present the complete culinary file and the itemized Food Cost audit delivered by `specs/006-recipe-food-cost` (ADM-5.1.2): ingredient names, portion quantities, inventory units, unit acquisition costs, line subtotals, aggregated Food Cost per portion, declared dietary/allergen restriction codes, and `has_unpriced_ingredients` warning flags.
+- **FR-006**: Opening an inbox entry MUST present the complete culinary file and the itemized Food Cost audit delivered by `specs/006-recipe-food-cost` (ADM-5.1.2): ingredient names, portion quantities, inventory units, unit acquisition costs **already converted to base units per the purchase-presentation rule of spec 004 FR-015d**, line subtotals, aggregated Food Cost per portion, declared dietary/allergen restriction codes, and `has_unpriced_ingredients` warning flags.
 - **FR-007**: The system MUST provide bidirectional reactive pricing calculation between commercial margin percentage and retail price ($PVP$):
   $$\text{margin\_pct} = \frac{\text{retail\_price} - \text{food\_cost}}{\text{retail\_price}} \times 100$$
   $$\text{retail\_price} = \frac{\text{food\_cost}}{1 - (\text{margin\_pct} / 100)}$$
@@ -325,7 +344,13 @@ When a submitted dish proposal is fundamentally flawed or unsuitable, only the A
 
 ---
 
-## Assumptions
+- **FR-038**: The system MUST expose an "Auditoría" link in the global Administrator Navbar (`WorkspaceLayout.tsx`), redirecting to the administrative review inbox (`/admin/dishes`).
+- **FR-039**: The review inbox MUST implement a two-option tab-switch: "En espera" (filtering by `PENDING_PRICE`) and "Finalizados" (filtering by `PUBLISHED`, `REJECTED`, `CANCELLED`).
+- **FR-041**: The system MUST implement a mandatory rejection feedback mechanism (10–1000 characters) for Administrators, ensuring feedback is persisted and visible to the Chef without exposing cost/margin data.
+- **FR-042**: The dish review workflow MUST support an iterative "ping-pong" cycle, allowing Administrators to reject dishes with a proposed edition (snapshot of modifications) and Chefs to accept, edit, and resubmit them.
+- **FR-043**: Every rejection cycle MUST increment a `cycle_number` and record the full proposal history (`DishReviewHistory`) in an immutable audit log.
+
+
 
 - **Precondition — Spec 005 (Chef Dish Management)**: Assumes dishes arrive in `PENDING_PRICE` status via the Chef's "Send for Review" action with basic identity, allergen confirmation flag, and locked against Chef editing. Spec 007 consumes this state machine and extends it to `PUBLISHED` upon approval or back to `DRAFT` upon rejection.
 - **Precondition — Spec 006 (Recipe Food Cost Engine)**: Assumes dynamic Food Cost calculation and itemized cost audits are provided by the engine defined in `specs/006-recipe-food-cost` (ADM-5.1.2) via `dish_recipe_ingredients` and inventory acquisition costs. Spec 007 consumes the cost audit and does not re-specify or duplicate the calculation logic.

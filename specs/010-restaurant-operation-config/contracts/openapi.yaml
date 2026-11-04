@@ -305,6 +305,8 @@ paths:
                     example: true
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           description: El método de pago fue deshabilitado mientras se navegaba en el checkout
           content:
@@ -404,6 +406,8 @@ components:
         id:
           type: string
           format: uuid
+          nullable: true
+          description: Null for a slot that has no capacity configured yet (EC-007).
         slotDate:
           type: string
           format: date
@@ -427,6 +431,8 @@ components:
         version:
           type: integer
           format: int64
+          nullable: true
+          description: Null for a slot that has no capacity configured yet; send no expectedVersion to create it.
 
     UpdateSlotCapacityRequest:
       type: object
@@ -462,6 +468,8 @@ components:
         id:
           type: string
           format: uuid
+          nullable: true
+          description: Null for a method that has no row yet; such a method is enabled.
         paymentMethod:
           $ref: '#/components/schemas/PaymentMethodEnum'
         displayName:
@@ -473,6 +481,8 @@ components:
         version:
           type: integer
           format: int64
+          nullable: true
+          description: Null for a method that has no row yet; send no expectedVersion to create it.
 
     TogglePaymentMethodRequest:
       type: object

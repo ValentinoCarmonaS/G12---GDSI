@@ -20,8 +20,10 @@ import { FirstLoginPasswordPage } from '../pages/FirstLoginPasswordPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { DishCostAuditPage } from '../pages/DishCostAuditPage';
 import { AdminDishReviewPage } from '../pages/AdminDishReviewPage';
+import { AdminOperationsPage } from '../pages/AdminOperationsPage';
 import { VerifyEmailPage } from '../pages/VerifyEmailPage';
 import { EstablishmentDiscoveryPage } from '../pages/EstablishmentDiscoveryPage';
+import { CheckoutPage } from '../pages/CheckoutPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -185,6 +187,14 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
+        path="/admin/operations"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <AdminOperationsPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
         path="/admin/*"
         element={
           <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
@@ -221,6 +231,16 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route path="/discovery" element={<Navigate to="/descubrimiento" replace />} />
+
+      {/* Role-Protected Diner Checkout (COMENSAL) */}
+      <Route
+        path="/checkout"
+        element={
+          <RoleRouteGuard allowedRoles={['COMENSAL']}>
+            <CheckoutPage />
+          </RoleRouteGuard>
+        }
+      />
 
       {/* Diner Home / Catalog View (Public for guests and diners) */}
       <Route path="/catalogo/*" element={<CatalogPage />} />

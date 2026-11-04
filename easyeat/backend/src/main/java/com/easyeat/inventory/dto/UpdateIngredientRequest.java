@@ -22,14 +22,26 @@ public record UpdateIngredientRequest(
         @DecimalMin(value = "0.0000", message = "Unit purchase cost must be non-negative")
         BigDecimal unitPurchaseCost,
 
+        @DecimalMin(value = "0.0000", message = "Package cost must be non-negative")
+        BigDecimal packageCost,
+
+        @jakarta.validation.constraints.Min(value = 1, message = "Units per package must be at least 1")
+        Integer unitsPerPackage,
+
         @Min(value = 0, message = "El stock crítico debe ser un número entero mayor o igual a 0")
         Integer criticalStockThreshold
 ) {
     public UpdateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure) {
-        this(name, category, unitOfMeasure, null, null);
+        this(name, category, unitOfMeasure, null, null, 1, null);
     }
 
-    public UpdateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure, BigDecimal unitPurchaseCost) {
-        this(name, category, unitOfMeasure, unitPurchaseCost, null);
+    public UpdateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure,
+                                   BigDecimal unitPurchaseCost) {
+        this(name, category, unitOfMeasure, unitPurchaseCost, null, 1, null);
+    }
+
+    public UpdateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure,
+                                   BigDecimal unitPurchaseCost, Integer criticalStockThreshold) {
+        this(name, category, unitOfMeasure, unitPurchaseCost, null, 1, criticalStockThreshold);
     }
 }

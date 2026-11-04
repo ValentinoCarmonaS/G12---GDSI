@@ -145,4 +145,109 @@ describe('PersonalDataForm Component (T014, COM-1.4.1)', () => {
     expect(firstNameInput).toHaveValue('Valentino');
     expect(mockOnCancel).toHaveBeenCalled();
   });
+
+  describe('Demographics fields and validation (T010, COM-1.4.2)', () => {
+    const demographicsSample = {
+      ...sampleData,
+      age: 28,
+      gender: 'Femenino',
+      address: 'Av. Santa Fe 1234',
+    };
+
+    it('renders demographic fields (age, gender, address) with initial values', () => {
+      render(
+        <PersonalDataForm
+          initialData={demographicsSample}
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      expect(screen.getByLabelText(/edad/i)).toHaveValue(28);
+      expect(screen.getByLabelText(/género/i)).toHaveValue('Femenino');
+      expect(screen.getByLabelText(/domicilio/i)).toHaveValue('Av. Santa Fe 1234');
+    });
+
+    it('displays validation error when age is below 14 or above 120', async () => {
+      const user = userEvent.setup();
+      render(
+        <PersonalDataForm
+          initialData={demographicsSample}
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      const ageInput = screen.getByLabelText(/edad/i);
+      await user.clear(ageInput);
+      await user.type(ageInput, '13');
+
+      const submitBtn = screen.getByRole('button', { name: /guardar cambios/i });
+      await user.click(submitBtn);
+
+      expect(await screen.findByText(/la edad debe ser un número entero entre 14 y 120/i)).toBeInTheDocument();
+      expect(mockOnSubmit).not.toHaveBeenCalled();
+
+      await user.clear(ageInput);
+      await user.type(ageInput, '121');
+      await user.click(submitBtn);
+
+      expect(await screen.findByText(/la edad debe ser un número entero entre 14 y 120/i)).toBeInTheDocument();
+      expect(mockOnSubmit).not.toHaveBeenCalled();
+    });
+
+    it('displays validation error when address exceeds 255 characters', async () => {
+      const user = userEvent.setup();
+      render(
+        <PersonalDataForm
+          initialData={demographicsSample}
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      const addressInput = screen.getByLabelText(/domicilio/i);
+      await user.clear(addressInput);
+      await user.type(addressInput, 'A'.repeat(256));
+
+      const submitBtn = screen.getByRole('button', { name: /guardar cambios/i });
+      await user.click(submitBtn);
+
+      expect(await screen.findByText(/el domicilio no puede exceder los 255 caracteres/i)).toBeInTheDocument();
+      expect(mockOnSubmit).not.toHaveBeenCalled();
+    });
+
+    it('submits demographic data when input is valid', async () => {
+      const user = userEvent.setup();
+      render(
+        <PersonalDataForm
+          initialData={demographicsSample}
+          onSubmit={mockOnSubmit}
+          onCancel={mockOnCancel}
+        />
+      );
+
+      const ageInput = screen.getByLabelText(/edad/i);
+      await user.clear(ageInput);
+      await user.type(ageInput, '32');
+
+      const genderSelect = screen.getByLabelText(/género/i);
+      await user.selectOptions(genderSelect, 'No binario');
+
+      const addressInput = screen.getByLabelText(/domicilio/i);
+      await user.clear(addressInput);
+      await user.type(addressInput, 'Av. Corrientes 555');
+
+      const submitBtn = screen.getByRole('button', { name: /guardar cambios/i });
+      await user.click(submitBtn);
+
+      expect(mockOnSubmit).toHaveBeenCalledWith(expect.objectContaining({
+        firstName: 'Valentino',
+        lastName: 'Carmona',
+        age: 32,
+        gender: 'No binario',
+        address: 'Av. Corrientes 555',
+      }));
+    });
+  });
 });

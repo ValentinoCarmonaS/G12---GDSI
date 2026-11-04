@@ -6,7 +6,7 @@
 
 **Prerequisites**: plan.md ✅ spec.md ✅ research.md ✅ data-model.md ✅ contracts/ ✅ quickstart.md ✅
 
-**GitHub Issues**: [#252](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/252), [#253](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/253), [#254](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/254), [#255](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/255), [#256](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/256), [#257](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/257)
+**GitHub Issues**: [#252](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/252), [#253](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/253), [#254](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/254), [#255](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/255), [#264](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/264), [#256](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/256), [#257](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/257)
 
 **TDD Order (por US)**: Tests unitarios + edge cases → Implementación backend → Tests frontend → Implementación frontend
 
@@ -26,7 +26,7 @@
 
 - [X] T001 Crear el branch de trabajo `013-critical-stock-chef-pause` a partir de `feat/012/phase-6-polish` con `git checkout -b 013-critical-stock-chef-pause`
 - [X] T002 Verificar que la migración Flyway predecesora `V10__support_admin_dish_cancellation.sql` existe en `easyeat/backend/src/main/resources/db/migration/` y que la secuencia no tiene huecos
-- [X] T003 Crear el archivo de migración Flyway `easyeat/backend/src/main/resources/db/migration/V11__critical_stock_and_chef_pause.sql` con el DDL completo definido en `data-model.md §3.1`: columna `ingredients.critical_stock_threshold INTEGER NULL CHECK (IS NULL OR >= 0)`, columna `dishes.paused_by_chef BOOLEAN NOT NULL DEFAULT FALSE`, e índices `idx_ingredients_critical_alert` e `idx_dishes_catalog_visibility`
+- [X] T003 Crear el archivo de migración Flyway `easyeat/backend/src/main/resources/db/migration/V17__critical_stock_and_chef_pause.sql` con el DDL completo definido en `data-model.md §3.1`: columna `ingredients.critical_stock_threshold INTEGER NULL CHECK (IS NULL OR >= 0)`, columna `dishes.paused_by_chef BOOLEAN NOT NULL DEFAULT FALSE`, e índices `idx_ingredients_critical_alert` e `idx_dishes_catalog_visibility`
 
 ---
 
@@ -41,7 +41,7 @@
 - [X] T006 [P] Extender el tipo TypeScript `easyeat/frontend/src/types/inventory.ts` añadiendo los campos `criticalStockThreshold?: number | null` e `isCritical?: boolean` en la interfaz de ingrediente
 - [X] T007 [P] Extender el tipo TypeScript `easyeat/frontend/src/types/dish.ts` añadiendo el campo `pausedByChef: boolean` en la interfaz de plato y definir la interfaz `ChefDishOperationalStatus` con los campos `dishId`, `pausedByChef`, `sinStock`, `isActive` y `updatedAt`
 
-**Checkpoint**: Migración V11 creada, entidades JPA extendidas, tipos TypeScript actualizados — las fases US pueden comenzar.
+**Checkpoint**: Migración V17 creada (renumerada desde V11), entidades JPA extendidas, tipos TypeScript actualizados — las fases US pueden comenzar.
 
 ---
 
@@ -92,7 +92,7 @@
 
 ### Implementación — User Story 2
 
-- [X] T028 [US2] Extender `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java` añadiendo la consulta JPQL o query nativa con soporte de parámetro `criticalOnly`: filtra `status = 'ACTIVE' AND critical_stock_threshold IS NOT NULL AND current_stock < critical_stock_threshold` apoyada en el índice `idx_ingredients_critical_alert` de la migración V11 (FR-020, D-003)
+- [X] T028 [US2] Extender `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java` añadiendo la consulta JPQL o query nativa con soporte de parámetro `criticalOnly`: filtra `status = 'ACTIVE' AND critical_stock_threshold IS NOT NULL AND current_stock < critical_stock_threshold` apoyada en el índice `idx_ingredients_critical_alert` de la migración V17 (FR-020, D-003)
 - [X] T029 [US2] Actualizar `easyeat/backend/src/main/java/com/easyeat/inventory/service/IngredientService.java` para soportar el parámetro `criticalOnly` en el método de listado, delegando al repositorio extendido en T028, y para calcular el campo `isCritical` en el DTO de respuesta considerando la suspensión de DISCONTINUED (FR-004..FR-007, FR-010, FR-021, INV-3, INV-7, INV-14, INV-17)
 - [X] T030 [US2] Actualizar `easyeat/backend/src/main/java/com/easyeat/inventory/controller/AdminIngredientController.java` para aceptar el query param `criticalOnly=true` en el endpoint `GET /api/v1/admin/ingredients` y pasarlo al servicio (FR-020, D-003)
 - [X] T031 [US2] Extender la insignia visual de alerta en `easyeat/frontend/src/components/inventory/IngredientCatalogTable.tsx`: renderizar el badge "⚠️ Stock crítico" (color ámbar/rojo) condicionalmente cuando `isCritical === true`, e incorporar el toggle de filtro rápido "Solo insumos en stock crítico" en la barra de herramientas (FR-005, FR-020, INV-4, D-003)
@@ -102,6 +102,26 @@
 **Checkpoint**: US2 completamente funcional — alertas visuales correctas, filtro rápido operativo, cero efectos externos.
 
 ---
+
+
+
+---
+
+## Phase 4.1: Integración y resolución de inconsistencias con develop/sprint-3 — [Issue #264](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/264)
+
+**Goal**: Resolver las tres inconsistencias detectadas tras la integración de develop/sprint-3: (1) renumeración de migración Flyway de V11 a V17 y actualización de la documentación de la especificación, (2) unificación aditiva completa de DTOs y tipos de inventario (packageCost, unitsPerPackage + criticalStockThreshold), y (3) resolución de la colisión de endpoints en Spring MVC (/api/v1/establishments/{id}/time-slots) entre PickupSlotController y DinerTimeSlotController.
+
+**Independent Test**: Ejecutar QuickstartScenariosTest y la suite completa de backend y frontend verificando cero fallos y cero colisiones de rutas.
+
+### Tareas — Fase 4.1
+
+- [X] T034a [Doc] Actualizar la documentación de la spec 013 (data-model.md, plan.md, quickstart.md, 	asks.md) reflejando la migración Flyway V17__critical_stock_and_chef_pause.sql y la unificación aditiva de DTOs (packageCost, unitsPerPackage, criticalStockThreshold)
+- [X] T034b [P] [Test] Escribir test en easyeat/backend/src/test/java/com/easyeat/inventory/service/IngredientServiceTest.java (o clase de test dedicada) que valide la coexistencia de la presentación de compra (packageCost, unitsPerPackage) y el umbral crítico (criticalStockThreshold) en creación y actualización de ingredientes
+- [X] T034c [Impl] Finalizar y verificar la unificación aditiva en CreateIngredientRequest, UpdateIngredientRequest, AdminIngredientDetailResponse, IngredientService.java y inventory.ts asegurando que todos los tests de inventario pasen
+- [X] T034d [P] [Test] Escribir test en easyeat/backend/src/test/java/com/easyeat/order/controller/PickupSlotControllerTest.java para verificar que el controlador responde en /api/v1/establishments/{establishmentId}/pickup-slots y no genera colisión de mapping
+- [X] T034e [Impl] Remover el alias colisionante /{establishmentId}/time-slots de PickupSlotController.java, ejecutar QuickstartScenariosTest y validar la suite completa de backend
+
+**Checkpoint**: Inconsistencias resueltas, documentación alineada, QuickstartScenariosTest y ambas suites de tests pasando al 100%.
 
 ## Phase 5: User Story 3 — Pausa manual de platos por el chef durante el servicio (Priority: P1) — [Issue #256](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/256)
 
@@ -163,7 +183,7 @@
 - [ ] T066 [P] Escribir test de contrato OpenAPI `easyeat/backend/src/test/java/com/easyeat/inventory/contract/IngredientOpenApiContractTest.java`: validar que los endpoints de ingredientes del contrato `specs/013-critical-stock-chef-pause/contracts/openapi.yaml` responden con los schemas y códigos HTTP especificados (plan.md §9, D-003)
 - [ ] T067 [P] Escribir test de contrato OpenAPI `easyeat/backend/src/test/java/com/easyeat/dish/contract/DishChefPauseOpenApiContractTest.java`: validar endpoints de toggle de pausa y operational-status contra `specs/013-critical-stock-chef-pause/contracts/openapi.yaml` (plan.md §9, D-005)
 - [ ] T068 [P] Verificar que el mapeo de errores RFC 7807 (`ProblemDetail`) está configurado en `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` para los nuevos casos: umbral negativo (400), formato inválido (400), Chef sin autorización para umbral (403), Admin sin autorización para toggle (403), insumo/plato no encontrado (404) (plan.md §10)
-- [ ] T069 Ejecutar el escenario E2E completo del `specs/013-critical-stock-chef-pause/quickstart.md` sobre entorno local con la migración V11 aplicada y validar los 7 escenarios prácticos descritos
+- [ ] T069 Ejecutar el escenario E2E completo del `specs/013-critical-stock-chef-pause/quickstart.md` sobre entorno local con la migración V17 aplicada y validar los 7 escenarios prácticos descritos
 - [ ] T070 [P] Revisar la matriz de trazabilidad `plan.md §12` para confirmar que el 100% de los 23 FRs, 19 INVs, 25 ECs y 15 SCs tienen al menos una tarea asignada en este `tasks.md`
 - [ ] T071 Ejecutar la suite de tests del backend (`./mvnw test` desde `easyeat/backend/`) y confirmar que todos los tests de la feature 013 pasan (cero regresiones en tests preexistentes)
 - [ ] T072 [P] Ejecutar la suite de tests del frontend (`npm run test` desde `easyeat/frontend/`) y confirmar que todos los tests RTL de la feature 013 pasan (cero regresiones)
@@ -231,7 +251,7 @@ Task: T045 useRealtimeAvailability.test.ts    → easyeat/frontend/tests/hooks/
 
 ### MVP (Solo User Story 1)
 
-1. Completar **Phase 1**: Setup del branch y migración V11.
+1. Completar **Phase 1**: Setup del branch y migración V17.
 2. Completar **Phase 2**: Entidades JPA y tipos TypeScript.
 3. Completar **Phase 3**: US1 — umbral de stock crítico.
 4. **PARAR Y VALIDAR**: el administrador puede definir umbrales; el Chef recibe 403; validaciones rechazan valores inválidos.

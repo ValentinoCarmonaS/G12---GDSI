@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import type { DishCatalogItem } from '@/types/dinerCatalog';
 import type { EnrichedDish } from '@/types/catalog';
 import { AllergenWarningBadge } from './AllergenWarningBadge';
+import { CartContext } from '@/context/CartContext';
+import { formatCurrency } from '@/utils/currencyUtils';
 
 export interface DishCardProps {
   dish: DishCatalogItem | EnrichedDish;
@@ -19,10 +21,18 @@ export const DishCard: React.FC<DishCardProps> = ({
   isReadOnly = false,
 }) => {
   const [imageError, setImageError] = useState(false);
+  const cartContext = useContext(CartContext);
+
+  const existingCartItem = cartContext?.items.find((item) => item.dishId === dish.id);
+  const quantityInCart = existingCartItem ? existingCartItem.quantity : 0;
+  const availableStock: number | undefined = (dish as any).availableStock;
+  const isMaxStockReached =
+    availableStock !== undefined && quantityInCart >= availableStock;
 
   const photoUrl = 'photoUrl' in dish ? dish.photoUrl : null;
   const isAvailable = 'isAvailable' in dish ? dish.isAvailable !== false : dish.isActive !== false;
   const isOutOfStock = !isAvailable && !isReadOnly;
+  const isButtonDisabled = isOutOfStock || isMaxStockReached || isReadOnly;
   const hasConflicts = dish.isCompliant === false && (dish.conflictingRestrictions?.length ?? 0) > 0;
 
   const handleCardClick = () => {
@@ -33,7 +43,7 @@ export const DishCard: React.FC<DishCardProps> = ({
 
   const handleAddToCartClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onAddToCart && !isOutOfStock && !isReadOnly) {
+    if (onAddToCart && !isButtonDisabled) {
       onAddToCart(dish);
     }
   };
@@ -89,10 +99,10 @@ export const DishCard: React.FC<DishCardProps> = ({
           </div>
         )}
 
-        {/* Price Tag Overlay on Image */}
+        {/* Price Tag Overlay on Image (INV-9, INV-10, INV-12, AC-3.1, AC-3.2, AC-3.4) */}
         <div className="absolute bottom-2.5 right-2.5 bg-white/95 backdrop-blur-xs px-3 py-1 rounded-lg shadow-sm border border-gray-100">
           <span className="text-sm font-extrabold text-amber-900">
-            ${dish.price.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(dish.price)}
           </span>
         </div>
       </div>
@@ -131,18 +141,22 @@ export const DishCard: React.FC<DishCardProps> = ({
           {!isReadOnly && onAddToCart && (
             <button
               type="button"
-              disabled={isOutOfStock}
+              disabled={isButtonDisabled}
               onClick={handleAddToCartClick}
               data-testid={`add-to-cart-btn-${dish.id}`}
               className={`inline-flex items-center justify-center px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors shadow-xs ${
-                isOutOfStock
+                isOutOfStock || isMaxStockReached
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : hasConflicts && showWarnings
                   ? 'bg-amber-600 hover:bg-amber-700 text-white cursor-pointer'
                   : 'bg-green-600 hover:bg-green-700 text-white cursor-pointer'
               }`}
             >
-              {isOutOfStock ? 'Agotado' : 'Agregar al carrito'}
+              {isOutOfStock
+                ? 'Agotado'
+                : isMaxStockReached
+                ? 'Límite alcanzado'
+                : 'Agregar al carrito'}
             </button>
           )}
         </div>

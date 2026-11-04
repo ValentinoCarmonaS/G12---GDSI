@@ -131,13 +131,13 @@ El modelo representa las materias primas del establecimiento, sus parámetros de
 
 ## 3. Esquema Relacional y Migración de Base de Datos
 
-La persistencia se implementa mediante la migración secuencial Flyway **`V11__critical_stock_and_chef_pause.sql`**, extendiendo las tablas existentes sin recreaciones ni rotura de constraints previos.
+La persistencia se implementa mediante la migración secuencial Flyway **`V17__critical_stock_and_chef_pause.sql`**, extendiendo las tablas existentes sin recreaciones ni rotura de constraints previos.
 
-### 3.1 DDL de Migración (`V11__critical_stock_and_chef_pause.sql`)
+### 3.1 DDL de Migración (`V17__critical_stock_and_chef_pause.sql`)
 
 ```sql
 -- ====================================================================
--- EasyEat V11: Critical Stock Threshold and Chef Dish Manual Pause
+-- EasyEat V17 (renumerada desde V11 tras merge con sprint-3): Critical Stock Threshold and Chef Dish Manual Pause
 -- Owns: ingredients.critical_stock_threshold, dishes.paused_by_chef,
 --       and performance indexes for critical stock and pause filtering.
 -- ====================================================================

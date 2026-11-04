@@ -152,6 +152,51 @@ class DinerCatalogControllerTest {
 
         @Test
         @WithMockUser(roles = "COMENSAL")
+        @DisplayName("Should return HTTP 200 with neutral allergens array conforming to OpenAPI schema (T008, OP-011-01, INV-6)")
+        void shouldReturnCatalogWithNeutralAllergens() throws Exception {
+            EstablishmentDetailDto estDetail = new EstablishmentDetailDto(
+                    tenantId,
+                    "La Farola de Palermo",
+                    EstablishmentStatus.ACTIVE,
+                    true,
+                    null
+            );
+
+            UUID dishId = UUID.fromString("e0eebc99-9c0b-4ef8-bb6d-6bb9bd380a55");
+            DishCatalogItemDto dishDto = new DishCatalogItemDto(
+                    dishId,
+                    "Milanesa Napolitana",
+                    "Carne con salsa y queso",
+                    "Platos principales",
+                    BigDecimal.valueOf(5500.00),
+                    "/api/v1/dishes/" + dishId + "/photo",
+                    true,
+                    10,
+                    true,
+                    List.of(),
+                    List.of("Carne", "Mozzarella", "Tomate"),
+                    List.of("Lácteos / Lactosa", "Trigo / Gluten")
+            );
+
+            CategoryGroupDto categoryGroup = new CategoryGroupDto("Platos principales", List.of(dishDto));
+            DinerCatalogResponse catalogResponse = new DinerCatalogResponse(estDetail, List.of(categoryGroup));
+
+            when(dinerCatalogService.getCatalog(eq(tenantId), any())).thenReturn(catalogResponse);
+
+            mockMvc.perform(get("/api/v1/establishments/{tenantId}/catalog", tenantId)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                    .andExpect(jsonPath("$.categories[0].dishes[0].allergens", hasSize(2)))
+                    .andExpect(jsonPath("$.categories[0].dishes[0].allergens[0]").value("Lácteos / Lactosa"))
+                    .andExpect(jsonPath("$.categories[0].dishes[0].allergens[1]").value("Trigo / Gluten"));
+
+            verify(dinerCatalogService, times(1)).getCatalog(eq(tenantId), any());
+        }
+
+
+        @Test
+        @WithMockUser(roles = "COMENSAL")
         @DisplayName("Should return HTTP 404 ProblemDetail when establishment does not exist")
         void shouldReturn404WhenEstablishmentNotFound() throws Exception {
             when(dinerCatalogService.getCatalog(eq(tenantId), any()))

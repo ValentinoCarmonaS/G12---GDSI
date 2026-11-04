@@ -39,22 +39,7 @@ export const KitchenWorkspacePage: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between gap-3">
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900">Gestión de Platos y Fichas Técnicas</h4>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Creá borradores, configurá identidad básica, alérgenos y recetas técnicas de cocina.
-            </p>
-          </div>
-          <Link
-            to="/cocina/platos"
-            className="inline-flex items-center justify-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-zinc-950 text-xs font-semibold rounded-md shadow-sm transition-colors whitespace-nowrap self-start"
-          >
-            Gestionar Platos →
-          </Link>
-        </div>
-
+      <div className="grid grid-cols-1 gap-4 mb-6">
         <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between gap-3">
           <div>
             <h4 className="text-sm font-semibold text-gray-900">Catálogo de Ingredientes y Materias Primas</h4>

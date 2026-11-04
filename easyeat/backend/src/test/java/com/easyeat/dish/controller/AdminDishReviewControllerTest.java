@@ -108,7 +108,7 @@ class AdminDishReviewControllerTest extends DishControllerTestBase {
     class Parameters {
 
         @ParameterizedTest
-        @CsvSource({"PENDING", "PUBLISHED", "HISTORY"})
+        @CsvSource({"PENDING", "FINALIZED"})
         @DisplayName("each published tab value reaches the service unchanged")
         void tabsAreForwarded(String tab) throws Exception {
             when(inboxService.getInbox(any(), anyInt(), anyInt())).thenReturn(emptyPage());
@@ -205,7 +205,7 @@ class AdminDishReviewControllerTest extends DishControllerTestBase {
                     .thenReturn(new DishReviewInboxPageResponse(
                             List.of(), 0, 20, 0L, 0, false, 37L));
 
-            mockMvc.perform(get(INBOX).param("tab", "PUBLISHED"))
+            mockMvc.perform(get(INBOX).param("tab", "FINALIZED"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.pendingCount").value(37));
         }
@@ -215,7 +215,7 @@ class AdminDishReviewControllerTest extends DishControllerTestBase {
         void emptyViewIsOk() throws Exception {
             when(inboxService.getInbox(any(), anyInt(), anyInt())).thenReturn(emptyPage());
 
-            mockMvc.perform(get(INBOX).param("tab", "HISTORY"))
+            mockMvc.perform(get(INBOX).param("tab", "FINALIZED"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.items").isArray())
                     .andExpect(jsonPath("$.items").isEmpty())

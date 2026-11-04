@@ -64,12 +64,11 @@ class InventoryNotificationTest {
     }
 
     private void assertCriticalOnlyParameterSupported() {
-        Method listMethod = Arrays.stream(IngredientService.class.getMethods())
+        boolean hasCriticalOnlySupport = Arrays.stream(IngredientService.class.getMethods())
                 .filter(m -> "listIngredients".equals(m.getName()))
-                .findFirst()
-                .orElse(null);
+                .anyMatch(m -> m.getParameterCount() >= 3);
 
-        if (listMethod != null && listMethod.getParameterCount() < 3) {
+        if (!hasCriticalOnlySupport) {
             fail("IngredientService.listIngredients must accept Boolean criticalOnly parameter (TDD Red: T029 pending)");
         }
     }
