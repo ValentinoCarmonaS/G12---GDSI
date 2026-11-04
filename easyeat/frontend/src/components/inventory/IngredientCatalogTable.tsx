@@ -11,6 +11,8 @@ export interface IngredientCatalogTableProps {
   onViewAudit?: (ingredient: AdminIngredientDetailResponse) => void;
   onStatusTransition?: (id: string, newStatus: IngredientStatus) => Promise<void>;
   onStatusChange?: (id: string, newStatus: IngredientStatus) => Promise<void>;
+  onToggleCriticalOnly?: (criticalOnly: boolean) => void;
+  criticalOnly?: boolean;
   isLoading?: boolean;
 }
 
@@ -31,6 +33,8 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
   onViewAudit,
   onStatusTransition,
   onStatusChange,
+  onToggleCriticalOnly,
+  criticalOnly = false,
   isLoading = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,14 +42,27 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [transitioningId, setTransitioningId] = useState<string | null>(null);
 
+  // Local state for criticalOnly if not externally controlled
+  const [localCriticalOnly, setLocalCriticalOnly] = useState<boolean>(criticalOnly);
+
+  const isCriticalFilterActive = onToggleCriticalOnly !== undefined ? criticalOnly : localCriticalOnly;
+
+  const handleCriticalFilterChange = (checked: boolean) => {
+    setLocalCriticalOnly(checked);
+    if (onToggleCriticalOnly) {
+      onToggleCriticalOnly(checked);
+    }
+  };
+
   const filteredIngredients = useMemo(() => {
     return ingredients.filter((item) => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = categoryFilter === 'ALL' || item.category === categoryFilter;
       const matchesStatus = statusFilter === 'ALL' || item.status === statusFilter;
-      return matchesSearch && matchesCategory && matchesStatus;
+      const matchesCritical = !isCriticalFilterActive || item.isCritical === true;
+      return matchesSearch && matchesCategory && matchesStatus && matchesCritical;
     });
-  }, [ingredients, searchTerm, categoryFilter, statusFilter]);
+  }, [ingredients, searchTerm, categoryFilter, statusFilter, isCriticalFilterActive]);
 
   const handleStatusTransition = async (id: string, nextStatus: IngredientStatus) => {
     setTransitioningId(id);
@@ -75,6 +92,18 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {/* Quick Critical Stock Filter Toggle (FR-020, INV-4, D-003) */}
+          <label className="flex items-center gap-2 cursor-pointer bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-md text-xs font-medium text-amber-900 transition-colors">
+            <input
+              type="checkbox"
+              checked={isCriticalFilterActive}
+              onChange={(e) => handleCriticalFilterChange(e.target.checked)}
+              aria-label="Solo insumos en stock crítico"
+              className="rounded border-amber-300 text-amber-600 focus:ring-amber-500 h-4 w-4"
+            />
+            <span>Solo insumos en stock crítico</span>
+          </label>
+
           <div className="flex items-center gap-1.5">
             <label htmlFor="filterCategorySelect" className="text-xs text-gray-500 font-medium whitespace-nowrap">
               Categoría:
@@ -146,7 +175,18 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
                   return (
                     <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                        {item.name}
+                        <div className="flex items-center gap-2">
+                          <span>{item.name}</span>
+                          {/* Visual Alert Badge: ⚠️ Stock crítico (INV-4, FR-005, FR-006, INV-17) */}
+                          {item.isCritical === true && item.status === 'ACTIVE' && (
+                            <span
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 shadow-sm"
+                              title="Stock disponible por debajo del umbral crítico"
+                            >
+                              ⚠️ Stock crítico
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-gray-600 whitespace-nowrap text-xs">
                         {item.category}
