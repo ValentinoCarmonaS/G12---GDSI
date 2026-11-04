@@ -1,0 +1,44 @@
+# ==============================================================================
+# EasyEat Backend — Production Profile
+# Active when: SPRING_PROFILES_ACTIVE=prod
+# All sensitive values must be injected via environment variables in Render.
+# ==============================================================================
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+    locations:
+      - classpath:db/migration
+      # db/dev is intentionally excluded: no seed data in production.
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# ------------------------------------------------------------------------------
+# Spring Boot Actuator — only /actuator/health exposed (used by Render)
+# ------------------------------------------------------------------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
