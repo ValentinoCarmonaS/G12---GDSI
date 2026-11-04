@@ -140,7 +140,7 @@
 - [X] T040 [P] [US3] Escribir test de componente RTL `easyeat/frontend/tests/components/ChefDishPauseToggle.test.tsx` (nuevo componente): renderizado del toggle, estado optimista al conmutar, ausencia en vistas de administrador (INV-16, SC-010)
 - [X] T041 [P] [US3] Escribir test de página RTL `easyeat/frontend/tests/pages/ChefDishesPage.test.tsx`: casos `testToggleRenderedPerDish` (toggle por plato en tabla), `testIndividualTogglesOnly` (sin acciones masivas por categoría, EC-016), `testOperationalStatusShown` (estado operativo visible en columna)
 - [X] T042 [P] [US3] Escribir test de hook `easyeat/frontend/tests/hooks/useChefDishesSync.test.ts`: polling cada 2500 ms con ETag, actualización de estado en cocina al cambiar ETag (D-006, INV-18)
-- [ ] T043 [P] [US3] Escribir test de modal de detalle RTL `easyeat/frontend/tests/components/DishDetailModal.test.tsx`: caso `testReactivePauseWithoutClosing` (pausa llega al modal abierto → deshabilita compra sin cerrar panel, EC-017, FR-016, INV-15)
+- [X] T043 [P] [US3] Escribir test de modal de detalle RTL `easyeat/frontend/tests/components/DishDetailModal.test.tsx`: caso `testReactivePauseWithoutClosing` (pausa llega al modal abierto → deshabilita compra sin cerrar panel, EC-017, FR-016, INV-15)
 - [ ] T044 [P] [US3] Escribir test de carrito RTL `easyeat/frontend/tests/components/CartDrawer.test.tsx`: caso `testHoldAndLockoutOnChefPause` (plato pausado en carrito → aviso "Pausado por cocina", botón `+` inhabilitado, checkout bloqueado, FR-019, EC-023)
 - [ ] T045 [P] [US3] Escribir test de hook de disponibilidad RTL `easyeat/frontend/tests/hooks/useRealtimeAvailability.test.ts`: propagación de pausa del chef al catálogo del comensal (INV-15, D-006)
 
