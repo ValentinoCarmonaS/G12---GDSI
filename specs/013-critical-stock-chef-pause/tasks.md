@@ -142,7 +142,7 @@
 - [X] T042 [P] [US3] Escribir test de hook `easyeat/frontend/tests/hooks/useChefDishesSync.test.ts`: polling cada 2500 ms con ETag, actualización de estado en cocina al cambiar ETag (D-006, INV-18)
 - [X] T043 [P] [US3] Escribir test de modal de detalle RTL `easyeat/frontend/tests/components/DishDetailModal.test.tsx`: caso `testReactivePauseWithoutClosing` (pausa llega al modal abierto → deshabilita compra sin cerrar panel, EC-017, FR-016, INV-15)
 - [X] T044 [P] [US3] Escribir test de carrito RTL `easyeat/frontend/tests/components/CartDrawer.test.tsx`: caso `testHoldAndLockoutOnChefPause` (plato pausado en carrito → aviso "Pausado por cocina", botón `+` inhabilitado, checkout bloqueado, FR-019, EC-023)
-- [ ] T045 [P] [US3] Escribir test de hook de disponibilidad RTL `easyeat/frontend/tests/hooks/useRealtimeAvailability.test.ts`: propagación de pausa del chef al catálogo del comensal (INV-15, D-006)
+- [X] T045 [P] [US3] Escribir test de hook de disponibilidad RTL `easyeat/frontend/tests/hooks/useRealtimeAvailability.test.ts`: propagación de pausa del chef al catálogo del comensal (INV-15, D-006)
 
 ### Implementación — User Story 3
 
