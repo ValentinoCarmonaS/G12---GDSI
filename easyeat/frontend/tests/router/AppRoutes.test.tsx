@@ -48,6 +48,7 @@ vi.mock('@/api/profileApi', () => ({
       emailVerificationLastSentAt: null,
       cooldownSecondsRemaining: 0,
     }),
+    getDietaryTaxonomy: vi.fn().mockResolvedValue([]),
     updatePersonalData: vi.fn(),
     requestEmailChange: vi.fn(),
     cancelEmailChange: vi.fn(),
@@ -658,7 +659,7 @@ describe('AppRoutes - Feature 004 Routes & RBAC Perimeter (T074, FR-028, FR-030,
       );
 
       expect(await screen.findByRole('heading', { name: /mi perfil/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /guardar cambios/i })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: /guardar cambios/i })).toBeInTheDocument();
     });
 
     it('redirects /profile alias to /perfil for COMENSAL', async () => {
