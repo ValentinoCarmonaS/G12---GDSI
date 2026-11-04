@@ -221,3 +221,17 @@ export interface ChefDishOperationalStatus {
   updatedAt: string;
 }
 
+export interface ChefDishOperationalStatusItem {
+  dishId: string;
+  pausedByChef: boolean;
+  hasStock: boolean;
+  isActiveAdmin: boolean;
+  status: string;
+}
+
+export interface ChefDishesOperationalStatusResponse {
+  etag?: string;
+  items: ChefDishOperationalStatusItem[];
+}
+
+

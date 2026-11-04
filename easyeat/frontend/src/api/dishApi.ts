@@ -7,6 +7,7 @@ import type {
   PhotoUploadResponse,
   DishAllergensUpdateRequest,
   DishAllergensResponse,
+  ChefDishesOperationalStatusResponse,
 } from '@/types/dish';
 
 export const dishApi = {
@@ -116,6 +117,35 @@ export const dishApi = {
   async submitForReview(id: string): Promise<DishDetailResponse> {
     const response = await apiClient.post<DishDetailResponse>(`/dishes/${id}/submit-review`);
     return response.data;
+  },
+
+  /**
+   * Toggles chef manual pause on a dish (FR-011, D-005).
+   */
+  async toggleChefPause(id: string, paused: boolean): Promise<{ dishId: string; pausedByChef: boolean; updatedAt: string }> {
+    const response = await apiClient.patch<{ dishId: string; pausedByChef: boolean; updatedAt: string }>(
+      `/dishes/${id}/chef-pause`,
+      { paused }
+    );
+    return response.data;
+  },
+
+  /**
+   * Retrieves operational status for all dishes with conditional ETag (D-006, INV-18).
+   */
+  async getOperationalStatus(ifNoneMatch?: string): Promise<ChefDishesOperationalStatusResponse> {
+    const headers: Record<string, string> = {};
+    if (ifNoneMatch) {
+      headers['If-None-Match'] = ifNoneMatch;
+    }
+    const response = await apiClient.get<ChefDishesOperationalStatusResponse>(
+      '/dishes/operational-status',
+      { headers }
+    );
+    return {
+      etag: (response.headers as any)?.etag || (response.headers as any)?.ETag,
+      items: response.data?.items || [],
+    };
   },
 };
 
