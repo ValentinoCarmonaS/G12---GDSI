@@ -32,6 +32,7 @@ describe('EstablishmentDiscoveryPage Tests (T022, US1, COM-1.5.1)', () => {
     totalAmount: 0,
     totalCount: 0,
     hasConflictingItems: false,
+    hasPausedItems: false,
   };
 
   it('renders page header, hero text, and establishment search input', () => {

@@ -10,7 +10,7 @@ export interface UseChefDishesSyncResult {
 
 export function useChefDishesSync(enabled = true): UseChefDishesSyncResult {
   const [items, setItems] = useState<ChefDishOperationalStatusItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading] = useState<boolean>(false);
   const etagRef = useRef<string | null>(null);
   const isPollingRef = useRef<boolean>(false);
 

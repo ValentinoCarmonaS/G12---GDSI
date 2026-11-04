@@ -1,6 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import React from 'react';
 import { DishDetailModal } from '../../src/components/catalog/DishDetailModal';
 import type { DishCatalogItem } from '@/types/dinerCatalog';
 
@@ -13,7 +12,9 @@ describe('DishDetailModal (T043, EC-017, FR-016, INV-15)', () => {
     photoUrl: '/img/ravioles.jpg',
     category: 'Platos principales',
     allergens: [],
-    dietaryRestrictions: [],
+isCompliant: true,
+conflictingRestrictions: [],
+recipeIngredients: [],
     availableStock: 5,
     isAvailable: true,
     pausedByChef: false,

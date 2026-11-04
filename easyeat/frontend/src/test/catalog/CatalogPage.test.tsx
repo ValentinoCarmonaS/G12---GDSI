@@ -41,6 +41,7 @@ describe('CatalogPage Component Tests (T026, US2, COM-4.1.1, FR-007, FR-008, FR-
     totalAmount: 0,
     totalCount: 0,
     hasConflictingItems: false,
+    hasPausedItems: false,
   };
 
   const defaultTenantContext: TenantContextType = {

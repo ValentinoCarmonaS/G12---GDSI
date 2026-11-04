@@ -70,7 +70,6 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
       name: 'Hamburguesa Completa',
       price: 2500,
       quantity: 2,
-      subtotal: 5000,
     },
     {
       dishId: 'dish-2',
@@ -78,7 +77,6 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
       name: 'Papas Rústicas',
       price: 1200,
       quantity: 1,
-      subtotal: 1200,
     },
   ];
 
@@ -96,6 +94,7 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
             totalAmount: items.reduce((acc, i) => acc + i.price * i.quantity, 0),
             totalCount: items.reduce((acc, i) => acc + i.quantity, 0),
             hasConflictingItems: false,
+            hasPausedItems: false,
             toastMessage: null,
           }}
         >
@@ -153,8 +152,7 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
           dishName: 'Hamburguesa Completa',
           quantity: 2,
           unitPrice: 2500,
-          subtotal: 5000,
-        },
+            },
       ],
     };
 

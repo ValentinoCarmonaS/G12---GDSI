@@ -12,9 +12,7 @@ describe('useTimeSlotPolling Hook', () => {
   const mockCatalog: PickupSlotCatalogResponse = {
     establishmentId: 'est-123',
     date: '2026-11-03',
-    serverTime: '2026-11-03T12:00:00Z',
     timezone: 'America/Argentina/Buenos_Aires',
-    isOpenNow: true,
     isOperatingDay: true,
     leadTimeMinutes: 30,
     slots: [

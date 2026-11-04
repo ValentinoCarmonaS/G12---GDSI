@@ -1,6 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import React from 'react';
 import ChefDishPauseToggle from '../../src/components/chef/ChefDishPauseToggle';
 
 describe('ChefDishPauseToggle (T040, INV-16, SC-010)', () => {

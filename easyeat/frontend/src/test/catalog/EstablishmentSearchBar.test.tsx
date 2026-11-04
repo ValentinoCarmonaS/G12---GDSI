@@ -41,6 +41,7 @@ describe('EstablishmentSearchBar Component Tests (T014, US1, COM-1.5.1, CA 1, CA
     totalAmount: 0,
     totalCount: 0,
     hasConflictingItems: false,
+    hasPausedItems: false,
   };
 
   const renderComponent = (

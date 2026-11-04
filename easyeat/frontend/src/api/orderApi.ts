@@ -47,5 +47,5 @@ export async function getOrderById(orderId: string): Promise<OrderDetailResponse
 export async function cancelOrder(orderId: string): Promise<OrderSummaryResponse> {
   const response = await apiClient.post<OrderSummaryResponse>(`/orders/${orderId}/cancel`);
   const data = response.data;
-  return { ...data, orderId: data.orderId || data.id };
+  return { ...data, orderId: data.orderId || data.id || orderId };
 }

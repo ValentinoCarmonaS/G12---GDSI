@@ -14,6 +14,7 @@ describe('FloatingCartButton Component (T025, US2, COM-6.1.2, INV-6, INV-7, SC-0
     totalAmount: 0,
     totalCount: 0,
     hasConflictingItems: false,
+    hasPausedItems: false,
   };
 
   const renderWithCart = (cartValues: Partial<CartContextType> = {}, onClick = vi.fn()) => {

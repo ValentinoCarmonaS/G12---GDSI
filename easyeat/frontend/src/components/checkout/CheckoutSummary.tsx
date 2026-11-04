@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Clock, ShoppingBag } from 'lucide-react';
+import { AlertTriangle, ShoppingBag } from 'lucide-react';
 import { CartItem } from '../../types/cart';
 import { FulfillmentMode, TimeSlotAvailability } from '../../types/order';
 

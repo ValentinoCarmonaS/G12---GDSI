@@ -1,6 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import React from 'react';
 import { CartDrawer } from '../../src/components/cart/CartDrawer';
 import * as useCartModule from '../../src/hooks/useCart';
 

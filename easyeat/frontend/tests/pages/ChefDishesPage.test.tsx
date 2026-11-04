@@ -1,7 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import React from 'react';
 import { ChefDishesPage } from '../../src/pages/ChefDishesPage';
 import { dishApi } from '@/api/dishApi';
 
