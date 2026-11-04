@@ -106,6 +106,12 @@ class AdminOperationsControllerTest {
     @MockBean
     private EstablishmentRepository establishmentRepository;
 
+    /** The write paths now check the establishment exists; these tests are about the web layer on top of that. */
+    @BeforeEach
+    void establishmentExists() {
+        when(establishmentRepository.existsById(TENANT)).thenReturn(true);
+    }
+
     @MockBean
     private EstablishmentTimeProvider timeProvider;
 
