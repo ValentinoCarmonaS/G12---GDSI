@@ -170,7 +170,7 @@
 - [X] T062 [US3] Extender `easyeat/frontend/src/components/catalog/DishDetailModal.tsx` para detectar reactivamente (vía `useRealtimeAvailability`) cuando el plato abierto pasa a `pausedByChef=true`: mostrar distintivo "Pausado por cocina" y deshabilitar controles de compra sin cerrar el modal; al cerrar, el plato queda excluido del catálogo (FR-016, EC-017, INV-15, D-008)
 - [X] T063 [US3] Extender `easyeat/frontend/src/context/CartContext.tsx` para detectar platos con `pausedByChef=true` en el carrito de sesión (`sessionStorage 'easyeat_cart'`) y exponer el flag de bloqueo de checkout cuando existan platos pausados (FR-019, EC-023, D-007)
 - [X] T064 [US3] Extender `easyeat/frontend/src/components/cart/CartDrawer.tsx` para mostrar la advertencia visible "Pausado por cocina" en ítems pausados, deshabilitar el botón `+` de incremento y bloquear el botón de confirmación del pedido mientras haya platos pausados en el carrito (FR-019, EC-023, D-007)
-- [ ] T065 [US3] Extender `easyeat/frontend/src/components/cart/CartItemWithBadge.tsx` para inhabilitar visualmente los controles de cantidad cuando el ítem tiene `pausedByChef=true` (FR-019, D-007)
+- [X] T065 [US3] Extender `easyeat/frontend/src/components/cart/CartItemWithBadge.tsx` para inhabilitar visualmente los controles de cantidad cuando el ítem tiene `pausedByChef=true` (FR-019, D-007)
 
 **Checkpoint**: US3 completamente funcional — toggle operativo, platos pausados ocultos en `<= 3 s`, carrito con bloqueo, modal reactivo, sincronización entre chefs.
 
