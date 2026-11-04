@@ -84,12 +84,14 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
       ? Math.max(0, effectiveAvailableStock - quantityInCart)
       : undefined;
 
+  const isPaused = Boolean((dish as any).pausedByChef);
   const isOutOfStock =
     dish.isAvailable === false ||
+    isPaused ||
     (effectiveAvailableStock !== undefined && effectiveAvailableStock <= 0);
 
   const isMaxStockReached = remainingStock !== undefined && remainingStock <= 0;
-  const canAddToCart = !isReadOnly && !isOutOfStock && !isMaxStockReached;
+  const canAddToCart = !isReadOnly && !isOutOfStock && !isMaxStockReached && !isPaused;
 
   const minQuantity = 1;
 
@@ -217,8 +219,18 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             </div>
           )}
 
-          {/* Dish Unavailable Banner (INV-5, FR-007, SC-010, EC-004) */}
-          {isOutOfStock && (
+          {/* Dish Unavailable or Paused Banner */}
+          {Boolean((dish as any).pausedByChef) ? (
+            <div
+              data-testid="dish-paused-banner"
+              className="bg-amber-50 border border-amber-300 text-amber-900 p-3 rounded-xl text-xs font-semibold flex items-center gap-2"
+            >
+              <svg className="w-4 h-4 shrink-0 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Pausado por cocina</span>
+            </div>
+          ) : isOutOfStock && (
             <div
               data-testid="dish-unavailable-banner"
               className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-xl text-xs font-semibold flex items-center gap-2"

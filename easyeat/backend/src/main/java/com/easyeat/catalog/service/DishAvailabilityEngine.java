@@ -167,7 +167,7 @@ public class DishAvailabilityEngine {
 
         Map<UUID, Boolean> map = new LinkedHashMap<>();
         for (Dish dish : publishedDishes) {
-            boolean available = isDishAvailable(dish.getId(), tenantId);
+            boolean available = !Boolean.TRUE.equals(dish.getPausedByChef()) && isDishAvailable(dish.getId(), tenantId);
             map.put(dish.getId(), available);
         }
 
@@ -190,8 +190,9 @@ public class DishAvailabilityEngine {
         for (UUID key : sortedKeys) {
             sb.append(key.toString())
                     .append("=")
-                    .append(availabilityMap.get(key))
-                    .append(";");
+                    .append(availabilityMap.get(key));
+            dishRepository.findById(key).ifPresent(d -> sb.append(":paused=").append(Boolean.TRUE.equals(d.getPausedByChef())));
+            sb.append(";");
         }
 
         return hashString(sb.toString());

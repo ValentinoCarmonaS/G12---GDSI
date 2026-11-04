@@ -29,6 +29,7 @@ export const CartItemWithBadge: React.FC<CartItemWithBadgeProps> = ({
     item.conflictingRestrictions &&
     item.conflictingRestrictions.length > 0;
 
+  const isPaused = Boolean(item.pausedByChef);
   const isMaxStockReached =
     item.availableStock !== undefined && item.quantity >= item.availableStock;
 
@@ -46,7 +47,7 @@ export const CartItemWithBadge: React.FC<CartItemWithBadgeProps> = ({
   };
 
   const handleIncrement = () => {
-    if (isMaxStockReached) {
+    if (isMaxStockReached || isPaused) {
       return;
     }
     onUpdateQuantity(item.dishId, item.quantity + 1);
@@ -75,8 +76,19 @@ export const CartItemWithBadge: React.FC<CartItemWithBadgeProps> = ({
         </span>
       </div>
 
+      {/* Warning badge on paused by chef (FR-019, EC-023) */}
+      {isPaused && (
+        <div
+          data-testid={`paused-by-chef-badge-${item.dishId}`}
+          className="mb-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-2xs font-bold bg-amber-100 text-amber-900 border border-amber-300"
+        >
+          <span>⏸️</span>
+          <span>Pausado por cocina</span>
+        </div>
+      )}
+
       {/* Warning badge on insufficient kitchen stock (FR-014a, INV-3) */}
-      {isInsufficientStock && (
+      {isInsufficientStock && !isPaused && (
         <div
           data-testid={`insufficient-stock-badge-${item.dishId}`}
           className="mb-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-2xs font-bold bg-amber-100 text-amber-900 border border-amber-300"
@@ -113,11 +125,11 @@ export const CartItemWithBadge: React.FC<CartItemWithBadgeProps> = ({
           <button
             type="button"
             onClick={handleIncrement}
-            disabled={isMaxStockReached}
+            disabled={isMaxStockReached || isPaused}
             data-testid={`increment-qty-${item.dishId}`}
             aria-label={`Aumentar cantidad de ${item.name}`}
             className={`w-6 h-6 rounded border flex items-center justify-center font-bold text-xs transition-all ${
-              isMaxStockReached
+              isMaxStockReached || isPaused
                 ? 'border-gray-200 text-gray-300 bg-gray-50 cursor-not-allowed opacity-40'
                 : 'border-gray-300 text-gray-600 hover:bg-gray-100 cursor-pointer active:scale-95'
             }`}

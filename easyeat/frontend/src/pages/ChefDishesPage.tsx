@@ -3,6 +3,8 @@ import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { Link } from 'react-router-dom';
 import { dishApi } from '@/api/dishApi';
 import { DishStatusBadge } from '@/components/dish/DishStatusBadge';
+import { ChefDishPauseToggle } from '@/components/chef/ChefDishPauseToggle';
+import { useChefDishesSync } from '@/hooks/useChefDishesSync';
 import type { DishSummaryResponse } from '@/types/dish';
 
 export const ChefDishesPage: React.FC = () => {
@@ -12,6 +14,8 @@ export const ChefDishesPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const { items: operationalItems } = useChefDishesSync(true);
 
   const fetchDishes = useCallback(async (status: string, pageNum: number) => {
     setIsLoading(true);
@@ -35,6 +39,20 @@ export const ChefDishesPage: React.FC = () => {
     fetchDishes(statusFilter, page);
   }, [fetchDishes, statusFilter, page]);
 
+  // Merge live operational status from polling into current dish list
+  const mergedDishes = React.useMemo(() => {
+    return dishes.map((dish) => {
+      const op = operationalItems.find((o) => o.dishId === dish.id);
+      if (op) {
+        return {
+          ...dish,
+          pausedByChef: op.pausedByChef,
+        };
+      }
+      return dish;
+    });
+  }, [dishes, operationalItems]);
+
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value;
     setStatusFilter(newStatus);
@@ -53,50 +71,54 @@ export const ChefDishesPage: React.FC = () => {
     }
   };
 
+  const handleTogglePause = async (dishId: string, nextPaused: boolean) => {
+    await dishApi.toggleChefPause(dishId, nextPaused);
+    setDishes((prev) =>
+      prev.map((d) => (d.id === dishId ? { ...d, pausedByChef: nextPaused } : d))
+    );
+  };
+
   return (
-    <WorkspaceLayout title="Gestión de Platos">
-      <div className="max-w-6xl">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <WorkspaceLayout title="Catálogo de Platos">
+      <div className="space-y-6 max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-              Gestión de Platos y Fichas Técnicas
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              Gestión de Platos
             </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              Administrá los platos, fichas técnicas y estados culinarios del establecimiento.
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Crea borradores, configura recetas y gestiona la disponibilidad en tiempo real.
             </p>
           </div>
           <Link
             to="/cocina/platos/nuevo"
-            className="inline-flex items-center justify-center px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-zinc-950 font-semibold text-sm rounded-lg shadow-sm transition"
+            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 rounded-lg shadow-sm transition"
           >
             Nuevo Plato
           </Link>
         </div>
 
-        {/* Filter Toolbar */}
-        <div className="flex items-center justify-between bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 mb-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <label htmlFor="status-filter" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Filtrar por estado:
-            </label>
-            <select
-              id="status-filter"
-              value={statusFilter}
-              onChange={handleStatusChange}
-              className="px-3 py-1.5 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-400/20"
-            >
-              <option value="ALL">All</option>
-              <option value="DRAFT">Draft</option>
-              <option value="PENDING_PRICE">Pending Price</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-          </div>
+        {/* Filters */}
+        <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+          <label htmlFor="status-filter" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Filtrar por estado:
+          </label>
+          <select
+            id="status-filter"
+            value={statusFilter}
+            onChange={handleStatusChange}
+            className="text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-500"
+          >
+            <option value="ALL">Todos los estados</option>
+            <option value="DRAFT">Borrador</option>
+            <option value="PENDING_PRICE">Pendiente de Aprobación</option>
+            <option value="PUBLISHED">Publicado</option>
+            <option value="CANCELLED">Descartado</option>
+          </select>
         </div>
 
-        {/* Content */}
         {errorMessage && (
-          <div className="p-4 mb-6 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-sm text-red-700 dark:text-red-400">
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-200 dark:border-red-800">
             {errorMessage}
           </div>
         )}
@@ -105,7 +127,7 @@ export const ChefDishesPage: React.FC = () => {
           <div className="flex justify-center items-center py-12 text-zinc-500">
             Cargando platos...
           </div>
-        ) : dishes.length === 0 ? (
+        ) : mergedDishes.length === 0 ? (
           <div className="text-center py-12 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
             <p className="text-zinc-500 dark:text-zinc-400 text-sm">
               No hay platos registrados en este establecimiento.
@@ -120,11 +142,12 @@ export const ChefDishesPage: React.FC = () => {
                     <th className="py-3 px-4">Plato</th>
                     <th className="py-3 px-4">Categoría</th>
                     <th className="py-3 px-4">Estado</th>
+                    <th className="py-3 px-4">Estado Operativo</th>
                     <th className="py-3 px-4 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
-                  {dishes.map((dish) => (
+                  {mergedDishes.map((dish) => (
                     <tr key={dish.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition">
                       <td className="py-3.5 px-4">
                         {dish.status === 'CANCELLED' ? (
@@ -145,6 +168,17 @@ export const ChefDishesPage: React.FC = () => {
                       </td>
                       <td className="py-3.5 px-4">
                         <DishStatusBadge status={dish.status} />
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {dish.status === 'PUBLISHED' ? (
+                          <ChefDishPauseToggle
+                            dishId={dish.id}
+                            initialPaused={Boolean(dish.pausedByChef)}
+                            onToggle={handleTogglePause}
+                          />
+                        ) : (
+                          <span className="text-xs text-zinc-400 italic">No publicable</span>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 text-right space-x-2">
                         {dish.status !== 'CANCELLED' && (
@@ -171,22 +205,25 @@ export const ChefDishesPage: React.FC = () => {
               </table>
             </div>
 
+            {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500">
+              <div className="flex items-center justify-between px-4 py-3 bg-zinc-50 dark:bg-zinc-800/40 border-t border-zinc-200 dark:border-zinc-800">
                 <button
+                  type="button"
                   disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
-                  className="px-3 py-1 rounded border disabled:opacity-40"
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  className="px-3 py-1 text-xs font-medium bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-md disabled:opacity-50"
                 >
                   Anterior
                 </button>
-                <span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">
                   Página {page + 1} de {totalPages}
                 </span>
                 <button
+                  type="button"
                   disabled={page >= totalPages - 1}
                   onClick={() => setPage((p) => p + 1)}
-                  className="px-3 py-1 rounded border disabled:opacity-40"
+                  className="px-3 py-1 text-xs font-medium bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-md disabled:opacity-50"
                 >
                   Siguiente
                 </button>
