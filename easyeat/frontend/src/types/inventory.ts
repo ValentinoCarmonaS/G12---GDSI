@@ -115,6 +115,7 @@ export interface ChefIngredientPageResponse {
 export interface IngredientFilterParams {
   category?: IngredientCategory;
   status?: IngredientStatus;
+  criticalOnly?: boolean;
 }
 
 export interface ChefCatalogParams {

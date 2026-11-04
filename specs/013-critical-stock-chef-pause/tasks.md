@@ -96,7 +96,7 @@
 - [X] T029 [US2] Actualizar `easyeat/backend/src/main/java/com/easyeat/inventory/service/IngredientService.java` para soportar el parámetro `criticalOnly` en el método de listado, delegando al repositorio extendido en T028, y para calcular el campo `isCritical` en el DTO de respuesta considerando la suspensión de DISCONTINUED (FR-004..FR-007, FR-010, FR-021, INV-3, INV-7, INV-14, INV-17)
 - [X] T030 [US2] Actualizar `easyeat/backend/src/main/java/com/easyeat/inventory/controller/AdminIngredientController.java` para aceptar el query param `criticalOnly=true` en el endpoint `GET /api/v1/admin/ingredients` y pasarlo al servicio (FR-020, D-003)
 - [ ] T031 [US2] Extender la insignia visual de alerta en `easyeat/frontend/src/components/inventory/IngredientCatalogTable.tsx`: renderizar el badge "⚠️ Stock crítico" (color ámbar/rojo) condicionalmente cuando `isCritical === true`, e incorporar el toggle de filtro rápido "Solo insumos en stock crítico" en la barra de herramientas (FR-005, FR-020, INV-4, D-003)
-- [ ] T032 [US2] Actualizar `easyeat/frontend/src/api/inventoryApi.ts` para aceptar y enviar el parámetro `criticalOnly?: boolean` en la función de listado de ingredientes (FR-020)
+- [X] T032 [US2] Actualizar `easyeat/frontend/src/api/inventoryApi.ts` para aceptar y enviar el parámetro `criticalOnly?: boolean` en la función de listado de ingredientes (FR-020)
 - [ ] T033 [US2] Integrar el filtro rápido en `easyeat/frontend/src/pages/InventoryManagementPage.tsx`: gestionar el estado `criticalOnly` local y pasarlo al componente `IngredientCatalogTable` y a la llamada de API (FR-020, SC-015)
 
 **Checkpoint**: US2 completamente funcional — alertas visuales correctas, filtro rápido operativo, cero efectos externos.
