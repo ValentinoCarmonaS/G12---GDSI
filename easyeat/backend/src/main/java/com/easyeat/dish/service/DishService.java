@@ -452,6 +452,25 @@ public class DishService {
         );
     }
 
+    @Transactional
+    public com.easyeat.dish.dto.DishChefPauseResponse toggleChefPause(UUID dishId, boolean paused, UUID tenantId) {
+        if (dishId == null || tenantId == null) {
+            throw new IllegalArgumentException("dishId y tenantId son obligatorios");
+        }
+        Dish dish = dishRepository.findByIdAndTenantId(dishId, tenantId)
+                .orElseThrow(() -> new DishNotFoundException(dishId));
+
+        dish.setPausedByChef(paused);
+        dish.setUpdatedAt(Instant.now());
+        Dish saved = dishRepository.save(dish);
+
+        return new com.easyeat.dish.dto.DishChefPauseResponse(
+                saved.getId(),
+                Boolean.TRUE.equals(saved.getPausedByChef()),
+                saved.getUpdatedAt()
+        );
+    }
+
     private List<String> computeMissingConditions(Dish dish) {
         List<String> conditions = new ArrayList<>();
         if (dish.getName() == null || dish.getName().trim().isEmpty()) {
