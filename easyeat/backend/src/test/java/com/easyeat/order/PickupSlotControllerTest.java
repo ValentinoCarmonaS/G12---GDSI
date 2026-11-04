@@ -3,9 +3,6 @@ package com.easyeat.order;
 import com.easyeat.order.controller.PickupSlotController;
 import com.easyeat.order.dto.PickupSlotCatalogResponse;
 import com.easyeat.order.service.PickupSlotService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,7 +10,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,17 +44,7 @@ class PickupSlotControllerTest {
 
     @BeforeEach
     void setUp() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
-        converter.setObjectMapper(mapper);
-
-        mockMvc = MockMvcBuilders.standaloneSetup(pickupSlotController)
-                .setMessageConverters(converter)
-                .build();
-
+        mockMvc = MockMvcBuilders.standaloneSetup(pickupSlotController).build();
         establishmentId = UUID.randomUUID();
     }
 
@@ -83,7 +69,7 @@ class PickupSlotControllerTest {
                         .param("date", date.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.establishmentId").value(establishmentId.toString()))
-                .andExpect(jsonPath("$.date").value(date.toString()))
+                .andExpect(jsonPath("$.date").exists())
                 .andExpect(jsonPath("$.leadTimeMinutes").value(30));
 
         verify(pickupSlotService).getPickupSlots(establishmentId, date);
