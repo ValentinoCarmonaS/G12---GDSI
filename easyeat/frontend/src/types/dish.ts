@@ -121,6 +121,7 @@ export interface DishSummaryResponse {
   photoUrl: string | null;
   allergensConfirmed: boolean;
   recipeIngredientsCount: number;
+  pausedByChef?: boolean;
   updatedAt: string;
   createdAt: string;
 }
@@ -142,6 +143,7 @@ export interface DishDetailResponse {
   isCompleteForReview: boolean;
   missingConditions: string[];
   createdById: string | null;
+  pausedByChef?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -206,5 +208,16 @@ export interface FoodCostAuditResponse {
   warningNotes: string[];
   requiredDietaryRestrictions: string[];
   items: RecipeItemAuditResponse[];
+}
+
+/**
+ * Operational status representation of a dish for chef views (T007).
+ */
+export interface ChefDishOperationalStatus {
+  dishId: string;
+  pausedByChef: boolean;
+  sinStock: boolean;
+  isActive: boolean;
+  updatedAt: string;
 }
 

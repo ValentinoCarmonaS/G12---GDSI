@@ -34,10 +34,10 @@
 
 **⚠️ CRÍTICO**: Ninguna fase US puede comenzar hasta que esta fase esté completa.
 
-- [ ] T004 Extender la entidad JPA `easyeat/backend/src/main/java/com/easyeat/inventory/entity/Ingredient.java` añadiendo el campo `private Integer criticalStockThreshold` con `@Column(name = "critical_stock_threshold")` y el método `@Transient public boolean isCritical()` según la fórmula `isCritical = status == ACTIVE && threshold != null && currentStock < threshold` (data-model.md §4.1)
-- [ ] T005 Extender la entidad JPA `easyeat/backend/src/main/java/com/easyeat/catalog/domain/Dish.java` añadiendo el campo `private Boolean pausedByChef = false` con `@Column(name = "paused_by_chef", nullable = false)` y los métodos `getPausedByChef()` / `setPausedByChef(Boolean)` (data-model.md §4.2)
-- [ ] T006 [P] Extender el tipo TypeScript `easyeat/frontend/src/types/inventory.ts` añadiendo los campos `criticalStockThreshold?: number | null` e `isCritical?: boolean` en la interfaz de ingrediente
-- [ ] T007 [P] Extender el tipo TypeScript `easyeat/frontend/src/types/dish.ts` añadiendo el campo `pausedByChef: boolean` en la interfaz de plato y definir la interfaz `ChefDishOperationalStatus` con los campos `dishId`, `pausedByChef`, `sinStock`, `isActive` y `updatedAt`
+- [X] T004 Extender la entidad JPA `easyeat/backend/src/main/java/com/easyeat/inventory/entity/Ingredient.java` añadiendo el campo `private Integer criticalStockThreshold` con `@Column(name = "critical_stock_threshold")` y el método `@Transient public boolean isCritical()` según la fórmula `isCritical = status == ACTIVE && threshold != null && currentStock < threshold` (data-model.md §4.1)
+- [X] T005 Extender la entidad JPA `easyeat/backend/src/main/java/com/easyeat/catalog/domain/Dish.java` añadiendo el campo `private Boolean pausedByChef = false` con `@Column(name = "paused_by_chef", nullable = false)` y los métodos `getPausedByChef()` / `setPausedByChef(Boolean)` (data-model.md §4.2)
+- [X] T006 [P] Extender el tipo TypeScript `easyeat/frontend/src/types/inventory.ts` añadiendo los campos `criticalStockThreshold?: number | null` e `isCritical?: boolean` en la interfaz de ingrediente
+- [X] T007 [P] Extender el tipo TypeScript `easyeat/frontend/src/types/dish.ts` añadiendo el campo `pausedByChef: boolean` en la interfaz de plato y definir la interfaz `ChefDishOperationalStatus` con los campos `dishId`, `pausedByChef`, `sinStock`, `isActive` y `updatedAt`
 
 **Checkpoint**: Migración V11 creada, entidades JPA extendidas, tipos TypeScript actualizados — las fases US pueden comenzar.
 

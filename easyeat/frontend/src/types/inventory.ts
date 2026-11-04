@@ -42,6 +42,8 @@ export interface AdminIngredientDetailResponse {
   unitPurchaseCost: number;
   status: IngredientStatus;
   currentStock: number;
+  criticalStockThreshold?: number | null;
+  isCritical?: boolean;
   createdAt: string;
   updatedAt: string;
 }
