@@ -84,4 +84,135 @@ describe('IngredientCatalogTable Component (FR-014, FR-031)', () => {
     await user.click(reactivateBtn);
     expect(mockOnStatusTransition).toHaveBeenCalledWith('ing-2', 'ACTIVE');
   });
+
+  describe('Critical Stock Alerts & Quick Filter (US2: INV-4, INV-17, FR-005, FR-006, FR-020, EC-020, US2 AC-2.5, AC-2.6)', () => {
+    const criticalIngredients: AdminIngredientDetailResponse[] = [
+      {
+        id: 'crit-1',
+        tenantId: 'tenant-1',
+        name: 'Tomate Perita',
+        category: 'Produce',
+        unitOfMeasure: 'kg',
+        unitPurchaseCost: 50.0,
+        status: 'ACTIVE',
+        currentStock: 2.0,
+        criticalStockThreshold: 10,
+        isCritical: true,
+        createdAt: '2026-10-24T10:00:00Z',
+        updatedAt: '2026-10-24T10:00:00Z',
+      },
+      {
+        id: 'normal-1',
+        tenantId: 'tenant-1',
+        name: 'Cebolla',
+        category: 'Produce',
+        unitOfMeasure: 'kg',
+        unitPurchaseCost: 30.0,
+        status: 'ACTIVE',
+        currentStock: 15.0,
+        criticalStockThreshold: 5,
+        isCritical: false,
+        createdAt: '2026-10-24T10:00:00Z',
+        updatedAt: '2026-10-24T10:00:00Z',
+      },
+      {
+        id: 'crit-2',
+        tenantId: 'tenant-1',
+        name: 'Queso Muzzarella',
+        category: 'Dairy',
+        unitOfMeasure: 'kg',
+        unitPurchaseCost: 120.0,
+        status: 'ACTIVE',
+        currentStock: 1.0,
+        criticalStockThreshold: 8,
+        isCritical: true,
+        createdAt: '2026-10-24T10:00:00Z',
+        updatedAt: '2026-10-24T10:00:00Z',
+      },
+      {
+        id: 'disc-crit',
+        tenantId: 'tenant-1',
+        name: 'Aceite de Oliva Descontinuado',
+        category: 'Dry Goods',
+        unitOfMeasure: 'l',
+        unitPurchaseCost: 200.0,
+        status: 'DISCONTINUED',
+        currentStock: 1.0,
+        criticalStockThreshold: 5,
+        isCritical: false, // Insumos descontinuados nunca tienen alerta visual activa (INV-17, FR-021)
+        createdAt: '2026-10-24T10:00:00Z',
+        updatedAt: '2026-10-24T10:00:00Z',
+      },
+    ];
+
+    it('testHighlightCriticalIngredients - displays "⚠️ Stock crítico" badge when isCritical is true (INV-4, FR-005)', () => {
+      render(
+        <IngredientCatalogTable
+          ingredients={[criticalIngredients[0]]}
+          onEdit={mockOnEdit}
+        />
+      );
+
+      expect(screen.getByText('Tomate Perita')).toBeInTheDocument();
+      expect(screen.getByText(/⚠️\s*Stock crítico/i)).toBeInTheDocument();
+    });
+
+    it('testMultipleAlertsRendered - renders multiple critical alert badges simultaneously without degradation (EC-020, US2 AC-2.5)', () => {
+      render(
+        <IngredientCatalogTable
+          ingredients={criticalIngredients}
+          onEdit={mockOnEdit}
+        />
+      );
+
+      const badges = screen.getAllByText(/⚠️\s*Stock crítico/i);
+      expect(badges).toHaveLength(2);
+    });
+
+    it('testNoAlertWhenAboveThreshold - does not render critical alert badge when currentStock >= threshold (FR-006)', () => {
+      render(
+        <IngredientCatalogTable
+          ingredients={[criticalIngredients[1]]}
+          onEdit={mockOnEdit}
+        />
+      );
+
+      expect(screen.getByText('Cebolla')).toBeInTheDocument();
+      expect(screen.queryByText(/⚠️\s*Stock crítico/i)).not.toBeInTheDocument();
+    });
+
+    it('testDiscontinuedNoAlert - does not display critical alert badge for DISCONTINUED ingredients even if stock < threshold (INV-17, FR-021)', () => {
+      render(
+        <IngredientCatalogTable
+          ingredients={[criticalIngredients[3]]}
+          onEdit={mockOnEdit}
+        />
+      );
+
+      expect(screen.getByText('Aceite de Oliva Descontinuado')).toBeInTheDocument();
+      expect(screen.queryByText(/⚠️\s*Stock crítico/i)).not.toBeInTheDocument();
+    });
+
+    it('testCriticalOnlyFilterToggles - toggling quick filter filters list to only show critical ingredients (FR-020, US2 AC-2.6)', async () => {
+      const user = userEvent.setup();
+      const mockOnToggleCriticalOnly = vi.fn();
+
+      render(
+        <IngredientCatalogTable
+          ingredients={criticalIngredients}
+          onEdit={mockOnEdit}
+          onToggleCriticalOnly={mockOnToggleCriticalOnly}
+        />
+      );
+
+      // Search for the quick filter toggle or checkbox
+      const criticalFilterControl = screen.getByRole('checkbox', {
+        name: /solo insumos en stock crítico|stock crítico/i,
+      });
+      expect(criticalFilterControl).toBeInTheDocument();
+
+      await user.click(criticalFilterControl);
+      expect(mockOnToggleCriticalOnly).toHaveBeenCalledWith(true);
+    });
+  });
 });
