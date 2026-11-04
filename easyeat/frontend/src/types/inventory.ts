@@ -24,6 +24,7 @@ export interface CreateIngredientRequest {
   category: IngredientCategory;
   unitOfMeasure: UnitOfMeasure;
   unitPurchaseCost?: number;
+  criticalStockThreshold?: number | null;
 }
 
 export interface UpdateIngredientRequest {
@@ -31,6 +32,7 @@ export interface UpdateIngredientRequest {
   category: IngredientCategory;
   unitOfMeasure: UnitOfMeasure;
   unitPurchaseCost?: number;
+  criticalStockThreshold?: number | null;
 }
 
 export interface AdminIngredientDetailResponse {

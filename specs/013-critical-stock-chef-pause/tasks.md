@@ -66,7 +66,7 @@
 - [X] T017 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/inventory/service/IngredientService.java` para leer y persistir `criticalStockThreshold` al crear y actualizar ingredientes, y para mapear `isCritical()` desde la entidad al DTO de respuesta (FR-001, FR-003, FR-010, INV-14)
 - [X] T018 [US1] Verificar que `easyeat/backend/src/main/java/com/easyeat/inventory/controller/AdminIngredientController.java` tiene `@PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRADOR')")` en los endpoints de creación y edición de ingredientes; ajustar si falta (FR-017, INV-16)
 - [X] T019 [US1] Extender el campo "Stock mínimo/crítico" en el componente `easyeat/frontend/src/components/inventory/IngredientFormModal.tsx`: añadir input numérico entero `>= 0`, validación en cliente con mensaje de error, y vincular al campo `criticalStockThreshold` del formulario (FR-001, FR-002, INV-2)
-- [ ] T020 [US1] Actualizar `easyeat/frontend/src/api/inventoryApi.ts` para incluir `criticalStockThreshold` en los payloads de creación y edición de ingredientes y en el tipo de respuesta (FR-001, FR-003)
+- [X] T020 [US1] Actualizar `easyeat/frontend/src/api/inventoryApi.ts` para incluir `criticalStockThreshold` en los payloads de creación y edición de ingredientes y en el tipo de respuesta (FR-001, FR-003)
 
 **Checkpoint**: US1 completamente funcional — el administrador puede definir y editar umbrales individuales; el Chef recibe 403; validaciones rechazan valores inválidos.
 
