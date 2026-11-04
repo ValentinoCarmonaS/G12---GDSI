@@ -1,6 +1,7 @@
 package com.easyeat.inventory.dto;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -19,9 +20,16 @@ public record UpdateIngredientRequest(
         UnitOfMeasure unitOfMeasure,
 
         @DecimalMin(value = "0.0000", message = "Unit purchase cost must be non-negative")
-        BigDecimal unitPurchaseCost
+        BigDecimal unitPurchaseCost,
+
+        @Min(value = 0, message = "El stock crítico debe ser un número entero mayor o igual a 0")
+        Integer criticalStockThreshold
 ) {
     public UpdateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure) {
-        this(name, category, unitOfMeasure, null);
+        this(name, category, unitOfMeasure, null, null);
+    }
+
+    public UpdateIngredientRequest(String name, IngredientCategory category, UnitOfMeasure unitOfMeasure, BigDecimal unitPurchaseCost) {
+        this(name, category, unitOfMeasure, unitPurchaseCost, null);
     }
 }
