@@ -103,6 +103,7 @@ public class SecurityConfig {
                         // is re-evaluated as an unauthenticated request and ends up as a 401.
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(
+                                "/actuator/health",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/password-reset/**",
