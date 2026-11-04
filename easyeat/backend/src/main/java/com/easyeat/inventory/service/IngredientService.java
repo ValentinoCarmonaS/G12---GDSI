@@ -43,6 +43,7 @@ public class IngredientService {
                 cost
         );
         applyPurchasePresentationIfPresent(ingredient, request.packageCost(), request.unitsPerPackage());
+        ingredient.setCriticalStockThreshold(request.criticalStockThreshold());
         Ingredient saved = ingredientRepository.save(ingredient);
         return toResponse(saved);
     }
@@ -59,6 +60,15 @@ public class IngredientService {
     public List<AdminIngredientDetailResponse> listIngredients(IngredientCategory category, IngredientStatus status) {
         UUID tenantId = TenantContextHolder.getTenantId();
         return ingredientRepository.findAllByTenantIdAndFilters(tenantId, category, status)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminIngredientDetailResponse> listIngredients(IngredientCategory category, IngredientStatus status, Boolean criticalOnly) {
+        UUID tenantId = TenantContextHolder.getTenantId();
+        return ingredientRepository.findAllByTenantIdAndFilters(tenantId, category, status, criticalOnly)
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -90,6 +100,7 @@ public class IngredientService {
         if (request.packageCost() != null) {
             applyPurchasePresentation(ingredient, request.packageCost(), request.unitsPerPackage());
         }
+        ingredient.setCriticalStockThreshold(request.criticalStockThreshold());
 
         Ingredient updated = ingredientRepository.save(ingredient);
         return toResponse(updated);
@@ -165,6 +176,8 @@ public class IngredientService {
                 ingredient.getUnitsPerPackage(),
                 ingredient.getStatus(),
                 ingredient.getCurrentStock(),
+                ingredient.getCriticalStockThreshold(),
+                ingredient.isCritical(),
                 ingredient.getCreatedAt(),
                 ingredient.getUpdatedAt()
         );

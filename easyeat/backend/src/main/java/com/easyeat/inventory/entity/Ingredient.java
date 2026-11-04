@@ -47,6 +47,9 @@ public class Ingredient {
     @Column(name = "current_stock", nullable = false, precision = 12, scale = 4)
     private BigDecimal currentStock = BigDecimal.ZERO.setScale(4);
 
+    @Column(name = "critical_stock_threshold")
+    private Integer criticalStockThreshold;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -191,6 +194,22 @@ public class Ingredient {
 
     public void setCurrentStock(BigDecimal currentStock) {
         this.currentStock = currentStock != null ? currentStock.setScale(4, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(4);
+    }
+
+    public Integer getCriticalStockThreshold() {
+        return criticalStockThreshold;
+    }
+
+    public void setCriticalStockThreshold(Integer criticalStockThreshold) {
+        this.criticalStockThreshold = criticalStockThreshold;
+    }
+
+    @Transient
+    public boolean isCritical() {
+        if (this.status != IngredientStatus.ACTIVE || this.criticalStockThreshold == null) {
+            return false;
+        }
+        return this.currentStock.compareTo(BigDecimal.valueOf(this.criticalStockThreshold)) < 0;
     }
 
     public Instant getCreatedAt() {

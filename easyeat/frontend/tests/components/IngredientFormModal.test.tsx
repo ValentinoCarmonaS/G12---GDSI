@@ -143,4 +143,74 @@ describe('IngredientFormModal Component (FR-010, FR-011, FR-013, FR-026)', () =>
       unitOfMeasure: 'kg',
     });
   });
+
+  describe('Critical Stock Threshold validation and rendering (T013, FR-001, FR-002, INV-2)', () => {
+    it('renders the critical stock threshold field in the modal', () => {
+      render(
+        <IngredientFormModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
+
+      const thresholdInput = screen.getByLabelText(/stock mínimo|stock crítico/i);
+      expect(thresholdInput).toBeInTheDocument();
+      expect(thresholdInput).toHaveAttribute('type', 'number');
+    });
+
+    it('rejects negative numbers and decimals for critical stock threshold in client validation', async () => {
+      const user = userEvent.setup();
+      render(
+        <IngredientFormModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
+
+      await user.type(screen.getByLabelText(/nombre del ingrediente/i), 'Tomates');
+      await user.selectOptions(screen.getByLabelText(/categoría/i), 'Produce');
+      await user.selectOptions(screen.getByLabelText(/unidad de medida/i), 'kg');
+
+      const thresholdInput = screen.getByLabelText(/stock mínimo|stock crítico/i);
+      await user.type(thresholdInput, '-5');
+
+      await user.click(screen.getByRole('button', { name: /guardar ingrediente/i }));
+
+      expect(await screen.findByText(/el stock crítico debe ser un número entero mayor o igual a 0/i)).toBeInTheDocument();
+      expect(mockOnSubmit).not.toHaveBeenCalled();
+    });
+
+    it('accepts integer >= 0 and submits criticalStockThreshold in payload', async () => {
+      const user = userEvent.setup();
+      mockOnSubmit.mockResolvedValueOnce(undefined);
+
+      render(
+        <IngredientFormModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+        />
+      );
+
+      await user.type(screen.getByLabelText(/nombre del ingrediente/i), 'Zanahorias');
+      await user.selectOptions(screen.getByLabelText(/categoría/i), 'Produce');
+      await user.selectOptions(screen.getByLabelText(/unidad de medida/i), 'kg');
+
+      const thresholdInput = screen.getByLabelText(/stock mínimo|stock crítico/i);
+      await user.type(thresholdInput, '15');
+
+      await user.click(screen.getByRole('button', { name: /guardar ingrediente/i }));
+
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Zanahorias',
+          category: 'Produce',
+          unitOfMeasure: 'kg',
+          criticalStockThreshold: 15,
+        })
+      );
+    });
+  });
 });

@@ -107,7 +107,7 @@ public class DinerCatalogService {
 
         EstablishmentDetailDto establishmentDetail = buildEstablishmentDetail(establishment);
 
-        List<Dish> publishedDishes = dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED);
+        List<Dish> publishedDishes = dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED);
         if (publishedDishes.isEmpty()) {
             return new DinerCatalogResponse(establishmentDetail, Collections.emptyList());
         }

@@ -30,6 +30,10 @@ export const DishCard: React.FC<DishCardProps> = ({
     availableStock !== undefined && quantityInCart >= availableStock;
 
   const photoUrl = 'photoUrl' in dish ? dish.photoUrl : null;
+  const isPaused = Boolean((dish as any).pausedByChef);
+  if (isPaused) {
+    return null;
+  }
   const isAvailable = 'isAvailable' in dish ? dish.isAvailable !== false : dish.isActive !== false;
   const isOutOfStock = !isAvailable && !isReadOnly;
   const isButtonDisabled = isOutOfStock || isMaxStockReached || isReadOnly;

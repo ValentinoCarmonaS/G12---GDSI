@@ -240,6 +240,44 @@ class DishAvailabilityEngineTest {
             assertThat(availabilityEngine.isDishAvailable(dishAId, tenantId)).isFalse();
             assertThat(availabilityEngine.isDishAvailable(dishBId, tenantId)).isFalse();
         }
+
+        @Test
+        @DisplayName("INV-6, FR-009, SC-011, EC-008: testCriticalStockDoesNotBlockSale - Critical stock status of ingredient does not block dish availability when currentStock > 0")
+        void testCriticalStockDoesNotBlockSale() {
+            // T025: In strict TDD Red phase, asserts criticalOnly parameter support in IngredientService
+            // and verifies that an ingredient in critical state (currentStock < threshold) but with currentStock > 0
+            // leaves dependent dishes available for sale.
+            boolean hasCriticalOnlySupport = Arrays.stream(com.easyeat.inventory.service.IngredientService.class.getMethods())
+                    .filter(m -> "listIngredients".equals(m.getName()))
+                    .anyMatch(m -> m.getParameterCount() >= 3);
+
+            if (!hasCriticalOnlySupport) {
+                org.junit.jupiter.api.Assertions.fail("IngredientService.listIngredients must accept Boolean criticalOnly parameter (TDD Red: T029 pending)");
+            }
+
+            UUID dishId = UUID.randomUUID();
+            UUID ingredientId = UUID.randomUUID();
+
+            DishRecipeIngredient recipeLine = new DishRecipeIngredient(
+                    new DishRecipeIngredientId(dishId, ingredientId),
+                    new BigDecimal("2.0000")
+            );
+
+            // Insumo en estado crítico: stock = 5, umbral = 10 (5 < 10 -> isCritical = true), pero stock 5 >= receta 2
+            Ingredient criticalIngredient = createIngredient(ingredientId, tenantId, "Harina Especial", new BigDecimal("5.0000"), IngredientStatus.ACTIVE);
+            criticalIngredient.setCriticalStockThreshold(10);
+
+            assertThat(criticalIngredient.isCritical()).isTrue();
+
+            when(dishRecipeIngredientRepository.findByIdDishId(dishId)).thenReturn(List.of(recipeLine));
+            when(ingredientRepository.findByIdAndTenantId(ingredientId, tenantId)).thenReturn(Optional.of(criticalIngredient));
+
+            boolean available = availabilityEngine.isDishAvailable(dishId, tenantId);
+
+            assertThat(available)
+                    .as("Dish must remain available when ingredient is in critical stock but current stock satisfies recipe requirement (INV-6, FR-009, SC-011, EC-008)")
+                    .isTrue();
+        }
     }
 
     @Nested

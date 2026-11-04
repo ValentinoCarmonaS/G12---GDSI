@@ -9,6 +9,7 @@ export interface CartItem {
   isCompliant?: boolean;
   conflictingRestrictions?: string[];
   riskConfirmed?: boolean;
+  pausedByChef?: boolean;
 }
 
 export interface CartComplianceRequest {

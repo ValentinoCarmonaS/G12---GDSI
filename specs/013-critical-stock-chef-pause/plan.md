@@ -6,7 +6,7 @@
 
 **Artefactos complementarios generados**:
 - [research.md](./research.md) — Fase 0: Decisiones arquitectónicas y resolución técnica de incógnitas.
-- [data-model.md](./data-model.md) — Fase 1: Modelo conceptual, tres causas de indisponibilidad y migración Flyway V11.
+- [data-model.md](./data-model.md) — Fase 1: Modelo conceptual, tres causas de indisponibilidad y migración Flyway V17.
 - [contracts/behavioral-contracts.md](./contracts/behavioral-contracts.md) — Fase 1: 10 contratos de comportamiento operacional.
 - [contracts/openapi.yaml](./contracts/openapi.yaml) — Fase 1: Especificación OpenAPI 3.0.3 de los endpoints expuestos.
 - [quickstart.md](./quickstart.md) — Fase 1: Guía ejecutable de validación end-to-end con 7 escenarios prácticos.
@@ -33,7 +33,7 @@ La iteración 013 expande la plataforma gastronómica multi-tenant EasyEat integ
 - **Storage & Relational Schema**: PostgreSQL 16.
   - Tabla `ingredients` extendida con columna `critical_stock_threshold INTEGER NULL` con constraint `CHECK (critical_stock_threshold IS NULL OR critical_stock_threshold >= 0)`.
   - Tabla `dishes` extendida con columna `paused_by_chef BOOLEAN NOT NULL DEFAULT FALSE`.
-  - Migración secuencial Flyway: `V11__critical_stock_and_chef_pause.sql` (sucede a `V10__support_admin_dish_cancellation.sql`).
+  - Migración secuencial Flyway: `V17__critical_stock_and_chef_pause.sql` (sucede a `V10__support_admin_dish_cancellation.sql`).
   - Sesión del comensal: `sessionStorage` (`'easyeat_cart'`).
 - **Testing Frameworks**:
   - *Backend*: JUnit 5, Mockito, MockMvc, AssertJ, Testcontainers (PostgreSQL 16 real).
@@ -66,7 +66,7 @@ La iteración 013 expande la plataforma gastronómica multi-tenant EasyEat integ
 | **III. Layered Verification Proportional to Risk** | **PASS** | **PASS** | Estrategia de pruebas en 4 capas: unitarias de dominio e invariantes (INV-1..INV-19), integración MockMvc + Testcontainers, pruebas de componentes RTL (modales, grillas, toggles) y validaciones end-to-end en `quickstart.md`. |
 | **IV. Simple, Cohesive, and Justified Design** | **PASS** | **PASS** | Se reutiliza el canal de polling con ETags existente (`useRealtimeAvailability`) en lugar de añadir WebSockets o SSE. Cohesión alta en bounded contexts `inventory`, `dish` y `catalog`. Cero sobreingeniería. |
 | **V. Bounded Scope** | **PASS** | **PASS** | Alcance rigurosamente acotado a las 3 historias aprobadas. Alertas externas, órdenes automáticas, umbrales globales, temporizadores de pausa y motivos obligatorios quedan excluidos en estricto cumplimiento de Out of Scope. |
-| **VI. Controlled Technical Debt** | **PASS** | **PASS** | Se incorpora la migración limpia `V11__critical_stock_and_chef_pause.sql` siguiendo secuencialmente a `V10`, sin modificar tablas de manera destructiva ni alterar scripts históricos. |
+| **VI. Controlled Technical Debt** | **PASS** | **PASS** | Se incorpora la migración limpia `V17__critical_stock_and_chef_pause.sql` siguiendo secuencialmente a `V10`, sin modificar tablas de manera destructiva ni alterar scripts históricos. |
 | **VII. Traceability, Consistency, and Documentation** | **PASS** | **PASS** | Matriz de trazabilidad exhaustiva en Sección 12 vinculando el 100% de ACs (15/15), ECs (25/25), INVs (19/19), FRs (23/23), SCs (15/15) y Clarifications (12/12) a decisiones, contratos y pruebas. |
 | **VIII. Evidence Over Assumption and Human Escalation** | **PASS** | **PASS** | Todas las decisiones técnicas se basan en evidencia verificable del repositorio (`Ingredient.java`, `Dish.java`, `DishAvailabilityEngine.java`, `useRealtimeAvailability.ts`) y aclaraciones ratificadas. Cero supuestos no documentados. |
 | **IX. Engineering Over Convenience** | **PASS** | **PASS** | Separación ortogonal de las tres causas de indisponibilidad (INV-10) en lugar de un flag conveniente pero destructivo. Formato estructurado ProblemDetail RFC 7807 para errores. |
@@ -110,7 +110,7 @@ specs/013-critical-stock-chef-pause/
 easyeat/
 ├── backend/
 │   ├── src/main/resources/db/migration/
-│   │   └── V11__critical_stock_and_chef_pause.sql          # Migración Flyway: critical_stock_threshold y paused_by_chef
+│   │   └── V17__critical_stock_and_chef_pause.sql          # Migración Flyway: critical_stock_threshold y paused_by_chef
 │   └── src/main/java/com/easyeat/
 │       ├── inventory/
 │       │   ├── controller/AdminIngredientController.java   # Extendido: soporta criticalOnly=true
@@ -268,7 +268,7 @@ easyeat/
   - `Ingredient` extendido con `criticalStockThreshold` (`Integer >= 0`, nullable) y método transient `isCritical()`.
   - `Dish` extendido con `pausedByChef` (`Boolean NOT NULL DEFAULT FALSE`).
   - Tres causas de indisponibilidad independientes: `sin_stock` (dinámico de recetas), `paused_by_chef` (columna boolean), `is_active`/`status` (admin).
-- **Migración Flyway**: `V11__critical_stock_and_chef_pause.sql` con constraints `CHECK` e índices especializados (`idx_ingredients_critical_alert`, `idx_dishes_catalog_visibility`).
+- **Migración Flyway**: `V17__critical_stock_and_chef_pause.sql` con constraints `CHECK` e índices especializados (`idx_ingredients_critical_alert`, `idx_dishes_catalog_visibility`).
 
 ---
 
@@ -525,7 +525,7 @@ Quedan formal y explícitamente fuera del alcance de la presente especificación
 ## 16. Phasing (Fases de Implementación)
 
 1. **Fase 1: Modelo de Umbral Crítico, Migración Flyway V11 y Autorización Admin**
-   - Ejecución de migración `V11__critical_stock_and_chef_pause.sql`.
+   - Ejecución de migración `V17__critical_stock_and_chef_pause.sql`.
    - Extensión de entidad `Ingredient`, DTOs de creación/edición y validación Bean Validation $\ge 0$.
    - Enforcement de seguridad `@PreAuthorize` en `AdminIngredientController`.
    - *Criterio de Done*: Tests unitarios de validación y persistencia de umbral pasando al 100%.
