@@ -18,6 +18,8 @@ export function useCart(): CartContextType {
       totalAmount: 0,
       totalCount: 0,
       hasConflictingItems: false,
+      hasPausedItems: false,
+      toastMessage: null,
     };
   }
   return context;

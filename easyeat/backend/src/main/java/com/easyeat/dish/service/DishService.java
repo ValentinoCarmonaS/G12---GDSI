@@ -452,6 +452,90 @@ public class DishService {
         );
     }
 
+    @Transactional
+    public com.easyeat.dish.dto.DishChefPauseResponse toggleChefPause(UUID dishId, boolean paused, UUID tenantId) {
+        if (dishId == null || tenantId == null) {
+            throw new IllegalArgumentException("dishId y tenantId son obligatorios");
+        }
+        Dish dish = dishRepository.findByIdAndTenantId(dishId, tenantId)
+                .orElseThrow(() -> new DishNotFoundException(dishId));
+
+        dish.setPausedByChef(paused);
+        dish.setUpdatedAt(Instant.now());
+        Dish saved = dishRepository.save(dish);
+
+        return new com.easyeat.dish.dto.DishChefPauseResponse(
+                saved.getId(),
+                Boolean.TRUE.equals(saved.getPausedByChef()),
+                saved.getUpdatedAt()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public com.easyeat.dish.dto.ChefDishesOperationalStatusResponse getOperationalStatus(UUID tenantId) {
+        if (tenantId == null) {
+            throw new IllegalArgumentException("tenantId es obligatorio");
+        }
+        List<Dish> dishes = dishRepository.findByTenantId(tenantId, Pageable.unpaged()).getContent();
+        List<com.easyeat.dish.dto.ChefDishesOperationalStatusResponse.ChefDishOperationalStatusItem> items = new ArrayList<>();
+
+        for (Dish dish : dishes) {
+            boolean hasStock = true; // Por defecto o consultable
+            if (dish.getStatus() == DishStatus.PUBLISHED) {
+                // Si la receta tiene insumos sin stock
+                List<com.easyeat.dish.domain.DishRecipeIngredient> lines = dishRecipeIngredientRepository.findByIdDishId(dish.getId());
+                for (com.easyeat.dish.domain.DishRecipeIngredient line : lines) {
+                    var ing = ingredientRepository.findByIdAndTenantId(line.getIngredientId(), tenantId);
+                    if (ing.isEmpty() || ing.get().getStatus() != IngredientStatus.ACTIVE || ing.get().getCurrentStock() == null || ing.get().getCurrentStock().compareTo(line.getQuantity()) < 0) {
+                        hasStock = false;
+                        break;
+                    }
+                }
+            }
+
+            items.add(new com.easyeat.dish.dto.ChefDishesOperationalStatusResponse.ChefDishOperationalStatusItem(
+                    dish.getId(),
+                    Boolean.TRUE.equals(dish.getPausedByChef()),
+                    hasStock,
+                    Boolean.TRUE.equals(dish.getIsActive()),
+                    dish.getStatus() != null ? dish.getStatus().name() : "DRAFT"
+            ));
+        }
+
+        return new com.easyeat.dish.dto.ChefDishesOperationalStatusResponse(items);
+    }
+
+    @Transactional(readOnly = true)
+    public com.easyeat.catalog.dto.DishAvailabilityDetailsResponse getDishAvailabilityDetails(UUID dishId, UUID tenantId) {
+        if (dishId == null || tenantId == null) {
+            throw new IllegalArgumentException("dishId y tenantId son obligatorios");
+        }
+        Dish dish = dishRepository.findByIdAndTenantId(dishId, tenantId)
+                .orElseThrow(() -> new DishNotFoundException(dishId));
+
+        boolean sinStock = false;
+        List<com.easyeat.dish.domain.DishRecipeIngredient> lines = dishRecipeIngredientRepository.findByIdDishId(dish.getId());
+        for (com.easyeat.dish.domain.DishRecipeIngredient line : lines) {
+            var ing = ingredientRepository.findByIdAndTenantId(line.getIngredientId(), tenantId);
+            if (ing.isEmpty() || ing.get().getStatus() != IngredientStatus.ACTIVE || ing.get().getCurrentStock() == null || ing.get().getCurrentStock().compareTo(line.getQuantity()) < 0) {
+                sinStock = true;
+                break;
+            }
+        }
+
+        boolean pausaChef = Boolean.TRUE.equals(dish.getPausedByChef());
+        boolean desactivacionAdmin = !Boolean.TRUE.equals(dish.getIsActive());
+        boolean isVisibleToDiner = !pausaChef && !desactivacionAdmin && dish.getStatus() == DishStatus.PUBLISHED;
+        boolean isOrderable = isVisibleToDiner && !sinStock;
+
+        return new com.easyeat.catalog.dto.DishAvailabilityDetailsResponse(
+                dish.getId(),
+                new com.easyeat.catalog.dto.DishAvailabilityDetailsResponse.UnavailabilityCauses(sinStock, pausaChef, desactivacionAdmin),
+                isOrderable,
+                isVisibleToDiner
+        );
+    }
+
     private List<String> computeMissingConditions(Dish dish) {
         List<String> conditions = new ArrayList<>();
         if (dish.getName() == null || dish.getName().trim().isEmpty()) {

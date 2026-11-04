@@ -67,7 +67,10 @@ public class FoodCostAuditService {
         for (DishRecipeIngredient line : recipeLines) {
             Ingredient ing = ingredientMap.get(line.getIngredientId());
             BigDecimal unitPurchaseCost = (ing != null) ? ing.getUnitPurchaseCost() : null;
-            calculationItems.add(new FoodCostEngine.IngredientCostItem(line.getQuantity(), unitPurchaseCost));
+            BigDecimal packageCost = (ing != null) ? ing.getPackageCost() : null;
+            Integer unitsPerPackage = (ing != null) ? ing.getUnitsPerPackage() : 1;
+            calculationItems.add(new FoodCostEngine.IngredientCostItem(
+                    line.getQuantity(), unitPurchaseCost, packageCost, unitsPerPackage));
         }
 
         FoodCostEngine.CalculationResult calcResult = foodCostEngine.calculate(calculationItems);
@@ -82,9 +85,8 @@ public class FoodCostAuditService {
 
             String ingredientName = (ing != null && ing.getName() != null) ? ing.getName() : "Ingrediente desconocido";
             com.easyeat.inventory.dto.UnitOfMeasure uom = (ing != null) ? ing.getUnitOfMeasure() : null;
-            BigDecimal unitPurchaseCost = (ing != null && ing.getUnitPurchaseCost() != null)
-                    ? ing.getUnitPurchaseCost()
-                    : BigDecimal.ZERO;
+            BigDecimal effectiveUnitCost = calculationItems.get(i).effectiveUnitCost();
+            BigDecimal unitPurchaseCost = effectiveUnitCost != null ? effectiveUnitCost : BigDecimal.ZERO;
             BigDecimal lineSubtotal = calcResult.lineSubtotals().get(i);
 
             if (isUnpriced) {

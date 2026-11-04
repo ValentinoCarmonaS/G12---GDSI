@@ -44,6 +44,7 @@ description: "Task list for feature 006 - Automated Food Cost Engine and Recipe 
 - [x] T014 [P] [US1] Implement `DishCostAuditPage.tsx` and register route `/admin/dishes/:id/cost-audit` in `AppRoutes.tsx`.
 - [x] T015 [US1] Integrate "Auditar Costo" link in `AdminWorkspacePage.tsx` under pending dish review notifications, connecting the navigation flow (SC-007).
 - [x] T016 [P] [US1] Implement user journey integration test `us2_dish_cost_audit.test.tsx` verifying end-to-end admin workflow from workspace to audit panel.
+- [x] T020 [P] [US1] Corregir binding de la propiedad de cantidad en la tabla de auditoría de platos para resolver renderizado NaN (FR-011).
 
 ---
 

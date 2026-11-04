@@ -34,7 +34,11 @@ public class AdminIngredientController {
     @GetMapping
     public List<AdminIngredientDetailResponse> listIngredients(
             @RequestParam(required = false) IngredientCategory category,
-            @RequestParam(required = false) IngredientStatus status) {
+            @RequestParam(required = false) IngredientStatus status,
+            @RequestParam(required = false) Boolean criticalOnly) {
+        if (criticalOnly != null) {
+            return ingredientService.listIngredients(category, status, criticalOnly);
+        }
         return ingredientService.listIngredients(category, status);
     }
 

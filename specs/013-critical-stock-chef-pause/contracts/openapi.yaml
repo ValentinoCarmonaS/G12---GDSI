@@ -1,0 +1,493 @@
+openapi: 3.0.3
+info:
+  title: EasyEat Critical Stock & Chef Pause API
+  version: "1.0.0"
+  description: >-
+    OpenAPI 3.0.3 specification for Feature 013: Critical Stock Threshold in Inventory (Admin)
+    and Manual Dish Pause during Live Service (Chef), with multi-tenant isolation and strict
+    separation of the three causes of dish unavailability (INV-10).
+paths:
+  /api/v1/admin/ingredients:
+    get:
+      summary: List inventory ingredients with critical stock indicators and quick filter
+      description: Returns all ingredients in the establishment. When criticalOnly=true, filters to only return ingredients in critical stock state.
+      tags:
+        - Admin Inventory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Produce, Meat, Dairy, Dry Goods, Spices]
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, DISCONTINUED]
+        - name: criticalOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: If true, isolates exclusively ingredients where current_stock < critical_stock_threshold (FR-020).
+      responses:
+        '200':
+          description: List of ingredients with critical status
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminIngredientDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      summary: Create new ingredient with optional individual critical stock threshold
+      tags:
+        - Admin Inventory
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIngredientRequest'
+      responses:
+        '201':
+          description: Ingredient created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminIngredientDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Duplicate ingredient name in establishment
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/admin/ingredients/{id}:
+    get:
+      summary: Get ingredient details by ID including critical stock status
+      tags:
+        - Admin Inventory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detailed ingredient record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminIngredientDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update ingredient details and critical stock threshold
+      tags:
+        - Admin Inventory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateIngredientRequest'
+      responses:
+        '200':
+          description: Ingredient updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminIngredientDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/dishes/{id}/chef-pause:
+    patch:
+      summary: Toggle chef manual dish pause
+      description: Allows a chef to manually pause or resume a dish. Operable at all times regardless of stock or admin activation (INV-19).
+      tags:
+        - Chef Dish Management
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToggleChefPauseRequest'
+      responses:
+        '200':
+          description: Dish pause status toggled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishChefPauseResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Only users with ROLE_CHEF can operate this toggle (INV-16, SC-009)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/dishes/operational-status:
+    get:
+      summary: Real-time collaborative synchronization of dishes operational status for chefs
+      description: Returns the pause and availability status for kitchen staff with HTTP ETag support (INV-18, FR-022).
+      tags:
+        - Chef Dish Management
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: If-None-Match
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Full operational status map with ETag
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChefDishesOperationalStatusResponse'
+        '304':
+          description: Not Modified - operational status unchanged
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/dishes/{id}/availability-details:
+    get:
+      summary: Get 3-tier availability details for staff audit
+      description: Returns the three independent causes of unavailability (INV-10, SC-014).
+      tags:
+        - Dish Governance
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Discrete availability causes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishAvailabilityDetailsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/establishments/{tenantId}/catalog/availability:
+    get:
+      summary: Real-time catalog availability polling for diners
+      description: Lightweight conditional polling with ETag. Evaluates stock and reflects chef pause by marking dish unavailable (spec 008/013).
+      tags:
+        - Diner Catalog
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: If-None-Match
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Catalog availability map
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityMapResponse'
+        '304':
+          description: Not Modified
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateIngredientRequest:
+      type: object
+      required:
+        - name
+        - category
+        - unitOfMeasure
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          type: string
+          enum: [Produce, Meat, Dairy, Dry Goods, Spices]
+        unitOfMeasure:
+          type: string
+          enum: [kg, g, l, ml, u]
+        unitPurchaseCost:
+          type: number
+          format: double
+          minimum: 0.0
+        criticalStockThreshold:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Individual critical stock threshold (ADM-4.1.3). Must be integer >= 0.
+
+    UpdateIngredientRequest:
+      type: object
+      required:
+        - name
+        - category
+        - unitOfMeasure
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          type: string
+          enum: [Produce, Meat, Dairy, Dry Goods, Spices]
+        unitOfMeasure:
+          type: string
+          enum: [kg, g, l, ml, u]
+        unitPurchaseCost:
+          type: number
+          format: double
+          minimum: 0.0
+        criticalStockThreshold:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Individual critical stock threshold. Rejects negative or decimal numbers.
+
+    AdminIngredientDetailResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category:
+          type: string
+        unitOfMeasure:
+          type: string
+        unitPurchaseCost:
+          type: number
+        status:
+          type: string
+          enum: [ACTIVE, DISCONTINUED]
+        currentStock:
+          type: number
+        criticalStockThreshold:
+          type: integer
+          nullable: true
+        isCritical:
+          type: boolean
+          description: Dynamically computed. True if status==ACTIVE and currentStock < criticalStockThreshold.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ToggleChefPauseRequest:
+      type: object
+      required:
+        - paused
+      properties:
+        paused:
+          type: boolean
+          description: True to pause and hide from diners; false to unpause.
+
+    DishChefPauseResponse:
+      type: object
+      properties:
+        dishId:
+          type: string
+          format: uuid
+        pausedByChef:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+
+    ChefDishesOperationalStatusResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChefDishOperationalStatusItem'
+
+    ChefDishOperationalStatusItem:
+      type: object
+      properties:
+        dishId:
+          type: string
+          format: uuid
+        pausedByChef:
+          type: boolean
+        hasStock:
+          type: boolean
+        isActiveAdmin:
+          type: boolean
+        status:
+          type: string
+
+    DishAvailabilityDetailsResponse:
+      type: object
+      properties:
+        dishId:
+          type: string
+          format: uuid
+        causes:
+          type: object
+          properties:
+            sinStock:
+              type: boolean
+            pausaChef:
+              type: boolean
+            desactivacionAdmin:
+              type: boolean
+        isOrderable:
+          type: boolean
+        isVisibleToDiner:
+          type: boolean
+
+    AvailabilityMapResponse:
+      type: object
+      properties:
+        availability:
+          type: object
+          additionalProperties:
+            type: boolean
+
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or constraint violation
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Unauthorized:
+      description: Authentication required or token expired
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    Forbidden:
+      description: User does not possess the required role (ADMIN or CHEF)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    NotFound:
+      description: Resource not found in active tenant
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+

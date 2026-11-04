@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AdminWorkspacePage } from '@/pages/AdminWorkspacePage';
 import { authApi } from '@/api/authApi';
@@ -211,7 +211,9 @@ describe('AdminWorkspacePage - dish review hub card (T062, FR-003)', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByTestId('admin-pending-review-count')).toHaveTextContent('7');
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-pending-review-count')).toHaveTextContent('7');
+    });
     expect(await screen.findByText('7 platos pendientes de fijación de precio')).toBeInTheDocument();
     expect(screen.queryByText('2 platos pendientes de fijación de precio')).not.toBeInTheDocument();
   });
@@ -225,7 +227,9 @@ describe('AdminWorkspacePage - dish review hub card (T062, FR-003)', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByTestId('admin-pending-review-count')).toHaveTextContent('0');
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-pending-review-count')).toHaveTextContent('0');
+    });
     expect(screen.getByText('Sin platos pendientes de revisión')).toBeInTheDocument();
   });
 

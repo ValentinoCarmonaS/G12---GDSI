@@ -6,6 +6,7 @@ import com.easyeat.auth.domain.UserStatus;
 import com.easyeat.auth.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class JwtAuthenticationFilterTest {
@@ -85,6 +87,39 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication().getAuthorities())
                 .extracting("authority")
                 .containsExactly("ROLE_CHEF");
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("Should authenticate request when token query parameter is provided and header is absent")
+    void shouldAuthenticateWhenTokenQueryParameterProvided() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String token = "valid.jwt.param.token";
+
+        User user = new User("comensal@restaurant.com", "hash", UserRole.COMENSAL);
+        user.setId(userId);
+        user.setStatus(UserStatus.ACTIVE);
+        user.setTokenVersion(1);
+
+        when(jwtService.validateToken(token)).thenReturn(true);
+        when(jwtService.extractUserId(token)).thenReturn(userId);
+        when(jwtService.extractRole(token)).thenReturn(UserRole.COMENSAL);
+        when(jwtService.extractTokenVersion(token)).thenReturn(1);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setParameter("token", token);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+        User principal = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        assertThat(principal.getEmail()).isEqualTo("comensal@restaurant.com");
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getAuthorities())
+                .extracting("authority")
+                .containsExactly("ROLE_COMENSAL");
         assertThat(response.getStatus()).isEqualTo(200);
     }
 
@@ -240,5 +275,37 @@ class JwtAuthenticationFilterTest {
         assertThat(response.getStatus()).isEqualTo(403);
         JsonNode problem = objectMapper.readTree(response.getContentAsString());
         assertThat(problem.get("detail").asText()).contains("Must complete mandatory password change");
+    }
+
+    @Test
+    @DisplayName("Should not turn a downstream failure into HTTP 401 when the token is valid")
+    void shouldNotAnswer401WhenDownstreamChainFails() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String token = "valid.jwt.token";
+
+        User user = new User("admin@restaurant.com", "hash", UserRole.ADMINISTRADOR);
+        user.setId(userId);
+        user.setStatus(UserStatus.ACTIVE);
+        user.setTokenVersion(1);
+
+        when(jwtService.validateToken(token)).thenReturn(true);
+        when(jwtService.extractUserId(token)).thenReturn(userId);
+        when(jwtService.extractRole(token)).thenReturn(UserRole.ADMINISTRADOR);
+        when(jwtService.extractTokenVersion(token)).thenReturn(1);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/admin/operating-schedules");
+        request.addHeader("Authorization", "Bearer " + token);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        FilterChain failingChain = (req, res) -> {
+            throw new IllegalStateException("downstream failure");
+        };
+
+        assertThatThrownBy(() -> filter.doFilterInternal(request, response, failingChain))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("downstream failure");
+
+        assertThat(response.getStatus()).isNotEqualTo(401);
     }
 }

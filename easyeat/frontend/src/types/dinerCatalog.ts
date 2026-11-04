@@ -1,6 +1,6 @@
 /**
  * Diner Catalog and Multi-Tenant Establishment Shared Types
- * Feature: 008-diner-catalog-multi-tenant
+ * Feature: 008-diner-catalog-multi-tenant & 011-dish-detail-manual-filters
  */
 
 export const ESTABLISHMENT_STATUSES = ['ACTIVE', 'PAUSED', 'DISABLED'] as const;
@@ -49,9 +49,11 @@ export interface DishCatalogItem {
   price: number;
   photoUrl: string | null;
   isAvailable: boolean;
+  availableStock?: number;
   isCompliant: boolean;
   conflictingRestrictions: string[];
   recipeIngredients: string[];
+  allergens?: string[];
 }
 
 export interface CategoryGroup {
@@ -67,4 +69,3 @@ export interface CatalogResponse {
 export interface AvailabilityMap {
   availability: Record<string, boolean>;
 }
-

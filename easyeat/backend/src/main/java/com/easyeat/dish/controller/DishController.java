@@ -70,6 +70,8 @@ public class DishController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('CHEF')")
     public ResponseEntity<Void> deleteDishDraft(@PathVariable UUID id) {
+        // Spec 005 permits the Chef to permanently delete their own DRAFT. The service rejects
+        // PENDING_PRICE, which can only be discarded through the Administrator's C-02 cancel flow.
         dishService.deleteDraft(id);
         return ResponseEntity.noContent().build();
     }
@@ -117,5 +119,46 @@ public class DishController {
         DishDetailResponse response = dishService.submitForReview(id);
         return ResponseEntity.ok(response);
     }
-}
 
+    @PatchMapping("/{id}/chef-pause")
+    @PreAuthorize("hasRole('CHEF')")
+    public ResponseEntity<com.easyeat.dish.dto.DishChefPauseResponse> toggleChefPause(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.easyeat.dish.dto.ToggleChefPauseRequest request
+    ) {
+        UUID tenantId = com.easyeat.common.context.TenantContextHolder.getTenantId();
+        com.easyeat.dish.dto.DishChefPauseResponse response = dishService.toggleChefPause(id, Boolean.TRUE.equals(request.paused()), tenantId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/operational-status")
+    @PreAuthorize("hasRole('CHEF')")
+    public ResponseEntity<com.easyeat.dish.dto.ChefDishesOperationalStatusResponse> getOperationalStatus(
+            @RequestHeader(value = "If-None-Match", required = false) String ifNoneMatch
+    ) {
+        UUID tenantId = com.easyeat.common.context.TenantContextHolder.getTenantId();
+        com.easyeat.dish.dto.ChefDishesOperationalStatusResponse response = dishService.getOperationalStatus(tenantId);
+
+        StringBuilder sb = new StringBuilder();
+        for (var item : response.items()) {
+            sb.append(item.dishId()).append("=").append(item.pausedByChef()).append(":").append(item.hasStock()).append(";");
+        }
+        String etag = "\"" + Integer.toHexString(sb.toString().hashCode()) + "\"";
+
+        if (ifNoneMatch != null && ifNoneMatch.equals(etag)) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).build();
+        }
+
+        return ResponseEntity.ok().eTag(etag).body(response);
+    }
+
+    @GetMapping("/{id}/availability-details")
+    @PreAuthorize("hasAnyRole('CHEF', 'ADMIN', 'ADMINISTRADOR')")
+    public ResponseEntity<com.easyeat.catalog.dto.DishAvailabilityDetailsResponse> getDishAvailabilityDetails(
+            @PathVariable UUID id
+    ) {
+        UUID tenantId = com.easyeat.common.context.TenantContextHolder.getTenantId();
+        com.easyeat.catalog.dto.DishAvailabilityDetailsResponse response = dishService.getDishAvailabilityDetails(id, tenantId);
+        return ResponseEntity.ok(response);
+    }
+}

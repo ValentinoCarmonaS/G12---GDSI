@@ -156,5 +156,35 @@ class EstablishmentDiscoveryServiceTest {
             assertThat(results.get(0).getStatus()).isEqualTo(EstablishmentStatus.ACTIVE);
         }
     }
+
+    @Nested
+    @DisplayName("Complete Establishment Listing (Fix C-01)")
+    class CompleteListingTests {
+
+        @Test
+        @DisplayName("Should return all active establishments for the complete diner discovery listing")
+        void shouldReturnAllActiveEstablishments() {
+            Establishment active1 = new Establishment(UUID.randomUUID(), "Café Central Palermo", EstablishmentStatus.ACTIVE, LocalTime.of(8, 0), LocalTime.of(23, 30), "America/Argentina/Buenos_Aires");
+            Establishment active2 = new Establishment(UUID.randomUUID(), "La Farola de Palermo", EstablishmentStatus.ACTIVE, LocalTime.of(11, 0), LocalTime.of(23, 0), "America/Argentina/Buenos_Aires");
+
+            when(establishmentRepository.findAllByStatus(EstablishmentStatus.ACTIVE)).thenReturn(List.of(active1, active2));
+
+            List<EstablishmentSummaryResponse> result = service.getAllActiveEstablishments();
+
+            assertThat(result).hasSize(2);
+            assertThat(result).extracting(EstablishmentSummaryResponse::getName)
+                    .containsExactly("Café Central Palermo", "La Farola de Palermo");
+        }
+
+        @Test
+        @DisplayName("Should return an empty list when no active establishments exist")
+        void shouldReturnEmptyListWhenNoActiveEstablishments() {
+            when(establishmentRepository.findAllByStatus(EstablishmentStatus.ACTIVE)).thenReturn(Collections.emptyList());
+
+            List<EstablishmentSummaryResponse> result = service.getAllActiveEstablishments();
+
+            assertThat(result).isNotNull().isEmpty();
+        }
+    }
 }
 

@@ -4,6 +4,7 @@ import com.easyeat.auth.security.JwtAuthenticationFilter;
 import com.easyeat.auth.security.SecurityAuditLogger;
 import com.easyeat.common.filter.TenantContextFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -65,6 +66,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.cacheControl(Customizer.withDefaults()))
                 .authorizeHttpRequests(auth -> auth
+                        // Container error dispatch (/error): without this, a failure outside Spring MVC
+                        // is re-evaluated as an unauthenticated request and ends up as a 401.
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",
@@ -78,6 +82,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/dishes/*/photo").permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
                         .requestMatchers(
+                                "/api/v1/establishments",
                                 "/api/v1/establishments/search",
                                 "/api/v1/establishments/*/catalog",
                                 "/api/v1/establishments/*/catalog/availability"

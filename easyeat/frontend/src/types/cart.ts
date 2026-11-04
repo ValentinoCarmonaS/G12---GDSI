@@ -1,11 +1,15 @@
 export interface CartItem {
   dishId: string;
+  tenantId?: string;
   name: string;
   price: number;
   quantity: number;
+  availableStock?: number;
+  lastSyncedQuantity?: number;
   isCompliant?: boolean;
   conflictingRestrictions?: string[];
   riskConfirmed?: boolean;
+  pausedByChef?: boolean;
 }
 
 export interface CartComplianceRequest {

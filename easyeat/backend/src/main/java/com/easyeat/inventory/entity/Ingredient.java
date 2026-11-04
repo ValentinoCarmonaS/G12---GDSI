@@ -32,12 +32,23 @@ public class Ingredient {
     @Column(name = "unit_purchase_cost", nullable = false, precision = 12, scale = 4)
     private BigDecimal unitPurchaseCost;
 
+    /** Total cost of the purchase presentation (package), when the ingredient is acquired packaged. */
+    @Column(name = "package_cost", precision = 12, scale = 4)
+    private BigDecimal packageCost;
+
+    /** Base units contained in one purchase presentation; defaults to 1. */
+    @Column(name = "units_per_package", nullable = false)
+    private Integer unitsPerPackage = 1;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 50)
     private IngredientStatus status = IngredientStatus.ACTIVE;
 
     @Column(name = "current_stock", nullable = false, precision = 12, scale = 4)
     private BigDecimal currentStock = BigDecimal.ZERO.setScale(4);
+
+    @Column(name = "critical_stock_threshold")
+    private Integer criticalStockThreshold;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -80,6 +91,12 @@ public class Ingredient {
         } else {
             unitPurchaseCost = unitPurchaseCost.setScale(4, java.math.RoundingMode.HALF_UP);
         }
+        if (packageCost != null) {
+            packageCost = packageCost.setScale(4, java.math.RoundingMode.HALF_UP);
+        }
+        if (unitsPerPackage != null) {
+            // No scale needed for integer
+        }
     }
 
     @PreUpdate
@@ -90,6 +107,12 @@ public class Ingredient {
         }
         if (unitPurchaseCost != null) {
             unitPurchaseCost = unitPurchaseCost.setScale(4, java.math.RoundingMode.HALF_UP);
+        }
+        if (packageCost != null) {
+            packageCost = packageCost.setScale(4, java.math.RoundingMode.HALF_UP);
+        }
+        if (unitsPerPackage == null) {
+            unitsPerPackage = 1;
         }
     }
 
@@ -141,6 +164,22 @@ public class Ingredient {
         this.unitPurchaseCost = unitPurchaseCost != null ? unitPurchaseCost.setScale(4, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(4);
     }
 
+    public BigDecimal getPackageCost() {
+        return packageCost;
+    }
+
+    public void setPackageCost(BigDecimal packageCost) {
+        this.packageCost = packageCost != null ? packageCost.setScale(4, java.math.RoundingMode.HALF_UP) : null;
+    }
+
+    public Integer getUnitsPerPackage() {
+        return unitsPerPackage != null ? unitsPerPackage : 1;
+    }
+
+    public void setUnitsPerPackage(Integer unitsPerPackage) {
+        this.unitsPerPackage = unitsPerPackage != null ? unitsPerPackage : 1;
+    }
+
     public IngredientStatus getStatus() {
         return status;
     }
@@ -155,6 +194,22 @@ public class Ingredient {
 
     public void setCurrentStock(BigDecimal currentStock) {
         this.currentStock = currentStock != null ? currentStock.setScale(4, java.math.RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(4);
+    }
+
+    public Integer getCriticalStockThreshold() {
+        return criticalStockThreshold;
+    }
+
+    public void setCriticalStockThreshold(Integer criticalStockThreshold) {
+        this.criticalStockThreshold = criticalStockThreshold;
+    }
+
+    @Transient
+    public boolean isCritical() {
+        if (this.status != IngredientStatus.ACTIVE || this.criticalStockThreshold == null) {
+            return false;
+        }
+        return this.currentStock.compareTo(BigDecimal.valueOf(this.criticalStockThreshold)) < 0;
     }
 
     public Instant getCreatedAt() {

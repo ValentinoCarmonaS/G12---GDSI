@@ -13,9 +13,6 @@ public enum InboxTab {
     /** Dishes in {@code PENDING_PRICE}, oldest submission first. */
     PENDING,
 
-    /** Dishes in {@code PUBLISHED}, most recently published first. */
-    PUBLISHED,
-
-    /** Dishes with at least one review entry, whatever their current status. */
-    HISTORY
+    /** Dishes in {@code PUBLISHED}, {@code REJECTED} (back to draft with history), or {@code CANCELLED}. */
+    FINALIZED
 }

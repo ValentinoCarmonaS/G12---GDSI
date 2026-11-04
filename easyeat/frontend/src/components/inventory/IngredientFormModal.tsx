@@ -41,10 +41,12 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
   const [name, setName] = useState('');
   const [category, setCategory] = useState<IngredientCategory>('Produce');
   const [unitOfMeasure, setUnitOfMeasure] = useState<UnitOfMeasure>('kg');
+  const [criticalStockThreshold, setCriticalStockThreshold] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<{
     name?: string;
     category?: string;
     unitOfMeasure?: string;
+    criticalStockThreshold?: string;
   }>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -58,10 +60,16 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
       setName(initialData.name || '');
       setCategory(initialData.category || 'Produce');
       setUnitOfMeasure(initialData.unitOfMeasure || 'kg');
+      setCriticalStockThreshold(
+        initialData.criticalStockThreshold !== undefined && initialData.criticalStockThreshold !== null
+          ? String(initialData.criticalStockThreshold)
+          : ''
+      );
     } else {
       setName('');
       setCategory('Produce');
       setUnitOfMeasure('kg');
+      setCriticalStockThreshold('');
     }
     setFieldErrors({});
     setGeneralError(null);
@@ -74,6 +82,7 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
       name?: string;
       category?: string;
       unitOfMeasure?: string;
+      criticalStockThreshold?: string;
     } = {};
 
     if (!name.trim()) {
@@ -90,6 +99,13 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
       errors.unitOfMeasure = 'La unidad de medida es obligatoria';
     }
 
+    if (criticalStockThreshold !== '') {
+      const num = Number(criticalStockThreshold);
+      if (!Number.isInteger(num) || num < 0 || isNaN(num)) {
+        errors.criticalStockThreshold = 'El stock crítico debe ser un número entero mayor o igual a 0';
+      }
+    }
+
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -103,10 +119,12 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
 
     setSubmitting(true);
     try {
+      const parsedThreshold = criticalStockThreshold !== '' ? Number(criticalStockThreshold) : undefined;
       await onSubmit({
         name: name.trim(),
         category,
         unitOfMeasure,
+        ...(parsedThreshold !== undefined ? { criticalStockThreshold: parsedThreshold } : {}),
       });
       onClose();
     } catch (err: unknown) {
@@ -230,6 +248,35 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
               <p className="mt-1 text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-200">
                 🔒 No se puede cambiar la unidad de medida mientras haya stock positivo registrado.
               </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="ingredient-threshold" className="block text-sm font-medium text-gray-700 mb-1">
+              Stock mínimo/crítico
+            </label>
+            <input
+              id="ingredient-threshold"
+              type="number"
+              min="0"
+              step="1"
+              value={criticalStockThreshold}
+              onChange={(e) => {
+                setCriticalStockThreshold(e.target.value);
+                if (fieldErrors.criticalStockThreshold) {
+                  setFieldErrors((prev) => ({ ...prev, criticalStockThreshold: undefined }));
+                }
+              }}
+              placeholder="Ej. 10 (opcional)"
+              disabled={submitting || isLoading}
+              className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
+                fieldErrors.criticalStockThreshold
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+              }`}
+            />
+            {fieldErrors.criticalStockThreshold && (
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.criticalStockThreshold}</p>
             )}
           </div>
 

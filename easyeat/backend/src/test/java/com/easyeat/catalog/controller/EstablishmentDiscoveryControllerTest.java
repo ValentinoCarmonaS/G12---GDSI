@@ -162,5 +162,60 @@ class EstablishmentDiscoveryControllerTest {
             verify(discoveryService, times(1)).searchEstablishments("desconocido");
         }
     }
+
+    @Nested
+    @DisplayName("Complete Establishment Listing Contract (Fix C-01, FR-030)")
+    class ListingAllEstablishmentsTests {
+
+        @Test
+        @WithMockUser(roles = "COMENSAL")
+        @DisplayName("Should return HTTP 200 OK with the complete active establishments list when no query is provided")
+        void shouldReturn200WithAllActiveEstablishments() throws Exception {
+            UUID id1 = UUID.fromString("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11");
+            EstablishmentSummaryResponse item1 = new EstablishmentSummaryResponse(
+                    id1,
+                    "Café Central Palermo",
+                    EstablishmentStatus.ACTIVE,
+                    LocalTime.of(8, 0, 0),
+                    LocalTime.of(23, 30, 0),
+                    "America/Argentina/Buenos_Aires",
+                    true
+            );
+
+            when(discoveryService.getAllActiveEstablishments()).thenReturn(List.of(item1));
+
+            mockMvc.perform(get("/api/v1/establishments")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$", hasSize(1)))
+                    .andExpect(jsonPath("$[0].id").value(id1.toString()))
+                    .andExpect(jsonPath("$[0].name").value("Café Central Palermo"))
+                    .andExpect(jsonPath("$[0].status").value("ACTIVE"))
+                    .andExpect(jsonPath("$[0].open").value(true));
+
+            verify(discoveryService, times(1)).getAllActiveEstablishments();
+        }
+
+        @Test
+        @DisplayName("Should reject unauthenticated requests to the listing endpoint with HTTP 401 Unauthorized")
+        void shouldReturn401ForUnauthenticatedListingRequest() throws Exception {
+            mockMvc.perform(get("/api/v1/establishments")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isUnauthorized());
+
+            verifyNoInteractions(discoveryService);
+        }
+
+        @Test
+        @WithMockUser(roles = "CHEF")
+        @DisplayName("Should reject non-COMENSAL roles (e.g. CHEF) on the listing endpoint with HTTP 403 Forbidden")
+        void shouldReturn403ForChefOnListingEndpoint() throws Exception {
+            mockMvc.perform(get("/api/v1/establishments")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isForbidden());
+
+            verifyNoInteractions(discoveryService);
+        }
+    }
 }
 

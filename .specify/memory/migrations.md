@@ -12,7 +12,7 @@
 4. A claim marked *in flight* is a courtesy, not a reservation. If two branches hold the same claim, the one that merges first keeps it and the other renumbers.
 5. Tests must not carry a version number in their class name, so an upstream renumbering cannot invalidate them.
 
-## Consumed — present on `develop/sprint-2`
+## Consumed — present on `develop/sprint-3`
 
 | Version | File | Spec | Landed via |
 |---|---|---|---|
@@ -25,6 +25,13 @@
 | V7 | `V7__chef_dish_management.sql` | 005 | PR #160 |
 | V8 | `V8__create_establishments.sql` | 008 | merged into `develop/sprint-2` ahead of spec 007 (exact PR not confirmed from this integration; present on `develop/sprint-2` when spec 007 was integrated 2026-10-31) |
 | V9 | `V9__admin_dish_approval_pricing.sql` | 007 | renumbered from `V8` during the `007-admin-dish-approval-pricing` → `develop/sprint-2` integration (PR #182), per rule 4: spec 008 merged first and kept `V8` |
+| V10 | `V10__support_admin_dish_cancellation.sql` | 007 / C-02 | adds `CANCELLED` to the dish-status and immutable review-event CHECK constraints; V7/V9 remain unchanged |
+| V11 | `V11__sync_ingredient_unit_purchase_cost.sql` | 006 / C-03 | backfills ingredient master unit_purchase_cost from latest batch |
+| V12 | `V12__extend_user_demographics_and_avatar.sql` | 009 | adds age, gender, address to users and creates user_photos (BYTEA avatar storage) |
+| V13 | `V13__dish_review_history_snapshot.sql` | 007 / C-07 | adds proposed_changes_json JSONB to dish_review_history |
+| V14 | `V14__add_units_per_package_to_ingredients.sql` | 007 / C-08 | adds package_cost and units_per_package to ingredients |
+| V15 | `V15__restaurant_operation_config.sql` | 010 | creates establishment operational schedules, slot capacity and payment methods |
+| V16 | `V16__add_time_slot_and_order_fulfillment.sql` | 012 | creates time slot orders, fulfillment and reservations |
 
 Spec 006 (`006-recipe-food-cost`, PR #170, merged 2026-10-28) added **no** migration: its recipe model reuses `dish_recipe_ingredients` from 005's `V7`. A feature that needs no schema change takes no version, and that is worth recording so nobody looks for a missing version from it.
 
@@ -32,15 +39,7 @@ Repeatable migrations carry no version and are re-applied whenever their content
 
 ## In flight — claimed but not yet merged
 
-None. The `V8` contest between specs 007 and 008 (below) is resolved: 008 merged first and kept `V8`; 007 renumbered to `V9` per rule 4, exactly as this table anticipated.
-
-**Renumbering either was cheap, and that was by design.** Spec 007's migration test is named `AdminPricingMigrationTest` and **nothing inside it hardcodes a version**: it locates the migration by its Flyway description and reads the preceding version from `flyway.info()`. A rename changes the filename and this table, nothing else. Spec 005's `V7MigrationAndSeedDevTest` does carry its version in the class name, which rule 5 exists to prevent; it is noted for that spec's owner.
-
-**Why 007 did not simply yield `V9` in advance.** Deferring a number only helps when the deferrer merges second, which nobody could promise ahead of time — the rule is merge order, decided only once an actual integration happens, not by courtesy. As it played out, 008 did merge first (it was already on `develop/sprint-2` when 007's integration PR #182 was opened), so 007 renumbered its already-written `V8__admin_dish_approval_pricing.sql` to `V9__admin_dish_approval_pricing.sql` during that integration, exactly as this table anticipated.
-
-The two files are independent in content, so renumbering either is a rename plus a row here: 007's alters `dishes` and creates the two audit tables; 008's creates `establishments` and, verified on its branch, does **not** touch `dishes.status` or `chk_dishes_status`, despite `008/data-model.md` planning to redefine that constraint. If 008 ever writes that redefinition it collides with spec 007's `PUBLISHED`, which is a design conflict rather than a numbering one — recorded in `specs/007-admin-dish-approval-pricing/research.md §3.7`.
-
-Spec 007's migration test is named `AdminPricingMigrationTest`, with no version in the name, so a renumbering cannot invalidate it (rule 5).
+**Spec 013 (`013-critical-stock-chef-pause`) claims `V17__critical_stock_and_chef_pause.sql`** (renumbered from V11 when integrating `develop/sprint-3`, which had already consumed V11 through V16; rule 4, the branch that merges later renumbers). Adds `critical_stock_threshold` to `ingredients`, `paused_by_chef` to `dishes`, and indexes `idx_ingredients_critical_alert` and `idx_dishes_catalog_visibility`.
 
 ## Operational note
 

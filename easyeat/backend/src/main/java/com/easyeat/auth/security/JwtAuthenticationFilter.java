@@ -50,13 +50,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
+        String token = null;
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        } else if (request.getParameter("token") != null && !request.getParameter("token").isBlank()) {
+            token = request.getParameter("token");
+        }
+
+        if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
-
-        String token = authHeader.substring(7);
 
         if (!jwtService.validateToken(token)) {
             sendProblemDetail(response, request.getRequestURI(), HttpStatus.UNAUTHORIZED, "Unauthorized", "Tu sesión ha expirado o el token es inválido");
@@ -103,12 +108,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             var authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            filterChain.doFilter(request, response);
         } catch (Exception e) {
             SecurityContextHolder.clearContext();
             sendProblemDetail(response, request.getRequestURI(), HttpStatus.UNAUTHORIZED, "Unauthorized", "Tu sesión ha expirado o el token es inválido");
+            return;
         }
+
+        // Outside the try: a failure in the application must not be reported as an authentication failure.
+        filterChain.doFilter(request, response);
     }
 
     private void sendProblemDetail(HttpServletResponse response, String instanceUri, HttpStatus status, String title, String detail) throws IOException {

@@ -1,10 +1,11 @@
 <!--
 Sync Impact Report
-- Version change: 1.1.0 -> 1.2.0
+- Version change: 1.2.0 -> 2.0.0
 - Modified principles: none
-- Added sections:
+- Added sections: none
+- Removed sections:
   - Fundamental Principle XI: Continuous Upstream Synchronization Awareness
-- Removed sections: none
+  - Pre-execution check (Continuous upstream reference synchronization) under Development Workflow and Quality Gates
 - Templates requiring updates: none
 - Deferred items: none
 -->
@@ -133,17 +134,6 @@ Each principle includes its **Compliance** criteria (verifiable during a review 
 
 **Rationale**: prevent fragmented, non-functional silos and orphan user stories where frontend interfaces lack functional backend contracts or backend endpoints lack frontend consumer verification.
 
-### XI. Continuous Upstream Synchronization Awareness
-
-- At the invocation start of any command or skill in the Spec-Kit ecosystem (`/speckit-*`), the AI agent MUST proactively execute a fetch of the remote repository (`git fetch origin main`), inspecting the latest state of the main integration branch (`main`), regardless of whichever local active branch the user is currently working on.
-- The agent MUST compare the active local branch against `origin/main`. If it detects that the local branch is outdated (i.e., there are commits on `origin/main` that are not integrated into the current branch), the agent MUST immediately notify the user via a prominent, eye-catching alert message under the `grill-me` advisory format, indicating the number of commits drifted and an explicit staleness warning.
-- The agent MUST NOT automatically execute mutative or destructive integration commands (`git pull`, `git merge`, or `git rebase`); the decision, timing, and integration strategy belong strictly and exclusively to the human developer.
-- The purpose of this principle is to guarantee that the developer never operates in ignorance of progress on the main branch, preventing late divergence, rework, and major integration conflicts.
-
-**Compliance**: at the initialization cycle of any Spec-Kit skill, the execution of `git fetch origin main`, comparative drift verification, and (in case new commits are detected on `origin/main`) the visible, prominent delivery of the staleness alert to the user without automatic local branch mutations are recorded.
-
-**Rationale**: prevent the developer from building specifications, plans, tasks, or code upon an outdated baseline relative to the agreed state on `main`, alerting them in time without violating developer autonomy over the local working tree.
-
 ## Additional Constraints
 
 This section contains the mechanisms and decisions declared by the project. They are NOT universal principles: they may be modified without altering the Fundamental Principles, although they remain subject to the amendment procedure.
@@ -152,10 +142,6 @@ This section contains the mechanisms and decisions declared by the project. They
 - **Technological constraints**: none declared at this time.
 
 ## Development Workflow and Quality Gates
-
-Pre-execution check for any Spec-Kit command or skill:
-
-- **Continuous upstream reference synchronization**: proactive execution of `git fetch origin main`, comparative drift verification, and emission of a prominent `grill-me` alert to the user whenever the active branch is behind `origin/main`.
 
 Minimum process prior to implementing a user story, in this order:
 
@@ -183,4 +169,4 @@ Atomic, traceable, and reversible delivery:
 - **Periodic compliance review**: MUST be performed in each feature planning cycle via the plan's Constitution Check, and at least once per quarter across the entire project, verifying that plans and reviews comply with the principles.
 - **Mandatory principles vs. project decisions**: a mandatory principle applies regardless of technology and domain, and resides in Fundamental Principles. Any decision depending on a specific technology, tool, or context resides in Additional Constraints or in the specification and plan artifacts.
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-10-24
+**Version**: 2.0.0 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-10-31

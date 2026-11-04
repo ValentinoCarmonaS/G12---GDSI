@@ -16,6 +16,7 @@ import {
 
 export const InventoryManagementPage: React.FC = () => {
   const [ingredients, setIngredients] = useState<AdminIngredientDetailResponse[]>([]);
+  const [criticalOnly, setCriticalOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
@@ -31,14 +32,16 @@ export const InventoryManagementPage: React.FC = () => {
     setIsLoading(true);
     setGeneralError(null);
     try {
-      const data = await inventoryApi.listIngredients();
+      const data = await inventoryApi.listIngredients(
+        criticalOnly ? { criticalOnly: true } : undefined
+      );
       setIngredients(data);
     } catch {
       setGeneralError('No se pudo cargar el catálogo de ingredientes. Intente nuevamente.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [criticalOnly]);
 
   useEffect(() => {
     fetchIngredients();
@@ -86,6 +89,10 @@ export const InventoryManagementPage: React.FC = () => {
     }
   };
 
+  const handleToggleCriticalOnly = (val: boolean) => {
+    setCriticalOnly(val);
+  };
+
   return (
     <WorkspaceLayout
       title="Inventario y Materias Primas"
@@ -127,6 +134,8 @@ export const InventoryManagementPage: React.FC = () => {
         {/* Catalog Table */}
         <IngredientCatalogTable
           ingredients={ingredients}
+          criticalOnly={criticalOnly}
+          onToggleCriticalOnly={handleToggleCriticalOnly}
           onEdit={handleOpenEdit}
           onAdjustStock={(ing) => setSelectedIngredientForAdjustment(ing)}
           onViewAudit={(ing) => setSelectedIngredientForAudit(ing)}

@@ -66,6 +66,9 @@ public class Dish {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    @Column(name = "paused_by_chef", nullable = false)
+    private Boolean pausedByChef = false;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "dish_dietary_restrictions", joinColumns = @JoinColumn(name = "dish_id"))
     @Column(name = "restriction_code")
@@ -212,6 +215,14 @@ public class Dish {
 
     public void setIsActive(Boolean active) {
         isActive = active;
+    }
+
+    public Boolean getPausedByChef() {
+        return pausedByChef;
+    }
+
+    public void setPausedByChef(Boolean pausedByChef) {
+        this.pausedByChef = pausedByChef != null ? pausedByChef : false;
     }
 
     public Set<String> getRestrictionCodes() {

@@ -15,7 +15,7 @@ import type {
   AvailabilityMap,
 } from '@/types/dinerCatalog';
 
-describe('Diner Catalog Types and Type Guards (T005)', () => {
+describe('Diner Catalog Types and Type Guards (T005 & T007)', () => {
   it('defines valid establishment statuses and closed gastronomic categories', () => {
     expect(ESTABLISHMENT_STATUSES).toEqual(['ACTIVE', 'PAUSED', 'DISABLED']);
     expect(CLOSED_GASTRONOMIC_CATEGORIES).toEqual([
@@ -69,7 +69,7 @@ describe('Diner Catalog Types and Type Guards (T005)', () => {
     expect(detail.nextOpeningSchedule).toBe('Abre hoy a las 11:00');
   });
 
-  it('verifies type contract for DishCatalogItem, CategoryGroup, and CatalogResponse', () => {
+  it('verifies type contract for DishCatalogItem, CategoryGroup, and CatalogResponse with allergens array (T007)', () => {
     const dish: DishCatalogItem = {
       id: 'e0eebc99-9c0b-4ef8-bb6d-6bb9bd380a55',
       name: 'Milanesa Napolitana con Papas Fritas',
@@ -81,6 +81,7 @@ describe('Diner Catalog Types and Type Guards (T005)', () => {
       isCompliant: true,
       conflictingRestrictions: [],
       recipeIngredients: ['Carne de ternera', 'Mozzarella', 'Jamón cocido', 'Papas'],
+      allergens: ['Lácteos / Lactosa', 'Trigo / Gluten'],
     };
 
     const group: CategoryGroup = {
@@ -100,6 +101,7 @@ describe('Diner Catalog Types and Type Guards (T005)', () => {
 
     expect(response.categories[0].dishes[0].price).toBe(5500.0);
     expect(response.categories[0].dishes[0].isAvailable).toBe(true);
+    expect(response.categories[0].dishes[0].allergens).toEqual(['Lácteos / Lactosa', 'Trigo / Gluten']);
   });
 
   it('verifies type contract for AvailabilityMap', () => {
@@ -114,4 +116,3 @@ describe('Diner Catalog Types and Type Guards (T005)', () => {
     expect(map.availability['d1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01']).toBe(false);
   });
 });
-

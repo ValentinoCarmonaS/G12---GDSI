@@ -153,7 +153,7 @@ class DinerCatalogServiceTest {
                     .price(BigDecimal.valueOf(2200.00))
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(mainDish, dessert));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
@@ -185,7 +185,7 @@ class DinerCatalogServiceTest {
                     .status(DishStatus.PUBLISHED)
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(publishedDish));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
@@ -225,7 +225,7 @@ class DinerCatalogServiceTest {
                     .status(DishStatus.PUBLISHED)
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(dishWithPhoto, dishWithoutPhoto));
 
             when(dishPhotoRepository.existsByDishId(dishWithPhoto.getId())).thenReturn(true);
@@ -272,7 +272,7 @@ class DinerCatalogServiceTest {
             Ingredient ing2 = new Ingredient();
             ing2.setName("Queso Parmesano");
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of(dish));
 
             when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
@@ -291,6 +291,114 @@ class DinerCatalogServiceTest {
             DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
             assertThat(item.getRecipeIngredients()).containsExactlyInAnyOrder("Lechuga Capuchina", "Queso Parmesano");
         }
+
+        @Test
+        @DisplayName("Should return empty ingredients list when dish has no recipe lines registered (T027, US3, INV-8, AC-2.3)")
+        void shouldReturnEmptyIngredientsWhenDishHasNoRecipe() {
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(activeEstablishment));
+
+            Dish dish = CatalogTestFixtures.catalogDishBuilder()
+                    .tenantId(tenantId)
+                    .name("Plato Sin Receta")
+                    .category(DishCategory.PLATOS_PRINCIPALES)
+                    .status(DishStatus.PUBLISHED)
+                    .build();
+
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+                    .thenReturn(List.of(dish));
+            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
+                    .thenReturn(List.of());
+
+            when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
+                    .thenReturn(List.of(
+                            new EnrichedDishResponse(dish.getId(), tenantId, dish.getName(), null, dish.getPrice(), true, true, List.of())
+                    ));
+
+            DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
+
+            DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
+            assertThat(item.getRecipeIngredients()).isNotNull().isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should dynamically reflect recipe modifications on subsequent call (T027, US3, INV-7, AC-2.2)")
+        void shouldDynamicallyReflectRecipeModifications() {
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(activeEstablishment));
+
+            Dish dish = CatalogTestFixtures.catalogDishBuilder()
+                    .tenantId(tenantId)
+                    .name("Plato Modificable")
+                    .category(DishCategory.PLATOS_PRINCIPALES)
+                    .status(DishStatus.PUBLISHED)
+                    .build();
+
+            UUID ingIdInitial = UUID.randomUUID();
+            UUID ingIdUpdated = UUID.randomUUID();
+
+            DishRecipeIngredient lineInitial = CatalogTestFixtures.createRecipeIngredientLine(dish.getId(), ingIdInitial, BigDecimal.valueOf(0.100));
+            DishRecipeIngredient lineUpdated = CatalogTestFixtures.createRecipeIngredientLine(dish.getId(), ingIdUpdated, BigDecimal.valueOf(0.150));
+
+            Ingredient ingInitial = new Ingredient();
+            ingInitial.setName("Ingrediente Original");
+            Ingredient ingUpdated = new Ingredient();
+            ingUpdated.setName("Ingrediente Reemplazo");
+
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+                    .thenReturn(List.of(dish));
+
+            when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
+                    .thenReturn(List.of(
+                            new EnrichedDishResponse(dish.getId(), tenantId, dish.getName(), null, dish.getPrice(), true, true, List.of())
+                    ));
+
+            // First call: Original recipe
+            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
+                    .thenReturn(List.of(lineInitial));
+            when(ingredientRepository.findByIdAndTenantId(ingIdInitial, tenantId))
+                    .thenReturn(Optional.of(ingInitial));
+
+            DinerCatalogResponse response1 = dinerCatalogService.getCatalog(tenantId, mockUser);
+            assertThat(response1.getCategories().get(0).getDishes().get(0).getRecipeIngredients())
+                    .containsExactly("Ingrediente Original");
+
+            // Second call: Kitchen replaced recipe with updated ingredient
+            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
+                    .thenReturn(List.of(lineUpdated));
+            when(ingredientRepository.findByIdAndTenantId(ingIdUpdated, tenantId))
+                    .thenReturn(Optional.of(ingUpdated));
+
+            DinerCatalogResponse response2 = dinerCatalogService.getCatalog(tenantId, mockUser);
+            assertThat(response2.getCategories().get(0).getDishes().get(0).getRecipeIngredients())
+                    .containsExactly("Ingrediente Reemplazo");
+        }
+
+        @Test
+        @DisplayName("Should populate neutral common allergens for dishes having restriction codes (T005, INV-6, AC-2.1)")
+        void shouldPopulateNeutralAllergens() {
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(activeEstablishment));
+
+            Dish dish = CatalogTestFixtures.catalogDishBuilder()
+                    .tenantId(tenantId)
+                    .name("Pasta Alfredo")
+                    .category(DishCategory.PLATOS_PRINCIPALES)
+                    .status(DishStatus.PUBLISHED)
+                    .build();
+            dish.setRestrictionCodes(Set.of("DAIRY", "WHEAT", "VEGAN"));
+
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+                    .thenReturn(List.of(dish));
+
+            when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
+                    .thenReturn(List.of(
+                            new EnrichedDishResponse(dish.getId(), tenantId, dish.getName(), null, dish.getPrice(), true, true, List.of())
+                    ));
+
+            DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
+
+            DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
+            assertThat(item.getAllergens()).containsExactlyInAnyOrder("Lácteos / Lactosa", "Trigo / Gluten");
+        }
+
     }
 
     @Nested
@@ -304,7 +412,7 @@ class DinerCatalogServiceTest {
             Establishment alwaysOpen = new Establishment(tenantId, "Siempre Abierto", EstablishmentStatus.ACTIVE,
                     LocalTime.of(0, 0), LocalTime.of(23, 59, 59), "America/Argentina/Buenos_Aires");
             when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(alwaysOpen));
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of());
 
             DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
@@ -320,7 +428,7 @@ class DinerCatalogServiceTest {
             Establishment closedNow = new Establishment(tenantId, "Cerrado Casi Siempre", EstablishmentStatus.ACTIVE,
                     LocalTime.of(4, 0), LocalTime.of(4, 1), "America/Argentina/Buenos_Aires");
             when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(closedNow));
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
                     .thenReturn(List.of());
 
             DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
@@ -328,6 +436,67 @@ class DinerCatalogServiceTest {
             assertThat(response.getEstablishment().getIsOpen()).isFalse();
             assertThat(response.getEstablishment().getNextOpeningSchedule()).isNotNull();
             assertThat(response.getEstablishment().getNextOpeningSchedule()).contains("04:00");
+        }
+    }
+
+    @Nested
+    @DisplayName("Critical Stock Non-Interference Tests (EC-010, FR-009, INV-6)")
+    class CriticalStockNonInterferenceTests {
+
+        @Test
+        @DisplayName("EC-010, FR-009: testThresholdChangeDoesNotAffectDiner - Modifying critical stock threshold does not alter diner catalog dish visibility or availability")
+        void testThresholdChangeDoesNotAffectDiner() {
+            // T026: In strict TDD Red phase, asserts criticalOnly parameter support in IngredientService
+            // and verifies that modifying threshold has no effect on diner catalog visibility or availability.
+            boolean hasCriticalOnlySupport = Arrays.stream(com.easyeat.inventory.service.IngredientService.class.getMethods())
+                    .filter(m -> "listIngredients".equals(m.getName()))
+                    .anyMatch(m -> m.getParameterCount() >= 3);
+
+            if (!hasCriticalOnlySupport) {
+                org.junit.jupiter.api.Assertions.fail("IngredientService.listIngredients must accept Boolean criticalOnly parameter (TDD Red: T029 pending)");
+            }
+
+            Establishment openEst = new Establishment(tenantId, "Restaurante Central", EstablishmentStatus.ACTIVE,
+                    LocalTime.of(0, 0), LocalTime.of(23, 59, 59), "America/Argentina/Buenos_Aires");
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(openEst));
+
+            Dish dish = CatalogTestFixtures.catalogDishBuilder()
+                    .tenantId(tenantId)
+                    .name("Plato Especial")
+                    .category(DishCategory.PLATOS_PRINCIPALES)
+                    .status(DishStatus.PUBLISHED)
+                    .build();
+
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+                    .thenReturn(List.of(dish));
+
+            UUID ingId = UUID.randomUUID();
+            DishRecipeIngredient recipeLine = CatalogTestFixtures.createRecipeIngredientLine(dish.getId(), ingId, BigDecimal.valueOf(1.000));
+            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId())).thenReturn(List.of(recipeLine));
+
+            Ingredient ingredient = new Ingredient();
+            ingredient.setName("Queso Azul");
+            ingredient.setCriticalStockThreshold(2);
+            ingredient.setCurrentStock(new BigDecimal("5.0000"));
+
+            when(ingredientRepository.findByIdAndTenantId(ingId, tenantId)).thenReturn(Optional.of(ingredient));
+            when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
+                    .thenReturn(List.of(
+                            new EnrichedDishResponse(dish.getId(), tenantId, dish.getName(), null, dish.getPrice(), true, true, List.of())
+                    ));
+
+            DinerCatalogResponse responseBefore = dinerCatalogService.getCatalog(tenantId, mockUser);
+            assertThat(responseBefore.getCategories().get(0).getDishes()).hasSize(1);
+            assertThat(responseBefore.getCategories().get(0).getDishes().get(0).getIsAvailable()).isTrue();
+
+            // Admin changes threshold to 20 (stock 5 < 20 -> now critical)
+            ingredient.setCriticalStockThreshold(20);
+
+            DinerCatalogResponse responseAfter = dinerCatalogService.getCatalog(tenantId, mockUser);
+            assertThat(responseAfter.getCategories().get(0).getDishes()).hasSize(1);
+            assertThat(responseAfter.getCategories().get(0).getDishes().get(0).getIsAvailable())
+                    .as("Diner catalog dish must remain visible and available despite ingredient entering critical stock (EC-010, FR-009)")
+                    .isTrue();
         }
     }
 }

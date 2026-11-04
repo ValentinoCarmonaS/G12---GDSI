@@ -29,6 +29,13 @@
 - [x] Feature meets measurable outcomes defined in Success Criteria
 - [x] No implementation details leak into specification
 
+## Fix C-01 — Complete Establishment Listing (Added 2026-10-31)
+
+- [x] FR-030 added and traceable to Fix C-01 CA1/CA3 (complete active listing; exclusion of paused/disabled).
+- [x] FR-031 added and traceable to Fix C-01 CA2 (selection loads real-time catalog via existing tenant-switch flow).
+- [x] FR-032 added and traceable to Fix C-01 CA4 (informative empty state).
+- [x] Fix C-01 acceptance criteria (CA1–CA4) are covered by the new FRs and existing discovery behavior.
+
 ## Notes
 
 - All items pass (16/16). Spec is fully audited, purified of technical implementation details, and aligned with user stories COM-1.5.1, COM-4.1.1, COM-4.1.2, COM-4.2.3 and project sprint roadmap.

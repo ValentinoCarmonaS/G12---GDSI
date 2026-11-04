@@ -178,6 +178,7 @@ export function createMockAvailabilityMap(
 
 export interface DinerCatalogApiMockHandlers {
   searchEstablishments: ReturnType<typeof vi.fn>;
+  getAllEstablishments: ReturnType<typeof vi.fn>;
   getEstablishmentCatalog: ReturnType<typeof vi.fn>;
   getCatalogAvailability: ReturnType<typeof vi.fn>;
 }
@@ -197,6 +198,9 @@ export function setupDinerCatalogApiMockHandlers(
         )
       );
     }),
+    getAllEstablishments: vi.fn().mockResolvedValue(
+      mockEstablishmentSummaries.filter((e) => e.status === 'ACTIVE')
+    ),
     getEstablishmentCatalog: vi.fn().mockResolvedValue(mockDinerCatalogResponse),
     getCatalogAvailability: vi.fn().mockResolvedValue(mockAvailabilityMap),
   };

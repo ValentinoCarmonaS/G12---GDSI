@@ -373,6 +373,47 @@ paths:
             application/problem+json:
               schema: { $ref: '#/components/schemas/ProblemDetail' }
 
+  /admin/dishes/{id}/cancel:
+    post:
+      tags: [Admin Dish Decisions]
+      summary: Cancel a dish pending administrative review (C-02)
+      description: |
+        Owning requirements: FR-001, FR-025, FR-038 to FR-042, SC-003, SC-009.
+        Allowed roles: ADMINISTRADOR (alias ADMIN), within the dish's establishment.
+        State gate: only `PENDING_PRICE` is cancellable. Chefs cannot cancel a submitted dish;
+        their separate ability to delete a `DRAFT` remains governed by spec 005.
+
+        Confirmation happens in the Back-Office UI before this request is sent. The state change
+        is one conditional write (`PENDING_PRICE` -> `CANCELLED`, `is_active = false`) and its
+        immutable `CANCELLED` review-history entry are committed in the same transaction. The
+        entry carries the next review cycle number; a comment is not required. If the conditional
+        write affects no row, the request returns 409 and writes no history entry.
+      operationId: cancelDishUnderReview
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DishId'
+      responses:
+        '204':
+          description: Dish cancelled and removed from the pending inbox
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden - caller is not an Administrator or dish belongs to another establishment
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '404':
+          description: Dish not found in the caller's establishment
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetail' }
+        '409':
+          description: Dish is not PENDING_PRICE, or another Administrator decided first
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ConflictProblemDetail' }
+
   /dishes/{id}/review-feedback:
     get:
       tags: [Chef Dish Feedback]
@@ -436,9 +477,9 @@ components:
     DishStatus:
       type: string
       description: |
-        Lifecycle status. DRAFT and PENDING_PRICE are owned by spec 005; PUBLISHED is introduced by
-        this feature.
-      enum: [DRAFT, PENDING_PRICE, PUBLISHED]
+        Lifecycle status. DRAFT and PENDING_PRICE are owned by spec 005; PUBLISHED and CANCELLED
+        are introduced by this feature, with CANCELLED persisted by its C-02 V10 amendment.
+      enum: [DRAFT, PENDING_PRICE, PUBLISHED, CANCELLED]
 
     DishCategory:
       type: string
@@ -447,7 +488,7 @@ components:
 
     ReviewEventType:
       type: string
-      enum: [APPROVED, REJECTED]
+      enum: [APPROVED, REJECTED, CANCELLED]
 
     PublicationGateCondition:
       type: string

@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Chef Dish Management — Technical File Creation and Submission. Covers CHF-2.2.1, CHF-2.2.2, CHF-2.2.3, CHF-2.2.4."
+**Input**: User description: "Chef Dish Management — Technical File Creation and Submission. Covers CHF-2.2.1, CHF-2.2.2, CHF-2.2.3, CHF-2.2.4." Amended by correction **C-08** (User Story 5: chef header navigation for "Gestionar Platos").
 
 ## Clarifications
 
@@ -32,6 +32,15 @@
 - Q: Can the Chef delete a previously uploaded photo from a draft to leave the dish without a photo again? → A: Yes, the Chef can delete the photo at any time while the dish is in Draft status, leaving it without an associated photo.
 - Q: What are the maximum character lengths allowed for the dish name and optional description? → A: Mandatory name up to 100 characters; optional description up to 500 characters.
 - Q: How should dishes be ordered and filtered in the Chef's management list? → A: Ordered by last updated timestamp descending (most recently edited first), with optional filter by status: "All", "Draft", and "Pending Price".
+
+### Session 2026-11-02 (C-08: "Gestionar Platos" en la cabecera del chef)
+
+- Q: ¿Dónde vive ahora el acceso a "Gestionar Platos"? → A: Como sección principal de la cabecera del Chef (`WorkspaceLayout.tsx`), junto a "Comandas KDS" e "Ingredientes". La tarjeta anidada dentro de la vista KDS (`KitchenWorkspacePage.tsx`) se elimina.
+- Q: ¿Se modifica el flujo del banner de rechazo (C-07, FR-025/FR-026)? → A: No. El banner sigue activándose por `?dishId=` en `/cocina` (vista KDS). C-08 es exclusivamente reubicación de navegación.
+- Q: ¿Cómo se indica la sección activa? → A: Resaltado dinámico derivado de la ruta (`useLocation`) con `aria-current="page"` sobre el enlace activo; el estilo ya no está hardcodeado por enlace.
+- Q: ¿Qué ocurre en pantallas pequeñas? → A: El contenedor de navegación del chef usa `overflow-x-auto` de modo que los tres enlaces sigan siendo accesibles por debajo del breakpoint `sm` (antes el nav entero era `hidden sm:flex`).
+- Q: ¿Las vistas `/cocina/platos*` muestran la cabecera? → A: Sí. `ChefDishesPage` y `ChefDishEditorPage` se envuelven en `WorkspaceLayout` para que el chef nunca quede sin cabecera, navegación ni cierre de sesión.
+- Q: ¿Se conserva la tarjeta de Ingredientes y las tarjetas de estadísticas del KDS? → A: Sí, intactas. Solo se elimina la tarjeta "Gestión de Platos y Fichas Técnicas".
 - Q: If an ingredient included in a draft's recipe is discontinued by the Administrator before submission, can the Chef submit the dish for review? → A: No. The system blocks submission for review if the recipe contains any discontinued ingredient, requiring the Chef to replace or remove it before being able to submit for review.
 - Q: Should the Chef's dish management list use 20 items per page pagination or list all items in a single view? → A: 20 items per page pagination with navigation controls, consistent with the catalog pattern established in spec 004.
 
@@ -134,6 +143,28 @@ The Chef views a draft and taps "Send for Review". The system evaluates all comp
 
 ---
 
+### User Story 5 — Chef Header Navigation for Dish Management (C-08) (Priority: P2)
+
+**C-08**: Como chef, quiero acceder a "Gestionar Platos" desde la cabecera del espacio de trabajo, junto a "Comandas KDS" e "Ingredientes", para llegar a la gestión de fichas técnicas sin tener que pasar por la vista de comandas.
+
+The Chef's operational header (`WorkspaceLayout.tsx`) exposes three top-level sections: "Comandas KDS" (`/cocina`), "Gestionar Platos" (`/cocina/platos`) and "Ingredientes" (`/cocina/ingredientes`). The dish-management card previously nested inside the KDS view is removed; the KDS view keeps its ingredient card, its four order-statistics cards, and the C-07 rejection-feedback banner. The dish list and the dish editor render inside the shared header so identity, section navigation and logout are always available.
+
+**Why this priority**: Dish management is a first-class chef workflow (CHF-2.2.x); burying its entry point inside the KDS view forces an extra hop and leaves the dishes views without the shared header. Promoting it is a P2 navigation correction that does not alter any dish-management behavior.
+
+**Independent Test**: As a Chef on `/cocina`, click "Gestionar Platos" in the header and verify the dish list renders at `/cocina/platos` with the shared header present; verify the KDS view no longer renders the dish-management card; verify the active header link changes with the route across the three sections.
+
+**Acceptance Scenarios**:
+
+1. **Given** a Chef on any workspace view, **When** the header renders, **Then** three chef sections are present — "Comandas KDS", "Gestionar Platos", "Ingredientes" — each linking to its canonical route.
+2. **Given** a Chef on `/cocina`, **When** they activate "Gestionar Platos" in the header, **Then** the dish management list renders at `/cocina/platos` inside the shared header, with list, status filter, pagination and "Nuevo Plato" behavior unchanged.
+3. **Given** a Chef on `/cocina/platos`, `/cocina/platos/nuevo` or `/cocina/platos/:id`, **When** the header renders, **Then** "Gestionar Platos" carries `aria-current="page"` and the other two sections do not.
+4. **Given** a Chef on the KDS view (`/cocina`), **When** the view renders, **Then** no dish-management card or entry point exists inside the view, while the ingredients card and the four order-statistics cards remain.
+5. **Given** a Chef on a viewport below the `sm` breakpoint, **When** the header renders, **Then** all three chef sections remain reachable through the horizontally scrollable navigation container.
+6. **Given** a Chef on the dish editor (`/cocina/platos/:id`), **When** they navigate from the header, **Then** they can reach "Comandas KDS" and "Ingredientes" and return to the dish list without a full page reload.
+7. **Given** an Administrator who rejected a draft (C-07), **When** the Chef opens `/cocina?dishId=<id>`, **Then** the rejection-feedback banner still renders in the KDS view exactly as specified by FR-025/FR-026.
+
+---
+
 ### Edge Cases
 
 - **Duplicate name race condition**: If another Chef creates a dish with the same name while the first Chef is composing their draft, the uniqueness check at save time catches the conflict.
@@ -143,6 +174,11 @@ The Chef views a draft and taps "Send for Review". The system evaluates all comp
 - **Draft with zero recipe ingredients at submission**: Blocked. Clear message: "The recipe must include at least one ingredient."
 - **Name with leading or trailing whitespace**: Trimmed before uniqueness validation and storage.
 - **Quantities and unit precision**: Continuous-unit ingredients (g, kg, ml, l) accept decimal quantities with exact precision; discrete-unit ingredients (u) accept whole numbers only, consistent with spec 004.
+- **Active-state prefix collision (C-08)**: `/cocina/platos/nuevo` and `/cocina/platos/:id` must highlight "Gestionar Platos", not "Comandas KDS"; `/cocina` matches only exactly, so nested dish routes never light up the KDS section.
+- **Rejection banner destination unchanged (C-08)**: `/cocina?dishId=<id>` continues to render `DishRejectionFeedbackBanner` in the KDS view; C-08 does not move the C-07 feedback flow to `/cocina/platos`.
+- **Chef viewport below `sm` (C-08)**: the header navigation is no longer hidden on small screens; it scrolls horizontally so the three chef sections stay reachable without wrapping the 16-unit-high header.
+- **Non-chef roles (C-08)**: header sections for ENCARGADO, ADMINISTRADOR and COMENSAL are untouched; only the `CHEF` navigation block changes.
+- **Deep link to `/cocina/platos` (C-08)**: remains protected by `RoleRouteGuard` for `CHEF` only, via the existing `/cocina` prefix perimeter in `postAuthRouting.ts` — no guard changes are required.
 
 ---
 
@@ -173,7 +209,15 @@ The Chef views a draft and taps "Send for Review". The system evaluates all comp
 - **FR-021**: All Chefs of the same establishment MUST share visibility and edit rights over all dish drafts belonging to that establishment. The Chef's dish management list MUST display items ordered by last updated timestamp descending (most recently updated first), paginated at 20 items per page with page navigation controls, and MUST provide filtering by status with options: "All" (Todos), "Draft" (Borrador), and "Pending Price" (Pendiente de Precio).
 - **FR-022**: The "Send for Review" action MUST be visually enabled when all completeness conditions are met and visually disabled with an informational indicator when any condition is unmet.
 - **FR-023**: The system MUST validate all input fields in real time on dish forms, highlighting missing required fields and invalid values before submission.
-- **FR-024**: Seed dev data in `R__seed_dev_dishes_and_dietary.sql` MUST be adapted to comply with the schema introduced by this feature if the adaptation is straightforward and non-conflicting. If adaptation would conflict with the new dish lifecycle logic, the conflicting records MUST be removed.
+- **FR-025**: El sistema MUST permitir al Chef recibir un plato devuelto por el Administrador en estado de rechazo, visualizando el comentario explicativo (10-1000 caracteres) y una propuesta de edición precargada (snapshot).
+- **FR-026**: El Chef MUST poder editar libremente la propuesta de edición del Administrador y re-enviar el plato a la bandeja de "En espera" (`PENDING_PRICE`), incrementando el ciclo de revisión sin recibir nunca acceso a costos ni márgenes.
+- **FR-027**: La cabecera del espacio de trabajo del Chef MUST exponer "Gestionar Platos" (`/cocina/platos`) como sección de primer nivel junto a "Comandas KDS" (`/cocina`) e "Ingredientes" (`/cocina/ingredientes`).
+- **FR-028**: La vista KDS (`/cocina`) MUST NOT contener ninguna tarjeta ni punto de entrada a la gestión de platos; la tarjeta de ingredientes y las cuatro tarjetas de estadísticas de comandas MUST permanecer intactas.
+- **FR-029**: La lista de gestión de platos y el editor de platos MUST renderizarse dentro del cabecera compartida del espacio de trabajo (identidad, badge de rol, navegación de secciones y cierre de sesión).
+- **FR-030**: La cabecera MUST indicar la sección activa del chef derivándola de la ruta actual (`useLocation`), aplicando `aria-current="page"` únicamente al enlace activo, incluidas las rutas anidadas bajo `/cocina/platos`.
+- **FR-031**: El bloque de navegación del chef MUST permanecer usable en viewports por debajo del breakpoint `sm` mediante un contenedor con scroll horizontal que mantenga accesibles los tres enlaces.
+- **FR-032**: C-08 MUST NOT alterar el flujo de feedback de rechazo (C-07): el banner continúa activándose por el parámetro `?dishId=` en `/cocina`.
+
 
 ### Key Entities
 
@@ -199,6 +243,8 @@ The Chef views a draft and taps "Send for Review". The system evaluates all comp
 - **SC-006**: A Chef can add 10 ingredients to a recipe and confirm the allergen section within 3 minutes from opening a new draft.
 - **SC-007**: Zero recipe lines exist with a quantity of zero or below. Zero recipe lines contain the same ingredient twice for the same dish.
 - **SC-008**: Allergen labels saved on a dish are correctly applied by the diner-side catalog filtering logic of spec 003 with 100% accuracy (verified at integration test level; diner-side rendering is out of scope here).
+- **SC-009**: 100% of the Chef's `/cocina*` views render the three header sections, and zero dish-management entry points remain inside the KDS view.
+- **SC-010**: 100% of header navigations between the three chef sections render the target view in-place (client-side navigation) with the shared header present, and the active-section indicator matches the current route in every case.
 
 ---
 

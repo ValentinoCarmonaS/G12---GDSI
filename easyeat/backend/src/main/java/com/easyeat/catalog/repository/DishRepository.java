@@ -32,6 +32,8 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
      */
     List<Dish> findByTenantIdAndStatusAndIsActiveTrue(UUID tenantId, DishStatus status);
 
+    List<Dish> findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(UUID tenantId, DishStatus status);
+
     List<Dish> findByIdIn(List<UUID> ids);
 
     Page<Dish> findByTenantId(UUID tenantId, Pageable pageable);
@@ -98,4 +100,10 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
             + "WHERE d.id = :dishId AND d.tenantId = :tenantId "
             + "AND d.status = com.easyeat.dish.domain.DishStatus.PENDING_PRICE")
     int updateRejectionIfPending(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId);
+
+    @Modifying
+    @Query("UPDATE Dish d SET d.status = com.easyeat.dish.domain.DishStatus.CANCELLED, d.isActive = false "
+            + "WHERE d.id = :dishId AND d.tenantId = :tenantId "
+            + "AND d.status = com.easyeat.dish.domain.DishStatus.PENDING_PRICE")
+    int updateCancellationIfPending(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId);
 }

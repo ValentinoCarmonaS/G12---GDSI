@@ -232,6 +232,12 @@ The Diner uses a search bar within the catalog to filter the currently loaded me
 - **FR-028**: If periodic availability updates fail due to network interruptions, the system MUST gracefully preserve the last known catalog availability state without blocking user browsing. If 3 consecutive update attempts fail, the interface MUST display a non-intrusive warning notice indicating connection retry status, clearing the notice immediately upon successful reconnection.
 - **FR-029**: When a Diner attempts to switch from an active establishment to another while holding items in their active session cart (`CartContext`), the system MUST display an interactive confirmation modal warning that switching establishments will empty their current cart. If the Diner confirms, the system MUST empty the cart, clear previous tenant data, and load the new establishment's catalog; if the Diner cancels, the previous establishment context and cart items MUST remain intact.
 
+- **FR-030**: The system MUST provide the complete list of active establishments to an authenticated diner on the establishment discovery screen. The backend discovery endpoint MUST return only establishments whose operational status is `ACTIVE`, excluding those that are `PAUSED` or `DISABLED`.
+
+- **FR-031**: When a diner selects an establishment from the complete listing, the system MUST load its real-time catalog, cleanly switching the multi-tenant context to the newly selected establishment (FR-004, FR-006), and applying the cart-switch confirmation behavior when applicable (FR-029).
+
+- **FR-032**: When the complete listing contains no active establishments, the discovery screen MUST display an informative empty state.
+
 ---
 
 ## Key Entities

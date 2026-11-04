@@ -23,12 +23,43 @@ public class ProfileController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ProfileResponse> getProfile(@AuthenticationPrincipal User user) {
+    public ResponseEntity<ExtendedProfileResponse> getProfile(@AuthenticationPrincipal User user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        ProfileResponse profile = profileService.getProfile(user);
+        ExtendedProfileResponse profile = profileService.getExtendedProfile(user);
+        if (profile == null) {
+            ProfileResponse base = profileService.getProfile(user);
+            if (base != null) {
+                profile = new ExtendedProfileResponse(
+                        base.id(),
+                        base.firstName(),
+                        base.lastName(),
+                        base.fullName(),
+                        base.phone(),
+                        base.email(),
+                        base.pendingEmail(),
+                        base.emailVerificationPending(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        base.dietaryRestrictions()
+                );
+            }
+        }
         return ResponseEntity.ok(profile);
+    }
+
+    @PutMapping("/demographics")
+    public ResponseEntity<ExtendedProfileResponse> updateDemographics(
+            @AuthenticationPrincipal User user,
+            @RequestBody DemographicsRequest request) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        ExtendedProfileResponse updated = profileService.updateDemographics(user, request);
+        return ResponseEntity.ok(updated);
     }
 
     @PutMapping("/personal-data")

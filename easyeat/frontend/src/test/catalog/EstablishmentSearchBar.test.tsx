@@ -41,6 +41,7 @@ describe('EstablishmentSearchBar Component Tests (T014, US1, COM-1.5.1, CA 1, CA
     totalAmount: 0,
     totalCount: 0,
     hasConflictingItems: false,
+    hasPausedItems: false,
   };
 
   const renderComponent = (
@@ -75,6 +76,7 @@ describe('EstablishmentSearchBar Component Tests (T014, US1, COM-1.5.1, CA 1, CA
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(dinerCatalogApi, 'getAllEstablishments').mockResolvedValue([]);
   });
 
   it('renders search input element with correct placeholder and accessible role', () => {
@@ -222,5 +224,60 @@ describe('EstablishmentSearchBar Component Tests (T014, US1, COM-1.5.1, CA 1, CA
     expect(mockSetTenant).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
     expect(screen.queryByText(/¿cambiar de restaurante\?/i)).not.toBeInTheDocument();
+  });
+
+  it('loads and displays the complete active establishments list when query is empty (Fix C-01, CA 1, CA 3)', async () => {
+    const getAllSpy = vi.spyOn(dinerCatalogApi, 'getAllEstablishments').mockResolvedValue([
+      mockEstablishmentSummaryActive,
+      mockEstablishmentSummaryActive2,
+    ]);
+
+    renderComponent();
+
+    expect(await screen.findByText('La Farola de Palermo')).toBeInTheDocument();
+    expect(screen.getByText('Parrilla Don Julio')).toBeInTheDocument();
+    expect(getAllSpy).toHaveBeenCalled();
+  });
+
+  it('shows informative empty state when the complete listing has no active establishments (Fix C-01, CA 4)', async () => {
+    vi.spyOn(dinerCatalogApi, 'getAllEstablishments').mockResolvedValue([]);
+
+    renderComponent();
+
+    expect(
+      await screen.findByText(/no hay establecimientos activos en este momento/i)
+    ).toBeInTheDocument();
+  });
+
+  it('triggers switch modal when cart has items with a different tenantId even if active tenant is null', async () => {
+    vi.spyOn(dinerCatalogApi, 'searchEstablishments').mockResolvedValue([
+      mockEstablishmentSummaryActive2,
+    ]);
+
+    renderComponent(
+      { tenant: null },
+      {
+        items: [
+          {
+            dishId: 'dish-1',
+            tenantId: 'other-tenant-id',
+            name: 'Milanesa',
+            price: 5000,
+            quantity: 1,
+            isCompliant: true,
+          },
+        ],
+      }
+    );
+
+    const input = screen.getByPlaceholderText(/buscar restaurante por nombre/i);
+    await userEvent.type(input, 'don julio');
+
+    const resultItem = await screen.findByText('Parrilla Don Julio');
+    fireEvent.click(resultItem);
+
+    expect(
+      await screen.findByText(/¿cambiar de restaurante\?/i)
+    ).toBeInTheDocument();
   });
 });
