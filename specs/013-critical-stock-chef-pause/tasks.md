@@ -6,6 +6,8 @@
 
 **Prerequisites**: plan.md ✅ spec.md ✅ research.md ✅ data-model.md ✅ contracts/ ✅ quickstart.md ✅
 
+**GitHub Issues**: [#252](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/252), [#253](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/253), [#254](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/254), [#255](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/255), [#256](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/256), [#257](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/257)
+
 **TDD Order (por US)**: Tests unitarios + edge cases → Implementación backend → Tests frontend → Implementación frontend
 
 **Organization**: Tareas agrupadas por User Story para implementación y verificación independiente.
@@ -18,7 +20,7 @@
 
 ---
 
-## Phase 1: Setup (Infraestructura compartida)
+## Phase 1: Setup (Infraestructura compartida) — [Issue #252](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/252)
 
 **Purpose**: Inicialización del branch de trabajo y estructura de proyecto para la feature 013.
 
@@ -28,7 +30,7 @@
 
 ---
 
-## Phase 2: Foundational (Prerrequisitos bloqueantes)
+## Phase 2: Foundational (Prerrequisitos bloqueantes) — [Issue #253](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/253)
 
 **Purpose**: Extensiones de entidades JPA y tipos TypeScript que son base para todas las User Stories. Debe completarse antes de iniciar cualquier fase US.
 
@@ -43,7 +45,7 @@
 
 ---
 
-## Phase 3: User Story 1 — Definir umbral de stock crítico individual (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 — Definir umbral de stock crítico individual (Priority: P1) 🎯 MVP — [Issue #254](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/254)
 
 **Goal**: El administrador puede asignar y modificar un umbral numérico entero `>= 0` individual por ingrediente en el módulo de inventario. Chef queda bloqueado. (ADM-4.1.3, FR-001..FR-003, FR-017, INV-1, INV-2)
 
@@ -72,7 +74,7 @@
 
 ---
 
-## Phase 4: User Story 2 — Visualizar alertas de reabastecimiento en inventario (Priority: P1)
+## Phase 4: User Story 2 — Visualizar alertas de reabastecimiento en inventario (Priority: P1) — [Issue #255](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/255)
 
 **Goal**: Al consultar el módulo de inventario, el administrador ve resaltados visualmente (con insignia "⚠️ Stock crítico") todos los ingredientes cuya cantidad disponible sea estrictamente menor a su umbral crítico. Incluye filtro rápido `criticalOnly`. La alerta es exclusivamente visual (cero correos/SMS/push). (ADM-4.1.4, FR-004..FR-010, FR-020, FR-021, INV-3..INV-7, INV-14, INV-17)
 
@@ -101,7 +103,7 @@
 
 ---
 
-## Phase 5: User Story 3 — Pausa manual de platos por el chef durante el servicio (Priority: P1)
+## Phase 5: User Story 3 — Pausa manual de platos por el chef durante el servicio (Priority: P1) — [Issue #256](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/256)
 
 **Goal**: El chef puede pausar/despausar individualmente cada plato mediante un toggle en su panel de cocina. Los platos pausados se ocultan del catálogo del comensal en `<= 3 s`. El carrito preserva platos pausados con advertencia y bloqueo de checkout. El modal de detalle abierto se deshabilita reactivamente sin cerrarse. El toggle es siempre operable por el chef (incluso con plato sin stock o desactivado). Las tres causas de indisponibilidad son independientes. (CHF-2.2.5, FR-011..FR-016, FR-018..FR-019, FR-022..FR-023, INV-8..INV-13, INV-15..INV-16, INV-18..INV-19)
 
@@ -154,7 +156,7 @@
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Phase 6: Polish & Cross-Cutting Concerns — [Issue #257](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/257)
 
 **Purpose**: Refinamientos de calidad que afectan a múltiples User Stories: validación de contratos OpenAPI, E2E quickstart y auditoría de invariantes.
 
