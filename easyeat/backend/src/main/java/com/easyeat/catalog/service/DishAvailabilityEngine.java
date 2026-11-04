@@ -167,7 +167,7 @@ public class DishAvailabilityEngine {
 
         Map<UUID, Boolean> map = new LinkedHashMap<>();
         for (Dish dish : publishedDishes) {
-            boolean available = isDishAvailable(dish.getId(), tenantId);
+            boolean available = !Boolean.TRUE.equals(dish.getPausedByChef()) && isDishAvailable(dish.getId(), tenantId);
             map.put(dish.getId(), available);
         }
 
