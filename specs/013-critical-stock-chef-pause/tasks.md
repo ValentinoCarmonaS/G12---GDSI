@@ -186,7 +186,7 @@
 - [X] T069 Ejecutar el escenario E2E completo del `specs/013-critical-stock-chef-pause/quickstart.md` sobre entorno local con la migración V17 aplicada y validar los 7 escenarios prácticos descritos
 - [X] T070 [P] Revisar la matriz de trazabilidad `plan.md §12` para confirmar que el 100% de los 23 FRs, 19 INVs, 25 ECs y 15 SCs tienen al menos una tarea asignada en este `tasks.md`
 - [X] T071 Ejecutar la suite de tests del backend (`./mvnw test` desde `easyeat/backend/`) y confirmar que todos los tests de la feature 013 pasan (cero regresiones en tests preexistentes)
-- [ ] T072 [P] Ejecutar la suite de tests del frontend (`npm run test` desde `easyeat/frontend/`) y confirmar que todos los tests RTL de la feature 013 pasan (cero regresiones)
+- [X] T072 [P] Ejecutar la suite de tests del frontend (`npm run test` desde `easyeat/frontend/`) y confirmar que todos los tests RTL de la feature 013 pasan (cero regresiones)
 
 ---
 
