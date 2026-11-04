@@ -41,6 +41,7 @@ public class IngredientService {
                 request.unitOfMeasure(),
                 cost
         );
+        ingredient.setCriticalStockThreshold(request.criticalStockThreshold());
         Ingredient saved = ingredientRepository.save(ingredient);
         return toResponse(saved);
     }
@@ -85,6 +86,7 @@ public class IngredientService {
         if (request.unitPurchaseCost() != null) {
             ingredient.setUnitPurchaseCost(request.unitPurchaseCost());
         }
+        ingredient.setCriticalStockThreshold(request.criticalStockThreshold());
 
         Ingredient updated = ingredientRepository.save(ingredient);
         return toResponse(updated);
@@ -158,6 +160,8 @@ public class IngredientService {
                 ingredient.getUnitPurchaseCost(),
                 ingredient.getStatus(),
                 ingredient.getCurrentStock(),
+                ingredient.getCriticalStockThreshold(),
+                ingredient.isCritical(),
                 ingredient.getCreatedAt(),
                 ingredient.getUpdatedAt()
         );
