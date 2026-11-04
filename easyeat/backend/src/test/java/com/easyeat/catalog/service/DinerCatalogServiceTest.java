@@ -330,4 +330,65 @@ class DinerCatalogServiceTest {
             assertThat(response.getEstablishment().getNextOpeningSchedule()).contains("04:00");
         }
     }
+
+    @Nested
+    @DisplayName("Critical Stock Non-Interference Tests (EC-010, FR-009, INV-6)")
+    class CriticalStockNonInterferenceTests {
+
+        @Test
+        @DisplayName("EC-010, FR-009: testThresholdChangeDoesNotAffectDiner - Modifying critical stock threshold does not alter diner catalog dish visibility or availability")
+        void testThresholdChangeDoesNotAffectDiner() {
+            // T026: In strict TDD Red phase, asserts criticalOnly parameter support in IngredientService
+            // and verifies that modifying threshold has no effect on diner catalog visibility or availability.
+            boolean hasCriticalOnlySupport = Arrays.stream(com.easyeat.inventory.service.IngredientService.class.getMethods())
+                    .filter(m -> "listIngredients".equals(m.getName()))
+                    .anyMatch(m -> m.getParameterCount() >= 3);
+
+            if (!hasCriticalOnlySupport) {
+                org.junit.jupiter.api.Assertions.fail("IngredientService.listIngredients must accept Boolean criticalOnly parameter (TDD Red: T029 pending)");
+            }
+
+            Establishment openEst = new Establishment(tenantId, "Restaurante Central", EstablishmentStatus.ACTIVE,
+                    LocalTime.of(0, 0), LocalTime.of(23, 59, 59), "America/Argentina/Buenos_Aires");
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(openEst));
+
+            Dish dish = CatalogTestFixtures.catalogDishBuilder()
+                    .tenantId(tenantId)
+                    .name("Plato Especial")
+                    .category(DishCategory.PLATOS_PRINCIPALES)
+                    .status(DishStatus.PUBLISHED)
+                    .build();
+
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+                    .thenReturn(List.of(dish));
+
+            UUID ingId = UUID.randomUUID();
+            DishRecipeIngredient recipeLine = CatalogTestFixtures.createRecipeIngredientLine(dish.getId(), ingId, BigDecimal.valueOf(1.000));
+            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId())).thenReturn(List.of(recipeLine));
+
+            Ingredient ingredient = new Ingredient();
+            ingredient.setName("Queso Azul");
+            ingredient.setCriticalStockThreshold(2);
+            ingredient.setCurrentStock(new BigDecimal("5.0000"));
+
+            when(ingredientRepository.findByIdAndTenantId(ingId, tenantId)).thenReturn(Optional.of(ingredient));
+            when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
+                    .thenReturn(List.of(
+                            new EnrichedDishResponse(dish.getId(), tenantId, dish.getName(), null, dish.getPrice(), true, true, List.of())
+                    ));
+
+            DinerCatalogResponse responseBefore = dinerCatalogService.getCatalog(tenantId, mockUser);
+            assertThat(responseBefore.getCategories().get(0).getDishes()).hasSize(1);
+            assertThat(responseBefore.getCategories().get(0).getDishes().get(0).getIsAvailable()).isTrue();
+
+            // Admin changes threshold to 20 (stock 5 < 20 -> now critical)
+            ingredient.setCriticalStockThreshold(20);
+
+            DinerCatalogResponse responseAfter = dinerCatalogService.getCatalog(tenantId, mockUser);
+            assertThat(responseAfter.getCategories().get(0).getDishes()).hasSize(1);
+            assertThat(responseAfter.getCategories().get(0).getDishes().get(0).getIsAvailable())
+                    .as("Diner catalog dish must remain visible and available despite ingredient entering critical stock (EC-010, FR-009)")
+                    .isTrue();
+        }
+    }
 }
