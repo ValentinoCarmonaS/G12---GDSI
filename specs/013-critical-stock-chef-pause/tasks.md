@@ -60,7 +60,7 @@
 
 ### Implementación — User Story 1
 
-- [ ] T014 [US1] Extender el DTO `easyeat/backend/src/main/java/com/easyeat/inventory/dto/CreateIngredientRequest.java` añadiendo el campo `@Min(0) Integer criticalStockThreshold` con validación Jakarta `@Min(0)` y mensaje de error explícito (FR-001, FR-002, INV-2)
+- [X] T014 [US1] Extender el DTO `easyeat/backend/src/main/java/com/easyeat/inventory/dto/CreateIngredientRequest.java` añadiendo el campo `@Min(0) Integer criticalStockThreshold` con validación Jakarta `@Min(0)` y mensaje de error explícito (FR-001, FR-002, INV-2)
 - [ ] T015 [US1] Extender el DTO `easyeat/backend/src/main/java/com/easyeat/inventory/dto/UpdateIngredientRequest.java` añadiendo el campo `@Min(0) Integer criticalStockThreshold` con la misma validación (FR-001, FR-002)
 - [ ] T016 [US1] Extender el DTO `easyeat/backend/src/main/java/com/easyeat/inventory/dto/AdminIngredientDetailResponse.java` añadiendo los campos `Integer criticalStockThreshold` y `boolean isCritical` para exponer el umbral y el estado calculado al frontend (FR-004, D-002)
 - [ ] T017 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/inventory/service/IngredientService.java` para leer y persistir `criticalStockThreshold` al crear y actualizar ingredientes, y para mapear `isCritical()` desde la entidad al DTO de respuesta (FR-001, FR-003, FR-010, INV-14)
