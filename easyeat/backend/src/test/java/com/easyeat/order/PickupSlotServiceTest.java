@@ -3,6 +3,10 @@ package com.easyeat.order;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.domain.EstablishmentStatus;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.operations.domain.EstablishmentSlotCapacity;
+import com.easyeat.operations.domain.TimeSlot;
+import com.easyeat.operations.repository.OperatingScheduleRepository;
+import com.easyeat.operations.repository.SlotCapacityRepository;
 import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.dto.PickupSlotCatalogResponse;
 import com.easyeat.order.dto.TimeSlotAvailability;
@@ -37,6 +41,12 @@ class PickupSlotServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
+
+    @Mock
+    private SlotCapacityRepository slotCapacityRepository;
+
+    @Mock
+    private OperatingScheduleRepository operatingScheduleRepository;
 
     @Mock
     private Clock clock;
@@ -186,6 +196,103 @@ class PickupSlotServiceTest {
                             .as("Slot starting at " + slot.getStartTime() + " must be selectable")
                             .isTrue();
                 }
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("Spec 010 Operations Slot Capacity Hierarchy")
+    class OperationsCapacityHierarchyTests {
+
+        @Test
+        @DisplayName("Franja con maxCapacity = 0 en SlotCapacity -> verifica SOLD_OUT y no seleccionable")
+        void shouldMarkSlotAsSoldOutWhenConfiguredWithZeroCapacity() {
+            when(clock.instant()).thenReturn(fixedInstant);
+            when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate targetDate = LocalDate.of(2026, 11, 3);
+            LocalTime zeroSlotTime = LocalTime.of(13, 0);
+
+            EstablishmentSlotCapacity zeroSlot = new EstablishmentSlotCapacity(
+                    establishmentId,
+                    new TimeSlot(targetDate, zeroSlotTime),
+                    0
+            );
+
+            when(slotCapacityRepository.findByEstablishmentIdAndSlotDateBetweenOrderBySlotDateAscStartTimeAsc(
+                    eq(establishmentId), eq(targetDate), eq(targetDate)))
+                    .thenReturn(List.of(zeroSlot));
+
+            PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, targetDate);
+
+            TimeSlotAvailability slot = response.getSlots().stream()
+                    .filter(s -> s.getStartTime().equals(zeroSlotTime))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertThat(slot.getMaxCapacity()).isEqualTo(0);
+            assertThat(slot.getStatus()).isEqualTo("SOLD_OUT");
+            assertThat(slot.isSelectable()).isFalse();
+            assertThat(slot.getOccupancyPercentage()).isEqualTo(100.0);
+        }
+
+        @Test
+        @DisplayName("Franja con maxCapacity = 5 y 4 pedidos en orders -> verifica badge HIGH_DEMAND (>=80%)")
+        void shouldMarkSlotAsHighDemandWhenFiveCapacityAndFourOrders() {
+            when(clock.instant()).thenReturn(fixedInstant);
+            when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate targetDate = LocalDate.of(2026, 11, 3);
+            LocalTime slotTime = LocalTime.of(13, 15);
+
+            EstablishmentSlotCapacity capacityRecord = new EstablishmentSlotCapacity(
+                    establishmentId,
+                    new TimeSlot(targetDate, slotTime),
+                    5
+            );
+
+            when(slotCapacityRepository.findByEstablishmentIdAndSlotDateBetweenOrderBySlotDateAscStartTimeAsc(
+                    eq(establishmentId), eq(targetDate), eq(targetDate)))
+                    .thenReturn(List.of(capacityRecord));
+
+            when(orderRepository.countActiveOrdersBySlot(any(), any(), any(), any()))
+                    .thenAnswer(invocation -> {
+                        LocalTime time = invocation.getArgument(2);
+                        return time.equals(slotTime) ? 4L : 0L;
+                    });
+
+            PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, targetDate);
+
+            TimeSlotAvailability slot = response.getSlots().stream()
+                    .filter(s -> s.getStartTime().equals(slotTime))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertThat(slot.getMaxCapacity()).isEqualTo(5);
+            assertThat(slot.getBookedCount()).isEqualTo(4L);
+            assertThat(slot.getOccupancyPercentage()).isEqualTo(80.0);
+            assertThat(slot.getStatus()).isEqualTo("HIGH_DEMAND");
+            assertThat(slot.isSelectable()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Franja sin registro en SlotCapacity -> verifica fallback a 10 cupos")
+        void shouldFallbackToEstablishmentDefaultCapacityWhenNoSlotCapacityRecord() {
+            when(clock.instant()).thenReturn(fixedInstant);
+            when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate targetDate = LocalDate.of(2026, 11, 3);
+            when(slotCapacityRepository.findByEstablishmentIdAndSlotDateBetweenOrderBySlotDateAscStartTimeAsc(
+                    eq(establishmentId), eq(targetDate), eq(targetDate)))
+                    .thenReturn(List.of());
+
+            PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, targetDate);
+
+            // Every slot should have fallback maxCapacity = 10
+            for (TimeSlotAvailability slot : response.getSlots()) {
+                assertThat(slot.getMaxCapacity()).isEqualTo(10);
+                assertThat(slot.getStatus()).isEqualTo("AVAILABLE");
+                assertThat(slot.isSelectable()).isTrue();
             }
         }
     }

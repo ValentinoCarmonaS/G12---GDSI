@@ -9,6 +9,7 @@ import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.domain.EstablishmentStatus;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.operations.repository.SlotCapacityRepository;
 import com.easyeat.order.repository.OrderItemRepository;
 import com.easyeat.order.repository.OrderRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -68,6 +69,9 @@ public abstract class BaseIntegrationTest {
 
     @Autowired
     protected UserRepository userRepository;
+
+    @Autowired
+    protected SlotCapacityRepository slotCapacityRepository;
 
     protected Establishment createTestEstablishment(String name) {
         Establishment establishment = new Establishment(

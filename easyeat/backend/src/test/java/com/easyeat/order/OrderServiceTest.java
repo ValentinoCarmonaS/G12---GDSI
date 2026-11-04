@@ -6,6 +6,9 @@ import com.easyeat.catalog.domain.EstablishmentStatus;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.dish.domain.DishStatus;
+import com.easyeat.operations.domain.EstablishmentSlotCapacity;
+import com.easyeat.operations.domain.TimeSlot;
+import com.easyeat.operations.repository.SlotCapacityRepository;
 import com.easyeat.order.domain.FulfillmentMode;
 import com.easyeat.order.domain.Order;
 import com.easyeat.order.domain.OrderStatus;
@@ -59,6 +62,9 @@ class OrderServiceTest {
 
     @Mock
     private DishRepository dishRepository;
+
+    @Mock
+    private SlotCapacityRepository slotCapacityRepository;
 
     @InjectMocks
     private OrderService orderService;
@@ -236,6 +242,107 @@ class OrderServiceTest {
             LocalTime slotStart = LocalTime.of(13, 0);
 
             // Mock that slot already has 10 booked orders (maxCapacity = 10)
+            when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(targetDate), eq(slotStart), any()))
+                    .thenReturn(10L);
+
+            CreateOrderRequest request = new CreateOrderRequest(
+                    establishmentId,
+                    FulfillmentMode.SCHEDULED,
+                    targetDate,
+                    slotStart,
+                    slotStart.plusMinutes(15),
+                    List.of(new CreateOrderItemRequest(dishId, 1))
+            );
+
+            assertThatThrownBy(() -> orderService.createOrder(userId, request))
+                    .isInstanceOf(SlotCapacityExceededException.class)
+                    .hasMessageContaining("acaba de agotarse");
+
+            verify(orderRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Intento de compra sobre slot con maxCapacity = 0 arroja SlotCapacityExceededException")
+        void rejectsWhenSlotCapacityIsConfiguredZero() {
+            when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
+            when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate targetDate = LocalDate.now().plusDays(1);
+            LocalTime slotStart = LocalTime.of(13, 0);
+
+            when(slotCapacityRepository.findByEstablishmentIdAndSlotDateAndStartTime(establishmentId, targetDate, slotStart))
+                    .thenReturn(Optional.of(new EstablishmentSlotCapacity(establishmentId, new TimeSlot(targetDate, slotStart), 0)));
+
+            when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(targetDate), eq(slotStart), any()))
+                    .thenReturn(0L);
+
+            CreateOrderRequest request = new CreateOrderRequest(
+                    establishmentId,
+                    FulfillmentMode.SCHEDULED,
+                    targetDate,
+                    slotStart,
+                    slotStart.plusMinutes(15),
+                    List.of(new CreateOrderItemRequest(dishId, 1))
+            );
+
+            assertThatThrownBy(() -> orderService.createOrder(userId, request))
+                    .isInstanceOf(SlotCapacityExceededException.class)
+                    .hasMessageContaining("acaba de agotarse");
+
+            verify(orderRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Allows order creation when configured maxCapacity is 5 and 4 orders booked")
+        void allowsOrderWhenCapacityFiveAndFourBooked() {
+            when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
+            when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate targetDate = LocalDate.now().plusDays(1);
+            LocalTime slotStart = LocalTime.of(13, 0);
+
+            when(slotCapacityRepository.findByEstablishmentIdAndSlotDateAndStartTime(establishmentId, targetDate, slotStart))
+                    .thenReturn(Optional.of(new EstablishmentSlotCapacity(establishmentId, new TimeSlot(targetDate, slotStart), 5)));
+
+            when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(targetDate), eq(slotStart), any()))
+                    .thenReturn(4L);
+
+            when(dishRepository.findByIdIn(any())).thenReturn(List.of(dish));
+            when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+                Order o = invocation.getArgument(0);
+                o.setId(UUID.randomUUID());
+                return o;
+            });
+
+            CreateOrderRequest request = new CreateOrderRequest(
+                    establishmentId,
+                    FulfillmentMode.SCHEDULED,
+                    targetDate,
+                    slotStart,
+                    slotStart.plusMinutes(15),
+                    List.of(new CreateOrderItemRequest(dishId, 1))
+            );
+
+            OrderCreatedResponse response = orderService.createOrder(userId, request);
+
+            assertThat(response).isNotNull();
+            assertThat(response.getStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+            verify(orderRepository).save(any(Order.class));
+        }
+
+        @Test
+        @DisplayName("Uses fallback capacity of 10 when no SlotCapacity record exists")
+        void usesFallbackCapacityWhenNoRecordExists() {
+            when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
+            when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate targetDate = LocalDate.now().plusDays(1);
+            LocalTime slotStart = LocalTime.of(13, 0);
+
+            when(slotCapacityRepository.findByEstablishmentIdAndSlotDateAndStartTime(establishmentId, targetDate, slotStart))
+                    .thenReturn(Optional.empty());
+
+            // 10 booked orders out of fallback 10 capacity
             when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(targetDate), eq(slotStart), any()))
                     .thenReturn(10L);
 

@@ -4,6 +4,8 @@ import com.easyeat.catalog.domain.Dish;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.operations.domain.EstablishmentSlotCapacity;
+import com.easyeat.operations.repository.SlotCapacityRepository;
 import com.easyeat.order.domain.FulfillmentMode;
 import com.easyeat.order.domain.Order;
 import com.easyeat.order.domain.OrderItem;
@@ -44,23 +46,33 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final EstablishmentRepository establishmentRepository;
     private final DishRepository dishRepository;
+    private final SlotCapacityRepository slotCapacityRepository;
     private final Clock clock;
 
     @Autowired
     public OrderService(OrderRepository orderRepository,
                         EstablishmentRepository establishmentRepository,
                         DishRepository dishRepository,
+                        @Autowired(required = false) SlotCapacityRepository slotCapacityRepository,
                         @Autowired(required = false) Clock clock) {
         this.orderRepository = orderRepository;
         this.establishmentRepository = establishmentRepository;
         this.dishRepository = dishRepository;
+        this.slotCapacityRepository = slotCapacityRepository;
         this.clock = (clock != null) ? clock : Clock.systemDefaultZone();
     }
 
     public OrderService(OrderRepository orderRepository,
                         EstablishmentRepository establishmentRepository,
+                        DishRepository dishRepository,
+                        Clock clock) {
+        this(orderRepository, establishmentRepository, dishRepository, null, clock);
+    }
+
+    public OrderService(OrderRepository orderRepository,
+                        EstablishmentRepository establishmentRepository,
                         DishRepository dishRepository) {
-        this(orderRepository, establishmentRepository, dishRepository, Clock.systemDefaultZone());
+        this(orderRepository, establishmentRepository, dishRepository, null, Clock.systemDefaultZone());
     }
 
     @Transactional
@@ -110,8 +122,9 @@ public class OrderService {
 
             LocalTime ongoingSlot = establishment.calculateCurrentOngoingSlot(nowTime);
             if (ongoingSlot != null) {
+                int slotMaxCapacity = resolveSlotCapacity(establishment.getId(), today, ongoingSlot, maxCapacity);
                 long ongoingBooked = orderRepository.countActiveOrdersBySlot(establishment.getId(), today, ongoingSlot, nowInstant);
-                if (ongoingBooked >= maxCapacity) {
+                if (slotMaxCapacity == 0 || ongoingBooked >= slotMaxCapacity) {
                     throw new SlotCapacityExceededException("Cocina al límite de capacidad actual — Seleccioná una reserva programada.");
                 }
             }
@@ -130,9 +143,10 @@ public class OrderService {
                 }
             }
 
-            // Zero overbooking capacity check (FR-016, FR-017)
+            // Zero overbooking capacity check (FR-016, FR-017, FR-032)
+            int slotMaxCapacity = resolveSlotCapacity(establishment.getId(), pickupDate, timeSlotStart, maxCapacity);
             long currentBooked = orderRepository.countActiveOrdersBySlot(establishment.getId(), pickupDate, timeSlotStart, nowInstant);
-            if (currentBooked >= maxCapacity) {
+            if (slotMaxCapacity == 0 || currentBooked >= slotMaxCapacity) {
                 throw new SlotCapacityExceededException("La franja horaria seleccionada acaba de agotarse. Por favor, seleccioná una nueva franja para continuar.");
             }
         }
@@ -281,5 +295,14 @@ public class OrderService {
         Order saved = orderRepository.save(order);
 
         return new OrderSummaryResponse(saved.getId(), saved.getStatus(), saved.getUpdatedAt());
+    }
+
+    private int resolveSlotCapacity(UUID establishmentId, LocalDate date, LocalTime startTime, int defaultCapacity) {
+        if (slotCapacityRepository != null) {
+            return slotCapacityRepository.findByEstablishmentIdAndSlotDateAndStartTime(establishmentId, date, startTime)
+                    .map(EstablishmentSlotCapacity::getMaxCapacity)
+                    .orElse(defaultCapacity);
+        }
+        return defaultCapacity;
     }
 }
