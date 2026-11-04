@@ -149,7 +149,7 @@
 #### Backend
 
 - [X] T046 [US3] Crear el DTO `easyeat/backend/src/main/java/com/easyeat/dish/dto/ToggleChefPauseRequest.java` con el campo `boolean paused` (payload del endpoint PATCH, D-005)
-- [ ] T047 [US3] Crear el DTO `easyeat/backend/src/main/java/com/easyeat/dish/dto/DishChefPauseResponse.java` con los campos `UUID dishId`, `boolean pausedByChef`, `Instant updatedAt` (respuesta del endpoint PATCH, plan.md §5.2)
+- [X] T047 [US3] Crear el DTO `easyeat/backend/src/main/java/com/easyeat/dish/dto/DishChefPauseResponse.java` con los campos `UUID dishId`, `boolean pausedByChef`, `Instant updatedAt` (respuesta del endpoint PATCH, plan.md §5.2)
 - [ ] T048 [US3] Crear el DTO `easyeat/backend/src/main/java/com/easyeat/dish/dto/ChefDishesOperationalStatusResponse.java` con la lista de items que incluye `dishId`, `pausedByChef`, `sinStock`, `isActive` (respuesta de GET operational-status con ETag, D-004, INV-10)
 - [ ] T049 [US3] Crear el DTO `easyeat/backend/src/main/java/com/easyeat/catalog/dto/DishAvailabilityDetailsResponse.java` con los campos `dishId`, `sinStock`, `pausedByChef`, `desactivacionAdmin` para exponer las tres causas de forma separada (INV-10, FR-015, D-004)
 - [ ] T050 [US3] Actualizar `easyeat/backend/src/main/java/com/easyeat/catalog/repository/DishRepository.java` para incluir `paused_by_chef` en las consultas de catálogo del comensal: platos visibles = `status=PUBLISHED AND is_active=true AND paused_by_chef=false` apoyado en el índice `idx_dishes_catalog_visibility` (INV-8, FR-012)
