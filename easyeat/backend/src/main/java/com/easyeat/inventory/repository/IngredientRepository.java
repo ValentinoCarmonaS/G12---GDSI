@@ -27,14 +27,30 @@ public interface IngredientRepository extends JpaRepository<Ingredient, UUID> {
 
     List<Ingredient> findAllByTenantIdOrderByCreatedAtDesc(UUID tenantId);
 
+    default List<Ingredient> findAllByTenantIdAndFilters(UUID tenantId, IngredientCategory category, IngredientStatus status) {
+        return findAllByTenantIdAndFilters(tenantId, category, status, false);
+    }
+
     @Query("SELECT i FROM Ingredient i WHERE i.tenantId = :tenantId " +
             "AND (:category IS NULL OR i.category = :category) " +
             "AND (:status IS NULL OR i.status = :status) " +
+            "AND (:criticalOnly IS NULL OR :criticalOnly = false OR " +
+            "     (i.status = com.easyeat.inventory.dto.IngredientStatus.ACTIVE AND " +
+            "      i.criticalStockThreshold IS NOT NULL AND " +
+            "      i.currentStock < i.criticalStockThreshold)) " +
             "ORDER BY i.name ASC")
     List<Ingredient> findAllByTenantIdAndFilters(
             @Param("tenantId") UUID tenantId,
             @Param("category") IngredientCategory category,
-            @Param("status") IngredientStatus status);
+            @Param("status") IngredientStatus status,
+            @Param("criticalOnly") Boolean criticalOnly);
+
+    @Query("SELECT i FROM Ingredient i WHERE i.tenantId = :tenantId " +
+            "AND i.status = com.easyeat.inventory.dto.IngredientStatus.ACTIVE " +
+            "AND i.criticalStockThreshold IS NOT NULL " +
+            "AND i.currentStock < i.criticalStockThreshold " +
+            "ORDER BY i.name ASC")
+    List<Ingredient> findCriticalIngredients(@Param("tenantId") UUID tenantId);
 
     boolean existsByTenantIdAndNameIgnoreCase(UUID tenantId, String name);
 
