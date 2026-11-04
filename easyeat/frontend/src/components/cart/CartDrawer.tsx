@@ -22,11 +22,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     totalAmount,
     totalCount,
     hasConflictingItems,
+    hasPausedItems,
   } = useCart();
 
   const hasInsufficientStock = items.some(
     (item) => item.availableStock !== undefined && item.quantity > item.availableStock
   );
+
+  const isCheckoutDisabled = hasInsufficientStock || hasPausedItems;
 
   if (!isOpen) {
     return null;
@@ -129,6 +132,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </span>
               </div>
 
+              {hasPausedItems && (
+                <div
+                  role="alert"
+                  className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-lg text-xs font-medium"
+                >
+                  Tu orden contiene platos pausados por cocina. Debés retirarlos o aguardar su reactivación para continuar.
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -141,10 +153,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <button
                   type="button"
                   onClick={onCheckout}
-                  disabled={hasInsufficientStock}
+                  disabled={isCheckoutDisabled}
                   data-testid="cart-checkout-button"
                   className={`flex-1 py-2.5 px-4 text-white text-sm font-bold rounded-lg shadow-sm transition-colors text-center ${
-                    hasInsufficientStock
+                    isCheckoutDisabled
                       ? 'bg-gray-400 cursor-not-allowed opacity-50'
                       : 'bg-green-600 hover:bg-green-700 cursor-pointer'
                   }`}
