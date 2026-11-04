@@ -1,10 +1,13 @@
 package com.easyeat.operations.service;
 
+import com.easyeat.catalog.exception.EstablishmentNotFoundException;
+import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
 import com.easyeat.operations.domain.ScheduleChange;
 import com.easyeat.operations.exception.InvalidScheduleException;
 import com.easyeat.operations.exception.OperatingConfigConflictException;
 import com.easyeat.operations.repository.OperatingScheduleRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,9 +25,12 @@ import java.util.UUID;
 public class OperatingScheduleService {
 
     private final OperatingScheduleRepository scheduleRepository;
+    private final EstablishmentRepository establishmentRepository;
 
-    public OperatingScheduleService(OperatingScheduleRepository scheduleRepository) {
+    public OperatingScheduleService(OperatingScheduleRepository scheduleRepository,
+                                    EstablishmentRepository establishmentRepository) {
         this.scheduleRepository = scheduleRepository;
+        this.establishmentRepository = establishmentRepository;
     }
 
     @Transactional(readOnly = true)
@@ -39,6 +45,9 @@ public class OperatingScheduleService {
      */
     @Transactional
     public List<EstablishmentOperatingSchedule> saveWeek(UUID establishmentId, List<ScheduleChange> changes) {
+        if (!establishmentRepository.existsById(establishmentId)) {
+            throw new EstablishmentNotFoundException(establishmentId);
+        }
         List<EstablishmentOperatingSchedule> toSave = new ArrayList<>();
         for (ScheduleChange change : changes) {
             if (!change.closed() && !change.openingTime().isBefore(change.closingTime())) {
@@ -63,7 +72,7 @@ public class OperatingScheduleService {
         }
         try {
             return scheduleRepository.saveAllAndFlush(toSave);
-        } catch (ObjectOptimisticLockingFailureException e) {
+        } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException e) {
             throw new OperatingConfigConflictException();
         }
     }

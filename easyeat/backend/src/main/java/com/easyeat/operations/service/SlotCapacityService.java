@@ -1,5 +1,7 @@
 package com.easyeat.operations.service;
 
+import com.easyeat.catalog.exception.EstablishmentNotFoundException;
+import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
 import com.easyeat.operations.domain.EstablishmentSlotCapacity;
 import com.easyeat.operations.domain.SlotCapacityChange;
@@ -9,6 +11,7 @@ import com.easyeat.operations.exception.OperatingConfigConflictException;
 import com.easyeat.operations.exception.SlotSoldOutException;
 import com.easyeat.operations.repository.OperatingScheduleRepository;
 import com.easyeat.operations.repository.SlotCapacityRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,11 +41,14 @@ public class SlotCapacityService {
 
     private final SlotCapacityRepository capacityRepository;
     private final OperatingScheduleRepository scheduleRepository;
+    private final EstablishmentRepository establishmentRepository;
 
     public SlotCapacityService(SlotCapacityRepository capacityRepository,
-                               OperatingScheduleRepository scheduleRepository) {
+                               OperatingScheduleRepository scheduleRepository,
+                               EstablishmentRepository establishmentRepository) {
         this.capacityRepository = capacityRepository;
         this.scheduleRepository = scheduleRepository;
+        this.establishmentRepository = establishmentRepository;
     }
 
     /**
@@ -67,6 +73,9 @@ public class SlotCapacityService {
     /** Upserts the given slots atomically: if any is invalid or stale, none is saved. */
     @Transactional
     public List<EstablishmentSlotCapacity> saveCapacities(UUID establishmentId, List<SlotCapacityChange> changes) {
+        if (!establishmentRepository.existsById(establishmentId)) {
+            throw new EstablishmentNotFoundException(establishmentId);
+        }
         for (SlotCapacityChange change : changes) {
             if (change.maxCapacity() < 0) {
                 throw InvalidCapacityException.negative();
@@ -97,7 +106,7 @@ public class SlotCapacityService {
         }
         try {
             return capacityRepository.saveAllAndFlush(toSave);
-        } catch (ObjectOptimisticLockingFailureException e) {
+        } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException e) {
             throw new OperatingConfigConflictException();
         }
     }

@@ -20,10 +20,7 @@ public class PickupSlotController {
         this.pickupSlotService = pickupSlotService;
     }
 
-    @GetMapping({
-            "/{establishmentId}/pickup-slots",
-            "/{establishmentId}/time-slots"
-    })
+    @GetMapping("/{establishmentId}/pickup-slots")
     @PreAuthorize("hasRole('COMENSAL')")
     public ResponseEntity<PickupSlotCatalogResponse> getPickupSlots(
             @PathVariable UUID establishmentId,

@@ -1,14 +1,18 @@
 package com.easyeat.operations.service;
 
+import com.easyeat.catalog.exception.EstablishmentNotFoundException;
+import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
 import com.easyeat.operations.domain.ScheduleChange;
 import com.easyeat.operations.exception.OperatingConfigConflictException;
 import com.easyeat.operations.repository.OperatingScheduleRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -21,6 +25,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +38,38 @@ class OperatingScheduleServiceTest {
 
     @Mock
     private OperatingScheduleRepository repository;
+
+    @Mock
+    private EstablishmentRepository establishments;
+
+    @BeforeEach
+    void establishmentExists() {
+        lenient().when(establishments.existsById(ID)).thenReturn(true);
+    }
+
+    @Test
+    @DisplayName("saving for an establishment that does not exist is a 404 and nothing is written")
+    void rejectsMissingEstablishment() {
+        UUID missing = UUID.randomUUID();
+        when(establishments.existsById(missing)).thenReturn(false);
+
+        assertThatThrownBy(() -> new OperatingScheduleService(repository, establishments)
+                .saveWeek(missing, List.of(change(null))))
+                .isInstanceOf(EstablishmentNotFoundException.class);
+        verify(repository, never()).saveAllAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("EC-012: two admins creating the same day, the second hits the unique constraint")
+    void mapsUniqueViolationOnCreate() {
+        when(repository.findByEstablishmentIdAndDayOfWeek(ID, DayOfWeek.MONDAY)).thenReturn(Optional.empty());
+        when(repository.saveAllAndFlush(any()))
+                .thenThrow(new DataIntegrityViolationException("uq_establishment_operating_schedule"));
+
+        assertThatThrownBy(() -> new OperatingScheduleService(repository, establishments)
+                .saveWeek(ID, List.of(change(null))))
+                .isInstanceOf(OperatingConfigConflictException.class);
+    }
 
     private EstablishmentOperatingSchedule existing(long version) {
         var schedule = new EstablishmentOperatingSchedule(ID, DayOfWeek.MONDAY, LocalTime.of(11, 0), LocalTime.of(16, 0), false);
@@ -51,7 +88,7 @@ class OperatingScheduleServiceTest {
         when(repository.findByEstablishmentIdAndDayOfWeek(ID, DayOfWeek.MONDAY)).thenReturn(Optional.of(schedule));
         when(repository.saveAllAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var saved = new OperatingScheduleService(repository).saveWeek(ID, List.of(change(3L)));
+        var saved = new OperatingScheduleService(repository, establishments).saveWeek(ID, List.of(change(3L)));
 
         assertThat(saved).containsExactly(schedule);
         assertThat(schedule.getOpeningTime()).isEqualTo(LocalTime.of(12, 0));
@@ -63,7 +100,7 @@ class OperatingScheduleServiceTest {
     void failsOnStaleVersion() {
         when(repository.findByEstablishmentIdAndDayOfWeek(ID, DayOfWeek.MONDAY)).thenReturn(Optional.of(existing(4L)));
 
-        assertThatThrownBy(() -> new OperatingScheduleService(repository).saveWeek(ID, List.of(change(3L))))
+        assertThatThrownBy(() -> new OperatingScheduleService(repository, establishments).saveWeek(ID, List.of(change(3L))))
                 .isInstanceOf(OperatingConfigConflictException.class)
                 .hasMessageContaining("recargue la pantalla");
         verify(repository, never()).saveAllAndFlush(any());
@@ -74,7 +111,7 @@ class OperatingScheduleServiceTest {
     void failsWhenDayWasCreatedMeanwhile() {
         when(repository.findByEstablishmentIdAndDayOfWeek(ID, DayOfWeek.MONDAY)).thenReturn(Optional.of(existing(0L)));
 
-        assertThatThrownBy(() -> new OperatingScheduleService(repository).saveWeek(ID, List.of(change(null))))
+        assertThatThrownBy(() -> new OperatingScheduleService(repository, establishments).saveWeek(ID, List.of(change(null))))
                 .isInstanceOf(OperatingConfigConflictException.class);
     }
 
@@ -83,7 +120,7 @@ class OperatingScheduleServiceTest {
     void failsWhenVersionedDayDisappeared() {
         when(repository.findByEstablishmentIdAndDayOfWeek(ID, DayOfWeek.MONDAY)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new OperatingScheduleService(repository).saveWeek(ID, List.of(change(2L))))
+        assertThatThrownBy(() -> new OperatingScheduleService(repository, establishments).saveWeek(ID, List.of(change(2L))))
                 .isInstanceOf(OperatingConfigConflictException.class);
     }
 
@@ -94,7 +131,7 @@ class OperatingScheduleServiceTest {
         when(repository.saveAllAndFlush(any()))
                 .thenThrow(new ObjectOptimisticLockingFailureException(EstablishmentOperatingSchedule.class, ID));
 
-        assertThatThrownBy(() -> new OperatingScheduleService(repository).saveWeek(ID, List.of(change(null))))
+        assertThatThrownBy(() -> new OperatingScheduleService(repository, establishments).saveWeek(ID, List.of(change(null))))
                 .isInstanceOf(OperatingConfigConflictException.class);
     }
 
@@ -105,6 +142,6 @@ class OperatingScheduleServiceTest {
         var monday = existing(0L);
         when(repository.findByEstablishmentId(ID)).thenReturn(List.of(sunday, monday));
 
-        assertThat(new OperatingScheduleService(repository).getWeek(ID)).containsExactly(monday, sunday);
+        assertThat(new OperatingScheduleService(repository, establishments).getWeek(ID)).containsExactly(monday, sunday);
     }
 }

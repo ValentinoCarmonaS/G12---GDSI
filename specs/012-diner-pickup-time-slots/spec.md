@@ -53,7 +53,7 @@
   → **A13**: Spec 012 recibe los ítems consolidados en `CartContext` (Spec 009, derivados de las selecciones de Spec 011), revalida que cada plato pertenezca al local activo (`tenant_id`), que cuente con stock suficiente en cocina (Spec 009 FR-014a), y congela un snapshot inmutable de precios y nombres en `order_items`, preservando la consistencia contable frente a posteriores modificaciones en la carta.
 
 - **Q14: Unificación de endpoints de franjas horarias**: ¿Qué convención de ruta REST expone la disponibilidad de turnos para el comensal?  
-  → **A14**: Se adopta formalmente `GET /api/v1/establishments/{establishmentId}/pickup-slots?date=YYYY-MM-DD` como el contrato principal para comensales, proveyendo proyección completa de turnos con porcentaje de demanda, lead time y estado operativo, admitiendo `/time-slots` como alias para plena interoperabilidad con Spec 010.
+  → **A14**: Se adopta formalmente `GET /api/v1/establishments/{establishmentId}/pickup-slots?date=YYYY-MM-DD` como el contrato principal para comensales, proveyendo proyección completa de turnos con porcentaje de demanda, lead time y estado operativo, sin alias: `/time-slots` pertenece a Spec 010 y responde con otra estructura. *(Corregido el 04/11/2026: el alias original hacía ambigua la ruta frente a `DinerTimeSlotController` de Spec 010 y toda consulta a `/time-slots` respondía 409.)*
 
 ---
 
@@ -246,7 +246,7 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 - **FR-030**: Al procesar la confirmación del pedido en el checkout, el sistema DEBE verificar que ninguno de los platos contenidos en la orden se encuentre en estado de pausa manual por cocina (`paused_by_chef == true`), rechazando la creación de la orden con código de error explicativo si se detecta un plato pausado en cumplimiento de Spec 013 (FR-019).
 - **FR-031**: Al procesar la confirmación del pedido, el sistema DEBE verificar que todos los platos pertenezcan al establecimiento seleccionado (`tenant_id`) y cuenten con disponibilidad de stock suficiente en cocina, rechazando la creación de la orden si se detecta insuficiencia de inventario en consistencia con Spec 009 (FR-014a).
 - **FR-032**: Para la determinación de horarios comerciales y capacidades de franjas horarias, el sistema DEBE consumir de manera prioritaria las configuraciones registradas en el módulo de operaciones (Spec 010) si estuvieren presentes, o aplicar los valores por defecto del establecimiento (`lead_time_minutes = 30`, `max_capacity_per_slot = 10`, `opening_time`, `closing_time`) si no hubieran sido personalizados.
-- **FR-033**: El sistema DEBE exponer el endpoint de disponibilidad de turnos bajo `GET /api/v1/establishments/{establishmentId}/pickup-slots`, manteniendo plena interoperabilidad y alias con la ruta `/time-slots` de Spec 010.
+- **FR-033**: El sistema DEBE exponer el endpoint de disponibilidad de turnos bajo `GET /api/v1/establishments/{establishmentId}/pickup-slots`. La ruta `/time-slots` pertenece a Spec 010 y Spec 012 no la expone como alias.
 
 ### Invariants
 
