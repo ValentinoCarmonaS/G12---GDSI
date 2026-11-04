@@ -50,9 +50,8 @@ class DinerCatalogAvailabilityPollingTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.flyway.url", postgres::getJdbcUrl);
-        registry.add("spring.flyway.user", postgres::getUsername);
-        registry.add("spring.flyway.password", postgres::getPassword);
+        registry.add("spring.datasource.driver-class-name", postgres::getDriverClassName);
+        registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/dev");
     }
 
     @Autowired
@@ -72,13 +71,11 @@ class DinerCatalogAvailabilityPollingTest {
 
     @BeforeEach
     void setUp() {
-        tenantId = UUID.randomUUID();
-
         Establishment est = new Establishment();
-        est.setId(tenantId);
         est.setName("Resto Polling");
         est.setStatus(EstablishmentStatus.ACTIVE);
-        establishmentRepository.save(est);
+        est = establishmentRepository.save(est);
+        tenantId = est.getId();
 
         dish = new Dish();
         dish.setTenantId(tenantId);

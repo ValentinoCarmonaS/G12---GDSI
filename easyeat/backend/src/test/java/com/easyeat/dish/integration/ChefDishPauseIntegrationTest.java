@@ -42,13 +42,15 @@ class ChefDishPauseIntegrationTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.flyway.url", postgres::getJdbcUrl);
-        registry.add("spring.flyway.user", postgres::getUsername);
-        registry.add("spring.flyway.password", postgres::getPassword);
+        registry.add("spring.datasource.driver-class-name", postgres::getDriverClassName);
+        registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/dev");
     }
 
     @Autowired
     private DishRepository dishRepository;
+
+    @Autowired
+    private com.easyeat.catalog.repository.EstablishmentRepository establishmentRepository;
 
     @Autowired
     private DinerCatalogService dinerCatalogService;
@@ -59,7 +61,11 @@ class ChefDishPauseIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        tenantId = UUID.randomUUID();
+        com.easyeat.catalog.domain.Establishment est = new com.easyeat.catalog.domain.Establishment();
+        est.setName("Resto Pause Test");
+        est.setStatus(com.easyeat.catalog.domain.EstablishmentStatus.ACTIVE);
+        est = establishmentRepository.save(est);
+        tenantId = est.getId();
 
         dish1 = new Dish();
         dish1.setTenantId(tenantId);
