@@ -1,5 +1,7 @@
 package com.easyeat.operations.service;
 
+import com.easyeat.catalog.exception.EstablishmentNotFoundException;
+import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
 import com.easyeat.operations.domain.EstablishmentSlotCapacity;
 import com.easyeat.operations.domain.SlotCapacityChange;
@@ -8,11 +10,13 @@ import com.easyeat.operations.exception.OperatingConfigConflictException;
 import com.easyeat.operations.repository.OperatingScheduleRepository;
 import com.easyeat.operations.repository.SlotCapacityRepository;
 import com.easyeat.operations.service.SlotCapacityService.Row;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -26,6 +30,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,8 +48,41 @@ class SlotCapacityServiceTest {
     @Mock
     private OperatingScheduleRepository scheduleRepository;
 
+    @Mock
+    private EstablishmentRepository establishments;
+
+    @BeforeEach
+    void establishmentExists() {
+        lenient().when(establishments.existsById(ID)).thenReturn(true);
+    }
+
     private SlotCapacityService service() {
-        return new SlotCapacityService(capacityRepository, scheduleRepository);
+        return new SlotCapacityService(capacityRepository, scheduleRepository, establishments);
+    }
+
+    @Test
+    @DisplayName("saving for an establishment that does not exist is a 404 and nothing is written")
+    void rejectsMissingEstablishment() {
+        UUID missing = UUID.randomUUID();
+        when(establishments.existsById(missing)).thenReturn(false);
+
+        assertThatThrownBy(() -> service().saveCapacities(missing,
+                List.of(new SlotCapacityChange(WEDNESDAY, LocalTime.of(12, 0), 25, null))))
+                .isInstanceOf(EstablishmentNotFoundException.class);
+        verify(capacityRepository, never()).saveAllAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("EC-012: two admins creating the same slot, the second hits the unique constraint")
+    void mapsUniqueViolationOnCreate() {
+        when(capacityRepository.findByEstablishmentIdAndSlotDateAndStartTime(ID, WEDNESDAY, LocalTime.of(12, 0)))
+                .thenReturn(Optional.empty());
+        when(capacityRepository.saveAllAndFlush(any()))
+                .thenThrow(new DataIntegrityViolationException("uq_establishment_slot_capacity"));
+
+        assertThatThrownBy(() -> service().saveCapacities(ID,
+                List.of(new SlotCapacityChange(WEDNESDAY, LocalTime.of(12, 0), 25, null))))
+                .isInstanceOf(OperatingConfigConflictException.class);
     }
 
     private void openWednesday(int openingHour, int closingHour, boolean closed) {

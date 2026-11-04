@@ -53,6 +53,13 @@ import static org.mockito.Mockito.when;
 class OperatingInvariantsUnitTest {
 
     private static final UUID ESTABLISHMENT = UUID.randomUUID();
+
+    /** The unit tests below are about the schedule, capacity and payment rules, not about the establishment lookup. */
+    private static EstablishmentRepository existingEstablishments() {
+        var establishments = mock(EstablishmentRepository.class);
+        when(establishments.existsById(any())).thenReturn(true);
+        return establishments;
+    }
     private static final String BUENOS_AIRES = "America/Argentina/Buenos_Aires";
     /** Tuesday. */
     private static final LocalDate TUESDAY = LocalDate.of(2026, 11, 10);
@@ -183,7 +190,7 @@ class OperatingInvariantsUnitTest {
         @Test
         @DisplayName("INV-7: opening equal to or after closing is rejected")
         void shouldRejectOpeningEqualOrAfterClosing() {
-            var service = new OperatingScheduleService(mock(OperatingScheduleRepository.class));
+            var service = new OperatingScheduleService(mock(OperatingScheduleRepository.class), existingEstablishments());
             var equal = new ScheduleChange(DayOfWeek.MONDAY, LocalTime.of(15, 0), LocalTime.of(15, 0), false, null);
             var after = new ScheduleChange(DayOfWeek.MONDAY, LocalTime.of(17, 0), LocalTime.of(15, 0), false, null);
 
@@ -200,7 +207,7 @@ class OperatingInvariantsUnitTest {
             var repository = mock(OperatingScheduleRepository.class);
             when(repository.findByEstablishmentIdAndDayOfWeek(eq(ESTABLISHMENT), any())).thenReturn(Optional.empty());
             when(repository.saveAllAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            var service = new OperatingScheduleService(repository);
+            var service = new OperatingScheduleService(repository, existingEstablishments());
 
             var closed = new ScheduleChange(DayOfWeek.SUNDAY, LocalTime.of(0, 0), LocalTime.of(0, 0), true, null);
 
@@ -312,7 +319,7 @@ class OperatingInvariantsUnitTest {
 
         private final SlotCapacityRepository capacityRepository = mock(SlotCapacityRepository.class);
         private final OperatingScheduleRepository scheduleRepository = mock(OperatingScheduleRepository.class);
-        private final SlotCapacityService service = new SlotCapacityService(capacityRepository, scheduleRepository);
+        private final SlotCapacityService service = new SlotCapacityService(capacityRepository, scheduleRepository, existingEstablishments());
 
         private final TimeSlot noon = new TimeSlot(WEDNESDAY, LocalTime.of(12, 0));
         private final TimeSlot quarterPast = new TimeSlot(WEDNESDAY, LocalTime.of(12, 15));
@@ -462,7 +469,7 @@ class OperatingInvariantsUnitTest {
     class PaymentMethodToggles {
 
         private final PaymentMethodRepository repository = mock(PaymentMethodRepository.class);
-        private final PaymentMethodService service = new PaymentMethodService(repository);
+        private final PaymentMethodService service = new PaymentMethodService(repository, existingEstablishments());
 
         private EstablishmentPaymentMethod row(PaymentMethod method, boolean enabled, long version) {
             var payment = new EstablishmentPaymentMethod(ESTABLISHMENT, method, enabled);

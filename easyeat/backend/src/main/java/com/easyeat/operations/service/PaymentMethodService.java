@@ -1,5 +1,7 @@
 package com.easyeat.operations.service;
 
+import com.easyeat.catalog.exception.EstablishmentNotFoundException;
+import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.operations.domain.EstablishmentPaymentMethod;
 import com.easyeat.operations.domain.PaymentMethod;
 import com.easyeat.operations.exception.OperatingConfigConflictException;
@@ -30,9 +32,11 @@ public class PaymentMethodService {
     }
 
     private final PaymentMethodRepository repository;
+    private final EstablishmentRepository establishmentRepository;
 
-    public PaymentMethodService(PaymentMethodRepository repository) {
+    public PaymentMethodService(PaymentMethodRepository repository, EstablishmentRepository establishmentRepository) {
         this.repository = repository;
+        this.establishmentRepository = establishmentRepository;
     }
 
     @Transactional(readOnly = true)
@@ -66,6 +70,9 @@ public class PaymentMethodService {
 
     @Transactional
     public View toggle(UUID establishmentId, PaymentMethod paymentMethod, boolean enabled, Long expectedVersion) {
+        if (!establishmentRepository.existsById(establishmentId)) {
+            throw new EstablishmentNotFoundException(establishmentId);
+        }
         Optional<EstablishmentPaymentMethod> existing =
                 repository.findByEstablishmentIdAndPaymentMethod(establishmentId, paymentMethod);
         EstablishmentPaymentMethod row;
@@ -84,6 +91,7 @@ public class PaymentMethodService {
         try {
             return toView(repository.saveAndFlush(row));
         } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException e) {
+            // The establishment was checked above, so a constraint violation here is the EC-012 race.
             throw new OperatingConfigConflictException();
         }
     }

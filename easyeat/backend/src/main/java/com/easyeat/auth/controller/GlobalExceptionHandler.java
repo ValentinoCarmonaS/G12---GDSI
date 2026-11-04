@@ -55,11 +55,16 @@ import com.easyeat.profile.exception.DietaryTaxonomyException;
 import com.easyeat.profile.exception.EmailVerificationException;
 import com.easyeat.staff.exception.OrphanedAdminException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -618,6 +623,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setTitle("Conflicto de concurrencia");
         problem.setInstance(URI.create(request.getRequestURI()));
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    /**
+     * 500 catch-all: any error not mapped above. Logged here and answered as a ProblemDetail so it is not
+     * mistaken for an authentication failure. Authentication errors are rethrown to Spring Security.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ProblemDetail> handleUnexpected(Exception ex, HttpServletRequest request) throws Exception {
+        if (ex instanceof AuthenticationException) {
+            throw ex;
+        }
+        LOGGER.error("Unhandled error on {} {}", request.getMethod(), request.getRequestURI(), ex);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error inesperado. Intentá nuevamente más tarde.");
+        problem.setType(URI.create("https://easyeat.com/errors/internal-server-error"));
+        problem.setTitle("Internal Server Error");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(problem);
     }
 
     private static Map<String, String> fieldError(String field, String message) {
