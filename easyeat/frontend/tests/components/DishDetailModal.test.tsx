@@ -36,7 +36,7 @@ describe('DishDetailModal (T043, EC-017, FR-016, INV-15)', () => {
 
     // Initial state: available to add to cart
     expect(screen.getByRole('heading', { name: /ravioles de ricota/i })).toBeInTheDocument();
-    const addButton = screen.getByRole('button', { name: /agregar al pedido/i });
+    const addButton = screen.getByTestId('add-to-cart-btn');
     expect(addButton).not.toBeDisabled();
 
     // Dish updated reactively to pausedByChef = true
@@ -49,6 +49,6 @@ describe('DishDetailModal (T043, EC-017, FR-016, INV-15)', () => {
 
     // Shows "Pausado por cocina" warning badge and disables purchase button
     expect(screen.getByText(/pausado por cocina/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /agregar al pedido/i })).toBeDisabled();
+    expect(screen.getByTestId('add-to-cart-btn')).toBeDisabled();
   });
 });

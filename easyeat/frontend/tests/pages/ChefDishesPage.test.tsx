@@ -13,6 +13,14 @@ vi.mock('@/api/dishApi', () => ({
   },
 }));
 
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'chef-1', name: 'Chef Mario', role: 'CHEF' },
+    isAuthenticated: true,
+    logout: vi.fn(),
+  }),
+}));
+
 describe('ChefDishesPage (T041, EC-016)', () => {
   const mockDishes = [
     {
