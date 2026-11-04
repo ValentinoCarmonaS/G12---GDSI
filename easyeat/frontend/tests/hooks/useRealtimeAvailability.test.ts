@@ -5,7 +5,7 @@ import { dinerCatalogApi } from '@/api/dinerCatalogApi';
 
 vi.mock('@/api/dinerCatalogApi', () => ({
   dinerCatalogApi: {
-    getAvailability: vi.fn(),
+    getCatalogAvailability: vi.fn(),
   },
 }));
 
@@ -20,9 +20,10 @@ describe('useRealtimeAvailability (T045, INV-15, D-006)', () => {
   });
 
   it('propagates chef pause status changes to diner availability map within SLA', async () => {
-    vi.mocked(dinerCatalogApi.getAvailability).mockResolvedValueOnce({
+    vi.mocked(dinerCatalogApi.getCatalogAvailability).mockResolvedValueOnce({
+      status: 200,
       etag: 'etag-dish-active',
-      availability: { 'dish-1': true },
+      data: { availability: { 'dish-1': true } },
     } as any);
 
     const { result } = renderHook(() =>
@@ -36,9 +37,10 @@ describe('useRealtimeAvailability (T045, INV-15, D-006)', () => {
     expect(result.current.availability['dish-1']).toBe(true);
 
     // Chef pauses dish: availability becomes false
-    vi.mocked(dinerCatalogApi.getAvailability).mockResolvedValueOnce({
+    vi.mocked(dinerCatalogApi.getCatalogAvailability).mockResolvedValueOnce({
+      status: 200,
       etag: 'etag-dish-paused',
-      availability: { 'dish-1': false },
+      data: { availability: { 'dish-1': false } },
     } as any);
 
     await act(async () => {
