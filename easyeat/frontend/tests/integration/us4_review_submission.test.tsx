@@ -20,6 +20,10 @@ vi.mock('@/api/dishApi', () => ({
   },
 }));
 
+vi.mock('@/components/common/WorkspaceLayout', () => ({
+  WorkspaceLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
 describe('User Story 4 User Journey Integration Test (T064, CHF-2.2.4)', () => {
   const dishId = 'd1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01';
 

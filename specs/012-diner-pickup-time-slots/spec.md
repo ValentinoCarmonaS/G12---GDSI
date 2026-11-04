@@ -12,7 +12,7 @@
 ### Session 31/10/2026 (Grill-Me Alignment con Arquitectura y Sprint 3)
 
 - **Q1: Persistencia de la reserva y relación con pagos**: Dado que la pasarela de pagos se incorpora formalmente en el Sprint 4 y el alcance actual excluye transacciones bancarias pero exige garantizar la invariante de capacidad con concurrencia atómica, ¿cómo se persiste la reserva al completar el checkout?  
-  → **A1**: Se crea el agregado `Order` en estado `PENDING_PAYMENT` (o `RESERVED`), asignando y asegurando atómicamente el cupo de la franja horaria en la base de datos. En el Sprint 4, la pasarela de pagos consumirá directamente esta orden y transicionará su estado a `PAID`, liberando o confirmando el cupo sin requerir tablas intermedias descartables.
+  → **A1**: Se crea el agregado `Order` en estado `PENDING_PAYMENT`, asignando y asegurando atómicamente el cupo de la franja horaria en la base de datos. En el Sprint 4, la pasarela de pagos consumirá directamente esta orden y transicionará su estado a `PAID`, liberando o confirmando el cupo sin requerir tablas intermedias descartables.
 
 - **Q2: Lead time de preparación y visualización de franjas pasadas**: Para la grilla de reservas del día actual y el margen mínimo de preparación anticipada (lead time), ¿qué valor por defecto y comportamiento visual se adopta?  
   → **A2**: Se fija un lead time predeterminado de 30 minutos a partir de la hora actual del servidor. Las franjas que ya transcurrieron y aquellas comprendidas dentro del buffer de preparación se muestran en la grilla en estado deshabilitado (atenuadas en gris con leyenda explicativa de no disponibilidad), preservando la estructura temporal completa del horario comercial del local.
@@ -53,7 +53,7 @@
   → **A13**: Spec 012 recibe los ítems consolidados en `CartContext` (Spec 009, derivados de las selecciones de Spec 011), revalida que cada plato pertenezca al local activo (`tenant_id`), que cuente con stock suficiente en cocina (Spec 009 FR-014a), y congela un snapshot inmutable de precios y nombres en `order_items`, preservando la consistencia contable frente a posteriores modificaciones en la carta.
 
 - **Q14: Unificación de endpoints de franjas horarias**: ¿Qué convención de ruta REST expone la disponibilidad de turnos para el comensal?  
-  → **A14**: Se adopta formalmente `GET /api/v1/establishments/{establishmentId}/pickup-slots?date=YYYY-MM-DD` como el contrato principal para comensales, proveyendo proyección completa de turnos con porcentaje de demanda, lead time y estado operativo, admitiendo `/time-slots` como alias para plena interoperabilidad con Spec 010.
+  → **A14**: Se adopta formalmente `GET /api/v1/establishments/{establishmentId}/pickup-slots?date=YYYY-MM-DD` como el contrato principal para comensales, proveyendo proyección completa de turnos con porcentaje de demanda, lead time y estado operativo, sin alias: `/time-slots` pertenece a Spec 010 y responde con otra estructura. *(Corregido el 04/11/2026: el alias original hacía ambigua la ruta frente a `DinerTimeSlotController` de Spec 010 y toda consulta a `/time-slots` respondía 409.)*
 
 ---
 
@@ -232,7 +232,7 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 - **FR-016**: El sistema DEBE validar de forma atómica en el backend la disponibilidad de cupo en la franja seleccionada al momento exacto de procesar la confirmación del pedido.
 - **FR-017**: En caso de colisión concurrente sobre el último cupo disponible de una franja, el sistema DEBE aplicar el criterio First-Come, First-Served (FCFS), asignando el cupo a la primera solicitud confirmada y abortando la transacción concurrente posterior.
 - **FR-018**: Ante una colisión de cupo abortada, el backend DEBE rechazar la creación de la orden y el frontend DEBE presentar la alerta: *"La franja horaria seleccionada acaba de agotarse. Por favor, seleccioná una nueva franja para continuar."*, refrescando automáticamente los estados de las franjas.
-- **FR-019**: Al confirmar exitosamente el checkout, el sistema DEBE crear el registro de la orden en estado `PENDING_PAYMENT` (o `RESERVED`), computando de forma indivisible el cupo correspondiente a la franja.
+- **FR-019**: Al confirmar exitosamente el checkout, el sistema DEBE crear el registro de la orden en estado `PENDING_PAYMENT`, computando de forma indivisible el cupo correspondiente a la franja.
 - **FR-020**: El frontend DEBE realizar consultas periódicas livianas (polling de 5 a 10 segundos) durante la estancia en checkout para mantener sincronizado el estado de saturación de las franjas horarias visibles.
 - **FR-021**: El sistema DEBE tomar la hora del servidor como única autoridad temporal para todas las evaluaciones de apertura, cierre, franjas vigentes y lead time, ignorando cualquier desfase del reloj del cliente.
 - **FR-022**: El sistema DEBE conservar íntegro el contexto del establecimiento (`tenant_id`), comensal autenticado y los ítems del carrito durante toda la experiencia de configuración de retiro.
@@ -246,7 +246,7 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 - **FR-030**: Al procesar la confirmación del pedido en el checkout, el sistema DEBE verificar que ninguno de los platos contenidos en la orden se encuentre en estado de pausa manual por cocina (`paused_by_chef == true`), rechazando la creación de la orden con código de error explicativo si se detecta un plato pausado en cumplimiento de Spec 013 (FR-019).
 - **FR-031**: Al procesar la confirmación del pedido, el sistema DEBE verificar que todos los platos pertenezcan al establecimiento seleccionado (`tenant_id`) y cuenten con disponibilidad de stock suficiente en cocina, rechazando la creación de la orden si se detecta insuficiencia de inventario en consistencia con Spec 009 (FR-014a).
 - **FR-032**: Para la determinación de horarios comerciales y capacidades de franjas horarias, el sistema DEBE consumir de manera prioritaria las configuraciones registradas en el módulo de operaciones (Spec 010) si estuvieren presentes, o aplicar los valores por defecto del establecimiento (`lead_time_minutes = 30`, `max_capacity_per_slot = 10`, `opening_time`, `closing_time`) si no hubieran sido personalizados.
-- **FR-033**: El sistema DEBE exponer el endpoint de disponibilidad de turnos bajo `GET /api/v1/establishments/{establishmentId}/pickup-slots`, manteniendo plena interoperabilidad y alias con la ruta `/time-slots` de Spec 010.
+- **FR-033**: El sistema DEBE exponer el endpoint de disponibilidad de turnos bajo `GET /api/v1/establishments/{establishmentId}/pickup-slots`. La ruta `/time-slots` pertenece a Spec 010 y Spec 012 no la expone como alias.
 
 ### Invariants
 
@@ -266,7 +266,7 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 
 ## Key Entities
 
-- **Order (Orden / Pedido)**: Representa la transacción comercial iniciada por el comensal. Atributos conceptuales clave en esta iteración: identificador único, identificador del establecimiento (`tenant_id`), identificador del comensal, modalidad de retiro (`IMMEDIATE` o `SCHEDULED`), fecha de retiro programada, hora de inicio y fin de la franja asignada, estado de la orden (`PENDING_PAYMENT` / `RESERVED` / `EXPIRED` / `CANCELLED`), total y detalle de platos del carrito.
+- **Order (Orden / Pedido)**: Representa la transacción comercial iniciada por el comensal. Atributos conceptuales clave en esta iteración: identificador único, identificador del establecimiento (`tenant_id`), identificador del comensal, modalidad de retiro (`IMMEDIATE` o `SCHEDULED`), fecha de retiro programada, hora de inicio y fin de la franja asignada, estado de la orden (`PENDING_PAYMENT` / `EXPIRED` / `CANCELLED` / `PAID` / `CONFIRMED`), total y detalle de platos del carrito.
 - **TimeSlotAvailability (Disponibilidad de Franja Horaria)**: Proyección operativa de un intervalo de 15 minutos en una fecha determinada. Atributos: fecha, hora de inicio, hora de fin, capacidad total de pedidos, cantidad de pedidos confirmados, porcentaje de saturación y estado operativo (`AVAILABLE`, `HIGH_DEMAND`, `SOLD_OUT`, `EXPIRED_OR_LEAD_TIME`).
 - **EstablishmentOperatingSchedule (Configuración Operativa del Local)**: Define las restricciones temporales del establecimiento. Atributos: días operativos de atención, hora de apertura (`opening_time`), hora de cierre (`closing_time`), zona horaria (`timezone`, por defecto `America/Argentina/Buenos_Aires`), margen de anticipación mínimo (`lead_time_minutes`, por defecto 30 minutos) y cupo máximo de pedidos por franja de 15 minutos (por defecto 10 pedidos).
 

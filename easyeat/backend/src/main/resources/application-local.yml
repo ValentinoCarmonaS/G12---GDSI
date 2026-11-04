@@ -1,0 +1,38 @@
+# ==============================================================================
+# EasyEat Backend - Local development profile
+# ==============================================================================
+# Credentials mirror docker-compose.yml (postgres/easyeat/easyeat_dev_password)
+# so the application starts out of the box with:
+#
+#   mvn spring-boot:run -Dspring-boot.run.profiles=local
+#
+# Every value can still be overridden with the usual Spring environment
+# variables (SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, ...).
+# ==============================================================================
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/easyeat}
+    username: ${SPRING_DATASOURCE_USERNAME:easyeat}
+    password: ${SPRING_DATASOURCE_PASSWORD:easyeat_dev_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  flyway:
+    enabled: true
+    locations:
+      - classpath:db/migration
+      - classpath:db/dev
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_SMTP_AUTH:${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:false}}
+          starttls:
+            enable: ${SPRING_MAIL_STARTTLS_ENABLE:${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:false}}

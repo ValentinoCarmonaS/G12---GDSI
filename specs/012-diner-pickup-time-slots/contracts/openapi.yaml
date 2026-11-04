@@ -57,38 +57,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
-  /establishments/{establishmentId}/time-slots:
-    get:
-      summary: Alias interoperable para consulta de franjas horarias (compatibilidad Spec 010)
-      description: Redirecciona o atiende la misma proyección de franjas horarias que pickup-slots.
-      operationId: getTimeSlotsAlias
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: establishmentId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: date
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
-      responses:
-        '200':
-          description: Grilla de turnos.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PickupSlotCatalogResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          $ref: '#/components/responses/NotFoundError'
-
   /orders:
     post:
       summary: Creación de pedido en checkout y reserva atómica de franja horaria

@@ -20,6 +20,10 @@ vi.mock('@/api/dishApi', () => ({
   },
 }));
 
+vi.mock('@/components/common/WorkspaceLayout', () => ({
+  WorkspaceLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
 vi.mock('@/api/inventoryApi', () => ({
   inventoryApi: {
     getChefCatalog: vi.fn(),
