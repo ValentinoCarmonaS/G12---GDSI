@@ -119,7 +119,7 @@
 - [X] T034b [P] [Test] Escribir test en easyeat/backend/src/test/java/com/easyeat/inventory/service/IngredientServiceTest.java (o clase de test dedicada) que valide la coexistencia de la presentación de compra (packageCost, unitsPerPackage) y el umbral crítico (criticalStockThreshold) en creación y actualización de ingredientes
 - [X] T034c [Impl] Finalizar y verificar la unificación aditiva en CreateIngredientRequest, UpdateIngredientRequest, AdminIngredientDetailResponse, IngredientService.java y inventory.ts asegurando que todos los tests de inventario pasen
 - [X] T034d [P] [Test] Escribir test en easyeat/backend/src/test/java/com/easyeat/order/controller/PickupSlotControllerTest.java para verificar que el controlador responde en /api/v1/establishments/{establishmentId}/pickup-slots y no genera colisión de mapping
-- [ ] T034e [Impl] Remover el alias colisionante /{establishmentId}/time-slots de PickupSlotController.java, ejecutar QuickstartScenariosTest y validar la suite completa de backend
+- [X] T034e [Impl] Remover el alias colisionante /{establishmentId}/time-slots de PickupSlotController.java, ejecutar QuickstartScenariosTest y validar la suite completa de backend
 
 **Checkpoint**: Inconsistencias resueltas, documentación alineada, QuickstartScenariosTest y ambas suites de tests pasando al 100%.
 
