@@ -180,7 +180,7 @@
 
 **Purpose**: Refinamientos de calidad que afectan a múltiples User Stories: validación de contratos OpenAPI, E2E quickstart y auditoría de invariantes.
 
-- [ ] T066 [P] Escribir test de contrato OpenAPI `easyeat/backend/src/test/java/com/easyeat/inventory/contract/IngredientOpenApiContractTest.java`: validar que los endpoints de ingredientes del contrato `specs/013-critical-stock-chef-pause/contracts/openapi.yaml` responden con los schemas y códigos HTTP especificados (plan.md §9, D-003)
+- [X] T066 [P] Escribir test de contrato OpenAPI `easyeat/backend/src/test/java/com/easyeat/inventory/contract/IngredientOpenApiContractTest.java`: validar que los endpoints de ingredientes del contrato `specs/013-critical-stock-chef-pause/contracts/openapi.yaml` responden con los schemas y códigos HTTP especificados (plan.md §9, D-003)
 - [ ] T067 [P] Escribir test de contrato OpenAPI `easyeat/backend/src/test/java/com/easyeat/dish/contract/DishChefPauseOpenApiContractTest.java`: validar endpoints de toggle de pausa y operational-status contra `specs/013-critical-stock-chef-pause/contracts/openapi.yaml` (plan.md §9, D-005)
 - [ ] T068 [P] Verificar que el mapeo de errores RFC 7807 (`ProblemDetail`) está configurado en `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` para los nuevos casos: umbral negativo (400), formato inválido (400), Chef sin autorización para umbral (403), Admin sin autorización para toggle (403), insumo/plato no encontrado (404) (plan.md §10)
 - [ ] T069 Ejecutar el escenario E2E completo del `specs/013-critical-stock-chef-pause/quickstart.md` sobre entorno local con la migración V17 aplicada y validar los 7 escenarios prácticos descritos
