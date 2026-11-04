@@ -21,6 +21,7 @@ export interface CartContextType {
   totalAmount: number;
   totalCount: number;
   hasConflictingItems: boolean;
+  hasPausedItems: boolean;
   toastMessage?: string | null;
 }
 
@@ -131,6 +132,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isCompliant: (dish as any).isCompliant,
           conflictingRestrictions: (dish as any).conflictingRestrictions,
           riskConfirmed,
+          pausedByChef: Boolean((dish as any).pausedByChef),
         };
         return [...prev, newItem];
       });
@@ -204,6 +206,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return items.some((item) => item.isCompliant === false);
   }, [items]);
 
+  const hasPausedItems = useMemo(() => {
+    return items.some((item) => Boolean(item.pausedByChef));
+  }, [items]);
+
   return (
     <CartContext.Provider
       value={{
@@ -216,6 +222,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         totalAmount,
         totalCount,
         hasConflictingItems,
+        hasPausedItems,
         toastMessage,
       }}
     >
