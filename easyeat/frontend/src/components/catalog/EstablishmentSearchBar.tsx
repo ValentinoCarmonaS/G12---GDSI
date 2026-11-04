@@ -42,7 +42,7 @@ export const EstablishmentSearchBar: React.FC<EstablishmentSearchBarProps> = ({
         .getAllEstablishments()
         .then((data) => {
           if (cancelled) return;
-          setResults(data);
+          setResults(Array.isArray(data) ? data : []);
           setIsDropdownOpen(true);
         })
         .catch((err) => {
@@ -70,7 +70,7 @@ export const EstablishmentSearchBar: React.FC<EstablishmentSearchBarProps> = ({
     const timer = setTimeout(async () => {
       try {
         const data = await dinerCatalogApi.searchEstablishments(trimmed);
-        setResults(data);
+        setResults(Array.isArray(data) ? data : []);
         setIsDropdownOpen(true);
       } catch (err) {
         console.error('Error searching establishments:', err);
@@ -187,7 +187,7 @@ export const EstablishmentSearchBar: React.FC<EstablishmentSearchBarProps> = ({
           role="listbox"
           className="absolute z-40 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden max-h-80 overflow-y-auto animate-fade-in"
         >
-          {results.length > 0 ? (
+          {Array.isArray(results) && results.length > 0 ? (
             results.map((est) => (
               <div
                 key={est.id}

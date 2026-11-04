@@ -2,7 +2,7 @@
 
 **Feature**: Chef Dish Management — Technical File Creation and Submission  
 **Branch**: `005-chef-dish-management`  
-**Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md)  
+**Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md) | **Implementation**: [implementation.md](./implementation.md)  
 **Data Model**: [data-model.md](./data-model.md) | **Contracts**: [contracts/](./contracts/) | **Quickstart**: [quickstart.md](./quickstart.md)  
 **GitHub Issues**: [#128](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/128), [#129](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/129), [#130](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/130), [#131](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/131), [#132](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/132), [#133](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/133), [#134](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/134)  
 
@@ -170,6 +170,30 @@
 - [X] T074 [P] Execute full frontend test suite via `npm run test` in `easyeat/frontend` verifying linting, type checks, and zero test failures
 - [X] T075 Execute end-to-end quickstart validation scenarios from `specs/005-chef-dish-management/quickstart.md`
 - [X] T076 Run `speckit-analyze` consistency analysis verifying cross-artifact alignment across `spec.md`, `plan.md`, and `tasks.md`
+
+---
+
+## Phase 8: C-08 — Reubicar "Gestionar Platos" en la cabecera del chef (Navigation Correction)
+
+**Goal**: Promote "Gestionar Platos" to a first-class Chef header section next to "Comandas KDS" and "Ingredientes", decouple it from the KDS view, and render the dishes views inside the shared header (spec §User Story 5, FR-027..FR-032).
+
+**Scope**: Frontend only. No route, guard, backend or API-contract changes. The C-07 rejection-feedback banner stays on `/cocina` (FR-032).
+
+### Tests for C-08 (TDD — Write First)
+
+- [X] T077 [P] [C-08] Frontend test `ChefHeaderNavigation` additions in `easyeat/frontend/tests/components/WorkspaceLayout.test.tsx` verifying the three chef sections (`Comandas KDS` → `/cocina`, `Gestionar Platos` → `/cocina/platos`, `Ingredientes` → `/cocina/ingredientes`), `aria-current="page"` on the active link per route, and no `aria-current` on inactive links
+- [X] T078 [P] [C-08] Frontend test additions in `easyeat/frontend/tests/pages/KitchenWorkspacePage.test.tsx` verifying the KDS view renders no dish-management card while the ingredients card and the four order-statistics cards remain, and that the C-07 `?dishId=` banner tests still pass untouched
+
+### Implementation for C-08
+
+- [X] T079 [C-08] Update chef navigation in `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` adding the "Gestionar Platos" link, route-derived active state via `useLocation()` with `aria-current="page"` (exact match for `/cocina`, prefix match for the other two), and a `min-w-0 overflow-x-auto` container replacing `hidden sm:flex`
+- [X] T080 [C-08] Remove the "Gestión de Platos y Fichas Técnicas" card from `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`, preserving the ingredients card, the four statistics cards, the `?dishId=` rejection banner and the `authApi.me()` session check
+- [X] T081 [C-08] Wrap `easyeat/frontend/src/pages/ChefDishesPage.tsx` and `easyeat/frontend/src/pages/ChefDishEditorPage.tsx` in `WorkspaceLayout` (title "Gestión de Platos") dropping the now-redundant outer padding
+- [X] T082 [C-08] Update affected test scaffolding: pass-through `WorkspaceLayout` mock in `easyeat/frontend/tests/integration/us1_basic_identity.test.tsx`, `us2_recipe_definition.test.tsx`, `us3_allergen_labeling.test.tsx`, and `us4_review_submission.test.tsx`; Chef session mock (`@/hooks/useAuth`) in `easyeat/frontend/tests/pages/ChefDishesPage.test.tsx` so the real shared header is exercised there
+
+### Verification for C-08
+
+- [ ] T083 [C-08] Run `npm test` and `npm run lint` (`tsc --noEmit`) in `easyeat/frontend` verifying zero failures and zero type errors
 
 ---
 
