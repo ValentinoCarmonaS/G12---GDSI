@@ -56,7 +56,7 @@
 - [X] T010 [P] [US1] Escribir test de seguridad `easyeat/backend/src/test/java/com/easyeat/inventory/security/InventorySecurityTest.java`: caso `testChefCannotSetThreshold` (rol Chef → HTTP 403 al configurar umbral, INV-16, FR-017, SC-009, EC-018)
 - [X] T011 [P] [US1] Escribir test de creación con umbral `easyeat/backend/src/test/java/com/easyeat/inventory/integration/IngredientCreationTest.java`: caso `testWithValidThreshold` (admin crea ingrediente con umbral válido → 201 con umbral persistido, US1 AC-1.1)
 - [X] T012 [P] [US1] Escribir test de edición con umbral `easyeat/backend/src/test/java/com/easyeat/inventory/integration/IngredientUpdateTest.java`: caso `testIndividualThresholdIsolation` (admin edita umbral de un ingrediente sin afectar otros, US1 AC-1.2)
-- [ ] T013 [P] [US1] Escribir test de componente RTL `easyeat/frontend/tests/components/IngredientFormModal.test.tsx`: casos de renderizado del campo "Stock mínimo/crítico", rechazo de negativos y no enteros en cliente, aceptación de enteros `>= 0`
+- [X] T013 [P] [US1] Escribir test de componente RTL `easyeat/frontend/tests/components/IngredientFormModal.test.tsx`: casos de renderizado del campo "Stock mínimo/crítico", rechazo de negativos y no enteros en cliente, aceptación de enteros `>= 0`
 
 ### Implementación — User Story 1
 
