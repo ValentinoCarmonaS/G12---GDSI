@@ -15,6 +15,8 @@ public record AdminIngredientDetailResponse(
         Integer unitsPerPackage,
         IngredientStatus status,
         BigDecimal currentStock,
+        Integer criticalStockThreshold,
+        boolean isCritical,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -24,6 +26,15 @@ public record AdminIngredientDetailResponse(
             UnitOfMeasure unitOfMeasure, BigDecimal unitPurchaseCost, IngredientStatus status,
             BigDecimal currentStock, Instant createdAt, Instant updatedAt) {
         this(id, tenantId, name, category, unitOfMeasure, unitPurchaseCost, null, 1,
-                status, currentStock, createdAt, updatedAt);
+                status, currentStock, null, false, createdAt, updatedAt);
+    }
+
+    public AdminIngredientDetailResponse(
+            UUID id, UUID tenantId, String name, IngredientCategory category,
+            UnitOfMeasure unitOfMeasure, BigDecimal unitPurchaseCost, IngredientStatus status,
+            BigDecimal currentStock, Integer criticalStockThreshold, boolean isCritical,
+            Instant createdAt, Instant updatedAt) {
+        this(id, tenantId, name, category, unitOfMeasure, unitPurchaseCost, null, 1,
+                status, currentStock, criticalStockThreshold, isCritical, createdAt, updatedAt);
     }
 }

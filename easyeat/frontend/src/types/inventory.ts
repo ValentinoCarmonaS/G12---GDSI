@@ -28,6 +28,7 @@ export interface CreateIngredientRequest {
   packageCost?: number;
   /** Base units contained in one package. Paired with packageCost. */
   unitsPerPackage?: number;
+  criticalStockThreshold?: number | null;
 }
 
 export interface UpdateIngredientRequest {
@@ -39,6 +40,7 @@ export interface UpdateIngredientRequest {
   packageCost?: number;
   /** Base units contained in one package. Paired with packageCost. */
   unitsPerPackage?: number;
+  criticalStockThreshold?: number | null;
 }
 
 export interface AdminIngredientDetailResponse {
@@ -52,6 +54,8 @@ export interface AdminIngredientDetailResponse {
   unitsPerPackage?: number;
   status: IngredientStatus;
   currentStock: number;
+  criticalStockThreshold?: number | null;
+  isCritical?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -121,6 +125,7 @@ export interface ChefIngredientPageResponse {
 export interface IngredientFilterParams {
   category?: IngredientCategory;
   status?: IngredientStatus;
+  criticalOnly?: boolean;
 }
 
 export interface ChefCatalogParams {
