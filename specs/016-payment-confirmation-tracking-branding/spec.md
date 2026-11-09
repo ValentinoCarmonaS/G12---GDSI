@@ -2,7 +2,7 @@
 
 **Rama de la feature**: `016-payment-confirmation-tracking-branding`  
 **Fecha de creación**: 09/11/2026  
-**Estado**: Borrador (Alineado con Grill-Me)  
+**Estado**: Aprobado  
 **Entrada**: Descripción del usuario: "Feature: Confirmación de pago, tiempo estimado en vivo y branding del restaurante (Spec 016) - Spec ID: 016"
 
 ---
