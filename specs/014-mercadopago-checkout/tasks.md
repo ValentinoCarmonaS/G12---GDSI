@@ -33,7 +33,7 @@
 
 **⚠️ CRITICAL**: Ninguna tarea de User Story puede comenzar hasta completar esta fase.
 
-- [ ] T006 Crear la entidad JPA `TemporaryReservation` con mapping a tabla `temporary_reservations` y relación con `Order` en `easyeat/backend/src/main/java/com/easyeat/order/domain/TemporaryReservation.java`
+- [x] T006 Crear la entidad JPA `TemporaryReservation` con mapping a tabla `temporary_reservations` y relación con `Order` en `easyeat/backend/src/main/java/com/easyeat/order/domain/TemporaryReservation.java`
 - [ ] T007 [P] Crear la entidad JPA `Payment` con mapping a tabla `payments`, relación con `Order` y `TemporaryReservation`, y metadatos de pasarela en `easyeat/backend/src/main/java/com/easyeat/order/domain/Payment.java`
 - [ ] T008 [P] Crear repositorio JPA `TemporaryReservationRepository` con métodos para consultar reservas activas por orden y barrido de expiradas en `easyeat/backend/src/main/java/com/easyeat/order/repository/TemporaryReservationRepository.java`
 - [ ] T009 [P] Crear repositorio JPA `PaymentRepository` con métodos para búsqueda por `gatewayPaymentId`, `orderId` y `gatewayPreferenceId` en `easyeat/backend/src/main/java/com/easyeat/order/repository/PaymentRepository.java`
