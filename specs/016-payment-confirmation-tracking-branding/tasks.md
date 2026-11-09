@@ -2,6 +2,7 @@
 
 **Input**: Documentos de diseño desde `/specs/016-payment-confirmation-tracking-branding/`  
 **Prerequisites**: [plan.md](./plan.md) (requerido), [spec.md](./spec.md) (requerido), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/), [quickstart.md](./quickstart.md)  
+**Upstream Integration**: Asume contractualmente el consumo de los artefactos de la Spec 014 (flujo de pago) y Spec 015 (comanda de cocina KDS y tabla `kds_tickets`) al momento de su ejecución.  
 **Tests**: Estrategia TDD estricta requerida explícitamente (Red Test primero, Green Test después).  
 **Organization**: Tareas agrupadas por User Story para permitir desarrollo, pruebas y despliegue independientes.  
 
@@ -60,7 +61,7 @@
 
 - [ ] T015 [US1] Implementar el servicio `OrderReceiptEmailService` con método `@Async` para armado y despacho de comprobante HTML con enlace directo de seguimiento en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderReceiptEmailService.java`
 - [ ] T016 [US1] Implementar listener de eventos de dominio para capturar `OrderPaymentApprovedEvent` y disparar `OrderReceiptEmailService` de forma desacoplada del ciclo HTTP en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderPaymentEventListener.java`
-- [ ] T017 [US1] Implementar el servicio `OrderConfirmationTrackingService` para ensamblar la respuesta consolidada de confirmación y seguimiento en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderConfirmationTrackingService.java`
+- [ ] T017 [US1] Implementar el servicio `OrderConfirmationTrackingService` para ensamblar la respuesta consolidada de confirmación y seguimiento, asegurando la publicación de `OrderPaymentApprovedEvent` ante pagos aprobados en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderConfirmationTrackingService.java`
 - [ ] T018 [US1] Implementar el controlador REST `OrderConfirmationTrackingController` exponiendo `GET /api/v1/orders/{orderId}/confirmation-tracking` en `easyeat/backend/src/main/java/com/easyeat/order/controller/OrderConfirmationTrackingController.java`
 - [ ] T019 [P] [US1] Implementar cliente Axios `orderTrackingApi.ts` para endpoints de confirmación y seguimiento en `easyeat/frontend/src/api/orderTrackingApi.ts`
 - [ ] T020 [P] [US1] Crear el componente visual `OrderSuccessGreenBanner` con icono animado de verificación, número de orden y detalle de franja horaria en `easyeat/frontend/src/components/tracking/OrderSuccessGreenBanner.tsx`
@@ -124,7 +125,7 @@
 - [ ] T046 [US3] Implementar `BrandingColorContrastCalculator` con la fórmula matemática de luminancia relativa estándar WCAG 2.1 en `easyeat/backend/src/main/java/com/easyeat/catalog/service/BrandingColorContrastCalculator.java`
 - [ ] T047 [US3] Implementar `BrandingLogoStorageService` para validación y almacenamiento local seguro de archivos de logotipo (PNG, JPG, WEBP, SVG) en `easyeat/backend/src/main/java/com/easyeat/catalog/service/BrandingLogoStorageService.java`
 - [ ] T048 [US3] Implementar `RestaurantBrandingService` resolviendo guardado, cálculo de contraste y fallback institucional neutro de EasyEat en `easyeat/backend/src/main/java/com/easyeat/catalog/service/RestaurantBrandingService.java`
-- [ ] T049 [US3] Implementar `AdminBrandingController` y `DinerBrandingController` exponiendo los endpoints administrativos y públicos de branding en `easyeat/backend/src/main/java/com/easyeat/operations/controller/AdminBrandingController.java` y `easyeat/backend/src/main/java/com/easyeat/catalog/controller/DinerBrandingController.java`
+- [ ] T049 [US3] Implementar `AdminBrandingController` y `DinerBrandingController` exponiendo los endpoints administrativos y públicos de branding en `easyeat/backend/src/main/java/com/easyeat/catalog/controller/AdminBrandingController.java` y `easyeat/backend/src/main/java/com/easyeat/catalog/controller/DinerBrandingController.java`
 - [ ] T050 [P] [US3] Implementar cliente `brandingApi.ts` y utilidad `colorContrastUtils.ts` en `easyeat/frontend/src/api/brandingApi.ts` y `easyeat/frontend/src/utils/colorContrastUtils.ts`
 - [ ] T051 [P] [US3] Crear componentes `ColorPickerInput` y `LogoUploader` con previsualización reactiva de contraste en `easyeat/frontend/src/components/admin/ColorPickerInput.tsx` y `easyeat/frontend/src/components/admin/LogoUploader.tsx`
 - [ ] T052 [US3] Implementar la página "Mi Local" (`AdminBrandingPage.tsx`), enlazarla en `AdminWorkspacePage.tsx`, crear el hook `useRestaurantBranding` y el componente `BrandThemeProvider` para aplicar la tríada en `CatalogPage.tsx` y `AppRoutes.tsx` en `easyeat/frontend/src/pages/AdminBrandingPage.tsx`, `easyeat/frontend/src/hooks/useRestaurantBranding.ts`, `easyeat/frontend/src/components/common/BrandThemeProvider.tsx` y `easyeat/frontend/src/pages/CatalogPage.tsx`

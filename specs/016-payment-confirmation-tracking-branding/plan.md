@@ -60,7 +60,8 @@ Implementar la experiencia integral posterior al pago para el comensal, el segui
 - Plantilla HTML y texto plano con detalle de ítems, montos, franja horaria, datos del local y enlace de seguimiento directo.
 - Registro en `order_receipts` para auditar entregas y garantizar idempotencia ante reintentos de webhooks (**INV-002**).
 
-**Mecanismo del KDS**:
+**Mecanismo del KDS y dependencias upstream**:
+- Esta especificación asume la integración y consumo de los modelos de comanda en cocina (`KdsTicket` y tabla `kds_tickets`) introducidos en la Spec 015, así como el flujo de pago con Mercado Pago de la Spec 014. La migración `V20` se apoya sobre el esquema resultante de `V18` y `V19` al ejecutarse en el pipeline del proyecto.
 - Entidad `KdsTicket` mapeada a la tabla `kds_tickets` (1:1 con `orders`).
 - Estados de comanda: `QUEUED`, `IN_PREPARATION`, `READY_FOR_PICKUP`, `COMPLETED`.
 - Endpoint de finalización: `POST /api/v1/kitchen/tickets/{ticketId}/ready-for-pickup`, que actualiza ticket y orden a `READY_FOR_PICKUP`.
@@ -151,6 +152,7 @@ easyeat/
 │   │   │   ├── java/com/easyeat/
 │   │   │   │   ├── catalog/
 │   │   │   │   │   ├── controller/
+│   │   │   │   │   │   ├── AdminBrandingController.java         # GET/PUT /api/v1/admin/establishments/{id}/branding
 │   │   │   │   │   │   └── DinerBrandingController.java         # GET /api/v1/establishments/{id}/branding
 │   │   │   │   │   ├── domain/
 │   │   │   │   │   │   └── RestaurantBranding.java              # Entidad JPA para branding multi-tenant
@@ -163,9 +165,6 @@ easyeat/
 │   │   │   │   │       ├── RestaurantBrandingService.java       # Lógica de guardado, fallback y contraste
 │   │   │   │   │       ├── BrandingColorContrastCalculator.java # Algoritmo WCAG 2.1 de luminancia relativa
 │   │   │   │   │       └── BrandingLogoStorageService.java      # Carga y almacenamiento seguro de logos
-│   │   │   │   ├── operations/
-│   │   │   │   │   └── controller/
-│   │   │   │   │       └── AdminBrandingController.java         # GET/PUT /api/v1/admin/establishments/{id}/branding
 │   │   │   │   └── order/
 │   │   │   │       ├── controller/
 │   │   │   │       │   ├── OrderConfirmationTrackingController.java # Endpoints unificados comensal
