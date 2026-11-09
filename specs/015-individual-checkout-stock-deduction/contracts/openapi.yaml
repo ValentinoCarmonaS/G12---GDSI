@@ -1,0 +1,322 @@
+openapi: 3.0.3
+info:
+  title: EasyEat - Individual Checkout, Stock Deduction & KDS API
+  description: Contratos OpenAPI 3.0 para la Spec 015 - Pago de carrito individual, descuento de stock transaccional y despacho a KDS.
+  version: 1.0.0
+paths:
+  /api/v1/checkout/confirm-payment:
+    post:
+      summary: Confirmar pago aprobado y debitar stock transaccional (AS-1, AS-1b)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentConfirmationRequest'
+      responses:
+        '200':
+          description: Pago aprobado, stock debitado y orden despachada a KDS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentConfirmationResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /api/v1/checkout/pending-payment:
+    post:
+      summary: Registrar estado pendiente devuelto por pasarela y retener recursos (AS-5, CB-05)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PendingPaymentRequest'
+      responses:
+        '200':
+          description: Orden en estado PENDING_ACCREDITATION con retención temporal congelada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingPaymentResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/v1/checkout/confirm-zero-amount:
+    post:
+      summary: Confirmar orden bonificada al 100% sin pasarela de pagos (AS-4, AS-6b, CB-04)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZeroAmountOrderRequest'
+      responses:
+        '200':
+          description: Orden confirmada, stock debitado y despachada a cocina
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZeroAmountOrderResponse'
+        '400':
+          description: Orden con monto mayor a cero
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /api/v1/kitchen/orders:
+    get:
+      summary: Consultar la cola de comandas del Kitchen Display System (KDS)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [QUEUED, IN_PREPARATION, READY_FOR_PICKUP, COMPLETED]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Lista paginada de comandas en KDS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KdsOrderPageResponse'
+
+  /api/v1/kitchen/dashboard/summary:
+    get:
+      summary: Obtener conteos en tiempo real para las 4 tarjetas del KDS
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Resumen de estados de cocina
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KdsDashboardSummaryResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    UnauthorizedError:
+      description: Credencial inválida o no provista
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    NotFoundError:
+      description: Recurso no encontrado
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+    ConflictError:
+      description: Conflicto de negocio (stock insuficiente o franja horaria saturada)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+  schemas:
+    PaymentConfirmationRequest:
+      type: object
+      required:
+        - orderId
+        - gatewayPaymentId
+        - status
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        gatewayPaymentId:
+          type: string
+        status:
+          type: string
+          example: approved
+
+    PaymentConfirmationResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        orderStatus:
+          type: string
+          example: IN_PROGRESS
+        paymentStatus:
+          type: string
+          example: APPROVED
+        stockDebited:
+          type: boolean
+          example: true
+        kdsTicket:
+          $ref: '#/components/schemas/KdsTicketSummary'
+        idempotentReplay:
+          type: boolean
+          example: false
+
+    PendingPaymentRequest:
+      type: object
+      required:
+        - orderId
+        - gatewayPaymentId
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        gatewayPaymentId:
+          type: string
+        statusDetail:
+          type: string
+          example: pending_contingency
+
+    PendingPaymentResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        orderStatus:
+          type: string
+          example: PENDING_ACCREDITATION
+        paymentStatus:
+          type: string
+          example: PENDING
+        stockDebited:
+          type: boolean
+          example: false
+        kdsQueued:
+          type: boolean
+          example: false
+        reservationFrozen:
+          type: boolean
+          example: true
+        message:
+          type: string
+
+    ZeroAmountOrderRequest:
+      type: object
+      required:
+        - orderId
+      properties:
+        orderId:
+          type: string
+          format: uuid
+
+    ZeroAmountOrderResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        orderStatus:
+          type: string
+          example: IN_PROGRESS
+        totalAmount:
+          type: number
+          example: 0.00
+        gatewayBypassed:
+          type: boolean
+          example: true
+        stockDebited:
+          type: boolean
+          example: true
+        kdsTicket:
+          $ref: '#/components/schemas/KdsTicketSummary'
+        message:
+          type: string
+
+    KdsTicketSummary:
+      type: object
+      properties:
+        ticketId:
+          type: string
+          format: uuid
+        ticketNumber:
+          type: integer
+          example: 142
+        status:
+          type: string
+          example: QUEUED
+        queuedAt:
+          type: string
+          format: date-time
+
+    KdsOrderPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/KdsTicketSummary'
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+
+    KdsDashboardSummaryResponse:
+      type: object
+      properties:
+        queuedOrdersCount:
+          type: integer
+          example: 3
+        inPreparationOrdersCount:
+          type: integer
+          example: 2
+        readyForPickupOrdersCount:
+          type: integer
+          example: 1
+        completedTodayCount:
+          type: integer
+          example: 28
+
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string
+        instance:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
