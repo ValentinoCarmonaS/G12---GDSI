@@ -31,9 +31,6 @@ public class PaymentGatewayResolver {
     public PaymentGatewayPort resolve(PaymentMethod method) {
         PaymentMethod targetMethod = method != null ? method : PaymentMethod.MERCADO_PAGO;
         PaymentGatewayPort adapter = adapters.get(targetMethod);
-        if (adapter == null && !adapters.isEmpty()) {
-            adapter = adapters.values().iterator().next();
-        }
         if (adapter == null) {
             throw new IllegalArgumentException("No payment gateway adapter registered for method: " + targetMethod);
         }
