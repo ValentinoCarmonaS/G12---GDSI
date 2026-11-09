@@ -126,7 +126,7 @@ describe('T021: CheckoutPaymentFlow frontend integration tests (AS-1, AS-6, FR-0
     const immediateOption = screen.getByLabelText(/lo antes posible/i);
     fireEvent.click(immediateOption);
 
-    const payButton = screen.getByRole('button', { name: /pagar/i });
+    const payButton = screen.getByRole('button', { name: /confirmar pedido/i });
     expect(payButton).toBeInTheDocument();
     expect(payButton).not.toBeDisabled();
 
@@ -157,7 +157,7 @@ describe('T021: CheckoutPaymentFlow frontend integration tests (AS-1, AS-6, FR-0
     const immediateOption = screen.getByLabelText(/lo antes posible/i);
     fireEvent.click(immediateOption);
 
-    const payButton = screen.getByRole('button', { name: /pagar/i });
+    const payButton = screen.getByRole('button', { name: /confirmar pedido/i });
     expect(payButton).not.toBeDisabled();
     fireEvent.click(payButton);
 

@@ -4,7 +4,14 @@ import { MemoryRouter } from 'react-router-dom';
 import { CheckoutPage } from '../../pages/CheckoutPage';
 import { CartContext } from '../../context/CartContext';
 import * as orderApi from '../../api/orderApi';
+import * as paymentApi from '../../api/paymentApi';
 import { CartItem } from '../../types/cart';
+
+vi.mock('../../api/paymentApi', () => ({
+  initiatePayment: vi.fn(),
+  cancelPayment: vi.fn(),
+  getOrderPaymentStatus: vi.fn(),
+}));
 
 vi.mock('../../api/orderApi', () => ({
   createOrder: vi.fn(),
@@ -135,28 +142,26 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
     expect(confirmButton).not.toBeDisabled();
   });
 
-  it('selects date and 15-minute slot from grid, submits order and transitions to 15:00 countdown timer view', async () => {
-    const mockOrderResponse: any = {
+  it('selects date and 15-minute slot from grid, submits order and initiates online payment redirect', async () => {
+    const originalLocation = window.location;
+    // @ts-ignore
+    delete window.location;
+    // @ts-ignore
+    window.location = { href: '', assign: vi.fn() };
+
+    const mockPaymentResponse: any = {
       orderId: 'order-999',
-      status: 'PENDING_PAYMENT',
-      fulfillmentMode: 'SCHEDULED',
-      pickupDate: '2026-11-03',
-      timeSlotStart: '13:00:00',
-      timeSlotEnd: '13:15:00',
-      totalAmount: 6200,
+      reservationId: 'res-999',
+      paymentId: 'pay-999',
+      gatewayPreferenceId: 'pref-999',
+      redirectUrl: 'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-999',
+      sandbox: true,
       expiresAt: new Date(Date.now() + 900000).toISOString(),
-      serverTime: new Date().toISOString(),
-      items: [
-        {
-          dishId: 'dish-1',
-          dishName: 'Hamburguesa Completa',
-          quantity: 2,
-          unitPrice: 2500,
-            },
-      ],
+      totalAmount: 6200,
+      currency: 'ARS',
     };
 
-    vi.mocked(orderApi.createOrder).mockResolvedValueOnce(mockOrderResponse);
+    vi.mocked(paymentApi.initiatePayment).mockResolvedValueOnce(mockPaymentResponse);
 
     renderWithProviders();
 
@@ -187,21 +192,21 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
     // 5. Submit order
     fireEvent.click(confirmButton);
 
-    // 6. Smoothly transition to PendingOrderCountdown view
+    // 6. Smoothly invokes initiatePayment with selected slot and payment method
     await waitFor(() => {
-      expect(orderApi.createOrder).toHaveBeenCalledWith(
+      expect(paymentApi.initiatePayment).toHaveBeenCalledWith(
         expect.objectContaining({
           establishmentId: 'est-123',
           fulfillmentMode: 'SCHEDULED',
+          paymentMethod: 'MERCADO_PAGO',
           timeSlotStart: '13:00:00',
           timeSlotEnd: '13:15:00',
         })
       );
-      expect(clearCartMock).toHaveBeenCalled();
-      expect(screen.getByText(/reserva en espera de pago/i)).toBeInTheDocument();
-      expect(screen.getByText(/#order-99/i)).toBeInTheDocument();
-      expect(screen.getByText(/15:00|14:59/)).toBeInTheDocument();
     });
+
+    // @ts-ignore
+    window.location = originalLocation;
   });
 
   it('receives 409 conflict modal (SLOT_SOLD_OUT) and recovers without losing cart state', async () => {
@@ -215,7 +220,7 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
       },
     };
 
-    vi.mocked(orderApi.createOrder).mockRejectedValueOnce(error409);
+    vi.mocked(paymentApi.initiatePayment).mockRejectedValueOnce(error409);
 
     renderWithProviders();
 
