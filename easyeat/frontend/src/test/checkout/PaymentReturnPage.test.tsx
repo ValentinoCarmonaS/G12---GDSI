@@ -11,6 +11,26 @@ vi.mock('../../api/paymentApi', () => ({
   cancelPayment: vi.fn(),
 }));
 
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { id: 'user-123', email: 'diner@test.com', role: 'COMENSAL' },
+    logout: vi.fn(),
+  }),
+}));
+
+vi.mock('../../api/profileApi', () => ({
+  profileApi: {
+    getProfile: vi.fn().mockResolvedValue({ avatarUrl: null }),
+  },
+}));
+
+vi.mock('../../api/adminNotificationApi', () => ({
+  adminNotificationApi: {
+    getUnreadCount: vi.fn().mockResolvedValue(0),
+    getNotifications: vi.fn().mockResolvedValue([]),
+  },
+}));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -126,14 +146,11 @@ describe('T023: PaymentReturnPage Component Tests (AS-2, AS-3, AS-4, Q2, Q4)', (
     renderComponent('?collection_status=null&external_reference=order-123&status=null');
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith(
-        '/checkout',
-        expect.objectContaining({
-          state: expect.objectContaining({
-            infoMessage: expect.stringMatching(/pago no completado|pago en curso/i),
-          }),
-        })
-      );
+      expect(mockNavigate).toHaveBeenCalledWith('/checkout', {
+        state: {
+          infoMessage: 'No se completó el pago. Podés retomarlo o reintentar cuando quieras.',
+        },
+      });
     });
 
     expect(clearCartMock).not.toHaveBeenCalled();
