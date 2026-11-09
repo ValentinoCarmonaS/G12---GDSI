@@ -1,8 +1,8 @@
-# Contrato 03: Notificación Asíncrona (Webhook de Mercado Pago)
+# Contrato 03: Notificación Asíncrona (Webhook de Pasarela de Pago)
 
-**Ruta**: `POST /api/v1/payments/mercadopago/webhook`  
-**Autenticación**: Verificación criptográfica obligatoria vía cabecera `x-signature` (HMAC-SHA256).  
-**Propósito**: Recibir notificaciones automáticas y asíncronas de Mercado Pago ante cambios en el estado de pagos (aprobaciones, rechazos, cancelaciones). Asegurar la consolidación definitiva o la liberación de la reserva aún si el comensal nunca retorna al sitio (AS-2b, CB-04b, FR-003).  
+**Ruta**: `POST /api/v1/payments/{provider}/webhook` (ej. `/api/v1/payments/mercadopago/webhook`)  
+**Autenticación**: Verificación criptográfica obligatoria delegada al puerto `PaymentGatewayPort` (para Mercado Pago: cabecera `x-signature` con HMAC-SHA256).  
+**Propósito**: Recibir notificaciones automáticas y asíncronas de la pasarela ante cambios en el estado de pagos (aprobaciones, rechazos, cancelaciones). El controlador extrae `{provider}`, valida que corresponda a un `PaymentMethod` soportado y delega la firma y parseo a su `PaymentGatewayPort`. Asegura la consolidación definitiva o la liberación de la reserva aún si el comensal nunca retorna al sitio (AS-2b, CB-04b, FR-003).  
 **Garantía de Aislamiento**: El payload de notificación no contiene ni requiere datos de tarjeta bancaria (FR-013, INV-11, SC-009).
 
 ---

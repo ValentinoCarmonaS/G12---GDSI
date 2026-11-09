@@ -157,7 +157,7 @@ Registra el intento transaccional delegado a la pasarela externa de Mercado Pago
 | `id` | `id` | `UUID` | PK, Not Null | Identificador único de la transacción en EasyEat. |
 | `order` | `order_id` | `Order` (`UUID`) | FK a `orders(id)`, Not Null | Orden sobre la cual se efectúa el cobro. |
 | `reservation` | `reservation_id` | `TemporaryReservation` (`UUID`) | FK a `temporary_reservations(id)`, Not Null | Reserva temporal que respalda este cobro. |
-| `paymentMethod` | `payment_method` | `String` | Not Null, Default `'MERCADO_PAGO'` | Pasarela utilizada. |
+| `paymentMethod` | `payment_method` | `PaymentMethod` | Not Null, Default `'MERCADO_PAGO'` | Pasarela utilizada (Enum `PaymentMethod`: `MERCADO_PAGO`, extensible a `STRIPE`). |
 | `gatewayPreferenceId` | `gateway_preference_id` | `String` | VARCHAR(100), Nullable | Identificador de preferencia devuelto por Mercado Pago. |
 | `gatewayPaymentId` | `gateway_payment_id` | `String` | VARCHAR(100), Nullable | Identificador numérico del pago provisto por Mercado Pago en webhook. |
 | `externalReference` | `external_reference` | `String` | VARCHAR(100), Not Null | ID de la orden en formato String. |

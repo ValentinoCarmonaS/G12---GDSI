@@ -115,23 +115,31 @@ paths:
         '404':
           description: Orden no encontrada.
 
-  /payments/mercadopago/webhook:
+  /payments/{provider}/webhook:
     post:
-      summary: Endpoint de notificación asíncrona de Mercado Pago
+      summary: Endpoint de notificación asíncrona de pasarela de pagos
       description: >
-        Recibe notificaciones automáticas de eventos de pago de Mercado Pago.
-        Requiere cabecera x-signature válida (HMAC-SHA256). Procesa transiciones de forma idempotente.
-      operationId: handleMercadoPagoWebhook
+        Recibe notificaciones automáticas de eventos de pago de cualquier pasarela soportada (Mercado Pago, Stripe).
+        Extrae {provider}, resuelve el PaymentGatewayPort correspondiente y valida la firma criptográfica.
+      operationId: handlePaymentWebhook
       parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [mercadopago, stripe]
+            example: mercadopago
         - name: x-signature
           in: header
-          required: true
+          required: false
+          description: Cabecera HMAC requerida para Mercado Pago
           schema:
             type: string
             example: 'ts=1742505638683,v1=ced36ab6d33566bb1e16c125819b8d840d6b8ef136b0b9127c76064466f5229b'
         - name: x-request-id
           in: header
-          required: true
+          required: false
           schema:
             type: string
       requestBody:
@@ -167,6 +175,11 @@ components:
         fulfillmentMode:
           type: string
           enum: [IMMEDIATE, SCHEDULED]
+        paymentMethod:
+          type: string
+          enum: [MERCADO_PAGO, STRIPE]
+          default: MERCADO_PAGO
+          description: Pasarela de pago elegida. Por defecto MERCADO_PAGO.
         pickupDate:
           type: string
           format: date

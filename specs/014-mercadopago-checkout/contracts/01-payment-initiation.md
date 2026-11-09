@@ -22,6 +22,7 @@ Content-Type: application/json
 {
   "establishmentId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
   "fulfillmentMode": "SCHEDULED",
+  "paymentMethod": "MERCADO_PAGO",
   "pickupDate": "2026-11-10",
   "timeSlotStart": "13:00:00",
   "timeSlotEnd": "13:15:00",
@@ -41,9 +42,10 @@ Content-Type: application/json
 ### Reglas de Validación
 1. `establishmentId`: UUID válido, debe pertenecer a un establecimiento activo.
 2. `fulfillmentMode`: `'IMMEDIATE'` o `'SCHEDULED'`. Si es `'SCHEDULED'`, `pickupDate`, `timeSlotStart` y `timeSlotEnd` son obligatorios.
-3. `items`: Lista no vacía. Cada ítem debe tener `quantity >= 1`.
-4. El importe total bruto calculado debe ser estrictamente mayor a cero (FR-001).
-5. No debe existir una reserva temporal activa ni un pago en curso para este usuario (INV-05, FR-010).
+3. `paymentMethod`: Opcional. Enum: `MERCADO_PAGO`, `STRIPE`. Si no se especifica, por defecto es `MERCADO_PAGO`. El backend valida que la pasarela esté habilitada para el restaurante (`PaymentMethodService`) y delega al puerto `PaymentGatewayPort`.
+4. `items`: Lista no vacía. Cada ítem debe tener `quantity >= 1`.
+5. El importe total bruto calculado debe ser estrictamente mayor a cero (FR-001).
+6. No debe existir una reserva temporal activa ni un pago en curso para este usuario (INV-05, FR-010).
 
 ---
 

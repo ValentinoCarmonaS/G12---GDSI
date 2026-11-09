@@ -41,11 +41,13 @@ Se articula armónicamente sobre las capacidades preexistentes de Carrito (Spec 
 **Estrategia de autenticación y sesión del comensal**:
 - Autenticación basada en tokens JWT Bearer (`jjwt`), validando rol `ROLE_COMENSAL` mediante Spring Security (`@PreAuthorize("hasRole('COMENSAL')")`). El flujo de pago no altera el mecanismo de sesión existente.
 
-**Patrón de integración con Mercado Pago**:
-- Modo: **Mercado Pago Checkout Pro (API de Preferencias)** (`POST https://api.mercadopago.com/checkout/preferences`).
+**Patrón de integración con pasarelas de pago (POO / SOLID)**:
+- Arquitectura Hexagonal y Patrón Strategy: Puerto de dominio agnóstico `PaymentGatewayPort` (`createPreference`, `queryPayment`, `verifyWebhookSignature`, `parseWebhook`).
+- Resolutor dinámico `PaymentGatewayResolver` que mapea cada pasarela soportada según el enum `PaymentMethod` (`MERCADO_PAGO`, extensible a `STRIPE`).
+- Implementación concreta exclusiva para esta feature: **`MercadoPagoGatewayAdapter`** integrando Mercado Pago Checkout Pro (`POST https://api.mercadopago.com/checkout/preferences`).
 - Redirección externa hacia pasarela segura vía `init_point` (o `sandbox_init_point`).
 - Idempotencia saliente: cabecera obligatoria `X-Idempotency-Key` conteniendo UUID v4.
-- Recepción de Webhooks en `/api/v1/payments/mercadopago/webhook`: validación de firma HMAC-SHA256 sobre cabecera `x-signature` y reconciliación REST directa con `GET /v1/payments/{id}`.
+- Recepción de Webhooks en `/api/v1/payments/{provider}/webhook`: validación de firma HMAC-SHA256 sobre cabecera `x-signature` y reconciliación REST directa con `GET /v1/payments/{id}`.
 
 **Manejo de configuración, secretos y entornos**:
 - Clase `@ConfigurationProperties(prefix = "mercadopago")` inyectada en componentes de integración.
@@ -125,11 +127,11 @@ easyeat/
 │   │   │   │   │   └── service/
 │   │   │   │   │       └── DishAvailabilityEngine.java          # Extendido: resta stock comprometido por reservas activas
 │   │   │   │   ├── config/
-│   │   │   │   │   └── MercadoPagoProperties.java               # Configuración tipada de credenciales y flags
+│   │   │   │   │   └── MercadoPagoProperties.java               # Configuración tipada segregada para Mercado Pago
 │   │   │   │   └── order/
 │   │   │   │       ├── controller/
 │   │   │   │       │   ├── CheckoutPaymentController.java       # POST /checkout/pay, POST /checkout/cancel-payment
-│   │   │   │       │   ├── MercadoPagoWebhookController.java    # POST /payments/mercadopago/webhook
+│   │   │   │       │   ├── PaymentWebhookController.java        # POST /payments/{provider}/webhook (ruteo desacoplado)
 │   │   │   │       │   └── OrderPaymentStatusController.java    # GET /orders/{orderId}/payment-status
 │   │   │   │       ├── domain/
 │   │   │   │       │   ├── TemporaryReservation.java            # Entidad JPA: reserva temporal conjunta
@@ -138,7 +140,7 @@ easyeat/
 │   │   │   │       │   ├── Payment.java                         # Entidad JPA: transacción de pasarela
 │   │   │   │       │   └── PaymentStatus.java                   # Enum: IN_PROCESS, APPROVED, REJECTED, CANCELLED, FAILED, EXPIRED
 │   │   │   │       ├── dto/
-│   │   │   │       │   ├── PaymentInitiationRequest.java        # DTO request de checkout
+│   │   │   │       │   ├── PaymentInitiationRequest.java        # DTO request de checkout (paymentMethod opcional)
 │   │   │   │       │   ├── PaymentInitiationResponse.java       # DTO response con redirectUrl
 │   │   │   │       │   ├── CancelPaymentRequest.java            # DTO para cancelar intento
 │   │   │   │       │   ├── CancelPaymentResponse.java           # DTO respuesta de cancelación
@@ -147,8 +149,10 @@ easyeat/
 │   │   │   │       │   ├── TemporaryReservationRepository.java  # Consultas de reservas activas y barrido
 │   │   │   │       │   └── PaymentRepository.java               # Consultas por preference/gatewayId
 │   │   │   │       └── service/
-│   │   │   │           ├── CheckoutPaymentService.java          # Orquestación de reserva atómica y cobro
-│   │   │   │           ├── MercadoPagoGatewayService.java       # Comunicación HTTP con API Mercado Pago (Checkout Pro)
+│   │   │   │           ├── CheckoutPaymentService.java          # Orquestador de dominio: reserva atómica y cobro
+│   │   │   │           ├── PaymentGatewayPort.java              # Puerto universal agnóstico a proveedores (SOLID DIP)
+│   │   │   │           ├── PaymentGatewayResolver.java          # Resolutor dinámico de pasarelas (Strategy Pattern)
+│   │   │   │           ├── MercadoPagoGatewayAdapter.java       # Adaptador concreto de Mercado Pago Checkout Pro
 │   │   │   │           ├── WebhookSignatureValidator.java       # Validación criptográfica HMAC-SHA256
 │   │   │   │           └── ReservationExpirationScheduler.java  # Barredor @Scheduled cada 60s
 │   │   │   └── resources/

@@ -19,6 +19,7 @@
 | **Estrategia Sandbox y Reproducibilidad** | **Credenciales oficiales de Sandbox de Mercado Pago, `sandbox_init_point`, tarjetas de prueba y simulación controlada de fallos de red** | Transacciones con dinero real en pruebas, simulación manual no reproducible | Satisface RT-1 (costo cero), RT-2 (equivalencia funcional 1:1) y RT-3 (determinismo reproducible en aprobación `APRO`, fondos `FUND`, fraude `OTHE` y fallos de enlace con WireMock/MockRestServiceServer). |
 | **Actualización de Estado en Frontend** | **Estrategia reactiva por redirección al retorno (`/checkout/payment-return`) complementada con polling liviano en Checkout con pago en curso** | WebSockets persistentes, Server-Sent Events (SSE) | Coherencia con el stack actual del frontend (React + Axios, sin infraestructura de sockets innecesaria); permite que el comensal retome o cancele con un solo clic. |
 | **Manejo de Secretos y Configuración** | **Spring Boot `@ConfigurationProperties` tipado (`MercadoPagoProperties`) alimentado por variables de entorno** | Hardcoding en YAML, inyección manual `@Value` dispersa | Segregación limpia entre ambientes (`application-dev.yml`, `application-test.yml`, `application-local.yml`), desacople de credenciales sensibles y aislamiento total de producción. |
+| **Extensibilidad de Pasarelas (POO / SOLID)** | **Patrón Strategy & Ports and Adapters (`PaymentGatewayPort` + `PaymentGatewayResolver`)** | Acoplamiento directo a SDK concreto de Mercado Pago | Cumple OCP y DIP: orquestador desacoplado de la pasarela. Incorporar futuros proveedores (ej. Stripe) no modifica la lógica central del checkout ni las órdenes. |
 
 ---
 
@@ -221,4 +222,33 @@ Mapeo de variables de entorno:
 - `MERCADOPAGO_BASE_URL` (default `https://api.mercadopago.com`)
 - `EASYEAT_FRONTEND_URL` (default `http://localhost:5173` en local)
 Ningún secreto ni token de acceso se almacena en el control de versiones; se documenta su provisión en `.env.example`.
+
+---
+
+### 2.10. Arquitectura Desacoplada y Extensible de Pasarelas (POO / SOLID)
+
+#### Decisión
+Diseñar el subsistema de pagos siguiendo los principios de la Arquitectura Hexagonal (Ports & Adapters) y el Patrón Strategy:
+1. **Puerto de Dominio (`PaymentGatewayPort`)**:
+   Define el contrato universal agnóstico a cualquier SDK o pasarela:
+   ```java
+   public interface PaymentGatewayPort {
+       PaymentMethod getSupportedMethod();
+       GatewayPreferenceResult createPreference(GatewayPreferenceCommand command);
+       GatewayPaymentResult queryPayment(String externalPaymentId);
+       boolean verifyWebhookSignature(HttpServletRequest request, String rawPayload);
+       GatewayWebhookEvent parseWebhook(String rawPayload);
+   }
+   ```
+2. **Implementación Concreta (`MercadoPagoGatewayAdapter`)**:
+   Implementa `PaymentGatewayPort` encapsulando toda la interacción con Checkout Pro de Mercado Pago, la inyección del header `X-Idempotency-Key` y la validación de firma HMAC-SHA256 (`x-signature`).
+3. **Resolución Dinámica (`PaymentGatewayResolver`)**:
+   Spring inyecta automáticamente todos los beans que implementen `PaymentGatewayPort` (`List<PaymentGatewayPort>`), mapeándolos en un `Map<PaymentMethod, PaymentGatewayPort>`.
+4. **Ruteo de Webhooks Desacoplado**:
+   Endpoint `/api/v1/payments/{provider}/webhook`:
+   - Extrae el `{provider}` del path (ej. `mercadopago`).
+   - Resuelve el `PaymentGatewayPort` correspondiente.
+   - Delega la validación de firma y el parseo del payload al adaptador respectivo.
+5. **Configuración Segregada por Proveedor**:
+   `MercadoPagoProperties` se inyecta de forma exclusiva en `MercadoPagoGatewayAdapter`, garantizando el Principio de Responsabilidad Única (SRP). Cuando se incorpore Stripe u otra pasarela, se creará su propio `StripeProperties` y `StripeGatewayAdapter` sin modificar una sola línea de Mercado Pago ni del orquestador `CheckoutPaymentService`.
 
