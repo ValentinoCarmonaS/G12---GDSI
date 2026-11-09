@@ -2,6 +2,7 @@
 
 **Input**: Documentos de diseño desde `/specs/015-individual-checkout-stock-deduction/`  
 **Prerequisites**: [plan.md](./plan.md) (requerido), [spec.md](./spec.md) (requerido), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/), [quickstart.md](./quickstart.md)  
+**GitHub Issues**: [#272](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/272), [#273](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/273), [#274](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/274), [#275](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/275), [#276](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/276)  
 **Tests**: Estrategia TDD estricta requerida explícitamente (Red Test primero, Green Test después).  
 **Organization**: Tareas agrupadas por User Story para permitir desarrollo y verificación independiente.  
 
@@ -15,7 +16,7 @@
 
 ---
 
-## Phase 1: Setup (Infraestructura Compartida)
+## Phase 1: Setup (Infraestructura Compartida) — [Issue #272](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/272)
 
 **Propósito**: Inicialización de esquemas, migraciones y tipos base compartidos.
 
@@ -26,7 +27,7 @@
 
 ---
 
-## Phase 2: Foundational (Prerrequisitos Bloqueantes)
+## Phase 2: Foundational (Prerrequisitos Bloqueantes) — [Issue #273](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/273)
 
 **Propósito**: Infraestructura de persistencia, entidades y DTOs que desbloquean la implementación de las historias de usuario.
 
@@ -42,7 +43,7 @@
 
 ---
 
-## Phase 3: User Story 1 — COM-7.2.1: Pago de Carrito Individual (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 — COM-7.2.1: Pago de Carrito Individual (Priority: P1) 🎯 MVP — [Issue #274](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/274)
 
 **Goal**: Permitir al comensal pagar el 100% de su orden individual y confirmarla de inmediato hacia la cocina, resolviendo pago aprobado, procesamiento autónomo de webhooks sin retorno, rechazo por stock agotado por concurrencia, interrupción por franja horaria saturada tras 15 minutos, pedidos con bonificación al 100% y retención provisoria ante estado pendiente.
 
@@ -81,7 +82,7 @@
 
 ---
 
-## Phase 4: User Story 2 — CHF-5.1.1: Descuento de Stock Transaccional (Priority: P1)
+## Phase 4: User Story 2 — CHF-5.1.1: Descuento de Stock Transaccional (Priority: P1) — [Issue #275](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/275)
 
 **Goal**: Descontar automáticamente del inventario la cantidad matemática exacta de ingredientes de las recetas técnicas (enteras y fraccionarias) de forma atómica y estricta en el momento en que se confirma y paga un pedido, reflejando de inmediato platos no disponibles en el catálogo si un insumo se agota.
 
@@ -106,7 +107,7 @@
 
 ---
 
-## Phase 5: Polish & Cross-Cutting Concerns
+## Phase 5: Polish & Cross-Cutting Concerns — [Issue #276](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/276)
 
 **Propósito**: Verificaciones transversales de seguridad, idempotencia, regresión y validación determinística.
 
@@ -123,18 +124,18 @@
 
 ```mermaid
 flowchart TD
-    Phase1[Phase 1: Setup] --> Phase2[Phase 2: Foundational]
-    Phase2 --> Phase3[Phase 3: US1 - COM-7.2.1 Pago de Carrito]
-    Phase2 --> Phase4[Phase 4: US2 - CHF-5.1.1 Descuento de Stock]
-    Phase3 --> Phase5[Phase 5: Polish & Cross-Cutting]
+    Phase1[Phase 1: Setup - Issue #272] --> Phase2[Phase 2: Foundational - Issue #273]
+    Phase2 --> Phase3[Phase 3: US1 - COM-7.2.1 Pago de Carrito - Issue #274]
+    Phase2 --> Phase4[Phase 4: US2 - CHF-5.1.1 Descuento de Stock - Issue #275]
+    Phase3 --> Phase5[Phase 5: Polish & Cross-Cutting - Issue #276]
     Phase4 --> Phase5
 ```
 
-- **Phase 1 (Setup)**: Sin dependencias previas. Comienza de inmediato.
-- **Phase 2 (Foundational)**: Depende de Phase 1. Bloquea el inicio de las historias de usuario.
-- **Phase 3 (User Story 1)**: Depende de Phase 2. Se puede implementar en paralelo con US2 o de forma incremental.
-- **Phase 4 (User Story 2)**: Depende de Phase 2. Provee la lógica transaccional de stock que consume US1 al confirmar pedidos.
-- **Phase 5 (Polish)**: Depende de la finalización de US1 y US2.
+- **Phase 1 (Setup, #272)**: Sin dependencias previas. Comienza de inmediato.
+- **Phase 2 (Foundational, #273)**: Depende de Phase 1. Bloquea el inicio de las historias de usuario.
+- **Phase 3 (User Story 1, #274)**: Depende de Phase 2. Se puede implementar en paralelo con US2 o de forma incremental.
+- **Phase 4 (User Story 2, #275)**: Depende de Phase 2. Provee la lógica transaccional de stock que consume US1 al confirmar pedidos.
+- **Phase 5 (Polish, #276)**: Depende de la finalización de US1 y US2.
 
 ### Orden de Ejecución dentro de cada User Story (TDD)
 
@@ -147,18 +148,18 @@ flowchart TD
 
 ## Parallel Execution Opportunities
 
-### Oportunidades en Phase 1 (Setup) y Phase 2 (Foundational)
+### Oportunidades en Phase 1 (Setup, #272) y Phase 2 (Foundational, #273)
 - `T002`, `T003` y `T004` pueden ejecutarse en paralelo (enums independientes en backend y tipos en frontend).
 - `T006`, `T007`, `T008` y `T009` pueden ejecutarse en paralelo una vez creada la entidad `KdsTicket` (`T005`).
 
-### Oportunidades en Tests de User Story 1
+### Oportunidades en Tests de User Story 1 (#274)
 - `T010`, `T011`, `T012`, `T013`, `T014`, `T015` y `T016` tocan archivos de test separados y pueden redactarse en paralelo.
 
-### Oportunidades en Implementación de User Story 1
+### Oportunidades en Implementación de User Story 1 (#274)
 - `T021` (`KitchenKdsController`) y `T022` (`checkoutApi.ts` / `kitchenKdsApi.ts`) pueden implementarse en paralelo con `T018` (`CheckoutConfirmationService`).
 - `T023` (`PendingAccreditationBanner.tsx`) y `T024` (`ConcurrencyAlertModal.tsx`) pueden construirse en paralelo.
 
-### Oportunidades en User Story 2
+### Oportunidades en User Story 2 (#275)
 - Todos los tests `T028`, `T029`, `T030` y `T031` residen en archivos de test aislados y pueden redactarse simultáneamente.
 
 ---
@@ -166,12 +167,11 @@ flowchart TD
 ## Implementation Strategy
 
 ### Estrategia MVP (User Story 1 Primero)
-1. Completar **Phase 1: Setup** y **Phase 2: Foundational**.
-2. Implementar **Phase 3: User Story 1** con un mock transaccional de stock.
+1. Completar **Phase 1: Setup (#272)** y **Phase 2: Foundational (#273)**.
+2. Implementar **Phase 3: User Story 1 (#274)** con un mock transaccional de stock.
 3. **Validar MVP**: Comprobar que un comensal puede pagar su pedido, recibir confirmación y ver su orden encolada.
 
 ### Entrega Incremental Completa
-1. Implementar **Phase 4: User Story 2** incorporando el débito atómico real de insumos por receta y bloqueos ordenados anti-deadlock.
+1. Implementar **Phase 4: User Story 2 (#275)** incorporando el débito atómico real de insumos por receta y bloqueos ordenados anti-deadlock.
 2. Integrar US2 dentro de `CheckoutConfirmationService` (`T035`).
-3. Ejecutar **Phase 5: Polish & Cross-Cutting** para certificar idempotencia, aislamiento financiero PCI-DSS y escenarios en Sandbox.
-
+3. Ejecutar **Phase 5: Polish & Cross-Cutting (#276)** para certificar idempotencia, aislamiento financiero PCI-DSS y escenarios en Sandbox.
