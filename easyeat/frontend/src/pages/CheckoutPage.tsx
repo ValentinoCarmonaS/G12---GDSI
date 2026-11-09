@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { FulfillmentModeSelector } from '../components/checkout/FulfillmentModeSelector';
 import { OperatingDatePicker, OperatingDayItem } from '../components/checkout/OperatingDatePicker';
@@ -16,7 +16,7 @@ import { useTimeSlotPolling } from '../hooks/useTimeSlotPolling';
 import { cancelOrder } from '../api/orderApi';
 import { initiatePayment, cancelPayment, getOrderPaymentStatus } from '../api/paymentApi';
 import { OrderDetailResponse } from '../types/order';
-import { PaymentInitiationRequest, OrderPaymentStatusResponse } from '../types/payment';
+import { PaymentInitiationRequest, OrderPaymentStatusResponse, PaymentMethod } from '../types/payment';
 
 function generateNext7Days(): OperatingDayItem[] {
   const days: OperatingDayItem[] = [];
@@ -85,6 +85,7 @@ export const CheckoutPage: React.FC = () => {
     enabled: Boolean(establishmentId && fulfillmentMode === 'SCHEDULED' && selectedDate),
   });
 
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('MERCADO_PAGO');
   const [pendingOrder, setPendingOrder] = useState<OrderDetailResponse | null>(null);
   const [inProcessPayment, setInProcessPayment] = useState<OrderPaymentStatusResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -116,11 +117,12 @@ export const CheckoutPage: React.FC = () => {
     if (items.length === 0) return false;
     if (!fulfillmentMode) return false;
     if (fulfillmentMode === 'SCHEDULED' && (!selectedDate || !selectedSlot)) return false;
+    if (!selectedPaymentMethod) return false;
     return true;
-  }, [items, fulfillmentMode, selectedDate, selectedSlot]);
+  }, [items, fulfillmentMode, selectedDate, selectedSlot, selectedPaymentMethod]);
 
-  // Handler for Mercado Pago Checkout Pro (T035, AS-1, AS-5, FR-001, FR-002)
-  const handlePayWithMercadoPago = async () => {
+  // Handler for Confirmar pedido / Checkout Payment (T035, AS-1, AS-5, FR-001, FR-002)
+  const handleConfirmOrder = async () => {
     if (!isFormValid || !establishmentId || inProcessPayment) return;
 
     setIsSubmitting(true);
@@ -130,7 +132,7 @@ export const CheckoutPage: React.FC = () => {
     const payload: PaymentInitiationRequest = {
       establishmentId,
       fulfillmentMode: fulfillmentMode!,
-      paymentMethod: 'MERCADO_PAGO',
+      paymentMethod: selectedPaymentMethod,
       pickupDate: fulfillmentMode === 'SCHEDULED' ? selectedDate : undefined,
       timeSlotStart: fulfillmentMode === 'SCHEDULED' ? selectedSlot?.startTime : undefined,
       timeSlotEnd: fulfillmentMode === 'SCHEDULED' ? selectedSlot?.endTime : undefined,
@@ -353,6 +355,42 @@ export const CheckoutPage: React.FC = () => {
                   )}
                 </div>
               )}
+
+              {/* Step 3: Payment Method Selection */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">
+                    Método de pago
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Seleccioná la plataforma para realizar el pago online seguro
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Método de pago">
+                  <div
+                    onClick={() => setSelectedPaymentMethod('MERCADO_PAGO')}
+                    className={`relative flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      selectedPaymentMethod === 'MERCADO_PAGO'
+                        ? 'border-sky-500 bg-sky-50/50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-sky-100 flex items-center justify-center font-bold text-sky-600 text-xs shrink-0">
+                        MP
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-900 text-sm">Mercado Pago</div>
+                        <div className="text-xs text-gray-500">Checkout Pro / Sandbox</div>
+                      </div>
+                    </div>
+                    {selectedPaymentMethod === 'MERCADO_PAGO' && (
+                      <CheckCircle2 className="w-5 h-5 text-sky-600 shrink-0" />
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Right Column: Checkout Summary & Payment Action */}
@@ -367,21 +405,21 @@ export const CheckoutPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={handlePayWithMercadoPago}
+                onClick={handleConfirmOrder}
                 disabled={!isFormValid || isSubmitting || Boolean(inProcessPayment)}
                 className={`w-full py-3.5 px-6 rounded-xl font-bold text-white text-base shadow-md transition-all flex items-center justify-center gap-2 ${
                   !isFormValid || isSubmitting || Boolean(inProcessPayment)
                     ? 'bg-gray-300 cursor-not-allowed shadow-none'
-                    : 'bg-sky-600 hover:bg-sky-700 active:bg-sky-800 cursor-pointer hover:shadow-lg'
+                    : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 cursor-pointer hover:shadow-lg'
                 }`}
               >
                 {isSubmitting ? (
                   <>
                     <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span>Iniciando Mercado Pago...</span>
+                    <span>Iniciando pago...</span>
                   </>
                 ) : (
-                  <span>Pagar con Mercado Pago</span>
+                  <span>Confirmar pedido</span>
                 )}
               </button>
             </div>
