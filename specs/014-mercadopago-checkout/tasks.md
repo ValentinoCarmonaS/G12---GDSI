@@ -33,13 +33,13 @@
 
 **⚠️ CRITICAL**: Ninguna tarea de User Story puede comenzar hasta completar esta fase.
 
-- [ ] T006 Crear la entidad JPA `TemporaryReservation` con mapping a tabla `temporary_reservations` y relación con `Order` en `easyeat/backend/src/main/java/com/easyeat/order/domain/TemporaryReservation.java`
-- [ ] T007 [P] Crear la entidad JPA `Payment` con mapping a tabla `payments`, relación con `Order` y `TemporaryReservation`, y metadatos de pasarela en `easyeat/backend/src/main/java/com/easyeat/order/domain/Payment.java`
-- [ ] T008 [P] Crear repositorio JPA `TemporaryReservationRepository` con métodos para consultar reservas activas por orden y barrido de expiradas en `easyeat/backend/src/main/java/com/easyeat/order/repository/TemporaryReservationRepository.java`
-- [ ] T009 [P] Crear repositorio JPA `PaymentRepository` con métodos para búsqueda por `gatewayPaymentId`, `orderId` y `gatewayPreferenceId` en `easyeat/backend/src/main/java/com/easyeat/order/repository/PaymentRepository.java`
-- [ ] T010 [P] Crear DTOs de request y response para inicio de pago, cancelación y estado consolidado de orden en `easyeat/backend/src/main/java/com/easyeat/order/dto/PaymentInitiationRequest.java`, `easyeat/backend/src/main/java/com/easyeat/order/dto/PaymentInitiationResponse.java`, `easyeat/backend/src/main/java/com/easyeat/order/dto/CancelPaymentRequest.java`, `easyeat/backend/src/main/java/com/easyeat/order/dto/CancelPaymentResponse.java` y `easyeat/backend/src/main/java/com/easyeat/order/dto/OrderPaymentStatusResponse.java`
-- [ ] T011 [P] Crear interfaz de puerto universal de pasarelas `PaymentGatewayPort` y DTOs de comando/resultado de pasarela en `easyeat/backend/src/main/java/com/easyeat/order/service/PaymentGatewayPort.java`
-- [ ] T012 [P] Implementar el resolutor dinámico de pasarelas `PaymentGatewayResolver` para inyección de componentes basada en el enum `PaymentMethod` en `easyeat/backend/src/main/java/com/easyeat/order/service/PaymentGatewayResolver.java`
+- [x] T006 Crear la entidad JPA `TemporaryReservation` con mapping a tabla `temporary_reservations` y relación con `Order` en `easyeat/backend/src/main/java/com/easyeat/order/domain/TemporaryReservation.java`
+- [x] T007 [P] Crear la entidad JPA `Payment` con mapping a tabla `payments`, relación con `Order` y `TemporaryReservation`, y metadatos de pasarela en `easyeat/backend/src/main/java/com/easyeat/order/domain/Payment.java`
+- [x] T008 [P] Crear repositorio JPA `TemporaryReservationRepository` con métodos para consultar reservas activas por orden y barrido de expiradas en `easyeat/backend/src/main/java/com/easyeat/order/repository/TemporaryReservationRepository.java`
+- [x] T009 [P] Crear repositorio JPA `PaymentRepository` con métodos para búsqueda por `gatewayPaymentId`, `orderId` y `gatewayPreferenceId` en `easyeat/backend/src/main/java/com/easyeat/order/repository/PaymentRepository.java`
+- [x] T010 [P] Crear DTOs de request y response para inicio de pago, cancelación y estado consolidado de orden en `easyeat/backend/src/main/java/com/easyeat/order/dto/PaymentInitiationRequest.java`, `easyeat/backend/src/main/java/com/easyeat/order/dto/PaymentInitiationResponse.java`, `easyeat/backend/src/main/java/com/easyeat/order/dto/CancelPaymentRequest.java`, `easyeat/backend/src/main/java/com/easyeat/order/dto/CancelPaymentResponse.java` y `easyeat/backend/src/main/java/com/easyeat/order/dto/OrderPaymentStatusResponse.java`
+- [x] T011 [P] Crear interfaz de puerto universal de pasarelas `PaymentGatewayPort` y DTOs de comando/resultado de pasarela en `easyeat/backend/src/main/java/com/easyeat/order/service/PaymentGatewayPort.java`
+- [x] T012 [P] Implementar el resolutor dinámico de pasarelas `PaymentGatewayResolver` para inyección de componentes basada en el enum `PaymentMethod` en `easyeat/backend/src/main/java/com/easyeat/order/service/PaymentGatewayResolver.java`
 
 **Checkpoint**: Base relacional, repositorios y puertos desacoplados listos — la implementación de User Story 1 puede comenzar de forma independiente.
 
