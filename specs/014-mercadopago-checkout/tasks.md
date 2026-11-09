@@ -15,7 +15,7 @@
 
 ---
 
-## Phase 1: Setup (Infraestructura Compartida)
+## Phase 1: Setup (Infraestructura Compartida) [Issue #283](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/283)
 
 **Propósito**: Inicialización de esquemas de base de datos relacional, migraciones Flyway, configuración tipada y definiciones de tipos base.
 
@@ -27,7 +27,7 @@
 
 ---
 
-## Phase 2: Foundational (Prerrequisitos Bloqueantes)
+## Phase 2: Foundational (Prerrequisitos Bloqueantes) [Issue #284](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/284)
 
 **Propósito**: Entidades relacionales JPA, repositorios, DTOs y abstracción universal de pasarela (`PaymentGatewayPort` / `PaymentGatewayResolver`) que desbloquean la implementación de la historia de usuario.
 
@@ -59,7 +59,7 @@
 7. Prevención de cobro y reserva duplicada ante pago en curso con panel informativo (AS-5, Q3).
 8. Fallo en inicio de pago con reversión instantánea de reservas y código 502 (AS-6).
 
-### Tests para User Story 1 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
+### Tests para User Story 1 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️ [Issue #285](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/285)
 
 > **NOTE: Escribir estos tests PRIMERO y verificar que fallen en ROJO antes de implementar el código de producción.**
 
@@ -75,7 +75,7 @@
 - [ ] T022 [P] [US1] Escribir pruebas de frontend para el componente `InProcessPaymentPanel` verificando panel sin cuenta regresiva, botón "Pagar" deshabilitado, y acciones "Retomar pago" y "Cancelar intento" (AS-5, FR-010, Q3) en `easyeat/frontend/src/test/checkout/InProcessPaymentPanel.test.tsx`
 - [ ] T023 [P] [US1] Escribir pruebas de frontend para la página de retorno `PaymentReturnPage` verificando vaciado automático de carrito tras pago aprobado (`clearCart()`) y redirección a checkout con alerta ante rechazos (AS-2, AS-3, AS-4, Q2, Q4) en `easyeat/frontend/src/test/checkout/PaymentReturnPage.test.tsx`
 
-### Implementación para User Story 1 (Hacer pasar los tests - Estado VERDE)
+### Implementación Backend para User Story 1 (Hacer pasar los tests - Estado VERDE) [Issue #286](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/286)
 
 - [ ] T024 [US1] Implementar el validador criptográfico `WebhookSignatureValidator` para cálculo HMAC-SHA256 con verificación en tiempo constante en `easyeat/backend/src/main/java/com/easyeat/order/service/WebhookSignatureValidator.java`
 - [ ] T025 [US1] Implementar el adaptador `MercadoPagoGatewayAdapter` integrando la API de Preferencias de Mercado Pago Checkout Pro (`POST /checkout/preferences`) con cabecera `X-Idempotency-Key` y consulta de pagos (`GET /v1/payments/{id}`) en `easyeat/backend/src/main/java/com/easyeat/order/service/MercadoPagoGatewayAdapter.java`
@@ -85,6 +85,9 @@
 - [ ] T029 [US1] Implementar el controlador REST `CheckoutPaymentController` con endpoints `POST /api/v1/checkout/pay` y `POST /api/v1/checkout/cancel-payment` en `easyeat/backend/src/main/java/com/easyeat/order/controller/CheckoutPaymentController.java`
 - [ ] T030 [US1] Implementar el controlador REST `PaymentWebhookController` con endpoint `POST /api/v1/payments/{provider}/webhook` para recepción desacoplada de webhooks en `easyeat/backend/src/main/java/com/easyeat/order/controller/PaymentWebhookController.java`
 - [ ] T031 [US1] Implementar el controlador REST `OrderPaymentStatusController` con endpoint `GET /api/v1/orders/{orderId}/payment-status` con evaluación perezosa de expiración en `easyeat/backend/src/main/java/com/easyeat/order/controller/OrderPaymentStatusController.java`
+
+### Implementación Frontend para User Story 1 (Hacer pasar los tests - Estado VERDE) [Issue #287](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/287)
+
 - [ ] T032 [P] [US1] Implementar cliente Axios `paymentApi.ts` para inicio de pago, cancelación y consulta de estado en `easyeat/frontend/src/api/paymentApi.ts`
 - [ ] T033 [P] [US1] Crear componente `InProcessPaymentPanel.tsx` sin cuenta regresiva en pantalla con acciones "Retomar pago" y "Cancelar intento" en `easyeat/frontend/src/components/checkout/InProcessPaymentPanel.tsx`
 - [ ] T034 [P] [US1] Crear componente `PaymentAlertBanner.tsx` para alertas visibles de rechazo y cancelación en `easyeat/frontend/src/components/checkout/PaymentAlertBanner.tsx`
@@ -96,7 +99,7 @@
 
 ---
 
-## Phase 4: Polish & Cross-Cutting Concerns
+## Phase 4: Polish & Cross-Cutting Concerns [Issue #288](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/288)
 
 **Propósito**: Verificaciones transversales de seguridad, ejecución determinística en Sandbox, pruebas de regresión y consistencia documental.
 
