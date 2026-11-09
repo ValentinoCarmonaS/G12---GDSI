@@ -106,7 +106,7 @@
 - [x] T038 [P] Ejecutar validación de aislamiento de datos de tarjeta mediante script de auditoría estricta (`git grep` sin coincidencias de PAN/CVV) en `easyeat/`
 - [x] T039 [P] Ejecutar validación paso a paso de los escenarios de aceptación en Sandbox con tarjetas de prueba oficiales (`APRO`, `FUND`, `OTHE`) según `specs/014-mercadopago-checkout/quickstart.md`
 - [x] T040 Ejecutar la suite completa de tests de backend (`./mvnw clean test`) y frontend (`npm test`) verificando cero regresiones en módulos preexistentes
-- [ ] T041 Ejecutar análisis de consistencia cruzada de artefactos (`speckit-analyze`) para verificar coherencia entre `spec.md`, `plan.md`, `data-model.md`, `contracts/` y `tasks.md`
+- [x] T041 Ejecutar análisis de consistencia cruzada de artefactos (`speckit-analyze`) para verificar coherencia entre `spec.md`, `plan.md`, `data-model.md`, `contracts/` y `tasks.md`
 
 ---
 
