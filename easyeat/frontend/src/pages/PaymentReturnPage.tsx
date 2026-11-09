@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, ShoppingBag } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { useCart } from '../context/CartContext';
 import { getOrderPaymentStatus } from '../api/paymentApi';

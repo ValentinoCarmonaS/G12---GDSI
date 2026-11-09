@@ -79,13 +79,16 @@ describe('T021: CheckoutPaymentFlow frontend integration tests (AS-1, AS-6, FR-0
         <CartContext.Provider
           value={{
             items,
-            tenantId: 'est-123',
             addItem: vi.fn(),
             updateQuantity: vi.fn(),
             removeItem: vi.fn(),
             clearCart: clearCartMock,
-            totalItems: items.reduce((acc, i) => acc + i.quantity, 0),
-            totalPrice: items.reduce((acc, i) => acc + i.price * i.quantity, 0),
+            reEvaluateCompliance: vi.fn(),
+            totalAmount: items.reduce((acc, i) => acc + i.price * i.quantity, 0),
+            totalCount: items.reduce((acc, i) => acc + i.quantity, 0),
+            hasConflictingItems: false,
+            hasPausedItems: false,
+            toastMessage: null,
           }}
         >
           <CheckoutPage />
@@ -133,6 +136,7 @@ describe('T021: CheckoutPaymentFlow frontend integration tests (AS-1, AS-6, FR-0
       expect(paymentApi.initiatePayment).toHaveBeenCalled();
     });
 
+    // @ts-ignore
     window.location = originalLocation;
   });
 

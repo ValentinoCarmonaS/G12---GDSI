@@ -55,13 +55,16 @@ describe('T023: PaymentReturnPage Component Tests (AS-2, AS-3, AS-4, Q2, Q4)', (
             items: [
               { dishId: 'dish-1', tenantId: 'est-1', name: 'Pizza', price: 5000, quantity: 1 },
             ],
-            tenantId: 'est-1',
             addItem: vi.fn(),
             updateQuantity: vi.fn(),
             removeItem: vi.fn(),
             clearCart: clearCartMock,
-            totalItems: 1,
-            totalPrice: 5000,
+            reEvaluateCompliance: vi.fn(),
+            totalAmount: 5000,
+            totalCount: 1,
+            hasConflictingItems: false,
+            hasPausedItems: false,
+            toastMessage: null,
           }}
         >
           <PaymentReturnPage />
@@ -74,15 +77,29 @@ describe('T023: PaymentReturnPage Component Tests (AS-2, AS-3, AS-4, Q2, Q4)', (
     vi.mocked(paymentApi.getOrderPaymentStatus).mockResolvedValueOnce({
       orderId: 'order-123',
       orderStatus: 'PAID',
-      reservationStatus: 'CONFIRMED',
-      paymentStatus: 'APPROVED',
-      statusDetail: 'accredited',
-      transactionAmount: 5000,
-      pickupDate: '2026-11-10',
-      timeSlotStart: '13:00:00',
-      timeSlotEnd: '13:15:00',
-      expiresAt: null,
-      expired: false,
+      reservation: {
+        id: 'res-1',
+        status: 'CONFIRMED',
+        expiresAt: '',
+        remainingSeconds: 0,
+        releaseReason: null,
+      },
+      payment: {
+        id: 'pay-1',
+        status: 'APPROVED',
+        statusDetail: 'accredited',
+        redirectUrl: null,
+        sandbox: true,
+      },
+      fulfillment: {
+        mode: 'SCHEDULED',
+        pickupDate: '2026-11-10',
+        timeSlotStart: '13:00:00',
+        timeSlotEnd: '13:15:00',
+      },
+      totalAmount: 5000,
+      currency: 'ARS',
+      serverTime: new Date().toISOString(),
     });
 
     renderComponent('?collection_status=approved&external_reference=order-123');
@@ -100,15 +117,29 @@ describe('T023: PaymentReturnPage Component Tests (AS-2, AS-3, AS-4, Q2, Q4)', (
     vi.mocked(paymentApi.getOrderPaymentStatus).mockResolvedValueOnce({
       orderId: 'order-123',
       orderStatus: 'CANCELLED',
-      reservationStatus: 'RELEASED',
-      paymentStatus: 'REJECTED',
-      statusDetail: 'cc_rejected_insufficient_amount',
-      transactionAmount: 5000,
-      pickupDate: '2026-11-10',
-      timeSlotStart: '13:00:00',
-      timeSlotEnd: '13:15:00',
-      expiresAt: null,
-      expired: false,
+      reservation: {
+        id: 'res-1',
+        status: 'RELEASED',
+        expiresAt: '',
+        remainingSeconds: 0,
+        releaseReason: 'REJECTED',
+      },
+      payment: {
+        id: 'pay-1',
+        status: 'REJECTED',
+        statusDetail: 'cc_rejected_insufficient_amount',
+        redirectUrl: null,
+        sandbox: true,
+      },
+      fulfillment: {
+        mode: 'SCHEDULED',
+        pickupDate: '2026-11-10',
+        timeSlotStart: '13:00:00',
+        timeSlotEnd: '13:15:00',
+      },
+      totalAmount: 5000,
+      currency: 'ARS',
+      serverTime: new Date().toISOString(),
     });
 
     renderComponent('?collection_status=rejected&external_reference=order-123');
@@ -132,15 +163,29 @@ describe('T023: PaymentReturnPage Component Tests (AS-2, AS-3, AS-4, Q2, Q4)', (
     vi.mocked(paymentApi.getOrderPaymentStatus).mockResolvedValueOnce({
       orderId: 'order-123',
       orderStatus: 'PENDING_PAYMENT',
-      reservationStatus: 'ACTIVE',
-      paymentStatus: 'IN_PROCESS',
-      statusDetail: null,
-      transactionAmount: 5000,
-      pickupDate: '2026-11-10',
-      timeSlotStart: '13:00:00',
-      timeSlotEnd: '13:15:00',
-      expiresAt: new Date(Date.now() + 600000).toISOString(),
-      expired: false,
+      reservation: {
+        id: 'res-1',
+        status: 'ACTIVE',
+        expiresAt: new Date(Date.now() + 600000).toISOString(),
+        remainingSeconds: 600,
+        releaseReason: null,
+      },
+      payment: {
+        id: 'pay-1',
+        status: 'IN_PROCESS',
+        statusDetail: null,
+        redirectUrl: 'https://sandbox.mercadopago.com',
+        sandbox: true,
+      },
+      fulfillment: {
+        mode: 'SCHEDULED',
+        pickupDate: '2026-11-10',
+        timeSlotStart: '13:00:00',
+        timeSlotEnd: '13:15:00',
+      },
+      totalAmount: 5000,
+      currency: 'ARS',
+      serverTime: new Date().toISOString(),
     });
 
     renderComponent('?collection_status=null&external_reference=order-123&status=null');
