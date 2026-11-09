@@ -49,8 +49,8 @@ class PaymentWebhookProcessingIntegrationTest extends BaseIntegrationTest {
         User diner = createTestDiner("webhook_diner@test.com");
 
         Order order = new Order();
-        order.setEstablishment(establishment);
-        order.setUser(diner);
+        order.setEstablishmentId(establishment.getId());
+        order.setUserId(diner.getId());
         order.setFulfillmentMode(FulfillmentMode.SCHEDULED);
         order.setPickupDate(LocalDate.now().plusDays(1));
         order.setTimeSlotStart(LocalTime.of(12, 0));
@@ -73,13 +73,11 @@ class PaymentWebhookProcessingIntegrationTest extends BaseIntegrationTest {
                 order,
                 reservation,
                 com.easyeat.operations.domain.PaymentMethod.MERCADO_PAGO,
-                gatewayPreferenceId,
                 order.getId().toString(),
                 order.getTotalAmount(),
-                "https://mercadopago.com/init",
-                "https://sandbox.mercadopago.com/init",
                 UUID.randomUUID().toString()
         );
+        payment.assignGatewayPreference(gatewayPreferenceId, "https://mercadopago.com/init", "https://sandbox.mercadopago.com/init");
         paymentRepository.save(payment);
 
         // Primer procesamiento de webhook de pago aprobado

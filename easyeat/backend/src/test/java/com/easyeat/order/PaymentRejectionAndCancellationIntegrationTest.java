@@ -56,8 +56,8 @@ class PaymentRejectionAndCancellationIntegrationTest extends BaseIntegrationTest
         User diner = createTestDiner("diner_rejected@test.com");
 
         Order order = new Order();
-        order.setEstablishment(establishment);
-        order.setUser(diner);
+        order.setEstablishmentId(establishment.getId());
+        order.setUserId(diner.getId());
         order.setFulfillmentMode(FulfillmentMode.SCHEDULED);
         order.setPickupDate(LocalDate.now().plusDays(1));
         order.setTimeSlotStart(LocalTime.of(14, 0));
@@ -78,13 +78,11 @@ class PaymentRejectionAndCancellationIntegrationTest extends BaseIntegrationTest
                 order,
                 reservation,
                 com.easyeat.operations.domain.PaymentMethod.MERCADO_PAGO,
-                "pref-reject-123",
                 order.getId().toString(),
                 order.getTotalAmount(),
-                "https://mercadopago.com/init",
-                "https://sandbox.mercadopago.com/init",
                 UUID.randomUUID().toString()
         );
+        payment.assignGatewayPreference("pref-reject-123", "https://mercadopago.com/init", "https://sandbox.mercadopago.com/init");
         paymentRepository.save(payment);
 
         paymentWebhookService.processPaymentUpdate("mercadopago", "mp-pay-rejected-123", order.getId().toString(), "rejected", "cc_rejected_insufficient_amount");
@@ -111,8 +109,8 @@ class PaymentRejectionAndCancellationIntegrationTest extends BaseIntegrationTest
         User diner = createTestDiner("diner_voluntary_cancel@test.com");
 
         Order order = new Order();
-        order.setEstablishment(establishment);
-        order.setUser(diner);
+        order.setEstablishmentId(establishment.getId());
+        order.setUserId(diner.getId());
         order.setFulfillmentMode(FulfillmentMode.SCHEDULED);
         order.setPickupDate(LocalDate.now().plusDays(1));
         order.setTimeSlotStart(LocalTime.of(15, 0));
@@ -133,20 +131,17 @@ class PaymentRejectionAndCancellationIntegrationTest extends BaseIntegrationTest
                 order,
                 reservation,
                 com.easyeat.operations.domain.PaymentMethod.MERCADO_PAGO,
-                "pref-cancel-123",
                 order.getId().toString(),
                 order.getTotalAmount(),
-                "https://mercadopago.com/init",
-                "https://sandbox.mercadopago.com/init",
                 UUID.randomUUID().toString()
         );
+        payment.assignGatewayPreference("pref-cancel-123", "https://mercadopago.com/init", "https://sandbox.mercadopago.com/init");
         paymentRepository.save(payment);
 
         CancelPaymentResponse cancelResponse = checkoutPaymentService.cancelPaymentAttempt(diner.getId(), new CancelPaymentRequest(order.getId()));
 
-        assertThat(cancelResponse.success()).isTrue();
         assertThat(cancelResponse.orderId()).isEqualTo(order.getId());
-        assertThat(cancelResponse.reservationStatus()).isEqualTo(ReservationStatus.RELEASED.name());
+        assertThat(cancelResponse.reservationStatus()).isEqualTo(ReservationStatus.RELEASED);
 
         TemporaryReservation updatedReservation = temporaryReservationRepository.findById(reservation.getId()).orElseThrow();
         assertThat(updatedReservation.getStatus()).isEqualTo(ReservationStatus.RELEASED);
