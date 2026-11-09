@@ -63,7 +63,7 @@
 
 > **NOTE: Escribir estos tests PRIMERO y verificar que fallen en ROJO antes de implementar el código de producción.**
 
-- [ ] T013 [P] [US1] Escribir test unitario `WebhookSignatureValidatorTest.java` verificando cálculo HMAC-SHA256 de `x-signature`, rechazo por desfasaje temporal > 5 min y comparación en tiempo constante (INV-08) en `easyeat/backend/src/test/java/com/easyeat/order/WebhookSignatureValidatorTest.java`
+- [x] T013 [P] [US1] Escribir test unitario `WebhookSignatureValidatorTest.java` verificando cálculo HMAC-SHA256 de `x-signature`, rechazo por desfasaje temporal > 5 min y comparación en tiempo constante (INV-08) en `easyeat/backend/src/test/java/com/easyeat/order/WebhookSignatureValidatorTest.java`
 - [ ] T014 [P] [US1] Escribir test de integración `AtomicReservationConcurrencyIntegrationTest.java` con 20 hilos compitiendo concurrentemente por el último cupo de franja y última unidad de stock (INV-01, INV-07, CB-10, SC-005) en `easyeat/backend/src/test/java/com/easyeat/order/AtomicReservationConcurrencyIntegrationTest.java`
 - [ ] T015 [P] [US1] Escribir test de integración `CheckoutPaymentIntegrationTest.java` validando inicio de pago, reserva conjunta de 15 min y redirección a Sandbox (AS-1, FR-001, FR-002) en `easyeat/backend/src/test/java/com/easyeat/order/CheckoutPaymentIntegrationTest.java`
 - [ ] T016 [P] [US1] Escribir test de integración `PaymentWebhookProcessingIntegrationTest.java` validando confirmación fehaciente autónoma vía webhook sin retorno (AS-2b, FR-003, INV-02) e idempotencia ante eventos repetidos (INV-06, CB-07, SC-008) en `easyeat/backend/src/test/java/com/easyeat/order/PaymentWebhookProcessingIntegrationTest.java`
