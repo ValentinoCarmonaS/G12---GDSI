@@ -1,0 +1,365 @@
+openapi: 3.0.3
+info:
+  title: EasyEat - Mercado Pago Checkout & Atomic Reservation API
+  description: >
+    Contrato formal para el inicio de pagos delegados a Mercado Pago Checkout Pro,
+    reserva temporal conjunta de franja y stock (TTL 15 min), recepción de webhooks
+    criptográficamente firmados y consulta de estado de transacción.
+    EasyEat no captura, almacena ni procesa datos de tarjetas de crédito o débito.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: EasyEat REST API Gateway
+
+paths:
+  /checkout/pay:
+    post:
+      summary: Iniciar proceso de pago y reserva temporal conjunta
+      description: >
+        Valida disponibilidad de stock y franja horaria bajo serialización atómica (INV-01, INV-07).
+        Crea la orden comercial, bloquea los recursos con TTL de 15 minutos (INV-04),
+        genera la preferencia en Mercado Pago Checkout Pro y retorna la URL de redirección.
+      operationId: initiatePayment
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentInitiationRequest'
+      responses:
+        '201':
+          description: Reserva temporal creada con éxito y preferencia generada en Mercado Pago.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentInitiationResponse'
+        '400':
+          description: Datos del pedido inválidos o mal formateados.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: No autenticado o token JWT expirado.
+        '409':
+          description: Franja agotada, stock insuficiente o pago en curso existente.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Carrito con monto cero o violación de reglas de negocio.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '502':
+          description: Fallo en la comunicación inicial con Mercado Pago (AS-6).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /checkout/cancel-payment:
+    post:
+      summary: Cancelar intento de pago voluntariamente
+      description: >
+        Permite al comensal cancelar voluntariamente un intento de pago en curso (AS-5, Q3, FR-010).
+        Libera de forma inmediata la reserva temporal de franja y stock, re-habilitando el checkout.
+      operationId: cancelPaymentAttempt
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelPaymentRequest'
+      responses:
+        '200':
+          description: Intento de pago cancelado y recursos restituidos inmediatamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelPaymentResponse'
+        '404':
+          description: Orden no encontrada o no perteneciente al usuario.
+        '409':
+          description: La orden ya se encuentra confirmada o en estado no cancelable.
+
+  /orders/{orderId}/payment-status:
+    get:
+      summary: Consultar estado consolidado de orden, reserva y pago
+      description: >
+        Retorna el estado fehaciente de la orden, la reserva temporal y la transacción de Mercado Pago.
+        Aplica expiración perezosa si transcurrieron 15 minutos sin resolución.
+      operationId: getOrderPaymentStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estado consolidado de la orden y el pago.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPaymentStatusResponse'
+        '404':
+          description: Orden no encontrada.
+
+  /payments/mercadopago/webhook:
+    post:
+      summary: Endpoint de notificación asíncrona de Mercado Pago
+      description: >
+        Recibe notificaciones automáticas de eventos de pago de Mercado Pago.
+        Requiere cabecera x-signature válida (HMAC-SHA256). Procesa transiciones de forma idempotente.
+      operationId: handleMercadoPagoWebhook
+      parameters:
+        - name: x-signature
+          in: header
+          required: true
+          schema:
+            type: string
+            example: 'ts=1742505638683,v1=ced36ab6d33566bb1e16c125819b8d840d6b8ef136b0b9127c76064466f5229b'
+        - name: x-request-id
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MercadoPagoWebhookPayload'
+      responses:
+        '200':
+          description: Notificación recibida y procesada exitosamente (o duplicada reconocida).
+        '401':
+          description: Firma x-signature inválida o timestamp expirado.
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    PaymentInitiationRequest:
+      type: object
+      required:
+        - establishmentId
+        - fulfillmentMode
+        - items
+      properties:
+        establishmentId:
+          type: string
+          format: uuid
+        fulfillmentMode:
+          type: string
+          enum: [IMMEDIATE, SCHEDULED]
+        pickupDate:
+          type: string
+          format: date
+          example: '2026-11-10'
+        timeSlotStart:
+          type: string
+          format: time
+          example: '13:00:00'
+        timeSlotEnd:
+          type: string
+          format: time
+          example: '13:15:00'
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItemRequest'
+
+    OrderItemRequest:
+      type: object
+      required:
+        - dishId
+        - quantity
+      properties:
+        dishId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+
+    PaymentInitiationResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        reservationId:
+          type: string
+          format: uuid
+        paymentId:
+          type: string
+          format: uuid
+        gatewayPreferenceId:
+          type: string
+        redirectUrl:
+          type: string
+          format: uri
+        sandbox:
+          type: boolean
+        expiresAt:
+          type: string
+          format: date-time
+        totalAmount:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: 'ARS'
+
+    CancelPaymentRequest:
+      type: object
+      required:
+        - orderId
+      properties:
+        orderId:
+          type: string
+          format: uuid
+
+    CancelPaymentResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        reservationStatus:
+          type: string
+          enum: [RELEASED, EXPIRED]
+        paymentStatus:
+          type: string
+          enum: [CANCELLED, EXPIRED]
+        message:
+          type: string
+
+    OrderPaymentStatusResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        orderStatus:
+          type: string
+          enum: [PENDING_PAYMENT, PAID, CONFIRMED, CANCELLED, EXPIRED]
+        reservation:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            status:
+              type: string
+              enum: [ACTIVE, CONFIRMED, RELEASED, EXPIRED]
+            expiresAt:
+              type: string
+              format: date-time
+            remainingSeconds:
+              type: integer
+            releaseReason:
+              type: string
+              nullable: true
+        payment:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            status:
+              type: string
+              enum: [IN_PROCESS, APPROVED, REJECTED, CANCELLED, FAILED, EXPIRED]
+            statusDetail:
+              type: string
+              nullable: true
+            redirectUrl:
+              type: string
+            sandbox:
+              type: boolean
+        fulfillment:
+          type: object
+          properties:
+            mode:
+              type: string
+            pickupDate:
+              type: string
+            timeSlotStart:
+              type: string
+            timeSlotEnd:
+              type: string
+        totalAmount:
+          type: number
+        currency:
+          type: string
+        serverTime:
+          type: string
+          format: date-time
+
+    MercadoPagoWebhookPayload:
+      type: object
+      required:
+        - action
+        - data
+        - type
+      properties:
+        action:
+          type: string
+          example: 'payment.updated'
+        data:
+          type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              example: '123456789'
+        type:
+          type: string
+          example: 'payment'
+        date_created:
+          type: string
+          format: date-time
+        live_mode:
+          type: boolean
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
