@@ -24,6 +24,7 @@ import { AdminOperationsPage } from '../pages/AdminOperationsPage';
 import { VerifyEmailPage } from '../pages/VerifyEmailPage';
 import { EstablishmentDiscoveryPage } from '../pages/EstablishmentDiscoveryPage';
 import { CheckoutPage } from '../pages/CheckoutPage';
+import { PaymentReturnPage } from '../pages/PaymentReturnPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -238,6 +239,14 @@ export const AppRoutes: React.FC = () => {
         element={
           <RoleRouteGuard allowedRoles={['COMENSAL']}>
             <CheckoutPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/checkout/payment-return"
+        element={
+          <RoleRouteGuard allowedRoles={['COMENSAL']}>
+            <PaymentReturnPage />
           </RoleRouteGuard>
         }
       />
