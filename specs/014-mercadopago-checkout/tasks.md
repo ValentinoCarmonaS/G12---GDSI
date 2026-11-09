@@ -84,7 +84,7 @@
 - [x] T028 [US1] Extender el proceso programado `OrderExpirationScheduler` inyectando `TemporaryReservationRepository` para barrido periódico coordinado de órdenes y reservas vencidas (> 15 min) en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderExpirationScheduler.java`
 - [x] T029 [US1] Implementar el controlador REST `CheckoutPaymentController` con endpoints `POST /api/v1/checkout/pay` y `POST /api/v1/checkout/cancel-payment` en `easyeat/backend/src/main/java/com/easyeat/order/controller/CheckoutPaymentController.java`
 - [x] T030 [US1] Implementar el controlador REST `PaymentWebhookController` con endpoint `POST /api/v1/payments/{provider}/webhook` para recepción desacoplada de webhooks en `easyeat/backend/src/main/java/com/easyeat/order/controller/PaymentWebhookController.java`
-- [ ] T031 [US1] Implementar el controlador REST `OrderPaymentStatusController` con endpoint `GET /api/v1/orders/{orderId}/payment-status` con evaluación perezosa de expiración en `easyeat/backend/src/main/java/com/easyeat/order/controller/OrderPaymentStatusController.java`
+- [x] T031 [US1] Implementar el controlador REST `OrderPaymentStatusController` con endpoint `GET /api/v1/orders/{orderId}/payment-status` con evaluación perezosa de expiración en `easyeat/backend/src/main/java/com/easyeat/order/controller/OrderPaymentStatusController.java`
 
 ### Implementación Frontend para User Story 1 (Hacer pasar los tests - Estado VERDE) [Issue #287](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/287)
 
