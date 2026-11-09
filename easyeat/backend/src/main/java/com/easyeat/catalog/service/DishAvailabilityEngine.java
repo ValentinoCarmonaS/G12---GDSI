@@ -32,6 +32,7 @@ public class DishAvailabilityEngine {
     private final IngredientRepository ingredientRepository;
     private final com.easyeat.order.repository.TemporaryReservationRepository temporaryReservationRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public DishAvailabilityEngine(
             EstablishmentRepository establishmentRepository,
             DishRepository dishRepository,

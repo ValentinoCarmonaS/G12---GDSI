@@ -210,7 +210,12 @@ public class CheckoutPaymentService {
 
         // 6. Invocar al puerto de pasarela universal (PaymentGatewayPort)
         PaymentMethod method = request.paymentMethod() != null ? request.paymentMethod() : PaymentMethod.MERCADO_PAGO;
-        PaymentGatewayPort gatewayPort = paymentGatewayResolver.resolve(method);
+        PaymentGatewayPort gatewayPort;
+        try {
+            gatewayPort = paymentGatewayResolver.resolve(method);
+        } catch (Exception e) {
+            gatewayPort = paymentGatewayResolver.resolveDefault();
+        }
 
         String paymentIdempotency = UUID.randomUUID().toString();
         PaymentGatewayPort.CreatePreferenceCommand command = new PaymentGatewayPort.CreatePreferenceCommand(

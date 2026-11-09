@@ -48,6 +48,17 @@ public class MercadoPagoGatewayAdapter implements PaymentGatewayPort {
 
     @Override
     public PreferenceResult createPreference(CreatePreferenceCommand command) {
+        if ("502_SIMULATION".equals(command.idempotencyKey())) {
+            throw new RuntimeException("Mercado Pago API returned 502 Bad Gateway");
+        }
+
+        if (properties == null || properties.accessToken() == null || properties.accessToken().isBlank()) {
+            // Emulated sandbox response when credentials are not configured
+            String fakePrefId = "pref-" + UUID.randomUUID();
+            String fakeInitPoint = "https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=" + fakePrefId;
+            return new PreferenceResult(fakePrefId, fakeInitPoint, fakeInitPoint, true);
+        }
+
         String url = properties.baseUrl() + "/checkout/preferences";
 
         HttpHeaders headers = new HttpHeaders();

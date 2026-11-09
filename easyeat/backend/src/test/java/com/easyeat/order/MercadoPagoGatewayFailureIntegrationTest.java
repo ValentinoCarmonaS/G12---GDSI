@@ -45,6 +45,9 @@ class MercadoPagoGatewayFailureIntegrationTest extends BaseIntegrationTest {
     private PaymentGatewayPort paymentGatewayPort;
 
     @Autowired
+    private com.easyeat.order.service.PaymentGatewayResolver paymentGatewayResolver;
+
+    @Autowired
     private OrderRepository orderRepository;
 
     @Autowired
@@ -98,6 +101,7 @@ class MercadoPagoGatewayFailureIntegrationTest extends BaseIntegrationTest {
         when(paymentGatewayPort.getPaymentMethod()).thenReturn(PaymentMethod.MERCADO_PAGO);
         when(paymentGatewayPort.createPreference(any()))
                 .thenThrow(new RuntimeException("Mercado Pago API returned 502 Bad Gateway"));
+        paymentGatewayResolver.registerAdapter(paymentGatewayPort);
 
         long ordersBefore = orderRepository.count();
         long reservationsBefore = temporaryReservationRepository.count();
