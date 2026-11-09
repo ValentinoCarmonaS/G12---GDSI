@@ -35,4 +35,7 @@
   1. **Umbral de cuenta regresiva para reservas programadas**: Activación formal a exactamente 15 minutos antes del inicio de la franja horaria pactada, consistente con los bloques de franjas y TTL definidos en Spec 010 y Spec 012.
   2. **Convivencia unificada y persistente de confirmación y seguimiento**: La pantalla verde de confirmación integra de forma permanente el estado de aprobación, número de orden, detalle de franja y widget de seguimiento en vivo con su avance actualizado ante recargas o reingresos.
   3. **Fallback institucional de branding**: Todo establecimiento que no haya personalizado sus datos de marca en "Mi Local" aplica automáticamente la identidad visual institucional neutra de EasyEat.
+  4. **Emisión universal de comprobante por correo**: Despacho garantizado e incondicional para todo pago aprobado en segundo plano, cubriendo plenamente tanto flujos normales como cierres o interrupciones de navegación.
+  5. **Tríada de colores de marca en "Mi Local"**: Tres colores explícitos en formato `#RRGGBB` (primario para acciones, secundario para cabeceras y acento para distintivos) con cálculo automático de contraste para legibilidad.
+  6. **Actualización silenciosa ante ajustes del KDS**: Modificación fluida y directa del valor numérico del tiempo en el reloj dinámico sin alertas ni elementos emergentes intrusivos.
 

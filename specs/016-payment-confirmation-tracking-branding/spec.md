@@ -41,6 +41,21 @@
 - **Q3: Fallback visual ante ausencia de configuración de branding previa (ADM-2.1.1, Criterio 9)**: Si un administrador aún no ha configurado o guardado los elementos de marca en "Mi Local", ¿qué identidad visual visualiza el comensal al entrar a pedir?  
   → **A3**: El sistema aplica la identidad visual base institucional de EasyEat: paleta de colores neutra predeterminada de la plataforma, isotipo por defecto del sistema y el nombre comercial registrado durante el alta operativa del establecimiento, asegurando coherencia y legibilidad sin bloquear la operación comercial.
 
+- **Q4: Política de emisión del correo de comprobante y cobertura ante interrupciones (COM-7.3.1, Criterio 2)**: ¿Se emite el correo electrónico únicamente si se detecta una interrupción en el navegador, o se adopta un despacho universal ante toda orden aprobada?  
+  → **A4**: Se adopta el despacho universal e incondicional: todo pago aprobado genera y envía automáticamente en segundo plano el correo electrónico con el comprobante formal, detalle de la orden y enlace de seguimiento. Esta política garantiza al 100% que ante cualquier cierre de navegador, corte de conexión o interrupción previa a la carga de la pantalla verde, el comensal disponga de su comprobante en su bandeja de entrada, proveyendo al mismo tiempo un respaldo transaccional estándar para todos los usuarios.
+
+- **Q5: Selección y accesibilidad de colores primarios en "Mi Local" (ADM-2.1.1, Criterio 9)**: ¿Cómo debe estructurarse la selección de la paleta de colores primarios para asegurar la coherencia estética y legibilidad en la vista del comensal?  
+  → **A5**: Se adopta selección libre mediante código hexadecimal (formato `#RRGGBB`) con cálculo automático de contraste: el sistema evalúa la luminosidad del color seleccionado para determinar dinámicamente si los textos e iconos sobre dicho fondo deben ser oscuros o claros, garantizando siempre el cumplimiento de contraste mínimo accesible y legibilidad en botones, barras y destacados visuales.
+
+- **Q6: Comportamiento visual del reloj ante ajustes globales de tiempos del KDS (COM-7.3.2, Criterio 7)**: ¿Cómo debe presentarse visualmente al comensal el reajuste temporal cuando el personal de cocina incrementa o ajusta los tiempos de preparación globales?  
+  → **A6**: Se adopta la actualización silenciosa del reloj numérico: el sistema actualiza de manera fluida y en vivo el valor de los minutos restantes en el reloj dinámico sin introducir carteles de alerta, popups ni distintivos adicionales, manteniendo la interfaz despejada y limpia mientras refleja fielmente el nuevo escenario operativo.
+
+- **Q7: Desglose de la tríada de colores de marca en "Mi Local" (ADM-2.1.1, Criterio 9)**: ¿Qué colores específicos componen la selección de "colores primarios" que el administrador configura para la identidad visual de su restaurante?  
+  → **A7**: La configuración cromática se define mediante tres colores explícitos en formato hexadecimal (`#RRGGBB`), cada uno con cálculo automático de contraste para textos e iconos asociados:
+  1. **Color Primario**: para botones de acción principal (CTA, confirmar orden, agregar al carrito) y acciones clave.
+  2. **Color Secundario**: para la cabecera del establecimiento, barras superiores y fondos destacados de sección.
+  3. **Color de Acento**: para insignias (badges), etiquetas de estado, píldoras informativas y bordes de selección activa.
+
 ---
 
 ## Propósito
@@ -135,14 +150,14 @@ para que la vista del comensal respete la identidad visual de mi marca.
 
 **Por qué esta prioridad**: Pertenece al dominio de configuración visual y fidelización comercial. Si bien no bloquea la realización funcional de los pedidos, garantiza la diferenciación estética y la presencia de marca de cada restaurante en un ecosistema multi-tenant.
 
-**Prueba independiente**: Se puede probar accediendo con rol de Administrador a la sección "Mi Local", cargando un archivo de logotipo válido, editando nombre de fantasía, descripción y seleccionando una paleta de colores primarios, guardando los cambios y verificando de inmediato que un comensal al entrar al catálogo o vistas de dicho restaurante visualice los elementos de marca actualizados.
+**Prueba independiente**: Se puede probar accediendo con rol de Administrador a la sección "Mi Local", cargando un archivo de logotipo válido, editando nombre de fantasía, descripción y seleccionando la tríada de colores primarios de marca (primario para acciones, secundario para cabecera y acento para detalles) en formato hexadecimal `#RRGGBB`, guardando los cambios y verificando de inmediato que un comensal al entrar al catálogo o vistas de dicho restaurante visualice los elementos de marca y contraste actualizados.
 
 #### Escenarios de aceptación
 
 - **AS-9 (Criterio fuente 9 — Aplicación de branding configurado en la vista del comensal)**:  
   **Dado** que el administrador guarda los cambios en "Mi Local",  
   **Cuando** un comensal entra a pedir en dicho establecimiento,  
-  **Entonces** la plataforma adopta la paleta de colores y el logo configurado, exhibiendo además su nombre de fantasía y descripción.
+  **Entonces** la plataforma adopta la paleta de colores configurada (color primario en botones de acción, secundario en cabecera y de acento en distintivos) y el logo configurado, exhibiendo además su nombre de fantasía y descripción comercial con contraste legible garantizado.
 
 ---
 
@@ -151,7 +166,7 @@ para que la vista del comensal respete la identidad visual de mi marca.
 - **CB-001 (Pago aprobado con retorno exitoso regular)**:  
   La pasarela retorna la aprobación del pago; el sistema procesa la notificación de inmediato, asegura el estado de la orden, redirige a la pantalla verde con animación y exhibe el número de orden asignado junto al botón de seguimiento y el detalle de la franja.
 - **CB-002 (Pago aprobado con navegador interrumpido antes de renderizar la pantalla verde)**:  
-  Si el comensal cierra el navegador, pierde la conexión a internet o el dispositivo se reinicia en el lapso entre la aprobación de la pasarela y la redirección a la pantalla verde, el backend procesa de forma autónoma la confirmación autoritativa y despacha inmediatamente el correo electrónico con el comprobante completo, detalle de ítems, franja y enlace directo de seguimiento.
+  Si el comensal cierra el navegador, pierde la conexión a internet o el dispositivo se reinicia en el lapso entre la aprobación de la pasarela y la redirección a la pantalla verde, el backend procesa de forma autónoma la confirmación autoritativa y despacha inmediatamente el correo electrónico con el comprobante completo, detalle de ítems, franja y enlace directo de seguimiento conforme a la política universal de emisión.
 - **CB-003 (Presión repetida o múltiple del botón de confirmación durante el procesamiento)**:  
   Al hacer clic en el botón de confirmación de pago, la interfaz inhabilita inmediatamente dicho control y bloquea interacciones adicionales, desplegando un indicador visual de procesamiento que previene el reenvío de peticiones y garantiza que no se produzcan cobros duplicados.
 - **CB-004 (Pedido de retiro inmediato con cola de cocina altamente saturada)**:  
@@ -161,13 +176,13 @@ para que la vista del comensal respete la identidad visual de mi marca.
 - **CB-006 (Transición de reserva programada al umbral de proximidad de 15 minutos)**:  
   Cuando el reloj del sistema alcanza los 15 minutos previos al inicio de la franja horaria pactada, la vista de seguimiento transmuta automáticamente la visualización del horario estático a una cuenta regresiva dinámica en tiempo real hacia el inicio del turno.
 - **CB-007 (Ajuste de tiempos de preparación por personal de KDS durante el seguimiento activo)**:  
-  Si la cocina introduce un ajuste temporal global ante un cuello de botella o demora imprevista, la pantalla del comensal en seguimiento actualiza en vivo el minutero del tiempo estimado, sincronizando la expectativa del comensal sin exigirle recargar la pantalla.
+  Si la cocina introduce un ajuste temporal global ante un cuello de botella o demora imprevista, la pantalla del comensal en seguimiento actualiza en vivo y de forma silenciosa el valor numérico del tiempo estimado en el minutero, sincronizando la expectativa del comensal sin exigirle recargar la pantalla ni emitir mensajes emergentes disruptivos.
 - **CB-008 (Pedido marcado como finalizado en KDS mientras el comensal observa el seguimiento)**:  
   En el instante exacto en que la cocina marca la orden como finalizada en el KDS, la interfaz del comensal remueve el contador o tiempo restante, aplica una transición visual notoria y presenta un estado destacado de llamado a mostrador ("Tu pedido está listo para retirar"), acompañado del número de orden en gran formato.
 - **CB-009 (Guardado de branding completo por el administrador en "Mi Local")**:  
-  El administrador define simultáneamente logotipo, nombre de fantasía, descripción y paleta cromática primaria; al presionar guardar, el sistema valida que los datos cumplan con los formatos permitidos, persiste la configuración y la asocia unívocamente al establecimiento.
+  El administrador define simultáneamente logotipo, nombre de fantasía, descripción y la tríada de colores primarios en formato hexadecimal (`#RRGGBB`: primario para acciones, secundario para cabecera y acento para detalles); al presionar guardar, el sistema valida que los datos cumplan con los formatos permitidos, aplica el cálculo de contraste para asegurar legibilidad, persiste la configuración y la asocia unívocamente al establecimiento.
 - **CB-010 (Comensal que entra a pedir inmediatamente después de un cambio de branding)**:  
-  El comensal ingresa al catálogo o flujo de compra del restaurante; la plataforma recupera la configuración de branding vigente del establecimiento y aplica los colores primarios en botones, encabezados y destacados visuales, mostrando el logotipo y los textos de fantasía actualizados.
+  El comensal ingresa al catálogo o flujo de compra del restaurante; la plataforma recupera la configuración de branding vigente del establecimiento y aplica el color primario en botones principales y llamadas a la acción, el color secundario en cabeceras y barras contextuales, y el color de acento en insignias y distintivos, mostrando el logotipo, nombre de fantasía y textos actualizados.
 - **CB-011 (Establecimiento que no posee configuración previa de branding en "Mi Local")**:  
   Si el local no ha cargado elementos personalizados de marca, el sistema despliega el diseño institucional neutro de EasyEat, garantizando accesibilidad y funcionalidad completas sin presentar elementos rotos o vacíos.
 - **CB-012 (Reingreso o recarga de la pantalla de confirmación por el comensal)**:  
@@ -178,14 +193,14 @@ para que la vista del comensal respete la identidad visual de mi marca.
 ## Requisitos funcionales
 
 - **FR-001**: El sistema debe redirigir al comensal a una pantalla verde de éxito con animaciones visuales y exhibir de forma visible el número de orden generado cuando la pasarela retorne un código de aprobación exitoso. *(Derivado de COM-7.3.1, Criterio 1)*
-- **FR-002**: El sistema debe garantizar el envío de un correo electrónico a la casilla registrada del comensal con el comprobante formal y el detalle completo de la orden cuando el navegador sufra una interrupción antes de cargar la pantalla de éxito tras un pago aprobado. *(Derivado de COM-7.3.1, Criterio 2)*
+- **FR-002**: El sistema debe emitir de forma universal y garantizada un correo electrónico a la casilla registrada del comensal con el comprobante formal, el detalle completo de la orden y el enlace de seguimiento ante todo pago aprobado, asegurando su recepción incluso si el navegador sufre una interrupción antes de cargar la pantalla de éxito. *(Derivado de COM-7.3.1, Criterio 2)*
 - **FR-003**: El sistema debe exhibir en la pantalla de confirmación la franja horaria de retiro elegida por el comensal y disponer de un control habilitado para realizar el seguimiento en vivo de la orden. *(Derivado de COM-7.3.1, Criterio 3)*
 - **FR-004**: El sistema debe bloquear inmediatamente las interacciones sobre la interfaz mientras se procesa el pago y se aguarda la respuesta autoritativa de la pasarela, impidiendo presiones múltiples y cobros duplicados. *(Derivado de COM-7.3.1, Criterio 4)*
 - **FR-005**: El sistema debe mostrar una barra de progreso y un tiempo estimado de entrega calculado dinámicamente según la saturación actual de la cola de pedidos en el KDS para órdenes con modalidad de retiro inmediato. *(Derivado de COM-7.3.2, Criterio 5)*
 - **FR-006**: El sistema debe mostrar el horario de retiro pactado de forma estática en lugar de un contador en vivo para reservas programadas a futuro, activando la cuenta regresiva únicamente al restar 15 minutos o menos para el inicio de la franja horaria acordada. *(Derivado de COM-7.3.2, Criterio 6)*
-- **FR-007**: El sistema debe actualizar automáticamente el reloj dinámico en la pantalla del comensal cuando el personal del KDS registre ajustes en los tiempos globales de preparación de la cocina. *(Derivado de COM-7.3.2, Criterio 7)*
+- **FR-007**: El sistema debe actualizar automáticamente y de manera silenciosa el reloj dinámico en la pantalla del comensal, reflejando el nuevo valor de minutos restantes cuando el personal del KDS registre ajustes en los tiempos globales de preparación de la cocina. *(Derivado de COM-7.3.2, Criterio 7)*
 - **FR-008**: El sistema debe retirar el tiempo estimado de entrega y hacer transicionar la pantalla a un estado destacado de aviso indicando que el pedido se encuentra "listo para retirar" por mostrador cuando el personal de cocina marque la orden como finalizada en el KDS. *(Derivado de COM-7.3.2, Criterio 8)*
-- **FR-009**: El sistema debe reflejar en la vista del comensal el logotipo, el nombre de fantasía, la descripción comercial y la paleta de colores primarios guardados por el administrador en la sección "Mi Local" al momento en que el usuario ingresa a pedir en dicho establecimiento. *(Derivado de ADM-2.1.1, Criterio 9)*
+- **FR-009**: El sistema debe reflejar en la vista del comensal el logotipo, el nombre de fantasía, la descripción comercial y la tríada de colores de marca configurados en formato hexadecimal por el administrador en la sección "Mi Local" (color primario para acciones clave, color secundario para cabeceras y color de acento para etiquetas y bordes), calculando automáticamente el contraste adecuado para textos e iconos sobre elementos destacados al momento en que el comensal ingresa a pedir en dicho establecimiento. *(Derivado de ADM-2.1.1, Criterio 9)*
 
 ---
 
@@ -195,7 +210,7 @@ para que la vista del comensal respete la identidad visual de mi marca.
 - **Comprobante de orden**: Documento informativo generado automáticamente tras la aprobación del pago que sintetiza la validez de la transacción, el detalle de ítems, el costo total liquidado, la franja horaria estipulada y el enlace de acceso al seguimiento del pedido.
 - **Seguimiento dinámico de orden**: Estado visible de atención para el comensal compuesto por la barra de avance, la métrica temporal de preparación (tiempo dinámico o cuenta regresiva) y la indicación de llamado a mostrador para el retiro físico.
 - **Estimación de tiempo de entrega**: Métrica de tiempo remanente derivada de la carga de comandas activas en la cola del KDS y los modificadores globales introducidos por el personal operativo.
-- **Identidad visual del restaurante (Branding)**: Conjunto de activos y atributos estéticos de personalización pertenecientes a un establecimiento gastronómico, que incluye archivo de logotipo, denominación de fantasía, texto descriptivo comercial y definición de colores primarios de interfaz.
+- **Identidad visual del restaurante (Branding)**: Conjunto de activos y atributos estéticos de personalización pertenecientes a un establecimiento gastronómico, que incluye archivo de logotipo, denominación de fantasía, texto descriptivo comercial y la tríada de colores de marca en formato hexadecimal (color primario, secundario y de acento) con sus niveles de contraste asociados.
 
 ---
 
@@ -203,8 +218,8 @@ para que la vista del comensal respete la identidad visual de mi marca.
 
 - **INV-001 (Aprobación autoritativa como condición excluyente de la pantalla verde)**:  
   La pantalla verde de éxito solo se presenta si la pasarela de pagos emite un código de aprobación formal y exitoso. Ninguna acción del comensal o alteración en la interfaz de usuario puede sustituir o simular este resultado.
-- **INV-002 (Garantía incondicional de emisión de comprobante por correo ante interrupciones)**:  
-  Toda orden con confirmación de pago aprobada cuyo flujo de navegación hacia la pantalla de éxito se vea interrumpido debe desencadenar de manera garantizada y asíncrona en el servidor el despacho del comprobante por correo electrónico.
+- **INV-002 (Garantía incondicional de emisión universal de comprobante por correo)**:  
+  Toda orden con confirmación de pago aprobada genera y despacha de manera automática, garantizada y asíncrona en el servidor el comprobante formal por correo electrónico, asegurando el respaldo tanto en flujos regulares como ante cualquier interrupción o cierre previo a la visualización de la pantalla de éxito.
 - **INV-003 (Bloqueo de interfaz e indemnidad contra cobros duplicados)**:  
   El inicio del procesamiento de cobro inhabilita de inmediato los controles de envío de la pantalla. El bloqueo de interacciones no interfiere ni cancela la recepción del desenlace emitido por la pasarela de pagos externa.
 - **INV-004 (Completitud informativa de la confirmación)**:  
@@ -213,12 +228,12 @@ para que la vista del comensal respete la identidad visual de mi marca.
   El tiempo estimado exhibido para órdenes de retiro inmediato debe responder dinámicamente al estado y volumen de trabajo real de la cola de preparación en el KDS, no pudiendo tratarse de un valor estático inmutable.
 - **INV-006 (Exclusión temporal de contador para reservas programadas distantes)**:  
   Una reserva programada cuya franja horaria de retiro inicie en un plazo superior a 15 minutos debe mostrar únicamente el horario pactado y tiene estrictamente prohibido presentar un contador dinámico regresivo hasta ingresar a dicho umbral.
-- **INV-007 (Sincronización reactiva ante ajustes operativos de cocina)**:  
-  Cualquier reajuste en los tiempos de preparación globales efectuado por el personal de cocina en el KDS debe verse reflejado en la pantalla de seguimiento del comensal sin requerir intervención o actualización manual por parte del usuario.
+- **INV-007 (Sincronización reactiva y silenciosa ante ajustes operativos de cocina)**:  
+  Cualquier reajuste en los tiempos de preparación globales efectuado por el personal de cocina en el KDS debe verse reflejado directamente en el minutero del reloj dinámico del comensal de forma silenciosa, sin recarga de pantalla ni elementos intrusivos.
 - **INV-008 (Irreversibilidad del estado 'Listo para retirar' y retiro del tiempo estimado)**:  
   Al marcarse la orden como finalizada en el KDS, la supresión del tiempo estimado y la transición al estado visual destacado de retiro en mostrador son de carácter definitivo e inmediato.
-- **INV-009 (Consistencia multi-tenant del branding configurado)**:  
-  Los elementos de marca guardados en "Mi Local" (logotipo, nombre de fantasía, descripción y colores primarios) se circunscriben estrictamente al establecimiento gestionado y se aplican a las vistas de catálogo y compra del comensal cuando este interactúa con dicho restaurante.
+- **INV-009 (Consistencia multi-tenant y legibilidad del branding configurado)**:  
+  Los elementos de marca guardados en "Mi Local" (logotipo, nombre de fantasía, descripción y la tríada de colores primarios en hexadecimal `#RRGGBB` con contraste garantizado) se circunscriben estrictamente al establecimiento gestionado y se aplican a las vistas de catálogo y compra del comensal cuando este interactúa con dicho restaurante.
 - **INV-010 (Fallback institucional ante ausencia de personalización)**:  
   Ante la inexistencia de datos de marca personalizados en un establecimiento, la plataforma debe utilizar la identidad institucional base de EasyEat sin degradar la experiencia visual ni interrumpir el proceso de compra.
 
