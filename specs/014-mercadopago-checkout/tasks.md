@@ -20,7 +20,7 @@
 **Propósito**: Inicialización de esquemas de base de datos relacional, migraciones Flyway, configuración tipada y definiciones de tipos base.
 
 - [x] T001 Crear migración Flyway `V18__mercadopago_checkout_and_reservations.sql` creando las tablas `temporary_reservations` y `payments` con índices y restricciones de unicidad en `easyeat/backend/src/main/resources/db/migration/V18__mercadopago_checkout_and_reservations.sql`
-- [ ] T002 [P] Crear enums de dominio `ReservationStatus` (`ACTIVE`, `CONFIRMED`, `RELEASED`, `EXPIRED`) y `ReleaseReason` (`REJECTED`, `CANCELLED_BY_USER`, `EXPIRED`, `GATEWAY_ERROR`) en `easyeat/backend/src/main/java/com/easyeat/order/domain/ReservationStatus.java` y `easyeat/backend/src/main/java/com/easyeat/order/domain/ReleaseReason.java`
+- [x] T002 [P] Crear enums de dominio `ReservationStatus` (`ACTIVE`, `CONFIRMED`, `RELEASED`, `EXPIRED`) y `ReleaseReason` (`REJECTED`, `CANCELLED_BY_USER`, `EXPIRED`, `GATEWAY_ERROR`) en `easyeat/backend/src/main/java/com/easyeat/order/domain/ReservationStatus.java` y `easyeat/backend/src/main/java/com/easyeat/order/domain/ReleaseReason.java`
 - [ ] T003 [P] Crear enum de dominio `PaymentStatus` (`IN_PROCESS`, `APPROVED`, `REJECTED`, `CANCELLED`, `FAILED`, `EXPIRED`) en `easyeat/backend/src/main/java/com/easyeat/order/domain/PaymentStatus.java`
 - [ ] T004 [P] Crear clase de configuración tipada `MercadoPagoProperties` vinculada al prefijo `mercadopago` en `easyeat/backend/src/main/java/com/easyeat/order/config/MercadoPagoProperties.java`
 - [ ] T005 [P] Definir tipos TypeScript para pagos, reservas temporales, estados de pasarela y respuestas de checkout en `easyeat/frontend/src/types/payment.ts`
