@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -91,11 +92,7 @@ class OrderExpirationSchedulerTest {
         TemporaryReservation reservation = new TemporaryReservation(order, "sweep-idemp-1", Instant.now().minusSeconds(10));
         reservation.setStatus(ReservationStatus.ACTIVE);
 
-        Payment payment = new Payment();
-        payment.setId(UUID.randomUUID());
-        payment.setStatus(PaymentStatus.IN_PROCESS);
-        payment.setOrder(order);
-        payment.setReservation(reservation);
+        Payment payment = new Payment(order, reservation, com.easyeat.operations.domain.PaymentMethod.MERCADO_PAGO, order.getId().toString(), new BigDecimal("1000.00"), "pay-idemp-1");
 
         when(orderRepository.findExpiredPendingOrders(any(Instant.class)))
                 .thenReturn(List.of(order));

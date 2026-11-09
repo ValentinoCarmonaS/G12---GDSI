@@ -68,15 +68,15 @@ class MercadoPagoGatewayFailureIntegrationTest extends BaseIntegrationTest {
         establishmentRepository.save(establishment);
 
         Dish dish = createTestDish(establishment.getId(), "Plato Fallo Red", new BigDecimal("2500.00"));
-        Ingredient ingredient = new Ingredient(establishment.getId(), "Arroz", IngredientCategory.GRAINS, UnitOfMeasure.KG, new BigDecimal("50.00"));
+        Ingredient ingredient = new Ingredient(establishment.getId(), "Arroz", IngredientCategory.DRY_GOODS, UnitOfMeasure.KG, new BigDecimal("50.00"));
         ingredient.setCurrentStock(new BigDecimal("10.00"));
         ingredient.setStatus(IngredientStatus.ACTIVE);
         ingredientRepository.save(ingredient);
 
         DishRecipeIngredient recipe = new DishRecipeIngredient(
-                new DishRecipeIngredientId(dish.getId(), ingredient.getId()),
-                new BigDecimal("0.25"),
-                1
+                dish.getId(),
+                ingredient.getId(),
+                new BigDecimal("0.25")
         );
         dishRecipeIngredientRepository.save(recipe);
 
@@ -96,16 +96,16 @@ class MercadoPagoGatewayFailureIntegrationTest extends BaseIntegrationTest {
                 List.of(new PaymentInitiationRequest.OrderItemRequest(dish.getId(), 2))
         );
 
-        when(paymentGatewayPort.supports(PaymentMethod.MERCADO_PAGO)).thenReturn(true);
+        when(paymentGatewayPort.getPaymentMethod()).thenReturn(PaymentMethod.MERCADO_PAGO);
         when(paymentGatewayPort.createPreference(any()))
-                .thenThrow(new GatewayCommunicationException("Mercado Pago API returned 502 Bad Gateway"));
+                .thenThrow(new RuntimeException("Mercado Pago API returned 502 Bad Gateway"));
 
         long ordersBefore = orderRepository.count();
         long reservationsBefore = temporaryReservationRepository.count();
         long paymentsBefore = paymentRepository.count();
 
         assertThatThrownBy(() -> checkoutPaymentService.initiatePayment(diner.getId(), request))
-                .isInstanceOf(GatewayCommunicationException.class)
+                .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("502");
 
         // Rollback completo: ninguna entidad debe quedar persistida (INV-01)

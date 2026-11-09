@@ -66,9 +66,9 @@ class AtomicReservationConcurrencyIntegrationTest extends BaseIntegrationTest {
         ingredientRepository.save(ingredient);
 
         DishRecipeIngredient recipe = new DishRecipeIngredient(
-                new DishRecipeIngredientId(dish.getId(), ingredient.getId()),
-                new BigDecimal("1.00"),
-                1
+                dish.getId(),
+                ingredient.getId(),
+                new BigDecimal("1.00")
         );
         dishRecipeIngredientRepository.save(recipe);
 

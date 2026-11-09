@@ -77,7 +77,7 @@
 
 ### Implementación Backend para User Story 1 (Hacer pasar los tests - Estado VERDE) [Issue #286](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/286)
 
-- [ ] T024 [US1] Implementar el validador criptográfico `WebhookSignatureValidator` para cálculo HMAC-SHA256 con verificación en tiempo constante en `easyeat/backend/src/main/java/com/easyeat/order/service/WebhookSignatureValidator.java`
+- [x] T024 [US1] Implementar el validador criptográfico `WebhookSignatureValidator` para cálculo HMAC-SHA256 con verificación en tiempo constante en `easyeat/backend/src/main/java/com/easyeat/order/service/WebhookSignatureValidator.java`
 - [ ] T025 [US1] Implementar el adaptador `MercadoPagoGatewayAdapter` integrando la API de Preferencias de Mercado Pago Checkout Pro (`POST /checkout/preferences`) con cabecera `X-Idempotency-Key` y consulta de pagos (`GET /v1/payments/{id}`) en `easyeat/backend/src/main/java/com/easyeat/order/service/MercadoPagoGatewayAdapter.java`
 - [ ] T026 [US1] Extender `DishAvailabilityEngine` para que deduzca del stock disponible las cantidades comprometidas por órdenes con reservas temporales activas (`status = 'ACTIVE' AND expires_at > NOW()`) en `easyeat/backend/src/main/java/com/easyeat/catalog/service/DishAvailabilityEngine.java`
 - [ ] T027 [US1] Implementar el servicio `CheckoutPaymentService` con orquestación transaccional pesimista: validación conjunta de franja y stock, creación de `Order` y `TemporaryReservation`, delegación al puerto de pasarela y registro de `Payment` en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutPaymentService.java`

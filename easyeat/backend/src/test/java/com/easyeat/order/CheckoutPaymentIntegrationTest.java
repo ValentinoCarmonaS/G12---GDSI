@@ -71,15 +71,15 @@ class CheckoutPaymentIntegrationTest extends BaseIntegrationTest {
         establishmentRepository.save(establishment);
 
         Dish dish = createTestDish(establishment.getId(), "Pasta Gourmet", new BigDecimal("4500.00"));
-        Ingredient ingredient = new Ingredient(establishment.getId(), "Harina", IngredientCategory.GRAINS, UnitOfMeasure.KG, new BigDecimal("100.00"));
+        Ingredient ingredient = new Ingredient(establishment.getId(), "Harina", IngredientCategory.DRY_GOODS, UnitOfMeasure.KG, new BigDecimal("100.00"));
         ingredient.setCurrentStock(new BigDecimal("10.00"));
         ingredient.setStatus(IngredientStatus.ACTIVE);
         ingredientRepository.save(ingredient);
 
         DishRecipeIngredient recipe = new DishRecipeIngredient(
-                new DishRecipeIngredientId(dish.getId(), ingredient.getId()),
-                new BigDecimal("0.50"),
-                1
+                dish.getId(),
+                ingredient.getId(),
+                new BigDecimal("0.50")
         );
         dishRecipeIngredientRepository.save(recipe);
 
