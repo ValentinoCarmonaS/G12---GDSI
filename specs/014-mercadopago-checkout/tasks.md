@@ -39,7 +39,7 @@
 - [x] T009 [P] Crear repositorio JPA `PaymentRepository` con métodos para búsqueda por `gatewayPaymentId`, `orderId` y `gatewayPreferenceId` en `easyeat/backend/src/main/java/com/easyeat/order/repository/PaymentRepository.java`
 - [x] T010 [P] Crear DTOs de request y response para inicio de pago, cancelación y estado consolidado de orden en `easyeat/backend/src/main/java/com/easyeat/order/dto/PaymentInitiationRequest.java`, `easyeat/backend/src/main/java/com/easyeat/order/dto/PaymentInitiationResponse.java`, `easyeat/backend/src/main/java/com/easyeat/order/dto/CancelPaymentRequest.java`, `easyeat/backend/src/main/java/com/easyeat/order/dto/CancelPaymentResponse.java` y `easyeat/backend/src/main/java/com/easyeat/order/dto/OrderPaymentStatusResponse.java`
 - [x] T011 [P] Crear interfaz de puerto universal de pasarelas `PaymentGatewayPort` y DTOs de comando/resultado de pasarela en `easyeat/backend/src/main/java/com/easyeat/order/service/PaymentGatewayPort.java`
-- [ ] T012 [P] Implementar el resolutor dinámico de pasarelas `PaymentGatewayResolver` para inyección de componentes basada en el enum `PaymentMethod` en `easyeat/backend/src/main/java/com/easyeat/order/service/PaymentGatewayResolver.java`
+- [x] T012 [P] Implementar el resolutor dinámico de pasarelas `PaymentGatewayResolver` para inyección de componentes basada en el enum `PaymentMethod` en `easyeat/backend/src/main/java/com/easyeat/order/service/PaymentGatewayResolver.java`
 
 **Checkpoint**: Base relacional, repositorios y puertos desacoplados listos — la implementación de User Story 1 puede comenzar de forma independiente.
 
