@@ -2,6 +2,7 @@
 
 **Input**: Documentos de diseño desde `/specs/016-payment-confirmation-tracking-branding/`  
 **Prerequisites**: [plan.md](./plan.md) (requerido), [spec.md](./spec.md) (requerido), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/), [quickstart.md](./quickstart.md)  
+**GitHub Issues**: [#277](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/277), [#278](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/278), [#279](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/279), [#280](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/280), [#281](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/281), [#282](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/282)  
 **Upstream Integration**: Asume contractualmente el consumo de los artefactos de la Spec 014 (flujo de pago) y Spec 015 (comanda de cocina KDS y tabla `kds_tickets`) al momento de su ejecución.  
 **Tests**: Estrategia TDD estricta requerida explícitamente (Red Test primero, Green Test después).  
 **Organization**: Tareas agrupadas por User Story para permitir desarrollo, pruebas y despliegue independientes.  
@@ -16,7 +17,7 @@
 
 ---
 
-## Phase 1: Setup (Infraestructura Compartida)
+## Phase 1: Setup (Infraestructura Compartida) — [Issue #277](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/277)
 
 **Propósito**: Inicialización de esquemas de base de datos, migraciones Flyway y definiciones de tipos base.
 
@@ -26,7 +27,7 @@
 
 ---
 
-## Phase 2: Foundational (Prerrequisitos Bloqueantes)
+## Phase 2: Foundational (Prerrequisitos Bloqueantes) — [Issue #278](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/278)
 
 **Propósito**: Entidades relacionales JPA, repositorios y DTOs transversales que desbloquean la implementación de las historias de usuario.
 
@@ -42,7 +43,7 @@
 
 ---
 
-## Phase 3: User Story 1 — COM-7.3.1: Confirmación de Pago (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 — COM-7.3.1: Confirmación de Pago (Priority: P1) 🎯 MVP — [Issue #279](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/279)
 
 **Goal**: Proveer al comensal confirmación visual inmediata mediante pantalla verde animada con número de orden y detalle de franja de retiro, bloqueo preventivo de interfaz durante el cobro para evitar pagos duplicados, y despacho universal, asíncrono e incondicional de correo electrónico con comprobante formal y enlace de seguimiento incluso ante interrupciones de navegación.
 
@@ -72,7 +73,7 @@
 
 ---
 
-## Phase 4: User Story 2 — COM-7.3.2: Tiempo Estimado en Vivo (Priority: P1)
+## Phase 4: User Story 2 — COM-7.3.2: Tiempo Estimado en Vivo (Priority: P1) — [Issue #280](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/280)
 
 **Goal**: Ofrecer visibilidad continua en tiempo real del progreso del pedido: cálculo dinámico según saturación de cocina en retiro inmediato, horario pactado fijo y activación automática de cuenta regresiva al ingresar en el umbral T-15 min en reservas programadas, sincronización reactiva y silenciosa del reloj ante demoras de cocina, y transición destacada a "listo para retirar" por mostrador al finalizar la orden en el KDS.
 
@@ -104,7 +105,7 @@
 
 ---
 
-## Phase 5: User Story 3 — ADM-2.1.1: Configurar Branding del Restaurante (Priority: P2)
+## Phase 5: User Story 3 — ADM-2.1.1: Configurar Branding del Restaurante (Priority: P2) — [Issue #281](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/281)
 
 **Goal**: Permitir a los administradores de restaurantes configurar su logotipo, nombre de fantasía, descripción comercial y tríada cromática `#RRGGBB` desde "Mi Local", calculando automáticamente el contraste para textos e iconos legibles, reflejando dinámicamente dicha marca en la vista del comensal con aislamiento multi-tenant y proveyendo fallback institucional neutro de EasyEat.
 
@@ -134,7 +135,7 @@
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Phase 6: Polish & Cross-Cutting Concerns — [Issue #282](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/282)
 
 **Propósito**: Validación de extremo a extremo, verificación contra regresiones y hardening de seguridad.
 
