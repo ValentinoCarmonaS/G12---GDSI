@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { ArrowLeft, ShoppingBag, RefreshCw } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { FulfillmentModeSelector } from '../components/checkout/FulfillmentModeSelector';
 import { OperatingDatePicker, OperatingDayItem } from '../components/checkout/OperatingDatePicker';
@@ -8,11 +8,15 @@ import { TimeSlotGrid } from '../components/checkout/TimeSlotGrid';
 import { CheckoutSummary } from '../components/checkout/CheckoutSummary';
 import { ConflictNotificationModal } from '../components/checkout/ConflictNotificationModal';
 import { PendingOrderCountdown } from '../components/checkout/PendingOrderCountdown';
+import { InProcessPaymentPanel } from '../components/checkout/InProcessPaymentPanel';
+import { PaymentAlertBanner } from '../components/checkout/PaymentAlertBanner';
 import { useCart } from '../context/CartContext';
 import { useCheckoutFulfillment } from '../hooks/useCheckoutFulfillment';
 import { useTimeSlotPolling } from '../hooks/useTimeSlotPolling';
-import { createOrder, cancelOrder } from '../api/orderApi';
-import { CreateOrderRequest, OrderDetailResponse } from '../types/order';
+import { cancelOrder } from '../api/orderApi';
+import { initiatePayment, cancelPayment, getOrderPaymentStatus } from '../api/paymentApi';
+import { OrderDetailResponse } from '../types/order';
+import { PaymentInitiationRequest, OrderPaymentStatusResponse } from '../types/payment';
 
 function generateNext7Days(): OperatingDayItem[] {
   const days: OperatingDayItem[] = [];
@@ -41,7 +45,8 @@ function generateNext7Days(): OperatingDayItem[] {
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { items, totalAmount, clearCart } = useCart();
+  const location = useLocation();
+  const { items, totalAmount } = useCart();
 
   const establishmentId = useMemo(() => {
     const fromStorage =
@@ -81,10 +86,21 @@ export const CheckoutPage: React.FC = () => {
   });
 
   const [pendingOrder, setPendingOrder] = useState<OrderDetailResponse | null>(null);
+  const [inProcessPayment, setInProcessPayment] = useState<OrderPaymentStatusResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const [cancelledMessage, setCancelledMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  // Read alert messages passed from redirect location state (e.g. from PaymentReturnPage)
+  useEffect(() => {
+    if (location.state?.paymentError) {
+      setSubmissionError(location.state.paymentError);
+    }
+    if (location.state?.infoMessage) {
+      setInfoMessage(location.state.infoMessage);
+    }
+  }, [location.state]);
 
   const [conflictModal, setConflictModal] = useState<{
     isOpen: boolean;
@@ -103,16 +119,18 @@ export const CheckoutPage: React.FC = () => {
     return true;
   }, [items, fulfillmentMode, selectedDate, selectedSlot]);
 
-  const handleConfirmOrder = async () => {
-    if (!isFormValid || !establishmentId) return;
+  // Handler for Mercado Pago Checkout Pro (T035, AS-1, AS-5, FR-001, FR-002)
+  const handlePayWithMercadoPago = async () => {
+    if (!isFormValid || !establishmentId || inProcessPayment) return;
 
     setIsSubmitting(true);
     setSubmissionError(null);
-    setCancelledMessage(null);
+    setInfoMessage(null);
 
-    const payload: CreateOrderRequest = {
+    const payload: PaymentInitiationRequest = {
       establishmentId,
       fulfillmentMode: fulfillmentMode!,
+      paymentMethod: 'MERCADO_PAGO',
       pickupDate: fulfillmentMode === 'SCHEDULED' ? selectedDate : undefined,
       timeSlotStart: fulfillmentMode === 'SCHEDULED' ? selectedSlot?.startTime : undefined,
       timeSlotEnd: fulfillmentMode === 'SCHEDULED' ? selectedSlot?.endTime : undefined,
@@ -123,34 +141,66 @@ export const CheckoutPage: React.FC = () => {
     };
 
     try {
-      const order = await createOrder(payload);
-      setPendingOrder(order);
-      clearCart();
+      const response = await initiatePayment(payload);
+
+      // Save ongoing payment info in state and redirect immediately to Sandbox/Production init_point
+      if (response.redirectUrl) {
+        window.location.href = response.redirectUrl;
+      }
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
       const code = data?.code;
 
       if (status === 409) {
+        if (code === 'PAYMENT_IN_PROCESS' && data?.orderId) {
+          // Fetch existing in-process payment details to display panel
+          try {
+            const statusRes = await getOrderPaymentStatus(data.orderId);
+            setInProcessPayment(statusRes);
+          } catch {
+            // fallback
+          }
+        }
+
         setConflictModal({
           isOpen: true,
           errorCode: code || 'SLOT_SOLD_OUT',
           errorMessage:
             data?.detail ||
-            'La franja horaria seleccionada acaba de agotarse. Por favor, seleccioná una nueva franja para continuar.',
+            data?.message ||
+            'La franja horaria seleccionada acaba de agotarse o ya tenés un pago en curso.',
         });
 
         if (code === 'SLOT_SOLD_OUT' || !code) {
           refreshSlots();
           setSelectedSlot(null);
         }
+      } else if (status === 502) {
+        setSubmissionError(
+          data?.message || 'Fallo al conectar con Mercado Pago. No se realizó ningún cargo. Podés intentar nuevamente.'
+        );
       } else {
         setSubmissionError(
-          data?.detail || 'Ocurrió un error al procesar el pedido. Por favor, intentá nuevamente.'
+          data?.detail || data?.message || 'Ocurrió un error al procesar el pago. Por favor, intentá nuevamente.'
         );
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelPaymentAttempt = async () => {
+    if (!inProcessPayment?.orderId) return;
+    setIsCancelling(true);
+    try {
+      await cancelPayment({ orderId: inProcessPayment.orderId });
+      setInProcessPayment(null);
+      setInfoMessage('El intento de pago fue cancelado y los recursos fueron liberados.');
+    } catch (err: any) {
+      setSubmissionError('Error al cancelar el intento de pago.');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -160,7 +210,7 @@ export const CheckoutPage: React.FC = () => {
     try {
       await cancelOrder(pendingOrder.orderId);
       setPendingOrder(null);
-      setCancelledMessage('Tu reserva ha sido cancelada exitosamente y el cupo fue liberado.');
+      setInfoMessage('Tu reserva ha sido cancelada exitosamente y el cupo fue liberado.');
     } catch (err: any) {
       console.error('Error al cancelar la orden:', err);
     } finally {
@@ -173,7 +223,7 @@ export const CheckoutPage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="Checkout" subtitle="Configuración de retiro y confirmación de reserva">
+    <WorkspaceLayout title="Checkout" subtitle="Configuración de retiro y pago con Mercado Pago">
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         <button
           type="button"
@@ -184,18 +234,29 @@ export const CheckoutPage: React.FC = () => {
           Volver a la carta
         </button>
 
-        {cancelledMessage && (
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
-            <CheckCircle className="w-5 h-5 flex-shrink-0 text-emerald-600" />
-            <p>{cancelledMessage}</p>
-          </div>
+        {infoMessage && (
+          <PaymentAlertBanner
+            type="info"
+            message={infoMessage}
+            onClose={() => setInfoMessage(null)}
+          />
         )}
 
         {submissionError && (
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
-            <p>{submissionError}</p>
-          </div>
+          <PaymentAlertBanner
+            type="error"
+            message={submissionError}
+            onClose={() => setSubmissionError(null)}
+          />
+        )}
+
+        {/* Panel de pago en curso (AS-5, FR-010, Q3) */}
+        {inProcessPayment && (
+          <InProcessPaymentPanel
+            redirectUrl={inProcessPayment.payment?.redirectUrl}
+            onCancelAttempt={handleCancelPaymentAttempt}
+            isCancelling={isCancelling}
+          />
         )}
 
         {/* View 1: Active Pending Order (Countdown & Post-Checkout State) */}
@@ -294,7 +355,7 @@ export const CheckoutPage: React.FC = () => {
               )}
             </div>
 
-            {/* Right Column: Checkout Summary & Confirmation Action */}
+            {/* Right Column: Checkout Summary & Payment Action */}
             <div className="space-y-6">
               <CheckoutSummary
                 items={items}
@@ -306,21 +367,21 @@ export const CheckoutPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={handleConfirmOrder}
-                disabled={!isFormValid || isSubmitting}
+                onClick={handlePayWithMercadoPago}
+                disabled={!isFormValid || isSubmitting || Boolean(inProcessPayment)}
                 className={`w-full py-3.5 px-6 rounded-xl font-bold text-white text-base shadow-md transition-all flex items-center justify-center gap-2 ${
-                  !isFormValid || isSubmitting
+                  !isFormValid || isSubmitting || Boolean(inProcessPayment)
                     ? 'bg-gray-300 cursor-not-allowed shadow-none'
-                    : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 cursor-pointer hover:shadow-lg'
+                    : 'bg-sky-600 hover:bg-sky-700 active:bg-sky-800 cursor-pointer hover:shadow-lg'
                 }`}
               >
                 {isSubmitting ? (
                   <>
                     <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span>Confirmando reserva...</span>
+                    <span>Iniciando Mercado Pago...</span>
                   </>
                 ) : (
-                  <span>Confirmar pedido</span>
+                  <span>Pagar con Mercado Pago</span>
                 )}
               </button>
             </div>
@@ -338,7 +399,6 @@ export const CheckoutPage: React.FC = () => {
             setSelectedSlot(null);
           }}
           onViewExistingOrder={() => {
-            // Can reload active order or close
             setConflictModal((prev) => ({ ...prev, isOpen: false }));
           }}
         />

@@ -91,7 +91,7 @@
 - [x] T032 [P] [US1] Implementar cliente Axios `paymentApi.ts` para inicio de pago, cancelación y consulta de estado en `easyeat/frontend/src/api/paymentApi.ts`
 - [x] T033 [P] [US1] Crear componente `InProcessPaymentPanel.tsx` sin cuenta regresiva en pantalla con acciones "Retomar pago" y "Cancelar intento" en `easyeat/frontend/src/components/checkout/InProcessPaymentPanel.tsx`
 - [x] T034 [P] [US1] Crear componente `PaymentAlertBanner.tsx` para alertas visibles de rechazo y cancelación en `easyeat/frontend/src/components/checkout/PaymentAlertBanner.tsx`
-- [ ] T035 [US1] Actualizar `CheckoutPage.tsx` integrando verificación de pago en curso, deshabilitación preventiva del botón "Pagar", despliegue del panel y preservación de carrito/franja ante rechazos en `easyeat/frontend/src/pages/CheckoutPage.tsx`
+- [x] T035 [US1] Actualizar `CheckoutPage.tsx` integrando verificación de pago en curso, deshabilitación preventiva del botón "Pagar", despliegue del panel y preservación de carrito/franja ante rechazos en `easyeat/frontend/src/pages/CheckoutPage.tsx`
 - [ ] T036 [US1] Implementar la página de retorno `PaymentReturnPage.tsx` con verificación fehaciente contra el backend, vaciado automático de carrito (`clearCart()`) y mensaje de éxito en `easyeat/frontend/src/pages/PaymentReturnPage.tsx`
 - [ ] T037 [US1] Registrar la ruta `/checkout/payment-return` en `AppRoutes.tsx` bajo perímetro comensal en `easyeat/frontend/src/router/AppRoutes.tsx`
 

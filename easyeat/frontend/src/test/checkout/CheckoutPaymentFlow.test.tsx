@@ -115,13 +115,17 @@ describe('T021: CheckoutPaymentFlow frontend integration tests (AS-1, AS-6, FR-0
 
     renderComponent();
 
-    // Select fulfillment
+    // Select fulfillment mode IMMEDIATE so the form is valid
     await waitFor(() => {
       expect(screen.getByText('Hamburguesa Gourmet')).toBeInTheDocument();
     });
 
+    const immediateOption = screen.getByLabelText(/lo antes posible/i);
+    fireEvent.click(immediateOption);
+
     const payButton = screen.getByRole('button', { name: /pagar/i });
     expect(payButton).toBeInTheDocument();
+    expect(payButton).not.toBeDisabled();
 
     fireEvent.click(payButton);
 
@@ -146,7 +150,11 @@ describe('T021: CheckoutPaymentFlow frontend integration tests (AS-1, AS-6, FR-0
       expect(screen.getByText('Hamburguesa Gourmet')).toBeInTheDocument();
     });
 
+    const immediateOption = screen.getByLabelText(/lo antes posible/i);
+    fireEvent.click(immediateOption);
+
     const payButton = screen.getByRole('button', { name: /pagar/i });
+    expect(payButton).not.toBeDisabled();
     fireEvent.click(payButton);
 
     await waitFor(() => {
