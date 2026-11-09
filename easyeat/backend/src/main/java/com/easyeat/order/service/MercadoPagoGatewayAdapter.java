@@ -133,10 +133,11 @@ public class MercadoPagoGatewayAdapter implements PaymentGatewayPort {
 
                 return new GatewayPaymentResult(
                         gatewayPaymentId,
+                        externalReference,
                         paymentStatus,
                         statusDetail,
-                        externalReference,
-                        amount
+                        amount,
+                        "ARS"
                 );
             } else {
                 throw new RuntimeException("Mercado Pago payment query failed with status: " + response.getStatusCode());
@@ -155,13 +156,14 @@ public class MercadoPagoGatewayAdapter implements PaymentGatewayPort {
     @Override
     public WebhookPayload parseWebhook(Map<String, Object> payload) {
         if (payload == null) {
-            return new WebhookPayload(null, null, null, null);
+            return new WebhookPayload(null, null, null, false, Collections.emptyMap());
         }
         String type = (String) payload.get("type");
         if (type == null) {
             type = (String) payload.get("topic");
         }
         String action = (String) payload.get("action");
+        boolean liveMode = Boolean.TRUE.equals(payload.get("live_mode"));
 
         String dataId = null;
         Object dataObj = payload.get("data");
@@ -172,7 +174,7 @@ public class MercadoPagoGatewayAdapter implements PaymentGatewayPort {
             }
         }
 
-        return new WebhookPayload(type, action, dataId, payload);
+        return new WebhookPayload(type, action, dataId, liveMode, payload);
     }
 
     private PaymentStatus mapStatus(String mpStatus) {

@@ -15,7 +15,6 @@ import com.easyeat.operations.domain.PaymentMethod;
 import com.easyeat.order.domain.FulfillmentMode;
 import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.dto.PaymentInitiationRequest;
-import com.easyeat.order.exception.GatewayCommunicationException;
 import com.easyeat.order.repository.OrderRepository;
 import com.easyeat.order.repository.PaymentRepository;
 import com.easyeat.order.repository.TemporaryReservationRepository;

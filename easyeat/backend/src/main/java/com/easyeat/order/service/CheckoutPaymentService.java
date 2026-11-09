@@ -3,6 +3,7 @@ package com.easyeat.order.service;
 import com.easyeat.catalog.domain.Dish;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.domain.EstablishmentStatus;
+import com.easyeat.catalog.exception.DishNotFoundException;
 import com.easyeat.catalog.exception.EstablishmentInactiveException;
 import com.easyeat.catalog.exception.EstablishmentNotFoundException;
 import com.easyeat.catalog.repository.DishRepository;
