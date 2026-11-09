@@ -30,16 +30,29 @@ public class DishAvailabilityEngine {
     private final DishRepository dishRepository;
     private final DishRecipeIngredientRepository dishRecipeIngredientRepository;
     private final IngredientRepository ingredientRepository;
+    private final com.easyeat.order.repository.TemporaryReservationRepository temporaryReservationRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public DishAvailabilityEngine(
+            EstablishmentRepository establishmentRepository,
+            DishRepository dishRepository,
+            DishRecipeIngredientRepository dishRecipeIngredientRepository,
+            IngredientRepository ingredientRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false)
+            com.easyeat.order.repository.TemporaryReservationRepository temporaryReservationRepository) {
+        this.establishmentRepository = establishmentRepository;
+        this.dishRepository = dishRepository;
+        this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
+        this.ingredientRepository = ingredientRepository;
+        this.temporaryReservationRepository = temporaryReservationRepository;
+    }
 
     public DishAvailabilityEngine(
             EstablishmentRepository establishmentRepository,
             DishRepository dishRepository,
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository) {
-        this.establishmentRepository = establishmentRepository;
-        this.dishRepository = dishRepository;
-        this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
-        this.ingredientRepository = ingredientRepository;
+        this(establishmentRepository, dishRepository, dishRecipeIngredientRepository, ingredientRepository, null);
     }
 
     /**
@@ -143,7 +156,15 @@ public class DishAvailabilityEngine {
             }
         }
 
-        return maxPortions == Integer.MAX_VALUE ? 0 : maxPortions;
+        int availableStock = maxPortions == Integer.MAX_VALUE ? 0 : maxPortions;
+
+        // T026: Deducir porciones bloqueadas en reservas temporales activas no vencidas (status = 'ACTIVE' AND expires_at > NOW())
+        if (temporaryReservationRepository != null && availableStock > 0) {
+            int reservedPortions = temporaryReservationRepository.sumReservedPortionsByDishId(dishId, java.time.Instant.now());
+            availableStock = Math.max(0, availableStock - reservedPortions);
+        }
+
+        return availableStock;
     }
 
     /**

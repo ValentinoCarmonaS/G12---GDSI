@@ -29,6 +29,16 @@ public interface TemporaryReservationRepository extends JpaRepository<TemporaryR
     """)
     List<TemporaryReservation> findExpiredActiveReservations(@Param("now") Instant now);
 
+    @Query("""
+        SELECT COALESCE(SUM(oi.quantity), 0)
+        FROM TemporaryReservation r
+        JOIN r.order.items oi
+        WHERE oi.dishId = :dishId
+          AND r.status = com.easyeat.order.domain.ReservationStatus.ACTIVE
+          AND r.expiresAt > :now
+    """)
+    int sumReservedPortionsByDishId(@Param("dishId") UUID dishId, @Param("now") Instant now);
+
     Optional<TemporaryReservation> findByIdempotencyKey(String idempotencyKey);
 }
 
