@@ -23,7 +23,7 @@
 - [x] T002 [P] Crear enums de dominio `ReservationStatus` (`ACTIVE`, `CONFIRMED`, `RELEASED`, `EXPIRED`) y `ReleaseReason` (`REJECTED`, `CANCELLED_BY_USER`, `EXPIRED`, `GATEWAY_ERROR`) en `easyeat/backend/src/main/java/com/easyeat/order/domain/ReservationStatus.java` y `easyeat/backend/src/main/java/com/easyeat/order/domain/ReleaseReason.java`
 - [x] T003 [P] Crear enum de dominio `PaymentStatus` (`IN_PROCESS`, `APPROVED`, `REJECTED`, `CANCELLED`, `FAILED`, `EXPIRED`) en `easyeat/backend/src/main/java/com/easyeat/order/domain/PaymentStatus.java`
 - [x] T004 [P] Crear clase de configuración tipada `MercadoPagoProperties` vinculada al prefijo `mercadopago` en `easyeat/backend/src/main/java/com/easyeat/order/config/MercadoPagoProperties.java`
-- [ ] T005 [P] Definir tipos TypeScript para pagos, reservas temporales, estados de pasarela y respuestas de checkout en `easyeat/frontend/src/types/payment.ts`
+- [x] T005 [P] Definir tipos TypeScript para pagos, reservas temporales, estados de pasarela y respuestas de checkout en `easyeat/frontend/src/types/payment.ts`
 
 ---
 
