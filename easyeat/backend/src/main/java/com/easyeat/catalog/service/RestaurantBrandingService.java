@@ -4,8 +4,10 @@ import com.easyeat.auth.domain.User;
 import com.easyeat.catalog.domain.RestaurantBranding;
 import com.easyeat.catalog.dto.RestaurantBrandingResponse;
 import com.easyeat.catalog.dto.RestaurantBrandingUpdateRequest;
+import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.catalog.repository.RestaurantBrandingRepository;
 import com.easyeat.common.exception.TenantViolationException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,13 +30,24 @@ public class RestaurantBrandingService {
 
     private final RestaurantBrandingRepository brandingRepository;
     private final BrandingColorContrastCalculator contrastCalculator;
+    private final EstablishmentRepository establishmentRepository;
 
     public RestaurantBrandingService(
             RestaurantBrandingRepository brandingRepository,
             BrandingColorContrastCalculator contrastCalculator
     ) {
+        this(brandingRepository, contrastCalculator, null);
+    }
+
+    @Autowired
+    public RestaurantBrandingService(
+            RestaurantBrandingRepository brandingRepository,
+            BrandingColorContrastCalculator contrastCalculator,
+            @Autowired(required = false) EstablishmentRepository establishmentRepository
+    ) {
         this.brandingRepository = brandingRepository;
         this.contrastCalculator = contrastCalculator;
+        this.establishmentRepository = establishmentRepository;
     }
 
     @Transactional(readOnly = true)
@@ -72,6 +85,15 @@ public class RestaurantBrandingService {
         branding.setUpdatedAt(Instant.now());
 
         RestaurantBranding saved = brandingRepository.save(branding);
+
+        if (establishmentRepository != null && request.fantasyName() != null && !request.fantasyName().isBlank()) {
+            establishmentRepository.findById(establishmentId).ifPresent(establishment -> {
+                establishment.setName(request.fantasyName().trim());
+                establishment.setUpdatedAt(Instant.now());
+                establishmentRepository.save(establishment);
+            });
+        }
+
         return toResponse(saved, false);
     }
 
@@ -106,9 +128,16 @@ public class RestaurantBrandingService {
     }
 
     private RestaurantBrandingResponse createDefaultAdminResponse(UUID establishmentId) {
+        String initialName = "";
+        if (establishmentRepository != null) {
+            initialName = establishmentRepository.findById(establishmentId)
+                    .map(est -> est.getName())
+                    .orElse("");
+        }
+
         return new RestaurantBrandingResponse(
                 establishmentId,
-                "",
+                initialName,
                 "",
                 null,
                 DEFAULT_PRIMARY_COLOR,

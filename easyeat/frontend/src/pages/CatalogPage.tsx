@@ -264,7 +264,11 @@ const CatalogContent: React.FC = () => {
     setActiveCategory(undefined);
   };
 
-  const pageTitle = catalogData?.establishment?.name || tenant?.name || 'Catálogo de Productos';
+  const pageTitle =
+    (!branding.isDefaultFallback && branding.fantasyName ? branding.fantasyName : null) ||
+    catalogData?.establishment?.name ||
+    tenant?.name ||
+    'Catálogo de Productos';
 
   return (
     <WorkspaceLayout
