@@ -22,6 +22,8 @@ describe('CatalogFilterContext Unit Tests (T036, US4, COM-4.2.2, INV-16, FR-020,
     const { result } = renderHook(() => useCatalogFilter(), { wrapper });
 
     expect(result.current.selectedCategories).toEqual([]);
+    expect(result.current.selectedLifestyles).toEqual([]);
+    expect(result.current.selectedAllergens).toEqual([]);
     expect(result.current.minPrice).toBe('');
     expect(result.current.maxPrice).toBe('');
     expect(result.current.searchQuery).toBe('');
@@ -50,6 +52,27 @@ describe('CatalogFilterContext Unit Tests (T036, US4, COM-4.2.2, INV-16, FR-020,
     expect(result.current.selectedCategories).toEqual(['Postres']);
   });
 
+  it('updates selected lifestyles and allergens with toggles (C-13)', () => {
+    const { result } = renderHook(() => useCatalogFilter(), { wrapper });
+
+    act(() => {
+      result.current.toggleLifestyle('Vegano');
+      result.current.toggleLifestyle('Sin TACC / Celíaco');
+      result.current.toggleAllergen('Maní');
+    });
+
+    expect(result.current.selectedLifestyles).toEqual(['Vegano', 'Sin TACC / Celíaco']);
+    expect(result.current.selectedAllergens).toEqual(['Maní']);
+
+    act(() => {
+      result.current.toggleLifestyle('Vegano');
+      result.current.toggleAllergen('Maní');
+    });
+
+    expect(result.current.selectedLifestyles).toEqual(['Sin TACC / Celíaco']);
+    expect(result.current.selectedAllergens).toEqual([]);
+  });
+
   it('updates minPrice, maxPrice, and searchQuery', () => {
     const { result } = renderHook(() => useCatalogFilter(), { wrapper });
 
@@ -69,6 +92,8 @@ describe('CatalogFilterContext Unit Tests (T036, US4, COM-4.2.2, INV-16, FR-020,
 
     act(() => {
       result.current.toggleCategory('Pizzas');
+      result.current.toggleLifestyle('Vegano');
+      result.current.toggleAllergen('Lácteos');
       result.current.setMinPrice('2000');
       result.current.setMaxPrice('8000');
       result.current.setSearchQuery('muzzarella');
@@ -78,6 +103,8 @@ describe('CatalogFilterContext Unit Tests (T036, US4, COM-4.2.2, INV-16, FR-020,
     expect(storedRaw).not.toBeNull();
     const stored = JSON.parse(storedRaw!);
     expect(stored.selectedCategories).toEqual(['Pizzas']);
+    expect(stored.selectedLifestyles).toEqual(['Vegano']);
+    expect(stored.selectedAllergens).toEqual(['Lácteos']);
     expect(stored.minPrice).toBe('2000');
     expect(stored.maxPrice).toBe('8000');
     expect(stored.searchQuery).toBe('muzzarella');
@@ -114,11 +141,13 @@ describe('CatalogFilterContext Unit Tests (T036, US4, COM-4.2.2, INV-16, FR-020,
     expect(sessionStorage.getItem('easyeat_catalog_filters_tenant-123')).toBeNull();
   });
 
-  it('resets all filters simultaneously on clearAllFilters (Clarification #1, INV-16, FR-020)', () => {
+  it('resets all filters simultaneously on clearAllFilters (Clarification #1, INV-16, FR-020, C-13)', () => {
     const { result } = renderHook(() => useCatalogFilter(), { wrapper });
 
     act(() => {
       result.current.toggleCategory('Bebidas');
+      result.current.toggleLifestyle('Vegano');
+      result.current.toggleAllergen('Huevos');
       result.current.setMinPrice('500');
       result.current.setMaxPrice('1500');
       result.current.setSearchQuery('vino');
@@ -131,6 +160,8 @@ describe('CatalogFilterContext Unit Tests (T036, US4, COM-4.2.2, INV-16, FR-020,
     });
 
     expect(result.current.selectedCategories).toEqual([]);
+    expect(result.current.selectedLifestyles).toEqual([]);
+    expect(result.current.selectedAllergens).toEqual([]);
     expect(result.current.minPrice).toBe('');
     expect(result.current.maxPrice).toBe('');
     expect(result.current.searchQuery).toBe('');

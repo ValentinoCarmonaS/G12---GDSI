@@ -20,6 +20,9 @@ import com.easyeat.dish.repository.DishPhotoRepository;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
 import com.easyeat.inventory.entity.Ingredient;
 import com.easyeat.inventory.repository.IngredientRepository;
+import com.easyeat.profile.domain.DietaryCategory;
+import com.easyeat.profile.domain.DietaryRestriction;
+import com.easyeat.profile.repository.DietaryRestrictionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -60,6 +63,9 @@ class DinerCatalogServiceTest {
     @Mock
     private CatalogComplianceService catalogComplianceService;
 
+    @Mock
+    private DietaryRestrictionRepository dietaryRestrictionRepository;
+
     private DinerCatalogService dinerCatalogService;
 
     private UUID tenantId;
@@ -74,7 +80,9 @@ class DinerCatalogServiceTest {
                 dishPhotoRepository,
                 dishRecipeIngredientRepository,
                 ingredientRepository,
-                catalogComplianceService
+                catalogComplianceService,
+                null,
+                dietaryRestrictionRepository
         );
 
         tenantId = CatalogTestFixtures.DEFAULT_TENANT_ID;
@@ -397,6 +405,36 @@ class DinerCatalogServiceTest {
 
             DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
             assertThat(item.getAllergens()).containsExactlyInAnyOrder("Lácteos / Lactosa", "Trigo / Gluten");
+            assertThat(item.getLifestyles()).containsExactly("Vegano");
+        }
+
+        @Test
+        @DisplayName("C-13: Should resolve lifestyles with explicit taxonomy from repository")
+        void shouldResolveLifestylesFromTaxonomyRepository() {
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(activeEstablishment));
+
+            Dish dish = CatalogTestFixtures.catalogDishBuilder()
+                    .tenantId(tenantId)
+                    .name("Ensalada Especial")
+                    .category(DishCategory.ENSALADAS)
+                    .status(DishStatus.PUBLISHED)
+                    .build();
+            dish.setRestrictionCodes(Set.of("CELIAC", "VEGETARIAN", "PEANUTS"));
+
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+                    .thenReturn(List.of(dish));
+
+            when(dietaryRestrictionRepository.findAll()).thenReturn(List.of(
+                    new DietaryRestriction("CELIAC", "Sin TACC / Celíaco", DietaryCategory.DIETARY_LIFESTYLE, "Sin TACC"),
+                    new DietaryRestriction("VEGETARIAN", "Vegetariano", DietaryCategory.DIETARY_LIFESTYLE, "Vegetariano"),
+                    new DietaryRestriction("PEANUTS", "Maní", DietaryCategory.COMMON_ALLERGEN, "Maní")
+            ));
+
+            DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
+
+            DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
+            assertThat(item.getAllergens()).containsExactly("Maní");
+            assertThat(item.getLifestyles()).containsExactlyInAnyOrder("Sin TACC / Celíaco", "Vegetariano");
         }
 
     }

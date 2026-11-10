@@ -48,10 +48,14 @@ const CatalogContent: React.FC = () => {
     isFilterActive,
     setIsFilterActive,
     selectedCategories,
+    selectedLifestyles,
+    selectedAllergens,
     minPrice,
     maxPrice,
     searchQuery,
     toggleCategory,
+    toggleLifestyle,
+    toggleAllergen,
     setMinPrice,
     setMaxPrice,
     setSearchQuery,
@@ -132,15 +136,44 @@ const CatalogContent: React.FC = () => {
     return catalogData.categories.map((c) => c.category);
   }, [catalogData]);
 
+  const availableLifestyles = useMemo(() => {
+    if (!catalogData?.categories) return [];
+    const set = new Set<string>();
+    catalogData.categories.forEach((cat) => {
+      cat.dishes.forEach((d) => {
+        d.lifestyles?.forEach((l) => set.add(l));
+      });
+    });
+    return Array.from(set).sort();
+  }, [catalogData]);
+
+  const availableAllergens = useMemo(() => {
+    if (!catalogData?.categories) return [];
+    const set = new Set<string>();
+    catalogData.categories.forEach((cat) => {
+      cat.dishes.forEach((d) => {
+        d.allergens?.forEach((a) => set.add(a));
+      });
+    });
+    return Array.from(set).sort();
+  }, [catalogData]);
+
   const isQueryActive = normalizeSearchTerm(searchQuery).length > 0;
   const isCategoryFilterActive = selectedCategories.length > 0;
+  const isLifestyleFilterActive = selectedLifestyles.length > 0;
+  const isAllergenFilterActive = selectedAllergens.length > 0;
   const minPriceNum = minPrice.trim() !== '' ? Number(minPrice) : null;
   const maxPriceNum = maxPrice.trim() !== '' ? Number(maxPrice) : null;
   const isPriceFilterValid =
     !(minPriceNum !== null && maxPriceNum !== null && !isNaN(minPriceNum) && !isNaN(maxPriceNum) && minPriceNum > maxPriceNum);
 
   const isAnyManualFilterActive =
-    isCategoryFilterActive || minPrice.trim() !== '' || maxPrice.trim() !== '' || isQueryActive;
+    isCategoryFilterActive ||
+    isLifestyleFilterActive ||
+    isAllergenFilterActive ||
+    minPrice.trim() !== '' ||
+    maxPrice.trim() !== '' ||
+    isQueryActive;
 
   const filteredCategoryGroups = useMemo(() => {
     if (!catalogData?.categories) return [];
@@ -154,7 +187,7 @@ const CatalogContent: React.FC = () => {
       })
       .map((group) => {
         const matchingDishes = group.dishes.filter((dish) => {
-          // Dietary restriction filter
+          // Dietary restriction filter (profile compliance)
           if (
             isAuthenticated &&
             activeRestrictionsCount > 0 &&
@@ -167,6 +200,24 @@ const CatalogContent: React.FC = () => {
           // Manual category filter: OR disjunction between selected categories
           if (isCategoryFilterActive && !selectedCategories.includes(group.category)) {
             return false;
+          }
+
+          // C-13: Lifestyles filter - mandatory inclusion (AND between selected lifestyles)
+          if (isLifestyleFilterActive) {
+            const dishLifestyles = dish.lifestyles || [];
+            const hasAllLifestyles = selectedLifestyles.every((l) => dishLifestyles.includes(l));
+            if (!hasAllLifestyles) {
+              return false;
+            }
+          }
+
+          // C-13: Allergens filter - exclusion (omit dish if it contains ANY selected allergen)
+          if (isAllergenFilterActive) {
+            const dishAllergens = dish.allergens || [];
+            const hasAnyExcludedAllergen = selectedAllergens.some((a) => dishAllergens.includes(a));
+            if (hasAnyExcludedAllergen) {
+              return false;
+            }
           }
 
           // Price range filter: closed inclusive interval [min, max]
@@ -201,6 +252,10 @@ const CatalogContent: React.FC = () => {
     isQueryActive,
     selectedCategories,
     isCategoryFilterActive,
+    selectedLifestyles,
+    isLifestyleFilterActive,
+    selectedAllergens,
+    isAllergenFilterActive,
     minPriceNum,
     maxPriceNum,
     isPriceFilterValid,
@@ -487,12 +542,18 @@ const CatalogContent: React.FC = () => {
 
             {/* Layout with Sidebar + Catalog Grid */}
             <div className="flex flex-col lg:flex-row gap-6 items-start">
-              {/* Manual Filters Sidebar (COM-4.2.2, FR-016, FR-017, FR-022) */}
+              {/* Manual Filters Sidebar (COM-4.2.2, FR-016, FR-017, FR-022, C-13) */}
               {categories.length > 0 && (
                 <ManualFiltersSidebar
                   categories={categories}
                   selectedCategories={selectedCategories}
                   onCategoryToggle={toggleCategory}
+                  lifestyles={availableLifestyles}
+                  selectedLifestyles={selectedLifestyles}
+                  onLifestyleToggle={toggleLifestyle}
+                  allergens={availableAllergens}
+                  selectedAllergens={selectedAllergens}
+                  onAllergenToggle={toggleAllergen}
                   minPrice={minPrice}
                   maxPrice={maxPrice}
                   onMinPriceChange={setMinPrice}
@@ -516,7 +577,7 @@ const CatalogContent: React.FC = () => {
                 ) : filteredCategoryGroups.length === 0 ? (
                   !isAnyManualFilterActive && isAuthenticated && activeRestrictionsCount > 0 && isFilterActive ? (
                     <EmptyCatalogDietaryState onViewFullMenu={() => setIsFilterActive(false)} />
-                  ) : (isCategoryFilterActive || minPrice.trim() !== '' || maxPrice.trim() !== '') ? (
+                  ) : (isCategoryFilterActive || isLifestyleFilterActive || isAllergenFilterActive || minPrice.trim() !== '' || maxPrice.trim() !== '') ? (
                     <EmptyFilterResultsNotice onClearFilters={handleClearUnifiedFilters} />
                   ) : (
                     <div
