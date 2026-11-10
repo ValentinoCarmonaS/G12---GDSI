@@ -117,7 +117,7 @@ export const PaymentReturnPage: React.FC = () => {
           </div>
         ) : isPending ? (
           <div className="space-y-6">
-            <PendingAccreditationBanner orderId={orderId} />
+            <PendingAccreditationBanner orderId={orderId || ''} />
             <div className="bg-white rounded-2xl border border-amber-200 p-8 text-center shadow-sm space-y-6">
               <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
                 <Clock className="w-8 h-8" />
