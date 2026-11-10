@@ -1,7 +1,12 @@
 package com.easyeat.order;
 
+import com.easyeat.auth.domain.User;
+import com.easyeat.catalog.domain.Establishment;
+import com.easyeat.order.domain.FulfillmentMode;
+import com.easyeat.order.domain.Order;
 import com.easyeat.order.domain.OrderReceipt;
 import com.easyeat.order.domain.OrderReceiptStatus;
+import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.event.OrderPaymentApprovedEvent;
 import com.easyeat.order.repository.OrderReceiptRepository;
 import com.easyeat.order.service.OrderReceiptEmailService;
@@ -16,6 +21,8 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -40,25 +47,43 @@ public class OrderReceiptEmailDispatchIntegrationTest extends BaseIntegrationTes
     @Autowired
     private OrderReceiptRepository orderReceiptRepository;
 
+    private Establishment testEstablishment;
+    private User testDiner;
+
     @BeforeEach
     void setUp() {
         orderReceiptRepository.deleteAll();
+        orderRepository.deleteAll();
+        testEstablishment = createTestEstablishment("Café Palermo Test");
+        testDiner = createTestDiner("diner.dispatch." + UUID.randomUUID() + "@test.com");
         when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+    }
+
+    private Order createSavedOrder() {
+        Order order = new Order();
+        order.setEstablishmentId(testEstablishment.getId());
+        order.setUserId(testDiner.getId());
+        order.setStatus(OrderStatus.IN_PROGRESS);
+        order.setFulfillmentMode(FulfillmentMode.IMMEDIATE);
+        order.setPickupDate(LocalDate.now());
+        order.setTimeSlotStart(LocalTime.of(12, 0));
+        order.setTimeSlotEnd(LocalTime.of(12, 30));
+        order.setTotalAmount(new BigDecimal("4850.00"));
+        return orderRepository.save(order);
     }
 
     @Test
     @DisplayName("AS-2/FR-002: Should dispatch email receipt asynchronously and persist OrderReceipt with status SENT")
     void shouldDispatchEmailReceiptAndPersistSentStatus() throws Exception {
-        UUID orderId = UUID.randomUUID();
-        UUID establishmentId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
+        Order order = createSavedOrder();
+        UUID orderId = order.getId();
         String recipientEmail = "diner.approved@test.com";
         String trackingUrl = "/pedidos/" + orderId + "/seguimiento";
 
         OrderPaymentApprovedEvent event = new OrderPaymentApprovedEvent(
                 orderId,
-                establishmentId,
-                userId,
+                testEstablishment.getId(),
+                testDiner.getId(),
                 recipientEmail,
                 new BigDecimal("4850.00"),
                 trackingUrl
@@ -87,16 +112,15 @@ public class OrderReceiptEmailDispatchIntegrationTest extends BaseIntegrationTes
         doThrow(new MailSendException("SMTP connection refused"))
                 .when(mailSender).send(any(MimeMessage.class));
 
-        UUID orderId = UUID.randomUUID();
-        UUID establishmentId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
+        Order order = createSavedOrder();
+        UUID orderId = order.getId();
         String recipientEmail = "diner.failure@test.com";
         String trackingUrl = "/pedidos/" + orderId + "/seguimiento";
 
         OrderPaymentApprovedEvent event = new OrderPaymentApprovedEvent(
                 orderId,
-                establishmentId,
-                userId,
+                testEstablishment.getId(),
+                testDiner.getId(),
                 recipientEmail,
                 new BigDecimal("1200.00"),
                 trackingUrl
