@@ -24,6 +24,12 @@ public interface TemporaryReservationRepository extends JpaRepository<TemporaryR
 
     @Query("""
         SELECT r FROM TemporaryReservation r
+        WHERE r.order.id = :orderId
+    """)
+    Optional<TemporaryReservation> findByOrderId(@Param("orderId") UUID orderId);
+
+    @Query("""
+        SELECT r FROM TemporaryReservation r
         WHERE r.status = com.easyeat.order.domain.ReservationStatus.ACTIVE
           AND r.expiresAt <= :now
     """)
@@ -41,4 +47,3 @@ public interface TemporaryReservationRepository extends JpaRepository<TemporaryR
 
     Optional<TemporaryReservation> findByIdempotencyKey(String idempotencyKey);
 }
-
