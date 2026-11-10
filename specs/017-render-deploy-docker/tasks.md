@@ -49,7 +49,7 @@
 
 ### Tests para User Story 1 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
-- [ ] T008 [P] [US1] Escribir script de test automatizado de verificación de contrato de imagen backend comprobando base Alpine JRE 21, usuario no root `easyeat`, flags JVM `-XX:+UseContainerSupport` y `-XX:MaxRAMPercentage=75.0`, y ausencia de código fuente `.java` o herramientas Maven (AS-1, AS-2, AS-3, SC-001, SC-002) en `easyeat/backend/src/test/resources/scripts/verify-backend-image.sh`
+- [x] T008 [P] [US1] Escribir script de test automatizado de verificación de contrato de imagen backend comprobando base Alpine JRE 21, usuario no root `easyeat`, flags JVM `-XX:+UseContainerSupport` y `-XX:MaxRAMPercentage=75.0`, y ausencia de código fuente `.java` o herramientas Maven (AS-1, AS-2, AS-3, SC-001, SC-002) en `easyeat/backend/src/test/resources/scripts/verify-backend-image.sh`
 
 ### Implementación para User Story 1 (Hacer pasar los tests - Estado VERDE)
 
