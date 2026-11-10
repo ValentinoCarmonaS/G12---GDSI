@@ -5,8 +5,10 @@ import { authApi } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { chefReviewFeedbackApi } from '../api/chefReviewFeedbackApi';
 import { orderTrackingApi } from '../api/orderTrackingApi';
+import { fetchDashboardSummary } from '../api/kitchenKdsApi';
 import { DishRejectionFeedbackBanner } from '../components/chef/DishRejectionFeedbackBanner';
 import type { ChefReviewFeedbackEntry } from '../types/dishReview';
+import type { KdsDashboardSummaryResponse } from '../types/kds';
 import { Clock, CheckCircle2, AlertTriangle, Send } from 'lucide-react';
 
 export const KitchenWorkspacePage: React.FC = () => {
@@ -26,6 +28,14 @@ export const KitchenWorkspacePage: React.FC = () => {
   const [ticketSuccessMsg, setTicketSuccessMsg] = useState<string | null>(null);
   const [ticketErrorMsg, setTicketErrorMsg] = useState<string | null>(null);
 
+  // KDS live dashboard metrics (T027, Contract 07)
+  const [kdsSummary, setKdsSummary] = useState<KdsDashboardSummaryResponse>({
+    queuedOrdersCount: 0,
+    inPreparationOrdersCount: 0,
+    readyForPickupOrdersCount: 0,
+    completedTodayCount: 0,
+  });
+
   useEffect(() => {
     authApi.me().catch(() => { /* handled by interceptor */ });
   }, []);
@@ -39,6 +49,21 @@ export const KitchenWorkspacePage: React.FC = () => {
       .then((feedback) => setFeedbackEntries(feedback.entries))
       .catch(() => setFeedbackEntries([]));
   }, [returnedDishId]);
+
+  useEffect(() => {
+    const loadKdsSummary = async () => {
+      try {
+        const summary = await fetchDashboardSummary();
+        setKdsSummary(summary);
+      } catch (err) {
+        // non-blocking fallback
+      }
+    };
+
+    loadKdsSummary();
+    const interval = setInterval(loadKdsSummary, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleUpdateDelay = async (minutes: number) => {
     const establishmentId = user?.tenantId;
@@ -208,25 +233,26 @@ export const KitchenWorkspacePage: React.FC = () => {
         </div>
       </div>
 
+      {/* KDS 4 Status Cards (T027, Contract 07) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-lg shadow-sm border-l-4 border-l-amber-500 border border-gray-200">
           <span className="text-xs font-bold uppercase tracking-wider text-amber-600">En Cola</span>
-          <p className="text-2xl font-bold text-gray-900 mt-2">0 comandas</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">{kdsSummary.queuedOrdersCount} comandas</p>
         </div>
 
         <div className="bg-white p-5 rounded-lg shadow-sm border-l-4 border-l-blue-500 border border-gray-200">
           <span className="text-xs font-bold uppercase tracking-wider text-blue-600">En Preparación</span>
-          <p className="text-2xl font-bold text-gray-900 mt-2">0 comandas</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">{kdsSummary.inPreparationOrdersCount} comandas</p>
         </div>
 
         <div className="bg-white p-5 rounded-lg shadow-sm border-l-4 border-l-green-500 border border-gray-200">
           <span className="text-xs font-bold uppercase tracking-wider text-green-600">Para Retirar</span>
-          <p className="text-2xl font-bold text-gray-900 mt-2">0 comandas</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">{kdsSummary.readyForPickupOrdersCount} comandas</p>
         </div>
 
         <div className="bg-white p-5 rounded-lg shadow-sm border-l-4 border-l-gray-400 border border-gray-200">
           <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Completadas hoy</span>
-          <p className="text-2xl font-bold text-gray-900 mt-2">0</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">{kdsSummary.completedTodayCount}</p>
         </div>
       </div>
     </WorkspaceLayout>
