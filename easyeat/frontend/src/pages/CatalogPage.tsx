@@ -28,6 +28,7 @@ import {
 } from '../components/catalog/CatalogSearchFilter';
 import { ManualFiltersSidebar } from '../components/catalog/ManualFiltersSidebar';
 import { EmptyFilterResultsNotice } from '../components/catalog/EmptyFilterResultsNotice';
+import { BrandThemeProvider } from '../components/common/BrandThemeProvider';
 
 export const CatalogView: React.FC = () => {
   const navigate = useNavigate();
@@ -260,10 +261,11 @@ export const CatalogView: React.FC = () => {
   const pageTitle = catalogData?.establishment?.name || tenant?.name || 'Catálogo de Productos';
 
   return (
-    <WorkspaceLayout
-      title={pageTitle}
-      subtitle="Explorá nuestra carta y armá tu pedido en tiempo real"
-    >
+    <BrandThemeProvider establishmentId={tenant?.id || catalogData?.establishment?.id}>
+      <WorkspaceLayout
+        title={pageTitle}
+        subtitle="Explorá nuestra carta y armá tu pedido en tiempo real"
+      >
       <div className="space-y-6">
         {/* Top Header Actions */}
         <div className="flex items-center justify-between gap-4">
@@ -613,6 +615,7 @@ export const CatalogView: React.FC = () => {
         }}
       />
     </WorkspaceLayout>
+    </BrandThemeProvider>
   );
 };
 
