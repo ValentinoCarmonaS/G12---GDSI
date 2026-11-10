@@ -151,7 +151,7 @@
 
 ### Implementación para User Story 6 (Hacer pasar los tests - Estado VERDE)
 
-- [ ] T027 [US6] Habilitar explícitamente en `SecurityConfig.java` el acceso público sin autenticación (`.requestMatchers("/api/v1/payments/*/webhook", "/api/v1/payments/mercadopago/webhook").permitAll()`) para permitir notificaciones externas de Mercado Pago (FR-023) en `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [x] T027 [US6] Habilitar explícitamente en `SecurityConfig.java` el acceso público sin autenticación (`.requestMatchers("/api/v1/payments/*/webhook", "/api/v1/payments/mercadopago/webhook").permitAll()`) para permitir notificaciones externas de Mercado Pago (FR-023) en `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
 - [ ] T028 [US6] Verificar y asegurar el mapeo de variables de entorno de URLs públicas (`MERCADOPAGO_FRONTEND_BASE_URL`, `APP_PASSWORD_RESET_BASE_URL`, `APP_EMAIL_VERIFICATION_BASE_URL`) en `application.yml` garantizando compatibilidad con entornos locales y cloud (FR-022, FR-024, Q3) en `easyeat/backend/src/main/resources/application.yml`
 
 **Checkpoint**: User Story 6 lista. Los pagos de Mercado Pago retornan al dominio público y los enlaces de correo no apuntan a localhost.
