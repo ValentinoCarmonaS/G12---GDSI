@@ -92,7 +92,7 @@
 
 ### Implementación para User Story 3 (Hacer pasar los tests - Estado VERDE)
 
-- [ ] T016 [US3] Declarar explícitamente en la regla `authorizeHttpRequests` de `SecurityConfig.java` el acceso público sin autenticación (`.requestMatchers("/actuator/health").permitAll()`) para permitir el monitoreo de la sonda de Render (FR-012) en `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [x] T016 [US3] Declarar explícitamente en la regla `authorizeHttpRequests` de `SecurityConfig.java` el acceso público sin autenticación (`.requestMatchers("/actuator/health").permitAll()`) para permitir el monitoreo de la sonda de Render (FR-012) en `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
 
 **Checkpoint**: User Story 3 lista. Render puede sondear la salud del contenedor y rutear tráfico al puerto asignado.
 
