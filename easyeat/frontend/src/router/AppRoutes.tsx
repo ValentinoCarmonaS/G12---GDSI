@@ -24,6 +24,7 @@ import { AdminOperationsPage } from '../pages/AdminOperationsPage';
 import { VerifyEmailPage } from '../pages/VerifyEmailPage';
 import { EstablishmentDiscoveryPage } from '../pages/EstablishmentDiscoveryPage';
 import { CheckoutPage } from '../pages/CheckoutPage';
+import { OrderConfirmationTrackingPage } from '../pages/OrderConfirmationTrackingPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -238,6 +239,24 @@ export const AppRoutes: React.FC = () => {
         element={
           <RoleRouteGuard allowedRoles={['COMENSAL']}>
             <CheckoutPage />
+          </RoleRouteGuard>
+        }
+      />
+
+      {/* Role-Protected Diner Payment Confirmation & Live Tracking (COMENSAL) */}
+      <Route
+        path="/checkout/confirmacion/:orderId"
+        element={
+          <RoleRouteGuard allowedRoles={['COMENSAL']}>
+            <OrderConfirmationTrackingPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/pedidos/:orderId/seguimiento"
+        element={
+          <RoleRouteGuard allowedRoles={['COMENSAL']}>
+            <OrderConfirmationTrackingPage />
           </RoleRouteGuard>
         }
       />
