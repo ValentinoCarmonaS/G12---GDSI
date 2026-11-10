@@ -172,7 +172,7 @@ Todos los escenarios son ejecutables en el entorno Sandbox sin costo financiero 
    ```
 
 #### Resultado Esperado
-- Al cumplirse `expires_at <= now()`, el scheduler marca `temporary_reservations.status = 'EXPIRED'`.
+- Al cumplirse `expires_at <= now()`, el scheduler `OrderExpirationScheduler` (extendido) marca `temporary_reservations.status = 'EXPIRED'` y `orders.status = 'EXPIRED'`.
 - Cero (0) recursos quedan retenidos indefinidamente en el sistema (SC-004).
 
 ---

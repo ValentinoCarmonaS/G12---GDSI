@@ -111,7 +111,7 @@ Representa la intención comercial del comensal.
 | `updatedAt` | `updated_at` | `Instant` | Not Null | Marca temporal de última modificación. |
 
 **Compatibilidad con Spec 012**:  
-La consulta `countActiveOrdersBySlot` de `OrderRepository` considera activas las órdenes con `status IN ('CONFIRMED', 'PAID')` o `(status = 'PENDING_PAYMENT' AND expires_at > :now)`. Cuando una reserva temporal se libera por rechazo o cancelación, el estado de la orden permanece `PENDING_PAYMENT` pero su reserva temporal se cancela, o bien se actualiza según el flujo de reintento.
+La consulta `countActiveOrdersBySlot` de `OrderRepository` considera activas las órdenes con `status IN ('CONFIRMED', 'PAID')` o `(status = 'PENDING_PAYMENT' AND expires_at > :now)`. Cuando una reserva temporal se libera por rechazo o cancelación, el estado de la orden transiciona a `CANCELLED` (o su `expires_at` se sincroniza a `NOW()`), asegurando que `countActiveOrdersBySlot` libere inmediatamente el cupo de franja y `hasActivePendingOrder` quede limpio para permitir un reintento limpio con una nueva orden desde el checkout.
 
 ---
 
@@ -241,10 +241,10 @@ stateDiagram-v2
 |---|---|---|---|---|---|
 | `[Ninguno]` | Presiona "Pagar" con recursos disponibles | `ACTIVE` | `IN_PROCESS` | `PENDING_PAYMENT` | **Bloquea 1 cupo** de franja y reserva temporalmente el stock de los platos del carrito. |
 | `ACTIVE` / `IN_PROCESS` | Notificación aprobada de MP (`approved`) | `CONFIRMED` | `APPROVED` | `CONFIRMED` | **Reserva pasa a definitiva** (INV-02). Se vacía el carrito local del comensal. |
-| `ACTIVE` / `IN_PROCESS` | Notificación o retorno de rechazo (`rejected`) | `RELEASED` | `REJECTED` | `PENDING_PAYMENT` | **Libera inmediatamente el cupo y el stock** (INV-03). Carrito y franja preservados para reintento. |
-| `ACTIVE` / `IN_PROCESS` | Comensal ejecuta "Cancelar intento" en panel | `RELEASED` | `CANCELLED` | `PENDING_PAYMENT` | **Libera inmediatamente el cupo y el stock** (INV-03, Q3). Re-habilita botón "Pagar". |
+| `ACTIVE` / `IN_PROCESS` | Notificación o retorno de rechazo (`rejected`) | `RELEASED` | `REJECTED` | `CANCELLED` | **Libera inmediatamente el cupo y el stock** (INV-03). Carrito y franja preservados para reintento. |
+| `ACTIVE` / `IN_PROCESS` | Comensal ejecuta "Cancelar intento" en panel | `RELEASED` | `CANCELLED` | `CANCELLED` | **Libera inmediatamente el cupo y el stock** (INV-03, Q3). Re-habilita botón "Pagar". |
 | `ACTIVE` / `IN_PROCESS` | Transcurren 15 min sin resolución (`expires_at < now`) | `EXPIRED` | `EXPIRED` | `EXPIRED` | **Libera automáticamente el cupo y el stock** (INV-04, FR-009). |
-| `[Inicio]` | Excepción de red o error 5xx al crear preferencia | `RELEASED` (o Rollback) | `FAILED` | `PENDING_PAYMENT` | **Reversión instantánea**. Recursos nunca quedan comprometidos (FR-011, AS-6). |
+| `[Inicio]` | Excepción de red o error 5xx al crear preferencia | `RELEASED` (o Rollback) | `FAILED` | `CANCELLED` (o Rollback) | **Reversión instantánea**. Recursos nunca quedan comprometidos (FR-011, AS-6). |
 
 ---
 

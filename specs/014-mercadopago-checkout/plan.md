@@ -126,9 +126,9 @@ easyeat/
 │   │   │   │   ├── catalog/
 │   │   │   │   │   └── service/
 │   │   │   │   │       └── DishAvailabilityEngine.java          # Extendido: resta stock comprometido por reservas activas
-│   │   │   │   ├── config/
-│   │   │   │   │   └── MercadoPagoProperties.java               # Configuración tipada segregada para Mercado Pago
 │   │   │   │   └── order/
+│   │   │   │       ├── config/
+│   │   │   │       │   └── MercadoPagoProperties.java               # Configuración tipada segregada para Mercado Pago
 │   │   │   │       ├── controller/
 │   │   │   │       │   ├── CheckoutPaymentController.java       # POST /checkout/pay, POST /checkout/cancel-payment
 │   │   │   │       │   ├── PaymentWebhookController.java        # POST /payments/{provider}/webhook (ruteo desacoplado)
@@ -154,7 +154,7 @@ easyeat/
 │   │   │   │           ├── PaymentGatewayResolver.java          # Resolutor dinámico de pasarelas (Strategy Pattern)
 │   │   │   │           ├── MercadoPagoGatewayAdapter.java       # Adaptador concreto de Mercado Pago Checkout Pro
 │   │   │   │           ├── WebhookSignatureValidator.java       # Validación criptográfica HMAC-SHA256
-│   │   │   │           └── ReservationExpirationScheduler.java  # Barredor @Scheduled cada 60s
+│   │   │   │           └── OrderExpirationScheduler.java        # Extendido: barrido @Scheduled cada 60s coordinando órdenes y reservas
 │   │   │   └── resources/
 │   │   │       └── db/migration/
 │   │   │           └── V18__mercadopago_checkout_and_reservations.sql # DDL Flyway tablas de reservas y pagos
@@ -177,13 +177,14 @@ easyeat/
     │   │   ├── CheckoutPage.tsx                                 # Extendido: gestión de botón Pagar y panel
     │   │   └── PaymentReturnPage.tsx                            # Página de aterrizaje de back_urls con vaciado de carrito (Q4)
     │   ├── router/
-    │   │   └── index.tsx                                        # Incorpora ruta /checkout/payment-return
-    │   └── types/
-    │       └── payment.ts                                       # Tipos TypeScript para pagos y reservas
-    └── tests/
-        └── checkout/
-            ├── CheckoutPaymentFlow.test.tsx                     # Pruebas de integración UI de estados de pago
-            └── InProcessPaymentPanel.test.tsx                   # Pruebas de renderizado de panel y acciones
+    │   │   └── AppRoutes.tsx                                    # Incorpora ruta /checkout/payment-return
+    │   ├── types/
+    │   │   └── payment.ts                                       # Tipos TypeScript para pagos y reservas
+    │   └── test/
+    │       └── checkout/
+    │           ├── CheckoutPaymentFlow.test.tsx                 # Pruebas de integración UI de estados de pago
+    │           ├── InProcessPaymentPanel.test.tsx               # Pruebas de renderizado de panel y acciones
+    │           └── PaymentReturnPage.test.tsx                   # Pruebas de retorno, vaciado de carrito y alertas
 ```
 
 **Decisión de Estructura**:  
@@ -197,7 +198,7 @@ La Fase 0 se encuentra formalizada en detalle en [research.md](./research.md).
 Principales definiciones consolidadas:
 - **Modo Checkout Pro**: Redirección mediante `init_point` o `sandbox_init_point` creada vía `POST /checkout/preferences`. Garantiza aislamiento absoluto de datos de tarjetas (FR-013, INV-11).
 - **Modelo de Reserva Conjunta**: Entidad explícita `TemporaryReservation` con restricción de unicidad activa por orden (`UNIQUE WHERE status = 'ACTIVE'`). Atomicidad garantizada mediante transacción pesimista.
-- **TTL de 15 Minutos**: Implementación híbrida mediante evaluación perezosa en consultas (`GET /payment-status`) y barredor `@Scheduled` cada 60 s (`ReservationExpirationScheduler`).
+- **TTL de 15 Minutos**: Implementación híbrida mediante evaluación perezosa en consultas (`GET /payment-status`) y barredor `@Scheduled` cada 60 s (`OrderExpirationScheduler` extendido).
 - **Idempotencia Transaccional**: Cabecera saliente `X-Idempotency-Key` hacia Mercado Pago y restricción de unicidad en base de datos para procesamiento de webhooks y pagos repetidos (INV-06, CB-07).
 - **Validación Criptográfica de Webhooks**: Verificación del header `x-signature` (`ts`, `v1`) con algoritmo HMAC-SHA256 sobre manifest canónico y consulta de confirmación contra `GET /v1/payments/{id}` (INV-08).
 - **Sandbox y Reproducibilidad**: Configuración de credenciales de prueba, matriz oficial de tarjetas documentadas (`APRO`, `FUND`, `OTHE`) y simulación controlada de fallos de red (RT-1, RT-2, RT-3).
