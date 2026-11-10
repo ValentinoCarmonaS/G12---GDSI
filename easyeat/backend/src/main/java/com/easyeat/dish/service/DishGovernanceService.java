@@ -153,13 +153,18 @@ public class DishGovernanceService {
                     List.of(AcknowledgementKind.NEGATIVE_MARGIN));
         }
 
-        int updated = dishRepository.updateRetailPriceAndMarginIfUnchanged(dishId, tenantId,
-                expectedRetailPrice, retailPrice, marginPct);
+        int updated = dishRepository.updateRetailPriceIfUnchanged(dishId, tenantId,
+                expectedRetailPrice, retailPrice);
         if (updated == 0) {
             BigDecimal current = dishRepository.findByIdAndTenantId(dishId, tenantId)
                     .map(Dish::getRetailPrice)
                     .orElse(null);
             throw new StaleDishPriceException(dishId, expectedRetailPrice, current);
+        }
+
+        if (marginPct != null) {
+            dish.setMarginPercentage(marginPct);
+            dishRepository.save(dish);
         }
 
         DishPriceHistory entry = DishPriceHistory.record(dishId, tenantId, resolveCurrentUserId(),
@@ -242,12 +247,17 @@ public class DishGovernanceService {
         }
 
         Instant publishedAt = Instant.now();
-        int updated = dishRepository.updateApprovalIfPendingAndSetMargin(dishId, tenantId, publishedAt, marginPct);
+        int updated = dishRepository.updateApprovalIfPending(dishId, tenantId, publishedAt);
         if (updated == 0) {
             String currentStatus = dishRepository.findByIdAndTenantId(dishId, tenantId)
                     .map(d -> d.getStatus().name())
                     .orElse(dish.getStatus().name());
             throw new DishAlreadyDecidedException(dishId, currentStatus, Instant.now());
+        }
+
+        if (marginPct != null) {
+            dish.setMarginPercentage(marginPct);
+            dishRepository.save(dish);
         }
 
         int cycleNumber = reviewHistoryRepository.findMaxCycleNumberByDishId(dishId).orElse(0) + 1;
