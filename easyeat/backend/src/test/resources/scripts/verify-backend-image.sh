@@ -42,7 +42,7 @@ echo "[+] OK: Dockerfile declara etapas e identidades según contrato (FR-001, F
 
 # 3. Inspección del usuario de ejecución del contenedor (Inv-Img-02, AS-3)
 echo "[*] Verificando usuario de ejecución no-root en el contenedor..."
-CONTAINER_USER=$(docker run --rm "${IMAGE_NAME}" whoami)
+CONTAINER_USER=$(docker run --rm --entrypoint whoami "${IMAGE_NAME}" | tr -d '\r\n[:space:]')
 if [ "${CONTAINER_USER}" != "easyeat" ]; then
   echo "[-] ERROR: El usuario del contenedor es '${CONTAINER_USER}', se esperaba 'easyeat'" >&2
   exit 1
@@ -51,7 +51,7 @@ echo "[+] OK: Proceso ejecutándose bajo usuario no privilegiado: ${CONTAINER_US
 
 # 4. Inspección de ausencia de código fuente .java en el contenedor (Inv-Img-01, AS-3, SC-001)
 echo "[*] Verificando ausencia total de código fuente (.java)..."
-JAVA_FILES_COUNT=$(docker run --rm "${IMAGE_NAME}" sh -c "find / -name '*.java' 2>/dev/null | wc -l" | tr -d '[:space:]')
+JAVA_FILES_COUNT=$(docker run --rm --entrypoint sh "${IMAGE_NAME}" -c "find / -name '*.java' 2>/dev/null | wc -l" | tr -d '\r\n[:space:]')
 if [ "${JAVA_FILES_COUNT}" -ne 0 ]; then
   echo "[-] ERROR: Se encontraron ${JAVA_FILES_COUNT} archivos .java dentro del contenedor de runtime" >&2
   exit 1
@@ -60,7 +60,7 @@ echo "[+] OK: Cero archivos .java en el contenedor de runtime (encontrados: 0)"
 
 # 5. Inspección de ausencia de herramientas de compilación maven (Inv-Img-01, AS-3, SC-001)
 echo "[*] Verificando ausencia de herramientas de compilación (mvn)..."
-if docker run --rm "${IMAGE_NAME}" which mvn >/dev/null 2>&1; then
+if docker run --rm --entrypoint which "${IMAGE_NAME}" mvn >/dev/null 2>&1; then
   echo "[-] ERROR: La herramienta de compilación 'mvn' no debe existir en la imagen de runtime" >&2
   exit 1
 fi
@@ -88,4 +88,3 @@ echo "[+] OK: Flags JVM de memoria gobernada correctamente configurados en ENTRY
 echo "=============================================================================="
 echo "[+] CONTRATO DE IMAGEN DOCKER BACKEND VALIDADO EXITOSAMENTE (100% OK)"
 echo "=============================================================================="
-
