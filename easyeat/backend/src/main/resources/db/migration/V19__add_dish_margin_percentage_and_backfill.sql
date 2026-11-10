@@ -1,5 +1,5 @@
 -- ====================================================================
--- EasyEat V18: Automatic Dish PVP Adjustment on Ingredient Cost Increase (C-09)
+-- EasyEat V19: Automatic Dish PVP Adjustment on Ingredient Cost Increase (C-09)
 -- Owns: dishes.margin_percentage, dish_price_history audit details,
 --       and backfill from prevailing PVP and Food Cost.
 -- ====================================================================
