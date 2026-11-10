@@ -126,25 +126,32 @@ class TimeSlotOccupancyTest {
     }
 
     @Test
-    @DisplayName("Saturation tier: occupancy >= 100% yields SOLD_OUT status and isSelectable=false")
-    void shouldMarkSlotAsSoldOutWhenOccupancyReaches100Percent() {
+    @DisplayName("Saturation tier: occupancy >= 100% yields SOLD_OUT and filters out the slot (C-12)")
+    void shouldFilterSoldOutSlotsWhenOccupancyReaches100Percent() {
         LocalDate testDate = LocalDate.of(2026, 11, 3);
 
         when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 0)), any(Instant.class)))
-                .thenReturn(10L); // 10/10 = 100.0%
+                .thenReturn(10L); // 10/10 = 100.0% (SOLD_OUT -> filtered out)
         when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 15)), any(Instant.class)))
-                .thenReturn(12L); // 12/10 = 120.0% (over capacity edge case)
+                .thenReturn(12L); // 12/10 = 120.0% (over capacity edge case -> filtered out)
+        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 30)), any(Instant.class)))
+                .thenReturn(4L);  // 4/10 = 40.0% (AVAILABLE -> retained)
+        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 45)), any(Instant.class)))
+                .thenReturn(8L);  // 8/10 = 80.0% (HIGH_DEMAND -> retained)
 
         PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, testDate);
 
-        TimeSlotAvailability slot100 = response.getSlots().get(0);
-        assertThat(slot100.getStatus()).isEqualTo("SOLD_OUT");
-        assertThat(slot100.isSelectable()).isFalse();
-        assertThat(slot100.getOccupancyPercentage()).isEqualTo(100.0);
+        // Slots at 12:00 and 12:15 are filtered out. Only 12:30 and 12:45 remain.
+        assertThat(response.getSlots()).hasSize(2);
 
-        TimeSlotAvailability slot120 = response.getSlots().get(1);
-        assertThat(slot120.getStatus()).isEqualTo("SOLD_OUT");
-        assertThat(slot120.isSelectable()).isFalse();
-        assertThat(slot120.getOccupancyPercentage()).isEqualTo(120.0);
+        TimeSlotAvailability slot30 = response.getSlots().get(0);
+        assertThat(slot30.getStartTime()).isEqualTo(LocalTime.of(12, 30));
+        assertThat(slot30.getStatus()).isEqualTo("AVAILABLE");
+        assertThat(slot30.isSelectable()).isTrue();
+
+        TimeSlotAvailability slot45 = response.getSlots().get(1);
+        assertThat(slot45.getStartTime()).isEqualTo(LocalTime.of(12, 45));
+        assertThat(slot45.getStatus()).isEqualTo("HIGH_DEMAND");
+        assertThat(slot45.isSelectable()).isTrue();
     }
 }
