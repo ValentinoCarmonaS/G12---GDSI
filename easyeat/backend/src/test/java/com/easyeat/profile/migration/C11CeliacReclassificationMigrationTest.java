@@ -29,14 +29,16 @@ class C11CeliacReclassificationMigrationTest {
     }
 
     @Test
-    @DisplayName("C-11: Seed V5 registers CELIAC as COMMON_ALLERGEN for fresh DB setups")
-    void v5SeedScript_registersCeliacAsCommonAllergen() throws Exception {
-        ClassPathResource resource = new ClassPathResource("db/migration/V5__extend_users_profile_and_dietary.sql");
+    @DisplayName("C-11: Flyway V22 reclassifies CELIAC to COMMON_ALLERGEN with explicit safety description")
+    void v22MigrationScript_setsDescriptionAndAllergenCategory() throws Exception {
+        ClassPathResource resource = new ClassPathResource("db/migration/V22__reclassify_celiac_as_common_allergen.sql");
         assertThat(resource.exists()).isTrue();
 
         try (InputStream is = resource.getInputStream()) {
             String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-            assertThat(sql).contains("('CELIAC', 'Sin TACC / Celíaco', 'COMMON_ALLERGEN'");
+            assertThat(sql).contains("category = 'COMMON_ALLERGEN'");
+            assertThat(sql).contains("WHERE code = 'CELIAC'");
+            assertThat(sql).containsIgnoringCase("gluten");
         }
     }
 
