@@ -126,7 +126,7 @@
 ### Tests para User Story 5 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
 - [x] T020 [P] [US5] Escribir test unitario en frontend con Vitest verificando que `apiClient.ts` adopte `import.meta.env.VITE_API_BASE_URL` si está definida o aplique fallback a `/api/v1` en su defecto (AS-19, FR-020) en `easyeat/frontend/src/test/config/apiClientBaseUrl.test.ts`
-- [ ] T021 [P] [US5] Escribir script de test automatizado de verificación de servidor Nginx validando la reescritura de rutas virtuales SPA (`try_files` a `/index.html` con 200 OK y 0 errores 404), la entrega de `Cache-Control: no-cache` para HTML, la entrega de `Cache-Control: public, max-age=31536000, immutable` para `/assets/*`, y el enlace en `${PORT:-80}` (AS-17, AS-18, AS-20, FR-018, FR-019, FR-021, Q2, Q5, SC-006, SC-010) en `easyeat/frontend/src/test/scripts/verify-nginx-spa.sh`
+- [x] T021 [P] [US5] Escribir script de test automatizado de verificación de servidor Nginx validando la reescritura de rutas virtuales SPA (`try_files` a `/index.html` con 200 OK y 0 errores 404), la entrega de `Cache-Control: no-cache` para HTML, la entrega de `Cache-Control: public, max-age=31536000, immutable` para `/assets/*`, y el enlace en `${PORT:-80}` (AS-17, AS-18, AS-20, FR-018, FR-019, FR-021, Q2, Q5, SC-006, SC-010) en `easyeat/frontend/src/test/scripts/verify-nginx-spa.sh`
 
 ### Implementación para User Story 5 (Hacer pasar los tests - Estado VERDE)
 
