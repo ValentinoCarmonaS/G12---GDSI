@@ -67,7 +67,7 @@
 
 ### Tests para User Story 2 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
-- [ ] T010 [P] [US2] Escribir prueba unitaria para el mecanismo de sanitización y binding de orígenes CORS verificando recorte de espacios (`trim`), remoción de barras diagonales finales (`/+$`), división por comas y fallback a `http://localhost:3000` (AS-5, AS-6, FR-006, FR-007, Q6) en `easyeat/backend/src/test/java/com/easyeat/config/SecurityCorsConfigurationTest.java`
+- [x] T010 [P] [US2] Escribir prueba unitaria para el mecanismo de sanitización y binding de orígenes CORS verificando recorte de espacios (`trim`), remoción de barras diagonales finales (`/+$`), división por comas y fallback a `http://localhost:3000` (AS-5, AS-6, FR-006, FR-007, Q6) en `easyeat/backend/src/test/java/com/easyeat/config/SecurityCorsConfigurationTest.java`
 - [ ] T011 [P] [US2] Escribir test de integración MockMvc para solicitudes preflight HTTP `OPTIONS` hacia endpoints públicos y protegidos verificando respuesta 200 OK, cabeceras `Access-Control-Allow-Origin`, `Access-Control-Allow-Credentials: true`, `Access-Control-Max-Age: 3600`, y rechazo de orígenes no autorizados sin requerir JWT (AS-4, AS-7, AS-8, FR-005, FR-008, FR-009, SC-003) en `easyeat/backend/src/test/java/com/easyeat/config/SecurityCorsIntegrationTest.java`
 
 ### Implementación para User Story 2 (Hacer pasar los tests - Estado VERDE)
