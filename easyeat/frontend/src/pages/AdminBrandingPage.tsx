@@ -22,12 +22,17 @@ export const AdminBrandingPage: React.FC = () => {
   const [secondaryColor, setSecondaryColor] = useState<string>('#065F46');
   const [accentColor, setAccentColor] = useState<string>('#F59E0B');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [previewImageError, setPreviewImageError] = useState<boolean>(false);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPreviewImageError(false);
+  }, [logoUrl]);
 
   useEffect(() => {
     if (!establishmentId) return;
@@ -237,10 +242,11 @@ export const AdminBrandingPage: React.FC = () => {
                 style={{ backgroundColor: secondaryColor, color: secondaryContrast }}
               >
                 <div className="flex items-center gap-3">
-                  {logoUrl ? (
+                  {logoUrl && !previewImageError ? (
                     <img
                       src={logoUrl}
                       alt="Logo local"
+                      onError={() => setPreviewImageError(true)}
                       className="w-12 h-12 rounded-lg object-contain bg-white/10 p-1"
                     />
                   ) : (

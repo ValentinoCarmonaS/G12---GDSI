@@ -32,6 +32,11 @@ import { BrandThemeProvider, useBrandTheme } from '../components/common/BrandThe
 
 const CatalogContent: React.FC = () => {
   const { branding } = useBrandTheme();
+  const [logoFailed, setLogoFailed] = useState(false);
+
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [branding.logoUrl]);
   const navigate = useNavigate();
   const tenantContext = useContext(TenantContext);
   const tenant = tenantContext?.tenant;
@@ -296,10 +301,11 @@ const CatalogContent: React.FC = () => {
           className="py-6 px-6 shadow-sm rounded-2xl transition-colors"
         >
           <div className="flex items-center gap-4">
-            {branding.logoUrl ? (
+            {branding.logoUrl && !logoFailed ? (
               <img
                 src={branding.logoUrl}
                 alt={branding.fantasyName || 'Logo'}
+                onError={() => setLogoFailed(true)}
                 data-testid="restaurant-branding-logo"
                 className="h-16 w-16 rounded-2xl object-cover bg-white/10 p-1 border-2 border-white/20 shadow-sm"
               />

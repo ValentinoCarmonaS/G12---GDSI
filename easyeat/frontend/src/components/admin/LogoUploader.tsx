@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
 
 interface LogoUploaderProps {
@@ -18,7 +18,21 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
   disabled = false,
 }) => {
   const [error, setError] = useState<string | null>(null);
+  const [optimisticPreview, setOptimisticPreview] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (optimisticPreview && typeof URL.revokeObjectURL === 'function') {
+        URL.revokeObjectURL(optimisticPreview);
+      }
+    };
+  }, [optimisticPreview]);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [currentLogoUrl, optimisticPreview]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -35,13 +49,21 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
       return;
     }
 
+    if (typeof URL.createObjectURL === 'function') {
+      const localPreviewUrl = URL.createObjectURL(file);
+      setOptimisticPreview(localPreviewUrl);
+    }
+
     try {
       await onUpload(file);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al subir el logotipo.';
       setError(msg);
+      setOptimisticPreview(null);
     }
   };
+
+  const displayLogoUrl = optimisticPreview || currentLogoUrl;
 
   return (
     <div className="space-y-3">
@@ -51,10 +73,11 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
 
       <div className="flex items-center gap-4">
         <div className="w-20 h-20 rounded-xl border-2 border-dashed border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-inner">
-          {currentLogoUrl ? (
+          {displayLogoUrl && !imageError ? (
             <img
-              src={currentLogoUrl}
+              src={displayLogoUrl}
               alt="Logotipo de la marca"
+              onError={() => setImageError(true)}
               className="w-full h-full object-contain p-1"
             />
           ) : (

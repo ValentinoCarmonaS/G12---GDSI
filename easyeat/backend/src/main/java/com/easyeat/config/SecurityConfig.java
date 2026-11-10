@@ -80,6 +80,7 @@ public class SecurityConfig {
                                 "/api/v1/establishments/{tenantId}/dishes"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/dishes/*/photo").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
                         .requestMatchers(
                                 "/api/v1/establishments",
