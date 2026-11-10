@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { CheckoutPage } from '../../pages/CheckoutPage';
 import { CartContext } from '../../context/CartContext';
-import * as orderApi from '../../api/orderApi';
 import * as paymentApi from '../../api/paymentApi';
 import { CartItem } from '../../types/cart';
 
