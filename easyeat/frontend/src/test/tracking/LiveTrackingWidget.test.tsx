@@ -172,6 +172,41 @@ describe('T028 [US2]: LiveTrackingWidget Component Tests', () => {
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '92');
   });
 
+  it('renders in-slot last touches state for scheduled order when minutesRemaining is 0 (AS-6, CB-006)', () => {
+    vi.spyOn(pollingHook, 'useOrderLiveTrackingPolling').mockReturnValue({
+      tracking: {
+        orderId: 'order-123',
+        ticketNumber: 142,
+        status: 'IN_PROGRESS',
+        fulfillmentMode: 'SCHEDULED',
+        isCountdownActive: true,
+        estimatedMinutesRemaining: 0,
+        progressPercentage: 92,
+        isReadyForPickup: false,
+        kdsQueueSaturation: undefined,
+        message: '¡Tu turno ha comenzado! La cocina está dando los últimos toques a tu pedido.',
+        serverTime: '2026-11-10T13:30:00Z',
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(
+      <LiveTrackingWidget
+        orderId="order-123"
+        ticketNumber={142}
+        fulfillmentMode="SCHEDULED"
+        timeSlotStart="13:30:00"
+        timeSlotEnd="13:45:00"
+      />
+    );
+
+    expect(screen.getByText(/¡Tu turno ha comenzado!/i)).toBeInTheDocument();
+    expect(screen.getByText(/Unos instantes/i)).toBeInTheDocument();
+    expect(screen.getByText(/13:30 - 13:45 hs/i)).toBeInTheDocument();
+  });
+
   it('switches to ready for pickup callout when order is ready (AS-8)', () => {
     vi.spyOn(pollingHook, 'useOrderLiveTrackingPolling').mockReturnValue({
       tracking: {

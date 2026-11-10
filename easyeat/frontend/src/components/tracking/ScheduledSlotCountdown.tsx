@@ -6,6 +6,7 @@ export interface ScheduledSlotCountdownProps {
   timeSlotStart?: string | null;
   timeSlotEnd?: string | null;
   estimatedMinutesRemaining?: number | null;
+  message?: string | null;
 }
 
 export const ScheduledSlotCountdown: React.FC<ScheduledSlotCountdownProps> = ({
@@ -13,6 +14,7 @@ export const ScheduledSlotCountdown: React.FC<ScheduledSlotCountdownProps> = ({
   timeSlotStart,
   timeSlotEnd,
   estimatedMinutesRemaining,
+  message,
 }) => {
   const formatSlot = (time?: string | null) => {
     if (!time) return '--:--';
@@ -39,6 +41,8 @@ export const ScheduledSlotCountdown: React.FC<ScheduledSlotCountdownProps> = ({
     );
   }
 
+  const isInSlot = estimatedMinutesRemaining != null && estimatedMinutesRemaining <= 0;
+
   return (
     <div
       data-testid="active-proximity-countdown"
@@ -47,11 +51,22 @@ export const ScheduledSlotCountdown: React.FC<ScheduledSlotCountdownProps> = ({
       <div className="inline-flex p-3 bg-amber-100 rounded-full mb-3 text-amber-600">
         <Clock className="w-8 h-8 animate-pulse" />
       </div>
-      <h3 className="text-xl font-bold text-gray-900">¡Tu turno se acerca!</h3>
-      <p className="text-sm text-gray-600 mt-1">La cocina está comenzando la preparación de tu orden.</p>
+      <h3 className="text-xl font-bold text-gray-900">
+        {isInSlot ? '¡Tu turno ha comenzado!' : '¡Tu turno se acerca!'}
+      </h3>
+      <p className="text-sm text-gray-600 mt-1">
+        {message ||
+          (isInSlot
+            ? 'La cocina está dando los últimos toques a tu pedido.'
+            : 'La cocina está comenzando la preparación de tu orden.')}
+      </p>
       <div className="mt-4 inline-block bg-white border border-amber-300 rounded-xl px-6 py-3 shadow-sm">
-        <span className="text-4xl font-extrabold text-amber-600 tracking-tight">
-          {estimatedMinutesRemaining ?? 15} min
+        <span
+          className={`${
+            isInSlot ? 'text-2xl sm:text-3xl' : 'text-4xl'
+          } font-extrabold text-amber-600 tracking-tight`}
+        >
+          {isInSlot ? 'Unos instantes' : `${estimatedMinutesRemaining ?? 15} min`}
         </span>
       </div>
       <p className="text-xs text-gray-500 mt-3">

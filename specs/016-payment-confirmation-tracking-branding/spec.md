@@ -125,10 +125,10 @@ para saber cuánto tiempo libre tengo antes de ir a mostrador.
   **Cuando** ingresa a la sección de seguimiento o se actualiza por sondeo silencioso en vivo,  
   **Entonces** visualiza una barra de progreso que escala proporcionalmente desde un 15% inicial hasta un tope asintótico del 92% y un tiempo remanente que descuenta los minutos transcurridos respecto al tiempo total calculado según la saturación de cola KDS (`20 + (comandasPrevias * 2) + demoraGlobal`). Si transcurre el tiempo estimado total sin despacho de cocina, el reloj se clava en 1 minuto y 92% con el mensaje "Dando los últimos toques a tu pedido", reservando el 100% exclusivamente para el despacho real a mostrador (`READY_FOR_PICKUP`).
 
-- **AS-6 (Criterio fuente 6 — Horario pactado estático y activación de cuenta regresiva al acercarse el turno)**:  
+- **AS-6 (Criterio fuente 6 — Horario pactado estático, activación de cuenta regresiva y estado en curso del turno)**:  
   **Dado** que el comensal posee una reserva programada para una franja horaria futura,  
   **Cuando** revisa su pedido,  
-  **Entonces** el sistema muestra el horario de retiro pactado en lugar de un contador en vivo, activando la cuenta regresiva únicamente al acercarse el turno (al restar 15 minutos o menos para el inicio de la franja horaria acordada).
+  **Entonces** el sistema muestra el horario de retiro pactado en lugar de un contador en vivo mientras falten más de 15 minutos. Al alcanzar los 15 minutos previos, activa la cuenta regresiva dinámica en tiempo real hacia el turno. Al alcanzar el horario de inicio pactado (0 min) sin despacho previo de cocina, conmuta al estado "¡Tu turno ha comenzado!" con indicador "Unos instantes" y el mensaje "La cocina está dando los últimos toques a tu pedido" durante la franja acordada hasta que el personal marque el pedido como listo en mostrador.
 
 - **AS-7 (Criterio fuente 7 — Actualización automática del reloj dinámico ante ajustes globales en KDS)**:  
   **Dado** que el pedido sufre demoras operativas imprevistas en la cocina,  
@@ -173,8 +173,8 @@ para que la vista del comensal respete la identidad visual de mi marca.
   Si la cola del KDS acumula una alta densidad de pedidos en elaboración, el tiempo estimado de entrega para retiro inmediato calcula e informa un tiempo extendido coherente con dicha sobrecarga, reflejando fielmente la saturación real de la cocina.
 - **CB-005 (Reserva programada para una franja futura distante)**:  
   Si la orden fue programada para un turno diferido (por ejemplo, para el día siguiente o con varias horas de anticipación), la vista de seguimiento exhibe de forma fija y destacada la fecha y el horario pactado, sin mostrar contadores activos ni inducir al comensal a acudir al local prematuramente.
-- **CB-006 (Transición de reserva programada al umbral de proximidad de 15 minutos)**:  
-  Cuando el reloj del sistema alcanza los 15 minutos previos al inicio de la franja horaria pactada, la vista de seguimiento transmuta automáticamente la visualización del horario estático a una cuenta regresiva dinámica en tiempo real hacia el inicio del turno.
+- **CB-006 (Transición de reserva programada al umbral de proximidad de 15 minutos y turno en curso)**:  
+  Cuando el reloj del sistema alcanza los 15 minutos previos al inicio de la franja horaria pactada, la vista de seguimiento transmuta automáticamente la visualización del horario estático a una cuenta regresiva dinámica en tiempo real hacia el inicio del turno. Si el reloj alcanza la hora de inicio de la franja sin que la cocina haya finalizado la orden, la interfaz transiciona al estado "¡Tu turno ha comenzado!" mostrando "Unos instantes" en lugar de un cero estático, indicando que la comanda está en sus últimos toques antes del llamado a mostrador.
 - **CB-007 (Ajuste de tiempos de preparación por personal de KDS durante el seguimiento activo)**:  
   Si la cocina introduce un ajuste temporal global ante un cuello de botella o demora imprevista, la pantalla del comensal en seguimiento actualiza en vivo y de forma silenciosa el valor numérico del tiempo estimado en el minutero, sincronizando la expectativa del comensal sin exigirle recargar la pantalla ni emitir mensajes emergentes disruptivos.
 - **CB-008 (Pedido marcado como finalizado en KDS mientras el comensal observa el seguimiento)**:  

@@ -212,10 +212,10 @@ public class OrderLiveTrackingService {
                     "Tu turno de retiro está programado para hoy a las " + slotStart + " hs.",
                     now
             );
-        } else {
-            // Proximity phase (<= 15 min): active countdown
-            int minutesRemaining = (int) Math.max(0, minutesUntilSlot);
-            int progressPercentage = Math.min(95, Math.max(10, (15 - minutesRemaining) * 6 + 10));
+        } else if (minutesUntilSlot > 0) {
+            // Proximity countdown phase (1..15 min): active countdown towards slot start
+            int minutesRemaining = (int) minutesUntilSlot;
+            int progressPercentage = Math.min(92, Math.max(15, (15 - minutesRemaining) * 5 + 15));
 
             return new OrderLiveTrackingResponse(
                     order.getId(),
@@ -228,6 +228,21 @@ public class OrderLiveTrackingService {
                     false,
                     null,
                     "¡Tu turno se acerca! Preparación en curso",
+                    now
+            );
+        } else {
+            // In-slot phase (<= 0 min): slot started, final touches before counter dispatch
+            return new OrderLiveTrackingResponse(
+                    order.getId(),
+                    ticketNumber,
+                    order.getStatus(),
+                    order.getFulfillmentMode(),
+                    true,
+                    0,
+                    92,
+                    false,
+                    null,
+                    "¡Tu turno ha comenzado! La cocina está dando los últimos toques a tu pedido.",
                     now
             );
         }

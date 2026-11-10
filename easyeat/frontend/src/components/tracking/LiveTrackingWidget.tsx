@@ -45,6 +45,7 @@ export const LiveTrackingWidget: React.FC<LiveTrackingWidgetProps> = ({
         timeSlotStart={timeSlotStart}
         timeSlotEnd={timeSlotEnd}
         estimatedMinutesRemaining={tracking?.estimatedMinutesRemaining}
+        message={tracking?.message}
       />
     );
   }

@@ -169,4 +169,29 @@ class LiveTrackingScheduledCountdownTest {
         assertThat(response.estimatedMinutesRemaining()).isNull();
         assertThat(response.message()).contains("13:15");
     }
+
+    @Test
+    @DisplayName("AS-6/CB-006: transitions to in-slot last touches state when slot start time is reached without dispatch")
+    void shouldTransitionToInSlotLastTouchesWhenSlotTimeReached() {
+        // Slot start: 14:00. Current time: 14:05 (5 minutes into the slot, slot started).
+        Instant fixedInstant = ZonedDateTime.of(
+                LocalDate.of(2026, 11, 9),
+                LocalTime.of(14, 5),
+                ZoneId.of("America/Argentina/Buenos_Aires")
+        ).toInstant();
+
+        when(clock.instant()).thenReturn(fixedInstant);
+        when(clock.getZone()).thenReturn(ZoneId.of("America/Argentina/Buenos_Aires"));
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
+
+        OrderLiveTrackingResponse response = liveTrackingService.getLiveTracking(orderId, userId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.isCountdownActive()).isTrue();
+        assertThat(response.estimatedMinutesRemaining()).isEqualTo(0);
+        assertThat(response.progressPercentage()).isEqualTo(92);
+        assertThat(response.isReadyForPickup()).isFalse();
+        assertThat(response.message()).containsIgnoringCase("Tu turno ha comenzado");
+    }
 }
