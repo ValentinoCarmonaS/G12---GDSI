@@ -20,7 +20,10 @@ vi.mock('../../src/api/paymentApi', () => ({
 }));
 
 vi.mock('../../src/api/orderApi', () => ({
-  createOrder: vi.fn(),
+  createOrder: vi.fn().mockResolvedValue({
+    orderId: 'order-zero-123',
+    status: 'PENDING_PAYMENT',
+  }),
   cancelOrder: vi.fn(),
   fetchPickupSlots: vi.fn().mockResolvedValue({
     establishmentId: 'est-123',
@@ -68,6 +71,7 @@ describe('T015: IndividualCheckoutPayment frontend tests (AS-4, AS-5, FR-005, FR
 
   beforeEach(() => {
     vi.clearAllMocks();
+    window.sessionStorage.setItem('easyeat_active_tenant', JSON.stringify({ id: 'est-123' }));
   });
 
   const renderComponent = (items: CartItem[]) => {
@@ -127,13 +131,18 @@ describe('T015: IndividualCheckoutPayment frontend tests (AS-4, AS-5, FR-005, FR
 
     renderComponent(zeroItems);
 
-    const zeroBtn = screen.getByRole('button', { name: /confirmar pedido bonificado|confirmar pedido \(\$0\)/i });
+    // Select immediate fulfillment mode so form is valid
+    const immediateOption = screen.getByText(/inmediato|lo antes posible/i);
+    fireEvent.click(immediateOption);
+
+    const zeroBtn = screen.getByRole('button', { name: /confirmar pedido bonificado/i });
     expect(zeroBtn).toBeInTheDocument();
+    expect(zeroBtn).not.toBeDisabled();
 
     fireEvent.click(zeroBtn);
 
     await waitFor(() => {
-      expect(checkoutApi.confirmZeroAmountOrder).toHaveBeenCalled();
+      expect(checkoutApi.confirmZeroAmountOrder).toHaveBeenCalledWith({ orderId: 'order-zero-123' });
       expect(clearCartMock).toHaveBeenCalled();
     });
   });
