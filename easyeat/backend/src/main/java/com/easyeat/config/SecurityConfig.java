@@ -115,7 +115,9 @@ public class SecurityConfig {
                                 "/api/v1/dietary-restrictions",
                                 "/api/v1/profile/email-change/confirm",
                                 "/api/v1/establishments/*/dishes",
-                                "/api/v1/establishments/{tenantId}/dishes"
+                                "/api/v1/establishments/{tenantId}/dishes",
+                                "/api/v1/payments/*/webhook",
+                                "/api/v1/payments/mercadopago/webhook"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/dishes/*/photo").permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
