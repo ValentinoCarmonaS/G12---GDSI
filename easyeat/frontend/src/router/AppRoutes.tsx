@@ -26,6 +26,7 @@ import { EstablishmentDiscoveryPage } from '../pages/EstablishmentDiscoveryPage'
 import { CheckoutPage } from '../pages/CheckoutPage';
 import { OrderConfirmationTrackingPage } from '../pages/OrderConfirmationTrackingPage';
 import { PaymentReturnPage } from '../pages/PaymentReturnPage';
+import { AdminBrandingPage } from '../pages/AdminBrandingPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -193,6 +194,14 @@ export const AppRoutes: React.FC = () => {
         element={
           <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
             <AdminOperationsPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/mi-local"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <AdminBrandingPage />
           </RoleRouteGuard>
         }
       />
