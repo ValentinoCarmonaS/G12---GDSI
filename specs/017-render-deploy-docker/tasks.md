@@ -165,7 +165,7 @@
 - [x] T029 Ejecutar la suite completa de pruebas unitarias y de integración del backend con Maven asegurando cobertura Jacoco (`mvn clean verify`) en `easyeat/backend/`
 - [x] T030 [P] Ejecutar la suite completa de pruebas del frontend con Vitest (`npm test`) en `easyeat/frontend/`
 - [x] T031 Ejecutar el escenario local de pruebas de humo definido en `quickstart.md` levantando los contenedores de backend y frontend con Docker, validando AS-1 a AS-24, SC-001 a SC-010 y cero errores 404 o rechazos de CORS
-- [ ] T032 [P] Validar y completar la lista de chequeo de despliegue en `specs/017-render-deploy-docker/checklists/deployment.md`
+- [x] T032 [P] Validar y completar la lista de chequeo de despliegue en `specs/017-render-deploy-docker/checklists/deployment.md`
 
 ---
 
