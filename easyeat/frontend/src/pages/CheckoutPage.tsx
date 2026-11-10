@@ -100,29 +100,44 @@ export const CheckoutPage: React.FC = () => {
             }
           })()
         : null;
-    const fromItem = items.length > 0 ? items[0].tenantId : null;
-    return fromStorage || fromActiveTenant || fromItem || null;
-  }, [items]);
+
+    return searchParams.get('establishmentId') || items[0]?.tenantId || fromActiveTenant || fromStorage || '';
+  }, [searchParams, items]);
+
+  const operatingDays = useMemo(() => generateWeeklyOperatingDays(), []);
 
   const {
     fulfillmentMode,
-    setFulfillmentMode,
     selectedDate,
-    setSelectedDate,
     selectedSlot,
+    setFulfillmentMode,
+    setSelectedDate,
     setSelectedSlot,
   } = useCheckoutFulfillment();
 
-  const { slots, isLoadingSlots, refreshSlots } = useTimeSlotPolling(
+  const { slots, isLoading: isLoadingSlots, refresh: refreshSlots } = useTimeSlotPolling({
     establishmentId,
-    selectedDate,
-    fulfillmentMode === 'SCHEDULED'
-  );
+    date: selectedDate || undefined,
+    enabled: Boolean(establishmentId && fulfillmentMode === 'SCHEDULED' && selectedDate),
+  });
 
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('MERCADO_PAGO');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState<OrderDetailResponse | null>(null);
+  const [inProcessPayment, setInProcessPayment] = useState<OrderPaymentStatusResponse | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  // Read alert messages passed from redirect location state (e.g. from PaymentReturnPage)
+  useEffect(() => {
+    if (location.state?.paymentError) {
+      setSubmissionError(location.state.paymentError);
+    }
+    if (location.state?.infoMessage) {
+      setInfoMessage(location.state.infoMessage);
+    }
+  }, [location.state]);
 
   const [conflictModal, setConflictModal] = useState<{
     isOpen: boolean;
@@ -146,17 +161,6 @@ export const CheckoutPage: React.FC = () => {
     unavailableDishes: [],
   });
 
-  const [inProcessPayment, setInProcessPayment] = useState<OrderPaymentStatusResponse | null>(null);
-  const [isCancelling, setIsCancelling] = useState(false);
-  const [pendingOrder, setPendingOrder] = useState<OrderDetailResponse | null>(null);
-
-  // Read error message from redirect state
-  useEffect(() => {
-    if (location.state && (location.state as any).paymentError) {
-      setSubmissionError((location.state as any).paymentError);
-    }
-  }, [location.state]);
-
   const isZeroAmount = useMemo(() => {
     return totalAmount === 0 && items.length > 0;
   }, [totalAmount, items]);
@@ -169,6 +173,7 @@ export const CheckoutPage: React.FC = () => {
     return true;
   }, [items, fulfillmentMode, selectedDate, selectedSlot, selectedPaymentMethod, isZeroAmount]);
 
+  // Handler for Confirmar pedido / Checkout Payment (T035, AS-1, AS-5, FR-001, FR-002)
   const handleConfirmOrder = async () => {
     if (!isFormValid || !establishmentId || isSubmitting || inProcessPayment) return;
 
@@ -245,6 +250,7 @@ export const CheckoutPage: React.FC = () => {
     try {
       const response = await initiatePayment(payload);
 
+      // Save ongoing payment info in state and redirect immediately to Sandbox/Production init_point
       if (response.redirectUrl) {
         window.location.href = response.redirectUrl;
       } else if (response.orderId) {
@@ -276,6 +282,7 @@ export const CheckoutPage: React.FC = () => {
         }
 
         if (code === 'PAYMENT_IN_PROCESS' && data?.orderId) {
+          // Fetch existing in-process payment details to display panel
           try {
             const statusRes = await getOrderPaymentStatus(data.orderId);
             setInProcessPayment(statusRes);
@@ -382,57 +389,82 @@ export const CheckoutPage: React.FC = () => {
 
         {/* View 1: Active Pending Order (Countdown & Post-Checkout State) */}
         {pendingOrder ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
+          <div className="space-y-6">
             <PendingOrderCountdown
+              orderId={pendingOrder.orderId}
               expiresAt={pendingOrder.expiresAt}
+              serverTime={pendingOrder.serverTime}
+              onCancel={handleCancelOrder}
               onExpire={handleOrderExpire}
-              onCancelOrder={handleCancelOrder}
               isCancelling={isCancelling}
             />
+
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+              <h3 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
+                Detalle de la reserva
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500 block text-xs">Modalidad:</span>
+                  <span className="font-semibold text-gray-900">
+                    {pendingOrder.fulfillmentMode === 'IMMEDIATE'
+                      ? 'Lo antes posible'
+                      : 'Turno programado'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block text-xs">Día y Franja:</span>
+                  <span className="font-semibold text-gray-900">
+                    {pendingOrder.pickupDate} ({pendingOrder.timeSlotStart.slice(0, 5)} - {pendingOrder.timeSlotEnd.slice(0, 5)})
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block text-xs">Importe Total:</span>
+                  <span className="font-semibold text-emerald-700 text-base">
+                    ${pendingOrder.totalAmount.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : items.length === 0 ? (
+          /* Empty Cart State */
+          <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm space-y-4">
+            <div className="inline-flex p-4 rounded-full bg-gray-100 text-gray-400">
+              <ShoppingBag className="w-10 h-10" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Tu carrito está vacío</h3>
+            <p className="text-sm text-gray-500 max-w-sm mx-auto">
+              No tenés platos seleccionados para continuar con la compra.
+            </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => navigate('/catalog')}
+                className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm"
+              >
+                Explorar carta
+              </button>
+            </div>
           </div>
         ) : (
-          /* View 2: Normal Checkout Flow */
+          /* View 2: Checkout Selection & Configuration */
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Columns: Options */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Step 1: Fulfillment Mode */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900">
-                    Modalidad de entrega
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Elegí si retirás en cuanto esté listo o programás tu retiro
-                  </p>
-                </div>
-
+              {/* Step 1: Fulfillment Mode Selection */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                 <FulfillmentModeSelector
                   selectedMode={fulfillmentMode}
-                  onSelectMode={(mode) => {
-                    setFulfillmentMode(mode);
-                    if (mode === 'IMMEDIATE') {
-                      setSelectedDate(null);
-                      setSelectedSlot(null);
-                    }
-                  }}
+                  onSelectMode={setFulfillmentMode}
                 />
               </div>
 
-              {/* Step 2: Date & Slot Selection (only for SCHEDULED) */}
+              {/* Step 2: Scheduled Time Slots (only when SCHEDULED) */}
               {fulfillmentMode === 'SCHEDULED' && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
-                  <div>
-                    <h3 className="text-base font-semibold text-gray-900">
-                      Fecha y horario de retiro
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Seleccioná el día y una franja horaria disponible de 15 minutos
-                    </p>
-                  </div>
-
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6 animate-fade-in">
                   <OperatingDatePicker
-                    operatingDays={generateWeeklyOperatingDays()}
-                    selectedDate={selectedDate}
+                    operatingDays={operatingDays}
+                    selectedDate={selectedDate || ''}
                     onSelectDate={(date) => {
                       setSelectedDate(date);
                       setSelectedSlot(null);
