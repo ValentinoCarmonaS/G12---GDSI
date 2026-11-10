@@ -2,6 +2,7 @@
 
 **Input**: Documentos de diseño desde `/specs/017-render-deploy-docker/`  
 **Prerequisites**: [plan.md](./plan.md) (requerido), [spec.md](./spec.md) (requerido), [research.md](./research.md), [deployment-model.md](./deployment-model.md), [contracts/](./contracts/), [quickstart.md](./quickstart.md)  
+**GitHub Issues**: [#302](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/302), [#303](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/303), [#304](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/304), [#305](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/305), [#306](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/306), [#307](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/307), [#308](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/308), [#309](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/309), [#310](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/310)  
 **Tests**: Estrategia TDD estricta requerida explícitamente (Red Test primero, Green Test después).  
 **Organization**: Tareas agrupadas por User Story para permitir desarrollo, pruebas y verificación independientes.  
 
@@ -15,7 +16,7 @@
 
 ---
 
-## Phase 1: Setup (Infraestructura de Despliegue Compartida)
+## Phase 1: Setup (Infraestructura de Despliegue Compartida) — [Issue #302](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/302)
 
 **Propósito**: Inicialización de dependencias base de monitoreo y reglas de exclusión de build context en ambos proyectos.
 
@@ -25,7 +26,7 @@
 
 ---
 
-## Phase 2: Foundational (Prerrequisitos Bloqueantes de Configuración)
+## Phase 2: Foundational (Prerrequisitos Bloqueantes de Configuración) — [Issue #303](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/303)
 
 **Propósito**: Estructuración centralizada de propiedades dinámicas en `application.yml` requeridas por todas las historias de despliegue.
 
@@ -40,7 +41,7 @@
 
 ---
 
-## Phase 3: User Story 1 — HU-01: Contenedorización multi-etapa del backend (Docker) (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 — HU-01: Contenedorización multi-etapa del backend (Docker) (Priority: P1) 🎯 MVP — [Issue #304](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/304)
 
 **Goal**: Empaquetar y ejecutar la aplicación Spring Boot en una imagen liviana Alpine JRE 21, ejecutada por un usuario no privilegiado (`easyeat`), con gobernanza estricta de memoria JVM (`-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0`) y exclusión de código fuente para operar dentro del límite de 512 MB de Render sin OOMKilled.
 
@@ -48,17 +49,17 @@
 
 ### Tests para User Story 1 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
-- [ ] T008 [P] [US1] Escribir script auxiliar de validación de humo para Docker / CI comprobando base Alpine JRE 21, usuario no root `easyeat`, flags JVM `-XX:+UseContainerSupport` y `-XX:MaxRAMPercentage=75.0`, y ausencia de código fuente `.java` o herramientas Maven (AS-1, AS-2, AS-3, SC-001, SC-002, quickstart.md Paso 1) en `easyeat/backend/src/test/resources/scripts/verify-backend-image.sh`
+- [ ] T008 [P] [US1] Escribir script de test automatizado de verificación de contrato de imagen backend comprobando base Alpine JRE 21, usuario no root `easyeat`, flags JVM `-XX:+UseContainerSupport` y `-XX:MaxRAMPercentage=75.0`, y ausencia de código fuente `.java` o herramientas Maven (AS-1, AS-2, AS-3, SC-001, SC-002) en `easyeat/backend/src/test/resources/scripts/verify-backend-image.sh`
 
 ### Implementación para User Story 1 (Hacer pasar los tests - Estado VERDE)
 
 - [ ] T009 [US1] Crear el `Dockerfile` multi-etapa del backend con etapa build (`maven:3.9.9-eclipse-temurin-21-alpine` con `mvn clean package -DskipTests`) y etapa runtime (`eclipse-temurin:21-jre-alpine` con creación de usuario `easyeat:easyeat`, copia exclusiva de `/app/app.jar`, `chown`, conmutación a `USER easyeat` y ENTRYPOINT de memoria gobernada) (FR-001, FR-002, FR-003, FR-004) en `easyeat/backend/Dockerfile`
 
-**Checkpoint**: User Story 1 completamente construida y verificada. La imagen del backend es liviana (< 200 MB), segura y gobiérnalos 512 MB de RAM.
+**Checkpoint**: User Story 1 completamente construida y verificada. La imagen del backend es liviana (< 200 MB), segura y gobierna los 512 MB de RAM.
 
 ---
 
-## Phase 4: User Story 2 — HU-02: Habilitación de CORS dinámico en Spring Security (Priority: P1)
+## Phase 4: User Story 2 — HU-02: Habilitación de CORS dinámico en Spring Security (Priority: P1) — [Issue #305](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/305)
 
 **Goal**: Autorizar solicitudes cross-origin entre el frontend público desplegado en Render y el backend Spring Boot, sanitizando sintaxis de orígenes (trim y remoción de barras finales), optimizando preflights mediante `Access-Control-Max-Age: 3600`, admitiendo credenciales y aplicando fallback automático a `http://localhost:3000`.
 
@@ -78,11 +79,11 @@
 
 ---
 
-## Phase 5: User Story 3 — HU-03: Adaptabilidad de puerto dinámico y health check del backend (Priority: P1)
+## Phase 5: User Story 3 — HU-03: Adaptabilidad de puerto dinámico y health check del backend (Priority: P1) — [Issue #306](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/306)
 
 **Goal**: Permitir que Tomcat enlace en el puerto inyectado por la plataforma en la variable `PORT` (con fallback a 8080) y publicar el endpoint de monitoreo `/actuator/health` accesible públicamente sin autenticación, respondiendo HTTP 200 `{"status":"UP"}` ante servicio saludable y HTTP 503 `{"status":"DOWN"}` ante degradación.
 
-**Independent Test**: Iniciar el backend con `PORT=10000` y certificar enlace en dicho puerto; iniciar sin `PORT` y certificar enlace en 8080; consultar `GET /actuator/health` sin token JWT y comprobar recepción inmediata de HTTP 200 con `{"status":"UP"}`.
+**Independent Test**: Iniciar el backend con `PORT=10000` y certificar enlace en dicho puerto; iniciar sin `PORT` y certificar enlace en 8080; consultar `GET /actuator/health` sin token JWT y comprobar recepción inmediata de HTTP 200 con `{"status":"UP"}` en menos de 2 segundos.
 
 ### Tests para User Story 3 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
@@ -97,11 +98,11 @@
 
 ---
 
-## Phase 6: User Story 4 — HU-04: Conexión a PostgreSQL en Neon y migraciones completas (Priority: P1)
+## Phase 6: User Story 4 — HU-04: Conexión a PostgreSQL en Neon y migraciones completas (Priority: P1) — [Issue #307](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/307)
 
-**Goal**: Conectar de forma segura a Neon mediante conexión directa JDBC con SSL mandatorio (`sslmode=require`), credenciales leídas exclusivamente de variables de entorno, tolerancia al scale-to-zero mediante timeout de conexión HikariCP de 30 segundos, y ejecución secuencial íntegra de migraciones Flyway `V1` a `V19` y datos semilla `R__seed_dev_*`.
+**Goal**: Conectar de forma segura a Neon mediante conexión directa JDBC con SSL mandatorio (`sslmode=require`), credenciales leídas exclusivamente de variables de entorno, tolerancia al scale-to-zero mediante timeout de conexión HikariCP de 30 segundos, y ejecución secuencial e idempotente de la totalidad de migraciones Flyway `V1` a `V19` y datos semilla `R__seed_dev_*`.
 
-**Independent Test**: Iniciar el backend contra una base de datos PostgreSQL vacía con SSL activo, observando en los logs de Flyway la aplicación exitosa de las 19 migraciones versionadas y los 3 scripts repetibles, constatando la creación de tablas e inserción de usuarios semilla.
+**Independent Test**: Iniciar el backend contra una base de datos PostgreSQL vacía con SSL activo, observando en los logs de Flyway la aplicación exitosa de las 19 migraciones versionadas y los 3 scripts repetibles, constatando la creación de tablas e inserción de usuarios semilla sin fallos de bloqueo consultivo (`pg_advisory_lock`).
 
 ### Tests para User Story 4 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
@@ -110,13 +111,13 @@
 
 ### Implementación para User Story 4 (Hacer pasar los tests - Estado VERDE)
 
-- [ ] T019 [US4] Verificar y validar que la configuración de DataSource y Flyway establecida en T005/T006 resuelva exitosamente contra la base de datos de Neon y pase los tests T017 y T018 en `easyeat/backend/src/main/resources/application.yml`
+- [ ] T019 [US4] Validar y asegurar en `application.yml` que las propiedades del DataSource y Flyway consuman directamente `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` y mantengan las rutas `classpath:db/migration` y `classpath:db/dev` en el perfil predeterminado de ejecución en contenedor (FR-014, FR-015, FR-016, FR-017) en `easyeat/backend/src/main/resources/application.yml`
 
 **Checkpoint**: User Story 4 lista. La base de datos en Neon inicializa su esquema completo y tolera suspensiones por inactividad.
 
 ---
 
-## Phase 7: User Story 5 — HU-05: Contenedorización del frontend con Nginx y enrutamiento SPA (Priority: P1)
+## Phase 7: User Story 5 — HU-05: Contenedorización del frontend con Nginx y enrutamiento SPA (Priority: P1) — [Issue #308](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/308)
 
 **Goal**: Empaquetar la SPA de React en una imagen Nginx Alpine liviana con inyección de `ARG VITE_API_BASE_URL` en build time, resolución dinámica del puerto de escucha `${PORT:-80}`, reescritura `try_files` para eliminar errores 404 en recargas virtuales, y directivas de caché HTTP (`no-cache` para `index.html` y caché inmutable de 1 año para `/assets/*`).
 
@@ -125,7 +126,7 @@
 ### Tests para User Story 5 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
 - [ ] T020 [P] [US5] Escribir test unitario en frontend con Vitest verificando que `apiClient.ts` adopte `import.meta.env.VITE_API_BASE_URL` si está definida o aplique fallback a `/api/v1` en su defecto (AS-19, FR-020) en `easyeat/frontend/src/test/config/apiClientBaseUrl.test.ts`
-- [ ] T021 [P] [US5] Escribir script auxiliar de validación de humo para Docker / CI validando la reescritura de rutas virtuales SPA (`try_files` a `/index.html` con 200 OK y 0 errores 404), la entrega de `Cache-Control: no-cache` para HTML, la entrega de `Cache-Control: public, max-age=31536000, immutable` para `/assets/*`, y el enlace en `${PORT:-80}` (AS-17, AS-18, AS-20, FR-018, FR-019, FR-021, Q2, Q5, SC-006, SC-010, quickstart.md Paso 5) en `easyeat/frontend/src/test/scripts/verify-nginx-spa.sh`
+- [ ] T021 [P] [US5] Escribir script de test automatizado de verificación de servidor Nginx validando la reescritura de rutas virtuales SPA (`try_files` a `/index.html` con 200 OK y 0 errores 404), la entrega de `Cache-Control: no-cache` para HTML, la entrega de `Cache-Control: public, max-age=31536000, immutable` para `/assets/*`, y el enlace en `${PORT:-80}` (AS-17, AS-18, AS-20, FR-018, FR-019, FR-021, Q2, Q5, SC-006, SC-010) en `easyeat/frontend/src/test/scripts/verify-nginx-spa.sh`
 
 ### Implementación para User Story 5 (Hacer pasar los tests - Estado VERDE)
 
@@ -136,7 +137,7 @@
 
 ---
 
-## Phase 8: User Story 6 — HU-06: Sincronización de URLs públicas para Mercado Pago y correos (Priority: P1)
+## Phase 8: User Story 6 — HU-06: Sincronización de URLs públicas para Mercado Pago y correos (Priority: P1) — [Issue #309](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/309)
 
 **Goal**: Garantizar que las redirecciones de pasarela externa de pago (Mercado Pago Checkout Pro) y los hipervínculos transaccionales de correo electrónico apunten a los dominios públicos HTTPS de Render (cero referencias a `localhost`), y mantener el webhook `/api/v1/payments/*/webhook` accesible públicamente sin token JWT.
 
@@ -157,7 +158,7 @@
 
 ---
 
-## Phase 9: Polish, Smoke Testing & Cross-Cutting Verification
+## Phase 9: Polish, Smoke Testing & Cross-Cutting Verification — [Issue #310](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/310)
 
 **Propósito**: Ejecución determinística de la suite de pruebas de humo y validación de extremo a extremo cubriendo todos los criterios de éxito de la Spec 017.
 
@@ -228,4 +229,3 @@ flowchart TD
 3. **Incremento 3 (Frontend & SPA)**: Completar US5 (Dockerfile Frontend y Nginx). La aplicación cliente se empaqueta, enlaza en `$PORT` y absorbe recargas virtuales sin errores 404.
 4. **Incremento 4 (Sincronización Transaccional)**: Completar US6 (URLs Públicas y Webhooks). Pagos con Mercado Pago y correos redirigen a la nube sin tocar `localhost`.
 5. **Incremento 5 (Validación Final)**: Ejecución de `quickstart.md` smoke tests y checklist de despliegue.
-
