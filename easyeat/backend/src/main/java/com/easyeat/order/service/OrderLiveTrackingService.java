@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
@@ -67,7 +68,10 @@ public class OrderLiveTrackingService {
     }
 
     private ZoneId currentZoneId() {
-        return (clock != null && clock.getZone() != null) ? clock.getZone() : ZoneId.of("America/Argentina/Buenos_Aires");
+        if (clock != null && clock.getZone() != null && !clock.getZone().equals(ZoneOffset.UTC)) {
+            return clock.getZone();
+        }
+        return ZoneId.of("America/Argentina/Buenos_Aires");
     }
 
     @Transactional(readOnly = true)
@@ -173,14 +177,17 @@ public class OrderLiveTrackingService {
         // SCHEDULED fulfillment mode (D-04, AS-6, INV-006, Q1/A1, CB-005, CB-006)
         ZoneId zoneId = currentZoneId();
         if (establishmentRepository != null && order.getEstablishmentId() != null) {
-            establishmentRepository.findById(order.getEstablishmentId()).ifPresent(est -> {
-                if (est.getTimezone() != null && !est.getTimezone().isBlank()) {
-                    try {
-                        // Keep zone consistent with establishment timezone if resolvable
-                    } catch (Exception ignored) {
-                    }
-                }
-            });
+            zoneId = establishmentRepository.findById(order.getEstablishmentId())
+                    .map(Establishment::getTimezone)
+                    .filter(tz -> tz != null && !tz.isBlank())
+                    .map(tz -> {
+                        try {
+                            return ZoneId.of(tz);
+                        } catch (Exception ignored) {
+                            return null;
+                        }
+                    })
+                    .orElse(zoneId);
         }
 
         LocalDate pickupDate = order.getPickupDate() != null ? order.getPickupDate() : LocalDate.now(zoneId);

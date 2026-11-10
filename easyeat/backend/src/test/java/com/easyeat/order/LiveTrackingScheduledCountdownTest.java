@@ -140,4 +140,33 @@ class LiveTrackingScheduledCountdownTest {
         assertThat(response.isReadyForPickup()).isTrue();
         assertThat(response.message()).containsIgnoringCase("mostrador");
     }
+
+    @Test
+    @DisplayName("AS-6/CB-005: correctly computes local establishment time when server clock is UTC")
+    void shouldCorrectlyComputeMinutesUntilSlotWhenServerClockIsUTC() {
+        // Current local time: 12:39 in America/Argentina/Buenos_Aires = 15:39 UTC.
+        // Slot start: 13:15 local time (36 minutes in the future).
+        order.setPickupDate(LocalDate.of(2026, 11, 10));
+        order.setTimeSlotStart(LocalTime.of(13, 15));
+        order.setTimeSlotEnd(LocalTime.of(13, 30));
+
+        Instant fixedInstant = ZonedDateTime.of(
+                LocalDate.of(2026, 11, 10),
+                LocalTime.of(12, 39),
+                ZoneId.of("America/Argentina/Buenos_Aires")
+        ).toInstant();
+
+        // Server clock returns UTC
+        when(clock.instant()).thenReturn(fixedInstant);
+        when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
+
+        OrderLiveTrackingResponse response = liveTrackingService.getLiveTracking(orderId, userId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.isCountdownActive()).isFalse();
+        assertThat(response.estimatedMinutesRemaining()).isNull();
+        assertThat(response.message()).contains("13:15");
+    }
 }
