@@ -47,4 +47,10 @@ public interface KdsTicketRepository extends JpaRepository<KdsTicket, UUID> {
             @Param("status") KdsTicketStatus status,
             @Param("pickupDate") LocalDate pickupDate
     );
+
+    @Query("""
+        SELECT MAX(k.ticketNumber) FROM KdsTicket k
+        WHERE k.establishment.id = :establishmentId
+    """)
+    Optional<Integer> findMaxTicketNumberByEstablishmentId(@Param("establishmentId") UUID establishmentId);
 }
