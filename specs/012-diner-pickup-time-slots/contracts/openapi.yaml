@@ -15,9 +15,10 @@ paths:
     get:
       summary: Consulta disponibilidad de franjas horarias de retiro
       description: >
-        Retorna la grilla completa de turnos de 15 minutos para la fecha especificada
-        (restringida a los próximos 7 días operativos), indicando el nivel de saturación,
-        marca de alta demanda y seleccionabilidad.
+        Retorna la grilla de turnos de 15 minutos disponibles y seleccionables para la fecha
+        especificada (restringida a los próximos 7 días operativos), filtrando y omitiendo
+        bloques horarios pasados, dentro del lead time de preparación o saturados al 100% (C-12).
+        Indica el nivel de saturación y marca de alta demanda para cada franja devuelta.
       operationId: getPickupSlots
       security:
         - bearerAuth: []

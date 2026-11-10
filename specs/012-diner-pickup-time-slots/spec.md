@@ -52,8 +52,14 @@
 - **Q13: Coherencia con el carrito de compras (Spec 009) y detalle de catálogo (Spec 011)**: ¿Cómo se validan los precios y el stock de los ítems del carrito al confirmar la orden en checkout?  
   → **A13**: Spec 012 recibe los ítems consolidados en `CartContext` (Spec 009, derivados de las selecciones de Spec 011), revalida que cada plato pertenezca al local activo (`tenant_id`), que cuente con stock suficiente en cocina (Spec 009 FR-014a), y congela un snapshot inmutable de precios y nombres en `order_items`, preservando la consistencia contable frente a posteriores modificaciones en la carta.
 
-- **Q14: Unificación de endpoints de franjas horarias**: ¿Qué convención de ruta REST expone la disponibilidad de turnos para el comensal?  
-  → **A14**: Se adopta formalmente `GET /api/v1/establishments/{establishmentId}/pickup-slots?date=YYYY-MM-DD` como el contrato principal para comensales, proveyendo proyección completa de turnos con porcentaje de demanda, lead time y estado operativo, sin alias: `/time-slots` pertenece a Spec 010 y responde con otra estructura. *(Corregido el 04/11/2026: el alias original hacía ambigua la ruta frente a `DinerTimeSlotController` de Spec 010 y toda consulta a `/time-slots` respondía 409.)*
+### Session 10/11/2026 (Corrección C-12: Ocultamiento de Franjas No Disponibles en UI y Filtrado en API)
+
+- **Q15: Tratamiento de franjas pasadas, saturadas o fuera de atención (C-12)**: En Q2 original y FR-010/FR-015, las franjas horarias pasadas, dentro del lead time o agotadas se renderizaban en la grilla en estado deshabilitado en gris. Esto generaba saturación y ruido visual para el comensal. ¿Cómo deben tratarse tanto en la API como en la UI?  
+  → **A15**: Se modifica la política de presentación y consulta para que el comensal visualice **únicamente las franjas horarias activas y disponibles** (`isSelectable == true`):
+  1. **UI (`TimeSlotGrid`)**: Las franjas horarias no seleccionables (pasadas, dentro del lead time de preparación de 30 minutos o saturadas/agotadas al 100%) **se ocultan completamente de la grilla** en lugar de mostrarse atenuadas o deshabilitadas en gris.
+  2. **API (`GET /pickup-slots`)**: El servicio filtra o expone únicamente los turnos disponibles y operables para el comensal en la fecha consultada, asegurando que la carga de datos no traslade bloques inertes al cliente.
+  3. **Estado vacío**: Si para la fecha seleccionada no existen franjas disponibles (establecimiento cerrado, día no operativo o todos los cupos agotados), el sistema despliega el mensaje informativo: *"No hay horarios de retiro disponibles para el día seleccionado"*.
+  4. **Validación estricta en checkout**: Al confirmar la compra (`POST /orders`), el backend continúa validando de forma atómica y estricta que la franja horaria enviada se mantenga activa, vigente y con cupo disponible en el servidor en el instante del checkout.
 
 ---
 
@@ -127,9 +133,13 @@ para asegurarme de que mi pedido esté listo exactamente cuando llegue al mostra
 
 3. **Given** que el comensal consulta las franjas para el día de la fecha,  
    **When** el reloj del servidor marca las 12:10 y el lead time configurado es de 30 minutos,  
-   **Then** todas las franjas cuyo inicio sea inferior a las 12:40 (pasadas o dentro del buffer de preparación) se muestran deshabilitadas y no clickeables.
+   **Then** todas las franjas cuyo inicio sea inferior a las 12:40 (pasadas o dentro del buffer de preparación) se omiten y ocultan de la interfaz (C-12), sin renderizarse en gris ni ocupar espacio en la grilla.
 
-4. **Given** una franja horaria disponible y válida seleccionada por el comensal,  
+4. **Given** una fecha consultada que no posee ninguna franja horaria activa y disponible (por horario cerrado, feriado o saturación total de turnos),  
+   **When** el comensal despliega la selección de horarios para esa fecha,  
+   **Then** el sistema presenta un mensaje de estado vacío informativo: *"No hay horarios de retiro disponibles para el día seleccionado"* (C-12).
+
+5. **Given** una franja horaria disponible y válida seleccionada por el comensal,  
    **When** revisa el resumen de su checkout,  
    **Then** la fecha y el rango horario elegido ("Día DD/MM/YYYY de HH:mm a HH:mm") se reflejan claramente en el resumen antes de la confirmación final.
 
@@ -175,7 +185,11 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 
 1. **Given** una franja horaria cuya cantidad de órdenes confirmadas iguala a su capacidad máxima configurada (100%),  
    **When** cualquier comensal visualiza la grilla de horarios,  
-   **Then** la tarjeta del turno se renderiza atenuada en gris, deshabilitada y con la indicación explícita "Agotado", impidiendo cualquier selección.
+   **Then** la franja horaria se excluye y oculta por completo de la grilla (C-12), evitando ruido visual y previniendo cualquier intento de selección.
+
+2. **Given** que todas las franjas horarias de una fecha se encuentran agotadas al 100%,  
+   **When** el comensal visualiza dicha fecha,  
+   **Then** el sistema presenta el estado vacío informativo *"No hay horarios de retiro disponibles para el día seleccionado"* (C-12).
 
 2. **Given** un turno con un único cupo restante (por ejemplo: 9/10 órdenes confirmadas) y dos comensales (A y B) con dicho turno seleccionado en sus pantallas,  
    **When** el comensal A confirma su pedido milisegundos antes que el comensal B,  
@@ -222,13 +236,13 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 - **FR-006**: Al activar "Para más tarde", el sistema DEBE desplegar un selector de fechas que permita elegir exclusivamente entre los próximos 7 días operativos del establecimiento.
 - **FR-007**: El sistema DEBE inhabilitar en el selector de fechas cualquier día no operativo, fin de semana o feriado en el que el establecimiento permanezca cerrado.
 - **FR-008**: Para cada día operativo seleccionado, el sistema DEBE generar y presentar la grilla de franjas horarias en intervalos homogéneos de 15 minutos, acotados entre el `opening_time` y el `closing_time` del local.
-- **FR-009**: Para reservas del día en curso, el sistema DEBE inhabilitar todas las franjas horarias cuyo horario de inicio sea anterior a la hora actual del servidor más el margen de preparación anticipada (`lead_time`, por defecto 30 minutos).
-- **FR-010**: Las franjas inhabilitadas por haber transcurrido o por violar el lead time DEBEN mostrarse en estado deshabilitado (gris atenuado) con una leyenda indicativa de turno no disponible.
+- **FR-009**: Para reservas del día en curso, el sistema DEBE determinar como no disponibles todas las franjas horarias cuyo horario de inicio sea anterior a la hora actual del servidor más el margen de preparación anticipada (`lead_time`, por defecto 30 minutos).
+- **FR-010** (C-12 / Ocultamiento de franjas no disponibles en UI): Las franjas horarias no seleccionables (por haber transcurrido, por violar el lead time de 30 minutos o por encontrarse agotadas al 100%) DEBEN ser omitidas y ocultadas por completo de la interfaz de usuario en lugar de mostrarse deshabilitadas o en gris, evitando sobrecarga visual.
 - **FR-011**: El sistema DEBE calcular dinámicamente el porcentaje de ocupación de cada franja horaria según la relación: `(Órdenes Confirmadas / Capacidad Máxima del Turno) * 100`.
 - **FR-012**: Las franjas con ocupación inferior al 80% DEBEN desplegarse con el estilo neutral estándar de disponibilidad normal.
 - **FR-013**: Las franjas con ocupación mayor o igual al 80% y menor al 100% DEBEN destacarse en color preventivo (ámbar) e incorporar la insignia visible *"Alta Demanda"*.
 - **FR-014**: Al seleccionar una franja marcada con "Alta Demanda", el sistema DEBE incorporar en el resumen del checkout una advertencia informativa preventiva sobre posibles demoras menores en mostrador.
-- **FR-015**: Las franjas que hayan alcanzado el 100% de su capacidad máxima DEBEN mostrarse deshabilitadas con el distintivo *"Agotado"*, bloqueando cualquier intento de selección.
+- **FR-015** (C-12 / Exclusión de franjas agotadas): Las franjas que hayan alcanzado el 100% de su capacidad máxima DEBEN ser excluidas y ocultadas de la lista de horarios seleccionables. Si todas las franjas de una fecha se encuentran agotadas o no disponibles, el sistema DEBE desplegar el estado vacío informativo *"No hay horarios de retiro disponibles para el día seleccionado"*.
 - **FR-016**: El sistema DEBE validar de forma atómica en el backend la disponibilidad de cupo en la franja seleccionada al momento exacto de procesar la confirmación del pedido.
 - **FR-017**: En caso de colisión concurrente sobre el último cupo disponible de una franja, el sistema DEBE aplicar el criterio First-Come, First-Served (FCFS), asignando el cupo a la primera solicitud confirmada y abortando la transacción concurrente posterior.
 - **FR-018**: Ante una colisión de cupo abortada, el backend DEBE rechazar la creación de la orden y el frontend DEBE presentar la alerta: *"La franja horaria seleccionada acaba de agotarse. Por favor, seleccioná una nueva franja para continuar."*, refrescando automáticamente los estados de las franjas.
@@ -247,6 +261,9 @@ para garantizar que la cocina nunca reciba más pedidos de los que humanamente p
 - **FR-031**: Al procesar la confirmación del pedido, el sistema DEBE verificar que todos los platos pertenezcan al establecimiento seleccionado (`tenant_id`) y cuenten con disponibilidad de stock suficiente en cocina, rechazando la creación de la orden si se detecta insuficiencia de inventario en consistencia con Spec 009 (FR-014a).
 - **FR-032**: Para la determinación de horarios comerciales y capacidades de franjas horarias, el sistema DEBE consumir de manera prioritaria las configuraciones registradas en el módulo de operaciones (Spec 010) si estuvieren presentes, o aplicar los valores por defecto del establecimiento (`lead_time_minutes = 30`, `max_capacity_per_slot = 10`, `opening_time`, `closing_time`) si no hubieran sido personalizados.
 - **FR-033**: El sistema DEBE exponer el endpoint de disponibilidad de turnos bajo `GET /api/v1/establishments/{establishmentId}/pickup-slots`. La ruta `/time-slots` pertenece a Spec 010 y Spec 012 no la expone como alias.
+- **FR-034** (C-12 / Filtrado de turnos en endpoint de disponibilidad): El endpoint `GET /api/v1/establishments/{establishmentId}/pickup-slots` DEBE devolver en el listado `slots` únicamente las franjas horarias válidas y disponibles (`isSelectable == true`, `status IN ('AVAILABLE', 'HIGH_DEMAND')`), omitiendo y filtrando de la respuesta cualquier bloque horario que haya transcurrido, se encuentre dentro del lead time de preparación o esté agotado al 100%. Si no existen franjas disponibles para la fecha, el array `slots` debe responder vacío (`[]`).
+- **FR-035** (C-12 / Estado vacío informativo y reactividad en UI): Cuando el selector de fechas cambie o cuando la consulta de turnos retorne una lista vacía de franjas, la interfaz DEBE renderizar en tiempo real el mensaje de estado vacío: *"No hay horarios de retiro disponibles para el día seleccionado"*, sin recargar la página.
+- **FR-036** (C-12 / Validación estricta en backend al confirmar compra): Al procesar la creación de la orden (`POST /api/v1/orders`), el backend DEBE validar estrictamente que la franja horaria enviada se mantenga en estado activo y disponible en el servidor en el momento exacto del checkout, rechazando con error `422 Unprocessable Entity` (o `409 Conflict`) si el turno expiró, cayó en el buffer de lead time o se agotó.
 
 ### Invariants
 

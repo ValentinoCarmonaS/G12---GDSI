@@ -106,16 +106,18 @@ public class PickupSlotService {
                     }
                 }
 
-                slots.add(new TimeSlotAvailability(
-                        currentSlotStart,
-                        currentSlotEnd,
-                        date,
-                        maxCapacity,
-                        bookedCount,
-                        occupancyPercentage,
-                        status,
-                        isSelectable
-                ));
+                if (isSelectable) {
+                    slots.add(new TimeSlotAvailability(
+                            currentSlotStart,
+                            currentSlotEnd,
+                            date,
+                            maxCapacity,
+                            bookedCount,
+                            occupancyPercentage,
+                            status,
+                            isSelectable
+                    ));
+                }
 
                 currentSlotStart = currentSlotEnd;
             }

@@ -38,10 +38,7 @@ class PickupSlotServiceTest {
     @Mock
     private OrderRepository orderRepository;
 
-    @Mock
     private Clock clock;
-
-    @InjectMocks
     private PickupSlotService pickupSlotService;
 
     private UUID establishmentId;
@@ -55,6 +52,8 @@ class PickupSlotServiceTest {
         // Fixed at Monday 2026-11-02 12:00:00 (Buenos Aires time)
         LocalDateTime localDateTime = LocalDateTime.of(2026, 11, 2, 12, 0, 0);
         fixedInstant = localDateTime.atZone(buenosAiresZone).toInstant();
+        clock = Clock.fixed(fixedInstant, buenosAiresZone);
+        pickupSlotService = new PickupSlotService(establishmentRepository, orderRepository, clock);
 
         establishmentId = UUID.randomUUID();
         establishment = new Establishment();
@@ -76,7 +75,6 @@ class PickupSlotServiceTest {
         @Test
         @DisplayName("Should generate continuous 15-minute intervals between opening and closing time")
         void shouldGenerateContinuousFifteenMinuteIntervals() {
-            when(clock.instant()).thenReturn(fixedInstant);
             when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
 
             LocalDate targetDate = LocalDate.of(2026, 11, 3); // Tuesday (future operating day)
@@ -114,7 +112,6 @@ class PickupSlotServiceTest {
         @Test
         @DisplayName("Should throw exception when target date is beyond 7 days from today")
         void shouldRejectDateBeyondOperatingWindow() {
-            when(clock.instant()).thenReturn(fixedInstant);
             when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
 
             LocalDate outOfBoundsDate = LocalDate.of(2026, 11, 10); // 8 days later
@@ -127,7 +124,6 @@ class PickupSlotServiceTest {
         @Test
         @DisplayName("Should throw exception when target date is before today")
         void shouldRejectPastDate() {
-            when(clock.instant()).thenReturn(fixedInstant);
             when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
 
             LocalDate pastDate = LocalDate.of(2026, 11, 1); // Yesterday
@@ -145,7 +141,6 @@ class PickupSlotServiceTest {
         @Test
         @DisplayName("Should return empty slots list when establishment is closed on that day")
         void shouldReturnEmptySlotsForClosedDay() {
-            when(clock.instant()).thenReturn(fixedInstant);
             when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
 
             LocalDate saturday = LocalDate.of(2026, 11, 7); // Saturday (closed per operatingDays)
@@ -158,15 +153,14 @@ class PickupSlotServiceTest {
     }
 
     @Nested
-    @DisplayName("30-Minute Lead Time Buffer Enforcement")
+    @DisplayName("30-Minute Lead Time Buffer Enforcement and Filtering (C-12)")
     class LeadTimeBufferTests {
 
         @Test
-        @DisplayName("Should disable slots in the past or within 30 minutes of server current time")
-        void shouldMarkPastAndLeadTimeSlotsAsNonSelectable() {
+        @DisplayName("Should filter out slots in the past or within 30 minutes of server current time (C-12)")
+        void shouldFilterPastAndLeadTimeSlots() {
             // Fixed time is 12:00:00 on Monday 2026-11-02
             // Lead time is 30 minutes -> cutoff is 12:30:00
-            when(clock.instant()).thenReturn(fixedInstant);
             when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
 
             LocalDate today = LocalDate.of(2026, 11, 2);
@@ -174,18 +168,12 @@ class PickupSlotServiceTest {
 
             List<TimeSlotAvailability> slots = response.getSlots();
 
-            // Slots before 12:30 should NOT be selectable (11:00-11:15, 11:15-11:30, 11:30-11:45, 11:45-12:00, 12:00-12:15, 12:15-12:30)
-            // 6 slots disabled
+            // Total slots was 16. The 6 slots before 12:30 (11:00 to 12:30) must be omitted.
+            // Remaining 10 slots (12:30 to 15:00) must all be selectable.
+            assertThat(slots).hasSize(10);
             for (TimeSlotAvailability slot : slots) {
-                if (slot.getStartTime().isBefore(LocalTime.of(12, 30))) {
-                    assertThat(slot.isSelectable())
-                            .as("Slot starting at " + slot.getStartTime() + " must be non-selectable due to lead time buffer")
-                            .isFalse();
-                } else {
-                    assertThat(slot.isSelectable())
-                            .as("Slot starting at " + slot.getStartTime() + " must be selectable")
-                            .isTrue();
-                }
+                assertThat(slot.getStartTime()).isAfterOrEqualTo(LocalTime.of(12, 30));
+                assertThat(slot.isSelectable()).isTrue();
             }
         }
     }

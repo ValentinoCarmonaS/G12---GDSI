@@ -122,7 +122,18 @@ public class OrderService {
                     ? request.getTimeSlotEnd()
                     : timeSlotStart.plusMinutes(15);
 
-            // Lead-time validation for today's reservations (FR-009)
+            // Validation of operating day and hours (FR-007, FR-008, FR-036)
+            if (!establishment.isOpenOn(pickupDate)) {
+                throw new InvalidOrderStateException("El establecimiento no se encuentra operativo en la fecha seleccionada.");
+            }
+            if (establishment.getOpeningTime() != null && timeSlotStart.isBefore(establishment.getOpeningTime())) {
+                throw new InvalidOrderStateException("La franja horaria seleccionada está fuera del horario de atención del establecimiento.");
+            }
+            if (establishment.getClosingTime() != null && timeSlotEnd.isAfter(establishment.getClosingTime())) {
+                throw new InvalidOrderStateException("La franja horaria seleccionada excede el horario de cierre del establecimiento.");
+            }
+
+            // Lead-time validation for today's reservations (FR-009, FR-036)
             if (pickupDate.isEqual(today)) {
                 LocalTime minAllowed = nowTime.plusMinutes(leadTime);
                 if (timeSlotStart.isBefore(minAllowed)) {
@@ -130,7 +141,7 @@ public class OrderService {
                 }
             }
 
-            // Zero overbooking capacity check (FR-016, FR-017)
+            // Zero overbooking capacity check (FR-016, FR-017, FR-036)
             long currentBooked = orderRepository.countActiveOrdersBySlot(establishment.getId(), pickupDate, timeSlotStart, nowInstant);
             if (currentBooked >= maxCapacity) {
                 throw new SlotCapacityExceededException("La franja horaria seleccionada acaba de agotarse. Por favor, seleccioná una nueva franja para continuar.");
