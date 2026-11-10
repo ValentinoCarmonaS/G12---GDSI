@@ -73,8 +73,8 @@ El entorno de desarrollo (`dev`) inicializa automáticamente los siguientes usua
 | --- | --- | --- | --- |
 | ADMINISTRADOR | `admin@easyeat.com` | `SecurePass123` | Administrador general de la plataforma |
 | ADMINISTRADOR | `laura.admin@cafeparque.com` | `Password123` | Administrador de local (Café Parque) |
-| ENCARGADO | `maria.encargada@laesquina.com` | `Password123` | Encargado de salón y mostrador (La Esquina) |
-| CHEF | `carlos.chef@comedorcentral.com` | `Password123` | Personal de cocina (Comedor Central) |
+| ENCARGADO | `maria.encargada@cafeparque.com` | `Password123` | Encargado de salón y mostrador (Café Parque) |
+| CHEF | `carlos.chef@cafeparque.com` | `Password123` | Personal de cocina (Café Parque) |
 | COMENSAL | `juan.comensal@gmail.com` | `Password123` | Usuario comensal |
 
 ## Carrito de compras y datos demográficos del comensal (Feature 009)

@@ -1,3 +1,5 @@
+import colors from 'tailwindcss/colors';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -7,6 +9,7 @@ export default {
   theme: {
     extend: {
       colors: {
+        primary: colors.emerald,
         brand: {
           dark: '#0b0b0d',
           accent: '#c9a96e',

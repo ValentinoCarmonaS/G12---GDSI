@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, AlertCircle, Utensils, Activity } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, RefreshCw, AlertCircle, Utensils } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { OrderSuccessGreenBanner } from '../components/tracking/OrderSuccessGreenBanner';
+import { LiveTrackingWidget } from '../components/tracking/LiveTrackingWidget';
 import { orderTrackingApi } from '../api/orderTrackingApi';
 import type { OrderConfirmationTrackingResponse } from '../types/orderTracking';
 
@@ -103,6 +104,15 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
               fulfillmentMode={order.fulfillmentMode}
             />
 
+            {/* Live Tracking Widget (FR-006, FR-007, FR-008, FR-009, AS-5, AS-6, AS-7, AS-8) */}
+            <LiveTrackingWidget
+              orderId={order.orderId}
+              ticketNumber={order.ticketNumber}
+              fulfillmentMode={order.fulfillmentMode}
+              timeSlotStart={order.timeSlotStart}
+              timeSlotEnd={order.timeSlotEnd}
+            />
+
             {/* Email Guarantee Notice (AS-2, FR-002) */}
             <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200/60 text-emerald-900 text-sm flex items-start gap-3">
               <span className="text-lg">📧</span>
@@ -165,18 +175,11 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
             </div>
 
             {/* Action Bar (AS-3, FR-003) */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-              <Link
-                to={order.trackingUrl || `/pedidos/${order.orderId}/seguimiento`}
-                className="w-full sm:flex-1 py-4 px-6 rounded-2xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-all text-center shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-              >
-                <Activity className="w-5 h-5" />
-                <span>Seguimiento en vivo</span>
-              </Link>
+            <div className="flex justify-center pt-2">
               <button
                 type="button"
                 onClick={() => navigate('/catalogo')}
-                className="w-full sm:w-auto py-4 px-8 rounded-2xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors text-center"
+                className="w-full sm:w-auto py-4 px-8 rounded-2xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-all text-center shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
               >
                 Explorar carta
               </button>

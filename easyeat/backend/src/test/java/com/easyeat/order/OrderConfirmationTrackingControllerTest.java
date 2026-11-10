@@ -52,6 +52,9 @@ class OrderConfirmationTrackingControllerTest {
     @Mock
     private OrderConfirmationTrackingService trackingService;
 
+    @Mock
+    private com.easyeat.order.service.OrderLiveTrackingService liveTrackingService;
+
     @InjectMocks
     private OrderConfirmationTrackingController controller;
 
@@ -171,5 +174,40 @@ class OrderConfirmationTrackingControllerTest {
                 .andExpect(status().isConflict());
 
         verify(trackingService).getConfirmationTracking(eq(orderId), eq(testUser.getId()));
+    }
+
+    @Test
+    @DisplayName("AS-5/INV-004: GET /api/v1/orders/{orderId}/live-tracking returns dynamic tracking payload with no-cache headers")
+    void shouldReturnLiveTrackingPayloadWithNoCacheHeaders() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        com.easyeat.order.dto.OrderLiveTrackingResponse liveResponse = new com.easyeat.order.dto.OrderLiveTrackingResponse(
+                orderId,
+                142,
+                OrderStatus.IN_PROGRESS,
+                FulfillmentMode.IMMEDIATE,
+                true,
+                24,
+                35,
+                false,
+                new com.easyeat.order.dto.OrderLiveTrackingResponse.KdsQueueSaturationDto(2, "NORMAL", 0),
+                "Preparando tu pedido",
+                Instant.now()
+        );
+
+        when(liveTrackingService.getLiveTracking(eq(orderId), eq(testUser.getId())))
+                .thenReturn(liveResponse);
+
+        mockMvc.perform(get("/api/v1/orders/{orderId}/live-tracking", orderId)
+                        .principal(auth)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", "no-cache, no-store, must-revalidate"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Pragma", "no-cache"))
+                .andExpect(jsonPath("$.orderId").value(orderId.toString()))
+                .andExpect(jsonPath("$.estimatedMinutesRemaining").value(24))
+                .andExpect(jsonPath("$.progressPercentage").value(35))
+                .andExpect(jsonPath("$.kdsQueueSaturation.activeOrdersAhead").value(2));
+
+        verify(liveTrackingService).getLiveTracking(eq(orderId), eq(testUser.getId()));
     }
 }

@@ -87,7 +87,7 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
 
     await waitFor(() => {
       expect(screen.getByText(/pago confirmado|reserva confirmada/i)).toBeInTheDocument();
-      expect(screen.getByText(/142/)).toBeInTheDocument();
+      expect(screen.getAllByText(/142/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/café central palermo/i)).toBeInTheDocument();
     });
   });
@@ -99,23 +99,23 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
 
     await waitFor(() => {
       expect(screen.getByText(/2026-11-10/)).toBeInTheDocument();
-      expect(screen.getByText(/13:00/)).toBeInTheDocument();
-      expect(screen.getByText(/13:30/)).toBeInTheDocument();
+      expect(screen.getAllByText(/13:00/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/13:30/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/hamburguesa clásica easyeat/i)).toBeInTheDocument();
       expect(screen.getByText(/agua mineral sin gas 500ml/i)).toBeInTheDocument();
       expect(screen.getAllByText(/\$4850|\$4,850/).length).toBeGreaterThanOrEqual(1);
     });
   });
 
-  it('AS-3: includes live tracking link button pointing to trackingUrl', async () => {
+  it('AS-3: embeds live tracking directly in confirmation page and excludes redundant self-referencing button', async () => {
     vi.mocked(orderTrackingApi.getConfirmationTracking).mockResolvedValueOnce(mockOrderData);
 
     renderWithRoute();
 
     await waitFor(() => {
-      const trackingBtn = screen.getByRole('link', { name: /seguir pedido|seguimiento en vivo/i });
-      expect(trackingBtn).toBeInTheDocument();
-      expect(trackingBtn).toHaveAttribute('href', '/pedidos/order-uuid-999/seguimiento');
+      expect(screen.queryByRole('link', { name: /seguir pedido|seguimiento en vivo/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /explorar carta/i })).toBeInTheDocument();
+      expect(screen.getByText(/horario de retiro programado/i)).toBeInTheDocument();
     });
   });
 
