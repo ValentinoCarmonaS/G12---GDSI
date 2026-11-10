@@ -96,6 +96,24 @@ class OperatingScheduleServiceTest {
     }
 
     @Test
+    @DisplayName("synchronizes establishment opening and closing time when saving today's schedule")
+    void synchronizesTodayScheduleOntoEstablishment() {
+        DayOfWeek today = java.time.LocalDate.now(java.time.ZoneId.of("America/Argentina/Buenos_Aires")).getDayOfWeek();
+        var est = new com.easyeat.catalog.domain.Establishment(ID, "Test", com.easyeat.catalog.domain.EstablishmentStatus.ACTIVE,
+                LocalTime.of(8, 0), LocalTime.of(23, 0), "America/Argentina/Buenos_Aires");
+        when(establishments.findById(ID)).thenReturn(Optional.of(est));
+        when(repository.findByEstablishmentIdAndDayOfWeek(org.mockito.ArgumentMatchers.eq(ID), any())).thenReturn(Optional.empty());
+        when(repository.saveAllAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var todayChange = new ScheduleChange(today, LocalTime.of(1, 0), LocalTime.of(23, 30), false, null);
+        new OperatingScheduleService(repository, establishments).saveWeek(ID, List.of(todayChange));
+
+        assertThat(est.getOpeningTime()).isEqualTo(LocalTime.of(1, 0));
+        assertThat(est.getClosingTime()).isEqualTo(LocalTime.of(23, 30));
+        verify(establishments).save(est);
+    }
+
+    @Test
     @DisplayName("EC-012: a stale expected version is a conflict and nothing is saved")
     void failsOnStaleVersion() {
         when(repository.findByEstablishmentIdAndDayOfWeek(ID, DayOfWeek.MONDAY)).thenReturn(Optional.of(existing(4L)));

@@ -475,6 +475,28 @@ class DinerCatalogServiceTest {
             assertThat(response.getEstablishment().getNextOpeningSchedule()).isNotNull();
             assertThat(response.getEstablishment().getNextOpeningSchedule()).contains("04:00");
         }
+
+        @Test
+        @DisplayName("Should evaluate isOpen using weekly operating schedule repository when present")
+        void shouldEvaluateIsOpenUsingWeeklyOperatingSchedule() {
+            Establishment closedStatic = new Establishment(tenantId, "Local", EstablishmentStatus.ACTIVE,
+                    LocalTime.of(4, 0), LocalTime.of(4, 1), "America/Argentina/Buenos_Aires");
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(closedStatic));
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+                    .thenReturn(List.of());
+
+            com.easyeat.operations.repository.OperatingScheduleRepository scheduleRepo = org.mockito.Mockito.mock(com.easyeat.operations.repository.OperatingScheduleRepository.class);
+            var schedule = new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                    tenantId, java.time.LocalDate.now().getDayOfWeek(), LocalTime.of(0, 0), LocalTime.of(23, 59, 59), false);
+            when(scheduleRepo.findByEstablishmentIdAndDayOfWeek(eq(tenantId), any())).thenReturn(Optional.of(schedule));
+
+            DinerCatalogService serviceWithSchedule = new DinerCatalogService(
+                    establishmentRepository, dishRepository, dishPhotoRepository, dishRecipeIngredientRepository,
+                    ingredientRepository, catalogComplianceService, null, null, scheduleRepo);
+
+            DinerCatalogResponse response = serviceWithSchedule.getCatalog(tenantId, mockUser);
+            assertThat(response.getEstablishment().getIsOpen()).isTrue();
+        }
     }
 
     @Nested

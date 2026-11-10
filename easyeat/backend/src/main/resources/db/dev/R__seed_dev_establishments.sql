@@ -8,4 +8,6 @@ VALUES
     ('1aa45e0c-4f6a-4b98-c2d4-1c2b32f35563', 'Café Parque',     'ACTIVE', '08:00:00', '23:00:00', 'America/Argentina/Buenos_Aires'),
     ('8bb12c8a-2d4e-4f76-a0b2-9a0910f13341', 'La Esquina',      'ACTIVE', '11:00:00', '23:00:00', 'America/Argentina/Buenos_Aires'),
     ('9cc23d9b-3e5f-4a87-b1c3-0b1a21e24452', 'Comedor Central', 'ACTIVE', '11:30:00', '22:30:00', 'America/Argentina/Buenos_Aires')
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    status = 'ACTIVE',
+    updated_at = NOW();

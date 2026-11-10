@@ -36,15 +36,23 @@ export const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
       role="button"
       aria-label="Ver carrito de compras"
       data-testid="floating-cart-button"
-      className={`fixed bottom-20 right-6 z-40 inline-flex items-center gap-3 px-5 py-3.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-2xl shadow-xl shadow-amber-600/30 transition-all duration-200 cursor-pointer animate-in fade-in slide-in-from-bottom-3 focus:outline-none focus:ring-4 focus:ring-amber-500/30 ${className}`}
+      style={{
+        backgroundColor: 'var(--brand-primary, #10B981)',
+        color: 'var(--brand-primary-contrast, #FFFFFF)',
+      }}
+      className={`fixed bottom-20 right-6 z-40 inline-flex items-center gap-3 px-5 py-3.5 hover:brightness-110 active:scale-95 font-bold rounded-2xl shadow-xl transition-all duration-200 cursor-pointer animate-in fade-in slide-in-from-bottom-3 focus:outline-none focus:ring-4 focus:ring-emerald-500/30 ${className}`}
     >
       <span data-testid="open-cart-button" className="contents">
         {/* Icon with Counter Badge */}
         <div className="relative flex items-center justify-center">
-          <ShoppingBag className="w-5 h-5 text-white" />
+          <ShoppingBag className="w-5 h-5" style={{ color: 'var(--brand-primary-contrast, #FFFFFF)' }} />
           <span
             data-testid="cart-badge-count"
-            className="absolute -top-2.5 -right-2.5 min-w-5 h-5 px-1 bg-white text-amber-900 text-2xs font-extrabold rounded-full flex items-center justify-center shadow-xs"
+            style={{
+              backgroundColor: 'var(--brand-accent, #F59E0B)',
+              color: 'var(--brand-accent-contrast, #000000)',
+            }}
+            className="absolute -top-2.5 -right-2.5 min-w-5 h-5 px-1 text-2xs font-extrabold rounded-full flex items-center justify-center shadow-xs"
           >
             {totalCount}
           </span>
@@ -52,9 +60,9 @@ export const FloatingCartButton: React.FC<FloatingCartButtonProps> = ({
 
         {/* Label and Subtotal Separator */}
         <div className="flex items-center gap-2 text-sm">
-          <span className="hidden sm:inline font-semibold text-amber-100">Ver Carrito</span>
-          <span className="hidden sm:inline text-amber-300 font-light">•</span>
-          <span data-testid="floating-cart-subtotal" className="text-white font-extrabold tracking-tight">
+          <span className="hidden sm:inline font-semibold opacity-90">Ver Carrito</span>
+          <span className="hidden sm:inline opacity-60 font-light">•</span>
+          <span data-testid="floating-cart-subtotal" className="font-extrabold tracking-tight">
             {formattedSubtotal}
           </span>
         </div>

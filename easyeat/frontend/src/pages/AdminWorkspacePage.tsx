@@ -113,6 +113,14 @@ export const AdminWorkspacePage: React.FC = () => {
           <p className="text-xs text-gray-500 mt-1">Horarios comerciales →</p>
         </Link>
 
+        <Link
+          to="/admin/mi-local"
+          className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-purple-300 hover:shadow transition-all block"
+        >
+          <h3 className="font-semibold text-gray-900 text-lg mb-2">Mi Local</h3>
+          <p className="text-xs text-gray-500 mt-1">Identidad visual y branding →</p>
+        </Link>
+
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="font-semibold text-gray-900 text-lg mb-2">Auditoría de Sesiones</h3>
           <p className="text-3xl font-bold text-gray-900">En línea</p>

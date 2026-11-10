@@ -5,6 +5,10 @@ package com.easyeat.order.domain;
  */
 public enum OrderStatus {
     PENDING_PAYMENT,
+    PENDING_ACCREDITATION,
+    IN_PROGRESS,
+    READY_FOR_PICKUP,
+    COMPLETED,
     PAID,
     CONFIRMED,
     CANCELLED,

@@ -59,6 +59,7 @@ import com.easyeat.order.exception.DishPausedByChefException;
 import com.easyeat.order.exception.InvalidFulfillmentModeException;
 import com.easyeat.order.exception.InvalidOrderStateException;
 import com.easyeat.order.exception.LeadTimeViolationException;
+import com.easyeat.order.exception.OrderNotFoundException;
 import com.easyeat.order.exception.SlotCapacityExceededException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -689,6 +690,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setInstance(URI.create(request.getRequestURI()));
         problem.setProperty("code", "INVALID_FULFILLMENT_MODE");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problem);
+    }
+
+    /** 404: order not found or does not belong to authenticated diner. */
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleOrderNotFound(OrderNotFoundException ex, HttpServletRequest request) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/order-not-found"));
+        problem.setTitle("Orden No Encontrada");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("code", "ORDER_NOT_FOUND");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
     }
 
     /** 409: invalid order state transition (e.g. cancelling non-pending order). */

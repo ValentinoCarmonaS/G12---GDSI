@@ -157,7 +157,7 @@ export const CheckoutPage: React.FC = () => {
 
   // Handler for Confirmar pedido / Checkout Payment (T035, AS-1, AS-5, FR-001, FR-002)
   const handleConfirmOrder = async () => {
-    if (!isFormValid || !establishmentId || inProcessPayment) return;
+    if (!isFormValid || !establishmentId || isSubmitting || inProcessPayment) return;
 
     setIsSubmitting(true);
     setSubmissionError(null);
@@ -182,6 +182,8 @@ export const CheckoutPage: React.FC = () => {
       // Save ongoing payment info in state and redirect immediately to Sandbox/Production init_point
       if (response.redirectUrl) {
         window.location.href = response.redirectUrl;
+      } else if (response.orderId) {
+        navigate(`/checkout/confirmacion/${response.orderId}`);
       }
     } catch (err: any) {
       const status = err?.response?.status;
@@ -441,9 +443,10 @@ export const CheckoutPage: React.FC = () => {
                 type="button"
                 onClick={handleConfirmOrder}
                 disabled={!isFormValid || isSubmitting || Boolean(inProcessPayment)}
+                aria-busy={isSubmitting}
                 className={`w-full py-3.5 px-6 rounded-xl font-bold text-white text-base shadow-md transition-all flex items-center justify-center gap-2 ${
                   !isFormValid || isSubmitting || Boolean(inProcessPayment)
-                    ? 'bg-gray-300 cursor-not-allowed shadow-none'
+                    ? 'bg-gray-300 opacity-60 cursor-not-allowed pointer-events-none shadow-none'
                     : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 cursor-pointer hover:shadow-lg'
                 }`}
               >

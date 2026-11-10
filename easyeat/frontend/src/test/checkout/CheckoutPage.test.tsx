@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { CheckoutPage, generateWeeklyOperatingDays } from '../../pages/CheckoutPage';
 import { CartContext } from '../../context/CartContext';
-import * as orderApi from '../../api/orderApi';
 import * as paymentApi from '../../api/paymentApi';
+import * as orderApi from '../../api/orderApi';
 import { CartItem } from '../../types/cart';
 
 vi.mock('../../api/paymentApi', () => ({
