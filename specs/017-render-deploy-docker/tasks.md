@@ -130,7 +130,7 @@
 
 ### Implementación para User Story 5 (Hacer pasar los tests - Estado VERDE)
 
-- [ ] T022 [US5] Crear el archivo de configuración `nginx.conf` con directiva `try_files $uri $uri/ /index.html =404;`, compresión gzip, bloque `/assets/` con `Cache-Control: public, max-age=31536000, immutable`, bloque raíz `/` con `Cache-Control: no-cache`, y plantilla de escucha en `${PORT}` (FR-019, Q5) en `easyeat/frontend/nginx.conf`
+- [x] T022 [US5] Crear el archivo de configuración `nginx.conf` con directiva `try_files $uri $uri/ /index.html =404;`, compresión gzip, bloque `/assets/` con `Cache-Control: public, max-age=31536000, immutable`, bloque raíz `/` con `Cache-Control: no-cache`, y plantilla de escucha en `${PORT}` (FR-019, Q5) en `easyeat/frontend/nginx.conf`
 - [ ] T023 [US5] Crear el `Dockerfile` multi-etapa del frontend con etapa build (`node:20-alpine` ejecutando `npm ci` y `npm run build` recibiendo `ARG VITE_API_BASE_URL` y exportando `ENV VITE_API_BASE_URL=$VITE_API_BASE_URL`) y etapa runtime (`nginx:alpine` copiando `/app/dist` a `/usr/share/nginx/html`, copiando `nginx.conf` y resolviendo `${PORT:-80}` mediante envsubst en el arranque) (FR-018, FR-020, FR-021, Q2) en `easyeat/frontend/Dockerfile`
 
 **Checkpoint**: User Story 5 lista. La SPA se sirve de forma ultra liviana (< 30 MB), absorbe recargas sin 404 y adopta el puerto de Render.
