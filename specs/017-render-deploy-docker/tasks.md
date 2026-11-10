@@ -146,7 +146,7 @@
 ### Tests para User Story 6 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
 - [x] T024 [P] [US6] Escribir test de integración MockMvc verificando que el webhook de pagos `/api/v1/payments/mercadopago/webhook` y `/api/v1/payments/*/webhook` sea accesible públicamente sin token JWT ni cabeceras de autorización (AS-23, FR-023, SC-009) en `easyeat/backend/src/test/java/com/easyeat/order/PaymentWebhookSecurityIntegrationTest.java`
-- [ ] T025 [P] [US6] Escribir test unitario para `MercadoPagoGatewayAdapter` verificando que la construcción de `back_urls` (`success`, `pending`, `failure`) utilice el valor inyectado en `MERCADOPAGO_FRONTEND_BASE_URL` concatenando `/checkout/payment-return` y no contenga referencias a `localhost` (AS-21, AS-22, FR-022, Q3, SC-007) en `easyeat/backend/src/test/java/com/easyeat/order/service/MercadoPagoPublicUrlTest.java`
+- [x] T025 [P] [US6] Escribir test unitario para `MercadoPagoGatewayAdapter` verificando que la construcción de `back_urls` (`success`, `pending`, `failure`) utilice el valor inyectado en `MERCADOPAGO_FRONTEND_BASE_URL` concatenando `/checkout/payment-return` y no contenga referencias a `localhost` (AS-21, AS-22, FR-022, Q3, SC-007) en `easyeat/backend/src/test/java/com/easyeat/order/service/MercadoPagoPublicUrlTest.java`
 - [ ] T026 [P] [US6] Escribir test unitario para servicios de despacho de correos verificando que los enlaces de recuperación de clave y verificación de casilla se construyan a partir de `APP_PASSWORD_RESET_BASE_URL` y `APP_EMAIL_VERIFICATION_BASE_URL` con dominios públicos configurados (AS-24, FR-024, SC-008) en `easyeat/backend/src/test/java/com/easyeat/auth/service/PublicUrlEmailLinkTest.java`
 
 ### Implementación para User Story 6 (Hacer pasar los tests - Estado VERDE)
