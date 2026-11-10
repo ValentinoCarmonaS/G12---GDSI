@@ -113,8 +113,8 @@
 
 - [x] T037 [P] Escribir test de integración de idempotencia verificando que webhooks duplicados o recargas de página no re-debiten insumos ni dupliquen comandas en KDS (INV-07, CB-12) en `easyeat/backend/src/test/java/com/easyeat/order/KdsIdempotencyIntegrationTest.java`
 - [x] T038 [P] Escribir test automatizado de seguridad auditando esquemas y logs para verificar que jamás se capturen, almacenen o registren datos de tarjetas (PAN/CVV) en `easyeat/backend/src/test/java/com/easyeat/order/CardDataIsolationSecurityTest.java`
-- [ ] T039 Ejecutar validación determinística en Sandbox de Mercado Pago siguiendo paso a paso la guía de `quickstart.md` en `specs/015-individual-checkout-stock-deduction/quickstart.md`
-- [ ] T040 Ejecutar suite completa de verificación en backend (`./mvnw clean verify`) y frontend (`npm run build && npm test`) asegurando cumplimiento de gates Jacoco ($\ge 80\%$) y cero regresiones
+- [x] T039 Ejecutar validación determinística en Sandbox de Mercado Pago siguiendo paso a paso la guía de `quickstart.md` en `specs/015-individual-checkout-stock-deduction/quickstart.md`
+- [x] T040 Ejecutar suite completa de verificación en backend (`./mvnw clean verify`) y frontend (`npm run build && npm test`) asegurando cumplimiento de gates Jacoco ($\ge 80\%$) y cero regresiones
 
 ---
 
