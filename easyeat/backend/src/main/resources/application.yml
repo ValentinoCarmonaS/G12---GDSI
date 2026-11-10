@@ -64,3 +64,12 @@ app:
     mail:
       from: ${APP_MAIL_FROM:${spring.mail.username:noreply@easyeat.com}}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: when-authorized
+
