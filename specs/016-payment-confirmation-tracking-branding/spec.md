@@ -96,10 +96,10 @@ para quedarme tranquilo de que la transacción funcionó.
   **Cuando** el navegador del comensal sufre una interrupción (cierre de ventana, caída de conexión o recarga) antes de cargar la pantalla de éxito,  
   **Entonces** el sistema garantiza el envío de un correo electrónico a la casilla registrada del comensal con el comprobante, el detalle de la orden y el enlace de seguimiento.
 
-- **AS-3 (Criterio fuente 3 — Detalle de franja horaria y botón de seguimiento en vivo)**:  
+- **AS-3 (Criterio fuente 3 — Detalle de franja horaria y seguimiento en vivo integrado)**:  
   **Dado** que el comensal visualiza la pantalla de confirmación,  
   **Cuando** revisa la información mostrada,  
-  **Entonces** el sistema le detalla explícitamente la franja horaria de retiro elegida y habilita un botón para hacer seguimiento en vivo.
+  **Entonces** el sistema le detalla explícitamente la franja horaria de retiro elegida e integra directamente el seguimiento en vivo de la orden en la misma vista unificada, disponiendo como acción principal de navegación el regreso a la carta del restaurante y prescindiendo de enlaces circulares redundantes a la pantalla actual.
 
 - **AS-4 (Criterio fuente 4 — Bloqueo de interacciones durante el procesamiento para evitar cobros duplicados)**:  
   **Dado** que el sistema se encuentra procesando el pago y esperando la respuesta de la pasarela,  
@@ -194,7 +194,7 @@ para que la vista del comensal respete la identidad visual de mi marca.
 
 - **FR-001**: El sistema debe redirigir al comensal a una pantalla verde de éxito con animaciones visuales y exhibir de forma visible el número de orden generado cuando la pasarela retorne un código de aprobación exitoso. *(Derivado de COM-7.3.1, Criterio 1)*
 - **FR-002**: El sistema debe emitir de forma universal y garantizada un correo electrónico a la casilla registrada del comensal con el comprobante formal, el detalle completo de la orden y el enlace de seguimiento ante todo pago aprobado, asegurando su recepción incluso si el navegador sufre una interrupción antes de cargar la pantalla de éxito. *(Derivado de COM-7.3.1, Criterio 2)*
-- **FR-003**: El sistema debe exhibir en la pantalla de confirmación la franja horaria de retiro elegida por el comensal y disponer de un control habilitado para realizar el seguimiento en vivo de la orden. *(Derivado de COM-7.3.1, Criterio 3)*
+- **FR-003**: El sistema debe exhibir en la pantalla de confirmación la franja horaria de retiro elegida por el comensal e integrar directamente el seguimiento en vivo de la comanda dentro de la misma experiencia unificada, disponiendo la acción de retorno a la carta del restaurante y prescindiendo de enlaces redundantes que apunten a la vista actual. *(Derivado de COM-7.3.1, Criterio 3)*
 - **FR-004**: El sistema debe bloquear inmediatamente las interacciones sobre la interfaz mientras se procesa el pago y se aguarda la respuesta autoritativa de la pasarela, impidiendo presiones múltiples y cobros duplicados. *(Derivado de COM-7.3.1, Criterio 4)*
 - **FR-005**: El sistema debe mostrar una barra de progreso y un tiempo estimado de entrega calculado dinámicamente según la saturación actual de la cola de pedidos en el KDS para órdenes con modalidad de retiro inmediato. *(Derivado de COM-7.3.2, Criterio 5)*
 - **FR-006**: El sistema debe mostrar el horario de retiro pactado de forma estática en lugar de un contador en vivo para reservas programadas a futuro, activando la cuenta regresiva únicamente al restar 15 minutos o menos para el inicio de la franja horaria acordada. *(Derivado de COM-7.3.2, Criterio 6)*
@@ -223,7 +223,7 @@ para que la vista del comensal respete la identidad visual de mi marca.
 - **INV-003 (Bloqueo de interfaz e indemnidad contra cobros duplicados)**:  
   El inicio del procesamiento de cobro inhabilita de inmediato los controles de envío de la pantalla. El bloqueo de interacciones no interfiere ni cancela la recepción del desenlace emitido por la pasarela de pagos externa.
 - **INV-004 (Completitud informativa de la confirmación)**:  
-  La pantalla de confirmación exitosa debe exhibir de forma obligatoria y simultánea el número de orden asignado, la franja horaria de retiro acordada y el acceso directo al seguimiento en vivo.
+  La pantalla de confirmación exitosa debe exhibir de forma obligatoria y simultánea el número de orden asignado, la franja horaria de retiro acordada y el componente interactivo de seguimiento en vivo integrado en la misma experiencia.
 - **INV-005 (Gobernanza de la saturación del KDS y tiempo transcurrido sobre el tiempo inmediato)**:  
   El tiempo estimado exhibido para órdenes de retiro inmediato debe responder dinámicamente al estado y volumen de trabajo real de la cola de preparación en el KDS y a los minutos transcurridos desde su creación, no pudiendo tratarse de un valor estático inmutable. Al alcanzar el tiempo estimado sin despacho, el minutero no desciende por debajo de 1 minuto ni el progreso supera el 92% hasta que cocina marque la comanda como lista.
 - **INV-006 (Exclusión temporal de contador para reservas programadas distantes)**:  
@@ -267,7 +267,7 @@ para que la vista del comensal respete la identidad visual de mi marca.
 
 - **SC-001**: El 100% de las transacciones con código de aprobación exitoso emitido por la pasarela redirigen al comensal a la pantalla verde de éxito exhibiendo el número de orden asignado.
 - **SC-002**: El 100% de los incidentes de interrupción del navegador del comensal ocurridos tras una aprobación de pago resultan en la emisión garantizada del correo electrónico con el comprobante y detalle de orden.
-- **SC-003**: El 100% de las pantallas de confirmación desplegadas exhiben la franja horaria de retiro seleccionada y presentan habilitado el control de seguimiento en vivo.
+- **SC-003**: El 100% de las pantallas de confirmación desplegadas exhiben la franja horaria de retiro seleccionada e integran directamente el componente interactivo de seguimiento en vivo con navegación hacia la carta.
 - **SC-004**: Registro de 0 cobros duplicados y 0 peticiones transaccionales redundantes atribuibles a presiones múltiples sobre el botón de confirmación durante el procesamiento del pago.
 - **SC-005**: El 100% de los pedidos bajo modalidad de retiro inmediato presentan en la vista de seguimiento una barra de progreso y una estimación de entrega calculada dinámicamente según la saturación de la cocina en el KDS.
 - **SC-006**: El 100% de los pedidos bajo modalidad de reserva programada exhiben el horario pactado de forma fija mientras la diferencia temporal con el turno sea mayor a 15 minutos, iniciando la cuenta regresiva en el 100% de los casos al ingresar en dicho umbral.
@@ -283,7 +283,7 @@ para que la vista del comensal respete la identidad visual de mi marca.
 |---|---|---|---|---|---|
 | **COM-7.3.1** | Criterio 1: Aprobación, pantalla verde y número de orden | AS-1 | FR-001 | INV-001, INV-004 | SC-001 |
 | **COM-7.3.1** | Criterio 2: Interrupción del navegador y envío de correo | AS-2 | FR-002 | INV-002 | SC-002 |
-| **COM-7.3.1** | Criterio 3: Detalle de franja y botón de seguimiento en vivo | AS-3 | FR-003 | INV-004 | SC-003 |
+| **COM-7.3.1** | Criterio 3: Detalle de franja y seguimiento en vivo integrado | AS-3 | FR-003 | INV-004 | SC-003 |
 | **COM-7.3.1** | Criterio 4: Bloqueo de interacciones y prevención de cobro duplicado | AS-4 | FR-004 | INV-003 | SC-004 |
 | **COM-7.3.2** | Criterio 5: Retiro inmediato, barra de progreso y tiempo dinámico KDS | AS-5 | FR-005 | INV-005 | SC-005 |
 | **COM-7.3.2** | Criterio 6: Reserva programada, horario pactado y cuenta regresiva a 15 min | AS-6 | FR-006 | INV-006 | SC-006 |

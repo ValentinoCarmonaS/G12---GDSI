@@ -107,15 +107,15 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
     });
   });
 
-  it('AS-3: includes live tracking link button pointing to trackingUrl', async () => {
+  it('AS-3: embeds live tracking directly in confirmation page and excludes redundant self-referencing button', async () => {
     vi.mocked(orderTrackingApi.getConfirmationTracking).mockResolvedValueOnce(mockOrderData);
 
     renderWithRoute();
 
     await waitFor(() => {
-      const trackingBtn = screen.getByRole('link', { name: /seguir pedido|seguimiento en vivo/i });
-      expect(trackingBtn).toBeInTheDocument();
-      expect(trackingBtn).toHaveAttribute('href', '/pedidos/order-uuid-999/seguimiento');
+      expect(screen.queryByRole('link', { name: /seguir pedido|seguimiento en vivo/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /explorar carta/i })).toBeInTheDocument();
+      expect(screen.getByText(/horario de retiro programado/i)).toBeInTheDocument();
     });
   });
 

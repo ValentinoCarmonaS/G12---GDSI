@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, AlertCircle, Utensils, Activity } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, RefreshCw, AlertCircle, Utensils } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { OrderSuccessGreenBanner } from '../components/tracking/OrderSuccessGreenBanner';
 import { LiveTrackingWidget } from '../components/tracking/LiveTrackingWidget';
@@ -175,18 +175,11 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
             </div>
 
             {/* Action Bar (AS-3, FR-003) */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-              <Link
-                to={order.trackingUrl || `/pedidos/${order.orderId}/seguimiento`}
-                className="w-full sm:flex-1 py-4 px-6 rounded-2xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-all text-center shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-              >
-                <Activity className="w-5 h-5" />
-                <span>Seguimiento en vivo</span>
-              </Link>
+            <div className="flex justify-center pt-2">
               <button
                 type="button"
                 onClick={() => navigate('/catalogo')}
-                className="w-full sm:w-auto py-4 px-8 rounded-2xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors text-center"
+                className="w-full sm:w-auto py-4 px-8 rounded-2xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-all text-center shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
               >
                 Explorar carta
               </button>
