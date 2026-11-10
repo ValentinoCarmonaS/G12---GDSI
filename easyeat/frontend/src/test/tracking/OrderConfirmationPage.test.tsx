@@ -1,0 +1,131 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { OrderConfirmationTrackingPage } from '../../pages/OrderConfirmationTrackingPage';
+import { orderTrackingApi } from '../../api/orderTrackingApi';
+import { OrderConfirmationTrackingResponse } from '../../types/orderTracking';
+
+vi.mock('../../api/orderTrackingApi', () => ({
+  orderTrackingApi: {
+    getConfirmationTracking: vi.fn(),
+    getLiveTracking: vi.fn(),
+  },
+}));
+
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { id: 'user-123', email: 'diner@test.com', role: 'COMENSAL' },
+    logout: vi.fn(),
+  }),
+}));
+
+vi.mock('../../api/profileApi', () => ({
+  profileApi: {
+    getProfile: vi.fn().mockResolvedValue({ avatarUrl: null }),
+  },
+}));
+
+vi.mock('../../api/adminNotificationApi', () => ({
+  adminNotificationApi: {
+    getUnreadCount: vi.fn().mockResolvedValue(0),
+    getNotifications: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () => {
+  const mockOrderData: OrderConfirmationTrackingResponse = {
+    orderId: 'order-uuid-999',
+    ticketNumber: 142,
+    status: 'IN_PROGRESS',
+    approvalStatus: 'APPROVED',
+    establishmentId: 'est-123',
+    establishmentName: 'Café Central Palermo',
+    fulfillmentMode: 'SCHEDULED',
+    pickupDate: '2026-11-10',
+    timeSlotStart: '13:00:00',
+    timeSlotEnd: '13:30:00',
+    totalAmount: 4850,
+    items: [
+      {
+        dishId: 'dish-1',
+        dishName: 'Hamburguesa Clásica EasyEat',
+        quantity: 2,
+        unitPrice: 2100,
+        subtotal: 4200,
+      },
+      {
+        dishId: 'dish-2',
+        dishName: 'Agua Mineral sin Gas 500ml',
+        quantity: 1,
+        unitPrice: 650,
+        subtotal: 650,
+      },
+    ],
+    trackingUrl: '/pedidos/order-uuid-999/seguimiento',
+    serverTime: new Date().toISOString(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const renderWithRoute = (orderId = 'order-uuid-999') => {
+    return render(
+      <MemoryRouter initialEntries={[`/checkout/confirmacion/${orderId}`]}>
+        <Routes>
+          <Route path="/checkout/confirmacion/:orderId" element={<OrderConfirmationTrackingPage />} />
+          <Route path="/pedidos/:orderId/seguimiento" element={<OrderConfirmationTrackingPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+  };
+
+  it('AS-1/INV-004: renders green success banner with ticket number and establishment name', async () => {
+    vi.mocked(orderTrackingApi.getConfirmationTracking).mockResolvedValueOnce(mockOrderData);
+
+    renderWithRoute();
+
+    await waitFor(() => {
+      expect(screen.getByText(/pago confirmado|reserva confirmada/i)).toBeInTheDocument();
+      expect(screen.getByText(/142/)).toBeInTheDocument();
+      expect(screen.getByText(/café central palermo/i)).toBeInTheDocument();
+    });
+  });
+
+  it('AS-3/FR-003: displays pickup date, time slot range and order items breakdown', async () => {
+    vi.mocked(orderTrackingApi.getConfirmationTracking).mockResolvedValueOnce(mockOrderData);
+
+    renderWithRoute();
+
+    await waitFor(() => {
+      expect(screen.getByText(/2026-11-10/)).toBeInTheDocument();
+      expect(screen.getByText(/13:00/)).toBeInTheDocument();
+      expect(screen.getByText(/13:30/)).toBeInTheDocument();
+      expect(screen.getByText(/hamburguesa clásica easyeat/i)).toBeInTheDocument();
+      expect(screen.getByText(/agua mineral sin gas 500ml/i)).toBeInTheDocument();
+      expect(screen.getByText(/\$4850|\$4,850/)).toBeInTheDocument();
+    });
+  });
+
+  it('AS-3: includes live tracking link button pointing to trackingUrl', async () => {
+    vi.mocked(orderTrackingApi.getConfirmationTracking).mockResolvedValueOnce(mockOrderData);
+
+    renderWithRoute();
+
+    await waitFor(() => {
+      const trackingBtn = screen.getByRole('link', { name: /seguir pedido|seguimiento en vivo/i });
+      expect(trackingBtn).toBeInTheDocument();
+      expect(trackingBtn).toHaveAttribute('href', '/pedidos/order-uuid-999/seguimiento');
+    });
+  });
+
+  it('displays error state when order cannot be retrieved', async () => {
+    vi.mocked(orderTrackingApi.getConfirmationTracking).mockRejectedValueOnce(new Error('Order not found'));
+
+    renderWithRoute('invalid-order');
+
+    await waitFor(() => {
+      expect(screen.getByText(/no pudimos cargar la información del pedido/i)).toBeInTheDocument();
+    });
+  });
+});
