@@ -49,11 +49,11 @@
 
 ### Tests para User Story 1 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
-- [ ] T008 [P] [US1] Escribir script de test automatizado de verificación de contrato de imagen backend comprobando base Alpine JRE 21, usuario no root `easyeat`, flags JVM `-XX:+UseContainerSupport` y `-XX:MaxRAMPercentage=75.0`, y ausencia de código fuente `.java` o herramientas Maven (AS-1, AS-2, AS-3, SC-001, SC-002) en `easyeat/backend/src/test/resources/scripts/verify-backend-image.sh`
+- [x] T008 [P] [US1] Escribir script de test automatizado de verificación de contrato de imagen backend comprobando base Alpine JRE 21, usuario no root `easyeat`, flags JVM `-XX:+UseContainerSupport` y `-XX:MaxRAMPercentage=75.0`, y ausencia de código fuente `.java` o herramientas Maven (AS-1, AS-2, AS-3, SC-001, SC-002) en `easyeat/backend/src/test/resources/scripts/verify-backend-image.sh`
 
 ### Implementación para User Story 1 (Hacer pasar los tests - Estado VERDE)
 
-- [ ] T009 [US1] Crear el `Dockerfile` multi-etapa del backend con etapa build (`maven:3.9.9-eclipse-temurin-21-alpine` con `mvn clean package -DskipTests`) y etapa runtime (`eclipse-temurin:21-jre-alpine` con creación de usuario `easyeat:easyeat`, copia exclusiva de `/app/app.jar`, `chown`, conmutación a `USER easyeat` y ENTRYPOINT de memoria gobernada) (FR-001, FR-002, FR-003, FR-004) en `easyeat/backend/Dockerfile`
+- [x] T009 [US1] Crear el `Dockerfile` multi-etapa del backend con etapa build (`maven:3.9.9-eclipse-temurin-21-alpine` con `mvn clean package -DskipTests`) y etapa runtime (`eclipse-temurin:21-jre-alpine` con creación de usuario `easyeat:easyeat`, copia exclusiva de `/app/app.jar`, `chown`, conmutación a `USER easyeat` y ENTRYPOINT de memoria gobernada) (FR-001, FR-002, FR-003, FR-004) en `easyeat/backend/Dockerfile`
 
 **Checkpoint**: User Story 1 completamente construida y verificada. La imagen del backend es liviana (< 200 MB), segura y gobierna los 512 MB de RAM.
 
