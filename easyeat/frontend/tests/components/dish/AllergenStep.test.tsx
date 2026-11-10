@@ -24,12 +24,12 @@ describe('AllergenStep Component (T050, CHF-2.2.3, FR-013, FR-014, FR-015)', () 
     expect(screen.getByText(/Estilos de Vida Dietarios/i)).toBeInTheDocument();
     expect(screen.getByText(/Alérgenos Comunes/i)).toBeInTheDocument();
 
-    // Dietary lifestyle items
+    // Dietary lifestyle items (C-11: only positive compliance lifestyles)
     expect(screen.getByText('Vegano')).toBeInTheDocument();
     expect(screen.getByText('Vegetariano')).toBeInTheDocument();
-    expect(screen.getByText('Celíaco')).toBeInTheDocument();
 
-    // Common allergens items
+    // Common allergens items (C-11: Celíaco is reclassified under common allergens)
+    expect(screen.getByText('Celíaco')).toBeInTheDocument();
     expect(screen.getByText('Lácteos')).toBeInTheDocument();
     expect(screen.getByText('Maní')).toBeInTheDocument();
     expect(screen.getByText('Huevos')).toBeInTheDocument();
