@@ -428,7 +428,7 @@ components:
         category:
           type: string
           enum: [DIETARY_LIFESTYLE, COMMON_ALLERGEN]
-          example: "DIETARY_LIFESTYLE"
+          example: "COMMON_ALLERGEN"
         description:
           type: string
           nullable: true

@@ -12,7 +12,7 @@
 ## 1. Food Safety & Allergen Labeling Requirements
 
 - [x] CHK001 - Are allergen labeling semantics explicitly differentiated between positive lifestyle compliance claims (`VEGAN`, `VEGETARIAN`) and negative/warning containment declarations (`CELIAC`, `DAIRY`, `PEANUTS`, etc.)? [Clarity, Spec §FR-013, §User Story 3]
-- [x] CHK002 - Is the Celiac / Sin TACC restriction explicitly defined as a warning label ("contains gluten / NOT Sin TACC") rather than an affirmative gluten-free certification claim? [Clarity, Food Safety, Spec §FR-013, §Clarifications]
+- [x] CHK002 - Is the Celiac / Sin TACC restriction explicitly defined as a warning label under Common Allergens ("contains gluten / NOT Sin TACC") rather than an affirmative gluten-free certification claim or lifestyle? [Clarity, Food Safety, Spec §FR-013, C-11, §Clarifications]
 - [x] CHK003 - Does the specification define an explicit, intentional Chef acknowledgment action ("Confirm allergen section") that is required regardless of how many allergen tags are selected? [Completeness, Spec §FR-015, §User Story 3]
 - [x] CHK004 - Is the empty allergen state (zero labels selected) explicitly specified as a valid confirmed condition representing "no known allergens", preventing ambiguity between "unspecified" and "allergen-free"? [Clarity, Edge Cases, Spec §FR-014, §Edge Cases]
 - [x] CHK005 - Are the dietary restriction taxonomy codes strictly mapped to the preexisting platform taxonomy defined in spec 003 without introducing redundant or competing codes? [Consistency, Spec §FR-013, §Assumptions]
