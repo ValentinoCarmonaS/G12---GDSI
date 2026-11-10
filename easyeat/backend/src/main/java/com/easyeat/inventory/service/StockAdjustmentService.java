@@ -14,6 +14,7 @@ import com.easyeat.inventory.exception.ZeroDeltaAdjustmentException;
 import com.easyeat.inventory.repository.IngredientBatchRepository;
 import com.easyeat.inventory.repository.IngredientRepository;
 import com.easyeat.inventory.repository.StockAuditEntryRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -39,11 +40,12 @@ public class StockAdjustmentService {
         this(ingredientRepository, ingredientBatchRepository, stockAuditEntryRepository, userRepository, null);
     }
 
+    @Autowired
     public StockAdjustmentService(IngredientRepository ingredientRepository,
                                   IngredientBatchRepository ingredientBatchRepository,
                                   StockAuditEntryRepository stockAuditEntryRepository,
                                   UserRepository userRepository,
-                                  AutomaticPriceAdjustmentService automaticPriceAdjustmentService) {
+                                  @Autowired(required = false) AutomaticPriceAdjustmentService automaticPriceAdjustmentService) {
         this.ingredientRepository = ingredientRepository;
         this.ingredientBatchRepository = ingredientBatchRepository;
         this.stockAuditEntryRepository = stockAuditEntryRepository;
