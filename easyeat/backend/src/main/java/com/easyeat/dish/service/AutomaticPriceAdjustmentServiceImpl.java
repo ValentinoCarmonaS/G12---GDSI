@@ -143,3 +143,4 @@ public class AutomaticPriceAdjustmentServiceImpl implements AutomaticPriceAdjust
                 .setScale(4, RoundingMode.HALF_UP);
     }
 }
+
