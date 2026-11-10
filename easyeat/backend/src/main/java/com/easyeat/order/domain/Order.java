@@ -112,6 +112,14 @@ public class Order {
         return expiresAt != null && now != null && now.isAfter(expiresAt);
     }
 
+    public boolean isPendingAccreditation() {
+        return status == OrderStatus.PENDING_ACCREDITATION;
+    }
+
+    public boolean isInProgress() {
+        return status == OrderStatus.IN_PROGRESS;
+    }
+
     public UUID getId() {
         return id;
     }
