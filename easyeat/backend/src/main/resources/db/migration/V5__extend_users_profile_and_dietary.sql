@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS dietary_restrictions (
 
 -- Seed standardized taxonomy
 INSERT INTO dietary_restrictions (code, name, category, description) VALUES
-    ('CELIAC', 'Sin TACC / Celíaco', 'DIETARY_LIFESTYLE', 'Excluye trigo, avena, cebada, centeno y derivados.'),
+    ('CELIAC', 'Sin TACC / Celíaco', 'COMMON_ALLERGEN', 'Excluye trigo, avena, cebada, centeno y derivados.'),
     ('VEGAN', 'Vegano', 'DIETARY_LIFESTYLE', 'Excluye carne, lácteos, huevos, miel y cualquier producto animal.'),
     ('VEGETARIAN', 'Vegetariano', 'DIETARY_LIFESTYLE', 'Excluye carnes y pescados, admite lácteos y huevos.'),
     ('DAIRY', 'Lácteos / Lactosa', 'COMMON_ALLERGEN', 'Presencia de leche de vaca, caseína o derivados lácteos.'),
