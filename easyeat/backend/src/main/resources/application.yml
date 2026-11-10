@@ -64,6 +64,14 @@ app:
     mail:
       from: ${APP_MAIL_FROM:${spring.mail.username:noreply@easyeat.com}}
 
+mercadopago:
+  access-token: ${MERCADOPAGO_ACCESS_TOKEN:}
+  public-key: ${MERCADOPAGO_PUBLIC_KEY:}
+  webhook-secret: ${MERCADOPAGO_WEBHOOK_SECRET:}
+  sandbox: ${MERCADOPAGO_SANDBOX:true}
+  base-url: ${MERCADOPAGO_BASE_URL:https://api.mercadopago.com}
+  frontend-base-url: ${MERCADOPAGO_FRONTEND_BASE_URL:http://localhost:3000}
+
 management:
   endpoints:
     web:
