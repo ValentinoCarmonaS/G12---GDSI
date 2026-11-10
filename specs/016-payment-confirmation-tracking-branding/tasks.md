@@ -139,10 +139,10 @@
 
 **Propósito**: Validación de extremo a extremo, verificación contra regresiones y hardening de seguridad.
 
-- [ ] T053 Ejecutar y validar íntegramente los 10 escenarios de prueba de la guía en `specs/016-payment-confirmation-tracking-branding/quickstart.md`
-- [ ] T054 [P] Verificar cumplimiento estricto de PCI-DSS SAQ A (cero captura, almacenamiento o exposición de PAN/CVV en logs, entidades o DTOs) en toda la suite de pruebas
-- [ ] T055 [P] Ejecutar la suite completa de tests de regresión de backend (`mvn clean test`) y frontend (`npm test -- --run`) asegurando 100% de tests en verde
-- [ ] T056 [P] Actualizar documentación de endpoints y variables de configuración en `easyeat/README.md`
+- [x] T053 Ejecutar y validar íntegramente los 10 escenarios de prueba de la guía en `specs/016-payment-confirmation-tracking-branding/quickstart.md`
+- [x] T054 [P] Verificar cumplimiento estricto de PCI-DSS SAQ A (cero captura, almacenamiento o exposición de PAN/CVV en logs, entidades o DTOs) en toda la suite de pruebas
+- [x] T055 [P] Ejecutar la suite completa de tests de regresión de backend (`mvn clean test`) y frontend (`npm test -- --run`) asegurando 100% de tests en verde
+- [x] T056 [P] Actualizar documentación de endpoints y variables de configuración en `easyeat/README.md`
 
 ---
 

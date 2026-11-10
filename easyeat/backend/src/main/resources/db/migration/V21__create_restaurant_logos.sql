@@ -1,6 +1,7 @@
 -- ====================================================================
--- EasyEat V21: Binary Restaurant Logo Persistence
+-- EasyEat V21: Binary Restaurant Logo Persistence & Order Status Check Extension
 -- Governs: restaurant_logos (BYTEA storage matching user_photos pattern)
+-- and broadens chk_order_status to include all OrderStatus enum states.
 -- ====================================================================
 
 CREATE TABLE IF NOT EXISTS restaurant_logos (
@@ -19,3 +20,21 @@ CREATE TABLE IF NOT EXISTS restaurant_logos (
 
 CREATE INDEX IF NOT EXISTS idx_restaurant_logos_establishment
     ON restaurant_logos(establishment_id);
+
+-- Broaden chk_order_status to guarantee compatibility with all OrderStatus values
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS chk_order_status;
+
+ALTER TABLE orders
+    ADD CONSTRAINT chk_order_status CHECK (
+        status IN (
+            'PENDING_PAYMENT',
+            'PENDING_ACCREDITATION',
+            'IN_PROGRESS',
+            'READY_FOR_PICKUP',
+            'COMPLETED',
+            'PAID',
+            'CONFIRMED',
+            'CANCELLED',
+            'EXPIRED'
+        )
+    );
