@@ -22,7 +22,7 @@
 **Propósito**: Inicialización de esquemas de base de datos, migraciones Flyway y definiciones de tipos base.
 
 - [x] T001 Crear migración Flyway `V20__payment_confirmation_tracking_and_branding.sql` ampliando el constraint `chk_order_status` de `orders`, creando las tablas `restaurant_brandings`, `establishment_kds_settings` y `order_receipts` en `easyeat/backend/src/main/resources/db/migration/V20__payment_confirmation_tracking_and_branding.sql`
-- [ ] T002 [P] Extender el enum `OrderStatus` incorporando los estados `READY_FOR_PICKUP` y `COMPLETED` en `easyeat/backend/src/main/java/com/easyeat/order/domain/OrderStatus.java`
+- [x] T002 [P] Extender el enum `OrderStatus` incorporando los estados `READY_FOR_PICKUP` y `COMPLETED` en `easyeat/backend/src/main/java/com/easyeat/order/domain/OrderStatus.java`
 - [ ] T003 [P] Definir tipos TypeScript para confirmación de pago, seguimiento en vivo, KDS y branding multi-tenant en `easyeat/frontend/src/types/orderTracking.ts` y `easyeat/frontend/src/types/branding.ts`
 
 ---
