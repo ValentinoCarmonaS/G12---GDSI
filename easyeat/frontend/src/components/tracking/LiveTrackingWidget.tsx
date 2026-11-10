@@ -107,12 +107,16 @@ export const LiveTrackingWidget: React.FC<LiveTrackingWidgetProps> = ({
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold">
-              {saturation?.kitchenStatus === 'HIGH_DEMAND'
-                ? 'Cocina con alta demanda'
-                : 'Demora adicional informada por cocina'}
+              {saturation?.globalDelayAppliedMinutes && saturation.globalDelayAppliedMinutes > 0
+                ? `Demora operativa en cocina (+${saturation.globalDelayAppliedMinutes} min)`
+                : 'Cocina con alta demanda'}
             </p>
             <p className="text-amber-700 mt-0.5">
-              Hay {saturation?.activeOrdersAhead ?? 0} pedidos por delante en cola.
+              {(saturation?.activeOrdersAhead ?? 0) > 0
+                ? `El equipo está elaborando ${saturation?.activeOrdersAhead} ${
+                    saturation?.activeOrdersAhead === 1 ? 'pedido' : 'pedidos'
+                  } por delante en cola.`
+                : 'El equipo de cocina extendió el tiempo de preparación para asegurar la calidad de tu pedido.'}
             </p>
           </div>
         </div>

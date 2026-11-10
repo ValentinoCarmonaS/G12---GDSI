@@ -112,6 +112,38 @@ describe('T028 [US2]: LiveTrackingWidget Component Tests', () => {
     );
 
     expect(screen.getAllByText(/alta demanda/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/Demora operativa en cocina \(\+10 min\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/El equipo está elaborando 5 pedidos por delante en cola/i)).toBeInTheDocument();
+  });
+
+  it('displays adaptive notice when kitchen has delay with 0 orders ahead (AS-7)', () => {
+    vi.spyOn(pollingHook, 'useOrderLiveTrackingPolling').mockReturnValue({
+      tracking: {
+        ...defaultImmediateTracking,
+        kdsQueueSaturation: {
+          activeOrdersAhead: 0,
+          kitchenStatus: 'DELAYED',
+          globalDelayAppliedMinutes: 15,
+        },
+        message: 'Preparando tu pedido',
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(
+      <LiveTrackingWidget
+        orderId="order-123"
+        ticketNumber={142}
+        fulfillmentMode="IMMEDIATE"
+      />
+    );
+
+    expect(screen.getByText(/Demora operativa en cocina \(\+15 min\)/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/El equipo de cocina extendió el tiempo de preparación para asegurar la calidad de tu pedido/i)
+    ).toBeInTheDocument();
   });
 
   it('renders last touches state when order reaches capped progress (AS-5, INV-005)', () => {
