@@ -29,6 +29,46 @@ describe('ManualFiltersSidebar Component Tests (T034, US4, COM-4.2.2, AC-4.1, AC
     expect(screen.getByRole('button', { name: /limpiar filtros/i })).toBeInTheDocument();
   });
 
+  it('renders lifestyles and allergens sections when provided and triggers callbacks (C-13, FR-025, FR-026)', () => {
+    const onLifestyleToggle = vi.fn();
+    const onAllergenToggle = vi.fn();
+
+    render(
+      <ManualFiltersSidebar
+        categories={availableCategories}
+        selectedCategories={[]}
+        onCategoryToggle={vi.fn()}
+        lifestyles={['Vegano', 'Sin TACC / Celíaco']}
+        selectedLifestyles={['Vegano']}
+        onLifestyleToggle={onLifestyleToggle}
+        allergens={['Lácteos', 'Maní']}
+        selectedAllergens={['Maní']}
+        onAllergenToggle={onAllergenToggle}
+        minPrice=""
+        maxPrice=""
+        onMinPriceChange={vi.fn()}
+        onMaxPriceChange={vi.fn()}
+        onClearFilters={vi.fn()}
+      />
+    );
+
+    const veganoCheckbox = screen.getByLabelText('Vegano');
+    const celiacoCheckbox = screen.getByLabelText('Sin TACC / Celíaco');
+    expect(veganoCheckbox).toBeChecked();
+    expect(celiacoCheckbox).not.toBeChecked();
+
+    fireEvent.click(celiacoCheckbox);
+    expect(onLifestyleToggle).toHaveBeenCalledWith('Sin TACC / Celíaco');
+
+    const lacteosCheckbox = screen.getByLabelText('Sin Lácteos');
+    const maniCheckbox = screen.getByLabelText('Sin Maní');
+    expect(maniCheckbox).toBeChecked();
+    expect(lacteosCheckbox).not.toBeChecked();
+
+    fireEvent.click(lacteosCheckbox);
+    expect(onAllergenToggle).toHaveBeenCalledWith('Lácteos');
+  });
+
   it('triggers onCategoryToggle callback when clicking category checkboxes (AC-4.1, EC-012)', () => {
     const onCategoryToggle = vi.fn();
     render(

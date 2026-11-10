@@ -28,16 +28,16 @@ export const DIETARY_LIFESTYLES: TaxonomyItem[] = [
     isPositive: true,
     warningLabel: 'Cumplimiento positivo (Apto)',
   },
+];
+
+export const COMMON_ALLERGENS: TaxonomyItem[] = [
   {
     code: 'CELIAC',
     name: 'Celíaco',
     description: 'Contiene gluten o trazas. No apto sin TACC.',
     isPositive: false,
-    warningLabel: 'Advertencia preventiva (Contiene)',
+    warningLabel: 'Advertencia de alérgeno',
   },
-];
-
-export const COMMON_ALLERGENS: TaxonomyItem[] = [
   {
     code: 'DAIRY',
     name: 'Lácteos',

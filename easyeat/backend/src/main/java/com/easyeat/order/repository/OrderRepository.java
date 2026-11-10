@@ -56,4 +56,15 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Optional<Order> findByIdAndUserId(UUID id, UUID userId);
 
     List<Order> findByUserIdOrderByCreatedAtDesc(UUID userId);
+
+    @Query("""
+        SELECT COUNT(o) FROM Order o
+        WHERE o.establishmentId = :establishmentId
+          AND o.status = com.easyeat.order.domain.OrderStatus.IN_PROGRESS
+          AND o.createdAt < :createdAt
+    """)
+    long countActiveOrdersAhead(
+        @Param("establishmentId") UUID establishmentId,
+        @Param("createdAt") Instant createdAt
+    );
 }

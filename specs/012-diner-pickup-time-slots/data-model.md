@@ -143,7 +143,7 @@ Persiste el detalle inmutable de cada plato contenido en el carrito de compras d
    - Los ítems del carrito (`CartItem`: `dishId`, `quantity`) se reciben en el request de checkout (`CreateOrderRequest.items`).
    - Se revalida stock remanente en cocina (`currentStock >= quantity`, Spec 009 FR-014a) antes de persistir la orden.
 2. **Spec 010 (Restaurant Operation Config)**:
-   - *Horarios*: Si existen registros en `establishment_operating_schedules`, se respetan sus franjas de apertura/cierre y el flag `is_closed` para el día de la semana correspondiente; si no, se recurre a `Establishment` (`opening_time`, `closing_time`).
+   - *Horarios y Cierre Operativo (C-12)*: `PickupSlotService` y las validaciones de checkout consultan obligatoriamente los registros de `establishment_operating_schedules` para el día de la semana correspondiente (`day_of_week`). Si para ese día no existe configuración o `is_closed == true`, el establecimiento no atiende y se devuelven 0 franjas (`slots: []`). Si existe horario activo, se toman de forma estricta sus valores `opening_time` y `closing_time` para acotar los bloques de 15 minutos, descartando cualquier bloque fuera de ese rango. Si el establecimiento no tiene registros personalizados en Spec 010, se recurre a `Establishment` (`opening_time`, `closing_time`, `operating_days`).
    - *Capacidades*: Si existe configuración en `establishment_slot_capacities` para la fecha y franja horaria, se adopta su `max_capacity`; caso contrario, se aplica la capacidad por defecto `establishment.max_capacity_per_slot` (10 órdenes).
 3. **Spec 011 (Dish Detail & Manual Filters)**:
    - Los precios unitarios y subtotales se procesan con aritmética exacta de dos decimales (BigInteger/BigDecimal), congelándose como snapshots inmutables en `order_items`.
@@ -198,12 +198,14 @@ TimeSlotAvailability {
 
 ### Clasificación y semántica de `SlotStatus`
 
-| `SlotStatus` | Condición de negocio | `isSelectable` | Representación en UI |
+Conforme a la regla C-12, **únicamente** se devuelven en la API y se renderizan en la interfaz aquellas franjas horarias con `isSelectable == true`. Los bloques horarios no seleccionables se omiten y ocultan completamente en lugar de mostrarse deshabilitados o en gris.
+
+| `SlotStatus` | Condición de negocio | `isSelectable` | Tratamiento en API y Representación en UI (C-12) |
 |---|---|:---:|---|
-| `AVAILABLE` | `occupancy < 80%` y cumple lead time | `true` | Botón estándar neutral. |
-| `HIGH_DEMAND` | `80% <= occupancy < 100%` y cumple lead time | `true` | Botón ámbar con badge "Alta Demanda". Dispara aviso en resumen de checkout. |
-| `SOLD_OUT` | `occupancy >= 100%` y dentro de horario | `false` | Botón gris deshabilitado con badge "Agotado". |
-| `EXPIRED_OR_LEAD_TIME` | Franja pasada o `startTime < NOW() + 30m` en día actual | `false` | Botón gris atenuado no clickeable. |
+| `AVAILABLE` | `occupancy < 80%`, dentro de horario comercial y cumple lead time | `true` | **Devuelto en API y visible en UI**: Botón estándar neutral seleccionable. |
+| `HIGH_DEMAND` | `80% <= occupancy < 100%`, dentro de horario comercial y cumple lead time | `true` | **Devuelto en API y visible en UI**: Botón ámbar con badge "Alta Demanda". Dispara aviso en resumen de checkout. |
+| `SOLD_OUT` | `occupancy >= 100%` y dentro de horario | `false` | **Filtrado en API y ocultado en UI**: Omitido por completo. Si todos los turnos del día están agotados, se devuelve `slots: []` y la UI muestra *"No hay horarios de retiro disponibles para el día seleccionado"*. |
+| `EXPIRED_OR_LEAD_TIME` | Franja pasada o `startTime < NOW() + 30m` en día actual | `false` | **Filtrado en API y ocultado en UI**: Omitido por completo. No se renderiza en gris ni ocupa espacio. |
 
 ---
 

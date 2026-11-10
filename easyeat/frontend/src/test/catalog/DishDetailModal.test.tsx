@@ -449,6 +449,22 @@ describe('DishDetailModal Component Tests (T034, US2, COM-4.1.1, FR-007, FR-012,
       expect(screen.queryByTestId('allergen-warning-badge')).not.toBeInTheDocument();
     });
 
+    it('renders Sin TACC / Celíaco as neutral allergen pill when present on dish (C-11)', () => {
+      const dishWithCeliac: DishCatalogItem = {
+        ...mockDish,
+        allergens: ['Sin TACC / Celíaco', 'Maní'],
+        recipeIngredients: ['Arroz', 'Maní tostado'],
+      };
+
+      render(<DishDetailModal dish={dishWithCeliac} isOpen={true} onClose={vi.fn()} />);
+
+      expect(screen.getByText(/Alérgenos/i)).toBeInTheDocument();
+      const pills = screen.getAllByTestId('allergen-neutral-pill');
+      expect(pills).toHaveLength(2);
+      expect(pills[0]).toHaveTextContent('Sin TACC / Celíaco');
+      expect(pills[1]).toHaveTextContent('Maní');
+    });
+
     it('displays explicit notice "Lista de componentes no disponible" when dish has no ingredients registered (INV-8, AC-2.3, EC-007)', () => {
       const dishNoRecipe: DishCatalogItem = {
         ...mockDish,

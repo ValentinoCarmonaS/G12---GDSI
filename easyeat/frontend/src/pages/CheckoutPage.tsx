@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { ArrowLeft, ShoppingBag, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { FulfillmentModeSelector } from '../components/checkout/FulfillmentModeSelector';
 import { OperatingDatePicker, OperatingDayItem } from '../components/checkout/OperatingDatePicker';
@@ -8,30 +8,68 @@ import { TimeSlotGrid } from '../components/checkout/TimeSlotGrid';
 import { CheckoutSummary } from '../components/checkout/CheckoutSummary';
 import { ConflictNotificationModal } from '../components/checkout/ConflictNotificationModal';
 import { PendingOrderCountdown } from '../components/checkout/PendingOrderCountdown';
+import { InProcessPaymentPanel } from '../components/checkout/InProcessPaymentPanel';
+import { PaymentAlertBanner } from '../components/checkout/PaymentAlertBanner';
 import { useCart } from '../context/CartContext';
 import { useCheckoutFulfillment } from '../hooks/useCheckoutFulfillment';
 import { useTimeSlotPolling } from '../hooks/useTimeSlotPolling';
-import { createOrder, cancelOrder } from '../api/orderApi';
-import { CreateOrderRequest, OrderDetailResponse } from '../types/order';
+import { cancelOrder } from '../api/orderApi';
+import { initiatePayment, cancelPayment, getOrderPaymentStatus } from '../api/paymentApi';
+import { OrderDetailResponse } from '../types/order';
+import { PaymentInitiationRequest, OrderPaymentStatusResponse, PaymentMethod } from '../types/payment';
 
-function generateNext7Days(): OperatingDayItem[] {
+/**
+ * Formats a local Date object into a YYYY-MM-DD string without UTC timezone shift.
+ */
+export function formatDateToIsoString(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Parses a YYYY-MM-DD string into a local Date object without UTC timezone conversion.
+ */
+export function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
+ * Generates the weekly operating calendar structured strictly starting on Monday (ISO 8601: Lun, Mar, Mié, Jue, Vie, Sáb, Dom).
+ * Restricts the view to exactly the 7 days of the current week up to Sunday (FR-006, C-12).
+ * Past days within the week are marked with isOperating = false (disabled).
+ */
+export function generateWeeklyOperatingDays(referenceDate: Date = new Date()): OperatingDayItem[] {
   const days: OperatingDayItem[] = [];
   const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  const now = new Date();
+  const now = new Date(referenceDate);
+  now.setHours(0, 0, 0, 0);
 
+  // ISO 8601: Monday is first day of the week (day 1), Sunday is 0
+  const dayOfWeek = now.getDay();
+  const diffToMonday = (dayOfWeek + 6) % 7; // Monday -> 0, Tuesday -> 1, ..., Sunday -> 6
+
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  const todayStr = formatDateToIsoString(now);
+
+  // Generate exactly 7 days of the same week (from Monday to Sunday)
   for (let i = 0; i < 7; i++) {
-    const d = new Date(now);
-    d.setDate(now.getDate() + i);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const dateStr = `${yyyy}-${mm}-${dd}`;
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dateStr = formatDateToIsoString(d);
+
+    const isPast = dateStr < todayStr;
 
     days.push({
       date: dateStr,
       dayName: dayNames[d.getDay()],
       dayNumber: d.getDate(),
-      isOperating: true,
+      isOperating: !isPast,
     });
   }
 
@@ -41,7 +79,8 @@ function generateNext7Days(): OperatingDayItem[] {
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { items, totalAmount, clearCart } = useCart();
+  const location = useLocation();
+  const { items, totalAmount } = useCart();
 
   const establishmentId = useMemo(() => {
     const fromStorage =
@@ -63,7 +102,7 @@ export const CheckoutPage: React.FC = () => {
     return searchParams.get('establishmentId') || items[0]?.tenantId || fromActiveTenant || fromStorage || '';
   }, [searchParams, items]);
 
-  const operatingDays = useMemo(() => generateNext7Days(), []);
+  const operatingDays = useMemo(() => generateWeeklyOperatingDays(), []);
 
   const {
     fulfillmentMode,
@@ -80,11 +119,23 @@ export const CheckoutPage: React.FC = () => {
     enabled: Boolean(establishmentId && fulfillmentMode === 'SCHEDULED' && selectedDate),
   });
 
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('MERCADO_PAGO');
   const [pendingOrder, setPendingOrder] = useState<OrderDetailResponse | null>(null);
+  const [inProcessPayment, setInProcessPayment] = useState<OrderPaymentStatusResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const [cancelledMessage, setCancelledMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  // Read alert messages passed from redirect location state (e.g. from PaymentReturnPage)
+  useEffect(() => {
+    if (location.state?.paymentError) {
+      setSubmissionError(location.state.paymentError);
+    }
+    if (location.state?.infoMessage) {
+      setInfoMessage(location.state.infoMessage);
+    }
+  }, [location.state]);
 
   const [conflictModal, setConflictModal] = useState<{
     isOpen: boolean;
@@ -100,19 +151,22 @@ export const CheckoutPage: React.FC = () => {
     if (items.length === 0) return false;
     if (!fulfillmentMode) return false;
     if (fulfillmentMode === 'SCHEDULED' && (!selectedDate || !selectedSlot)) return false;
+    if (!selectedPaymentMethod) return false;
     return true;
-  }, [items, fulfillmentMode, selectedDate, selectedSlot]);
+  }, [items, fulfillmentMode, selectedDate, selectedSlot, selectedPaymentMethod]);
 
+  // Handler for Confirmar pedido / Checkout Payment (T035, AS-1, AS-5, FR-001, FR-002)
   const handleConfirmOrder = async () => {
-    if (!isFormValid || !establishmentId) return;
+    if (!isFormValid || !establishmentId || isSubmitting || inProcessPayment) return;
 
     setIsSubmitting(true);
     setSubmissionError(null);
-    setCancelledMessage(null);
+    setInfoMessage(null);
 
-    const payload: CreateOrderRequest = {
+    const payload: PaymentInitiationRequest = {
       establishmentId,
       fulfillmentMode: fulfillmentMode!,
+      paymentMethod: selectedPaymentMethod,
       pickupDate: fulfillmentMode === 'SCHEDULED' ? selectedDate : undefined,
       timeSlotStart: fulfillmentMode === 'SCHEDULED' ? selectedSlot?.startTime : undefined,
       timeSlotEnd: fulfillmentMode === 'SCHEDULED' ? selectedSlot?.endTime : undefined,
@@ -123,34 +177,68 @@ export const CheckoutPage: React.FC = () => {
     };
 
     try {
-      const order = await createOrder(payload);
-      setPendingOrder(order);
-      clearCart();
+      const response = await initiatePayment(payload);
+
+      // Save ongoing payment info in state and redirect immediately to Sandbox/Production init_point
+      if (response.redirectUrl) {
+        window.location.href = response.redirectUrl;
+      } else if (response.orderId) {
+        navigate(`/checkout/confirmacion/${response.orderId}`);
+      }
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
       const code = data?.code;
 
       if (status === 409) {
+        if (code === 'PAYMENT_IN_PROCESS' && data?.orderId) {
+          // Fetch existing in-process payment details to display panel
+          try {
+            const statusRes = await getOrderPaymentStatus(data.orderId);
+            setInProcessPayment(statusRes);
+          } catch {
+            // fallback
+          }
+        }
+
         setConflictModal({
           isOpen: true,
           errorCode: code || 'SLOT_SOLD_OUT',
           errorMessage:
             data?.detail ||
-            'La franja horaria seleccionada acaba de agotarse. Por favor, seleccioná una nueva franja para continuar.',
+            data?.message ||
+            'La franja horaria seleccionada acaba de agotarse o ya tenés un pago en curso.',
         });
 
         if (code === 'SLOT_SOLD_OUT' || !code) {
           refreshSlots();
           setSelectedSlot(null);
         }
+      } else if (status === 502) {
+        setSubmissionError(
+          data?.message || 'Fallo al conectar con Mercado Pago. No se realizó ningún cargo. Podés intentar nuevamente.'
+        );
       } else {
         setSubmissionError(
-          data?.detail || 'Ocurrió un error al procesar el pedido. Por favor, intentá nuevamente.'
+          data?.detail || data?.message || 'Ocurrió un error al procesar el pago. Por favor, intentá nuevamente.'
         );
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelPaymentAttempt = async () => {
+    if (!inProcessPayment?.orderId) return;
+    setIsCancelling(true);
+    try {
+      await cancelPayment({ orderId: inProcessPayment.orderId });
+      setInProcessPayment(null);
+      setInfoMessage('El intento de pago fue cancelado y los recursos fueron liberados.');
+    } catch (err: any) {
+      setSubmissionError('Error al cancelar el intento de pago.');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -160,7 +248,7 @@ export const CheckoutPage: React.FC = () => {
     try {
       await cancelOrder(pendingOrder.orderId);
       setPendingOrder(null);
-      setCancelledMessage('Tu reserva ha sido cancelada exitosamente y el cupo fue liberado.');
+      setInfoMessage('Tu reserva ha sido cancelada exitosamente y el cupo fue liberado.');
     } catch (err: any) {
       console.error('Error al cancelar la orden:', err);
     } finally {
@@ -173,7 +261,7 @@ export const CheckoutPage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="Checkout" subtitle="Configuración de retiro y confirmación de reserva">
+    <WorkspaceLayout title="Checkout" subtitle="Configuración de retiro y pago con Mercado Pago">
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         <button
           type="button"
@@ -184,18 +272,29 @@ export const CheckoutPage: React.FC = () => {
           Volver a la carta
         </button>
 
-        {cancelledMessage && (
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
-            <CheckCircle className="w-5 h-5 flex-shrink-0 text-emerald-600" />
-            <p>{cancelledMessage}</p>
-          </div>
+        {infoMessage && (
+          <PaymentAlertBanner
+            type="info"
+            message={infoMessage}
+            onClose={() => setInfoMessage(null)}
+          />
         )}
 
         {submissionError && (
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
-            <p>{submissionError}</p>
-          </div>
+          <PaymentAlertBanner
+            type="error"
+            message={submissionError}
+            onClose={() => setSubmissionError(null)}
+          />
+        )}
+
+        {/* Panel de pago en curso (AS-5, FR-010, Q3) */}
+        {inProcessPayment && (
+          <InProcessPaymentPanel
+            redirectUrl={inProcessPayment.payment?.redirectUrl}
+            onCancelAttempt={handleCancelPaymentAttempt}
+            isCancelling={isCancelling}
+          />
         )}
 
         {/* View 1: Active Pending Order (Countdown & Post-Checkout State) */}
@@ -292,9 +391,45 @@ export const CheckoutPage: React.FC = () => {
                   )}
                 </div>
               )}
+
+              {/* Step 3: Payment Method Selection */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">
+                    Método de pago
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Seleccioná la plataforma para realizar el pago online seguro
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Método de pago">
+                  <div
+                    onClick={() => setSelectedPaymentMethod('MERCADO_PAGO')}
+                    className={`relative flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                      selectedPaymentMethod === 'MERCADO_PAGO'
+                        ? 'border-sky-500 bg-sky-50/50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-sky-100 flex items-center justify-center font-bold text-sky-600 text-xs shrink-0">
+                        MP
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-900 text-sm">Mercado Pago</div>
+                        <div className="text-xs text-gray-500">Checkout Pro / Sandbox</div>
+                      </div>
+                    </div>
+                    {selectedPaymentMethod === 'MERCADO_PAGO' && (
+                      <CheckCircle2 className="w-5 h-5 text-sky-600 shrink-0" />
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Right Column: Checkout Summary & Confirmation Action */}
+            {/* Right Column: Checkout Summary & Payment Action */}
             <div className="space-y-6">
               <CheckoutSummary
                 items={items}
@@ -307,17 +442,18 @@ export const CheckoutPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleConfirmOrder}
-                disabled={!isFormValid || isSubmitting}
+                disabled={!isFormValid || isSubmitting || Boolean(inProcessPayment)}
+                aria-busy={isSubmitting}
                 className={`w-full py-3.5 px-6 rounded-xl font-bold text-white text-base shadow-md transition-all flex items-center justify-center gap-2 ${
-                  !isFormValid || isSubmitting
-                    ? 'bg-gray-300 cursor-not-allowed shadow-none'
+                  !isFormValid || isSubmitting || Boolean(inProcessPayment)
+                    ? 'bg-gray-300 opacity-60 cursor-not-allowed pointer-events-none shadow-none'
                     : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 cursor-pointer hover:shadow-lg'
                 }`}
               >
                 {isSubmitting ? (
                   <>
                     <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span>Confirmando reserva...</span>
+                    <span>Iniciando pago...</span>
                   </>
                 ) : (
                   <span>Confirmar pedido</span>
@@ -338,7 +474,6 @@ export const CheckoutPage: React.FC = () => {
             setSelectedSlot(null);
           }}
           onViewExistingOrder={() => {
-            // Can reload active order or close
             setConflictModal((prev) => ({ ...prev, isOpen: false }));
           }}
         />

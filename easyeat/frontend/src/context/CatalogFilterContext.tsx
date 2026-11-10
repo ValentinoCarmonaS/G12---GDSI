@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 
 export interface CatalogFilterState {
   selectedCategories: string[];
+  selectedLifestyles: string[];
+  selectedAllergens: string[];
   minPrice: string;
   maxPrice: string;
   searchQuery: string;
@@ -15,6 +17,8 @@ export interface CatalogFilterContextType extends CatalogFilterState {
   setActiveTenantId: (tenantId: string | null) => void;
   resetFilter: () => void;
   toggleCategory: (category: string) => void;
+  toggleLifestyle: (lifestyle: string) => void;
+  toggleAllergen: (allergen: string) => void;
   setMinPrice: (minPrice: string) => void;
   setMaxPrice: (maxPrice: string) => void;
   setSearchQuery: (query: string) => void;
@@ -36,6 +40,8 @@ const getStorageKey = (tenantId: string | null): string | null => {
 const loadFiltersFromSession = (tenantId: string | null): CatalogFilterState => {
   const defaultState: CatalogFilterState = {
     selectedCategories: [],
+    selectedLifestyles: [],
+    selectedAllergens: [],
     minPrice: '',
     maxPrice: '',
     searchQuery: '',
@@ -50,6 +56,8 @@ const loadFiltersFromSession = (tenantId: string | null): CatalogFilterState => 
     const parsed = JSON.parse(raw);
     return {
       selectedCategories: Array.isArray(parsed?.selectedCategories) ? parsed.selectedCategories : [],
+      selectedLifestyles: Array.isArray(parsed?.selectedLifestyles) ? parsed.selectedLifestyles : [],
+      selectedAllergens: Array.isArray(parsed?.selectedAllergens) ? parsed.selectedAllergens : [],
       minPrice: typeof parsed?.minPrice === 'string' ? parsed.minPrice : '',
       maxPrice: typeof parsed?.maxPrice === 'string' ? parsed.maxPrice : '',
       searchQuery: typeof parsed?.searchQuery === 'string' ? parsed.searchQuery : '',
@@ -67,6 +75,8 @@ const saveFiltersToSession = (tenantId: string | null, state: CatalogFilterState
 
   const isEmpty =
     state.selectedCategories.length === 0 &&
+    state.selectedLifestyles.length === 0 &&
+    state.selectedAllergens.length === 0 &&
     state.minPrice === '' &&
     state.maxPrice === '' &&
     state.searchQuery === '';
@@ -117,6 +127,30 @@ export const CatalogFilterProvider: React.FC<CatalogFilterProviderProps> = ({
     });
   }, [activeTenantId]);
 
+  const toggleLifestyle = useCallback((lifestyle: string) => {
+    setFilterState((prev) => {
+      const exists = prev.selectedLifestyles.includes(lifestyle);
+      const nextLifestyles = exists
+        ? prev.selectedLifestyles.filter((l) => l !== lifestyle)
+        : [...prev.selectedLifestyles, lifestyle];
+      const nextState = { ...prev, selectedLifestyles: nextLifestyles };
+      saveFiltersToSession(activeTenantId, nextState);
+      return nextState;
+    });
+  }, [activeTenantId]);
+
+  const toggleAllergen = useCallback((allergen: string) => {
+    setFilterState((prev) => {
+      const exists = prev.selectedAllergens.includes(allergen);
+      const nextAllergens = exists
+        ? prev.selectedAllergens.filter((a) => a !== allergen)
+        : [...prev.selectedAllergens, allergen];
+      const nextState = { ...prev, selectedAllergens: nextAllergens };
+      saveFiltersToSession(activeTenantId, nextState);
+      return nextState;
+    });
+  }, [activeTenantId]);
+
   const setMinPrice = useCallback((minPrice: string) => {
     setFilterState((prev) => {
       const nextState = { ...prev, minPrice };
@@ -144,6 +178,8 @@ export const CatalogFilterProvider: React.FC<CatalogFilterProviderProps> = ({
   const clearAllFilters = useCallback(() => {
     const cleared: CatalogFilterState = {
       selectedCategories: [],
+      selectedLifestyles: [],
+      selectedAllergens: [],
       minPrice: '',
       maxPrice: '',
       searchQuery: '',
@@ -186,10 +222,14 @@ export const CatalogFilterProvider: React.FC<CatalogFilterProviderProps> = ({
         setActiveTenantId,
         resetFilter,
         selectedCategories: filterState.selectedCategories,
+        selectedLifestyles: filterState.selectedLifestyles,
+        selectedAllergens: filterState.selectedAllergens,
         minPrice: filterState.minPrice,
         maxPrice: filterState.maxPrice,
         searchQuery: filterState.searchQuery,
         toggleCategory,
+        toggleLifestyle,
+        toggleAllergen,
         setMinPrice,
         setMaxPrice,
         setSearchQuery,

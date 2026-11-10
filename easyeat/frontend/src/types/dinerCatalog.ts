@@ -54,6 +54,7 @@ export interface DishCatalogItem {
   conflictingRestrictions: string[];
   recipeIngredients: string[];
   allergens?: string[];
+  lifestyles?: string[];
 }
 
 export interface CategoryGroup {

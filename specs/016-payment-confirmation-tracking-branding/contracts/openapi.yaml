@@ -1,0 +1,551 @@
+openapi: 3.0.3
+info:
+  title: EasyEat - Spec 016 Payment Confirmation, Live Tracking & Restaurant Branding API
+  description: >
+    Especificación OpenAPI 3.0 para la confirmación de pago del comensal, comprobante universal
+    por correo electrónico, seguimiento dinámico en vivo (retiro inmediato y reservas programadas)
+    y personalización de branding multi-tenant.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Servidor de desarrollo local
+
+paths:
+  /orders/{orderId}/confirmation-tracking:
+    get:
+      summary: Consulta unificada de confirmación de pago y widget de seguimiento
+      operationId: getOrderConfirmationTracking
+      tags:
+        - Diner Tracking & Confirmation
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Confirmación aprobada y estado de seguimiento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderConfirmationTrackingResponse'
+        '404':
+          description: Orden no encontrada
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: Orden con pago no confirmado
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /orders/{orderId}/live-tracking:
+    get:
+      summary: Consulta periódica de seguimiento en vivo de la orden
+      operationId: getOrderLiveTracking
+      tags:
+        - Diner Tracking & Confirmation
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Estado dinámico de preparación de la orden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderLiveTrackingResponse'
+        '404':
+          description: Orden no encontrada
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /kitchen/tickets/{ticketId}/ready-for-pickup:
+    post:
+      summary: Marca una comanda como finalizada en cocina (Lista para retirar)
+      operationId: markTicketReadyForPickup
+      tags:
+        - Kitchen Display System
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Comanda marcada como lista exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KdsTicketResponse'
+
+  /kitchen/delay:
+    put:
+      summary: Configura el ajuste global de demora en minutos para la cocina del establecimiento
+      operationId: updateKitchenGlobalDelay
+      tags:
+        - Kitchen Display System
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - establishmentId
+                - globalDelayMinutes
+              properties:
+                establishmentId:
+                  type: string
+                  format: uuid
+                globalDelayMinutes:
+                  type: integer
+                  minimum: 0
+                  example: 10
+      responses:
+        '200':
+          description: Ajuste global aplicado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  establishmentId:
+                    type: string
+                    format: uuid
+                  globalDelayMinutes:
+                    type: integer
+                  updatedAt:
+                    type: string
+                    format: date-time
+
+  /admin/establishments/{establishmentId}/branding:
+    get:
+      summary: Consulta la configuración de branding para administración en Mi Local
+      operationId: getAdminBranding
+      tags:
+        - Restaurant Branding Admin
+      parameters:
+        - name: establishmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Configuración de marca del restaurante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantBrandingDto'
+
+    put:
+      summary: Guarda o actualiza los elementos de marca del restaurante
+      operationId: updateAdminBranding
+      tags:
+        - Restaurant Branding Admin
+      parameters:
+        - name: establishmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBrandingRequest'
+      responses:
+        '200':
+          description: Branding guardado con contraste accesible calculado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantBrandingDto'
+        '422':
+          description: Error de formato hexadecimal o validación
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /admin/establishments/{establishmentId}/branding/logo:
+    post:
+      summary: Sube o actualiza el logotipo del establecimiento
+      operationId: uploadBrandingLogo
+      tags:
+        - Restaurant Branding Admin
+      parameters:
+        - name: establishmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Logotipo subido exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logoUrl:
+                    type: string
+                  updatedAt:
+                    type: string
+                    format: date-time
+
+  /establishments/{establishmentId}/branding:
+    get:
+      summary: Consulta pública del branding del establecimiento para la vista del comensal
+      operationId: getDinerBranding
+      tags:
+        - Diner Catalog & Branding
+      parameters:
+        - name: establishmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Identidad visual del restaurante (o fallback institucional si no posee)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantBrandingDto'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    OrderConfirmationTrackingResponse:
+      type: object
+      required:
+        - orderId
+        - ticketNumber
+        - status
+        - approvalStatus
+        - establishmentId
+        - establishmentName
+        - fulfillmentMode
+        - pickupDate
+        - timeSlotStart
+        - timeSlotEnd
+        - totalAmount
+        - items
+        - tracking
+        - branding
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        ticketNumber:
+          type: integer
+          example: 142
+        status:
+          type: string
+          enum: [IN_PROGRESS, READY_FOR_PICKUP, COMPLETED]
+        approvalStatus:
+          type: string
+          example: APPROVED
+        establishmentId:
+          type: string
+          format: uuid
+        establishmentName:
+          type: string
+        fulfillmentMode:
+          type: string
+          enum: [IMMEDIATE, SCHEDULED]
+        pickupDate:
+          type: string
+          format: date
+        timeSlotStart:
+          type: string
+          example: "14:00:00"
+        timeSlotEnd:
+          type: string
+          example: "14:30:00"
+        totalAmount:
+          type: number
+          format: double
+          example: 4850.00
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemDto'
+        tracking:
+          $ref: '#/components/schemas/TrackingSnapshotDto'
+        branding:
+          $ref: '#/components/schemas/RestaurantBrandingDto'
+
+    OrderItemDto:
+      type: object
+      required:
+        - dishId
+        - dishName
+        - quantity
+        - unitPrice
+        - subtotal
+      properties:
+        dishId:
+          type: string
+          format: uuid
+        dishName:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+          format: double
+        subtotal:
+          type: number
+          format: double
+
+    TrackingSnapshotDto:
+      type: object
+      required:
+        - isCountdownActive
+        - isReadyForPickup
+        - message
+      properties:
+        isCountdownActive:
+          type: boolean
+        estimatedMinutesRemaining:
+          type: integer
+          nullable: true
+          example: 18
+        progressPercentage:
+          type: integer
+          example: 35
+        isReadyForPickup:
+          type: boolean
+          example: false
+        message:
+          type: string
+
+    OrderLiveTrackingResponse:
+      type: object
+      required:
+        - orderId
+        - ticketNumber
+        - status
+        - fulfillmentMode
+        - isCountdownActive
+        - isReadyForPickup
+        - message
+        - serverTime
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        ticketNumber:
+          type: integer
+        status:
+          type: string
+          enum: [IN_PROGRESS, READY_FOR_PICKUP, COMPLETED]
+        fulfillmentMode:
+          type: string
+          enum: [IMMEDIATE, SCHEDULED]
+        pickupDate:
+          type: string
+          format: date
+        timeSlotStart:
+          type: string
+        timeSlotEnd:
+          type: string
+        isCountdownActive:
+          type: boolean
+        estimatedMinutesRemaining:
+          type: integer
+          nullable: true
+        progressPercentage:
+          type: integer
+        isReadyForPickup:
+          type: boolean
+        kdsQueueSaturation:
+          type: object
+          properties:
+            activeOrdersAhead:
+              type: integer
+            kitchenStatus:
+              type: string
+              enum: [NORMAL, DELAYED]
+            globalDelayAppliedMinutes:
+              type: integer
+        message:
+          type: string
+        serverTime:
+          type: string
+          format: date-time
+
+    KdsTicketResponse:
+      type: object
+      required:
+        - ticketId
+        - orderId
+        - ticketNumber
+        - status
+        - readyAt
+      properties:
+        ticketId:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        ticketNumber:
+          type: integer
+        status:
+          type: string
+          enum: [QUEUED, IN_PREPARATION, READY_FOR_PICKUP, COMPLETED]
+        readyAt:
+          type: string
+          format: date-time
+
+    RestaurantBrandingDto:
+      type: object
+      required:
+        - establishmentId
+        - fantasyName
+        - primaryColor
+        - secondaryColor
+        - accentColor
+        - primaryContrastColor
+        - secondaryContrastColor
+        - accentContrastColor
+      properties:
+        establishmentId:
+          type: string
+          format: uuid
+        fantasyName:
+          type: string
+          example: Café Central Palermo
+        description:
+          type: string
+          nullable: true
+        logoUrl:
+          type: string
+          nullable: true
+        primaryColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: '#2563EB'
+        secondaryColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: '#1E3A8A'
+        accentColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: '#F59E0B'
+        primaryContrastColor:
+          type: string
+          enum: ['#000000', '#FFFFFF']
+        secondaryContrastColor:
+          type: string
+          enum: ['#000000', '#FFFFFF']
+        accentContrastColor:
+          type: string
+          enum: ['#000000', '#FFFFFF']
+        isDefaultFallback:
+          type: boolean
+          example: false
+
+    UpdateBrandingRequest:
+      type: object
+      required:
+        - fantasyName
+        - primaryColor
+        - secondaryColor
+        - accentColor
+      properties:
+        fantasyName:
+          type: string
+          minLength: 2
+          maxLength: 150
+          example: Café Central Palermo
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        primaryColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: '#2563EB'
+        secondaryColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: '#1E3A8A'
+        accentColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: '#F59E0B'
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+

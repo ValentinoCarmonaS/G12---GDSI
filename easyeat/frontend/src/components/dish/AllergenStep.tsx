@@ -99,7 +99,7 @@ export const AllergenStep: React.FC<AllergenStepProps> = ({
             Estilos de Vida Dietarios
           </h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Declaraciones de aptitud y advertencias de gluten para comensales.
+            Declaraciones de aptitud y preferencias dietarias para comensales.
           </p>
         </div>
 

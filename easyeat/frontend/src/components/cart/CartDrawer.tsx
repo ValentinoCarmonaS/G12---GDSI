@@ -155,10 +155,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   onClick={onCheckout}
                   disabled={isCheckoutDisabled}
                   data-testid="cart-checkout-button"
-                  className={`flex-1 py-2.5 px-4 text-white text-sm font-bold rounded-lg shadow-sm transition-colors text-center ${
+                  style={
+                    !isCheckoutDisabled
+                      ? {
+                          backgroundColor: 'var(--brand-primary, #10B981)',
+                          color: 'var(--brand-primary-contrast, #FFFFFF)',
+                        }
+                      : undefined
+                  }
+                  className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg shadow-sm transition-colors text-center ${
                     isCheckoutDisabled
-                      ? 'bg-gray-400 cursor-not-allowed opacity-50'
-                      : 'bg-green-600 hover:bg-green-700 cursor-pointer'
+                      ? 'bg-gray-400 cursor-not-allowed opacity-50 text-white'
+                      : 'hover:brightness-110 cursor-pointer'
                   }`}
                 >
                   Continuar al checkout

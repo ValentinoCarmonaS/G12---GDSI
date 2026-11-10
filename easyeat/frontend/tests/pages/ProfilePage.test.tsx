@@ -18,11 +18,11 @@ describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
     email: 'valentino@example.com',
     pendingEmail: null,
     emailVerificationPending: false,
-    dietaryRestrictions: [{ code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' }],
+    dietaryRestrictions: [{ code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'COMMON_ALLERGEN' }],
   };
 
   const mockTaxonomy: DietaryRestrictionItem[] = [
-    { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' },
+    { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'COMMON_ALLERGEN' },
     { code: 'VEGAN', name: 'Vegano', category: 'DIETARY_LIFESTYLE' },
     { code: 'PEANUTS', name: 'Maní', category: 'COMMON_ALLERGEN' },
   ];
@@ -123,7 +123,7 @@ describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
     const user = userEvent.setup();
     vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
     const updateSpy = vi.spyOn(profileApi, 'updateDietaryRestrictions').mockResolvedValueOnce([
-      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' },
+      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'COMMON_ALLERGEN' },
       { code: 'VEGAN', name: 'Vegano', category: 'DIETARY_LIFESTYLE' },
     ]);
 
@@ -152,7 +152,7 @@ describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
 
     vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
     vi.spyOn(profileApi, 'updateDietaryRestrictions').mockResolvedValueOnce([
-      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' },
+      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'COMMON_ALLERGEN' },
     ]);
 
     renderWithProviders(<ProfilePage />);

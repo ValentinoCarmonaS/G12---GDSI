@@ -13,6 +13,7 @@ import com.easyeat.inventory.entity.IngredientBatch;
 import com.easyeat.inventory.repository.IngredientBatchRepository;
 import com.easyeat.inventory.repository.IngredientRepository;
 import com.easyeat.inventory.repository.StockAuditEntryRepository;
+import com.easyeat.dish.service.AutomaticPriceAdjustmentService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -50,6 +51,9 @@ class StockAdjustmentServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private AutomaticPriceAdjustmentService automaticPriceAdjustmentService;
 
     @InjectMocks
     private StockAdjustmentService stockAdjustmentService;
@@ -650,5 +654,43 @@ class StockAdjustmentServiceTest {
         assertThat(history).hasSize(1);
         assertThat(history.get(0).adminName()).isEqualTo("Admin Master");
         assertThat(history.get(0).justification()).isEqualTo("Audit note");
+    }
+
+    @Test
+    @DisplayName("adjustStock - ADD action with changed purchase cost triggers AutomaticPriceAdjustmentService (C-09)")
+    void testAddStockWithCostChangeTriggersAutomaticPriceAdjustment() {
+        UUID ingredientId = UUID.randomUUID();
+        Ingredient ingredient = new Ingredient(tenantId, "Leche Entera", IngredientCategory.DAIRY, UnitOfMeasure.L, new BigDecimal("650.0000"));
+        ingredient.setId(ingredientId);
+        ingredient.setCurrentStock(BigDecimal.ZERO);
+
+        BigDecimal previousCost = new BigDecimal("650.0000");
+        BigDecimal newCost = new BigDecimal("1750.0000");
+
+        StockAdjustmentRequest request = new StockAdjustmentRequest(
+                StockAdjustmentAction.ADD,
+                null,
+                new BigDecimal("10.0000"),
+                null,
+                newCost,
+                null,
+                "Restock milk with new cost"
+        );
+
+        when(ingredientRepository.findByIdAndTenantIdForUpdate(ingredientId, tenantId)).thenReturn(Optional.of(ingredient));
+        when(ingredientBatchRepository.save(any(IngredientBatch.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(stockAuditEntryRepository.save(any(StockAuditEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(ingredientRepository.save(any(Ingredient.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        stockAdjustmentService.adjustStock(ingredientId, request);
+
+        assertThat(ingredient.getUnitPurchaseCost()).isEqualByComparingTo(newCost);
+        verify(automaticPriceAdjustmentService).processIngredientCostChange(
+                eq(tenantId),
+                eq(ingredientId),
+                eq(previousCost),
+                eq(newCost),
+                eq(userId)
+        );
     }
 }

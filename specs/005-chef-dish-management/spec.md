@@ -14,7 +14,7 @@
 
 - Q: How many photos can the Chef upload per dish? → A: Exactly one photo per dish. The photo is 100% optional at all times, including for submission to review.
 - Q: What image formats and maximum size are allowed? → A: Any standard image format (JPEG, PNG, WebP). Maximum 5 MB per file.
-- Q: How are allergen labels interpreted on a dish? → A: Mixed model — "Vegan" and "Vegetarian" are positive compliance labels; all other codes including Celiac/Sin TACC are warning labels (the Chef marks them when the dish CONTAINS the allergen).
+- Q: How are allergen labels interpreted on a dish? → A: Clear dichotomy — "Vegan" and "Vegetarian" are positive compliance labels under Dietary Lifestyles; all other codes including Celiac/Sin TACC (`CELIAC`) are warning labels under Common Allergens / Medical Restrictions (the Chef marks them when the dish CONTAINS the allergen or gluten, per C-11).
 - Q: Is the existing dietary restriction taxonomy reused? → A: Yes. The same platform taxonomy from spec 003 is reused. No new taxonomy is created.
 - Q: What are the dish categories? → A: Fixed closed list: Entradas, Platos principales, Postres, Bebidas, Ensaladas.
 - Q: Is the dish name unique within the establishment? → A: Yes, across all statuses.
@@ -104,8 +104,7 @@ The Chef opens the allergen section of a draft. The system presents the full pla
 | Group | Codes | Label Direction |
 |---|---|---|
 | Dietary Lifestyles | VEGAN, VEGETARIAN | Positive compliance ("this dish IS suitable for...") |
-| Dietary Lifestyles | CELIAC | Warning ("this dish CONTAINS gluten / is NOT Sin TACC") |
-| Common Allergens | DAIRY, PEANUTS, TREE_NUTS, EGGS, FISH, SHELLFISH, SOY, WHEAT | Warning ("this dish CONTAINS...") |
+| Common Allergens / Medical Restrictions | CELIAC, DAIRY, PEANUTS, TREE_NUTS, EGGS, FISH, SHELLFISH, SOY, WHEAT | Warning ("this dish CONTAINS / is NOT Sin TACC...") |
 
 **Why this priority**: Allergen labeling is required for the submission gate and feeds the diner-side filtering of spec 003. It is P2 because it logically follows the dish identity (P1).
 
@@ -198,7 +197,7 @@ The Chef's operational header (`WorkspaceLayout.tsx`) exposes three top-level se
 - **FR-010**: The same ingredient MUST NOT appear more than once in a dish's recipe. If a Chef attempts to add a duplicate, the system MUST notify them and offer to update the existing quantity.
 - **FR-011**: Only Active ingredients MUST be available in the recipe ingredient selector. Discontinued and Archived ingredients MUST be excluded.
 - **FR-012**: The recipe ingredient selector MUST support filtering by category and text search by ingredient name, with 20 items per page ordered alphabetically ascending (A–Z) by name, consistent with spec 004.
-- **FR-013**: The system MUST present the platform's full dietary taxonomy in the dish allergen section, organized into Dietary Lifestyles (VEGAN, VEGETARIAN as positive compliance labels; CELIAC as a warning label) and Common Allergens (DAIRY, PEANUTS, TREE_NUTS, EGGS, FISH, SHELLFISH, SOY, WHEAT as warning labels), reusing the taxonomy codes from the existing `dietary_restrictions` table defined in spec 003.
+- **FR-013**: The system MUST present the platform's full dietary taxonomy in the dish allergen section, organized into Dietary Lifestyles (VEGAN, VEGETARIAN as positive compliance labels) and Common Allergens / Medical Restrictions (CELIAC, DAIRY, PEANUTS, TREE_NUTS, EGGS, FISH, SHELLFISH, SOY, WHEAT as warning labels), reusing the taxonomy codes from the existing `dietary_restrictions` table defined in spec 003 (updated per C-11 reclassification).
 - **FR-014**: A Chef MUST be able to select zero, one, or multiple labels from the allergen taxonomy for a dish. Zero selected labels is a valid state.
 - **FR-015**: The allergen section MUST include an explicit confirmation action ("Confirm allergen section") that the Chef activates when they consider the section complete, regardless of the number of labels selected. This confirmation state MUST be persisted on the dish.
 - **FR-016**: The system MUST allow a Chef to submit a dish draft for review via "Send for Review" only when ALL of the following completeness conditions are met: (1) name and category are present; (2) the recipe has at least one ingredient with a valid positive quantity; (3) the allergen section has been explicitly confirmed; and (4) all ingredients in the recipe are currently in Active status (no discontinued ingredients).

@@ -57,7 +57,7 @@ class CatalogComplianceServiceTest {
         diner.setEmail("diner@easyeat.com");
 
         taxonomy = List.of(
-                new DietaryRestriction("CELIAC", "Sin TACC / Celíaco", DietaryCategory.DIETARY_LIFESTYLE, "Excluye trigo, avena, cebada y centeno."),
+                new DietaryRestriction("CELIAC", "Sin TACC / Celíaco", DietaryCategory.COMMON_ALLERGEN, "Excluye trigo, avena, cebada y centeno."),
                 new DietaryRestriction("VEGAN", "Vegano", DietaryCategory.DIETARY_LIFESTYLE, "Excluye productos de origen animal."),
                 new DietaryRestriction("VEGETARIAN", "Vegetariano", DietaryCategory.DIETARY_LIFESTYLE, "Excluye carnes y pescados."),
                 new DietaryRestriction("DAIRY", "Lácteos", DietaryCategory.COMMON_ALLERGEN, "Presencia de lácteos."),
@@ -150,8 +150,8 @@ class CatalogComplianceServiceTest {
                 new UserDietaryRestriction(new UserDietaryRestrictionId(diner.getId(), "DAIRY"))
         ));
 
-        Dish dish1 = createDish(tenantId, "Risotto sin TACC", new BigDecimal("9000.00"), Set.of("CELIAC"));
-        Dish dish2 = createDish(tenantId, "Pasta con Queso", new BigDecimal("8000.00"), Set.of("DAIRY"));
+        Dish dish1 = createDish(tenantId, "Risotto sin TACC", new BigDecimal("9000.00"), Set.of());
+        Dish dish2 = createDish(tenantId, "Pasta con Queso", new BigDecimal("8000.00"), Set.of("CELIAC", "DAIRY"));
 
         when(dishRepository.findById(dish1.getId())).thenReturn(Optional.of(dish1));
         when(dishRepository.findById(dish2.getId())).thenReturn(Optional.of(dish2));
@@ -181,6 +181,34 @@ class CatalogComplianceServiceTest {
         assertThatThrownBy(() -> catalogComplianceService.evaluateCartCompliance(request, diner))
                 .isInstanceOf(DishNotFoundException.class)
                 .hasMessageContaining(unknownDishId.toString());
+    }
+
+    @Test
+    @DisplayName("C-11: Celiac evaluated as COMMON_ALLERGEN (conflict if dish contains CELIAC)")
+    void evaluateCartCompliance_celiacAsCommonAllergen_causesConflictWhenDishContainsCeliac() {
+        when(dietaryRestrictionRepository.findAll()).thenReturn(taxonomy);
+        when(userDietaryRestrictionRepository.findByIdUserId(diner.getId())).thenReturn(List.of(
+                new UserDietaryRestriction(new UserDietaryRestrictionId(diner.getId(), "CELIAC"))
+        ));
+
+        // Dish containing gluten/CELIAC allergen
+        Dish dishWithGluten = createDish(tenantId, "Pan de Trigo", new BigDecimal("3000.00"), Set.of("CELIAC"));
+        // Dish safe for celiacs (no CELIAC allergen tag)
+        Dish dishSinTacc = createDish(tenantId, "Ensalada Sin TACC", new BigDecimal("4500.00"), Set.of());
+
+        when(dishRepository.findById(dishWithGluten.getId())).thenReturn(Optional.of(dishWithGluten));
+        when(dishRepository.findById(dishSinTacc.getId())).thenReturn(Optional.of(dishSinTacc));
+
+        CartComplianceRequest request = new CartComplianceRequest(List.of(dishWithGluten.getId(), dishSinTacc.getId()));
+        CartComplianceResponse response = catalogComplianceService.evaluateCartCompliance(request, diner);
+
+        assertThat(response.getItems().get(0).getDishId()).isEqualTo(dishWithGluten.getId());
+        assertThat(response.getItems().get(0).getIsCompliant()).isFalse();
+        assertThat(response.getItems().get(0).getConflictingRestrictions()).containsExactly("CELIAC");
+
+        assertThat(response.getItems().get(1).getDishId()).isEqualTo(dishSinTacc.getId());
+        assertThat(response.getItems().get(1).getIsCompliant()).isTrue();
+        assertThat(response.getItems().get(1).getConflictingRestrictions()).isEmpty();
     }
 
     private Dish createDish(UUID tenantId, String name, BigDecimal price, Set<String> restrictions) {

@@ -18,7 +18,7 @@ describe('useProfile custom hook (T021, COM-1.4.1 & COM-1.4.3)', () => {
   };
 
   const mockTaxonomy: DietaryRestrictionItem[] = [
-    { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' },
+    { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'COMMON_ALLERGEN' },
     { code: 'PEANUTS', name: 'Maní', category: 'COMMON_ALLERGEN' },
   ];
 
@@ -182,7 +182,7 @@ describe('useProfile custom hook (T021, COM-1.4.1 & COM-1.4.3)', () => {
     vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
     vi.spyOn(profileApi, 'getDietaryTaxonomy').mockResolvedValueOnce(mockTaxonomy);
     const updatedRestrictions: DietaryRestrictionItem[] = [
-      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' },
+      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'COMMON_ALLERGEN' },
     ];
     vi.spyOn(profileApi, 'updateDietaryRestrictions').mockResolvedValueOnce(updatedRestrictions);
 
