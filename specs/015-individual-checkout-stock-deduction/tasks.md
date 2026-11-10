@@ -20,7 +20,7 @@
 
 **Propósito**: Inicialización de esquemas, migraciones y tipos base compartidos.
 
-- [ ] T001 Crear migración Flyway `V19__individual_checkout_stock_deduction_and_kds.sql` ampliando el check constraint de `orders.status` e incorporando la tabla `kds_tickets` con índices en `easyeat/backend/src/main/resources/db/migration/V19__individual_checkout_stock_deduction_and_kds.sql`
+- [ ] T001 Crear migración Flyway `V23__individual_checkout_stock_deduction_and_kds.sql` ampliando el check constraint de `orders.status` e incorporando la tabla `kds_tickets` con índices en `easyeat/backend/src/main/resources/db/migration/V23__individual_checkout_stock_deduction_and_kds.sql`
 - [ ] T002 [P] Extender el enum `OrderStatus` incorporando los estados `PENDING_ACCREDITATION` e `IN_PROGRESS` en `easyeat/backend/src/main/java/com/easyeat/order/domain/OrderStatus.java`
 - [ ] T003 [P] Crear el enum `KdsTicketStatus` con los estados `QUEUED`, `IN_PREPARATION`, `READY_FOR_PICKUP` y `COMPLETED` en `easyeat/backend/src/main/java/com/easyeat/order/domain/KdsTicketStatus.java`
 - [ ] T004 [P] Definir tipos TypeScript para respuestas de confirmación de checkout, pedidos bonificados y estados de comandas en `easyeat/frontend/src/types/checkout.ts` y `easyeat/frontend/src/types/kds.ts`

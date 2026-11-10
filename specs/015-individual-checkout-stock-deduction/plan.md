@@ -37,7 +37,7 @@ La solución articula armónicamente las capacidades operativas consolidadas en 
 **Persistencia y esquema de base de datos**:
 - PostgreSQL 16 relacional.
 - Migraciones gestionadas por Flyway en `easyeat/backend/src/main/resources/db/migration/`.
-- Nueva migración: **`V19__individual_checkout_stock_deduction_and_kds.sql`**:
+- Nueva migración: **`V23__individual_checkout_stock_deduction_and_kds.sql`**:
   - Amplía el constraint `chk_order_status` de la tabla `orders` para incorporar los estados `PENDING_ACCREDITATION` e `IN_PROGRESS`.
   - Crea la tabla `kds_tickets` con restricción de unicidad `UNIQUE (order_id)` y estados `QUEUED`, `IN_PREPARATION`, `READY_FOR_PICKUP`, `COMPLETED`.
   - Incorpora índices especializados para consultas operativas de cocina y barrido de estados.
@@ -103,11 +103,11 @@ La solución articula armónicamente las capacidades operativas consolidadas en 
 | **III. Layered Verification Proportional to Risk** | **PASS** | Se define una estrategia de pruebas por capas: (1) Unit tests de cálculo exacto fraccionario de recetas y validación de estados de orden; (2) Tests de integración transaccional con Testcontainers verificando rollback completo ante falta de un solo insumo (INV-01); (3) Tests de estrés de concurrencia con 20 hilos compitiendo por insumos y cupo (INV-08); (4) Pruebas de idempotencia con webhooks duplicados (INV-07); (5) Guía de verificación determinística en Sandbox documentada en `quickstart.md`. |
 | **IV. Simple, Cohesive, and Justified Design** | **PASS** | Se aplica KISS y alta cohesión: se crea la entidad `KdsTicket` justificada en la necesidad de auditar la cola de cocina y alimentar el dashboard de KDS sin corromper la tabla de órdenes; se reutiliza el bloqueo pesimista de `IngredientRepository` y `EstablishmentRepository`; se extiende `OrderStatus` de forma normalizada. |
 | **V. Bounded Scope** | **PASS** | Alcance estrictamente delimitado: no se introducen otros medios de pago, no se tocan reembolsos ni compras a proveedores, no se alteran recetas técnicas (Spec 005), y las aprobaciones tardías sobre órdenes ya vencidas se delegan a contingencia posterior según lo acordado. |
-| **VI. Controlled Technical Debt** | **PASS** | Se introduce la migración secuencial aditiva `V19__individual_checkout_stock_deduction_and_kds.sql` sin romper el esquema existente ni realizar alteraciones destructivas sobre `orders`, `dishes` o `ingredients`. |
+| **VI. Controlled Technical Debt** | **PASS** | Se introduce la migración secuencial aditiva `V23__individual_checkout_stock_deduction_and_kds.sql` sin romper el esquema existente ni realizar alteraciones destructivas sobre `orders`, `dishes` o `ingredients`. |
 | **VII. Traceability, Consistency, and Documentation** | **PASS** | Trazabilidad completa y bidireccional entre `spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/` y `quickstart.md`. Todos los estados, campos y contratos están documentados en español profesional, con identificadores técnicos en inglés. |
 | **VIII. Evidence Over Assumption & Escalation** | **PASS** | Todas las decisiones técnicas se basan estrictamente en el código existente del repositorio (entidades, repositorios, controladores, vistas React) y en la documentación oficial de Mercado Pago Developers. No se inventaron endpoints ni tablas inexistentes. |
 | **IX. Engineering Over Convenience** | **PASS** | Atomicidad real garantizada mediante transacciones ACID y bloqueos pesimistas ordenados anti-deadlock (`PESSIMISTIC_WRITE`); idempotencia reforzada a nivel de restricciones `UNIQUE` en base de datos; seguridad criptográfica verificada con HMAC-SHA256 en tiempo constante. |
-| **X. Full-Stack End-to-End Integrity (Vertical Slices)** | **PASS** | Vertical slice completo y funcional: migración Flyway `V19`, entidades JPA y repositorios, servicios de dominio transaccionales, controladores REST de checkout y KDS, actualización de `CheckoutPage.tsx` y `PaymentReturnPage.tsx`, y actualización de métricas en `KitchenWorkspacePage.tsx`. |
+| **X. Full-Stack End-to-End Integrity (Vertical Slices)** | **PASS** | Vertical slice completo y funcional: migración Flyway `V23`, entidades JPA y repositorios, servicios de dominio transaccionales, controladores REST de checkout y KDS, actualización de `CheckoutPage.tsx` y `PaymentReturnPage.tsx`, y actualización de métricas en `KitchenWorkspacePage.tsx`. |
 
 ---
 
@@ -123,7 +123,7 @@ specs/015-individual-checkout-stock-deduction/
 │   └── individual-checkout-stock-deduction-quality.md # Checklist de calidad funcional
 ├── plan.md                                 # Este plan de implementación técnica
 ├── research.md                             # Fase 0: Decisiones arquitectónicas y de concurrencia
-├── data-model.md                           # Fase 1: Esquema relacional, entidades JPA y DDL V19
+├── data-model.md                           # Fase 1: Esquema relacional, entidades JPA y DDL V23
 ├── contracts/                              # Fase 1: Contratos modulares y OpenAPI 3.0
 │   ├── openapi.yaml                        # Especificación OpenAPI 3.0 unificada
 │   ├── 01-payment-confirmation.md          # Contrato de confirmación de pago aprobado (AS-1, AS-1b)
@@ -184,7 +184,7 @@ easyeat/
 │   │   │   │           └── WebhookProcessingService.java        # Procesador autónomo de webhooks de MP en servidor
 │   │   │   └── resources/
 │   │   │       └── db/migration/
-│   │   │           └── V19__individual_checkout_stock_deduction_and_kds.sql # DDL Flyway ampliación orders y tabla kds_tickets
+│   │   │           └── V23__individual_checkout_stock_deduction_and_kds.sql # DDL Flyway ampliación orders y tabla kds_tickets
 │   │   └── test/
 │   │       └── java/com/easyeat/
 │   │           ├── inventory/
@@ -246,7 +246,7 @@ Principales definiciones consolidadas:
 ## Phase 1 — Design Summary
 
 Los artefactos de diseño técnico se encuentran detallados en:
-- **[data-model.md](./data-model.md)**: Modelo relacional, entidades JPA (`Order` extendida, `KdsTicket`, `Ingredient`, `StockAuditEntry`, `Payment`, `TemporaryReservation`), diagramas Mermaid ER y State Machine, especificación de invariantes y script Flyway `V19`.
+- **[data-model.md](./data-model.md)**: Modelo relacional, entidades JPA (`Order` extendida, `KdsTicket`, `Ingredient`, `StockAuditEntry`, `Payment`, `TemporaryReservation`), diagramas Mermaid ER y State Machine, especificación de invariantes y script Flyway `V23`.
 - **[contracts/](./contracts/)**: Catálogo de contratos modulares:
   - `01-payment-confirmation.md`: Confirmación de pago aprobado, débito de stock y comanda en KDS (AS-1, AS-1b).
   - `02-pending-status-resolution.md`: Estado pendiente de pasarela y resolución posterior (AS-5, CB-05).
@@ -270,7 +270,7 @@ Tras completar los artefactos de diseño técnico (`research.md`, `data-model.md
 3. **Principio III (Layered Verification Proportional to Risk)**: **PASS**. Estrategia exhaustiva por capas: unitaria (fórmulas fraccionarias de recetas), integración (rollback total con Testcontainers), estrés de concurrencia (20 hilos compitiendo por insumos y turnos), idempotencia y validación determinística en Sandbox.
 4. **Principio IV (Simple, Cohesive, and Justified Design)**: **PASS**. Diseño normalizado y cohesivo, reutilizando componentes existentes (`DishAvailabilityEngine`, `IngredientRepository`, `EstablishmentRepository`) sin patrones especulativos ni sobreingeniería.
 5. **Principio V (Bounded Scope)**: **PASS**. Alcance rigurosamente acotado a `COM-7.2.1` y `CHF-5.1.1`. Casos delegados de contingencia financiera tardía expresamente excluidos.
-6. **Principio VI (Controlled Technical Debt)**: **PASS**. Migración aditiva secuencial `V19` limpia y compatible.
+6. **Principio VI (Controlled Technical Debt)**: **PASS**. Migración aditiva secuencial `V23` limpia y compatible.
 7. **Principio VII (Traceability, Consistency, and Documentation)**: **PASS**. Trazabilidad completa y explícita entre requerimientos funcionales, contratos, entidades, casos borde y guías de validación.
 8. **Principio VIII (Evidence Over Assumption & Escalation)**: **PASS**. Basado exclusivamente en evidencia comprobada del repositorio y especificaciones previas del producto.
 9. **Principio IX (Engineering Over Convenience)**: **PASS**. Atomicidad estricta y bloqueos ordenados anti-deadlock implementados con máximo rigor técnico en el backend.
