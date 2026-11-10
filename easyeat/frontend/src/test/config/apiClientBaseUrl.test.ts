@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 describe('apiClient baseURL resolution (T020, AS-19, FR-020)', () => {
-  const originalEnv = import.meta.env;
-
   beforeEach(() => {
     vi.resetModules();
   });
