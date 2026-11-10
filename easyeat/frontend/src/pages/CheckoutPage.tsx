@@ -104,7 +104,7 @@ export const CheckoutPage: React.FC = () => {
   }, [items, fulfillmentMode, selectedDate, selectedSlot]);
 
   const handleConfirmOrder = async () => {
-    if (!isFormValid || !establishmentId) return;
+    if (!isFormValid || !establishmentId || isSubmitting) return;
 
     setIsSubmitting(true);
     setSubmissionError(null);
@@ -124,8 +124,19 @@ export const CheckoutPage: React.FC = () => {
 
     try {
       const order = await createOrder(payload);
-      setPendingOrder(order);
       clearCart();
+
+      // AS-1: Authoritative redirection to confirmation screen when order payment is approved
+      if (
+        order.status === 'IN_PROGRESS' ||
+        order.status === 'READY_FOR_PICKUP' ||
+        order.status === 'COMPLETED'
+      ) {
+        navigate(`/checkout/confirmacion/${order.orderId}`);
+        return;
+      }
+
+      setPendingOrder(order);
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
@@ -308,9 +319,10 @@ export const CheckoutPage: React.FC = () => {
                 type="button"
                 onClick={handleConfirmOrder}
                 disabled={!isFormValid || isSubmitting}
+                aria-busy={isSubmitting}
                 className={`w-full py-3.5 px-6 rounded-xl font-bold text-white text-base shadow-md transition-all flex items-center justify-center gap-2 ${
                   !isFormValid || isSubmitting
-                    ? 'bg-gray-300 cursor-not-allowed shadow-none'
+                    ? 'bg-gray-300 opacity-60 cursor-not-allowed pointer-events-none shadow-none'
                     : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 cursor-pointer hover:shadow-lg'
                 }`}
               >
