@@ -24,6 +24,10 @@
 - Q: ¿Dónde debe residir la compuerta de estado `PENDING_PRICE`? (`R-006-1`) → A: La validación de estado `PENDING_PRICE` se desacopla y se aplica en el Controller (`AdminDishCostAuditController`), devolviendo HTTP 409 Conflict si un plato no está en revisión. El servicio (`FoodCostAuditService.auditDishCost`) queda liberado para que servicios aguas abajo (como la spec 007 para platos `PUBLISHED`) puedan auditar costos sin duplicar lógica ni DTOs.
 - Q: ¿Cuál es la fuente autoritativa para el costo unitario de adquisición en el Food Cost? (`R-004-1`) → A: El catálogo maestro `ingredients.unit_purchase_cost`. Representa el costo estándar o último precio de compra registrado al agregar stock en inventario (actualizado automáticamente por cada recepción de lote con costo > 0), permitiendo auditar y presupuestar platos independientemente de la existencia de stock físico transitorio en lotes (`ingredient_batches`). Redondeo exacto a 2 decimales (`HALF_UP`) en subtotales y total. (Nota: Se enmienda la decisión original del 2026-10-28 que desconectaba el inventario, asegurando la sincronización automática entre ingresos de stock y el costo maestro).
 
+### Session 2026-11-10 (C-09: Recálculo en tiempo real de Food Cost ante variaciones de stock)
+
+- Q: ¿Cómo y cuándo se recomputa el Food Cost de los platos ante una actualización de costo unitario de un ingrediente? (C-09) → A: Sincrónicamente al confirmarse el ingreso de stock que modifica el costo maestro del ingrediente (`ingredients.unit_purchase_cost`). El motor `FoodCostEngine` / `FoodCostAuditService` re-evalúa el costo total acumulado de cada plato publicado afectado para alimentar el ajuste automático de PVP de la spec 007.
+
 ---
 
 ## User Scenarios & Testing *(mandatory)*
@@ -69,6 +73,7 @@ The Financial Administrator accesses the cost audit endpoint and UI panel for a 
 - **FR-009**: The system MUST reject cost audit requests for dishes that have no assigned recipe with HTTP 400 Bad Request (`EmptyRecipeException`).
 - **FR-010**: The frontend MUST provide a dedicated audit view (`CostAuditPanel` within `DishCostAuditPage`) accessible to Administrators from the workspace pending review tray, displaying the full itemized table, total Food Cost, declared dietary badges, and unpriced warnings.
 - **FR-011**: The frontend UI itemized table MUST explicitly bind the "CANTIDAD" column to the quantity property received from the API audit DTO, ensuring fallback default handling (e.g. `0` or `0.00`) to prevent `NaN` rendering errors.
+- **FR-012** (C-09 / Real-time Food Cost recalculation trigger): The system MUST expose an internal service method allowing synchronous recomputation of the total Food Cost for a given dish ID upon an ingredient cost variation, returning both previous Food Cost and new Food Cost to evaluate price adjustments.
 
 ---
 
