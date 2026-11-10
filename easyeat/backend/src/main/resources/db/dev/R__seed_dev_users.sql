@@ -26,7 +26,7 @@ INSERT INTO users (
     NOW()
 ) ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, updated_at = NOW();
 
--- 2. Encargado (Counter Manager)
+-- 2. Encargado (Counter Manager - Café Parque)
 INSERT INTO users (
     id,
     email,
@@ -39,17 +39,17 @@ INSERT INTO users (
     updated_at
 ) VALUES (
     'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a23',
-    'maria.encargada@laesquina.com',
+    'maria.encargada@cafeparque.com',
     '$2a$12$jX0y55Hlj7f32Cz8lrFyMO97TFGkjX/8gWFoa.TtWL422i8qaU9/C',
     'ENCARGADO',
     'ACTIVE',
-    '8bb12c8a-2d4e-4f76-a0b2-9a0910f13341',
+    '1aa45e0c-4f6a-4b98-c2d4-1c2b32f35563',
     0,
     NOW(),
     NOW()
-) ON CONFLICT (email) DO NOTHING;
+) ON CONFLICT (email) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, updated_at = NOW();
 
--- 3. Chef (Kitchen Staff)
+-- 3. Chef (Kitchen Staff - Café Parque)
 INSERT INTO users (
     id,
     email,
@@ -62,17 +62,17 @@ INSERT INTO users (
     updated_at
 ) VALUES (
     'b2eebc99-9c0b-4ef8-bb6d-6bb9bd380a24',
-    'carlos.chef@comedorcentral.com',
+    'carlos.chef@cafeparque.com',
     '$2a$12$jX0y55Hlj7f32Cz8lrFyMO97TFGkjX/8gWFoa.TtWL422i8qaU9/C',
     'CHEF',
     'ACTIVE',
-    '9cc23d9b-3e5f-4a87-b1c3-0b1a21e24452',
+    '1aa45e0c-4f6a-4b98-c2d4-1c2b32f35563',
     0,
     NOW(),
     NOW()
-) ON CONFLICT (email) DO NOTHING;
+) ON CONFLICT (email) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, updated_at = NOW();
 
--- 4. Administrador (Local Admin)
+-- 4. Administrador (Local Admin - Café Parque)
 INSERT INTO users (
     id,
     email,
