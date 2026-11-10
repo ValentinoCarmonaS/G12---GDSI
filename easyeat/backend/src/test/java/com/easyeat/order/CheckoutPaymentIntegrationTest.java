@@ -129,4 +129,63 @@ class CheckoutPaymentIntegrationTest extends BaseIntegrationTest {
         assertThat(payment.getTransactionAmount()).isEqualByComparingTo(new BigDecimal("9000.00"));
         assertThat(payment.getReservation().getId()).isEqualTo(reservation.getId());
     }
+
+    @Test
+    @DisplayName("AS-1: Iniciar pago con plato que tiene retailPrice (PVP) y price nulo no produce NullPointerException y calcula correctamente el monto total")
+    void shouldInitiatePaymentSuccessfullyWhenDishHasRetailPriceAndNullPrice() {
+        Establishment establishment = createTestEstablishment("Restaurante Retail Price Checkout");
+        establishment.setMaxCapacityPerSlot(10);
+        establishmentRepository.save(establishment);
+
+        Dish dish = new Dish();
+        dish.setTenantId(establishment.getId());
+        dish.setName("Milanesa a caballo");
+        dish.setPrice(null); // Explicitamente nulo como en platos con PVP de spec 007
+        dish.setRetailPrice(new BigDecimal("136.67"));
+        dish.setStatus(com.easyeat.dish.domain.DishStatus.PUBLISHED);
+        dish = dishRepository.save(dish);
+
+        Ingredient ingredient = new Ingredient(establishment.getId(), "Manzanas", IngredientCategory.DRY_GOODS, UnitOfMeasure.KG, new BigDecimal("100.00"));
+        ingredient.setCurrentStock(new BigDecimal("19.00"));
+        ingredient.setStatus(IngredientStatus.ACTIVE);
+        ingredientRepository.save(ingredient);
+
+        DishRecipeIngredient recipe = new DishRecipeIngredient(
+                dish.getId(),
+                ingredient.getId(),
+                new BigDecimal("1.00")
+        );
+        dishRecipeIngredientRepository.save(recipe);
+
+        User diner = createTestDiner("diner_retail_price_test@test.com");
+
+        LocalDate pickupDate = LocalDate.now().plusDays(2);
+        LocalTime slotStart = LocalTime.of(14, 30);
+        LocalTime slotEnd = slotStart.plusMinutes(15);
+
+        PaymentInitiationRequest request = new PaymentInitiationRequest(
+                establishment.getId(),
+                FulfillmentMode.SCHEDULED,
+                PaymentMethod.MERCADO_PAGO,
+                pickupDate,
+                slotStart,
+                slotEnd,
+                List.of(new PaymentInitiationRequest.OrderItemRequest(dish.getId(), 1))
+        );
+
+        PaymentInitiationResponse response = checkoutPaymentService.initiatePayment(diner.getId(), request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.orderId()).isNotNull();
+        assertThat(response.totalAmount()).isEqualByComparingTo(new BigDecimal("136.67"));
+        assertThat(response.redirectUrl()).isNotEmpty();
+
+        Order order = orderRepository.findById(response.orderId()).orElseThrow();
+        assertThat(order.getTotalAmount()).isEqualByComparingTo(new BigDecimal("136.67"));
+
+        var items = orderItemRepository.findByOrderId(order.getId());
+        assertThat(items).hasSize(1);
+        assertThat(items.get(0).getUnitPrice()).isEqualByComparingTo(new BigDecimal("136.67"));
+        assertThat(items.get(0).getSubtotal()).isEqualByComparingTo(new BigDecimal("136.67"));
+    }
 }

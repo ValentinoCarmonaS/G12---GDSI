@@ -159,7 +159,10 @@ public class CheckoutPaymentService {
                 throw new RuntimeException("Stock insuficiente para el plato: " + dish.getName());
             }
 
-            BigDecimal unitPrice = dish.getPrice();
+            BigDecimal unitPrice = dish.getRetailPrice() != null ? dish.getRetailPrice() : dish.getPrice();
+            if (unitPrice == null) {
+                unitPrice = BigDecimal.ZERO;
+            }
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(itemReq.quantity()));
             totalAmount = totalAmount.add(subtotal);
 
