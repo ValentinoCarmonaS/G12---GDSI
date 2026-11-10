@@ -106,7 +106,7 @@
 
 ### Tests para User Story 4 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
-- [ ] T017 [P] [US4] Escribir test de integración con Testcontainers verificando la ejecución secuencial completa de migraciones Flyway desde `V1` hasta `V19` y la idempotencia de los scripts repetibles `R__seed_dev_*` ante reinicios sucesivos sin violaciones de clave única (AS-15, AS-16, FR-016, FR-017, Q1, SC-005) en `easyeat/backend/src/test/java/com/easyeat/order/FlywayFullMigrationIntegrationTest.java`
+- [x] T017 [P] [US4] Escribir test de integración con Testcontainers verificando la ejecución secuencial completa de migraciones Flyway desde `V1` hasta `V19` y la idempotencia de los scripts repetibles `R__seed_dev_*` ante reinicios sucesivos sin violaciones de clave única (AS-15, AS-16, FR-016, FR-017, Q1, SC-005) en `easyeat/backend/src/test/java/com/easyeat/order/FlywayFullMigrationIntegrationTest.java`
 - [ ] T018 [P] [US4] Escribir test unitario de configuración de DataSource verificando la compatibilidad de la cadena JDBC con parámetros SSL (`?sslmode=require`), externalización de credenciales `SPRING_DATASOURCE_*` y configuración de timeouts en HikariCP (`connection-timeout: 30000`, `validation-timeout: 5000`) para tolerar el scale-to-zero de Neon (AS-13, AS-14, FR-014, FR-015, Q7, Q11) en `easyeat/backend/src/test/java/com/easyeat/config/NeonDataSourceConfigurationTest.java`
 
 ### Implementación para User Story 4 (Hacer pasar los tests - Estado VERDE)
