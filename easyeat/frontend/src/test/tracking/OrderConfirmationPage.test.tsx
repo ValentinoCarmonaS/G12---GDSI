@@ -87,7 +87,7 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
 
     await waitFor(() => {
       expect(screen.getByText(/pago confirmado|reserva confirmada/i)).toBeInTheDocument();
-      expect(screen.getByText(/142/)).toBeInTheDocument();
+      expect(screen.getAllByText(/142/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/café central palermo/i)).toBeInTheDocument();
     });
   });
@@ -99,8 +99,8 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
 
     await waitFor(() => {
       expect(screen.getByText(/2026-11-10/)).toBeInTheDocument();
-      expect(screen.getByText(/13:00/)).toBeInTheDocument();
-      expect(screen.getByText(/13:30/)).toBeInTheDocument();
+      expect(screen.getAllByText(/13:00/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/13:30/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/hamburguesa clásica easyeat/i)).toBeInTheDocument();
       expect(screen.getByText(/agua mineral sin gas 500ml/i)).toBeInTheDocument();
       expect(screen.getAllByText(/\$4850|\$4,850/).length).toBeGreaterThanOrEqual(1);

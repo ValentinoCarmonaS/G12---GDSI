@@ -76,7 +76,7 @@ describe('T014 [US1]: Order Confirmation and Tracking Coexistence upon Reload or
     // Verifies data fetched with correct orderId parameter
     await waitFor(() => {
       expect(orderTrackingApi.getConfirmationTracking).toHaveBeenCalledWith('order-persist-777');
-      expect(screen.getByText(/305/)).toBeInTheDocument();
+      expect(screen.getAllByText(/305/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/parrilla san telmo/i)).toBeInTheDocument();
       expect(screen.getByText(/ojo de bife con guarnición/i)).toBeInTheDocument();
       expect(screen.getAllByText(/\$9200|\$9,200/).length).toBeGreaterThanOrEqual(1);
@@ -97,7 +97,7 @@ describe('T014 [US1]: Order Confirmation and Tracking Coexistence upon Reload or
     await waitFor(() => {
       expect(orderTrackingApi.getConfirmationTracking).toHaveBeenCalledWith('order-persist-777');
       expect(screen.getByText(/pago confirmado|reserva confirmada/i)).toBeInTheDocument();
-      expect(screen.getByText(/305/)).toBeInTheDocument();
+      expect(screen.getAllByText(/305/).length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -117,7 +117,7 @@ describe('T014 [US1]: Order Confirmation and Tracking Coexistence upon Reload or
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/305/)).toBeInTheDocument();
+      expect(screen.getAllByText(/305/).length).toBeGreaterThanOrEqual(1);
       // Does not redirect away to checkout cart
       expect(screen.queryByText(/checkout page \(cart\)/i)).not.toBeInTheDocument();
     });

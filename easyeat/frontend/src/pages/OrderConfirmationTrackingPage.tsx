@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, AlertCircle, Utensils, Activity } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { OrderSuccessGreenBanner } from '../components/tracking/OrderSuccessGreenBanner';
+import { LiveTrackingWidget } from '../components/tracking/LiveTrackingWidget';
 import { orderTrackingApi } from '../api/orderTrackingApi';
 import type { OrderConfirmationTrackingResponse } from '../types/orderTracking';
 
@@ -101,6 +102,15 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
               timeSlotEnd={order.timeSlotEnd}
               establishmentName={order.establishmentName}
               fulfillmentMode={order.fulfillmentMode}
+            />
+
+            {/* Live Tracking Widget (FR-006, FR-007, FR-008, FR-009, AS-5, AS-6, AS-7, AS-8) */}
+            <LiveTrackingWidget
+              orderId={order.orderId}
+              ticketNumber={order.ticketNumber}
+              fulfillmentMode={order.fulfillmentMode}
+              timeSlotStart={order.timeSlotStart}
+              timeSlotEnd={order.timeSlotEnd}
             />
 
             {/* Email Guarantee Notice (AS-2, FR-002) */}
