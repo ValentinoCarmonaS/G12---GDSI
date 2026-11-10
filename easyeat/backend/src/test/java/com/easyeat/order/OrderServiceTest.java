@@ -33,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -351,6 +352,82 @@ class OrderServiceTest {
             assertThatThrownBy(() -> orderService.createOrder(userId, request))
                     .isInstanceOf(InvalidOrderStateException.class)
                     .hasMessageContaining("cerrado para pedidos inmediatos");
+
+            verify(orderRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Allows scheduled order on upcoming MONDAY when establishment is open (C-12)")
+        void allowsScheduledOrderOnMondayWhenOpen() {
+            when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
+            when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
+            when(dishRepository.findByIdIn(List.of(dishId))).thenReturn(List.of(dish));
+
+            // Next Monday
+            LocalDate monday = LocalDate.now();
+            while (monday.getDayOfWeek() != DayOfWeek.MONDAY) {
+                monday = monday.plusDays(1);
+            }
+            if (monday.equals(LocalDate.now())) {
+                monday = monday.plusDays(7);
+            }
+
+            com.easyeat.operations.domain.EstablishmentOperatingSchedule mondaySched =
+                    new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                            establishmentId, DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0), false
+                    );
+            when(operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, DayOfWeek.MONDAY))
+                    .thenReturn(Optional.of(mondaySched));
+            when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(monday), any(), any())).thenReturn(0L);
+            when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            CreateOrderRequest request = new CreateOrderRequest(
+                    establishmentId,
+                    FulfillmentMode.SCHEDULED,
+                    monday,
+                    LocalTime.of(10, 0),
+                    LocalTime.of(10, 15),
+                    List.of(new CreateOrderItemRequest(dishId, 2))
+            );
+
+            OrderCreatedResponse response = orderService.createOrder(userId, request);
+
+            assertThat(response).isNotNull();
+            assertThat(response.getFulfillmentMode()).isEqualTo(FulfillmentMode.SCHEDULED);
+            assertThat(response.getPickupDate()).isEqualTo(monday);
+            verify(orderRepository).save(any(Order.class));
+        }
+
+        @Test
+        @DisplayName("Rejects scheduled order on MONDAY when closed in operating schedule (C-12)")
+        void rejectsScheduledOrderOnMondayWhenClosed() {
+            when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
+            when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate monday = LocalDate.now();
+            while (monday.getDayOfWeek() != DayOfWeek.MONDAY) {
+                monday = monday.plusDays(1);
+            }
+
+            com.easyeat.operations.domain.EstablishmentOperatingSchedule mondayClosed =
+                    new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                            establishmentId, DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0), true
+                    );
+            when(operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, DayOfWeek.MONDAY))
+                    .thenReturn(Optional.of(mondayClosed));
+
+            CreateOrderRequest request = new CreateOrderRequest(
+                    establishmentId,
+                    FulfillmentMode.SCHEDULED,
+                    monday,
+                    LocalTime.of(10, 0),
+                    LocalTime.of(10, 15),
+                    List.of(new CreateOrderItemRequest(dishId, 1))
+            );
+
+            assertThatThrownBy(() -> orderService.createOrder(userId, request))
+                    .isInstanceOf(InvalidOrderStateException.class)
+                    .hasMessageContaining("no se encuentra operativo");
 
             verify(orderRepository, never()).save(any());
         }

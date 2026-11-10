@@ -15,8 +15,28 @@ import { createOrder, cancelOrder } from '../api/orderApi';
 import { CreateOrderRequest, OrderDetailResponse } from '../types/order';
 
 /**
+ * Formats a local Date object into a YYYY-MM-DD string without UTC timezone shift.
+ */
+export function formatDateToIsoString(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Parses a YYYY-MM-DD string into a local Date object without UTC timezone conversion.
+ */
+export function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
  * Generates the weekly operating calendar structured strictly starting on Monday (ISO 8601: Lun, Mar, Mié, Jue, Vie, Sáb, Dom).
- * Past days within the week are marked with isOperating = false (disabled).
+ * Covers a 14-day window (2 full ISO weeks starting on Monday) ensuring that upcoming Mondays and any operating days
+ * within the next 7 days are visible and selectable (FR-006, C-12).
+ * Past days within the current week are marked with isOperating = false (disabled).
  */
 export function generateWeeklyOperatingDays(referenceDate: Date = new Date()): OperatingDayItem[] {
   const days: OperatingDayItem[] = [];
@@ -32,25 +52,26 @@ export function generateWeeklyOperatingDays(referenceDate: Date = new Date()): O
   monday.setDate(now.getDate() - diffToMonday);
   monday.setHours(0, 0, 0, 0);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayStr = formatDateToIsoString(now);
 
-  for (let i = 0; i < 7; i++) {
+  const maxOperatingDate = new Date(now);
+  maxOperatingDate.setDate(now.getDate() + 7);
+  const maxDateStr = formatDateToIsoString(maxOperatingDate);
+
+  // Generate 14 days (2 complete ISO weeks from Monday to Sunday)
+  for (let i = 0; i < 14; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const dateStr = `${yyyy}-${mm}-${dd}`;
+    const dateStr = formatDateToIsoString(d);
 
     const isPast = dateStr < todayStr;
+    const isWithinWindow = dateStr >= todayStr && dateStr <= maxDateStr;
 
     days.push({
       date: dateStr,
       dayName: dayNames[d.getDay()],
       dayNumber: d.getDate(),
-      isOperating: !isPast,
+      isOperating: isWithinWindow && !isPast,
     });
   }
 

@@ -228,6 +228,50 @@ class PickupSlotServiceTest {
             assertThat(response.getSlots().get(0).getStartTime()).isEqualTo(LocalTime.of(12, 0));
             assertThat(response.getSlots().get(5).getEndTime()).isEqualTo(LocalTime.of(13, 30));
         }
+
+        @Test
+        @DisplayName("Should properly generate time slots for MONDAY when open in operating schedule (C-12)")
+        void shouldGenerateTimeSlotsForMondayWhenOpen() {
+            when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
+
+            // Target date is upcoming Monday 2026-11-09 (today is Monday 2026-11-02, +7 days)
+            LocalDate upcomingMonday = LocalDate.of(2026, 11, 9);
+            com.easyeat.operations.domain.EstablishmentOperatingSchedule mondaySched =
+                    new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                            establishmentId, DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0), false
+                    );
+            when(operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, DayOfWeek.MONDAY))
+                    .thenReturn(Optional.of(mondaySched));
+
+            PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, upcomingMonday);
+
+            assertThat(response).isNotNull();
+            assertThat(response.isOperatingDay()).isTrue();
+            // 9:00 to 17:00 = 8 hours = 32 slots of 15 min
+            assertThat(response.getSlots()).hasSize(32);
+            assertThat(response.getSlots().get(0).getStartTime()).isEqualTo(LocalTime.of(9, 0));
+            assertThat(response.getSlots().get(31).getEndTime()).isEqualTo(LocalTime.of(17, 0));
+        }
+
+        @Test
+        @DisplayName("Should return empty slots for MONDAY when marked closed in operating schedule (C-12)")
+        void shouldReturnEmptySlotsForMondayWhenClosed() {
+            when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate upcomingMonday = LocalDate.of(2026, 11, 9);
+            com.easyeat.operations.domain.EstablishmentOperatingSchedule mondayClosed =
+                    new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                            establishmentId, DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0), true
+                    );
+            when(operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, DayOfWeek.MONDAY))
+                    .thenReturn(Optional.of(mondayClosed));
+
+            PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, upcomingMonday);
+
+            assertThat(response).isNotNull();
+            assertThat(response.isOperatingDay()).isFalse();
+            assertThat(response.getSlots()).isEmpty();
+        }
     }
 }
 
