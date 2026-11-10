@@ -20,6 +20,7 @@ export type ReleaseReason = 'REJECTED' | 'CANCELLED_BY_USER' | 'EXPIRED' | 'GATE
  */
 export type PaymentStatus =
   | 'IN_PROCESS'
+  | 'PENDING'
   | 'APPROVED'
   | 'REJECTED'
   | 'CANCELLED'

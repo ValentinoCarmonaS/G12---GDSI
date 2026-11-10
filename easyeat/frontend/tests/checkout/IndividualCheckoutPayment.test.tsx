@@ -4,7 +4,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { CheckoutPage } from '../../src/pages/CheckoutPage';
 import { CartContext } from '../../src/context/CartContext';
 import * as checkoutApi from '../../src/api/checkoutApi';
-import * as orderApi from '../../src/api/orderApi';
 import { CartItem } from '../../src/types/cart';
 
 vi.mock('../../src/api/checkoutApi', () => ({
@@ -120,11 +119,6 @@ describe('T015: IndividualCheckoutPayment frontend tests (AS-4, AS-5, FR-005, FR
         ticketNumber: 42,
         status: 'QUEUED',
         queuedAt: '2026-11-10T13:00:00Z',
-        estimatedPickup: {
-          date: '2026-11-10',
-          slotStart: '13:00:00',
-          slotEnd: '13:15:00',
-        },
       },
       message: '¡Orden 100% bonificada confirmada! Tu pedido ya fue enviado a la cocina.',
     });
