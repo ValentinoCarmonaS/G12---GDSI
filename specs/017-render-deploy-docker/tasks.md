@@ -111,7 +111,7 @@
 
 ### Implementación para User Story 4 (Hacer pasar los tests - Estado VERDE)
 
-- [ ] T019 [US4] Validar y asegurar en `application.yml` que las propiedades del DataSource y Flyway consuman directamente `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` y mantengan las rutas `classpath:db/migration` y `classpath:db/dev` en el perfil predeterminado de ejecución en contenedor (FR-014, FR-015, FR-016, FR-017) en `easyeat/backend/src/main/resources/application.yml`
+- [x] T019 [US4] Validar y asegurar en `application.yml` que las propiedades del DataSource y Flyway consuman directamente `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` y mantengan las rutas `classpath:db/migration` y `classpath:db/dev` en el perfil predeterminado de ejecución en contenedor (FR-014, FR-015, FR-016, FR-017) en `easyeat/backend/src/main/resources/application.yml`
 
 **Checkpoint**: User Story 4 lista. La base de datos en Neon inicializa su esquema completo y tolera suspensiones por inactividad.
 
