@@ -4,7 +4,16 @@
 
 export type FulfillmentMode = 'IMMEDIATE' | 'SCHEDULED';
 
-export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
+export type OrderStatus =
+  | 'PENDING_PAYMENT'
+  | 'PENDING_ACCREDITATION'
+  | 'IN_PROGRESS'
+  | 'READY_FOR_PICKUP'
+  | 'COMPLETED'
+  | 'PAID'
+  | 'CONFIRMED'
+  | 'CANCELLED'
+  | 'EXPIRED';
 
 export type SlotStatus = 'AVAILABLE' | 'HIGH_DEMAND' | 'SOLD_OUT' | 'EXPIRED_OR_LEAD_TIME';
 
