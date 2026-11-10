@@ -22,7 +22,7 @@
 
 - [x] T001 Incorporar la dependencia oficial de Spring Boot Actuator (`org.springframework.boot:spring-boot-starter-actuator`) en `easyeat/backend/pom.xml`
 - [x] T002 [P] Crear el archivo `.dockerignore` del backend excluyendo `target/`, `.git/`, `.idea/`, `.env*` y artefactos de desarrollo en `easyeat/backend/.dockerignore`
-- [ ] T003 [P] Crear el archivo `.dockerignore` del frontend excluyendo `node_modules/`, `dist/`, `.git/`, `coverage/` y archivos temporales en `easyeat/frontend/.dockerignore`
+- [x] T003 [P] Crear el archivo `.dockerignore` del frontend excluyendo `node_modules/`, `dist/`, `.git/`, `coverage/` y archivos temporales en `easyeat/frontend/.dockerignore`
 
 ---
 
