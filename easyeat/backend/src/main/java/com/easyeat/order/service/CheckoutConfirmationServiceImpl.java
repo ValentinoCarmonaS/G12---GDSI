@@ -7,6 +7,7 @@ import com.easyeat.dish.repository.DishRecipeIngredientRepository;
 import com.easyeat.inventory.entity.Ingredient;
 import com.easyeat.inventory.exception.InsufficientIngredientStockException;
 import com.easyeat.inventory.repository.IngredientRepository;
+import com.easyeat.inventory.service.StockDeductionService;
 import com.easyeat.order.domain.*;
 import com.easyeat.order.dto.*;
 import com.easyeat.order.exception.OrderNotFoundException;
@@ -33,6 +34,7 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
     private final DishRepository dishRepository;
     private final DishRecipeIngredientRepository dishRecipeIngredientRepository;
     private final IngredientRepository ingredientRepository;
+    private final StockDeductionService stockDeductionService;
 
     @Autowired
     public CheckoutConfirmationServiceImpl(
@@ -41,7 +43,8 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
             KdsQueueService kdsQueueService,
             DishRepository dishRepository,
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
-            IngredientRepository ingredientRepository
+            IngredientRepository ingredientRepository,
+            StockDeductionService stockDeductionService
     ) {
         this.orderRepository = orderRepository;
         this.temporaryReservationRepository = temporaryReservationRepository;
@@ -49,6 +52,7 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
         this.dishRepository = dishRepository;
         this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
         this.ingredientRepository = ingredientRepository;
+        this.stockDeductionService = stockDeductionService;
     }
 
     @Override
@@ -165,37 +169,15 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
             return;
         }
 
-        // Aggregate required ingredient quantities
-        Map<UUID, BigDecimal> ingredientDemand = new HashMap<>();
-        for (OrderItem item : items) {
-            List<DishRecipeIngredient> recipeIngredients = dishRecipeIngredientRepository.findByIdDishId(item.getDishId());
-            for (DishRecipeIngredient ri : recipeIngredients) {
-                BigDecimal needed = ri.getQuantity().multiply(BigDecimal.valueOf(item.getQuantity()));
-                ingredientDemand.merge(ri.getId().getIngredientId(), needed, BigDecimal::add);
-            }
-        }
+        List<OrderItemSnapshot> snapshots = items.stream()
+                .map(item -> new OrderItemSnapshot(
+                        item.getDishId(),
+                        dishRepository.findById(item.getDishId()).map(Dish::getName).orElse("Plato"),
+                        item.getQuantity()
+                ))
+                .toList();
 
-        // Check and deduct stock
-        for (Map.Entry<UUID, BigDecimal> entry : ingredientDemand.entrySet()) {
-            UUID ingredientId = entry.getKey();
-            BigDecimal neededQty = entry.getValue();
-
-            Ingredient ingredient = ingredientRepository.findById(ingredientId)
-                    .orElseThrow(() -> new IllegalStateException("Ingredient not found: " + ingredientId));
-
-            if (ingredient.getCurrentStock().compareTo(neededQty) < 0) {
-                throw new InsufficientIngredientStockException(
-                        ingredient.getId(),
-                        ingredient.getName(),
-                        neededQty,
-                        ingredient.getCurrentStock(),
-                        ingredient.getUnitOfMeasure() != null ? ingredient.getUnitOfMeasure().name() : "unidades"
-                );
-            }
-
-            ingredient.setCurrentStock(ingredient.getCurrentStock().subtract(neededQty));
-            ingredientRepository.save(ingredient);
-        }
+        stockDeductionService.deductRecipeStockForOrder(order.getId(), order.getEstablishmentId(), snapshots);
     }
 
     private KdsTicketSummaryDto mapToSummaryDto(KdsTicket ticket) {

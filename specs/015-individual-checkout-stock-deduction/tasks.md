@@ -90,18 +90,18 @@
 
 ### Tests para User Story 2 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
-- [ ] T028 [P] [US2] Escribir test de integración para deducción atómica de recetas con cantidades enteras y decimales fraccionarias, y verificación "todo o nada" ante insuficiencia parcial (AS-6, CB-07, CB-08) en `easyeat/backend/src/test/java/com/easyeat/inventory/AtomicStockDeductionIntegrationTest.java`
-- [ ] T029 [P] [US2] Escribir test de integración para deducción atómica de materias primas en pedidos con bonificación al 100% (AS-6b, CB-04) en `easyeat/backend/src/test/java/com/easyeat/inventory/ZeroAmountStockDeductionIntegrationTest.java`
-- [ ] T030 [P] [US2] Escribir test de concurrencia pesimista con 20 hilos verificando ordenamiento anti-deadlock (`ingredient_id ASC`) en platos que comparten ingredientes (C3, CB-06) en `easyeat/backend/src/test/java/com/easyeat/inventory/SharedIngredientsDeadlockConcurrencyTest.java`
-- [ ] T031 [P] [US2] Escribir test de integración verificando la actualización visual inmediata del catálogo de platos (`available = false`) al agotarse un insumo de receta (FR-013, INV-10) en `easyeat/backend/src/test/java/com/easyeat/catalog/CatalogStockExhaustionSyncIntegrationTest.java`
+- [x] T028 [P] [US2] Escribir test de integración para deducción atómica de recetas con cantidades enteras y decimales fraccionarias, y verificación "todo o nada" ante insuficiencia parcial (AS-6, CB-07, CB-08) en `easyeat/backend/src/test/java/com/easyeat/inventory/AtomicStockDeductionIntegrationTest.java`
+- [x] T029 [P] [US2] Escribir test de integración para deducción atómica de materias primas en pedidos con bonificación al 100% (AS-6b, CB-04) en `easyeat/backend/src/test/java/com/easyeat/inventory/ZeroAmountStockDeductionIntegrationTest.java`
+- [x] T030 [P] [US2] Escribir test de concurrencia pesimista con 20 hilos verificando ordenamiento anti-deadlock (`ingredient_id ASC`) en platos que comparten ingredientes (C3, CB-06) en `easyeat/backend/src/test/java/com/easyeat/inventory/SharedIngredientsDeadlockConcurrencyTest.java`
+- [x] T031 [P] [US2] Escribir test de integración verificando la actualización visual inmediata del catálogo de platos (`available = false`) al agotarse un insumo de receta (FR-013, INV-10) en `easyeat/backend/src/test/java/com/easyeat/catalog/CatalogStockExhaustionSyncIntegrationTest.java`
 
 ### Implementación para User Story 2 (Hacer pasar los tests - Estado VERDE)
 
-- [ ] T032 [US2] Incorporar consulta de bloqueo pesimista en lote ordenado `findAllByIdInOrderByIdAscForUpdate` en `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java`
-- [ ] T033 [US2] Definir la interfaz de dominio `StockDeductionService` con el contrato transaccional de deducción atómica en `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockDeductionService.java`
-- [ ] T034 [US2] Implementar `StockDeductionServiceImpl` con cálculo de demanda agregada por receta (`quantity * orderQuantity`), validación estricta de existencias con `BigDecimal` (escala 4) y registro en `stock_audit_entries` en `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockDeductionServiceImpl.java`
-- [ ] T035 [US2] Integrar `StockDeductionService` dentro del flujo transaccional de `CheckoutConfirmationService` para asegurar que el débito sea previo a la transición a `IN_PROGRESS` y al envío a KDS en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutConfirmationService.java`
-- [ ] T036 [US2] Reforzar `DishAvailabilityEngine.isDishAvailable` para garantizar que ni bien el stock físico de un insumo caiga por debajo de la receta, el plato se reporte como no disponible en `easyeat/backend/src/main/java/com/easyeat/catalog/service/DishAvailabilityEngine.java`
+- [x] T032 [US2] Incorporar consulta de bloqueo pesimista en lote ordenado `findAllByIdInOrderByIdAscForUpdate` en `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java`
+- [x] T033 [US2] Definir la interfaz de dominio `StockDeductionService` con el contrato transaccional de deducción atómica en `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockDeductionService.java`
+- [x] T034 [US2] Implementar `StockDeductionServiceImpl` con cálculo de demanda agregada por receta (`quantity * orderQuantity`), validación estricta de existencias con `BigDecimal` (escala 4) y registro en `stock_audit_entries` en `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockDeductionServiceImpl.java`
+- [x] T035 [US2] Integrar `StockDeductionService` dentro del flujo transaccional de `CheckoutConfirmationService` para asegurar que el débito sea previo a la transición a `IN_PROGRESS` y al envío a KDS en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutConfirmationService.java`
+- [x] T036 [US2] Reforzar `DishAvailabilityEngine.isDishAvailable` para garantizar que ni bien el stock físico de un insumo caiga por debajo de la receta, el plato se reporte como no disponible en `easyeat/backend/src/main/java/com/easyeat/catalog/service/DishAvailabilityEngine.java`
 
 **Checkpoint**: User Story 2 (CHF-5.1.1) completamente funcional e integrada con el flujo comercial.
 
