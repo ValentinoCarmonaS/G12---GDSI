@@ -87,12 +87,12 @@
 
 ### Tests para User Story 3 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
-- [ ] T014 [P] [US3] Escribir test de integración MockMvc verificando que el endpoint `GET /actuator/health` sea accesible públicamente sin token JWT, responda código HTTP 200 con payload `{"status":"UP"}` cuando el DataSource está activo, y no exponga detalles internos de infraestructura a clientes anónimos (AS-11, AS-12, FR-012, FR-013, SC-004) en `easyeat/backend/src/test/java/com/easyeat/config/ActuatorHealthEndpointIntegrationTest.java`
-- [ ] T015 [P] [US3] Escribir test de verificación de resolución dinámica de puerto comprobando que Tomcat adopte la propiedad `${PORT:8080}` tanto con variable definida como aplicando fallback a 8080 en ausencia de la misma (AS-9, FR-010, SC-010) en `easyeat/backend/src/test/java/com/easyeat/config/ServerPortConfigurationTest.java`
+- [x] T014 [P] [US3] Escribir test de integración MockMvc verificando que el endpoint `GET /actuator/health` sea accesible públicamente sin token JWT, responda código HTTP 200 con payload `{"status":"UP"}` cuando el DataSource está activo, y no exponga detalles internos de infraestructura a clientes anónimos (AS-11, AS-12, FR-012, FR-013, SC-004) en `easyeat/backend/src/test/java/com/easyeat/config/ActuatorHealthEndpointIntegrationTest.java`
+- [x] T015 [P] [US3] Escribir test de verificación de resolución dinámica de puerto comprobando que Tomcat adopte la propiedad `${PORT:8080}` tanto con variable definida como aplicando fallback a 8080 en ausencia de la misma (AS-9, FR-010, SC-010) en `easyeat/backend/src/test/java/com/easyeat/config/ServerPortConfigurationTest.java`
 
 ### Implementación para User Story 3 (Hacer pasar los tests - Estado VERDE)
 
-- [ ] T016 [US3] Declarar explícitamente en la regla `authorizeHttpRequests` de `SecurityConfig.java` el acceso público sin autenticación (`.requestMatchers("/actuator/health").permitAll()`) para permitir el monitoreo de la sonda de Render (FR-012) en `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
+- [x] T016 [US3] Declarar explícitamente en la regla `authorizeHttpRequests` de `SecurityConfig.java` el acceso público sin autenticación (`.requestMatchers("/actuator/health").permitAll()`) para permitir el monitoreo de la sonda de Render (FR-012) en `easyeat/backend/src/main/java/com/easyeat/config/SecurityConfig.java`
 
 **Checkpoint**: User Story 3 lista. Render puede sondear la salud del contenedor y rutear tráfico al puerto asignado.
 
