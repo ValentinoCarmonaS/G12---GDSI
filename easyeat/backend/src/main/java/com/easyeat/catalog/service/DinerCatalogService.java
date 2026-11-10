@@ -114,6 +114,7 @@ public class DinerCatalogService {
 
         Map<UUID, EnrichedDishResponse> complianceMap = resolveComplianceMap(tenantId, user);
         Map<String, DietaryRestriction> allergenTaxonomy = resolveAllergenTaxonomy();
+        Map<String, DietaryRestriction> lifestyleTaxonomy = resolveLifestyleTaxonomy();
 
         Map<DishCategory, List<DishCatalogItemDto>> dishesByCategory = new EnumMap<>(DishCategory.class);
 
@@ -122,7 +123,7 @@ public class DinerCatalogService {
                 continue;
             }
 
-            DishCatalogItemDto itemDto = buildDishCatalogItem(dish, tenantId, complianceMap, allergenTaxonomy);
+            DishCatalogItemDto itemDto = buildDishCatalogItem(dish, tenantId, complianceMap, allergenTaxonomy, lifestyleTaxonomy);
             dishesByCategory.computeIfAbsent(dish.getCategory(), k -> new ArrayList<>()).add(itemDto);
         }
 
@@ -144,6 +145,19 @@ public class DinerCatalogService {
         try {
             return dietaryRestrictionRepository.findAll().stream()
                     .filter(dr -> dr.getCategory() == DietaryCategory.COMMON_ALLERGEN)
+                    .collect(Collectors.toMap(DietaryRestriction::getCode, Function.identity(), (a, b) -> a));
+        } catch (Exception e) {
+            return Collections.emptyMap();
+        }
+    }
+
+    private Map<String, DietaryRestriction> resolveLifestyleTaxonomy() {
+        if (dietaryRestrictionRepository == null) {
+            return Collections.emptyMap();
+        }
+        try {
+            return dietaryRestrictionRepository.findAll().stream()
+                    .filter(dr -> dr.getCategory() == DietaryCategory.DIETARY_LIFESTYLE)
                     .collect(Collectors.toMap(DietaryRestriction::getCode, Function.identity(), (a, b) -> a));
         } catch (Exception e) {
             return Collections.emptyMap();
@@ -205,7 +219,8 @@ public class DinerCatalogService {
             Dish dish,
             UUID tenantId,
             Map<UUID, EnrichedDishResponse> complianceMap,
-            Map<String, DietaryRestriction> allergenTaxonomy) {
+            Map<String, DietaryRestriction> allergenTaxonomy,
+            Map<String, DietaryRestriction> lifestyleTaxonomy) {
 
         String photoUrl = dishPhotoRepository.existsByDishId(dish.getId())
                 ? "/api/v1/dishes/" + dish.getId() + "/photo"
@@ -232,6 +247,7 @@ public class DinerCatalogService {
                 : null;
 
         List<String> neutralAllergens = resolveNeutralAllergens(dish, allergenTaxonomy);
+        List<String> neutralLifestyles = resolveNeutralLifestyles(dish, lifestyleTaxonomy);
 
         return new DishCatalogItemDto(
                 dish.getId(),
@@ -245,9 +261,34 @@ public class DinerCatalogService {
                 isCompliant,
                 conflictingRestrictions,
                 recipeIngredients,
-                neutralAllergens
+                neutralAllergens,
+                neutralLifestyles
         );
     }
+
+    private List<String> resolveNeutralLifestyles(Dish dish, Map<String, DietaryRestriction> lifestyleTaxonomy) {
+        Set<String> codes = dish.getRestrictionCodes();
+        if (codes == null || codes.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<String> lifestyles = new ArrayList<>();
+        for (String code : codes) {
+            if (lifestyleTaxonomy.containsKey(code)) {
+                lifestyles.add(lifestyleTaxonomy.get(code).getName());
+            } else if (FALLBACK_LIFESTYLE_NAMES.containsKey(code)) {
+                lifestyles.add(FALLBACK_LIFESTYLE_NAMES.get(code));
+            }
+        }
+        Collections.sort(lifestyles);
+        return lifestyles;
+    }
+
+    private static final Map<String, String> FALLBACK_LIFESTYLE_NAMES = Map.of(
+            "CELIAC", "Sin TACC / Celíaco",
+            "VEGAN", "Vegano",
+            "VEGETARIAN", "Vegetariano"
+    );
 
     private List<String> resolveNeutralAllergens(Dish dish, Map<String, DietaryRestriction> allergenTaxonomy) {
         Set<String> codes = dish.getRestrictionCodes();
