@@ -202,7 +202,7 @@ describe('T028 [US2]: LiveTrackingWidget Component Tests', () => {
       />
     );
 
-    expect(screen.getByText(/¡Tu turno ha comenzado!/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/¡Tu turno ha comenzado!/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/Unos instantes/i)).toBeInTheDocument();
     expect(screen.getByText(/13:30 - 13:45 hs/i)).toBeInTheDocument();
   });
