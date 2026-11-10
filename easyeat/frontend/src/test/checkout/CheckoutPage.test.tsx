@@ -292,9 +292,7 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
       vi.mocked(orderApi.fetchPickupSlots).mockResolvedValueOnce({
         establishmentId: 'est-123',
         date: '2026-11-03',
-        serverTime: new Date().toISOString(),
         timezone: 'America/Argentina/Buenos_Aires',
-        isEstablishmentOpen: true,
         isOperatingDay: false,
         leadTimeMinutes: 30,
         slots: [],
