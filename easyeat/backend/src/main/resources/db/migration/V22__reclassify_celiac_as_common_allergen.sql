@@ -1,5 +1,5 @@
 -- ====================================================================
--- EasyEat V19: Reclassify CELIAC from DIETARY_LIFESTYLE to COMMON_ALLERGEN (C-11)
+-- EasyEat V22: Reclassify CELIAC from DIETARY_LIFESTYLE to COMMON_ALLERGEN (C-11)
 -- ====================================================================
 
 UPDATE dietary_restrictions

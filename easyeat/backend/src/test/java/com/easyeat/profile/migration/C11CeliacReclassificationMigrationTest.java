@@ -15,9 +15,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class C11CeliacReclassificationMigrationTest {
 
     @Test
-    @DisplayName("C-11: Flyway V19 script exists and executes DML update from DIETARY_LIFESTYLE to COMMON_ALLERGEN")
-    void v19MigrationScript_containsDeterministicUpdate() throws Exception {
-        ClassPathResource resource = new ClassPathResource("db/migration/V19__reclassify_celiac_as_common_allergen.sql");
+    @DisplayName("C-11: Flyway V22 script exists and executes DML update from DIETARY_LIFESTYLE to COMMON_ALLERGEN")
+    void v22MigrationScript_containsDeterministicUpdate() throws Exception {
+        ClassPathResource resource = new ClassPathResource("db/migration/V22__reclassify_celiac_as_common_allergen.sql");
         assertThat(resource.exists()).isTrue();
 
         try (InputStream is = resource.getInputStream()) {

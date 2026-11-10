@@ -162,6 +162,7 @@ public class DishGovernanceService {
             throw new StaleDishPriceException(dishId, expectedRetailPrice, current);
         }
 
+        dish.setRetailPrice(retailPrice);
         if (marginPct != null) {
             dish.setMarginPercentage(marginPct);
             dishRepository.save(dish);

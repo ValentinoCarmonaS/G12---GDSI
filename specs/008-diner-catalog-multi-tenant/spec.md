@@ -240,6 +240,8 @@ The Diner uses a search bar within the catalog to filter the currently loaded me
 
 - **FR-033** (C-09 / Real-time retail price update in diner discovery & catalog): When an automatic price adjustment occurs due to an increase in ingredient cost (spec 007 FR-010b), the diner-facing catalog and discovery views (COM-1.5.1 / C-01 / COM-4.1.1) MUST reflect the updated retail price immediately on subsequent queries and active real-time updates without delay.
 
+- **FR-034** (C-13 / Exposición de estilos de vida y alérgenos en catálogo de comensal): El endpoint del catálogo del comensal (`GET /api/v1/establishments/{tenantId}/catalog`) DEBE incluir en cada plato (`DishCatalogItemDto`) tanto la lista de alérgenos presentes (`allergens`, correspondientes a la taxonomía `COMMON_ALLERGEN`) como la lista de estilos de vida / dietas compatibles (`lifestyles`, correspondientes a la taxonomía `DIETARY_LIFESTYLE`, ej. Celíaco / Sin TACC, Vegano, Vegetariano). Ambos conjuntos DEBEN resolverse cruzando las etiquetas registradas en el plato (`dish_dietary_restrictions`) con la taxonomía de restricciones de la plataforma (`dietary_restrictions`).
+
 ---
 
 ## Key Entities

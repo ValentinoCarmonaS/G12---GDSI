@@ -18,24 +18,58 @@ import { initiatePayment, cancelPayment, getOrderPaymentStatus } from '../api/pa
 import { OrderDetailResponse } from '../types/order';
 import { PaymentInitiationRequest, OrderPaymentStatusResponse, PaymentMethod } from '../types/payment';
 
-function generateNext7Days(): OperatingDayItem[] {
+/**
+ * Formats a local Date object into a YYYY-MM-DD string without UTC timezone shift.
+ */
+export function formatDateToIsoString(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Parses a YYYY-MM-DD string into a local Date object without UTC timezone conversion.
+ */
+export function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
+ * Generates the weekly operating calendar structured strictly starting on Monday (ISO 8601: Lun, Mar, Mié, Jue, Vie, Sáb, Dom).
+ * Restricts the view to exactly the 7 days of the current week up to Sunday (FR-006, C-12).
+ * Past days within the week are marked with isOperating = false (disabled).
+ */
+export function generateWeeklyOperatingDays(referenceDate: Date = new Date()): OperatingDayItem[] {
   const days: OperatingDayItem[] = [];
   const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  const now = new Date();
+  const now = new Date(referenceDate);
+  now.setHours(0, 0, 0, 0);
 
+  // ISO 8601: Monday is first day of the week (day 1), Sunday is 0
+  const dayOfWeek = now.getDay();
+  const diffToMonday = (dayOfWeek + 6) % 7; // Monday -> 0, Tuesday -> 1, ..., Sunday -> 6
+
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  const todayStr = formatDateToIsoString(now);
+
+  // Generate exactly 7 days of the same week (from Monday to Sunday)
   for (let i = 0; i < 7; i++) {
-    const d = new Date(now);
-    d.setDate(now.getDate() + i);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const dateStr = `${yyyy}-${mm}-${dd}`;
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dateStr = formatDateToIsoString(d);
+
+    const isPast = dateStr < todayStr;
 
     days.push({
       date: dateStr,
       dayName: dayNames[d.getDay()],
       dayNumber: d.getDate(),
-      isOperating: true,
+      isOperating: !isPast,
     });
   }
 
@@ -68,7 +102,7 @@ export const CheckoutPage: React.FC = () => {
     return searchParams.get('establishmentId') || items[0]?.tenantId || fromActiveTenant || fromStorage || '';
   }, [searchParams, items]);
 
-  const operatingDays = useMemo(() => generateNext7Days(), []);
+  const operatingDays = useMemo(() => generateWeeklyOperatingDays(), []);
 
   const {
     fulfillmentMode,
@@ -123,7 +157,7 @@ export const CheckoutPage: React.FC = () => {
 
   // Handler for Confirmar pedido / Checkout Payment (T035, AS-1, AS-5, FR-001, FR-002)
   const handleConfirmOrder = async () => {
-    if (!isFormValid || !establishmentId || inProcessPayment) return;
+    if (!isFormValid || !establishmentId || isSubmitting || inProcessPayment) return;
 
     setIsSubmitting(true);
     setSubmissionError(null);
@@ -148,6 +182,8 @@ export const CheckoutPage: React.FC = () => {
       // Save ongoing payment info in state and redirect immediately to Sandbox/Production init_point
       if (response.redirectUrl) {
         window.location.href = response.redirectUrl;
+      } else if (response.orderId) {
+        navigate(`/checkout/confirmacion/${response.orderId}`);
       }
     } catch (err: any) {
       const status = err?.response?.status;
@@ -407,9 +443,10 @@ export const CheckoutPage: React.FC = () => {
                 type="button"
                 onClick={handleConfirmOrder}
                 disabled={!isFormValid || isSubmitting || Boolean(inProcessPayment)}
+                aria-busy={isSubmitting}
                 className={`w-full py-3.5 px-6 rounded-xl font-bold text-white text-base shadow-md transition-all flex items-center justify-center gap-2 ${
                   !isFormValid || isSubmitting || Boolean(inProcessPayment)
-                    ? 'bg-gray-300 cursor-not-allowed shadow-none'
+                    ? 'bg-gray-300 opacity-60 cursor-not-allowed pointer-events-none shadow-none'
                     : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 cursor-pointer hover:shadow-lg'
                 }`}
               >

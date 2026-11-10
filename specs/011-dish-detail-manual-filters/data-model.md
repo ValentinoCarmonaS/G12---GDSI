@@ -32,7 +32,8 @@ Representa el producto gastronómico publicado y disponible para exploración, c
   - `isActive`: Indicador booleano de activación comercial.
   - `photoUrl`: Enlace de entrega del archivo binario multimedia (`/api/v1/dishes/{id}/photo`) o `null` si no posee fotografía.
   - `recipeIngredients`: Lista ordenada de nombres de ingredientes que componen la receta activa en cocina.
-  - `allergens`: Conjunto de etiquetas neutrales de advertencias de alérgenos asociados al plato.
+  - `allergens`: Conjunto de etiquetas neutrales de advertencias de alérgenos asociados al plato (`COMMON_ALLERGEN`).
+  - `lifestyles`: Conjunto de etiquetas de estilos de vida / dietas compatibles con el plato (`DIETARY_LIFESTYLE`, ej. Celíaco, Vegano, Vegetariano).
   - `isAvailable`: Estado derivado en tiempo real de disponibilidad para la venta.
 
 - **Invariantes Locales**:
@@ -44,7 +45,8 @@ Representa el producto gastronómico publicado y disponible para exploración, c
   - Pertenece a exactamente un `Establecimiento` (`tenantId`).
   - Clasificado en exactamente una `Categoría Gastronómica`.
   - Vinculado a cero o más `Ingredientes` mediante su receta activa.
-  - Vinculado a cero o más `Alérgenos`.
+  - Vinculado a cero o más `Alérgenos` (presencia).
+  - Vinculado a cero o más `Estilos de Vida` (compatibilidad).
 
 ---
 
@@ -122,14 +124,18 @@ Conjunto de parámetros de selección aplicados voluntariamente por el comensal 
   - `selectedCategories`: Lista de nombres o códigos de categorías gastronómicas marcadas ($C_{\text{sel}}$). Si está vacía, no restringe categorías.
   - `minPrice`: Límite inferior del rango de precios ($P_{\min}$), valor monetario no negativo o nulo.
   - `maxPrice`: Límite superior del rango de precios ($P_{\max}$), valor monetario no negativo o nulo.
+  - `selectedLifestyles`: Lista de códigos de estilos de vida / dietas requeridos ($L_{\text{sel}}$, ej. `CELIAC`, `VEGAN`, `VEGETARIAN`). El plato debe ser compatible con todas las seleccionadas.
+  - `selectedAllergens`: Lista de códigos de alérgenos excluyentes marcados ($A_{\text{sel}}$, ej. `DAIRY`, `PEANUTS`, `EGGS`). El plato no debe contener ninguno de los seleccionados.
   - `searchQuery`: Término ingresado en la barra de búsqueda rápida de texto del catálogo (integración con COM-4.2.3).
 
 - **Invariantes Locales**:
   - Validación de rango (FR-022, EC-014): Si $P_{\min} > P_{\max}$, el estado es inválido; el sistema bloquea la aplicación del filtro y presenta advertencia de validación ("El precio mínimo no puede superar al precio máximo").
   - Intervalo cerrado e inclusivo (EC-016): Los platos cuyo precio coincide exactamente con $P_{\min}$ o con $P_{\max}$ se consideran dentro del rango y se exhiben en los resultados.
   - Igualdad estricta (EC-015): Si $P_{\min} = P_{\max}$, se filtran platos con precio exactamente igual a dicho importe.
-  - Persistencia en sesión (Clarification #3, INV-16, FR-024): Los filtros manuales se conservan en `sessionStorage` indexados por `tenantId` mientras el comensal navegue dentro del mismo restaurante (incluso yendo a su perfil o al carrito).
-  - Limpieza unificada (Clarification #1, INV-16, FR-020, EC-018): La acción "Limpiar filtros" desmarca todas las categorías, vacía el rango de precios y vacía simultáneamente la barra de búsqueda de texto.
+  - Semántica inclusiva de estilos de vida (C-13, FR-025): Todo estilo de vida seleccionado exige presencia explícita en la configuración del plato ($\forall l \in L_{\text{sel}}: l \in p.\text{lifestyles}$). Platos sin la etiqueta son excluidos inmediatamente.
+  - Semántica excluyente de alérgenos (C-13, FR-026): Todo alérgeno marcado exige ausencia estricta en el plato ($\forall a \in A_{\text{sel}}: a \notin p.\text{allergens}$). Platos que lo contengan son excluidos inmediatamente.
+  - Persistencia en sesión (Clarification #3, INV-16, FR-024, FR-028): Los filtros manuales (categorías, precio, estilos de vida, alérgenos) se conservan en `sessionStorage` indexados por `tenantId` mientras el comensal navegue dentro del mismo restaurante (incluso yendo a su perfil o al carrito).
+  - Limpieza unificada (Clarification #1, INV-16, FR-020, FR-028, EC-018): La acción "Limpiar filtros" desmarca todas las categorías, vacía el rango de precios, desmarca los estilos de vida y alérgenos excluyentes, y vacía simultáneamente la barra de búsqueda de texto.
 
 ---
 
@@ -137,8 +143,8 @@ Conjunto de parámetros de selección aplicados voluntariamente por el comensal 
 
 Colección dinámica de platos que satisfacen simultáneamente todas las dimensiones de filtrado activas.
 
-- **Predicado de Inclusión**:
-  $$\text{cumple\_filtros}(p) \iff \left(C_{\text{sel}} = \emptyset \lor p.\text{category} \in C_{\text{sel}}\right) \land \left(P_{\min} \le p.\text{retailPrice} \le P_{\max}\right) \land \text{matchesDishQuery}(p, T_{\text{busq}})$$
+- **Predicado de Inclusión Multidimensional (C-13, FR-027)**:
+  $$\text{cumple\_filtros}(p) \iff \left(C_{\text{sel}} = \emptyset \lor p.\text{category} \in C_{\text{sel}}\right) \land \left(P_{\min} \le p.\text{retailPrice} \le P_{\max}\right) \land \left(\forall l \in L_{\text{sel}}: l \in p.\text{lifestyles}\right) \land \left(\forall a \in A_{\text{sel}}: a \notin p.\text{allergens}\right) \land \text{matchesDishQuery}(p, T_{\text{busq}})$$
 - **Invariantes Locales**:
   - Visibilidad no excluyente de agotados (INV-17, FR-021, SC-014, EC-019): Los platos que carecen de stock pero satisfacen las condiciones del filtro permanecen visibles en la lista filtrada bajo estado visual atenuado y controles de compra deshabilitados.
   - Manejo de conjunto vacío (INV-15, FR-019, SC-013, EC-017): Si el resultado es $\emptyset$, se despliega un mensaje visible de ausencia de resultados junto a un botón interactivo para limpiar los filtros.
