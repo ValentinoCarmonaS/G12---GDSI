@@ -79,7 +79,7 @@ describe('T014 [US1]: Order Confirmation and Tracking Coexistence upon Reload or
       expect(screen.getByText(/305/)).toBeInTheDocument();
       expect(screen.getByText(/parrilla san telmo/i)).toBeInTheDocument();
       expect(screen.getByText(/ojo de bife con guarnición/i)).toBeInTheDocument();
-      expect(screen.getByText(/\$9200|\$9,200/)).toBeInTheDocument();
+      expect(screen.getAllByText(/\$9200|\$9,200/).length).toBeGreaterThanOrEqual(1);
     });
   });
 

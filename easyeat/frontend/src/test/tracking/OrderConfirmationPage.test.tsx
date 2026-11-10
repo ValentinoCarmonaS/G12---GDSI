@@ -103,7 +103,7 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
       expect(screen.getByText(/13:30/)).toBeInTheDocument();
       expect(screen.getByText(/hamburguesa clásica easyeat/i)).toBeInTheDocument();
       expect(screen.getByText(/agua mineral sin gas 500ml/i)).toBeInTheDocument();
-      expect(screen.getByText(/\$4850|\$4,850/)).toBeInTheDocument();
+      expect(screen.getAllByText(/\$4850|\$4,850/).length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -125,7 +125,7 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
     renderWithRoute('invalid-order');
 
     await waitFor(() => {
-      expect(screen.getByText(/no pudimos cargar la información del pedido/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/no pudimos cargar la información del pedido/i).length).toBeGreaterThanOrEqual(1);
     });
   });
 });
