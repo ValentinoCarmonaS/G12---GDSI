@@ -60,7 +60,7 @@ export const LiveTrackingWidget: React.FC<LiveTrackingWidgetProps> = ({
     <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="p-2.5 bg-primary-50 rounded-xl text-primary-600">
+          <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
             <ChefHat className="w-6 h-6" />
           </div>
           <div>
@@ -73,7 +73,7 @@ export const LiveTrackingWidget: React.FC<LiveTrackingWidgetProps> = ({
           </div>
         </div>
         <div className="text-right">
-          <div className="flex items-center space-x-1.5 text-primary-700">
+          <div className="flex items-center space-x-1.5 text-emerald-700">
             <Clock className="w-5 h-5 animate-pulse" />
             <span className="text-2xl font-black">{estimatedMinutes} min</span>
           </div>
@@ -85,18 +85,18 @@ export const LiveTrackingWidget: React.FC<LiveTrackingWidgetProps> = ({
       <div className="space-y-1.5">
         <div className="flex justify-between text-xs text-gray-500 font-medium">
           <span>Elaboración en cocina</span>
-          <span>{progress}%</span>
+          <span className="font-bold text-emerald-700">{progress}%</span>
         </div>
         <div
           role="progressbar"
           aria-valuenow={progress}
           aria-valuemin={0}
           aria-valuemax={100}
-          className="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner"
+          className="w-full bg-gray-200 rounded-full h-3.5 overflow-hidden shadow-inner"
         >
           <div
-            className="bg-primary-600 h-3 rounded-full transition-all duration-700 ease-out"
-            style={{ width: `${progress}%` }}
+            className="bg-emerald-600 h-full rounded-full transition-all duration-700 ease-out"
+            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
           />
         </div>
       </div>

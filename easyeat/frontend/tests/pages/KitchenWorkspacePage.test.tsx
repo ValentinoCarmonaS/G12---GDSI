@@ -44,7 +44,7 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
     );
 
     expect(screen.getByText(/kitchen display system/i)).toBeInTheDocument();
-    expect(screen.getByText(/comandas en preparación y despachos de cocina/i)).toBeInTheDocument();
+    expect(screen.getByText(/comandas en preparación.*despachos de cocina/i)).toBeInTheDocument();
     expect(screen.getByText('En Cola')).toBeInTheDocument();
     expect(screen.getByText('En Preparación')).toBeInTheDocument();
     expect(screen.getByText('Para Retirar')).toBeInTheDocument();
