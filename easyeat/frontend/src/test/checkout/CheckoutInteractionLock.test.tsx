@@ -3,8 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { CheckoutPage } from '../../pages/CheckoutPage';
 import { CartContext } from '../../context/CartContext';
-import * as orderApi from '../../api/orderApi';
+import * as paymentApi from '../../api/paymentApi';
 import { CartItem } from '../../types/cart';
+
+vi.mock('../../api/paymentApi', () => ({
+  initiatePayment: vi.fn(),
+  cancelPayment: vi.fn(),
+  getOrderPaymentStatus: vi.fn(),
+}));
 
 vi.mock('../../api/orderApi', () => ({
   createOrder: vi.fn(),
@@ -85,7 +91,7 @@ describe('T012 [US1]: Checkout UI Interaction Lock and Duplicate Payment Prevent
       resolveOrderPromise = resolve;
     });
 
-    vi.mocked(orderApi.createOrder).mockReturnValue(pendingPromise as any);
+    vi.mocked(paymentApi.initiatePayment).mockReturnValue(pendingPromise as any);
 
     renderCheckout();
 
@@ -102,22 +108,19 @@ describe('T012 [US1]: Checkout UI Interaction Lock and Duplicate Payment Prevent
     // Button should immediately become disabled with spinner / processing text
     await waitFor(() => {
       expect(submitBtn).toBeDisabled();
-      expect(screen.getByText(/confirmando reserva|procesando/i)).toBeInTheDocument();
+      expect(screen.getByText(/confirmando reserva|procesando|iniciando pago/i)).toBeInTheDocument();
     });
 
     // Resolve the promise
     resolveOrderPromise!({
       orderId: 'order-123',
-      establishmentId: 'est-123',
-      fulfillmentMode: 'IMMEDIATE',
-      pickupDate: '2026-11-09',
-      timeSlotStart: '14:00:00',
-      timeSlotEnd: '14:30:00',
-      status: 'IN_PROGRESS',
+      reservationId: 'res-123',
+      paymentId: 'pay-123',
+      redirectUrl: 'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-123',
+      sandbox: true,
+      expiresAt: new Date(Date.now() + 900000).toISOString(),
       totalAmount: 5000,
-      items: [],
-      serverTime: new Date().toISOString(),
-      expiresAt: null,
+      currency: 'ARS',
     });
   });
 
@@ -127,7 +130,7 @@ describe('T012 [US1]: Checkout UI Interaction Lock and Duplicate Payment Prevent
       resolveOrderPromise = resolve;
     });
 
-    vi.mocked(orderApi.createOrder).mockReturnValue(pendingPromise as any);
+    vi.mocked(paymentApi.initiatePayment).mockReturnValue(pendingPromise as any);
 
     renderCheckout();
 
@@ -143,26 +146,23 @@ describe('T012 [US1]: Checkout UI Interaction Lock and Duplicate Payment Prevent
     fireEvent.click(submitBtn);
     fireEvent.click(submitBtn);
 
-    // Ensure createOrder was only called once
-    expect(orderApi.createOrder).toHaveBeenCalledTimes(1);
+    // Ensure initiatePayment was only called once
+    expect(paymentApi.initiatePayment).toHaveBeenCalledTimes(1);
 
     resolveOrderPromise!({
       orderId: 'order-456',
-      establishmentId: 'est-123',
-      fulfillmentMode: 'IMMEDIATE',
-      pickupDate: '2026-11-09',
-      timeSlotStart: '14:00:00',
-      timeSlotEnd: '14:30:00',
-      status: 'IN_PROGRESS',
+      reservationId: 'res-456',
+      paymentId: 'pay-456',
+      redirectUrl: 'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-456',
+      sandbox: true,
+      expiresAt: new Date(Date.now() + 900000).toISOString(),
       totalAmount: 5000,
-      items: [],
-      serverTime: new Date().toISOString(),
-      expiresAt: null,
+      currency: 'ARS',
     });
   });
 
   it('INV-003: re-enables submit button if order creation fails to allow retry', async () => {
-    vi.mocked(orderApi.createOrder).mockRejectedValueOnce({
+    vi.mocked(paymentApi.initiatePayment).mockRejectedValueOnce({
       response: {
         status: 500,
         data: { detail: 'Error temporal en pasarela' },

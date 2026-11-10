@@ -238,6 +238,8 @@ The Diner uses a search bar within the catalog to filter the currently loaded me
 
 - **FR-032**: When the complete listing contains no active establishments, the discovery screen MUST display an informative empty state.
 
+- **FR-033** (C-09 / Real-time retail price update in diner discovery & catalog): When an automatic price adjustment occurs due to an increase in ingredient cost (spec 007 FR-010b), the diner-facing catalog and discovery views (COM-1.5.1 / C-01 / COM-4.1.1) MUST reflect the updated retail price immediately on subsequent queries and active real-time updates without delay.
+
 ---
 
 ## Key Entities
