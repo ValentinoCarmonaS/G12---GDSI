@@ -24,7 +24,7 @@ INSERT INTO users (
     0,
     NOW(),
     NOW()
-) ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, updated_at = NOW();
+) ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, tenant_id = EXCLUDED.tenant_id, updated_at = NOW();
 
 -- 2. Encargado (Counter Manager - Café Parque)
 INSERT INTO users (
@@ -47,7 +47,7 @@ INSERT INTO users (
     0,
     NOW(),
     NOW()
-) ON CONFLICT (email) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, updated_at = NOW();
+) ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, tenant_id = EXCLUDED.tenant_id, updated_at = NOW();
 
 -- 3. Chef (Kitchen Staff - Café Parque)
 INSERT INTO users (
@@ -70,7 +70,7 @@ INSERT INTO users (
     0,
     NOW(),
     NOW()
-) ON CONFLICT (email) DO UPDATE SET tenant_id = EXCLUDED.tenant_id, updated_at = NOW();
+) ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, tenant_id = EXCLUDED.tenant_id, updated_at = NOW();
 
 -- 4. Administrador (Local Admin - Café Parque)
 INSERT INTO users (
@@ -93,7 +93,7 @@ INSERT INTO users (
     0,
     NOW(),
     NOW()
-) ON CONFLICT (email) DO NOTHING;
+) ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, tenant_id = EXCLUDED.tenant_id, updated_at = NOW();
 
 -- 5. Comensal (Diner)
 INSERT INTO users (
@@ -116,4 +116,4 @@ INSERT INTO users (
     0,
     NOW(),
     NOW()
-) ON CONFLICT (email) DO NOTHING;
+) ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role, tenant_id = EXCLUDED.tenant_id, updated_at = NOW();

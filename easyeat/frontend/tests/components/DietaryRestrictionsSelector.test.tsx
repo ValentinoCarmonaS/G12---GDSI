@@ -11,7 +11,7 @@ describe('DietaryRestrictionsSelector Component (T031, COM-1.4.3)', () => {
     {
       code: 'CELIAC',
       name: 'Sin TACC / Celíaco',
-      category: 'DIETARY_LIFESTYLE',
+      category: 'COMMON_ALLERGEN',
       description: 'Excluye trigo, avena, cebada y centeno.',
     },
     {

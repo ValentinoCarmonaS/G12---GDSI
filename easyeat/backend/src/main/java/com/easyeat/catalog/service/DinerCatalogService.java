@@ -323,7 +323,6 @@ public class DinerCatalogService {
     }
 
     private static final Map<String, String> FALLBACK_LIFESTYLE_NAMES = Map.of(
-            "CELIAC", "Sin TACC / Celíaco",
             "VEGAN", "Vegano",
             "VEGETARIAN", "Vegetariano"
     );
@@ -347,6 +346,7 @@ public class DinerCatalogService {
     }
 
     private static final Map<String, String> FALLBACK_ALLERGEN_NAMES = Map.of(
+            "CELIAC", "Sin TACC / Celíaco",
             "DAIRY", "Lácteos / Lactosa",
             "PEANUTS", "Maní",
             "TREE_NUTS", "Frutos secos",

@@ -139,7 +139,7 @@ class DinerProfileOpenApiContractTest {
                 "valentino@example.com",
                 null,
                 false,
-                List.of(new DietaryRestrictionItemDto("CELIAC", "Sin TACC", "DIETARY_LIFESTYLE", "Desc"))
+                List.of(new DietaryRestrictionItemDto("CELIAC", "Sin TACC", "COMMON_ALLERGEN", "Desc"))
         );
 
         when(profileService.getProfile(any(User.class))).thenReturn(response);
@@ -232,7 +232,7 @@ class DinerProfileOpenApiContractTest {
     @DisplayName("Verify dietary taxonomy & preferences endpoints conform to OpenAPI 200 contracts")
     void shouldConformToDietaryEndpointsContract() throws Exception {
         List<DietaryRestrictionItemDto> taxonomy = List.of(
-                new DietaryRestrictionItemDto("CELIAC", "Sin TACC", "DIETARY_LIFESTYLE", "Desc"),
+                new DietaryRestrictionItemDto("CELIAC", "Sin TACC", "COMMON_ALLERGEN", "Desc"),
                 new DietaryRestrictionItemDto("PEANUTS", "Maní", "COMMON_ALLERGEN", "Desc")
         );
 
@@ -245,7 +245,7 @@ class DinerProfileOpenApiContractTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].code").value("CELIAC"))
-                .andExpect(jsonPath("$[0].category").value("DIETARY_LIFESTYLE"));
+                .andExpect(jsonPath("$[0].category").value("COMMON_ALLERGEN"));
 
         // PUT /api/v1/profile/dietary-restrictions (Authenticated) -> 200 OK
         mockMvc.perform(put("/api/v1/profile/dietary-restrictions")

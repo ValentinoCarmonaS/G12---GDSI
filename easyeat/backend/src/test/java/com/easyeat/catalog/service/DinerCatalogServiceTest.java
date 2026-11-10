@@ -425,7 +425,7 @@ class DinerCatalogServiceTest {
                     .thenReturn(List.of(dish));
 
             when(dietaryRestrictionRepository.findAll()).thenReturn(List.of(
-                    new DietaryRestriction("CELIAC", "Sin TACC / Celíaco", DietaryCategory.DIETARY_LIFESTYLE, "Sin TACC"),
+                    new DietaryRestriction("CELIAC", "Sin TACC / Celíaco", DietaryCategory.COMMON_ALLERGEN, "Sin TACC"),
                     new DietaryRestriction("VEGETARIAN", "Vegetariano", DietaryCategory.DIETARY_LIFESTYLE, "Vegetariano"),
                     new DietaryRestriction("PEANUTS", "Maní", DietaryCategory.COMMON_ALLERGEN, "Maní")
             ));
@@ -433,8 +433,8 @@ class DinerCatalogServiceTest {
             DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
 
             DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
-            assertThat(item.getAllergens()).containsExactly("Maní");
-            assertThat(item.getLifestyles()).containsExactlyInAnyOrder("Sin TACC / Celíaco", "Vegetariano");
+            assertThat(item.getAllergens()).containsExactlyInAnyOrder("Maní", "Sin TACC / Celíaco");
+            assertThat(item.getLifestyles()).containsExactly("Vegetariano");
         }
 
     }

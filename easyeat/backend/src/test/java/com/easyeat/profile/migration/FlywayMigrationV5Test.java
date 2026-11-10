@@ -68,13 +68,13 @@ class FlywayMigrationV5Test {
                 "SELECT code, category FROM dietary_restrictions WHERE category = 'DIETARY_LIFESTYLE'"
         );
         assertThat(lifestyles).extracting(m -> m.get("code"))
-                .containsExactlyInAnyOrder("CELIAC", "VEGAN", "VEGETARIAN");
+                .containsExactlyInAnyOrder("VEGAN", "VEGETARIAN");
 
         List<Map<String, Object>> allergens = jdbcTemplate.queryForList(
                 "SELECT code, category FROM dietary_restrictions WHERE category = 'COMMON_ALLERGEN'"
         );
         assertThat(allergens).extracting(m -> m.get("code"))
-                .containsExactlyInAnyOrder("DAIRY", "PEANUTS", "TREE_NUTS", "EGGS", "FISH", "SHELLFISH", "SOY", "WHEAT");
+                .containsExactlyInAnyOrder("CELIAC", "DAIRY", "PEANUTS", "TREE_NUTS", "EGGS", "FISH", "SHELLFISH", "SOY", "WHEAT");
 
         // Verify dishes and join tables exist
         List<String> tables = jdbcTemplate.queryForList(

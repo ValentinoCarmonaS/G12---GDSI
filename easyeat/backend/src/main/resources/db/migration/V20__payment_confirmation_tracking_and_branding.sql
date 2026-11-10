@@ -15,6 +15,8 @@ ALTER TABLE orders
             'IN_PROGRESS',
             'READY_FOR_PICKUP',
             'COMPLETED',
+            'PAID',
+            'CONFIRMED',
             'CANCELLED',
             'EXPIRED'
         )
