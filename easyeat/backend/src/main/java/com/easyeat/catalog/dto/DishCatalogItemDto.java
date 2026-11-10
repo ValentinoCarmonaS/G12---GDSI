@@ -27,6 +27,7 @@ public class DishCatalogItemDto {
     private List<String> conflictingRestrictions = new ArrayList<>();
     private List<String> recipeIngredients = new ArrayList<>();
     private List<String> allergens = new ArrayList<>();
+    private List<String> lifestyles = new ArrayList<>();
 
     public DishCatalogItemDto() {
     }
@@ -42,7 +43,7 @@ public class DishCatalogItemDto {
             Boolean isCompliant,
             List<String> conflictingRestrictions,
             List<String> recipeIngredients) {
-        this(id, name, description, category, price, photoUrl, isAvailable, null, isCompliant, conflictingRestrictions, recipeIngredients, new ArrayList<>());
+        this(id, name, description, category, price, photoUrl, isAvailable, null, isCompliant, conflictingRestrictions, recipeIngredients, new ArrayList<>(), new ArrayList<>());
     }
 
     public DishCatalogItemDto(
@@ -57,7 +58,7 @@ public class DishCatalogItemDto {
             Boolean isCompliant,
             List<String> conflictingRestrictions,
             List<String> recipeIngredients) {
-        this(id, name, description, category, price, photoUrl, isAvailable, availableStock, isCompliant, conflictingRestrictions, recipeIngredients, new ArrayList<>());
+        this(id, name, description, category, price, photoUrl, isAvailable, availableStock, isCompliant, conflictingRestrictions, recipeIngredients, new ArrayList<>(), new ArrayList<>());
     }
 
     public DishCatalogItemDto(
@@ -73,6 +74,23 @@ public class DishCatalogItemDto {
             List<String> conflictingRestrictions,
             List<String> recipeIngredients,
             List<String> allergens) {
+        this(id, name, description, category, price, photoUrl, isAvailable, availableStock, isCompliant, conflictingRestrictions, recipeIngredients, allergens, new ArrayList<>());
+    }
+
+    public DishCatalogItemDto(
+            UUID id,
+            String name,
+            String description,
+            String category,
+            BigDecimal price,
+            String photoUrl,
+            Boolean isAvailable,
+            Integer availableStock,
+            Boolean isCompliant,
+            List<String> conflictingRestrictions,
+            List<String> recipeIngredients,
+            List<String> allergens,
+            List<String> lifestyles) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -85,6 +103,7 @@ public class DishCatalogItemDto {
         this.conflictingRestrictions = conflictingRestrictions != null ? conflictingRestrictions : new ArrayList<>();
         this.recipeIngredients = recipeIngredients != null ? recipeIngredients : new ArrayList<>();
         this.allergens = allergens != null ? allergens : new ArrayList<>();
+        this.lifestyles = lifestyles != null ? lifestyles : new ArrayList<>();
     }
 
     public UUID getId() {
@@ -181,5 +200,13 @@ public class DishCatalogItemDto {
 
     public void setAllergens(List<String> allergens) {
         this.allergens = allergens != null ? allergens : new ArrayList<>();
+    }
+
+    public List<String> getLifestyles() {
+        return lifestyles;
+    }
+
+    public void setLifestyles(List<String> lifestyles) {
+        this.lifestyles = lifestyles != null ? lifestyles : new ArrayList<>();
     }
 }
