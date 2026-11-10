@@ -33,7 +33,7 @@
 
 **⚠️ CRITICAL**: Ninguna tarea de User Story puede comenzar hasta completar esta fase.
 
-- [ ] T004 Crear la entidad relacional JPA `OrderReceipt` con clave foránea unívoca `order_id` y auditoría en `easyeat/backend/src/main/java/com/easyeat/order/domain/OrderReceipt.java`
+- [x] T004 Crear la entidad relacional JPA `OrderReceipt` con clave foránea unívoca `order_id` y auditoría en `easyeat/backend/src/main/java/com/easyeat/order/domain/OrderReceipt.java`
 - [ ] T005 [P] Crear el repositorio JPA `OrderReceiptRepository` para persistencia y comprobación de idempotencia en `easyeat/backend/src/main/java/com/easyeat/order/repository/OrderReceiptRepository.java`
 - [ ] T006 [P] Crear la entidad JPA `EstablishmentKdsSettings` y su repositorio `EstablishmentKdsSettingsRepository` en `easyeat/backend/src/main/java/com/easyeat/order/domain/EstablishmentKdsSettings.java` y `easyeat/backend/src/main/java/com/easyeat/order/repository/EstablishmentKdsSettingsRepository.java`
 - [ ] T007 [P] Crear la entidad JPA `RestaurantBranding` y su repositorio `RestaurantBrandingRepository` en `easyeat/backend/src/main/java/com/easyeat/catalog/domain/RestaurantBranding.java` y `easyeat/backend/src/main/java/com/easyeat/catalog/repository/RestaurantBrandingRepository.java`
