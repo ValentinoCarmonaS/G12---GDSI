@@ -170,9 +170,9 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
     });
 
     const dayButtons = screen.getAllByRole('button').filter((btn) => btn.className.includes('min-w-[70px]'));
-    expect(dayButtons.length).toBe(14);
+    expect(dayButtons.length).toBe(7);
     expect(dayButtons[0]).toHaveTextContent(/Lun/i);
-    expect(dayButtons[7]).toHaveTextContent(/Lun/i);
+    expect(dayButtons[6]).toHaveTextContent(/Dom/i);
     const selectableDay = dayButtons.find((btn) => !btn.hasAttribute('disabled')) || dayButtons[0];
     fireEvent.click(selectableDay);
 
@@ -269,70 +269,46 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
   });
 
   describe('C-12: Week Structure starting on Monday & Empty Slots State', () => {
-    it('verifies that generateWeeklyOperatingDays starts the week on Monday (ISO 8601) and includes 14 days', () => {
+    it('verifies that generateWeeklyOperatingDays starts the week on Monday (ISO 8601) and shows only up to Sunday of the same week', () => {
       // Test reference date on Wednesday 2026-11-04
       const wednesday = new Date(2026, 10, 4);
       const days = generateWeeklyOperatingDays(wednesday);
 
-      expect(days).toHaveLength(14);
-      // Week 1 starts on Monday 2026-11-02
+      expect(days).toHaveLength(7);
+      // Week starts on Monday 2026-11-02
       expect(days[0].dayName).toBe('Lun');
       expect(days[0].date).toBe('2026-11-02');
       expect(days[0].isOperating).toBe(false); // Past day is disabled
 
-      // Week 1 ends on Sunday 2026-11-08
+      // Tuesday 2026-11-03
+      expect(days[1].dayName).toBe('Mar');
+      expect(days[1].date).toBe('2026-11-03');
+      expect(days[1].isOperating).toBe(false); // Past day is disabled
+
+      // Wednesday 2026-11-04 (Today)
+      expect(days[2].dayName).toBe('Mié');
+      expect(days[2].date).toBe('2026-11-04');
+      expect(days[2].isOperating).toBe(true);
+
+      // Week ends on Sunday 2026-11-08 of the same week
       expect(days[6].dayName).toBe('Dom');
       expect(days[6].date).toBe('2026-11-08');
       expect(days[6].isOperating).toBe(true);
-
-      // Week 2 starts on Monday 2026-11-09
-      expect(days[7].dayName).toBe('Lun');
-      expect(days[7].date).toBe('2026-11-09');
-      // Crucial C-12 fix: upcoming Monday MUST be operating and selectable
-      expect(days[7].isOperating).toBe(true);
     });
 
-    it('allows selecting upcoming Monday and queries pickup slots correctly', async () => {
-      vi.mocked(orderApi.fetchPickupSlots).mockResolvedValueOnce({
-        establishmentId: 'est-123',
-        date: '2026-11-09',
-        timezone: 'America/Argentina/Buenos_Aires',
-        isOperatingDay: true,
-        leadTimeMinutes: 30,
-        slots: [
-          {
-            startTime: '10:00:00',
-            endTime: '10:15:00',
-            date: '2026-11-09',
-            maxCapacity: 10,
-            bookedCount: 2,
-            occupancyPercentage: 20,
-            status: 'AVAILABLE',
-            isSelectable: true,
-          },
-        ],
-      });
+    it('verifies that Monday is operating and selectable when reference date is Monday', () => {
+      // Reference date is Monday 2026-11-02
+      const monday = new Date(2026, 10, 2);
+      const days = generateWeeklyOperatingDays(monday);
 
-      renderWithProviders();
-
-      // Select Scheduled Mode
-      fireEvent.click(screen.getByText(/para más tarde/i));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Seleccioná el día de retiro/i)).toBeInTheDocument();
-      });
-
-      // Find Monday buttons (day 0 is current week Monday, day 7 is next week Monday)
-      const dayButtons = screen.getAllByRole('button').filter((btn) => btn.className.includes('min-w-[70px]'));
-      const activeMonday = dayButtons.find((btn) => btn.textContent?.includes('Lun') && !btn.hasAttribute('disabled'));
-      expect(activeMonday).toBeDefined();
-
-      fireEvent.click(activeMonday!);
-
-      // Slots for Monday must be rendered
-      await waitFor(() => {
-        expect(screen.getByText(/10:00\s*-\s*10:15/i)).toBeInTheDocument();
-      });
+      expect(days).toHaveLength(7);
+      expect(days[0].dayName).toBe('Lun');
+      expect(days[0].date).toBe('2026-11-02');
+      // On Monday itself, Monday is operating and selectable
+      expect(days[0].isOperating).toBe(true);
+      expect(days[6].dayName).toBe('Dom');
+      expect(days[6].date).toBe('2026-11-08');
+      expect(days[6].isOperating).toBe(true);
     });
 
     it('renders empty state message when API returns empty slots list (C-12 / FR-035)', async () => {

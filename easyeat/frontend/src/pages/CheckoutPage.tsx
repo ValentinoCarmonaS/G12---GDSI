@@ -34,9 +34,8 @@ export function parseLocalDate(dateStr: string): Date {
 
 /**
  * Generates the weekly operating calendar structured strictly starting on Monday (ISO 8601: Lun, Mar, Mié, Jue, Vie, Sáb, Dom).
- * Covers a 14-day window (2 full ISO weeks starting on Monday) ensuring that upcoming Mondays and any operating days
- * within the next 7 days are visible and selectable (FR-006, C-12).
- * Past days within the current week are marked with isOperating = false (disabled).
+ * Restricts the view to exactly the 7 days of the current week up to Sunday (FR-006, C-12).
+ * Past days within the week are marked with isOperating = false (disabled).
  */
 export function generateWeeklyOperatingDays(referenceDate: Date = new Date()): OperatingDayItem[] {
   const days: OperatingDayItem[] = [];
@@ -54,24 +53,19 @@ export function generateWeeklyOperatingDays(referenceDate: Date = new Date()): O
 
   const todayStr = formatDateToIsoString(now);
 
-  const maxOperatingDate = new Date(now);
-  maxOperatingDate.setDate(now.getDate() + 7);
-  const maxDateStr = formatDateToIsoString(maxOperatingDate);
-
-  // Generate 14 days (2 complete ISO weeks from Monday to Sunday)
-  for (let i = 0; i < 14; i++) {
+  // Generate exactly 7 days of the same week (from Monday to Sunday)
+  for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
     const dateStr = formatDateToIsoString(d);
 
     const isPast = dateStr < todayStr;
-    const isWithinWindow = dateStr >= todayStr && dateStr <= maxDateStr;
 
     days.push({
       date: dateStr,
       dayName: dayNames[d.getDay()],
       dayNumber: d.getDate(),
-      isOperating: isWithinWindow && !isPast,
+      isOperating: !isPast,
     });
   }
 
