@@ -14,6 +14,8 @@ public interface DishRecipeIngredientRepository extends JpaRepository<DishRecipe
 
     List<DishRecipeIngredient> findByIdDishId(UUID dishId);
 
+    List<DishRecipeIngredient> findByIdIngredientId(UUID ingredientId);
+
     void deleteByIdDishId(UUID dishId);
 
     void deleteByIdDishIdAndIdIngredientId(UUID dishId, UUID ingredientId);

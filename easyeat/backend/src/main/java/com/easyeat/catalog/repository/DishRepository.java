@@ -62,11 +62,32 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
      * version shared with specs 003 and 005.
      */
     @Modifying
+    @Query("UPDATE Dish d SET d.retailPrice = :newPrice, d.marginPercentage = :marginPercentage WHERE d.id = :dishId AND d.tenantId = :tenantId "
+            + "AND d.retailPrice IS NOT DISTINCT FROM :expectedPrice")
+    int updateRetailPriceAndMarginIfUnchanged(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId,
+                                              @Param("expectedPrice") BigDecimal expectedPrice,
+                                              @Param("newPrice") BigDecimal newPrice,
+                                              @Param("marginPercentage") BigDecimal marginPercentage);
+
+    @Modifying
     @Query("UPDATE Dish d SET d.retailPrice = :newPrice WHERE d.id = :dishId AND d.tenantId = :tenantId "
             + "AND d.retailPrice IS NOT DISTINCT FROM :expectedPrice")
     int updateRetailPriceIfUnchanged(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId,
                                      @Param("expectedPrice") BigDecimal expectedPrice,
                                      @Param("newPrice") BigDecimal newPrice);
+
+    @Modifying
+    @Query("UPDATE Dish d SET d.retailPrice = :newPrice WHERE d.id = :dishId AND d.tenantId = :tenantId")
+    int updateRetailPrice(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId,
+                          @Param("newPrice") BigDecimal newPrice);
+
+    @Query("SELECT d FROM Dish d WHERE d.tenantId = :tenantId AND d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED "
+            + "AND d.id IN (SELECT dri.id.dishId FROM com.easyeat.dish.domain.DishRecipeIngredient dri WHERE dri.id.ingredientId = :ingredientId)")
+    List<Dish> findPublishedDishesByIngredientId(@Param("tenantId") UUID tenantId, @Param("ingredientId") UUID ingredientId);
+
+    @Query("SELECT d FROM Dish d WHERE d.tenantId = :tenantId "
+            + "AND d.id IN (SELECT dri.id.dishId FROM com.easyeat.dish.domain.DishRecipeIngredient dri WHERE dri.id.ingredientId = :ingredientId)")
+    List<Dish> findDishesByIngredientId(@Param("tenantId") UUID tenantId, @Param("ingredientId") UUID ingredientId);
 
     /**
      * The approval transition of FR-016, FR-025, spec 007: a single conditional {@code UPDATE}
@@ -80,6 +101,15 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
      * would stay invisible and SC-001 would be unprovable. This is the first and only path in
      * this feature that writes {@code is_active}; the Sprint 3 pause feature owns every other one.
      */
+    @Modifying
+    @Query("UPDATE Dish d SET d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED, "
+            + "d.publishedAt = :publishedAt, d.isActive = true, d.marginPercentage = :marginPercentage "
+            + "WHERE d.id = :dishId AND d.tenantId = :tenantId "
+            + "AND d.status = com.easyeat.dish.domain.DishStatus.PENDING_PRICE")
+    int updateApprovalIfPendingAndSetMargin(@Param("dishId") UUID dishId, @Param("tenantId") UUID tenantId,
+                                            @Param("publishedAt") Instant publishedAt,
+                                            @Param("marginPercentage") BigDecimal marginPercentage);
+
     @Modifying
     @Query("UPDATE Dish d SET d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED, "
             + "d.publishedAt = :publishedAt, d.isActive = true "
