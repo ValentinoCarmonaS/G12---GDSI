@@ -28,9 +28,10 @@ import {
 } from '../components/catalog/CatalogSearchFilter';
 import { ManualFiltersSidebar } from '../components/catalog/ManualFiltersSidebar';
 import { EmptyFilterResultsNotice } from '../components/catalog/EmptyFilterResultsNotice';
-import { BrandThemeProvider } from '../components/common/BrandThemeProvider';
+import { BrandThemeProvider, useBrandTheme } from '../components/common/BrandThemeProvider';
 
-export const CatalogView: React.FC = () => {
+const CatalogContent: React.FC = () => {
+  const { branding } = useBrandTheme();
   const navigate = useNavigate();
   const tenantContext = useContext(TenantContext);
   const tenant = tenantContext?.tenant;
@@ -261,11 +262,10 @@ export const CatalogView: React.FC = () => {
   const pageTitle = catalogData?.establishment?.name || tenant?.name || 'Catálogo de Productos';
 
   return (
-    <BrandThemeProvider establishmentId={tenant?.id || catalogData?.establishment?.id}>
-      <WorkspaceLayout
-        title={pageTitle}
-        subtitle="Explorá nuestra carta y armá tu pedido en tiempo real"
-      >
+    <WorkspaceLayout
+      title={pageTitle}
+      subtitle="Explorá nuestra carta y armá tu pedido en tiempo real"
+    >
       <div className="space-y-6">
         {/* Top Header Actions */}
         <div className="flex items-center justify-between gap-4">
@@ -285,6 +285,41 @@ export const CatalogView: React.FC = () => {
             <div />
           )}
         </div>
+
+        {/* Branded Restaurant Header (Contract 08, AS-9, Q7/A7, INV-009) */}
+        <header
+          data-testid="restaurant-branding-header"
+          style={{
+            backgroundColor: branding.secondaryColor || 'var(--brand-secondary, #065F46)',
+            color: branding.secondaryContrastColor || 'var(--brand-secondary-contrast, #FFFFFF)',
+          }}
+          className="py-6 px-6 shadow-sm rounded-2xl transition-colors"
+        >
+          <div className="flex items-center gap-4">
+            {branding.logoUrl ? (
+              <img
+                src={branding.logoUrl}
+                alt={branding.fantasyName || 'Logo'}
+                data-testid="restaurant-branding-logo"
+                className="h-16 w-16 rounded-2xl object-cover bg-white/10 p-1 border-2 border-white/20 shadow-sm"
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-2xl bg-white/20 flex items-center justify-center font-bold text-2xl border-2 border-white/20 shadow-sm">
+                {(branding.fantasyName || pageTitle || 'E').charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <h1 className="text-2xl font-black tracking-tight" data-testid="restaurant-branding-name">
+                {branding.fantasyName || pageTitle}
+              </h1>
+              {branding.description && (
+                <p className="text-sm opacity-90 mt-1" data-testid="restaurant-branding-desc">
+                  {branding.description}
+                </p>
+              )}
+            </div>
+          </div>
+        </header>
 
         {/* Guest Banner (FR-026, spec 003) */}
         {!isAuthenticated && (
@@ -615,6 +650,15 @@ export const CatalogView: React.FC = () => {
         }}
       />
     </WorkspaceLayout>
+  );
+};
+
+export const CatalogView: React.FC = () => {
+  const tenantContext = useContext(TenantContext);
+  const tenant = tenantContext?.tenant;
+  return (
+    <BrandThemeProvider establishmentId={tenant?.id}>
+      <CatalogContent />
     </BrandThemeProvider>
   );
 };
