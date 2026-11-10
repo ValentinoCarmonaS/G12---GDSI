@@ -60,6 +60,9 @@ class OrderServiceTest {
     @Mock
     private DishRepository dishRepository;
 
+    @Mock
+    private com.easyeat.operations.repository.OperatingScheduleRepository operatingScheduleRepository;
+
     @InjectMocks
     private OrderService orderService;
 
@@ -251,6 +254,103 @@ class OrderServiceTest {
             assertThatThrownBy(() -> orderService.createOrder(userId, request))
                     .isInstanceOf(SlotCapacityExceededException.class)
                     .hasMessageContaining("acaba de agotarse");
+
+            verify(orderRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("C-12 & FR-038: Operating Schedule Validation (Hours & Closed Days)")
+    class OperatingScheduleValidationTests {
+
+        @Test
+        @DisplayName("Rejects scheduled order when operating schedule is marked closed for that day (FR-038)")
+        void rejectsScheduledOrderWhenScheduleIsClosed() {
+            when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
+            when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate futureDate = LocalDate.now().plusDays(2);
+            com.easyeat.operations.domain.EstablishmentOperatingSchedule closedSched =
+                    new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                            establishmentId, futureDate.getDayOfWeek(), LocalTime.of(11, 0), LocalTime.of(15, 0), true
+                    );
+            when(operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, futureDate.getDayOfWeek()))
+                    .thenReturn(Optional.of(closedSched));
+
+            CreateOrderRequest request = new CreateOrderRequest(
+                    establishmentId,
+                    FulfillmentMode.SCHEDULED,
+                    futureDate,
+                    LocalTime.of(12, 0),
+                    LocalTime.of(12, 15),
+                    List.of(new CreateOrderItemRequest(dishId, 1))
+            );
+
+            assertThatThrownBy(() -> orderService.createOrder(userId, request))
+                    .isInstanceOf(InvalidOrderStateException.class)
+                    .hasMessageContaining("no se encuentra operativo");
+
+            verify(orderRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Rejects scheduled order when slot is outside operating schedule opening/closing hours (FR-038)")
+        void rejectsScheduledOrderWhenSlotOutsideOperatingHours() {
+            when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
+            when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate futureDate = LocalDate.now().plusDays(2);
+            // Open only 13:00 to 15:00
+            com.easyeat.operations.domain.EstablishmentOperatingSchedule schedule =
+                    new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                            establishmentId, futureDate.getDayOfWeek(), LocalTime.of(13, 0), LocalTime.of(15, 0), false
+                    );
+            when(operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, futureDate.getDayOfWeek()))
+                    .thenReturn(Optional.of(schedule));
+
+            // Attempting 11:30 (before opening 13:00)
+            CreateOrderRequest request = new CreateOrderRequest(
+                    establishmentId,
+                    FulfillmentMode.SCHEDULED,
+                    futureDate,
+                    LocalTime.of(11, 30),
+                    LocalTime.of(11, 45),
+                    List.of(new CreateOrderItemRequest(dishId, 1))
+            );
+
+            assertThatThrownBy(() -> orderService.createOrder(userId, request))
+                    .isInstanceOf(InvalidOrderStateException.class)
+                    .hasMessageContaining("fuera del horario de atención");
+
+            verify(orderRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Rejects immediate order when operating schedule is closed right now (FR-038)")
+        void rejectsImmediateOrderWhenScheduleIsClosedNow() {
+            when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
+            when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate today = LocalDate.now();
+            com.easyeat.operations.domain.EstablishmentOperatingSchedule closedSched =
+                    new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                            establishmentId, today.getDayOfWeek(), LocalTime.of(11, 0), LocalTime.of(15, 0), true
+                    );
+            when(operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, today.getDayOfWeek()))
+                    .thenReturn(Optional.of(closedSched));
+
+            CreateOrderRequest request = new CreateOrderRequest(
+                    establishmentId,
+                    FulfillmentMode.IMMEDIATE,
+                    null,
+                    null,
+                    null,
+                    List.of(new CreateOrderItemRequest(dishId, 1))
+            );
+
+            assertThatThrownBy(() -> orderService.createOrder(userId, request))
+                    .isInstanceOf(InvalidOrderStateException.class)
+                    .hasMessageContaining("cerrado para pedidos inmediatos");
 
             verify(orderRepository, never()).save(any());
         }

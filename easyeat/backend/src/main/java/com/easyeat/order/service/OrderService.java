@@ -4,6 +4,8 @@ import com.easyeat.catalog.domain.Dish;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
+import com.easyeat.operations.repository.OperatingScheduleRepository;
 import com.easyeat.order.domain.FulfillmentMode;
 import com.easyeat.order.domain.Order;
 import com.easyeat.order.domain.OrderItem;
@@ -35,6 +37,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -45,22 +48,32 @@ public class OrderService {
     private final EstablishmentRepository establishmentRepository;
     private final DishRepository dishRepository;
     private final Clock clock;
+    private final OperatingScheduleRepository operatingScheduleRepository;
 
     @Autowired
     public OrderService(OrderRepository orderRepository,
                         EstablishmentRepository establishmentRepository,
                         DishRepository dishRepository,
-                        @Autowired(required = false) Clock clock) {
+                        @Autowired(required = false) Clock clock,
+                        @Autowired(required = false) OperatingScheduleRepository operatingScheduleRepository) {
         this.orderRepository = orderRepository;
         this.establishmentRepository = establishmentRepository;
         this.dishRepository = dishRepository;
         this.clock = (clock != null) ? clock : Clock.systemDefaultZone();
+        this.operatingScheduleRepository = operatingScheduleRepository;
     }
 
     public OrderService(OrderRepository orderRepository,
                         EstablishmentRepository establishmentRepository,
                         DishRepository dishRepository) {
-        this(orderRepository, establishmentRepository, dishRepository, Clock.systemDefaultZone());
+        this(orderRepository, establishmentRepository, dishRepository, Clock.systemDefaultZone(), null);
+    }
+
+    public OrderService(OrderRepository orderRepository,
+                        EstablishmentRepository establishmentRepository,
+                        DishRepository dishRepository,
+                        Clock clock) {
+        this(orderRepository, establishmentRepository, dishRepository, clock, null);
     }
 
     @Transactional
@@ -108,6 +121,24 @@ public class OrderService {
             timeSlotStart = nowTime.truncatedTo(ChronoUnit.MINUTES);
             timeSlotEnd = timeSlotStart.plusMinutes(leadTime);
 
+            boolean isOpenNow;
+            if (operatingScheduleRepository != null) {
+                Optional<EstablishmentOperatingSchedule> todaySchedOpt =
+                        operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishment.getId(), today.getDayOfWeek());
+                if (todaySchedOpt.isPresent()) {
+                    EstablishmentOperatingSchedule s = todaySchedOpt.get();
+                    isOpenNow = !s.isClosed() && !nowTime.isBefore(s.getOpeningTime()) && nowTime.isBefore(s.getClosingTime());
+                } else {
+                    isOpenNow = establishment.isOpen(nowTime);
+                }
+            } else {
+                isOpenNow = establishment.isOpen(nowTime);
+            }
+
+            if (!isOpenNow) {
+                throw new InvalidOrderStateException("El establecimiento se encuentra cerrado para pedidos inmediatos en este momento.");
+            }
+
             LocalTime ongoingSlot = establishment.calculateCurrentOngoingSlot(nowTime);
             if (ongoingSlot != null) {
                 long ongoingBooked = orderRepository.countActiveOrdersBySlot(establishment.getId(), today, ongoingSlot, nowInstant);
@@ -122,14 +153,33 @@ public class OrderService {
                     ? request.getTimeSlotEnd()
                     : timeSlotStart.plusMinutes(15);
 
-            // Validation of operating day and hours (FR-007, FR-008, FR-036)
-            if (!establishment.isOpenOn(pickupDate)) {
+            // Validation of operating day and hours with establishment_operating_schedules (FR-007, FR-008, FR-036, FR-038)
+            boolean isOperatingDay = establishment.isOpenOn(pickupDate);
+            LocalTime openTime = establishment.getOpeningTime();
+            LocalTime closeTime = establishment.getClosingTime();
+
+            if (operatingScheduleRepository != null) {
+                Optional<EstablishmentOperatingSchedule> schedOpt =
+                        operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishment.getId(), pickupDate.getDayOfWeek());
+                if (schedOpt.isPresent()) {
+                    EstablishmentOperatingSchedule sched = schedOpt.get();
+                    if (sched.isClosed()) {
+                        isOperatingDay = false;
+                    } else {
+                        isOperatingDay = true;
+                        openTime = sched.getOpeningTime();
+                        closeTime = sched.getClosingTime();
+                    }
+                }
+            }
+
+            if (!isOperatingDay) {
                 throw new InvalidOrderStateException("El establecimiento no se encuentra operativo en la fecha seleccionada.");
             }
-            if (establishment.getOpeningTime() != null && timeSlotStart.isBefore(establishment.getOpeningTime())) {
+            if (openTime != null && timeSlotStart.isBefore(openTime)) {
                 throw new InvalidOrderStateException("La franja horaria seleccionada está fuera del horario de atención del establecimiento.");
             }
-            if (establishment.getClosingTime() != null && timeSlotEnd.isAfter(establishment.getClosingTime())) {
+            if (closeTime != null && timeSlotEnd.isAfter(closeTime)) {
                 throw new InvalidOrderStateException("La franja horaria seleccionada excede el horario de cierre del establecimiento.");
             }
 

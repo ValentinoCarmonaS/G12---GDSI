@@ -38,6 +38,9 @@ class PickupSlotServiceTest {
     @Mock
     private OrderRepository orderRepository;
 
+    @Mock
+    private com.easyeat.operations.repository.OperatingScheduleRepository operatingScheduleRepository;
+
     private Clock clock;
     private PickupSlotService pickupSlotService;
 
@@ -53,7 +56,7 @@ class PickupSlotServiceTest {
         LocalDateTime localDateTime = LocalDateTime.of(2026, 11, 2, 12, 0, 0);
         fixedInstant = localDateTime.atZone(buenosAiresZone).toInstant();
         clock = Clock.fixed(fixedInstant, buenosAiresZone);
-        pickupSlotService = new PickupSlotService(establishmentRepository, orderRepository, clock);
+        pickupSlotService = new PickupSlotService(establishmentRepository, orderRepository, clock, operatingScheduleRepository);
 
         establishmentId = UUID.randomUUID();
         establishment = new Establishment();
@@ -175,6 +178,55 @@ class PickupSlotServiceTest {
                 assertThat(slot.getStartTime()).isAfterOrEqualTo(LocalTime.of(12, 30));
                 assertThat(slot.isSelectable()).isTrue();
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("C-12: Operating Schedule (010) Cross-check and Strict Filtering")
+    class OperatingScheduleCrossCheckTests {
+
+        @Test
+        @DisplayName("Should return empty slots when day is marked closed in establishment_operating_schedules")
+        void shouldReturnEmptySlotsWhenScheduleIsClosed() {
+            when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate tuesday = LocalDate.of(2026, 11, 3);
+            com.easyeat.operations.domain.EstablishmentOperatingSchedule closedSched =
+                    new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                            establishmentId, DayOfWeek.TUESDAY, LocalTime.of(11, 0), LocalTime.of(15, 0), true
+                    );
+            when(operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, DayOfWeek.TUESDAY))
+                    .thenReturn(Optional.of(closedSched));
+
+            PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, tuesday);
+
+            assertThat(response).isNotNull();
+            assertThat(response.isOperatingDay()).isFalse();
+            assertThat(response.getSlots()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should strictly constrain slots to custom opening and closing hours from establishment_operating_schedules")
+        void shouldConstrainSlotsToCustomOperatingHours() {
+            when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
+
+            LocalDate wednesday = LocalDate.of(2026, 11, 4);
+            // Custom window: 12:00 to 13:30 (6 15-minute slots: 12:00-12:15, 12:15-12:30, 12:30-12:45, 12:45-13:00, 13:00-13:15, 13:15-13:30)
+            com.easyeat.operations.domain.EstablishmentOperatingSchedule customSched =
+                    new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                            establishmentId, DayOfWeek.WEDNESDAY, LocalTime.of(12, 0), LocalTime.of(13, 30), false
+                    );
+            when(operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, DayOfWeek.WEDNESDAY))
+                    .thenReturn(Optional.of(customSched));
+
+            PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, wednesday);
+
+            assertThat(response).isNotNull();
+            assertThat(response.isOperatingDay()).isTrue();
+            assertThat(response.getSlots()).hasSize(6);
+
+            assertThat(response.getSlots().get(0).getStartTime()).isEqualTo(LocalTime.of(12, 0));
+            assertThat(response.getSlots().get(5).getEndTime()).isEqualTo(LocalTime.of(13, 30));
         }
     }
 }
