@@ -164,7 +164,7 @@ class AdminBrandingIntegrationTest {
                 new byte[]{1, 2, 3, 4}
         );
 
-        String savedUrl = "/uploads/logos/" + myEstablishmentId + "/logo.png";
+        String savedUrl = "/api/v1/establishments/" + myEstablishmentId + "/logo";
         when(logoStorageService.storeLogo(eq(myEstablishmentId), any(), eq(adminUser)))
                 .thenReturn(savedUrl);
 
