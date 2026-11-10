@@ -56,6 +56,18 @@ public class DishPriceHistory {
             updatable = false)
     private BigDecimal foodCostSnapshot;
 
+    @Column(name = "triggering_ingredient_id", updatable = false)
+    private UUID triggeringIngredientId;
+
+    @Column(name = "ingredient_previous_cost", precision = 12, scale = 4, updatable = false)
+    private BigDecimal ingredientPreviousCost;
+
+    @Column(name = "ingredient_new_cost", precision = 12, scale = 4, updatable = false)
+    private BigDecimal ingredientNewCost;
+
+    @Column(name = "previous_food_cost", precision = 10, scale = 2, updatable = false)
+    private BigDecimal previousFoodCost;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -65,12 +77,23 @@ public class DishPriceHistory {
 
     private DishPriceHistory(UUID dishId, UUID tenantId, UUID adminId, BigDecimal previousPrice,
                              BigDecimal newPrice, BigDecimal foodCostSnapshot) {
+        this(dishId, tenantId, adminId, previousPrice, newPrice, foodCostSnapshot, null, null, null, null);
+    }
+
+    private DishPriceHistory(UUID dishId, UUID tenantId, UUID adminId, BigDecimal previousPrice,
+                             BigDecimal newPrice, BigDecimal foodCostSnapshot,
+                             UUID triggeringIngredientId, BigDecimal ingredientPreviousCost,
+                             BigDecimal ingredientNewCost, BigDecimal previousFoodCost) {
         this.dishId = Objects.requireNonNull(dishId, "dishId");
         this.tenantId = Objects.requireNonNull(tenantId, "tenantId");
         this.adminId = Objects.requireNonNull(adminId, "adminId");
         this.previousPrice = previousPrice == null ? null : atMoneyScale(previousPrice);
         this.newPrice = requirePositivePrice(newPrice);
         this.foodCostSnapshot = requireNonNegativeFoodCost(foodCostSnapshot);
+        this.triggeringIngredientId = triggeringIngredientId;
+        this.ingredientPreviousCost = ingredientPreviousCost;
+        this.ingredientNewCost = ingredientNewCost;
+        this.previousFoodCost = previousFoodCost == null ? null : atMoneyScale(previousFoodCost);
         this.createdAt = Instant.now();
     }
 
@@ -83,6 +106,18 @@ public class DishPriceHistory {
                                           BigDecimal foodCostSnapshot) {
         return new DishPriceHistory(dishId, tenantId, adminId, previousPrice, newPrice,
                 foodCostSnapshot);
+    }
+
+    /**
+     * Records an automatic price adjustment caused by an ingredient cost change (C-09).
+     */
+    public static DishPriceHistory recordAutomaticAdjustment(
+            UUID dishId, UUID tenantId, UUID actorId,
+            BigDecimal previousPrice, BigDecimal newPrice,
+            BigDecimal previousFoodCost, BigDecimal newFoodCost,
+            UUID triggeringIngredientId, BigDecimal ingredientPreviousCost, BigDecimal ingredientNewCost) {
+        return new DishPriceHistory(dishId, tenantId, actorId, previousPrice, newPrice,
+                newFoodCost, triggeringIngredientId, ingredientPreviousCost, ingredientNewCost, previousFoodCost);
     }
 
     private static BigDecimal requirePositivePrice(BigDecimal newPrice) {
@@ -143,6 +178,22 @@ public class DishPriceHistory {
 
     public BigDecimal getFoodCostSnapshot() {
         return foodCostSnapshot;
+    }
+
+    public UUID getTriggeringIngredientId() {
+        return triggeringIngredientId;
+    }
+
+    public BigDecimal getIngredientPreviousCost() {
+        return ingredientPreviousCost;
+    }
+
+    public BigDecimal getIngredientNewCost() {
+        return ingredientNewCost;
+    }
+
+    public BigDecimal getPreviousFoodCost() {
+        return previousFoodCost;
     }
 
     public Instant getCreatedAt() {

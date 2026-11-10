@@ -153,8 +153,8 @@ public class DishGovernanceService {
                     List.of(AcknowledgementKind.NEGATIVE_MARGIN));
         }
 
-        int updated = dishRepository.updateRetailPriceIfUnchanged(dishId, tenantId,
-                expectedRetailPrice, retailPrice);
+        int updated = dishRepository.updateRetailPriceAndMarginIfUnchanged(dishId, tenantId,
+                expectedRetailPrice, retailPrice, marginPct);
         if (updated == 0) {
             BigDecimal current = dishRepository.findByIdAndTenantId(dishId, tenantId)
                     .map(Dish::getRetailPrice)
@@ -242,7 +242,7 @@ public class DishGovernanceService {
         }
 
         Instant publishedAt = Instant.now();
-        int updated = dishRepository.updateApprovalIfPending(dishId, tenantId, publishedAt);
+        int updated = dishRepository.updateApprovalIfPendingAndSetMargin(dishId, tenantId, publishedAt, marginPct);
         if (updated == 0) {
             String currentStatus = dishRepository.findByIdAndTenantId(dishId, tenantId)
                     .map(d -> d.getStatus().name())

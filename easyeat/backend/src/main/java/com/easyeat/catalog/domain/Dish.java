@@ -56,6 +56,13 @@ public class Dish {
     private BigDecimal retailPrice;
 
     /**
+     * Commercial margin percentage assigned or derived on pricing/approval (C-09 / Spec 007).
+     * Used for automatic PVP recalculation upon ingredient cost increase.
+     */
+    @Column(name = "margin_percentage", precision = 7, scale = 4)
+    private BigDecimal marginPercentage;
+
+    /**
      * The instant of the {@code PENDING_PRICE -> PUBLISHED} transition, owned by spec 007.
      * {@code null} for any dish never approved, and never cleared here — unpublishing belongs to
      * the Sprint 3 catalog feature.
@@ -199,6 +206,14 @@ public class Dish {
 
     public void setRetailPrice(BigDecimal retailPrice) {
         this.retailPrice = retailPrice;
+    }
+
+    public BigDecimal getMarginPercentage() {
+        return marginPercentage;
+    }
+
+    public void setMarginPercentage(BigDecimal marginPercentage) {
+        this.marginPercentage = marginPercentage;
     }
 
     public Instant getPublishedAt() {
