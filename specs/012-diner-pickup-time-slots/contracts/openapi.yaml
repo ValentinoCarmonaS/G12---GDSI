@@ -16,9 +16,14 @@ paths:
       summary: Consulta disponibilidad de franjas horarias de retiro
       description: >
         Retorna la grilla de turnos de 15 minutos disponibles y seleccionables para la fecha
-        especificada (restringida a los próximos 7 días operativos), filtrando y omitiendo
-        bloques horarios pasados, dentro del lead time de preparación o saturados al 100% (C-12).
-        Indica el nivel de saturación y marca de alta demanda para cada franja devuelta.
+        especificada (restringida a los próximos 7 días operativos). Cruza obligatoriamente los
+        horarios de atención del establecimiento configurados para el día correspondiente en
+        `establishment_operating_schedules` (o fallback base). Si el local está cerrado en esa
+        fecha (`is_closed == true`) o fuera de horario de atención, o si no existen cupos disponibles,
+        el endpoint responde con una lista vacía `slots: []`. Filtra y omite de forma estricta
+        bloques horarios pasados, dentro del lead time de preparación (30 min) o saturados al 100% (C-12).
+        En frontend, el selector de calendario semanal correspondiente se estructura iniciando
+        obligatoriamente en Lunes (ISO 8601).
       operationId: getPickupSlots
       security:
         - bearerAuth: []

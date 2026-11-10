@@ -14,7 +14,7 @@
 ## Completitud de Requisitos
 
 - [x] Sin marcadores `[NEEDS CLARIFICATION]` pendientes (todos los puntos fueron acordados en Grill-Me).
-- [x] Requisitos funcionales testeables, unívocos y con numeración correlativa (`FR-001` a `FR-036`, incorporando `FR-034` a `FR-036` de la corrección C-12).
+- [x] Requisitos funcionales testeables, unívocos y con numeración correlativa (`FR-001` a `FR-038`, incorporando `FR-034` a `FR-038` de la corrección C-12).
 - [x] Criterios de éxito medibles y expresados de forma agnóstica a la tecnología (`SC-001` a `SC-008`).
 - [x] Todos los escenarios de aceptación definidos en formato Given-When-Then.
 - [x] Casos borde contemplados (desfase de reloj, envejecimiento en checkout, colisión concurrente, cierres comerciales).
@@ -41,4 +41,6 @@
   7. **Cómputo Unitario por Orden**: Cada orden confirmada equivale exactamente a 1 cupo de capacidad de la franja horaria, con independencia de la cantidad de ítems del carrito.
   8. **Protección Anti-Acaparamiento**: Límite estricto de máximo 1 orden en `PENDING_PAYMENT` por comensal en simultáneo.
   9. **Contador Regresivo en Pantalla**: Visualización en vivo del tiempo restante de reserva (15:00 a 00:00) con alerta visual preventiva al restar menos de 2 minutos.
+  10. **Filtro Estricto por Horarios Operativos (C-12)**: Cruce obligatorio con `establishment_operating_schedules`. Días con `is_closed == true` o sin atención devuelven `slots: []`, desplegando el estado vacío informativo.
+  11. **Convención de Calendario Iniciando en LUNES (C-12)**: Estructuración obligatoria de la semana iniciando en Lunes (ISO 8601: Lun, Mar, Mié, Jue, Vie, Sáb, Dom).
 
