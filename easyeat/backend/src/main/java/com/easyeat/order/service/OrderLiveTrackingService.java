@@ -122,7 +122,24 @@ public class OrderLiveTrackingService {
             }
 
             int baseMinutes = 20;
-            int estimatedMinutes = baseMinutes + (int) (activeAhead * 2) + globalDelay;
+            int totalEstimatedMinutes = Math.max(1, baseMinutes + (int) (activeAhead * 2) + globalDelay);
+
+            Instant createdAt = order.getCreatedAt() != null ? order.getCreatedAt() : now;
+            long elapsedMinutes = Math.max(0, Duration.between(createdAt, now).toMinutes());
+
+            int estimatedMinutes = (int) Math.max(1, totalEstimatedMinutes - elapsedMinutes);
+
+            int progressPercentage;
+            String message;
+            if (elapsedMinutes >= totalEstimatedMinutes) {
+                progressPercentage = 92;
+                message = "Dando los últimos toques a tu pedido";
+            } else {
+                double ratio = (double) elapsedMinutes / (double) totalEstimatedMinutes;
+                progressPercentage = (int) Math.round(15.0 + (ratio * 77.0));
+                progressPercentage = Math.min(92, Math.max(15, progressPercentage));
+                message = "Preparando tu pedido";
+            }
 
             String kitchenStatus = "NORMAL";
             if (globalDelay > 0) {
@@ -138,8 +155,6 @@ public class OrderLiveTrackingService {
                             globalDelay
                     );
 
-            int progressPercentage = Math.min(95, Math.max(10, 100 - (estimatedMinutes * 2)));
-
             return new OrderLiveTrackingResponse(
                     order.getId(),
                     ticketNumber,
@@ -150,7 +165,7 @@ public class OrderLiveTrackingService {
                     progressPercentage,
                     false,
                     saturationDto,
-                    "Preparando tu pedido",
+                    message,
                     now
             );
         }

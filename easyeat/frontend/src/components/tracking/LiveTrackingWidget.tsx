@@ -65,7 +65,7 @@ export const LiveTrackingWidget: React.FC<LiveTrackingWidgetProps> = ({
           </div>
           <div>
             <h3 className="text-base font-bold text-gray-900">
-              Preparando tu pedido
+              {tracking?.message || 'Preparando tu pedido'}
             </h3>
             <p className="text-xs text-gray-500">
               Pedido #{effectiveTicketNumber} • Retiro en mostrador
@@ -107,10 +107,9 @@ export const LiveTrackingWidget: React.FC<LiveTrackingWidgetProps> = ({
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold">
-              {tracking?.message ||
-                (saturation?.kitchenStatus === 'HIGH_DEMAND'
-                  ? 'Cocina con alta demanda'
-                  : 'Demora adicional informada por cocina')}
+              {saturation?.kitchenStatus === 'HIGH_DEMAND'
+                ? 'Cocina con alta demanda'
+                : 'Demora adicional informada por cocina'}
             </p>
             <p className="text-amber-700 mt-0.5">
               Hay {saturation?.activeOrdersAhead ?? 0} pedidos por delante en cola.

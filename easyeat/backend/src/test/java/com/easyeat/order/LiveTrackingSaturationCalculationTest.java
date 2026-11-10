@@ -59,7 +59,7 @@ class LiveTrackingSaturationCalculationTest {
     }
 
     @Test
-    @DisplayName("AS-5/INV-005: calculates dynamic estimated time for IMMEDIATE order based on queue saturation")
+    @DisplayName("AS-5/INV-005: calculates dynamic estimated time and progress for IMMEDIATE order based on queue saturation and elapsed time")
     void shouldCalculateEstimatedTimeBasedOnQueueSaturation() {
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
         // 2 orders ahead in queue
@@ -77,8 +77,12 @@ class LiveTrackingSaturationCalculationTest {
         assertThat(response.isCountdownActive()).isTrue();
         assertThat(response.isReadyForPickup()).isFalse();
 
-        // Base: 20 min + (2 * 2 min) + 0 delay = 24 min
-        assertThat(response.estimatedMinutesRemaining()).isEqualTo(24);
+        // Base total: 20 min + (2 * 2 min) + 0 delay = 24 min.
+        // Elapsed: 2 min -> remaining: 22 min.
+        assertThat(response.estimatedMinutesRemaining()).isEqualTo(22);
+        // Progress: 15 + round((2 / 24) * 77) = 15 + 6 = 21%
+        assertThat(response.progressPercentage()).isEqualTo(21);
+        assertThat(response.message()).isEqualTo("Preparando tu pedido");
         assertThat(response.kdsQueueSaturation()).isNotNull();
         assertThat(response.kdsQueueSaturation().activeOrdersAhead()).isEqualTo(2);
         assertThat(response.kdsQueueSaturation().kitchenStatus()).isEqualTo("NORMAL");
@@ -98,10 +102,30 @@ class LiveTrackingSaturationCalculationTest {
         OrderLiveTrackingResponse response = liveTrackingService.getLiveTracking(orderId, userId);
 
         assertThat(response).isNotNull();
-        // Base: 20 min + (1 * 2 min) + 10 delay = 32 min
-        assertThat(response.estimatedMinutesRemaining()).isEqualTo(32);
+        // Base total: 20 min + (1 * 2 min) + 10 delay = 32 min.
+        // Elapsed: 2 min -> remaining: 30 min.
+        assertThat(response.estimatedMinutesRemaining()).isEqualTo(30);
         assertThat(response.kdsQueueSaturation().activeOrdersAhead()).isEqualTo(1);
         assertThat(response.kdsQueueSaturation().kitchenStatus()).isEqualTo("DELAYED");
         assertThat(response.kdsQueueSaturation().globalDelayAppliedMinutes()).isEqualTo(10);
+    }
+
+    @Test
+    @DisplayName("AS-5/INV-005: caps at 92% and 1 minute with last touches message when elapsed time exceeds estimate")
+    void shouldCapAt92PercentAnd1MinuteWhenElapsedExceedsTotalEstimate() {
+        // Order created 30 minutes ago, while total estimate will be 24 min
+        order.setCreatedAt(Instant.now().minus(30, ChronoUnit.MINUTES));
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.countActiveOrdersAhead(eq(establishmentId), any(Instant.class))).thenReturn(2L);
+        when(kdsSettingsRepository.findById(establishmentId))
+                .thenReturn(Optional.of(new EstablishmentKdsSettings(establishmentId, 0, null)));
+
+        OrderLiveTrackingResponse response = liveTrackingService.getLiveTracking(orderId, userId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.estimatedMinutesRemaining()).isEqualTo(1);
+        assertThat(response.progressPercentage()).isEqualTo(92);
+        assertThat(response.message()).isEqualTo("Dando los últimos toques a tu pedido");
+        assertThat(response.isReadyForPickup()).isFalse();
     }
 }

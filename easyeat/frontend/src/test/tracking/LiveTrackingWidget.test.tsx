@@ -111,7 +111,33 @@ describe('T028 [US2]: LiveTrackingWidget Component Tests', () => {
       />
     );
 
-    expect(screen.getByText(/alta demanda/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/alta demanda/i).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders last touches state when order reaches capped progress (AS-5, INV-005)', () => {
+    vi.spyOn(pollingHook, 'useOrderLiveTrackingPolling').mockReturnValue({
+      tracking: {
+        ...defaultImmediateTracking,
+        estimatedMinutesRemaining: 1,
+        progressPercentage: 92,
+        message: 'Dando los últimos toques a tu pedido',
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(
+      <LiveTrackingWidget
+        orderId="order-123"
+        ticketNumber={142}
+        fulfillmentMode="IMMEDIATE"
+      />
+    );
+
+    expect(screen.getByText(/Dando los últimos toques a tu pedido/i)).toBeInTheDocument();
+    expect(screen.getByText(/1\s*min/i)).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '92');
   });
 
   it('switches to ready for pickup callout when order is ready (AS-8)', () => {

@@ -120,10 +120,10 @@ para saber cuánto tiempo libre tengo antes de ir a mostrador.
 
 #### Escenarios de aceptación
 
-- **AS-5 (Criterio fuente 5 — Progreso y tiempo estimado dinámico para retiro inmediato según saturación KDS)**:  
+- **AS-5 (Criterio fuente 5 — Progreso y tiempo estimado dinámico para retiro inmediato según saturación KDS y tiempo transcurrido)**:  
   **Dado** que el comensal confirmó un pedido de retiro inmediato,  
-  **Cuando** ingresa a la sección de seguimiento,  
-  **Entonces** visualiza una barra de progreso y un tiempo estimado de entrega calculado dinámicamente según la saturación actual de la cola en el KDS.
+  **Cuando** ingresa a la sección de seguimiento o se actualiza por sondeo silencioso en vivo,  
+  **Entonces** visualiza una barra de progreso que escala proporcionalmente desde un 15% inicial hasta un tope asintótico del 92% y un tiempo remanente que descuenta los minutos transcurridos respecto al tiempo total calculado según la saturación de cola KDS (`20 + (comandasPrevias * 2) + demoraGlobal`). Si transcurre el tiempo estimado total sin despacho de cocina, el reloj se clava en 1 minuto y 92% con el mensaje "Dando los últimos toques a tu pedido", reservando el 100% exclusivamente para el despacho real a mostrador (`READY_FOR_PICKUP`).
 
 - **AS-6 (Criterio fuente 6 — Horario pactado estático y activación de cuenta regresiva al acercarse el turno)**:  
   **Dado** que el comensal posee una reserva programada para una franja horaria futura,  
@@ -224,8 +224,8 @@ para que la vista del comensal respete la identidad visual de mi marca.
   El inicio del procesamiento de cobro inhabilita de inmediato los controles de envío de la pantalla. El bloqueo de interacciones no interfiere ni cancela la recepción del desenlace emitido por la pasarela de pagos externa.
 - **INV-004 (Completitud informativa de la confirmación)**:  
   La pantalla de confirmación exitosa debe exhibir de forma obligatoria y simultánea el número de orden asignado, la franja horaria de retiro acordada y el acceso directo al seguimiento en vivo.
-- **INV-005 (Gobernanza de la saturación del KDS sobre el tiempo inmediato)**:  
-  El tiempo estimado exhibido para órdenes de retiro inmediato debe responder dinámicamente al estado y volumen de trabajo real de la cola de preparación en el KDS, no pudiendo tratarse de un valor estático inmutable.
+- **INV-005 (Gobernanza de la saturación del KDS y tiempo transcurrido sobre el tiempo inmediato)**:  
+  El tiempo estimado exhibido para órdenes de retiro inmediato debe responder dinámicamente al estado y volumen de trabajo real de la cola de preparación en el KDS y a los minutos transcurridos desde su creación, no pudiendo tratarse de un valor estático inmutable. Al alcanzar el tiempo estimado sin despacho, el minutero no desciende por debajo de 1 minuto ni el progreso supera el 92% hasta que cocina marque la comanda como lista.
 - **INV-006 (Exclusión temporal de contador para reservas programadas distantes)**:  
   Una reserva programada cuya franja horaria de retiro inicie en un plazo superior a 15 minutos debe mostrar únicamente el horario pactado y tiene estrictamente prohibido presentar un contador dinámico regresivo hasta ingresar a dicho umbral.
 - **INV-007 (Sincronización reactiva y silenciosa ante ajustes operativos de cocina)**:  
