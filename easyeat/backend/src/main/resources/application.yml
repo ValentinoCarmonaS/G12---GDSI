@@ -8,6 +8,18 @@ server:
 spring:
   application:
     name: easyeat-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/easyeat}
+    username: ${SPRING_DATASOURCE_USERNAME:easyeat}
+    password: ${SPRING_DATASOURCE_PASSWORD:easyeat_dev_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 30000
+      validation-timeout: 5000
+      maximum-pool-size: 5
+      minimum-idle: 1
+      idle-timeout: 600000
+      max-lifetime: 1800000
   servlet:
     multipart:
       max-file-size: 10MB

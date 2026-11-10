@@ -33,7 +33,7 @@
 **⚠️ CRITICAL**: Ninguna tarea de User Story del backend puede comenzar hasta completar esta fase.
 
 - [x] T004 Configurar el puerto dinámico del servidor web con fallback (`server.port: ${PORT:8080}`) en `easyeat/backend/src/main/resources/application.yml`
-- [ ] T005 [P] Declarar las propiedades centralizadas de conexión a base de datos con soporte SSL y pool HikariCP optimizado (`connection-timeout: 30000`, `validation-timeout: 5000`, `maximum-pool-size: 5`) en `easyeat/backend/src/main/resources/application.yml`
+- [x] T005 [P] Declarar las propiedades centralizadas de conexión a base de datos con soporte SSL y pool HikariCP optimizado (`connection-timeout: 30000`, `validation-timeout: 5000`, `maximum-pool-size: 5`) en `easyeat/backend/src/main/resources/application.yml`
 - [ ] T006 [P] Configurar el escaneo de migraciones y semillas de Flyway (`classpath:db/migration` y `classpath:db/dev`) y la propiedad de orígenes CORS (`app.cors.allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}`) en `easyeat/backend/src/main/resources/application.yml`
 - [ ] T007 [P] Configurar la exposición del endpoint de salud de Actuator restringiendo los detalles a usuarios autorizados (`management.endpoints.web.exposure.include: health` y `management.endpoint.health.show-details: when-authorized`) en `easyeat/backend/src/main/resources/application.yml`
 
