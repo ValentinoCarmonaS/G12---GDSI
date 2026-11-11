@@ -61,6 +61,15 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     """)
     List<Order> findExpiredPendingOrders(@Param("now") Instant now);
 
+    @Query("""
+        SELECT o FROM Order o
+        WHERE o.userId = :userId
+          AND o.status = com.easyeat.order.domain.OrderStatus.PENDING_PAYMENT
+          AND (o.expiresAt IS NULL OR o.expiresAt > :now)
+        ORDER BY o.createdAt DESC
+    """)
+    List<Order> findActivePendingOrders(@Param("userId") UUID userId, @Param("now") Instant now);
+
     Optional<Order> findByIdAndUserId(UUID id, UUID userId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
