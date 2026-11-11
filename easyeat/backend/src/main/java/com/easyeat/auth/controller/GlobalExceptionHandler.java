@@ -657,6 +657,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setTitle("Conflict");
         problem.setInstance(URI.create(request.getRequestURI()));
         problem.setProperty("code", "ACTIVE_RESERVATION_EXISTS");
+        if (ex.getOrderId() != null) {
+            problem.setProperty("orderId", ex.getOrderId());
+        }
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }
 
