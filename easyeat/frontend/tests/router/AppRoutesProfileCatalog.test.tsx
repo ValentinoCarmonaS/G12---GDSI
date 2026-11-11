@@ -3,8 +3,16 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../../src/router/AppRoutes';
 import * as AuthModule from '../../src/hooks/useAuth';
+import * as orderApi from '../../src/api/orderApi';
 
 vi.mock('../../src/hooks/useAuth');
+vi.mock('../../src/api/orderApi', () => ({
+  getMyOrders: vi.fn().mockResolvedValue([]),
+  cancelOrder: vi.fn(),
+  createOrder: vi.fn(),
+  getOrderById: vi.fn(),
+  fetchPickupSlots: vi.fn(),
+}));
 vi.mock('../../src/api/profileApi', () => ({
   profileApi: {
     getProfile: vi.fn().mockResolvedValue({
@@ -179,5 +187,34 @@ describe('AppRoutes - Profile & Catalog Routing Integration (T046, US3, FR-026)'
     );
 
     expect(await screen.findByRole('heading', { name: /Mi perfil/i })).toBeInTheDocument();
+  });
+
+  it('activates "Mis pedidos" tab on /perfil#pedidos and displays responsive "Mis pedidos" nav link (T029, FR-009)', async () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      user: {
+        id: 'diner-1',
+        email: 'comensal@easyeat.com',
+        role: 'COMENSAL',
+        status: 'ACTIVE',
+        mustChangePassword: false,
+      },
+      token: 'jwt-token',
+      login: vi.fn(),
+      logout: vi.fn(),
+    } as any);
+
+    render(
+      <MemoryRouter initialEntries={['/perfil#pedidos']}>
+        <AppRoutes />
+      </MemoryRouter>
+    );
+
+    const ordersTab = await screen.findByRole('tab', { name: /mis pedidos/i });
+    expect(ordersTab).toHaveAttribute('aria-selected', 'true');
+    expect(orderApi.getMyOrders).toHaveBeenCalledTimes(1);
+
+    const navOrdersLink = screen.getByRole('link', { name: /mis pedidos/i });
+    expect(navOrdersLink).toHaveAttribute('href', '/perfil#pedidos');
   });
 });
