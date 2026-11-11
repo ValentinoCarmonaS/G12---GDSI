@@ -33,6 +33,7 @@ export type PaymentStatus =
 export type PaymentErrorCode =
   | 'SLOT_SOLD_OUT'
   | 'INSUFFICIENT_STOCK'
+  | 'ACTIVE_RESERVATION_EXISTS'
   | 'PAYMENT_IN_PROCESS'
   | 'GATEWAY_UNAVAILABLE'
   | 'RESERVATION_EXPIRED'
@@ -67,7 +68,7 @@ export interface PaymentInitiationResponse {
   reservationId: string;
   paymentId: string;
   gatewayPreferenceId: string;
-  redirectUrl: string;
+  redirectUrl: string | null;
   sandbox: boolean;
   expiresAt: string;
   totalAmount: number;
