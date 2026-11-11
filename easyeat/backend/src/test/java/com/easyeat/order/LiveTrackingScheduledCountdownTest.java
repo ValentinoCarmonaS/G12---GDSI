@@ -3,10 +3,13 @@ package com.easyeat.order;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.order.domain.FulfillmentMode;
+import com.easyeat.order.domain.KdsTicket;
+import com.easyeat.order.domain.KdsTicketStatus;
 import com.easyeat.order.domain.Order;
 import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.dto.OrderLiveTrackingResponse;
 import com.easyeat.order.repository.EstablishmentKdsSettingsRepository;
+import com.easyeat.order.repository.KdsTicketRepository;
 import com.easyeat.order.repository.OrderRepository;
 import com.easyeat.order.service.OrderLiveTrackingService;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +41,9 @@ class LiveTrackingScheduledCountdownTest {
 
     @Mock
     private Clock clock;
+
+    @Mock
+    private KdsTicketRepository kdsTicketRepository;
 
     @InjectMocks
     private OrderLiveTrackingService liveTrackingService;
@@ -193,5 +199,41 @@ class LiveTrackingScheduledCountdownTest {
         assertThat(response.progressPercentage()).isEqualTo(92);
         assertThat(response.isReadyForPickup()).isFalse();
         assertThat(response.message()).containsIgnoringCase("Tu turno ha comenzado");
+    }
+
+    @Test
+    @DisplayName("PENDING_ACCREDITATION y estados fuera de cocina devuelven progreso inactivo y ticketNumber desde KdsTicketRepository")
+    void nonKitchenOrderShouldReturnInactiveTrackingAndRealOrNullTicketNumber() {
+        order.setStatus(OrderStatus.PENDING_ACCREDITATION);
+        Instant fixedInstant = ZonedDateTime.of(
+                LocalDate.of(2026, 11, 9),
+                LocalTime.of(14, 5),
+                ZoneId.of("America/Argentina/Buenos_Aires")
+        ).toInstant();
+
+        when(clock.instant()).thenReturn(fixedInstant);
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(kdsTicketRepository.findByOrderId(orderId)).thenReturn(Optional.empty());
+
+        OrderLiveTrackingResponse pendingResponse = liveTrackingService.getLiveTracking(orderId, userId);
+
+        assertThat(pendingResponse.ticketNumber()).isNull();
+        assertThat(pendingResponse.isCountdownActive()).isFalse();
+        assertThat(pendingResponse.estimatedMinutesRemaining()).isNull();
+        assertThat(pendingResponse.progressPercentage()).isEqualTo(0);
+        assertThat(pendingResponse.isReadyForPickup()).isFalse();
+
+        order.setStatus(OrderStatus.IN_PROGRESS);
+        KdsTicket ticket = new KdsTicket(
+                UUID.randomUUID(), orderId, establishment, 55,
+                KdsTicketStatus.QUEUED, FulfillmentMode.SCHEDULED,
+                LocalDate.of(2026, 11, 9), LocalTime.of(14, 0), LocalTime.of(14, 30), fixedInstant
+        );
+        when(clock.getZone()).thenReturn(ZoneId.of("America/Argentina/Buenos_Aires"));
+        when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
+        when(kdsTicketRepository.findByOrderId(orderId)).thenReturn(Optional.of(ticket));
+
+        OrderLiveTrackingResponse activeResponse = liveTrackingService.getLiveTracking(orderId, userId);
+        assertThat(activeResponse.ticketNumber()).isEqualTo(55);
     }
 }

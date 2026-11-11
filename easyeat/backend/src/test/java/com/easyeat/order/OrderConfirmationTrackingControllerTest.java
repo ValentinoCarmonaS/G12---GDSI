@@ -210,4 +210,38 @@ class OrderConfirmationTrackingControllerTest {
 
         verify(liveTrackingService).getLiveTracking(eq(orderId), eq(testUser.getId()));
     }
+
+    @Test
+    @DisplayName("PENDING_ACCREDITATION serializa ticketNumber null y approvalStatus PENDING sin error")
+    void shouldReturnPendingAccreditationWithNullTicketNumber() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UUID establishmentId = UUID.randomUUID();
+        OrderConfirmationTrackingResponse pendingResponse = new OrderConfirmationTrackingResponse(
+                orderId,
+                null,
+                OrderStatus.PENDING_ACCREDITATION,
+                "PENDING",
+                establishmentId,
+                "Café Central Palermo",
+                FulfillmentMode.IMMEDIATE,
+                LocalDate.now(),
+                LocalTime.of(12, 0),
+                LocalTime.of(12, 30),
+                new BigDecimal("3500.00"),
+                List.of(),
+                "/pedidos/" + orderId + "/seguimiento",
+                Instant.now()
+        );
+
+        when(trackingService.getConfirmationTracking(eq(orderId), eq(testUser.getId())))
+                .thenReturn(pendingResponse);
+
+        mockMvc.perform(get("/api/v1/orders/{orderId}/confirmation-tracking", orderId)
+                        .principal(auth)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDING_ACCREDITATION"))
+                .andExpect(jsonPath("$.approvalStatus").value("PENDING"))
+                .andExpect(jsonPath("$.ticketNumber").doesNotExist());
+    }
 }
