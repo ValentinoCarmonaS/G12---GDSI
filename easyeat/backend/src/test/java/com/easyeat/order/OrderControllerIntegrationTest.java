@@ -15,6 +15,8 @@ import com.easyeat.order.domain.FulfillmentMode;
 import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.dto.CreateOrderItemRequest;
 import com.easyeat.order.dto.CreateOrderRequest;
+import com.easyeat.order.dto.DinerOrderSummaryResponse;
+import com.easyeat.order.dto.DinerOrderSummaryResponse.DinerOrderItemResponse;
 import com.easyeat.order.dto.OrderCreatedResponse;
 import com.easyeat.order.dto.OrderDetailResponse;
 import com.easyeat.order.dto.OrderSummaryResponse;
@@ -46,6 +48,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -165,6 +168,21 @@ class OrderControllerIntegrationTest {
         @DisplayName("POST /api/v1/orders/{id}/cancel returns 403 Forbidden for unauthorized role (MOSTRADOR)")
         void counterRoleCancelReturns403() throws Exception {
             mockMvc.perform(post("/api/v1/orders/{id}/cancel", UUID.randomUUID()))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/orders returns 401 Unauthorized for unauthenticated requests")
+        void unauthenticatedGetDinerOrdersReturns401() throws Exception {
+            mockMvc.perform(get("/api/v1/orders"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @WithMockUser(username = "admin@easyeat.com", roles = {"ADMINISTRADOR"})
+        @DisplayName("GET /api/v1/orders returns 403 Forbidden for unauthorized role (ADMINISTRADOR)")
+        void adminRoleGetDinerOrdersReturns403() throws Exception {
+            mockMvc.perform(get("/api/v1/orders"))
                     .andExpect(status().isForbidden());
         }
     }
@@ -416,6 +434,125 @@ class OrderControllerIntegrationTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnprocessableEntity())
                     .andExpect(jsonPath("$.code").value("LEAD_TIME_VIOLATION"));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/orders Diner Order History Tests")
+    class GetDinerOrdersEndpointTests {
+
+        @Test
+        @DisplayName("GET /api/v1/orders returns 200 OK with DinerOrderSummaryResponse payload including pending and lazily expired orders")
+        void getDinerOrdersReturnsPayloadAndLazilyExpiredStatus() throws Exception {
+            UUID confirmedId = UUID.randomUUID();
+            UUID pendingId = UUID.randomUUID();
+            UUID expiredId = UUID.randomUUID();
+            UUID dishId = UUID.randomUUID();
+            Instant now = Instant.now();
+
+            DinerOrderSummaryResponse confirmed = new DinerOrderSummaryResponse(
+                    confirmedId,
+                    108,
+                    establishmentId,
+                    "La Parrilla de Boedo",
+                    OrderStatus.CONFIRMED,
+                    FulfillmentMode.SCHEDULED,
+                    LocalDate.now().plusDays(1),
+                    LocalTime.of(20, 0),
+                    LocalTime.of(20, 15),
+                    new BigDecimal("18500.00"),
+                    now.plusSeconds(600),
+                    now.minusSeconds(120),
+                    null,
+                    "/pedidos/" + confirmedId + "/seguimiento",
+                    List.of(new DinerOrderItemResponse(
+                            dishId,
+                            "Vacío al Asador",
+                            1,
+                            new BigDecimal("18500.00"),
+                            new BigDecimal("18500.00")
+                    ))
+            );
+
+            DinerOrderSummaryResponse pending = new DinerOrderSummaryResponse(
+                    pendingId,
+                    null,
+                    establishmentId,
+                    "La Parrilla de Boedo",
+                    OrderStatus.PENDING_PAYMENT,
+                    FulfillmentMode.IMMEDIATE,
+                    LocalDate.now(),
+                    null,
+                    null,
+                    new BigDecimal("9200.00"),
+                    now.plusSeconds(420),
+                    now.minusSeconds(300),
+                    "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-123",
+                    "/pedidos/" + pendingId + "/seguimiento",
+                    List.of(new DinerOrderItemResponse(
+                            dishId,
+                            "Empanadas Salteñas x3",
+                            2,
+                            new BigDecimal("4600.00"),
+                            new BigDecimal("9200.00")
+                    ))
+            );
+
+            DinerOrderSummaryResponse lazilyExpired = new DinerOrderSummaryResponse(
+                    expiredId,
+                    null,
+                    establishmentId,
+                    "La Parrilla de Boedo",
+                    OrderStatus.EXPIRED,
+                    FulfillmentMode.IMMEDIATE,
+                    LocalDate.now(),
+                    null,
+                    null,
+                    new BigDecimal("5400.00"),
+                    now.minusSeconds(60),
+                    now.minusSeconds(960),
+                    null,
+                    "/pedidos/" + expiredId + "/seguimiento",
+                    List.of()
+            );
+
+            when(orderService.getDinerOrders(dinerId))
+                    .thenReturn(List.of(confirmed, pending, lazilyExpired));
+
+            mockMvc.perform(get("/api/v1/orders")
+                            .with(SecurityMockMvcRequestPostProcessors.authentication(authPrincipal)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(3))
+                    .andExpect(jsonPath("$[0].orderId").value(confirmedId.toString()))
+                    .andExpect(jsonPath("$[0].ticketNumber").value(108))
+                    .andExpect(jsonPath("$[0].establishmentName").value("La Parrilla de Boedo"))
+                    .andExpect(jsonPath("$[0].status").value("CONFIRMED"))
+                    .andExpect(jsonPath("$[0].redirectUrl").value(nullValue()))
+                    .andExpect(jsonPath("$[0].trackingUrl").value("/pedidos/" + confirmedId + "/seguimiento"))
+                    .andExpect(jsonPath("$[0].items[0].dishName").value("Vacío al Asador"))
+                    .andExpect(jsonPath("$[0].items[0].quantity").value(1))
+                    .andExpect(jsonPath("$[1].orderId").value(pendingId.toString()))
+                    .andExpect(jsonPath("$[1].ticketNumber").value(nullValue()))
+                    .andExpect(jsonPath("$[1].status").value("PENDING_PAYMENT"))
+                    .andExpect(jsonPath("$[1].redirectUrl").value("https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-123"))
+                    .andExpect(jsonPath("$[2].orderId").value(expiredId.toString()))
+                    .andExpect(jsonPath("$[2].status").value("EXPIRED"))
+                    .andExpect(jsonPath("$[2].redirectUrl").value(nullValue()));
+
+            verify(orderService).getDinerOrders(dinerId);
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/orders returns 200 OK with empty array when diner has no orders")
+        void getDinerOrdersReturnsEmptyArray() throws Exception {
+            when(orderService.getDinerOrders(dinerId)).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/v1/orders")
+                            .with(SecurityMockMvcRequestPostProcessors.authentication(authPrincipal)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.length()").value(0));
+
+            verify(orderService).getDinerOrders(dinerId);
         }
     }
 }
