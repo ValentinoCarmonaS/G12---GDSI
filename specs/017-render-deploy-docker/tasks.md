@@ -203,7 +203,7 @@
 
 ### Ciclo TDD 2 — Búsqueda segura de adaptador en `PaymentGatewayResolver`
 
-- [ ] T044 [US6] [RED] Agregar pruebas unitarias para `PaymentGatewayResolver.findAdapter(PaymentMethod)` verificando adaptador presente, `Optional.empty()` ante método sin adaptador registrado y `Optional.empty()` ante `null` (preservando el comportamiento existente de `resolve`) en `easyeat/backend/src/test/java/com/easyeat/order/service/PaymentGatewayResolverTest.java` (FR-023, Q15)
+- [x] T044 [US6] [RED] Agregar pruebas unitarias para `PaymentGatewayResolver.findAdapter(PaymentMethod)` verificando adaptador presente, `Optional.empty()` ante método sin adaptador registrado y `Optional.empty()` ante `null` (preservando el comportamiento existente de `resolve`) en `easyeat/backend/src/test/java/com/easyeat/order/service/PaymentGatewayResolverTest.java` (FR-023, Q15)
 - [ ] T045 [US6] [GREEN] Implementar `PaymentGatewayResolver.findAdapter(PaymentMethod)` retornando `Optional<PaymentGatewayPort>` y reutilizarlo desde `resolve(PaymentMethod)` en `easyeat/backend/src/main/java/com/easyeat/order/service/PaymentGatewayResolver.java` (FR-023, Q15)
 
 ### Ciclo TDD 3 — Enrutamiento y seguridad en `PaymentWebhookController`
