@@ -1,10 +1,8 @@
 package com.easyeat.order.controller;
 
 import com.easyeat.auth.domain.User;
-import com.easyeat.order.dto.CancelPaymentRequest;
-import com.easyeat.order.dto.CancelPaymentResponse;
-import com.easyeat.order.dto.PaymentInitiationRequest;
-import com.easyeat.order.dto.PaymentInitiationResponse;
+import com.easyeat.order.dto.*;
+import com.easyeat.order.service.CheckoutConfirmationService;
 import com.easyeat.order.service.CheckoutPaymentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -21,9 +19,14 @@ import java.util.UUID;
 public class CheckoutPaymentController {
 
     private final CheckoutPaymentService checkoutPaymentService;
+    private final CheckoutConfirmationService checkoutConfirmationService;
 
-    public CheckoutPaymentController(CheckoutPaymentService checkoutPaymentService) {
+    public CheckoutPaymentController(
+            CheckoutPaymentService checkoutPaymentService,
+            CheckoutConfirmationService checkoutConfirmationService
+    ) {
         this.checkoutPaymentService = checkoutPaymentService;
+        this.checkoutConfirmationService = checkoutConfirmationService;
     }
 
     @PostMapping("/pay")
@@ -47,6 +50,42 @@ public class CheckoutPaymentController {
     ) {
         UUID userId = resolveUserId(user, authentication);
         CancelPaymentResponse response = checkoutPaymentService.cancelPaymentAttempt(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/confirm-payment")
+    @PreAuthorize("hasRole('ROLE_COMENSAL') or hasRole('COMENSAL')")
+    public ResponseEntity<PaymentConfirmationResponse> confirmPayment(
+            @Valid @RequestBody PaymentConfirmationRequest request,
+            @AuthenticationPrincipal User user,
+            Authentication authentication
+    ) {
+        UUID userId = resolveUserId(user, authentication);
+        PaymentConfirmationResponse response = checkoutConfirmationService.confirmPayment(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/pending-payment")
+    @PreAuthorize("hasRole('ROLE_COMENSAL') or hasRole('COMENSAL')")
+    public ResponseEntity<PendingPaymentResponse> pendingPayment(
+            @Valid @RequestBody PendingPaymentRequest request,
+            @AuthenticationPrincipal User user,
+            Authentication authentication
+    ) {
+        UUID userId = resolveUserId(user, authentication);
+        PendingPaymentResponse response = checkoutConfirmationService.registerPendingPayment(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/confirm-zero-amount")
+    @PreAuthorize("hasRole('ROLE_COMENSAL') or hasRole('COMENSAL')")
+    public ResponseEntity<ZeroAmountOrderResponse> confirmZeroAmount(
+            @Valid @RequestBody ZeroAmountOrderRequest request,
+            @AuthenticationPrincipal User user,
+            Authentication authentication
+    ) {
+        UUID userId = resolveUserId(user, authentication);
+        ZeroAmountOrderResponse response = checkoutConfirmationService.confirmZeroAmountOrder(userId, request);
         return ResponseEntity.ok(response);
     }
 

@@ -25,6 +25,10 @@ public interface IngredientRepository extends JpaRepository<Ingredient, UUID> {
     @Query("SELECT i FROM Ingredient i WHERE i.id = :id AND i.tenantId = :tenantId")
     Optional<Ingredient> findByIdAndTenantIdForUpdate(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM Ingredient i WHERE i.id IN :ids AND i.tenantId = :tenantId ORDER BY i.id ASC")
+    List<Ingredient> findAllByIdInOrderByIdAscForUpdate(@Param("ids") List<UUID> ids, @Param("tenantId") UUID tenantId);
+
     List<Ingredient> findAllByTenantIdOrderByCreatedAtDesc(UUID tenantId);
 
     default List<Ingredient> findAllByTenantIdAndFilters(UUID tenantId, IngredientCategory category, IngredientStatus status) {

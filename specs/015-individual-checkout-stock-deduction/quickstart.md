@@ -53,7 +53,7 @@ EASYEAT_FRONTEND_URL=http://localhost:5173
 cd easyeat/backend
 docker compose up -d postgres
 
-# 2. Compilar e iniciar Backend Spring Boot (aplica migraciones Flyway V1 a V19)
+# 2. Compilar e iniciar Backend Spring Boot (aplica migraciones Flyway V1 a V23)
 ./mvnw spring-boot:run
 
 # 3. En terminal separada: iniciar Frontend React + Vite

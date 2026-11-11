@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { CheckCircle2, AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, Clock } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
+import { PendingAccreditationBanner } from '../components/checkout/PendingAccreditationBanner';
 import { useCart } from '../context/CartContext';
 import { getOrderPaymentStatus } from '../api/paymentApi';
+import { confirmPayment, registerPendingPayment } from '../api/checkoutApi';
 import { OrderPaymentStatusResponse } from '../types/payment';
 
 export const PaymentReturnPage: React.FC = () => {
@@ -13,10 +15,12 @@ export const PaymentReturnPage: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [paymentStatus, setPaymentStatus] = useState<OrderPaymentStatusResponse | null>(null);
+  const [isPending, setIsPending] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const orderId = searchParams.get('external_reference');
   const collectionStatus = searchParams.get('collection_status') || searchParams.get('status');
+  const paymentId = searchParams.get('payment_id') || searchParams.get('collection_id');
 
   useEffect(() => {
     if (!orderId) {
@@ -27,11 +31,33 @@ export const PaymentReturnPage: React.FC = () => {
 
     const verifyStatus = async () => {
       try {
+        if (collectionStatus === 'pending' || collectionStatus === 'in_process') {
+          setIsPending(true);
+          try {
+            await registerPendingPayment({
+              orderId,
+              gatewayPaymentId: paymentId || 'mp-pending',
+              statusDetail: 'pending_contingency',
+            });
+          } catch {
+            // best-effort
+          }
+        } else if (collectionStatus === 'approved') {
+          try {
+            await confirmPayment({
+              orderId,
+              gatewayPaymentId: paymentId || 'mp-approved',
+              status: 'approved',
+            });
+          } catch {
+            // best-effort if already confirmed by webhook
+          }
+        }
+
         const response = await getOrderPaymentStatus(orderId);
         setPaymentStatus(response);
 
-        // Si el pago está aprobado fehacientemente en backend (AS-2, Q4)
-        if (response.payment?.status === 'APPROVED' || response.orderStatus === 'PAID') {
+        if (response.payment?.status === 'APPROVED' || response.orderStatus === 'PAID' || response.orderStatus === 'IN_PROGRESS') {
           clearCart();
         } else if (response.payment?.status === 'REJECTED' || response.orderStatus === 'CANCELLED') {
           // Si el pago fue rechazado, redirigir a checkout preservando carrito (AS-3, Q2)
@@ -41,6 +67,8 @@ export const PaymentReturnPage: React.FC = () => {
                 'El pago fue rechazado por la entidad bancaria o fondos insuficientes. Tu carrito y franja siguen preservados.',
             },
           });
+        } else if (response.orderStatus === 'PENDING_ACCREDITATION' || response.payment?.status === 'PENDING' || collectionStatus === 'pending' || collectionStatus === 'in_process') {
+          setIsPending(true);
         } else if (collectionStatus === 'null' || !collectionStatus) {
           // Abandono voluntario sin pago
           navigate('/checkout', {
@@ -57,7 +85,7 @@ export const PaymentReturnPage: React.FC = () => {
     };
 
     verifyStatus();
-  }, [orderId, collectionStatus, clearCart, navigate]);
+  }, [orderId, collectionStatus, paymentId, clearCart, navigate]);
 
   return (
     <WorkspaceLayout title="Confirmación de Pago" subtitle="Verificación fehaciente con Mercado Pago">
@@ -85,6 +113,31 @@ export const PaymentReturnPage: React.FC = () => {
               >
                 Volver al checkout
               </button>
+            </div>
+          </div>
+        ) : isPending ? (
+          <div className="space-y-6">
+            <PendingAccreditationBanner orderId={orderId || ''} />
+            <div className="bg-white rounded-2xl border border-amber-200 p-8 text-center shadow-sm space-y-6">
+              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
+                <Clock className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-extrabold text-gray-900">Acreditación en curso</h2>
+                <p className="text-sm text-gray-600 max-w-md mx-auto">
+                  Tu orden ya se encuentra registrada. En cuanto Mercado Pago notifique la aprobación definitiva, tu pedido pasará automáticamente a cocina.
+                </p>
+              </div>
+              <div className="pt-2 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => navigate('/catalog')}
+                  className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-md flex items-center justify-center gap-2"
+                >
+                  <span>Volver al catálogo</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         ) : (

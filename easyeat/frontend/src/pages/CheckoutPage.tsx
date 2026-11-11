@@ -7,14 +7,16 @@ import { OperatingDatePicker, OperatingDayItem } from '../components/checkout/Op
 import { TimeSlotGrid } from '../components/checkout/TimeSlotGrid';
 import { CheckoutSummary } from '../components/checkout/CheckoutSummary';
 import { ConflictNotificationModal } from '../components/checkout/ConflictNotificationModal';
+import { ConcurrencyAlertModal } from '../components/checkout/ConcurrencyAlertModal';
 import { PendingOrderCountdown } from '../components/checkout/PendingOrderCountdown';
 import { InProcessPaymentPanel } from '../components/checkout/InProcessPaymentPanel';
 import { PaymentAlertBanner } from '../components/checkout/PaymentAlertBanner';
 import { useCart } from '../context/CartContext';
 import { useCheckoutFulfillment } from '../hooks/useCheckoutFulfillment';
 import { useTimeSlotPolling } from '../hooks/useTimeSlotPolling';
-import { cancelOrder } from '../api/orderApi';
+import { cancelOrder, createOrder } from '../api/orderApi';
 import { initiatePayment, cancelPayment, getOrderPaymentStatus } from '../api/paymentApi';
+import { confirmZeroAmountOrder } from '../api/checkoutApi';
 import { OrderDetailResponse } from '../types/order';
 import { PaymentInitiationRequest, OrderPaymentStatusResponse, PaymentMethod } from '../types/payment';
 
@@ -80,7 +82,7 @@ export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const { items, totalAmount } = useCart();
+  const { items, totalAmount, clearCart } = useCart();
 
   const establishmentId = useMemo(() => {
     const fromStorage =
@@ -147,13 +149,29 @@ export const CheckoutPage: React.FC = () => {
     errorMessage: '',
   });
 
+  const [concurrencyModal, setConcurrencyModal] = useState<{
+    isOpen: boolean;
+    type: 'INSUFFICIENT_STOCK' | 'SLOT_CAPACITY_EXCEEDED';
+    message: string;
+    unavailableDishes?: any[];
+  }>({
+    isOpen: false,
+    type: 'INSUFFICIENT_STOCK',
+    message: '',
+    unavailableDishes: [],
+  });
+
+  const isZeroAmount = useMemo(() => {
+    return totalAmount === 0 && items.length > 0;
+  }, [totalAmount, items]);
+
   const isFormValid = useMemo(() => {
     if (items.length === 0) return false;
     if (!fulfillmentMode) return false;
     if (fulfillmentMode === 'SCHEDULED' && (!selectedDate || !selectedSlot)) return false;
-    if (!selectedPaymentMethod) return false;
+    if (!isZeroAmount && !selectedPaymentMethod) return false;
     return true;
-  }, [items, fulfillmentMode, selectedDate, selectedSlot, selectedPaymentMethod]);
+  }, [items, fulfillmentMode, selectedDate, selectedSlot, selectedPaymentMethod, isZeroAmount]);
 
   // Handler for Confirmar pedido / Checkout Payment (T035, AS-1, AS-5, FR-001, FR-002)
   const handleConfirmOrder = async () => {
@@ -162,6 +180,59 @@ export const CheckoutPage: React.FC = () => {
     setIsSubmitting(true);
     setSubmissionError(null);
     setInfoMessage(null);
+
+    // Flujo especial para orden bonificada $0 (AS-4, FR-005)
+    if (isZeroAmount) {
+      try {
+        const orderPayload = {
+          establishmentId,
+          fulfillmentMode: fulfillmentMode!,
+          pickupDate: fulfillmentMode === 'SCHEDULED' ? selectedDate : undefined,
+          timeSlotStart: fulfillmentMode === 'SCHEDULED' ? selectedSlot?.startTime : undefined,
+          timeSlotEnd: fulfillmentMode === 'SCHEDULED' ? selectedSlot?.endTime : undefined,
+          items: items.map((i) => ({
+            dishId: i.dishId,
+            quantity: i.quantity,
+          })),
+        };
+
+        const createdOrder = await createOrder(orderPayload as any);
+        const zeroResponse = await confirmZeroAmountOrder({ orderId: createdOrder.orderId });
+
+        clearCart();
+        navigate(`/checkout/confirmacion/${zeroResponse.orderId}`, {
+          state: { message: zeroResponse.message },
+        });
+      } catch (err: any) {
+        const status = err?.response?.status;
+        const data = err?.response?.data;
+        const code = data?.code;
+
+        if (status === 409) {
+          if (code === 'INSUFFICIENT_STOCK') {
+            setConcurrencyModal({
+              isOpen: true,
+              type: 'INSUFFICIENT_STOCK',
+              message: data?.detail || 'Insumos agotados por concurrencia para preparar el menú.',
+              unavailableDishes: data?.unavailableDishes || [],
+            });
+            return;
+          }
+          if (code === 'SLOT_CAPACITY_EXCEEDED') {
+            setConcurrencyModal({
+              isOpen: true,
+              type: 'SLOT_CAPACITY_EXCEEDED',
+              message: data?.detail || 'La franja horaria seleccionada acaba de agotarse.',
+            });
+            return;
+          }
+        }
+        setSubmissionError(data?.detail || data?.message || 'Error al confirmar orden bonificada.');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
 
     const payload: PaymentInitiationRequest = {
       establishmentId,
@@ -191,6 +262,25 @@ export const CheckoutPage: React.FC = () => {
       const code = data?.code;
 
       if (status === 409) {
+        if (code === 'INSUFFICIENT_STOCK') {
+          setConcurrencyModal({
+            isOpen: true,
+            type: 'INSUFFICIENT_STOCK',
+            message: data?.detail || 'Los insumos de uno o más platos se agotaron por alta demanda concurrente.',
+            unavailableDishes: data?.unavailableDishes || [],
+          });
+          return;
+        }
+
+        if (code === 'SLOT_CAPACITY_EXCEEDED') {
+          setConcurrencyModal({
+            isOpen: true,
+            type: 'SLOT_CAPACITY_EXCEEDED',
+            message: data?.detail || 'La franja horaria seleccionada acaba de agotarse.',
+          });
+          return;
+        }
+
         if (code === 'PAYMENT_IN_PROCESS' && data?.orderId) {
           // Fetch existing in-process payment details to display panel
           try {
@@ -393,40 +483,42 @@ export const CheckoutPage: React.FC = () => {
               )}
 
               {/* Step 3: Payment Method Selection */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900">
-                    Método de pago
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    Seleccioná la plataforma para realizar el pago online seguro
-                  </p>
-                </div>
+              {!isZeroAmount && (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+                  <div>
+                    <h3 className="text-base font-semibold text-gray-900">
+                      Método de pago
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Seleccioná la plataforma para realizar el pago online seguro
+                    </p>
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Método de pago">
-                  <div
-                    onClick={() => setSelectedPaymentMethod('MERCADO_PAGO')}
-                    className={`relative flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                      selectedPaymentMethod === 'MERCADO_PAGO'
-                        ? 'border-sky-500 bg-sky-50/50 shadow-sm'
-                        : 'border-gray-200 hover:border-gray-300 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-sky-100 flex items-center justify-center font-bold text-sky-600 text-xs shrink-0">
-                        MP
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Método de pago">
+                    <div
+                      onClick={() => setSelectedPaymentMethod('MERCADO_PAGO')}
+                      className={`relative flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        selectedPaymentMethod === 'MERCADO_PAGO'
+                          ? 'border-sky-500 bg-sky-50/50 shadow-sm'
+                          : 'border-gray-200 hover:border-gray-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-sky-100 flex items-center justify-center font-bold text-sky-600 text-xs shrink-0">
+                          MP
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900 text-sm">Mercado Pago</div>
+                          <div className="text-xs text-gray-500">Checkout Pro / Sandbox</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-semibold text-gray-900 text-sm">Mercado Pago</div>
-                        <div className="text-xs text-gray-500">Checkout Pro / Sandbox</div>
-                      </div>
+                      {selectedPaymentMethod === 'MERCADO_PAGO' && (
+                        <CheckCircle2 className="w-5 h-5 text-sky-600 shrink-0" />
+                      )}
                     </div>
-                    {selectedPaymentMethod === 'MERCADO_PAGO' && (
-                      <CheckCircle2 className="w-5 h-5 text-sky-600 shrink-0" />
-                    )}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Right Column: Checkout Summary & Payment Action */}
@@ -447,16 +539,18 @@ export const CheckoutPage: React.FC = () => {
                 className={`w-full py-3.5 px-6 rounded-xl font-bold text-white text-base shadow-md transition-all flex items-center justify-center gap-2 ${
                   !isFormValid || isSubmitting || Boolean(inProcessPayment)
                     ? 'bg-gray-300 opacity-60 cursor-not-allowed pointer-events-none shadow-none'
+                    : isZeroAmount
+                    ? 'bg-[#c9a96e] text-[#0b0b0d] hover:bg-[#d8ba7f] cursor-pointer hover:shadow-lg'
                     : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 cursor-pointer hover:shadow-lg'
                 }`}
               >
                 {isSubmitting ? (
                   <>
                     <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span>Iniciando pago...</span>
+                    <span>{isZeroAmount ? 'Confirmando...' : 'Iniciando pago...'}</span>
                   </>
                 ) : (
-                  <span>Confirmar pedido</span>
+                  <span>{isZeroAmount ? 'Confirmar pedido bonificado ($0)' : 'Confirmar pedido'}</span>
                 )}
               </button>
             </div>
@@ -475,6 +569,24 @@ export const CheckoutPage: React.FC = () => {
           }}
           onViewExistingOrder={() => {
             setConflictModal((prev) => ({ ...prev, isOpen: false }));
+          }}
+        />
+
+        {/* Modal de Concurrencia (Agotamiento de Insumos y Saturación de Franjas) */}
+        <ConcurrencyAlertModal
+          isOpen={concurrencyModal.isOpen}
+          type={concurrencyModal.type}
+          message={concurrencyModal.message}
+          unavailableDishes={concurrencyModal.unavailableDishes}
+          onClose={() => setConcurrencyModal((prev) => ({ ...prev, isOpen: false }))}
+          onAction={() => {
+            setConcurrencyModal((prev) => ({ ...prev, isOpen: false }));
+            if (concurrencyModal.type === 'INSUFFICIENT_STOCK') {
+              // Mantener carrito y permitir modificar
+            } else {
+              refreshSlots();
+              setSelectedSlot(null);
+            }
           }}
         />
       </div>
