@@ -55,10 +55,10 @@ Standardized, predefined platform reference taxonomy representing dietary lifest
 ```sql
 INSERT INTO dietary_restrictions (code, name, category, description) VALUES
 -- Dietary Lifestyles
-('CELIAC', 'Sin TACC / Celíaco', 'DIETARY_LIFESTYLE', 'Excluye trigo, avena, cebada, centeno y derivados.'),
 ('VEGAN', 'Vegano', 'DIETARY_LIFESTYLE', 'Excluye carne, lácteos, huevos, miel y cualquier producto de origen animal.'),
 ('VEGETARIAN', 'Vegetariano', 'DIETARY_LIFESTYLE', 'Excluye carnes y pescados, admite lácteos y huevos.'),
--- Common Allergens
+-- Common Allergens & Medical Restrictions (C-11: CELIAC reclassified to COMMON_ALLERGEN)
+('CELIAC', 'Sin TACC / Celíaco', 'COMMON_ALLERGEN', 'Excluye trigo, avena, cebada, centeno y derivados.'),
 ('DAIRY', 'Lácteos / Lactosa', 'COMMON_ALLERGEN', 'Presencia de leche de vaca, caseína o derivados lácteos.'),
 ('PEANUTS', 'Maní', 'COMMON_ALLERGEN', 'Presencia de maní o derivados.'),
 ('TREE_NUTS', 'Frutos secos', 'COMMON_ALLERGEN', 'Presencia de nueces, almendras, avellanas o castañas.'),
@@ -163,11 +163,11 @@ CREATE TABLE IF NOT EXISTS dietary_restrictions (
     CONSTRAINT chk_dietary_category CHECK (category IN ('DIETARY_LIFESTYLE', 'COMMON_ALLERGEN'))
 );
 
--- Seed standardized taxonomy
+-- Seed standardized taxonomy (Updated under C-11: CELIAC is COMMON_ALLERGEN)
 INSERT INTO dietary_restrictions (code, name, category, description) VALUES
-    ('CELIAC', 'Sin TACC / Celíaco', 'DIETARY_LIFESTYLE', 'Excluye trigo, avena, cebada, centeno y derivados.'),
     ('VEGAN', 'Vegano', 'DIETARY_LIFESTYLE', 'Excluye carne, lácteos, huevos, miel y cualquier producto animal.'),
     ('VEGETARIAN', 'Vegetariano', 'DIETARY_LIFESTYLE', 'Excluye carnes y pescados, admite lácteos y huevos.'),
+    ('CELIAC', 'Sin TACC / Celíaco', 'COMMON_ALLERGEN', 'Excluye trigo, avena, cebada, centeno y derivados.'),
     ('DAIRY', 'Lácteos / Lactosa', 'COMMON_ALLERGEN', 'Presencia de leche de vaca, caseína o derivados lácteos.'),
     ('PEANUTS', 'Maní', 'COMMON_ALLERGEN', 'Presencia de maní o derivados.'),
     ('TREE_NUTS', 'Frutos secos', 'COMMON_ALLERGEN', 'Presencia de nueces, almendras, avellanas o castañas.'),

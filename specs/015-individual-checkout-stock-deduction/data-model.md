@@ -297,11 +297,11 @@ Para dar estricto cumplimiento a FR-013 de Spec 014, INV-11 de Spec 014 y SC-009
 
 ---
 
-## 6. Script DDL de Migración Flyway: `V19__individual_checkout_stock_deduction_and_kds.sql`
+## 6. Script DDL de Migración Flyway: `V23__individual_checkout_stock_deduction_and_kds.sql`
 
 ```sql
 -- ====================================================================
--- EasyEat V19: Individual Checkout, Stock Deduction & KDS Queue Dispatch
+-- EasyEat V23: Individual Checkout, Stock Deduction & KDS Queue Dispatch
 -- ====================================================================
 
 -- 1. Ampliar el check constraint de status en la tabla orders para incluir PENDING_ACCREDITATION e IN_PROGRESS
@@ -311,6 +311,8 @@ ALTER TABLE orders ADD CONSTRAINT chk_order_status
         'PENDING_PAYMENT', 
         'PENDING_ACCREDITATION', 
         'IN_PROGRESS', 
+        'READY_FOR_PICKUP',
+        'COMPLETED',
         'CONFIRMED', 
         'PAID', 
         'CANCELLED', 

@@ -156,7 +156,13 @@ public class CheckoutPaymentService {
 
             int availableStock = dishAvailabilityEngine.calculateAvailableStock(dish.getId(), establishment.getId());
             if (availableStock < itemReq.quantity()) {
-                throw new RuntimeException("Stock insuficiente para el plato: " + dish.getName());
+                throw new com.easyeat.inventory.exception.InsufficientIngredientStockException(
+                        null,
+                        dish.getName(),
+                        BigDecimal.valueOf(itemReq.quantity()),
+                        BigDecimal.valueOf(availableStock),
+                        "porciones"
+                );
             }
 
             BigDecimal unitPrice = dish.getRetailPrice() != null ? dish.getRetailPrice() : dish.getPrice();

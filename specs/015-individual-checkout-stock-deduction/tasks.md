@@ -20,7 +20,7 @@
 
 **Propósito**: Inicialización de esquemas, migraciones y tipos base compartidos.
 
-- [ ] T001 Crear migración Flyway `V19__individual_checkout_stock_deduction_and_kds.sql` ampliando el check constraint de `orders.status` e incorporando la tabla `kds_tickets` con índices en `easyeat/backend/src/main/resources/db/migration/V19__individual_checkout_stock_deduction_and_kds.sql`
+- [ ] T001 Crear migración Flyway `V23__individual_checkout_stock_deduction_and_kds.sql` ampliando el check constraint de `orders.status` e incorporando la tabla `kds_tickets` con índices en `easyeat/backend/src/main/resources/db/migration/V23__individual_checkout_stock_deduction_and_kds.sql`
 - [ ] T002 [P] Extender el enum `OrderStatus` incorporando los estados `PENDING_ACCREDITATION` e `IN_PROGRESS` en `easyeat/backend/src/main/java/com/easyeat/order/domain/OrderStatus.java`
 - [ ] T003 [P] Crear el enum `KdsTicketStatus` con los estados `QUEUED`, `IN_PREPARATION`, `READY_FOR_PICKUP` y `COMPLETED` en `easyeat/backend/src/main/java/com/easyeat/order/domain/KdsTicketStatus.java`
 - [ ] T004 [P] Definir tipos TypeScript para respuestas de confirmación de checkout, pedidos bonificados y estados de comandas en `easyeat/frontend/src/types/checkout.ts` y `easyeat/frontend/src/types/kds.ts`
@@ -56,27 +56,27 @@
 
 ### Tests para User Story 1 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
-- [ ] T010 [P] [US1] Escribir test de integración para pago aprobado y procesamiento autónomo de webhooks sin retorno del comensal (AS-1, AS-1b, CB-11) en `easyeat/backend/src/test/java/com/easyeat/order/IndividualCheckoutIntegrationTest.java`
-- [ ] T011 [P] [US1] Escribir test de integración para rechazo inmediato por insumos de receta agotados por concurrencia al iniciar cobro (AS-2, CB-02) en `easyeat/backend/src/test/java/com/easyeat/order/ConcurrencyStockExhaustionIntegrationTest.java`
-- [ ] T012 [P] [US1] Escribir test de integración para interrupción por franja horaria saturada tras superar ventana de 15 minutos (AS-3, CB-03) en `easyeat/backend/src/test/java/com/easyeat/order/SlotSaturationInterruptionIntegrationTest.java`
-- [ ] T013 [P] [US1] Escribir test de integración para confirmación directa de orden bonificada al 100% con monto cero (AS-4, CB-04) en `easyeat/backend/src/test/java/com/easyeat/order/ZeroAmountCheckoutIntegrationTest.java`
-- [ ] T014 [P] [US1] Escribir test de integración para retención provisoria ante estado pendiente de pasarela sin envío a KDS y resolución asíncrona (AS-5, CB-05) en `easyeat/backend/src/test/java/com/easyeat/order/PendingPaymentResolutionIntegrationTest.java`
-- [ ] T015 [P] [US1] Escribir pruebas unitarias y de integración de frontend para el flujo de pago individual, botón de confirmación de bonificación ($0) y vista de pago pendiente en `easyeat/frontend/tests/checkout/IndividualCheckoutPayment.test.tsx`
-- [ ] T016 [P] [US1] Escribir pruebas de frontend para visualización de modal de alerta de stock agotado y reapertura de horarios por franja saturada en `easyeat/frontend/tests/checkout/ConcurrencyAlerts.test.tsx`
+- [x] T010 [P] [US1] Escribir test de integración para pago aprobado y procesamiento autónomo de webhooks sin retorno del comensal (AS-1, AS-1b, CB-11) en `easyeat/backend/src/test/java/com/easyeat/order/IndividualCheckoutIntegrationTest.java`
+- [x] T011 [P] [US1] Escribir test de integración para rechazo inmediato por insumos de receta agotados por concurrencia al iniciar cobro (AS-2, CB-02) en `easyeat/backend/src/test/java/com/easyeat/order/ConcurrencyStockExhaustionIntegrationTest.java`
+- [x] T012 [P] [US1] Escribir test de integración para interrupción por franja horaria saturada tras superar ventana de 15 minutos (AS-3, CB-03) en `easyeat/backend/src/test/java/com/easyeat/order/SlotSaturationInterruptionIntegrationTest.java`
+- [x] T013 [P] [US1] Escribir test de integración para confirmación directa de orden bonificada al 100% con monto cero (AS-4, CB-04) en `easyeat/backend/src/test/java/com/easyeat/order/ZeroAmountCheckoutIntegrationTest.java`
+- [x] T014 [P] [US1] Escribir test de integración para retención provisoria ante estado pendiente de pasarela sin envío a KDS y resolución asíncrona (AS-5, CB-05) en `easyeat/backend/src/test/java/com/easyeat/order/PendingPaymentResolutionIntegrationTest.java`
+- [x] T015 [P] [US1] Escribir pruebas unitarias y de integración de frontend para el flujo de pago individual, botón de confirmación de bonificación ($0) y vista de pago pendiente en `easyeat/frontend/tests/checkout/IndividualCheckoutPayment.test.tsx`
+- [x] T016 [P] [US1] Escribir pruebas de frontend para visualización de modal de alerta de stock agotado y reapertura de horarios por franja saturada en `easyeat/frontend/tests/checkout/ConcurrencyAlerts.test.tsx`
 
 ### Implementación para User Story 1 (Hacer pasar los tests - Estado VERDE)
 
-- [ ] T017 [US1] Implementar la interfaz y servicio `KdsQueueService` y `KdsQueueServiceImpl` para inserción atómica e idempotente de tickets en la cola de cocina en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueService.java` y `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java`
-- [ ] T018 [US1] Implementar `CheckoutConfirmationService` para orquestar la validación de cobro, delegación de débito de stock, transición a `IN_PROGRESS` y despacho a KDS en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutConfirmationService.java`
-- [ ] T019 [US1] Implementar `WebhookProcessingService` para procesar notificaciones asíncronas de Mercado Pago en backend con validación HMAC-SHA256 y reconciliación REST en `easyeat/backend/src/main/java/com/easyeat/order/service/WebhookProcessingService.java`
-- [ ] T020 [US1] Extender `CheckoutPaymentController` con endpoints `/confirm-payment`, `/pending-payment` y `/confirm-zero-amount` en `easyeat/backend/src/main/java/com/easyeat/order/controller/CheckoutPaymentController.java`
-- [ ] T021 [P] [US1] Implementar `KitchenKdsController` exponiendo endpoints `/api/v1/kitchen/orders` y `/api/v1/kitchen/dashboard/summary` para la brigada de cocina en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java`
-- [ ] T022 [P] [US1] Implementar clientes Axios en frontend para endpoints de checkout (`confirm-payment`, `pending-payment`, `confirm-zero-amount`) y KDS en `easyeat/frontend/src/api/checkoutApi.ts` y `easyeat/frontend/src/api/kitchenKdsApi.ts`
-- [ ] T023 [P] [US1] Crear el componente visual `PendingAccreditationBanner` para informar al comensal que su pago está pendiente de confirmación en `easyeat/frontend/src/components/checkout/PendingAccreditationBanner.tsx`
-- [ ] T024 [P] [US1] Crear el componente visual `ConcurrencyAlertModal` para gestionar alertas de insumos agotados y saturación de franjas horarias con acciones de usuario en `easyeat/frontend/src/components/checkout/ConcurrencyAlertModal.tsx`
-- [ ] T025 [US1] Actualizar `CheckoutPage.tsx` para soportar confirmación directa de pedidos bonificados ($0), alertas de concurrencia y preservación del carrito en `easyeat/frontend/src/pages/CheckoutPage.tsx`
-- [ ] T026 [US1] Actualizar `PaymentReturnPage.tsx` para gestionar la confirmación fehaciente, vaciado de carrito y aterrizaje de pagos pendientes en `easyeat/frontend/src/pages/PaymentReturnPage.tsx`
-- [ ] T027 [P] [US1] Conectar `KitchenWorkspacePage.tsx` con `kitchenKdsApi` para actualizar dinámicamente en tiempo real las cuatro tarjetas del tablero de KDS en `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
+- [x] T017 [US1] Implementar la interfaz y servicio `KdsQueueService` y `KdsQueueServiceImpl` para inserción atómica e idempotente de tickets en la cola de cocina en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueService.java` y `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java`
+- [x] T018 [US1] Implementar `CheckoutConfirmationService` para orquestar la validación de cobro, delegación de débito de stock, transición a `IN_PROGRESS` y despacho a KDS en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutConfirmationService.java`
+- [x] T019 [US1] Implementar `WebhookProcessingService` para procesar notificaciones asíncronas de Mercado Pago en backend con validación HMAC-SHA256 y reconciliación REST en `easyeat/backend/src/main/java/com/easyeat/order/service/WebhookProcessingService.java`
+- [x] T020 [US1] Extender `CheckoutPaymentController` con endpoints `/confirm-payment`, `/pending-payment` y `/confirm-zero-amount` en `easyeat/backend/src/main/java/com/easyeat/order/controller/CheckoutPaymentController.java`
+- [x] T021 [P] [US1] Implementar `KitchenKdsController` exponiendo endpoints `/api/v1/kitchen/orders` y `/api/v1/kitchen/dashboard/summary` para la brigada de cocina en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java`
+- [x] T022 [P] [US1] Implementar clientes Axios en frontend para endpoints de checkout (`confirm-payment`, `pending-payment`, `confirm-zero-amount`) y KDS en `easyeat/frontend/src/api/checkoutApi.ts` y `easyeat/frontend/src/api/kitchenKdsApi.ts`
+- [x] T023 [P] [US1] Crear el componente visual `PendingAccreditationBanner` para informar al comensal que su pago está pendiente de confirmación en `easyeat/frontend/src/components/checkout/PendingAccreditationBanner.tsx`
+- [x] T024 [P] [US1] Crear el componente visual `ConcurrencyAlertModal` para gestionar alertas de insumos agotados y saturación de franjas horarias con acciones de usuario en `easyeat/frontend/src/components/checkout/ConcurrencyAlertModal.tsx`
+- [x] T025 [US1] Actualizar `CheckoutPage.tsx` para soportar confirmación directa de pedidos bonificados ($0), alertas de concurrencia y preservación del carrito en `easyeat/frontend/src/pages/CheckoutPage.tsx`
+- [x] T026 [US1] Actualizar `PaymentReturnPage.tsx` para gestionar la confirmación fehaciente, vaciado de carrito y aterrizaje de pagos pendientes en `easyeat/frontend/src/pages/PaymentReturnPage.tsx`
+- [x] T027 [P] [US1] Conectar `KitchenWorkspacePage.tsx` con `kitchenKdsApi` para actualizar dinámicamente en tiempo real las cuatro tarjetas del tablero de KDS en `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`
 
 **Checkpoint**: User Story 1 (COM-7.2.1) completamente funcional y testeable de forma independiente. Representa el MVP comercial.
 
@@ -90,18 +90,18 @@
 
 ### Tests para User Story 2 (TDD - Escribir PRIMERO y verificar estado ROJO) ⚠️
 
-- [ ] T028 [P] [US2] Escribir test de integración para deducción atómica de recetas con cantidades enteras y decimales fraccionarias, y verificación "todo o nada" ante insuficiencia parcial (AS-6, CB-07, CB-08) en `easyeat/backend/src/test/java/com/easyeat/inventory/AtomicStockDeductionIntegrationTest.java`
-- [ ] T029 [P] [US2] Escribir test de integración para deducción atómica de materias primas en pedidos con bonificación al 100% (AS-6b, CB-04) en `easyeat/backend/src/test/java/com/easyeat/inventory/ZeroAmountStockDeductionIntegrationTest.java`
-- [ ] T030 [P] [US2] Escribir test de concurrencia pesimista con 20 hilos verificando ordenamiento anti-deadlock (`ingredient_id ASC`) en platos que comparten ingredientes (C3, CB-06) en `easyeat/backend/src/test/java/com/easyeat/inventory/SharedIngredientsDeadlockConcurrencyTest.java`
-- [ ] T031 [P] [US2] Escribir test de integración verificando la actualización visual inmediata del catálogo de platos (`available = false`) al agotarse un insumo de receta (FR-013, INV-10) en `easyeat/backend/src/test/java/com/easyeat/catalog/CatalogStockExhaustionSyncIntegrationTest.java`
+- [x] T028 [P] [US2] Escribir test de integración para deducción atómica de recetas con cantidades enteras y decimales fraccionarias, y verificación "todo o nada" ante insuficiencia parcial (AS-6, CB-07, CB-08) en `easyeat/backend/src/test/java/com/easyeat/inventory/AtomicStockDeductionIntegrationTest.java`
+- [x] T029 [P] [US2] Escribir test de integración para deducción atómica de materias primas en pedidos con bonificación al 100% (AS-6b, CB-04) en `easyeat/backend/src/test/java/com/easyeat/inventory/ZeroAmountStockDeductionIntegrationTest.java`
+- [x] T030 [P] [US2] Escribir test de concurrencia pesimista con 20 hilos verificando ordenamiento anti-deadlock (`ingredient_id ASC`) en platos que comparten ingredientes (C3, CB-06) en `easyeat/backend/src/test/java/com/easyeat/inventory/SharedIngredientsDeadlockConcurrencyTest.java`
+- [x] T031 [P] [US2] Escribir test de integración verificando la actualización visual inmediata del catálogo de platos (`available = false`) al agotarse un insumo de receta (FR-013, INV-10) en `easyeat/backend/src/test/java/com/easyeat/catalog/CatalogStockExhaustionSyncIntegrationTest.java`
 
 ### Implementación para User Story 2 (Hacer pasar los tests - Estado VERDE)
 
-- [ ] T032 [US2] Incorporar consulta de bloqueo pesimista en lote ordenado `findAllByIdInOrderByIdAscForUpdate` en `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java`
-- [ ] T033 [US2] Definir la interfaz de dominio `StockDeductionService` con el contrato transaccional de deducción atómica en `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockDeductionService.java`
-- [ ] T034 [US2] Implementar `StockDeductionServiceImpl` con cálculo de demanda agregada por receta (`quantity * orderQuantity`), validación estricta de existencias con `BigDecimal` (escala 4) y registro en `stock_audit_entries` en `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockDeductionServiceImpl.java`
-- [ ] T035 [US2] Integrar `StockDeductionService` dentro del flujo transaccional de `CheckoutConfirmationService` para asegurar que el débito sea previo a la transición a `IN_PROGRESS` y al envío a KDS en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutConfirmationService.java`
-- [ ] T036 [US2] Reforzar `DishAvailabilityEngine.isDishAvailable` para garantizar que ni bien el stock físico de un insumo caiga por debajo de la receta, el plato se reporte como no disponible en `easyeat/backend/src/main/java/com/easyeat/catalog/service/DishAvailabilityEngine.java`
+- [x] T032 [US2] Incorporar consulta de bloqueo pesimista en lote ordenado `findAllByIdInOrderByIdAscForUpdate` en `easyeat/backend/src/main/java/com/easyeat/inventory/repository/IngredientRepository.java`
+- [x] T033 [US2] Definir la interfaz de dominio `StockDeductionService` con el contrato transaccional de deducción atómica en `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockDeductionService.java`
+- [x] T034 [US2] Implementar `StockDeductionServiceImpl` con cálculo de demanda agregada por receta (`quantity * orderQuantity`), validación estricta de existencias con `BigDecimal` (escala 4) y registro en `stock_audit_entries` en `easyeat/backend/src/main/java/com/easyeat/inventory/service/StockDeductionServiceImpl.java`
+- [x] T035 [US2] Integrar `StockDeductionService` dentro del flujo transaccional de `CheckoutConfirmationService` para asegurar que el débito sea previo a la transición a `IN_PROGRESS` y al envío a KDS en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutConfirmationService.java`
+- [x] T036 [US2] Reforzar `DishAvailabilityEngine.isDishAvailable` para garantizar que ni bien el stock físico de un insumo caiga por debajo de la receta, el plato se reporte como no disponible en `easyeat/backend/src/main/java/com/easyeat/catalog/service/DishAvailabilityEngine.java`
 
 **Checkpoint**: User Story 2 (CHF-5.1.1) completamente funcional e integrada con el flujo comercial.
 
@@ -111,10 +111,10 @@
 
 **Propósito**: Verificaciones transversales de seguridad, idempotencia, regresión y validación determinística.
 
-- [ ] T037 [P] Escribir test de integración de idempotencia verificando que webhooks duplicados o recargas de página no re-debiten insumos ni dupliquen comandas en KDS (INV-07, CB-12) en `easyeat/backend/src/test/java/com/easyeat/order/KdsIdempotencyIntegrationTest.java`
-- [ ] T038 [P] Escribir test automatizado de seguridad auditando esquemas y logs para verificar que jamás se capturen, almacenen o registren datos de tarjetas (PAN/CVV) en `easyeat/backend/src/test/java/com/easyeat/order/CardDataIsolationSecurityTest.java`
-- [ ] T039 Ejecutar validación determinística en Sandbox de Mercado Pago siguiendo paso a paso la guía de `quickstart.md` en `specs/015-individual-checkout-stock-deduction/quickstart.md`
-- [ ] T040 Ejecutar suite completa de verificación en backend (`./mvnw clean verify`) y frontend (`npm run build && npm test`) asegurando cumplimiento de gates Jacoco ($\ge 80\%$) y cero regresiones
+- [x] T037 [P] Escribir test de integración de idempotencia verificando que webhooks duplicados o recargas de página no re-debiten insumos ni dupliquen comandas en KDS (INV-07, CB-12) en `easyeat/backend/src/test/java/com/easyeat/order/KdsIdempotencyIntegrationTest.java`
+- [x] T038 [P] Escribir test automatizado de seguridad auditando esquemas y logs para verificar que jamás se capturen, almacenen o registren datos de tarjetas (PAN/CVV) en `easyeat/backend/src/test/java/com/easyeat/order/CardDataIsolationSecurityTest.java`
+- [x] T039 Ejecutar validación determinística en Sandbox de Mercado Pago siguiendo paso a paso la guía de `quickstart.md` en `specs/015-individual-checkout-stock-deduction/quickstart.md`
+- [x] T040 Ejecutar suite completa de verificación en backend (`./mvnw clean verify`) y frontend (`npm run build && npm test`) asegurando cumplimiento de gates Jacoco ($\ge 80\%$) y cero regresiones
 
 ---
 

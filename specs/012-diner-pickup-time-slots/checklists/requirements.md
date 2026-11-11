@@ -14,7 +14,7 @@
 ## Completitud de Requisitos
 
 - [x] Sin marcadores `[NEEDS CLARIFICATION]` pendientes (todos los puntos fueron acordados en Grill-Me).
-- [x] Requisitos funcionales testeables, unívocos y con numeración correlativa (`FR-001` a `FR-029`).
+- [x] Requisitos funcionales testeables, unívocos y con numeración correlativa (`FR-001` a `FR-038`, incorporando `FR-034` a `FR-038` de la corrección C-12).
 - [x] Criterios de éxito medibles y expresados de forma agnóstica a la tecnología (`SC-001` a `SC-008`).
 - [x] Todos los escenarios de aceptación definidos en formato Given-When-Then.
 - [x] Casos borde contemplados (desfase de reloj, envejecimiento en checkout, colisión concurrente, cierres comerciales).
@@ -33,7 +33,7 @@
 - Los 16 ítems de control fueron verificados exitosamente (16/16).
 - Decisiones críticas acordadas durante la sesión de Grill-Me del 31/10/2026:
   1. **Persistencia y Mantenibilidad**: La orden se crea en estado `PENDING_PAYMENT` (o `RESERVED`) al completar el checkout, asegurando de forma indivisible el cupo de la franja. En el Sprint 4, la pasarela de pagos consumirá directamente esta orden y transicionará su estado a `PAID`, evitando tablas temporales intermedias descartables.
-  2. **Lead Time y Visibilidad**: Margen de preparación por defecto fijado en 30 minutos. Las franjas pasadas o comprendidas en el buffer se muestran deshabilitadas (gris atenuado con leyenda indicativa) para mantener la cuadrícula temporal del local predecible y transparente.
+  2. **Lead Time y Visibilidad (Actualizado C-12)**: Margen de preparación por defecto fijado en 30 minutos. Tras la auditoría UX de C-12, las franjas pasadas, dentro del lead time o agotadas al 100% se excluyen y ocultan completamente de la interfaz para evitar sobrecarga cognitiva. Si una fecha no posee franjas disponibles, se muestra el estado vacío informativo.
   3. **Estrategia en Tiempo Real**: Polling periódico liviano (5-10 segundos) durante la estancia en checkout con validación atómica obligatoria en el backend al momento de la confirmación final, respetando la arquitectura previa a WebSockets (Sprint 5).
   4. **Fuera de Horario Operativo y Articulación con Spec 008**: Si el establecimiento está cerrado, se respeta la evolución natural del catálogo: el modo 'solo lectura' de Spec 008 restringía los pedidos inmediatos por ausencia de carrito en el Sprint 2. En el Sprint 3, el comensal puede conformar su carrito para turnos futuros; en el checkout, la opción "Lo antes posible" se deshabilita con aviso explicativo y se exige seleccionar "Para más tarde" dentro del calendario operativo futuro.
   5. **TTL de Expiración (15 minutos)**: Las órdenes en `PENDING_PAYMENT` sin abonar transicionan a `EXPIRED` a los 15 minutos, liberando el cupo automáticamente para otros comensales.
@@ -41,4 +41,6 @@
   7. **Cómputo Unitario por Orden**: Cada orden confirmada equivale exactamente a 1 cupo de capacidad de la franja horaria, con independencia de la cantidad de ítems del carrito.
   8. **Protección Anti-Acaparamiento**: Límite estricto de máximo 1 orden en `PENDING_PAYMENT` por comensal en simultáneo.
   9. **Contador Regresivo en Pantalla**: Visualización en vivo del tiempo restante de reserva (15:00 a 00:00) con alerta visual preventiva al restar menos de 2 minutos.
+  10. **Filtro Estricto por Horarios Operativos (C-12)**: Cruce obligatorio con `establishment_operating_schedules`. Días con `is_closed == true` o sin atención devuelven `slots: []`, desplegando el estado vacío informativo.
+  11. **Convención de Calendario Iniciando en LUNES (C-12)**: Estructuración obligatoria de la semana iniciando en Lunes (ISO 8601: Lun, Mar, Mié, Jue, Vie, Sáb, Dom).
 

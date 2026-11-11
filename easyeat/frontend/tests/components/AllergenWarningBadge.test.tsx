@@ -18,7 +18,7 @@ describe('AllergenWarningBadge Component (T044, US3, FR-020, FR-022)', () => {
     expect(screen.getByText(/Contiene Maní/i)).toBeInTheDocument();
   });
 
-  it('renders dietary lifestyle conflict label for VEGAN and CELIAC', () => {
+  it('renders dietary conflict label for VEGAN (lifestyle) and CELIAC (allergen per C-11)', () => {
     render(<AllergenWarningBadge conflicts={['VEGAN', 'CELIAC']} />);
 
     expect(screen.getByTestId('warning-badge-vegan')).toBeInTheDocument();

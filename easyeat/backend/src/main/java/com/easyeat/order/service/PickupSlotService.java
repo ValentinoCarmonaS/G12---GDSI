@@ -2,22 +2,24 @@ package com.easyeat.order.service;
 
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
+import com.easyeat.operations.repository.OperatingScheduleRepository;
 import com.easyeat.order.dto.PickupSlotCatalogResponse;
 import com.easyeat.order.dto.TimeSlotAvailability;
 import com.easyeat.order.exception.InvalidOrderStateException;
 import com.easyeat.order.repository.OrderRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -26,13 +28,23 @@ public class PickupSlotService {
     private final EstablishmentRepository establishmentRepository;
     private final OrderRepository orderRepository;
     private final Clock clock;
+    private final OperatingScheduleRepository operatingScheduleRepository;
+
+    @Autowired
+    public PickupSlotService(EstablishmentRepository establishmentRepository,
+                             OrderRepository orderRepository,
+                             Clock clock,
+                             @Autowired(required = false) OperatingScheduleRepository operatingScheduleRepository) {
+        this.establishmentRepository = establishmentRepository;
+        this.orderRepository = orderRepository;
+        this.clock = clock;
+        this.operatingScheduleRepository = operatingScheduleRepository;
+    }
 
     public PickupSlotService(EstablishmentRepository establishmentRepository,
                              OrderRepository orderRepository,
                              Clock clock) {
-        this.establishmentRepository = establishmentRepository;
-        this.orderRepository = orderRepository;
-        this.clock = clock;
+        this(establishmentRepository, orderRepository, clock, null);
     }
 
     @Transactional(readOnly = true)
@@ -61,16 +73,49 @@ public class PickupSlotService {
             throw new InvalidOrderStateException("La fecha consultada excede la ventana operativa de 7 días");
         }
 
+        // Cross-check operating schedule with establishment_operating_schedules (FR-008, FR-034, FR-038)
         boolean isOperatingDay = establishment.isOpenOn(date);
-        boolean isEstablishmentOpenNow = establishment.isOpen(nowTime);
+        LocalTime openingTime = establishment.getOpeningTime();
+        LocalTime closingTime = establishment.getClosingTime();
+
+        if (operatingScheduleRepository != null) {
+            Optional<EstablishmentOperatingSchedule> scheduleOpt =
+                    operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, date.getDayOfWeek());
+            if (scheduleOpt.isPresent()) {
+                EstablishmentOperatingSchedule schedule = scheduleOpt.get();
+                if (schedule.isClosed()) {
+                    isOperatingDay = false;
+                } else {
+                    isOperatingDay = true;
+                    openingTime = schedule.getOpeningTime();
+                    closingTime = schedule.getClosingTime();
+                }
+            }
+        }
+
+        boolean isEstablishmentOpenNow;
+        if (operatingScheduleRepository != null) {
+            Optional<EstablishmentOperatingSchedule> todayScheduleOpt =
+                    operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, today.getDayOfWeek());
+            if (todayScheduleOpt.isPresent()) {
+                EstablishmentOperatingSchedule todaySchedule = todayScheduleOpt.get();
+                isEstablishmentOpenNow = !todaySchedule.isClosed()
+                        && !nowTime.isBefore(todaySchedule.getOpeningTime())
+                        && nowTime.isBefore(todaySchedule.getClosingTime());
+            } else {
+                isEstablishmentOpenNow = establishment.isOpen(nowTime);
+            }
+        } else {
+            isEstablishmentOpenNow = establishment.isOpen(nowTime);
+        }
+
         int leadTimeMinutes = establishment.getLeadTimeMinutes() != null ? establishment.getLeadTimeMinutes() : 30;
         int maxCapacity = establishment.getMaxCapacityPerSlot() != null ? establishment.getMaxCapacityPerSlot() : 10;
 
         List<TimeSlotAvailability> slots = new ArrayList<>();
 
-        if (isOperatingDay && establishment.getOpeningTime() != null && establishment.getClosingTime() != null) {
-            LocalTime currentSlotStart = establishment.getOpeningTime();
-            LocalTime closingTime = establishment.getClosingTime();
+        if (isOperatingDay && openingTime != null && closingTime != null) {
+            LocalTime currentSlotStart = openingTime;
 
             // Lead-time cutoff threshold for today
             LocalTime leadTimeCutoff = nowTime.plusMinutes(leadTimeMinutes);
@@ -106,16 +151,19 @@ public class PickupSlotService {
                     }
                 }
 
-                slots.add(new TimeSlotAvailability(
-                        currentSlotStart,
-                        currentSlotEnd,
-                        date,
-                        maxCapacity,
-                        bookedCount,
-                        occupancyPercentage,
-                        status,
-                        isSelectable
-                ));
+                // C-12: Only return active, selectable slots
+                if (isSelectable) {
+                    slots.add(new TimeSlotAvailability(
+                            currentSlotStart,
+                            currentSlotEnd,
+                            date,
+                            maxCapacity,
+                            bookedCount,
+                            occupancyPercentage,
+                            status,
+                            isSelectable
+                    ));
+                }
 
                 currentSlotStart = currentSlotEnd;
             }
