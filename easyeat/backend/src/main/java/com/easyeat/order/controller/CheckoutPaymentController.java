@@ -7,6 +7,7 @@ import com.easyeat.order.service.CheckoutPaymentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -108,6 +109,6 @@ public class CheckoutPaymentController {
                 }
             }
         }
-        throw new SecurityException("No authenticated diner found in security context");
+        throw new AccessDeniedException("No authenticated diner found in security context");
     }
 }

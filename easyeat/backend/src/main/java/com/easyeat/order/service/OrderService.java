@@ -30,12 +30,14 @@ import com.easyeat.order.exception.DishPausedByChefException;
 import com.easyeat.order.exception.InvalidFulfillmentModeException;
 import com.easyeat.order.exception.InvalidOrderStateException;
 import com.easyeat.order.exception.LeadTimeViolationException;
+import com.easyeat.order.exception.OrderNotFoundException;
 import com.easyeat.order.exception.SlotCapacityExceededException;
 import com.easyeat.order.repository.KdsTicketRepository;
 import com.easyeat.order.repository.OrderRepository;
 import com.easyeat.order.repository.PaymentRepository;
 import com.easyeat.order.repository.TemporaryReservationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -124,7 +126,16 @@ public class OrderService {
 
         Instant nowInstant = clock.instant();
 
-        // Check active pending reservation (Anti-acaparamiento: Max 1 pending order per diner - FR-027)
+        // Expire any stale pending orders before checking active reservation (Anti-acaparamiento: Max 1 pending order per diner - FR-027, US3)
+        expirePendingOrdersForUser(userId, nowInstant);
+
+        List<Order> activeOrders = orderRepository.findActivePendingOrders(userId, nowInstant);
+        if (activeOrders != null && !activeOrders.isEmpty()) {
+            throw new ActiveReservationExistsException(
+                    "Ya poseés una orden pendiente de confirmación. Por favor, completá o cancelá tu reserva actual para continuar.",
+                    activeOrders.get(0).getId()
+            );
+        }
         if (orderRepository.hasActivePendingOrder(userId, nowInstant)) {
             throw new ActiveReservationExistsException("Ya poseés una orden pendiente de confirmación. Por favor, completá o cancelá tu reserva actual para continuar.");
         }
@@ -415,10 +426,28 @@ public class OrderService {
         return value;
     }
 
+    private void expirePendingOrdersForUser(UUID userId, Instant nowInstant) {
+        List<Order> userOrders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        if (userOrders == null) {
+            return;
+        }
+        for (Order candidate : userOrders) {
+            expireOrderIfNeeded(candidate, nowInstant);
+        }
+    }
+
+    private Order findOwnedOrderOrThrow(UUID orderId, UUID userId) {
+        return orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseGet(() -> orderRepository.findById(orderId)
+                        .<Order>map(existing -> {
+                            throw new AccessDeniedException("No tenés permiso para acceder a esta orden");
+                        })
+                        .orElseThrow(() -> new OrderNotFoundException(orderId)));
+    }
+
     @Transactional
     public OrderDetailResponse getOrderById(UUID orderId, UUID userId) {
-        Order order = orderRepository.findByIdAndUserId(orderId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada"));
+        Order order = findOwnedOrderOrThrow(orderId, userId);
 
         Instant nowInstant = clock.instant();
         Long remainingSeconds = null;
@@ -461,8 +490,7 @@ public class OrderService {
 
     @Transactional
     public OrderSummaryResponse cancelOrder(UUID orderId, UUID userId) {
-        Order order = orderRepository.findByIdAndUserId(orderId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Orden no encontrada"));
+        Order order = findOwnedOrderOrThrow(orderId, userId);
 
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
             throw new InvalidOrderStateException("La orden no se encuentra en estado cancelable (estado actual: " + order.getStatus() + ")");

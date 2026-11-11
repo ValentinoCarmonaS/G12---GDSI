@@ -134,7 +134,7 @@
 
 - [X] T040 [P] [US3] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/exception/ActiveReservationExistsException.java` (`UUID orderId` con constructor compatible) y `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` adjuntando la propiedad `orderId` al `ProblemDetail` del `409`.
 - [X] T041 [P] [US3] Añadir `findActivePendingOrders(UUID userId, Instant now)` en `easyeat/backend/src/main/java/com/easyeat/order/repository/OrderRepository.java`.
-- [ ] T042 [US3] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutPaymentService.java` y `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` (depende de `T040`, `T041`) para expirar pendientes vencidas antes del conflicto, lanzar `ActiveReservationExistsException` con `orderId`, usar `AccessDeniedException` en `cancelPaymentAttempt` y liberar reserva y pago en `OrderService.cancelOrder`.
+- [X] T042 [US3] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutPaymentService.java` y `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` (depende de `T040`, `T041`) para expirar pendientes vencidas antes del conflicto, lanzar `ActiveReservationExistsException` con `orderId`, usar `AccessDeniedException` en `cancelPaymentAttempt` y liberar reserva y pago en `OrderService.cancelOrder`.
 
 ### Implementación frontend de US3
 
