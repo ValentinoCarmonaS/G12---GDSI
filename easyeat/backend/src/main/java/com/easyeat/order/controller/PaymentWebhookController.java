@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -38,15 +39,19 @@ public class PaymentWebhookController {
     ) {
         log.info("PaymentWebhookController: received webhook for provider={}", provider);
 
-        PaymentMethod method;
-        try {
-            method = PaymentMethod.valueOf(provider.replace("-", "_").toUpperCase());
-        } catch (IllegalArgumentException e) {
+        Optional<PaymentMethod> methodOpt = PaymentMethod.fromWebhookSlug(provider);
+        if (methodOpt.isEmpty()) {
             log.warn("PaymentWebhookController: unknown provider: {}", provider);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        PaymentGatewayPort gatewayPort = paymentGatewayResolver.resolve(method);
+        Optional<PaymentGatewayPort> gatewayPortOpt = paymentGatewayResolver.findAdapter(methodOpt.get());
+        if (gatewayPortOpt.isEmpty()) {
+            log.warn("PaymentWebhookController: no adapter registered for provider={} (method={})", provider, methodOpt.get());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        PaymentGatewayPort gatewayPort = gatewayPortOpt.get();
 
         PaymentGatewayPort.WebhookPayload parsed = gatewayPort.parseWebhook(payload);
         String dataId = parsed.dataId() != null ? parsed.dataId() : dataIdParam;

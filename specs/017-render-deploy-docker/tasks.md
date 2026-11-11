@@ -209,7 +209,7 @@
 ### Ciclo TDD 3 — Enrutamiento y seguridad en `PaymentWebhookController`
 
 - [x] T046 [US6] [RED] Reforzar `PaymentWebhookSecurityIntegrationTest.java` importando `PaymentGatewayResolver`, `MercadoPagoGatewayAdapter` y `WebhookSignatureValidator` reales para verificar que `/api/v1/payments/mercadopago/webhook` y `/api/v1/payments/mercado-pago/webhook` resuelvan el adaptador (`200 OK` o `401 Unauthorized` ante firma inválida, nunca `404`), mientras proveedores desconocidos o sin adaptador registrado (`stripe`) retornen `404 Not Found` en `easyeat/backend/src/test/java/com/easyeat/order/PaymentWebhookSecurityIntegrationTest.java` (FR-023, Q15, SC-009)
-- [ ] T047 [US6] [GREEN] Actualizar `PaymentWebhookController` para resolver el método vía `PaymentMethod.fromWebhookSlug(provider)` y `paymentGatewayResolver.findAdapter(method)`, retornando `404 Not Found` ante proveedor desconocido o sin adaptador y manteniendo intacta la semántica de firma y respuesta `401` en `easyeat/backend/src/main/java/com/easyeat/order/controller/PaymentWebhookController.java` (FR-023, Q15)
+- [x] T047 [US6] [GREEN] Actualizar `PaymentWebhookController` para resolver el método vía `PaymentMethod.fromWebhookSlug(provider)` y `paymentGatewayResolver.findAdapter(method)`, retornando `404 Not Found` ante proveedor desconocido o sin adaptador y manteniendo intacta la semántica de firma y respuesta `401` en `easyeat/backend/src/main/java/com/easyeat/order/controller/PaymentWebhookController.java` (FR-023, Q15)
 
 ### Cierre — Coherencia Documental, Verificación Integral y Validación en Vivo
 
