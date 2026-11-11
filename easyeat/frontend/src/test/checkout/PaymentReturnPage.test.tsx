@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { PaymentReturnPage } from '../../pages/PaymentReturnPage';
@@ -248,7 +248,7 @@ describe('T023: PaymentReturnPage Component Tests (AS-2, AS-3, AS-4, Q2, Q4)', (
       'href',
       '/pedidos/order-123/seguimiento'
     );
-    expect(screen.getByRole('link', { name: /mis pedidos/i })).toHaveAttribute(
+    expect(within(screen.getByRole('main')).getByRole('link', { name: /mis pedidos/i })).toHaveAttribute(
       'href',
       '/perfil#pedidos'
     );

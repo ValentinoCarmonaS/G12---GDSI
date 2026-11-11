@@ -1,4 +1,4 @@
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { OrderConfirmationTrackingPage } from '../../pages/OrderConfirmationTrackingPage';
@@ -157,7 +157,10 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.queryByText(/#0\b|#null/i)).not.toBeInTheDocument();
     expect(screen.getByText(/pago pendiente de confirmación/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /mis pedidos/i })).toHaveAttribute('href', '/perfil#pedidos');
+    expect(within(screen.getByRole('main')).getByRole('link', { name: /mis pedidos/i })).toHaveAttribute(
+      'href',
+      '/perfil#pedidos'
+    );
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5000);
