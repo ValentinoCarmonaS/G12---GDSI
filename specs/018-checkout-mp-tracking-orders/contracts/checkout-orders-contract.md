@@ -141,7 +141,7 @@ Aplicable cuando el comensal autenticado posee una orden vigente en estado `PEND
   - Cuando `status` es `PENDING_ACCREDITATION`, `PENDING_PAYMENT`, `CANCELLED` o `EXPIRED`: retorna `ticketNumber = null`, `isCountdownActive = false`, `estimatedMinutesRemaining = null`, `progressPercentage = 0` e `isReadyForPickup = false`, sin inventar progreso ni número de comanda por hash.
   - Cuando está en cocina (`IN_PROGRESS`, `READY_FOR_PICKUP`, `COMPLETED`), usa el `ticketNumber` persistido de `KdsTicket`.
 - **Despacho listo para retirar (`OrderLiveTrackingService.markTicketReadyForPickup`)**:
-  - Resuelve primero `kdsTicketRepository.findById(ticketId)` (actualizando también `KdsTicketStatus.READY`) y solo recurre a `orderRepository.findById(ticketId)` como compatibilidad secundaria; incluye `ticketNumber` real desde `KdsTicket`.
+  - Resuelve primero `kdsTicketRepository.findById(ticketId)` (actualizando también `KdsTicketStatus.READY_FOR_PICKUP`) y solo recurre a `orderRepository.findById(ticketId)` como compatibilidad secundaria; incluye `ticketNumber` real desde `KdsTicket`.
 
 ---
 

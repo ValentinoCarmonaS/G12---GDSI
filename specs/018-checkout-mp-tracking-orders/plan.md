@@ -81,7 +81,7 @@ specs/018-checkout-mp-tracking-orders/
 - `order/service/OrderConfirmationTrackingService.java`, `order/service/OrderLiveTrackingService.java` y `order/controller/OrderConfirmationTrackingController.java`:
   - Consultar `KdsTicketRepository.findByOrderId(orderId)` para `ticketNumber` (`null` sin comanda, eliminando `hashCode`).
   - En `getConfirmationTracking`: admitir `PENDING_ACCREDITATION` con `approvalStatus = "PENDING"`, aceptar `PAID`/`CONFIRMED` como `"APPROVED"`, rechazar `CANCELLED`, `EXPIRED` y `PENDING_PAYMENT` con `InvalidOrderStateException`, y asegurar validación de ownership compatible con pruebas.
-  - En `getLiveTracking`: devolver vista inactiva (`0%`, `null` minutos y `ticketNumber = null`) fuera de estados en cocina; en `markTicketReadyForPickup`, resolver por `kdsTicketRepository.findById(ticketId)` (y actualizar `KdsTicketStatus.READY`) con respaldo a `orderRepository.findById(ticketId)`.
+  - En `getLiveTracking`: devolver vista inactiva (`0%`, `null` minutos y `ticketNumber = null`) fuera de estados en cocina; en `markTicketReadyForPickup`, resolver por `kdsTicketRepository.findById(ticketId)` (y actualizar `KdsTicketStatus.READY_FOR_PICKUP`) con respaldo a `orderRepository.findById(ticketId)`.
 - `order/exception/ActiveReservationExistsException.java` y `auth/controller/GlobalExceptionHandler.java`:
   - Adjuntar `UUID orderId` en `ActiveReservationExistsException` y exponerlo en `ProblemDetail` (`409 ACTIVE_RESERVATION_EXISTS`); agregar `@ExceptionHandler(InsufficientIngredientStockException.class)` (`409 INSUFFICIENT_STOCK`).
 - `order/repository/OrderRepository.java`, `order/service/OrderService.java`, `order/controller/OrderController.java` y `order/dto/DinerOrderSummaryResponse.java`:
