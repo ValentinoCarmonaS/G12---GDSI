@@ -32,7 +32,7 @@
 > **NOTA TDD**: Escribir o ampliar primero estas pruebas y confirmar que fallan antes de implementar `T006`–`T008`.
 
 - [X] T002 [P] [US1] Ampliar `easyeat/backend/src/test/java/com/easyeat/order/config/MercadoPagoPropertiesTest.java` verificando enlace de `backendBaseUrl`, respaldo con `RENDER_EXTERNAL_URL`, constructor compatible de 6 argumentos y valores por defecto.
-- [ ] T003 [P] [US1] Ampliar `easyeat/backend/src/test/java/com/easyeat/order/service/MercadoPagoPublicUrlTest.java` verificando saneamiento de barras finales en `back_urls`, envío condicional de `notification_url` cuando `backendBaseUrl` es público, omisión cuando es local o vacío y normalización de cadenas vacías a `null`.
+- [X] T003 [P] [US1] Ampliar `easyeat/backend/src/test/java/com/easyeat/order/service/MercadoPagoPublicUrlTest.java` verificando saneamiento de barras finales en `back_urls`, envío condicional de `notification_url` cuando `backendBaseUrl` es público, omisión cuando es local o vacío y normalización de cadenas vacías a `null`.
 - [ ] T004 [P] [US1] Ampliar `easyeat/backend/src/test/java/com/easyeat/order/CheckoutPaymentIntegrationTest.java` verificando que `redirectUrl` prioriza `init_point` incluso cuando `sandbox = true`.
 - [ ] T005 [P] [US1] Crear `easyeat/backend/src/test/java/com/easyeat/order/OrderPaymentStatusControllerIntegrationTest.java` verificando `@PreAuthorize` para `COMENSAL`, `403 Forbidden` ante usuario distinto al dueño, prioridad de `initPoint` con normalización `"" -> null`, expiración `expiresAt <= now` y booleano `sandbox` desde configuración.
 
