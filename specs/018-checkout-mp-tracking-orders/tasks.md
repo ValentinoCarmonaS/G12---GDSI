@@ -96,7 +96,7 @@
 
 - [X] T026 [P] [US4] Ampliar `easyeat/backend/src/test/java/com/easyeat/order/OrderServiceTest.java` probando `getDinerOrders(UUID userId)` (ordenamiento descendente, aislamiento, expiración perezosa `expiresAt <= now` sobre orden/reserva/pago, `ticketNumber` real desde `KdsTicketRepository` o `null`, y `redirectUrl` priorizando `initPoint` o `null`).
 - [X] T027 [P] [US4] Ampliar `easyeat/backend/src/test/java/com/easyeat/order/OrderControllerIntegrationTest.java` cubriendo `GET /api/v1/orders` con rol `COMENSAL`, payload `DinerOrderSummaryResponse` y expiración perezosa.
-- [ ] T028 [P] [US4] Crear `easyeat/frontend/tests/components/MyOrdersSection.test.tsx` probando listado ordenado, badges traducidos, estado vacío hacia `/catalogo`, acciones `"Ver seguimiento"`, `"Retomar pago"` y `"Cancelar intento"`, y regla Q5 sin `redirectUrl` (oculta/deshabilita `"Retomar pago"` informando al usuario).
+- [X] T028 [P] [US4] Crear `easyeat/frontend/tests/components/MyOrdersSection.test.tsx` probando listado ordenado, badges traducidos, estado vacío hacia `/catalogo`, acciones `"Ver seguimiento"`, `"Retomar pago"` y `"Cancelar intento"`, y regla Q5 sin `redirectUrl` (oculta/deshabilita `"Retomar pago"` informando al usuario).
 - [ ] T029 [P] [US4] Actualizar `easyeat/frontend/tests/pages/ProfilePage.test.tsx`, `easyeat/frontend/tests/components/WorkspaceLayout.test.tsx` y `easyeat/frontend/tests/router/AppRoutesProfileCatalog.test.tsx` verificando pestañas `"Datos y preferencias"` y `"Mis pedidos"`, activación por `#pedidos`, carga perezosa sin romper pruebas previas de Perfil, y enlace `"Mis pedidos"` visible en escritorio y móvil (`FR-009`) dentro de `WorkspaceLayout`.
 
 ### Implementación backend de US4
