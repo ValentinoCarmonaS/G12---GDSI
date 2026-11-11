@@ -18,7 +18,8 @@ export const RoleRouteGuard: React.FC<RoleRouteGuardProps> = ({
 
   // 1. Unauthenticated perimeter check (FR-011)
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    const fullTarget = `${location.pathname}${location.search}${location.hash}`;
+    return <Navigate to="/login" state={{ from: fullTarget }} replace />;
   }
 
   // 1.5 Mandatory first-login password change check (FR-003, FR-030)

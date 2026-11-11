@@ -139,7 +139,7 @@
 ### Implementación frontend de US3
 
 - [X] T043 [P] [US3] Actualizar `easyeat/frontend/src/context/CartContext.tsx` persistiendo únicamente `easyeat_cart` en `localStorage`.
-- [ ] T044 [P] [US3] Actualizar `easyeat/frontend/src/router/postAuthRouting.ts` y `easyeat/frontend/src/router/RoleRouteGuard.tsx` agregando `/checkout` y `/pedidos` para `COMENSAL`, evaluando el path base sin query/hash y preservando `location.pathname + location.search + location.hash` en `state.from`.
+- [X] T044 [P] [US3] Actualizar `easyeat/frontend/src/router/postAuthRouting.ts` y `easyeat/frontend/src/router/RoleRouteGuard.tsx` agregando `/checkout` y `/pedidos` para `COMENSAL`, evaluando el path base sin query/hash y preservando `location.pathname + location.search + location.hash` en `state.from`.
 - [ ] T045 [P] [US3] Actualizar `easyeat/frontend/src/components/checkout/InProcessPaymentPanel.tsx` implementando la regla Q5 cuando `redirectUrl` es nulo o vacío (ocultar/deshabilitar `"Retomar pago"`, explicar motivo y mantener `"Cancelar intento"`) y corrigiendo contraste claro.
 - [ ] T046 [US3] Actualizar `easyeat/frontend/src/pages/CheckoutPage.tsx` (depende de `T043`, `T045`) detectando órdenes `PENDING_PAYMENT` al montar vía `getMyOrders()`, manejando `ACTIVE_RESERVATION_EXISTS` y `PAYMENT_IN_PROCESS` con `data.orderId`, conectando `onViewExistingOrder` hacia el panel con scroll/foco, ocultando `"Tu carrito está vacío"` mientras `InProcessPaymentPanel` esté activo, eliminando `localStorage.getItem('selectedEstablishmentId')`, refrescando al cancelar y corrigiendo rutas `/catalogo`.
 
