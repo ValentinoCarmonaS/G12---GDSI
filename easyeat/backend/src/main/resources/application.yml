@@ -85,6 +85,7 @@ mercadopago:
   sandbox: ${MERCADOPAGO_SANDBOX:true}
   base-url: ${MERCADOPAGO_BASE_URL:https://api.mercadopago.com}
   frontend-base-url: ${MERCADOPAGO_FRONTEND_BASE_URL:http://localhost:3000}
+  backend-base-url: ${MERCADOPAGO_BACKEND_BASE_URL:${RENDER_EXTERNAL_URL:}}
 
 management:
   endpoints:

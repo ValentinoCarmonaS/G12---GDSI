@@ -15,7 +15,7 @@
 
 **Propósito**: Incorporar la configuración base requerida por la pasarela y webhooks públicos antes de implementar las historias.
 
-- [ ] T001 Añadir propiedad `backendBaseUrl` (`${MERCADOPAGO_BACKEND_BASE_URL:${RENDER_EXTERNAL_URL:}}`) con `@ConstructorBinding` y constructor secundario compatible de 6 argumentos en `easyeat/backend/src/main/java/com/easyeat/order/config/MercadoPagoProperties.java` y en `easyeat/backend/src/main/resources/application.yml`.
+- [X] T001 Añadir propiedad `backendBaseUrl` (`${MERCADOPAGO_BACKEND_BASE_URL:${RENDER_EXTERNAL_URL:}}`) con `@ConstructorBinding` y constructor secundario compatible de 6 argumentos en `easyeat/backend/src/main/java/com/easyeat/order/config/MercadoPagoProperties.java` y en `easyeat/backend/src/main/resources/application.yml`.
 
 **Checkpoint**: Configuración base de Mercado Pago enlazada y retrocompatible con constructores existentes.
 
