@@ -38,7 +38,7 @@
 
 ### Implementación de US1
 
-- [ ] T006 [P] [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/service/MercadoPagoGatewayAdapter.java` para sanear barras finales en `frontendBaseUrl` y `backendBaseUrl`, enviar `notification_url` pública al crear la preferencia y normalizar cadenas vacías en `PreferenceResult` a `null`.
+- [X] T006 [P] [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/service/MercadoPagoGatewayAdapter.java` para sanear barras finales en `frontendBaseUrl` y `backendBaseUrl`, enviar `notification_url` pública al crear la preferencia y normalizar cadenas vacías en `PreferenceResult` a `null`.
 - [ ] T007 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutPaymentService.java` (depende de `T006`) para priorizar `initPoint` no blanco sobre `sandboxInitPoint` al entregar `redirectUrl`.
 - [ ] T008 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/OrderPaymentStatusController.java` agregando `@PreAuthorize("hasRole('ROLE_COMENSAL') or hasRole('COMENSAL')")`, validando pertenencia (`AccessDeniedException`), reemplazando `temporaryReservationRepository.findAll()` por `findByOrderId(orderId)`, aplicando expiración `expiresAt <= now`, priorizando `initPoint` normalizado y reflejando `mercadopago.sandbox`.
 
