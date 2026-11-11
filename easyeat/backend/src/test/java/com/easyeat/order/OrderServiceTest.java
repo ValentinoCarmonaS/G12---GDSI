@@ -43,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -851,6 +852,115 @@ class OrderServiceTest {
             assertThat(results).isEmpty();
             verify(orderRepository).findByUserIdOrderByCreatedAtDesc(otherUserId);
             verify(orderRepository, never()).findByUserIdOrderByCreatedAtDesc(userId);
+        }
+    }
+
+    @Nested
+    @DisplayName("US3: Conflict orderId, 403 Ownership and Joint Cancellation")
+    class ActiveConflictAndCancellationTests {
+
+        private OrderService buildServiceWithAllDeps() {
+            return new OrderService(
+                    orderRepository,
+                    establishmentRepository,
+                    dishRepository,
+                    FIXED_CLOCK,
+                    operatingScheduleRepository,
+                    paymentRepository,
+                    kdsTicketRepository,
+                    temporaryReservationRepository,
+                    new MercadoPagoProperties(null, null, null, true, "https://api.mercadopago.com", "http://localhost:3000", "")
+            );
+        }
+
+        @Test
+        @DisplayName("createOrder includes activeOrderId in ActiveReservationExistsException when active pending order exists")
+        void createOrderIncludesActiveOrderIdInConflict() {
+            OrderService service = buildServiceWithAllDeps();
+            UUID activeOrderId = UUID.randomUUID();
+            Order activeOrder = new Order();
+            activeOrder.setId(activeOrderId);
+            activeOrder.setUserId(userId);
+            activeOrder.setStatus(OrderStatus.PENDING_PAYMENT);
+            activeOrder.setExpiresAt(FIXED_CLOCK.instant().plus(10, ChronoUnit.MINUTES));
+
+            when(orderRepository.findActivePendingOrders(eq(userId), any()))
+                    .thenReturn(List.of(activeOrder));
+
+            CreateOrderRequest request = new CreateOrderRequest(
+                    establishmentId,
+                    FulfillmentMode.IMMEDIATE,
+                    null,
+                    null,
+                    null,
+                    List.of(new CreateOrderItemRequest(dishId, 1))
+            );
+
+            assertThatThrownBy(() -> service.createOrder(userId, request))
+                    .isInstanceOf(ActiveReservationExistsException.class)
+                    .satisfies(ex -> assertThat(((ActiveReservationExistsException) ex).getOrderId())
+                            .isEqualTo(activeOrderId));
+        }
+
+        @Test
+        @DisplayName("cancelOrder throws AccessDeniedException when order belongs to a different user")
+        void cancelOrderThrowsAccessDeniedForDifferentUser() {
+            OrderService service = buildServiceWithAllDeps();
+            UUID orderId = UUID.randomUUID();
+            UUID intruderId = UUID.randomUUID();
+
+            Order ownedOrder = new Order();
+            ownedOrder.setId(orderId);
+            ownedOrder.setUserId(userId);
+            ownedOrder.setStatus(OrderStatus.PENDING_PAYMENT);
+
+            when(orderRepository.findByIdAndUserId(orderId, intruderId)).thenReturn(Optional.empty());
+            when(orderRepository.findById(orderId)).thenReturn(Optional.of(ownedOrder));
+
+            assertThatThrownBy(() -> service.cancelOrder(orderId, intruderId))
+                    .isInstanceOf(AccessDeniedException.class);
+        }
+
+        @Test
+        @DisplayName("cancelOrder releases TemporaryReservation and cancels Payment alongside Order")
+        void cancelOrderReleasesReservationAndCancelsPayment() {
+            OrderService service = buildServiceWithAllDeps();
+            UUID orderId = UUID.randomUUID();
+            Order order = new Order();
+            order.setId(orderId);
+            order.setUserId(userId);
+            order.setEstablishmentId(establishmentId);
+            order.setStatus(OrderStatus.PENDING_PAYMENT);
+            order.setExpiresAt(FIXED_CLOCK.instant().plus(10, ChronoUnit.MINUTES));
+
+            TemporaryReservation reservation = new TemporaryReservation(
+                    order,
+                    "res-cancel",
+                    FIXED_CLOCK.instant().plus(10, ChronoUnit.MINUTES)
+            );
+            Payment payment = new Payment(
+                    order,
+                    reservation,
+                    PaymentMethod.MERCADO_PAGO,
+                    orderId.toString(),
+                    new BigDecimal("12000.00"),
+                    "pay-cancel"
+            );
+
+            when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
+            when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(temporaryReservationRepository.findByOrderId(orderId)).thenReturn(Optional.of(reservation));
+            when(paymentRepository.findTopByOrderIdOrderByCreatedAtDesc(orderId)).thenReturn(Optional.of(payment));
+
+            OrderSummaryResponse response = service.cancelOrder(orderId, userId);
+
+            assertThat(response.status()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.RELEASED);
+            assertThat(reservation.getReleaseReason()).isEqualTo(ReleaseReason.CANCELLED_BY_USER);
+            assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELLED);
+            verify(temporaryReservationRepository).save(reservation);
+            verify(paymentRepository).save(payment);
         }
     }
 }

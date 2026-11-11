@@ -414,6 +414,34 @@ class OrderControllerIntegrationTest {
         }
 
         @Test
+        @DisplayName("POST /api/v1/orders returns 409 Conflict including active orderId property (T036, US3)")
+        void activeReservationReturns409IncludesOrderId() throws Exception {
+            UUID activeOrderId = UUID.randomUUID();
+            CreateOrderRequest request = new CreateOrderRequest(
+                    establishmentId,
+                    FulfillmentMode.IMMEDIATE,
+                    null,
+                    null,
+                    null,
+                    List.of(new CreateOrderItemRequest(UUID.randomUUID(), 1))
+            );
+
+            when(orderService.createOrder(eq(dinerId), any(CreateOrderRequest.class)))
+                    .thenThrow(new ActiveReservationExistsException(
+                            "Ya posee un pedido pendiente de confirmación.",
+                            activeOrderId
+                    ));
+
+            mockMvc.perform(post("/api/v1/orders")
+                            .with(SecurityMockMvcRequestPostProcessors.authentication(authPrincipal))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("ACTIVE_RESERVATION_EXISTS"))
+                    .andExpect(jsonPath("$.orderId").value(activeOrderId.toString()));
+        }
+
+        @Test
         @DisplayName("POST /api/v1/orders returns 422 Unprocessable Entity for lead-time violation (LEAD_TIME_VIOLATION)")
         void leadTimeViolationReturns422() throws Exception {
             CreateOrderRequest request = new CreateOrderRequest(
