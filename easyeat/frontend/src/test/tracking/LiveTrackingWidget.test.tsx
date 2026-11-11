@@ -238,7 +238,7 @@ describe('T028 [US2]: LiveTrackingWidget Component Tests', () => {
     vi.spyOn(pollingHook, 'useOrderLiveTrackingPolling').mockReturnValue({
       tracking: {
         ...defaultImmediateTracking,
-        ticketNumber: null as unknown as number,
+        ticketNumber: null,
       },
       isLoading: false,
       error: null,
@@ -248,7 +248,7 @@ describe('T028 [US2]: LiveTrackingWidget Component Tests', () => {
     const { rerender } = render(
       <LiveTrackingWidget
         orderId="order-123"
-        ticketNumber={null as unknown as number}
+        ticketNumber={null}
         fulfillmentMode="IMMEDIATE"
       />
     );
@@ -259,7 +259,7 @@ describe('T028 [US2]: LiveTrackingWidget Component Tests', () => {
     vi.spyOn(pollingHook, 'useOrderLiveTrackingPolling').mockReturnValue({
       tracking: {
         ...defaultImmediateTracking,
-        ticketNumber: null as unknown as number,
+        ticketNumber: null,
         status: 'READY_FOR_PICKUP',
         isReadyForPickup: true,
         estimatedMinutesRemaining: null,
@@ -274,7 +274,7 @@ describe('T028 [US2]: LiveTrackingWidget Component Tests', () => {
     rerender(
       <LiveTrackingWidget
         orderId="order-123"
-        ticketNumber={null as unknown as number}
+        ticketNumber={null}
         fulfillmentMode="IMMEDIATE"
       />
     );
