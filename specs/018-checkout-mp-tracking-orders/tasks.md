@@ -152,7 +152,7 @@
 **Propósito**: Actualizar configuración documentada de entorno sin tocar `specs/017-render-deploy-docker/`, validar todas las suites backend/frontend y confirmar consistencia completa previa a la prueba manual en Render.
 
 - [X] T047 [P] Actualizar `easyeat/backend/.env.example` añadiendo `MERCADOPAGO_BACKEND_BASE_URL` y aclarando la obligatoriedad de `MERCADOPAGO_WEBHOOK_SECRET` en entornos con webhooks firmados.
-- [ ] T048 [P] Actualizar `README.md` raíz enlazando la configuración de Mercado Pago en Render y [quickstart.md](./quickstart.md), dejando intactos los archivos de `specs/017-render-deploy-docker/`.
+- [X] T048 [P] Actualizar `README.md` raíz enlazando la configuración de Mercado Pago en Render y [quickstart.md](./quickstart.md), dejando intactos los archivos de `specs/017-render-deploy-docker/`.
 - [ ] T049 Ejecutar en `easyeat/backend` la suite de pruebas afectada (`mvn test -Dtest="*Order*,*Payment*,*Webhook*,*Kds*,*MercadoPago*,*Checkout*"`) y la suite de regresión completa (`mvn test`), validando cero fallos.
 - [ ] T050 Ejecutar en `easyeat/frontend` todas las pruebas automatizadas (`npm test -- --run`, cubriendo `src/test/` y `tests/`) y la compilación de producción (`npm run build`), validando cero errores.
 - [ ] T051 Verificar consistencia cruzada final contra [spec.md](./spec.md), [plan.md](./plan.md), [contracts/checkout-orders-contract.md](./contracts/checkout-orders-contract.md) y [quickstart.md](./quickstart.md) antes de la validación manual con navegador de incógnito en Render.
