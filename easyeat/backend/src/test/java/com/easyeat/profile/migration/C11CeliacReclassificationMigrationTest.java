@@ -1,0 +1,61 @@
+package com.easyeat.profile.migration;
+
+import com.easyeat.profile.domain.DietaryCategory;
+import com.easyeat.profile.domain.DietaryRestriction;
+import com.easyeat.profile.dto.DietaryRestrictionItemDto;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class C11CeliacReclassificationMigrationTest {
+
+    @Test
+    @DisplayName("C-11: Flyway V22 script exists and executes DML update from DIETARY_LIFESTYLE to COMMON_ALLERGEN")
+    void v22MigrationScript_containsDeterministicUpdate() throws Exception {
+        ClassPathResource resource = new ClassPathResource("db/migration/V22__reclassify_celiac_as_common_allergen.sql");
+        assertThat(resource.exists()).isTrue();
+
+        try (InputStream is = resource.getInputStream()) {
+            String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            assertThat(sql).containsIgnoringCase("UPDATE dietary_restrictions");
+            assertThat(sql).containsIgnoringCase("category = 'COMMON_ALLERGEN'");
+            assertThat(sql).containsIgnoringCase("WHERE code = 'CELIAC'");
+        }
+    }
+
+    @Test
+    @DisplayName("C-11: Flyway V22 reclassifies CELIAC to COMMON_ALLERGEN with explicit safety description")
+    void v22MigrationScript_setsDescriptionAndAllergenCategory() throws Exception {
+        ClassPathResource resource = new ClassPathResource("db/migration/V22__reclassify_celiac_as_common_allergen.sql");
+        assertThat(resource.exists()).isTrue();
+
+        try (InputStream is = resource.getInputStream()) {
+            String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            assertThat(sql).contains("category = 'COMMON_ALLERGEN'");
+            assertThat(sql).contains("WHERE code = 'CELIAC'");
+            assertThat(sql).containsIgnoringCase("gluten");
+        }
+    }
+
+    @Test
+    @DisplayName("C-11: DietaryRestriction entity maps CELIAC to COMMON_ALLERGEN in DTO serialization")
+    void entityAndDto_serializeCeliacAsCommonAllergen() {
+        DietaryRestriction entity = new DietaryRestriction(
+                "CELIAC",
+                "Sin TACC / Celíaco",
+                DietaryCategory.COMMON_ALLERGEN,
+                "Excluye trigo, avena, cebada y centeno."
+        );
+
+        DietaryRestrictionItemDto dto = DietaryRestrictionItemDto.fromEntity(entity);
+
+        assertThat(dto.code()).isEqualTo("CELIAC");
+        assertThat(dto.category()).isEqualTo("COMMON_ALLERGEN");
+        assertThat(dto.name()).isEqualTo("Sin TACC / Celíaco");
+    }
+}

@@ -52,7 +52,7 @@ class DietaryRestrictionServiceTest {
         sampleDiner = new User("diner@example.com", "pwdHash", UserRole.COMENSAL);
         sampleDiner.setId(UUID.randomUUID());
 
-        celiac = new DietaryRestriction("CELIAC", "Sin TACC / Celíaco", DietaryCategory.DIETARY_LIFESTYLE, "Excluye gluten");
+        celiac = new DietaryRestriction("CELIAC", "Sin TACC / Celíaco", DietaryCategory.COMMON_ALLERGEN, "Excluye gluten");
         vegan = new DietaryRestriction("VEGAN", "Vegano", DietaryCategory.DIETARY_LIFESTYLE, "Excluye origen animal");
         peanuts = new DietaryRestriction("PEANUTS", "Maní", DietaryCategory.COMMON_ALLERGEN, "Contiene maní");
     }
@@ -71,7 +71,7 @@ class DietaryRestrictionServiceTest {
 
             assertThat(result).hasSize(3);
             assertThat(result.get(0).code()).isEqualTo("CELIAC");
-            assertThat(result.get(0).category()).isEqualTo("DIETARY_LIFESTYLE");
+            assertThat(result.get(0).category()).isEqualTo("COMMON_ALLERGEN");
             assertThat(result.get(1).code()).isEqualTo("VEGAN");
             assertThat(result.get(2).code()).isEqualTo("PEANUTS");
             assertThat(result.get(2).category()).isEqualTo("COMMON_ALLERGEN");

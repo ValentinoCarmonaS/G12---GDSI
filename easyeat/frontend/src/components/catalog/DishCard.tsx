@@ -149,12 +149,20 @@ export const DishCard: React.FC<DishCardProps> = ({
               disabled={isButtonDisabled}
               onClick={handleAddToCartClick}
               data-testid={`add-to-cart-btn-${dish.id}`}
+              style={
+                !isButtonDisabled && !(hasConflicts && showWarnings)
+                  ? {
+                      backgroundColor: 'var(--brand-primary, #10B981)',
+                      color: 'var(--brand-primary-contrast, #FFFFFF)',
+                    }
+                  : undefined
+              }
               className={`inline-flex items-center justify-center px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors shadow-xs ${
                 isOutOfStock || isMaxStockReached
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : hasConflicts && showWarnings
                   ? 'bg-amber-600 hover:bg-amber-700 text-white cursor-pointer'
-                  : 'bg-green-600 hover:bg-green-700 text-white cursor-pointer'
+                  : 'hover:brightness-110 cursor-pointer'
               }`}
             >
               {isOutOfStock

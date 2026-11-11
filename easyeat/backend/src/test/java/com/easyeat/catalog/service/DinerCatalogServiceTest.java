@@ -425,7 +425,7 @@ class DinerCatalogServiceTest {
                     .thenReturn(List.of(dish));
 
             when(dietaryRestrictionRepository.findAll()).thenReturn(List.of(
-                    new DietaryRestriction("CELIAC", "Sin TACC / Celíaco", DietaryCategory.DIETARY_LIFESTYLE, "Sin TACC"),
+                    new DietaryRestriction("CELIAC", "Sin TACC / Celíaco", DietaryCategory.COMMON_ALLERGEN, "Sin TACC"),
                     new DietaryRestriction("VEGETARIAN", "Vegetariano", DietaryCategory.DIETARY_LIFESTYLE, "Vegetariano"),
                     new DietaryRestriction("PEANUTS", "Maní", DietaryCategory.COMMON_ALLERGEN, "Maní")
             ));
@@ -433,8 +433,8 @@ class DinerCatalogServiceTest {
             DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
 
             DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
-            assertThat(item.getAllergens()).containsExactly("Maní");
-            assertThat(item.getLifestyles()).containsExactlyInAnyOrder("Sin TACC / Celíaco", "Vegetariano");
+            assertThat(item.getAllergens()).containsExactlyInAnyOrder("Maní", "Sin TACC / Celíaco");
+            assertThat(item.getLifestyles()).containsExactly("Vegetariano");
         }
 
     }
@@ -474,6 +474,28 @@ class DinerCatalogServiceTest {
             assertThat(response.getEstablishment().getIsOpen()).isFalse();
             assertThat(response.getEstablishment().getNextOpeningSchedule()).isNotNull();
             assertThat(response.getEstablishment().getNextOpeningSchedule()).contains("04:00");
+        }
+
+        @Test
+        @DisplayName("Should evaluate isOpen using weekly operating schedule repository when present")
+        void shouldEvaluateIsOpenUsingWeeklyOperatingSchedule() {
+            Establishment closedStatic = new Establishment(tenantId, "Local", EstablishmentStatus.ACTIVE,
+                    LocalTime.of(4, 0), LocalTime.of(4, 1), "America/Argentina/Buenos_Aires");
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(closedStatic));
+            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+                    .thenReturn(List.of());
+
+            com.easyeat.operations.repository.OperatingScheduleRepository scheduleRepo = org.mockito.Mockito.mock(com.easyeat.operations.repository.OperatingScheduleRepository.class);
+            var schedule = new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                    tenantId, java.time.LocalDate.now().getDayOfWeek(), LocalTime.of(0, 0), LocalTime.of(23, 59, 59), false);
+            when(scheduleRepo.findByEstablishmentIdAndDayOfWeek(eq(tenantId), any())).thenReturn(Optional.of(schedule));
+
+            DinerCatalogService serviceWithSchedule = new DinerCatalogService(
+                    establishmentRepository, dishRepository, dishPhotoRepository, dishRecipeIngredientRepository,
+                    ingredientRepository, catalogComplianceService, null, null, scheduleRepo);
+
+            DinerCatalogResponse response = serviceWithSchedule.getCatalog(tenantId, mockUser);
+            assertThat(response.getEstablishment().getIsOpen()).isTrue();
         }
     }
 

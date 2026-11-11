@@ -1,5 +1,6 @@
 package com.easyeat.operations.service;
 
+import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.exception.EstablishmentNotFoundException;
 import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
@@ -12,6 +13,9 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -42,12 +46,14 @@ public class OperatingScheduleService {
 
     /**
      * Upserts the given days atomically: if any day is invalid or stale, none is saved.
+     * Synchronizes today's operating hours onto the base establishment entity.
      */
     @Transactional
     public List<EstablishmentOperatingSchedule> saveWeek(UUID establishmentId, List<ScheduleChange> changes) {
         if (!establishmentRepository.existsById(establishmentId)) {
             throw new EstablishmentNotFoundException(establishmentId);
         }
+
         List<EstablishmentOperatingSchedule> toSave = new ArrayList<>();
         for (ScheduleChange change : changes) {
             if (!change.closed() && !change.openingTime().isBefore(change.closingTime())) {
@@ -70,6 +76,26 @@ public class OperatingScheduleService {
                         change.openingTime(), change.closingTime(), change.closed()));
             }
         }
+
+        // Sincronizar el horario del día de hoy en la entidad base establishment
+        establishmentRepository.findById(establishmentId).ifPresent(establishment -> {
+            ZoneId zoneId;
+            try {
+                zoneId = ZoneId.of(establishment.getTimezone() != null ? establishment.getTimezone() : "America/Argentina/Buenos_Aires");
+            } catch (Exception e) {
+                zoneId = ZoneId.of("America/Argentina/Buenos_Aires");
+            }
+            DayOfWeek currentDay = LocalDate.now(zoneId).getDayOfWeek();
+            for (ScheduleChange change : changes) {
+                if (change.dayOfWeek() == currentDay && !change.closed()) {
+                    establishment.setOpeningTime(change.openingTime());
+                    establishment.setClosingTime(change.closingTime());
+                    establishmentRepository.save(establishment);
+                    break;
+                }
+            }
+        });
+
         try {
             return scheduleRepository.saveAllAndFlush(toSave);
         } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException e) {

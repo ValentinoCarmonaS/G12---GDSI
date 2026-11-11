@@ -81,7 +81,7 @@ class DietaryRestrictionControllerTest {
         @DisplayName("Returns 200 OK and taxonomy list without requiring authentication (public access)")
         void getTaxonomy_publicAccess_returns200() throws Exception {
             List<DietaryRestrictionItemDto> items = List.of(
-                    new DietaryRestrictionItemDto("CELIAC", "Sin TACC / Celíaco", "DIETARY_LIFESTYLE", "Excluye gluten"),
+                    new DietaryRestrictionItemDto("CELIAC", "Sin TACC / Celíaco", "COMMON_ALLERGEN", "Excluye gluten"),
                     new DietaryRestrictionItemDto("PEANUTS", "Maní", "COMMON_ALLERGEN", "Contiene maní")
             );
 
@@ -95,7 +95,7 @@ class DietaryRestrictionControllerTest {
                     .andExpect(jsonPath("$.length()").value(2))
                     .andExpect(jsonPath("$[0].code").value("CELIAC"))
                     .andExpect(jsonPath("$[0].name").value("Sin TACC / Celíaco"))
-                    .andExpect(jsonPath("$[0].category").value("DIETARY_LIFESTYLE"))
+                    .andExpect(jsonPath("$[0].category").value("COMMON_ALLERGEN"))
                     .andExpect(jsonPath("$[1].code").value("PEANUTS"))
                     .andExpect(jsonPath("$[1].category").value("COMMON_ALLERGEN"));
 
@@ -125,7 +125,7 @@ class DietaryRestrictionControllerTest {
         void updatePreferences_authenticatedDiner_returns200() throws Exception {
             DietaryPreferencesRequest request = new DietaryPreferencesRequest(List.of("CELIAC", "PEANUTS"));
             List<DietaryRestrictionItemDto> updatedItems = List.of(
-                    new DietaryRestrictionItemDto("CELIAC", "Sin TACC / Celíaco", "DIETARY_LIFESTYLE", "Excluye gluten"),
+                    new DietaryRestrictionItemDto("CELIAC", "Sin TACC / Celíaco", "COMMON_ALLERGEN", "Excluye gluten"),
                     new DietaryRestrictionItemDto("PEANUTS", "Maní", "COMMON_ALLERGEN", "Contiene maní")
             );
 

@@ -13,7 +13,11 @@ export const AllergenNeutralPill: React.FC<AllergenNeutralPillProps> = ({ allerg
   return (
     <span
       data-testid="allergen-neutral-pill"
-      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-900 border border-amber-200/80 transition-colors"
+      style={{
+        backgroundColor: 'var(--brand-accent, #F59E0B)',
+        color: 'var(--brand-accent-contrast, #000000)',
+      }}
+      className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold shadow-xs transition-colors"
     >
       {allergen}
     </span>

@@ -91,7 +91,7 @@ export interface StockAdjustmentResponse {
 export interface StockAuditEntryResponse {
   id: string;
   ingredientId: string;
-  userId: string;
+  userId: string | null;
   adminName: string;
   adjustmentMode: StockAdjustmentMode | StockAdjustmentAction;
   previousStock: number;

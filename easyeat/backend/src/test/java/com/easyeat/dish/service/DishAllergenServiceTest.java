@@ -93,7 +93,7 @@ class DishAllergenServiceTest {
             when(dishRepository.findByIdAndTenantId(dishId, tenantId)).thenReturn(Optional.of(draftDish));
             when(dietaryRestrictionRepository.findAllById(validCodes)).thenReturn(List.of(
                     new DietaryRestriction("VEGAN", "Vegano", DietaryCategory.DIETARY_LIFESTYLE, "Apto vegano"),
-                    new DietaryRestriction("CELIAC", "Celíaco", DietaryCategory.DIETARY_LIFESTYLE, "Contiene gluten"),
+                    new DietaryRestriction("CELIAC", "Celíaco", DietaryCategory.COMMON_ALLERGEN, "Contiene gluten"),
                     new DietaryRestriction("DAIRY", "Lácteos", DietaryCategory.COMMON_ALLERGEN, "Contiene lácteos")
             ));
             when(dishRepository.save(any(Dish.class))).thenAnswer(invocation -> invocation.getArgument(0));

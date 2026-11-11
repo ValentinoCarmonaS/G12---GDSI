@@ -101,6 +101,11 @@ public class DishAvailabilityEngine {
             }
         }
 
+        // T036: Si las porciones disponibles netas calculadas (contemplando reservas activas) son 0, el plato no está disponible
+        if (temporaryReservationRepository != null && calculateAvailableStock(dishId, tenantId) <= 0) {
+            return false;
+        }
+
         return true;
     }
 

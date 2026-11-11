@@ -24,7 +24,9 @@ import { AdminOperationsPage } from '../pages/AdminOperationsPage';
 import { VerifyEmailPage } from '../pages/VerifyEmailPage';
 import { EstablishmentDiscoveryPage } from '../pages/EstablishmentDiscoveryPage';
 import { CheckoutPage } from '../pages/CheckoutPage';
+import { OrderConfirmationTrackingPage } from '../pages/OrderConfirmationTrackingPage';
 import { PaymentReturnPage } from '../pages/PaymentReturnPage';
+import { AdminBrandingPage } from '../pages/AdminBrandingPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -196,6 +198,14 @@ export const AppRoutes: React.FC = () => {
         }
       />
       <Route
+        path="/admin/mi-local"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <AdminBrandingPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
         path="/admin/*"
         element={
           <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
@@ -247,6 +257,24 @@ export const AppRoutes: React.FC = () => {
         element={
           <RoleRouteGuard allowedRoles={['COMENSAL']}>
             <PaymentReturnPage />
+          </RoleRouteGuard>
+        }
+      />
+
+      {/* Role-Protected Diner Payment Confirmation & Live Tracking (COMENSAL) */}
+      <Route
+        path="/checkout/confirmacion/:orderId"
+        element={
+          <RoleRouteGuard allowedRoles={['COMENSAL']}>
+            <OrderConfirmationTrackingPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/pedidos/:orderId/seguimiento"
+        element={
+          <RoleRouteGuard allowedRoles={['COMENSAL']}>
+            <OrderConfirmationTrackingPage />
           </RoleRouteGuard>
         }
       />

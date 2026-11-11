@@ -264,6 +264,23 @@ El presente documento consolida las decisiones arquitectónicas, de infraestruct
 
 ---
 
+### 2.9. Lock pesimista en confirmación de checkout y estabilización de integración (11/11/2026)
+
+- **Decisión**:
+  - Incorporar `OrderRepository.findByIdForUpdate(UUID id)` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` (`SELECT ... FOR UPDATE` sobre `orders`) y utilizarlo en los tres métodos transaccionales de `CheckoutConfirmationServiceImpl`: `confirmPayment`, `registerPendingPayment` y `confirmZeroAmountOrder`, incorporando además el guard de idempotencia (`order.getStatus() == OrderStatus.IN_PROGRESS`) en `confirmZeroAmountOrder`.
+  - Mantener el orden estricto de adquisición de locks `Order -> Ingredient (ASC)` sin ciclos respecto de `CheckoutPaymentService` (`Establishment -> Ingredient`), `OrderService` (`Establishment`) y `StockAdjustmentService` (`Ingredient -> IngredientBatch`).
+  - Registrar la migración idempotente `V24__nullable_stock_audit_user_id.sql` (`ALTER TABLE stock_audit_entries ALTER COLUMN user_id DROP NOT NULL;`) para que las deducciones automáticas de `StockDeductionServiceImpl` registren `user_id = NULL` (`adminName = "System"`) en lugar de violar `stock_audit_entries_user_id_fkey` con el UUID sintético `00000000-0000-0000-0000-000000000000`.
+  - Incluir `IN_PROGRESS`, `PENDING_ACCREDITATION` y `READY_FOR_PICKUP` en `OrderRepository.countActiveOrdersBySlot` junto con `CONFIRMED`, `PAID` y `PENDING_PAYMENT` no expirado.
+- **Rationale**:
+  - Bajo `Isolation.READ_COMMITTED`, las lecturas sin lock permitían que múltiples hilos concurrentes (por ejemplo, webhook simultáneo con retorno de pasarela) leyeran `PENDING_PAYMENT` antes del primer commit, ejecutando múltiples descuentos de stock sobre `Ingredient` mientras `KdsQueueServiceImpl` devolvía el ticket ya insertado y ocultaba la duplicación devolviendo `idempotentReplay = false`.
+  - Con `SELECT ... FOR UPDATE` sobre `orders`, las transacciones competidoras esperan el commit de la primera y PostgreSQL `READ COMMITTED` reevalúa la tupla comprometida (`IN_PROGRESS`), garantizando exactamente una deducción física de stock y respuestas `idempotentReplay = true` para los reintentos concurrentes.
+  - Hacer `stock_audit_entries.user_id` nullable evita crear filas sintéticas en `users` sujetas a `chk_users_role_tenant` y aprovecha el mapeo `"System"` ya soportado en `StockAdjustmentService.getAuditHistory`.
+- **Alternativas consideradas**:
+  - *Optimistic locking (`@Version` en `orders` con captura de `OptimisticLockException`)*: Descartada frente a `findByIdForUpdate` porque obligaría a reabrir una transacción nueva para consultar el ticket KDS ya creado, mientras `findByIdForUpdate` resuelve el replay idempotente dentro de la misma llamada sin error transitorio.
+  - *Usuario sintético `00000000-0000-0000-0000-000000000000` en `users`*: Descartada para mantener la tabla `users` restringida a cuentas reales.
+
+---
+
 ## 3. Resumen de Parámetros y Valores por Defecto
 
 | Parámetro / Variable | Componente | Valor Render / Producción | Fallback Local | Propósito |
