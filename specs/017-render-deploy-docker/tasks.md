@@ -213,7 +213,7 @@
 
 ### Cierre — Coherencia Documental, Verificación Integral y Validación en Vivo
 
-- [ ] T048 [P] [US6] Alinear `specs/017-render-deploy-docker/contracts/08-public-urls-contract.md` y `specs/017-render-deploy-docker/quickstart.md` con `Q15` y `FR-023` (documentar resolución de slugs, respuesta `200`/`401` ante firma inválida y `404` exclusivo para proveedor desconocido o sin adaptador)
+- [x] T048 [P] [US6] Alinear `specs/017-render-deploy-docker/contracts/08-public-urls-contract.md` y `specs/017-render-deploy-docker/quickstart.md` con `Q15` y `FR-023` (documentar resolución de slugs, respuesta `200`/`401` ante firma inválida y `404` exclusivo para proveedor desconocido o sin adaptador)
 - [ ] T049 [US6] Ejecutar `mvn verify` completo en `easyeat/backend/` (con gate Jacoco >= 80%), pushear la rama `017-render-deploy-docker` y validar en vivo que `https://easyeat-backend.onrender.com/api/v1/payments/mercadopago/webhook` rechace una firma inválida con `401 Unauthorized` (nunca `404`) antes de ejecutar la simulación en Mercado Pago
 
 ---

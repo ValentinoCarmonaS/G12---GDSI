@@ -30,7 +30,7 @@ Cubre de manera integral la verificación de los 24 escenarios de aceptación (*
 | **Puerto Dinámico & Health** | AS-9, AS-10, AS-11, AS-12 | Arranque con `PORT=10000` y sin `PORT`; petición a `/actuator/health`. | Enlace en puerto solicitado (o 8080 default); HTTP 200 `{"status":"UP"}` sin token JWT. |
 | **Neon & Flyway** | AS-13, AS-14, AS-15, AS-16 | Arranque contra base vacía en Neon con SSL. | Migraciones `V1` a `V19` aplicadas correlativamente + scripts `R__seed_dev_*`. |
 | **Contenedorización Frontend** | AS-17, AS-18, AS-19, AS-20 | Construcción con `ARG VITE_API_BASE_URL`; recarga de `/checkout` y `/catalog`. | 200 OK sirviendo `index.html` (cero 404); bundle apunta a API configurada; Nginx en `${PORT:-80}`. |
-| **URLs Públicas & Webhook** | AS-21, AS-22, AS-23, AS-24 | Simulación de preferencia MP, webhook anónimo y solicitud de reseteo de clave. | `back_urls` apuntan a frontend público; webhook responde sin JWT; link de mail sin `localhost`. |
+| **URLs Públicas & Webhook** | AS-21, AS-22, AS-23, AS-24 | Simulación de preferencia MP, webhook anónimo (con y sin `x-signature` inválida) y solicitud de reseteo de clave. | `back_urls` apuntan a frontend público; webhook resuelve slugs y responde `200`/`401` HMAC sin JWT (nunca `404`); link de mail sin `localhost`. |
 
 ---
 
@@ -154,13 +154,26 @@ docker stop test-fe && docker rm test-fe
 
 ---
 
-### Paso 5: Verificación de Webhooks y URLs Públicas (HU-06)
+### Paso 5: Verificación de Webhooks y URLs Públicas (HU-06, Q15)
 ```bash
-# 5.1. Validar accesibilidad pública del webhook de Mercado Pago sin autenticación (AS-23, SC-009)
+# 5.1. Validar accesibilidad pública del webhook de Mercado Pago sin autenticación ni x-signature (AS-23, FR-023, SC-009)
 curl -i -X POST http://localhost:8080/api/v1/payments/mercadopago/webhook \
   -H "Content-Type: application/json" \
   -d '{"action":"payment.created","data":{"id":"test_id"}}'
-# Salida esperada: No debe responder 401 ni 403 (código de negocio 200 o 400 por firma simulada)
+# Salida esperada: 200 OK (no debe responder 401 JWT, 403 ni 404).
+
+# 5.2. Validar resolución de slugs y rechazo HMAC ante firma inválida en /mercadopago/webhook y /mercado-pago/webhook (Q15, FR-023)
+curl -i -X POST http://localhost:8080/api/v1/payments/mercadopago/webhook \
+  -H "Content-Type: application/json" \
+  -H "x-signature: ts=12345,v1=invalid" \
+  -d '{"action":"payment.created","data":{"id":"test_id"}}'
+# Salida esperada: 401 Unauthorized con cuerpo vacío (rechazo de firma en PaymentWebhookController, nunca 404 ni application/problem+json).
+
+# 5.3. Validar que 404 Not Found quede reservado a proveedor desconocido o sin adaptador registrado (ej. stripe)
+curl -i -X POST http://localhost:8080/api/v1/payments/stripe/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"action":"payment.created","data":{"id":"test_id"}}'
+# Salida esperada: 404 Not Found.
 ```
 
 ---
