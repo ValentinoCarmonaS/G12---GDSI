@@ -35,7 +35,7 @@ export const fetchKitchenOrders = async (
   if (status) {
     params.status = status;
   }
-  const response = await apiClient.get<KitchenOrderPageResponse>('/api/v1/kitchen/orders', {
+  const response = await apiClient.get<KitchenOrderPageResponse>('/kitchen/orders', {
     params,
   });
   return response.data;
@@ -43,7 +43,7 @@ export const fetchKitchenOrders = async (
 
 export const fetchDashboardSummary = async (): Promise<KdsDashboardSummaryResponse> => {
   const response = await apiClient.get<KdsDashboardSummaryResponse>(
-    '/api/v1/kitchen/dashboard/summary'
+    '/kitchen/dashboard/summary'
   );
   return response.data;
 };

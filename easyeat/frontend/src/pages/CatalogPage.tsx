@@ -29,6 +29,7 @@ import {
 import { ManualFiltersSidebar } from '../components/catalog/ManualFiltersSidebar';
 import { EmptyFilterResultsNotice } from '../components/catalog/EmptyFilterResultsNotice';
 import { BrandThemeProvider, useBrandTheme } from '../components/common/BrandThemeProvider';
+import { resolveApiMediaUrl } from '../utils/mediaUtils';
 
 const CatalogContent: React.FC = () => {
   const { branding } = useBrandTheme();
@@ -362,7 +363,7 @@ const CatalogContent: React.FC = () => {
           <div className="flex items-center gap-4">
             {branding.logoUrl && !logoFailed ? (
               <img
-                src={branding.logoUrl}
+                src={resolveApiMediaUrl(branding.logoUrl)}
                 alt={branding.fantasyName || 'Logo'}
                 onError={() => setLogoFailed(true)}
                 data-testid="restaurant-branding-logo"

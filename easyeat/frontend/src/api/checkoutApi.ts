@@ -12,7 +12,7 @@ export const confirmPayment = async (
   request: PaymentConfirmationRequest
 ): Promise<PaymentConfirmationResponse> => {
   const response = await apiClient.post<PaymentConfirmationResponse>(
-    '/api/v1/checkout/confirm-payment',
+    '/checkout/confirm-payment',
     request
   );
   return response.data;
@@ -22,7 +22,7 @@ export const registerPendingPayment = async (
   request: PendingPaymentRequest
 ): Promise<PendingPaymentResponse> => {
   const response = await apiClient.post<PendingPaymentResponse>(
-    '/api/v1/checkout/pending-payment',
+    '/checkout/pending-payment',
     request
   );
   return response.data;
@@ -32,7 +32,7 @@ export const confirmZeroAmountOrder = async (
   request: ZeroAmountOrderRequest
 ): Promise<ZeroAmountOrderResponse> => {
   const response = await apiClient.post<ZeroAmountOrderResponse>(
-    '/api/v1/checkout/confirm-zero-amount',
+    '/checkout/confirm-zero-amount',
     request
   );
   return response.data;
