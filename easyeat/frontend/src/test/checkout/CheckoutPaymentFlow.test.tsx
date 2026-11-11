@@ -327,8 +327,7 @@ describe('T021: CheckoutPaymentFlow frontend integration tests (AS-1, AS-6, FR-0
 
     expect(screen.queryByTestId('false-confirmation-route')).not.toBeInTheDocument();
     expect(clearCartMock).not.toHaveBeenCalled();
-    expect(
-      screen.getByText(/no pudimos obtener el enlace de pago|no existe preferencia de pago activa/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/no pudimos obtener el enlace de pago/i)).toBeInTheDocument();
+    expect(screen.getByText(/no existe preferencia de pago activa/i)).toBeInTheDocument();
   });
 });
