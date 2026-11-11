@@ -199,7 +199,7 @@
 ### Ciclo TDD 1 — Resolución normalizada de slug en `PaymentMethod`
 
 - [x] T042 [US6] [RED] Agregar pruebas unitarias para `PaymentMethod.fromWebhookSlug(String)` verificando normalización uniforme (insensible a mayúsculas y sin separadores `-`/`_`: `mercadopago`, `mercado-pago`, `mercado_pago`, `stripe`) y retorno vacío ante `null`, blanco, espacios internos o proveedores desconocidos en `easyeat/backend/src/test/java/com/easyeat/operations/domain/PaymentMethodAndTimeSlotTest.java` (FR-023, Q15)
-- [ ] T043 [US6] [GREEN] Implementar `PaymentMethod.fromWebhookSlug(String)` retornando `Optional<PaymentMethod>` mediante normalización uniforme sin control de flujo por excepciones en `easyeat/backend/src/main/java/com/easyeat/operations/domain/PaymentMethod.java` (FR-023, Q15)
+- [x] T043 [US6] [GREEN] Implementar `PaymentMethod.fromWebhookSlug(String)` retornando `Optional<PaymentMethod>` mediante normalización uniforme sin control de flujo por excepciones en `easyeat/backend/src/main/java/com/easyeat/operations/domain/PaymentMethod.java` (FR-023, Q15)
 
 ### Ciclo TDD 2 — Búsqueda segura de adaptador en `PaymentGatewayResolver`
 
