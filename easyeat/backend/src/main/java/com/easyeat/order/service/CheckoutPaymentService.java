@@ -238,6 +238,13 @@ public class CheckoutPaymentService {
 
         PaymentGatewayPort.PreferenceResult prefResult = gatewayPort.createPreference(command);
 
+        String normalizedInitPoint = normalizeBlankToNull(prefResult.initPoint());
+        String normalizedSandboxInitPoint = normalizeBlankToNull(prefResult.sandboxInitPoint());
+        String chosenRedirectUrl = normalizedInitPoint != null ? normalizedInitPoint : normalizedSandboxInitPoint;
+        if (chosenRedirectUrl == null) {
+            throw new RuntimeException("Mercado Pago no devolvió una URL de redirección válida para iniciar el pago.");
+        }
+
         // 7. Persistir registro de Payment en estado IN_PROCESS
         Payment payment = new Payment(
                 order,
@@ -247,13 +254,8 @@ public class CheckoutPaymentService {
                 totalAmount,
                 paymentIdempotency
         );
-        payment.assignGatewayPreference(prefResult.preferenceId(), prefResult.initPoint(), prefResult.sandboxInitPoint());
+        payment.assignGatewayPreference(prefResult.preferenceId(), normalizedInitPoint, normalizedSandboxInitPoint);
         paymentRepository.save(payment);
-
-        String chosenRedirectUrl = prefResult.sandbox() ? prefResult.sandboxInitPoint() : prefResult.initPoint();
-        if (chosenRedirectUrl == null || chosenRedirectUrl.isBlank()) {
-            chosenRedirectUrl = prefResult.initPoint();
-        }
 
         return new PaymentInitiationResponse(
                 order.getId(),
@@ -266,6 +268,10 @@ public class CheckoutPaymentService {
                 totalAmount,
                 "ARS"
         );
+    }
+
+    private static String normalizeBlankToNull(String value) {
+        return (value == null || value.isBlank()) ? null : value.trim();
     }
 
     /**
