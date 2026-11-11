@@ -59,7 +59,7 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public PaymentConfirmationResponse confirmPayment(UUID dinerId, PaymentConfirmationRequest request) {
         Objects.requireNonNull(request, "Request cannot be null");
-        Order order = orderRepository.findById(request.orderId())
+        Order order = orderRepository.findByIdForUpdate(request.orderId())
                 .orElseThrow(() -> new OrderNotFoundException(request.orderId()));
 
         // Idempotency check (INV-07, CB-12)
@@ -106,7 +106,7 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public PendingPaymentResponse registerPendingPayment(UUID dinerId, PendingPaymentRequest request) {
         Objects.requireNonNull(request, "Request cannot be null");
-        Order order = orderRepository.findById(request.orderId())
+        Order order = orderRepository.findByIdForUpdate(request.orderId())
                 .orElseThrow(() -> new OrderNotFoundException(request.orderId()));
 
         if (order.getStatus() != OrderStatus.IN_PROGRESS) {
@@ -129,8 +129,22 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public ZeroAmountOrderResponse confirmZeroAmountOrder(UUID dinerId, ZeroAmountOrderRequest request) {
         Objects.requireNonNull(request, "Request cannot be null");
-        Order order = orderRepository.findById(request.orderId())
+        Order order = orderRepository.findByIdForUpdate(request.orderId())
                 .orElseThrow(() -> new OrderNotFoundException(request.orderId()));
+
+        if (order.getStatus() == OrderStatus.IN_PROGRESS) {
+            log.info("Zero-amount order {} is already IN_PROGRESS. Returning idempotent response.", order.getId());
+            KdsTicket existingTicket = kdsQueueService.dispatchOrderToKitchen(order);
+            return new ZeroAmountOrderResponse(
+                    order.getId(),
+                    OrderStatus.IN_PROGRESS.name(),
+                    BigDecimal.ZERO,
+                    true,
+                    true,
+                    mapToSummaryDto(existingTicket),
+                    "¡Orden 100% bonificada confirmada! Tu pedido ya fue enviado a la cocina."
+            );
+        }
 
         if (order.getTotalAmount() != null && order.getTotalAmount().compareTo(BigDecimal.ZERO) > 0) {
             throw new IllegalArgumentException("La orden tiene un monto superior a cero; debe procesarse mediante pasarela.");

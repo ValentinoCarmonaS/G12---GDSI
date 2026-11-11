@@ -25,8 +25,8 @@ En consecuencia, el modelo de datos para esta característica se adapta formalme
 - **Configuración Nginx** (`easyeat/frontend/nginx.conf`): Servidor estático con directiva `try_files $uri $uri/ /index.html =404;`, resolución de variable `${PORT:-80}` y política de caché HTTP.
 
 ### 2.2. Esquema Relacional Persistente (Estado en Neon)
-Las migraciones ejecutadas al inicio del backend en Neon corresponden a la secuencia completa existente:
-- Migraciones versionadas: `V1` a `V19` en `classpath:db/migration`.
+Las migraciones ejecutadas al inicio del backend en Neon corresponden a la secuencia completa existente tras integrar las Specs 015, 016 y C-11 junto con la estabilización de integración:
+- Migraciones versionadas: `V1` a `V24` en `classpath:db/migration` (incluyendo `V24__nullable_stock_audit_user_id.sql`, que habilita `user_id NULL` en `stock_audit_entries` para deducciones automáticas sin actor humano).
 - Scripts repetibles de inicialización y datos semilla: `R__seed_dev_users.sql`, `R__seed_dev_establishments.sql`, `R__seed_dev_dishes_and_dietary.sql` en `classpath:db/dev`.
 
 Para consultar la matriz completa de variables de entorno, topología de red, flujos de inicialización y validación de invariantes, remitirse íntegramente a [deployment-model.md](./deployment-model.md).

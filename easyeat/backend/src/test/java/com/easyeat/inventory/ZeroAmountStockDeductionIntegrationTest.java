@@ -46,7 +46,7 @@ class ZeroAmountStockDeductionIntegrationTest extends BaseIntegrationTest {
         assertThat(stockDeductionService).as("StockDeductionService must be implemented").isNotNull();
 
         Establishment establishment = createTestEstablishment("Restaurante Promociones");
-        Dish freeDish = createTestDish(establishment.getId(), "Plato Promocional 100% Off", BigDecimal.ZERO);
+        Dish freeDish = createTestDish(establishment.getId(), "Plato Promocional 100% Off", new BigDecimal("4500.00"));
 
         Ingredient vegetable = new Ingredient(
                 establishment.getId(), "Verduras Frescas", IngredientCategory.PRODUCE, UnitOfMeasure.KG, new BigDecimal("800.00")

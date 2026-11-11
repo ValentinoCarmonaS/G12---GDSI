@@ -265,15 +265,16 @@ public class StockAdjustmentService {
         Map<UUID, String> userNames = new HashMap<>();
 
         return entries.stream().map(entry -> {
-            String adminName = userNames.computeIfAbsent(entry.getUserId(), id -> {
-                if (id == null) return "System";
-                return userRepository.findById(id).map(User::getFullName).orElse("Unknown User");
-            });
+            UUID actorId = entry.getUserId();
+            String adminName = actorId == null
+                    ? "System"
+                    : userNames.computeIfAbsent(actorId, id ->
+                            userRepository.findById(id).map(User::getFullName).orElse("Unknown User"));
 
             return new StockAuditEntryResponse(
                     entry.getId(),
                     entry.getIngredientId(),
-                    entry.getUserId(),
+                    actorId,
                     adminName,
                     entry.getAdjustmentMode(),
                     entry.getPreviousStock(),
@@ -291,7 +292,7 @@ public class StockAdjustmentService {
     private UUID resolveCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getPrincipal() == null) {
-            return UUID.fromString("00000000-0000-0000-0000-000000000000");
+            return null;
         }
 
         if (auth.getPrincipal() instanceof User user) {
@@ -301,7 +302,7 @@ public class StockAdjustmentService {
         if (auth.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
             return userRepository.findByEmail(userDetails.getUsername())
                     .map(User::getId)
-                    .orElse(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+                    .orElse(null);
         }
 
         if (auth.getPrincipal() instanceof String principalStr) {
@@ -310,10 +311,10 @@ public class StockAdjustmentService {
             } catch (IllegalArgumentException e) {
                 return userRepository.findByEmail(principalStr)
                         .map(User::getId)
-                        .orElse(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+                        .orElse(null);
             }
         }
 
-        return UUID.fromString("00000000-0000-0000-0000-000000000000");
+        return null;
     }
 }

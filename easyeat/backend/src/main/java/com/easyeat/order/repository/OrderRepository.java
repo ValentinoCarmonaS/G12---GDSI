@@ -2,7 +2,9 @@ package com.easyeat.order.repository;
 
 import com.easyeat.order.domain.Order;
 import com.easyeat.order.domain.OrderStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -23,7 +25,13 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
           AND o.pickupDate = :pickupDate
           AND o.timeSlotStart = :timeSlotStart
           AND (
-            o.status IN (com.easyeat.order.domain.OrderStatus.CONFIRMED, com.easyeat.order.domain.OrderStatus.PAID)
+            o.status IN (
+              com.easyeat.order.domain.OrderStatus.CONFIRMED,
+              com.easyeat.order.domain.OrderStatus.PAID,
+              com.easyeat.order.domain.OrderStatus.IN_PROGRESS,
+              com.easyeat.order.domain.OrderStatus.PENDING_ACCREDITATION,
+              com.easyeat.order.domain.OrderStatus.READY_FOR_PICKUP
+            )
             OR (o.status = com.easyeat.order.domain.OrderStatus.PENDING_PAYMENT AND (o.expiresAt IS NULL OR o.expiresAt > :now))
           )
     """)
@@ -54,6 +62,10 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findExpiredPendingOrders(@Param("now") Instant now);
 
     Optional<Order> findByIdAndUserId(UUID id, UUID userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Order o WHERE o.id = :id")
+    Optional<Order> findByIdForUpdate(@Param("id") UUID id);
 
     List<Order> findByUserIdOrderByCreatedAtDesc(UUID userId);
 

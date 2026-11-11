@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -64,7 +63,12 @@ class OrderServiceTest {
     @Mock
     private com.easyeat.operations.repository.OperatingScheduleRepository operatingScheduleRepository;
 
-    @InjectMocks
+    private static final ZoneId TEST_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
+    private static final Clock FIXED_CLOCK = Clock.fixed(
+            LocalDate.of(2026, 11, 11).atTime(14, 0).atZone(TEST_ZONE).toInstant(),
+            TEST_ZONE
+    );
+
     private OrderService orderService;
 
     private UUID establishmentId;
@@ -75,6 +79,14 @@ class OrderServiceTest {
 
     @BeforeEach
     void setUp() {
+        orderService = new OrderService(
+                orderRepository,
+                establishmentRepository,
+                dishRepository,
+                FIXED_CLOCK,
+                operatingScheduleRepository
+        );
+
         establishmentId = UUID.randomUUID();
         userId = UUID.randomUUID();
         dishId = UUID.randomUUID();
@@ -109,7 +121,7 @@ class OrderServiceTest {
             CreateOrderRequest request = new CreateOrderRequest(
                     establishmentId,
                     null,
-                    LocalDate.now(),
+                    LocalDate.now(FIXED_CLOCK),
                     LocalTime.of(14, 0),
                     LocalTime.of(14, 15),
                     List.of(new CreateOrderItemRequest(dishId, 1))
@@ -128,7 +140,7 @@ class OrderServiceTest {
             CreateOrderRequest request = new CreateOrderRequest(
                     establishmentId,
                     FulfillmentMode.IMMEDIATE,
-                    LocalDate.now().plusDays(2),
+                    LocalDate.now(FIXED_CLOCK).plusDays(2),
                     LocalTime.of(18, 0),
                     LocalTime.of(18, 15),
                     List.of(new CreateOrderItemRequest(dishId, 2))
@@ -153,8 +165,8 @@ class OrderServiceTest {
             Order savedOrder = orderCaptor.getValue();
 
             assertThat(savedOrder.getFulfillmentMode()).isEqualTo(FulfillmentMode.IMMEDIATE);
-            assertThat(savedOrder.getPickupDate()).isEqualTo(LocalDate.now());
-            assertThat(savedOrder.getPickupDate()).isNotEqualTo(LocalDate.now().plusDays(2));
+            assertThat(savedOrder.getPickupDate()).isEqualTo(LocalDate.now(FIXED_CLOCK));
+            assertThat(savedOrder.getPickupDate()).isNotEqualTo(LocalDate.now(FIXED_CLOCK).plusDays(2));
         }
 
         @Test
@@ -217,7 +229,7 @@ class OrderServiceTest {
             CreateOrderRequest request = new CreateOrderRequest(
                     establishmentId,
                     FulfillmentMode.SCHEDULED,
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now(FIXED_CLOCK).plusDays(1),
                     LocalTime.of(13, 0),
                     LocalTime.of(13, 15),
                     List.of(new CreateOrderItemRequest(dishId, 1))
@@ -236,7 +248,7 @@ class OrderServiceTest {
             when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
             when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
 
-            LocalDate targetDate = LocalDate.now().plusDays(1);
+            LocalDate targetDate = LocalDate.now(FIXED_CLOCK).plusDays(1);
             LocalTime slotStart = LocalTime.of(13, 0);
 
             // Mock that slot already has 10 booked orders (maxCapacity = 10)
@@ -270,7 +282,7 @@ class OrderServiceTest {
             when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
             when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
 
-            LocalDate futureDate = LocalDate.now().plusDays(2);
+            LocalDate futureDate = LocalDate.now(FIXED_CLOCK).plusDays(2);
             com.easyeat.operations.domain.EstablishmentOperatingSchedule closedSched =
                     new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
                             establishmentId, futureDate.getDayOfWeek(), LocalTime.of(11, 0), LocalTime.of(15, 0), true
@@ -300,7 +312,7 @@ class OrderServiceTest {
             when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
             when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
 
-            LocalDate futureDate = LocalDate.now().plusDays(2);
+            LocalDate futureDate = LocalDate.now(FIXED_CLOCK).plusDays(2);
             // Open only 13:00 to 15:00
             com.easyeat.operations.domain.EstablishmentOperatingSchedule schedule =
                     new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
@@ -332,7 +344,7 @@ class OrderServiceTest {
             when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
             when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
 
-            LocalDate today = LocalDate.now();
+            LocalDate today = LocalDate.now(FIXED_CLOCK);
             com.easyeat.operations.domain.EstablishmentOperatingSchedule closedSched =
                     new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
                             establishmentId, today.getDayOfWeek(), LocalTime.of(11, 0), LocalTime.of(15, 0), true
@@ -364,11 +376,11 @@ class OrderServiceTest {
             when(dishRepository.findByIdIn(List.of(dishId))).thenReturn(List.of(dish));
 
             // Next Monday
-            LocalDate monday = LocalDate.now();
+            LocalDate monday = LocalDate.now(FIXED_CLOCK);
             while (monday.getDayOfWeek() != DayOfWeek.MONDAY) {
                 monday = monday.plusDays(1);
             }
-            if (monday.equals(LocalDate.now())) {
+            if (monday.equals(LocalDate.now(FIXED_CLOCK))) {
                 monday = monday.plusDays(7);
             }
 
@@ -404,7 +416,7 @@ class OrderServiceTest {
             when(orderRepository.hasActivePendingOrder(eq(userId), any())).thenReturn(false);
             when(establishmentRepository.findByIdForUpdate(establishmentId)).thenReturn(Optional.of(establishment));
 
-            LocalDate monday = LocalDate.now();
+            LocalDate monday = LocalDate.now(FIXED_CLOCK);
             while (monday.getDayOfWeek() != DayOfWeek.MONDAY) {
                 monday = monday.plusDays(1);
             }
@@ -446,7 +458,7 @@ class OrderServiceTest {
             order.setUserId(userId);
             order.setEstablishmentId(establishmentId);
             order.setStatus(OrderStatus.PENDING_PAYMENT);
-            order.setExpiresAt(Instant.now().plus(10, ChronoUnit.MINUTES));
+            order.setExpiresAt(Instant.now(FIXED_CLOCK).plus(10, ChronoUnit.MINUTES));
 
             when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -486,12 +498,12 @@ class OrderServiceTest {
             order.setUserId(userId);
             order.setEstablishmentId(establishmentId);
             order.setFulfillmentMode(FulfillmentMode.SCHEDULED);
-            order.setPickupDate(LocalDate.now().plusDays(1));
+            order.setPickupDate(LocalDate.now(FIXED_CLOCK).plusDays(1));
             order.setTimeSlotStart(LocalTime.of(14, 0));
             order.setTimeSlotEnd(LocalTime.of(14, 15));
             order.setStatus(OrderStatus.PENDING_PAYMENT);
             order.setTotalAmount(new BigDecimal("12000.00"));
-            order.setExpiresAt(Instant.now().plus(600, ChronoUnit.SECONDS));
+            order.setExpiresAt(Instant.now(FIXED_CLOCK).plus(600, ChronoUnit.SECONDS));
 
             when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Optional.of(order));
 
