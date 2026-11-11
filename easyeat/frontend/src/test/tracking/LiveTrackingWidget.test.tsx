@@ -233,4 +233,53 @@ describe('T028 [US2]: LiveTrackingWidget Component Tests', () => {
     expect(screen.getByText(/#142/)).toBeInTheDocument();
     expect(screen.getByText(/listo para retirar/i)).toBeInTheDocument();
   });
+
+  it('renders safely when ticketNumber is null without dangling # or fake digits in preparation and ready callout', () => {
+    vi.spyOn(pollingHook, 'useOrderLiveTrackingPolling').mockReturnValue({
+      tracking: {
+        ...defaultImmediateTracking,
+        ticketNumber: null as unknown as number,
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    const { rerender } = render(
+      <LiveTrackingWidget
+        orderId="order-123"
+        ticketNumber={null as unknown as number}
+        fulfillmentMode="IMMEDIATE"
+      />
+    );
+
+    expect(screen.queryByText(/#/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Retiro en mostrador/i)).toBeInTheDocument();
+
+    vi.spyOn(pollingHook, 'useOrderLiveTrackingPolling').mockReturnValue({
+      tracking: {
+        ...defaultImmediateTracking,
+        ticketNumber: null as unknown as number,
+        status: 'READY_FOR_PICKUP',
+        isReadyForPickup: true,
+        estimatedMinutesRemaining: null,
+        progressPercentage: 100,
+        message: '¡Tu pedido está listo para retirar!',
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    rerender(
+      <LiveTrackingWidget
+        orderId="order-123"
+        ticketNumber={null as unknown as number}
+        fulfillmentMode="IMMEDIATE"
+      />
+    );
+
+    expect(screen.queryByText(/#/)).not.toBeInTheDocument();
+    expect(screen.getByText(/listo para retirar/i)).toBeInTheDocument();
+  });
 });
