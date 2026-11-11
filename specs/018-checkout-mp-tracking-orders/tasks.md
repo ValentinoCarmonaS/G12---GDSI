@@ -103,7 +103,7 @@
 
 - [X] T030 [P] [US4] Crear `easyeat/backend/src/main/java/com/easyeat/order/dto/DinerOrderSummaryResponse.java` incluyendo `DinerOrderItemResponse`, `ticketNumber` nullable y `redirectUrl` nullable.
 - [X] T031 [US4] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` (depende de `T030`) conservando el constructor compatible de 5 parámetros junto al constructor completo `@Autowired` (`PaymentRepository`, `KdsTicketRepository`, `TemporaryReservationRepository`, `MercadoPagoProperties`) e implementando `getDinerOrders(UUID userId)` con expiración perezosa y `ticketNumber` real.
-- [ ] T032 [US4] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/OrderController.java` (depende de `T031`) exponiendo `@GetMapping` (`GET /api/v1/orders`) autorizado para `COMENSAL`.
+- [X] T032 [US4] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/OrderController.java` (depende de `T031`) exponiendo `@GetMapping` (`GET /api/v1/orders`) autorizado para `COMENSAL`.
 
 ### Implementación frontend de US4
 
