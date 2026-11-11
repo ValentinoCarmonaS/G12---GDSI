@@ -192,6 +192,32 @@
 
 ---
 
+## Phase 12: Remediación Post-Despliegue Webhook de Mercado Pago (Q15)
+
+**Propósito**: Corregir el error `404 Not Found` en `POST /api/v1/payments/mercadopago/webhook` mediante resolución normalizada de proveedor en el dominio, siguiendo ciclos verticales TDD estrictos (Test Rojo → Implementación Verde) y manteniendo la coherencia documental de la Spec 017.
+
+### Ciclo TDD 1 — Resolución normalizada de slug en `PaymentMethod`
+
+- [ ] T042 [US6] [RED] Agregar pruebas unitarias para `PaymentMethod.fromWebhookSlug(String)` verificando normalización uniforme (insensible a mayúsculas y sin separadores `-`/`_`: `mercadopago`, `mercado-pago`, `mercado_pago`, `stripe`) y retorno vacío ante `null`, blanco, espacios internos o proveedores desconocidos en `easyeat/backend/src/test/java/com/easyeat/operations/domain/PaymentMethodAndTimeSlotTest.java` (FR-023, Q15)
+- [ ] T043 [US6] [GREEN] Implementar `PaymentMethod.fromWebhookSlug(String)` retornando `Optional<PaymentMethod>` mediante normalización uniforme sin control de flujo por excepciones en `easyeat/backend/src/main/java/com/easyeat/operations/domain/PaymentMethod.java` (FR-023, Q15)
+
+### Ciclo TDD 2 — Búsqueda segura de adaptador en `PaymentGatewayResolver`
+
+- [ ] T044 [US6] [RED] Agregar pruebas unitarias para `PaymentGatewayResolver.findAdapter(PaymentMethod)` verificando adaptador presente, `Optional.empty()` ante método sin adaptador registrado y `Optional.empty()` ante `null` (preservando el comportamiento existente de `resolve`) en `easyeat/backend/src/test/java/com/easyeat/order/service/PaymentGatewayResolverTest.java` (FR-023, Q15)
+- [ ] T045 [US6] [GREEN] Implementar `PaymentGatewayResolver.findAdapter(PaymentMethod)` retornando `Optional<PaymentGatewayPort>` y reutilizarlo desde `resolve(PaymentMethod)` en `easyeat/backend/src/main/java/com/easyeat/order/service/PaymentGatewayResolver.java` (FR-023, Q15)
+
+### Ciclo TDD 3 — Enrutamiento y seguridad en `PaymentWebhookController`
+
+- [ ] T046 [US6] [RED] Reforzar `PaymentWebhookSecurityIntegrationTest.java` importando `PaymentGatewayResolver`, `MercadoPagoGatewayAdapter` y `WebhookSignatureValidator` reales para verificar que `/api/v1/payments/mercadopago/webhook` y `/api/v1/payments/mercado-pago/webhook` resuelvan el adaptador (`200 OK` o `401 Unauthorized` ante firma inválida, nunca `404`), mientras proveedores desconocidos o sin adaptador registrado (`stripe`) retornen `404 Not Found` en `easyeat/backend/src/test/java/com/easyeat/order/PaymentWebhookSecurityIntegrationTest.java` (FR-023, Q15, SC-009)
+- [ ] T047 [US6] [GREEN] Actualizar `PaymentWebhookController` para resolver el método vía `PaymentMethod.fromWebhookSlug(provider)` y `paymentGatewayResolver.findAdapter(method)`, retornando `404 Not Found` ante proveedor desconocido o sin adaptador y manteniendo intacta la semántica de firma y respuesta `401` en `easyeat/backend/src/main/java/com/easyeat/order/controller/PaymentWebhookController.java` (FR-023, Q15)
+
+### Cierre — Coherencia Documental, Verificación Integral y Validación en Vivo
+
+- [ ] T048 [P] [US6] Alinear `specs/017-render-deploy-docker/contracts/08-public-urls-contract.md` y `specs/017-render-deploy-docker/quickstart.md` con `Q15` y `FR-023` (documentar resolución de slugs, respuesta `200`/`401` ante firma inválida y `404` exclusivo para proveedor desconocido o sin adaptador)
+- [ ] T049 [US6] Ejecutar `mvn verify` completo en `easyeat/backend/` (con gate Jacoco >= 80%), pushear la rama `017-render-deploy-docker` y validar en vivo que `https://easyeat-backend.onrender.com/api/v1/payments/mercadopago/webhook` rechace una firma inválida con `401 Unauthorized` (nunca `404`) antes de ejecutar la simulación en Mercado Pago
+
+---
+
 ## Dependencias y Orden de Ejecución
 
 ```mermaid
