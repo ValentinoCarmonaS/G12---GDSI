@@ -26,9 +26,12 @@ import com.easyeat.order.repository.OrderRepository;
 import com.easyeat.order.repository.PaymentRepository;
 import com.easyeat.order.repository.TemporaryReservationRepository;
 import com.easyeat.order.service.CheckoutPaymentService;
+import com.easyeat.order.service.PaymentGatewayPort;
+import com.easyeat.order.service.PaymentGatewayResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -38,12 +41,19 @@ import java.time.LocalTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @DisplayName("T015: CheckoutPaymentIntegrationTest (AS-1, FR-001, FR-002)")
 class CheckoutPaymentIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CheckoutPaymentService checkoutPaymentService;
+
+    @SpyBean
+    private PaymentGatewayResolver paymentGatewayResolver;
 
     @Autowired
     private OrderRepository orderRepository;
@@ -187,5 +197,46 @@ class CheckoutPaymentIntegrationTest extends BaseIntegrationTest {
         assertThat(items).hasSize(1);
         assertThat(items.get(0).getUnitPrice()).isEqualByComparingTo(new BigDecimal("136.67"));
         assertThat(items.get(0).getSubtotal()).isEqualByComparingTo(new BigDecimal("136.67"));
+    }
+
+    @Test
+    @DisplayName("FR-001: redirectUrl prioriza init_point sobre sandbox_init_point incluso cuando sandbox = true")
+    void shouldPrioritizeInitPointOverSandboxInitPointEvenWhenSandboxTrue() {
+        Establishment establishment = createTestEstablishment("Restaurante InitPoint Priority");
+        establishment.setMaxCapacityPerSlot(10);
+        establishmentRepository.save(establishment);
+
+        Dish dish = createTestDish(establishment.getId(), "Empanada Salteña", new BigDecimal("2500.00"));
+        Ingredient ingredient = new Ingredient(establishment.getId(), "Carne", IngredientCategory.DRY_GOODS, UnitOfMeasure.KG, new BigDecimal("50.00"));
+        ingredient.setCurrentStock(new BigDecimal("20.00"));
+        ingredient.setStatus(IngredientStatus.ACTIVE);
+        ingredientRepository.save(ingredient);
+        dishRecipeIngredientRepository.save(new DishRecipeIngredient(dish.getId(), ingredient.getId(), new BigDecimal("0.25")));
+
+        User diner = createTestDiner("diner_initpoint_priority@test.com");
+
+        String officialInitPoint = "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-priority-1";
+        String sandboxInitPoint = "https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-priority-1";
+
+        PaymentGatewayPort stubGateway = mock(PaymentGatewayPort.class);
+        when(stubGateway.createPreference(any())).thenReturn(
+                new PaymentGatewayPort.PreferenceResult("pref-priority-1", officialInitPoint, sandboxInitPoint, true)
+        );
+        doReturn(stubGateway).when(paymentGatewayResolver).resolve(PaymentMethod.MERCADO_PAGO);
+
+        PaymentInitiationRequest request = new PaymentInitiationRequest(
+                establishment.getId(),
+                FulfillmentMode.SCHEDULED,
+                PaymentMethod.MERCADO_PAGO,
+                LocalDate.now().plusDays(1),
+                LocalTime.of(15, 0),
+                LocalTime.of(15, 15),
+                List.of(new PaymentInitiationRequest.OrderItemRequest(dish.getId(), 1))
+        );
+
+        PaymentInitiationResponse response = checkoutPaymentService.initiatePayment(diner.getId(), request);
+
+        assertThat(response.redirectUrl()).isEqualTo(officialInitPoint);
+        assertThat(response.sandbox()).isTrue();
     }
 }
