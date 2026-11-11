@@ -128,7 +128,7 @@ describe('T014 [US1]: Order Confirmation and Tracking Coexistence upon Reload or
       ...sampleOrder,
       status: 'PENDING_ACCREDITATION',
       approvalStatus: 'PENDING',
-      ticketNumber: null as unknown as number,
+      ticketNumber: null,
     });
 
     render(

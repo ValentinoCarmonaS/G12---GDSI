@@ -139,7 +139,7 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
       ...mockOrderData,
       status: 'PENDING_ACCREDITATION',
       approvalStatus: 'PENDING',
-      ticketNumber: null as unknown as number,
+      ticketNumber: null,
     };
 
     vi.mocked(orderTrackingApi.getConfirmationTracking)

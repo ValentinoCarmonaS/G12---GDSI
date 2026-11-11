@@ -78,7 +78,7 @@
 - [X] T022 [P] [US2] Actualizar `easyeat/frontend/src/types/orderTracking.ts` (`ticketNumber: number | null`) y `easyeat/frontend/src/hooks/useOrderLiveTrackingPolling.ts` deteniendo polling en estados terminales (`READY_FOR_PICKUP`, `COMPLETED`, `CANCELLED`, `EXPIRED`).
 - [X] T023 [P] [US2] Actualizar `easyeat/frontend/src/components/checkout/PendingAccreditationBanner.tsx` y `easyeat/frontend/src/components/tracking/{OrderSuccessGreenBanner.tsx,LiveTrackingWidget.tsx,ReadyForPickupCallout.tsx}` para soportar `ticketNumber: null` sin renderizar números ficticios ni caer a `0`, y corregir contraste sobre fondo claro.
 - [X] T024 [US2] Actualizar `easyeat/frontend/src/pages/PaymentReturnPage.tsx` (depende de `T023`) redirigiendo pagos confirmados a `/checkout/confirmacion/:orderId`, manejando conflicto `409` (Q3) y `EXPIRED` hacia `/checkout` sin limpiar carrito, ofreciendo enlaces a seguimiento y `/perfil#pedidos` en `PENDING_ACCREDITATION` y corrigiendo navegación `/catalogo`.
-- [ ] T025 [US2] Actualizar `easyeat/frontend/src/pages/OrderConfirmationTrackingPage.tsx` (depende de `T022`, `T023`) implementando vista provisional para `PENDING_ACCREDITATION` (sin banner verde, sin aviso de comprobante ni barra activa de cocina, con polling suave cada 5 s y enlace a `"Mis pedidos"`).
+- [X] T025 [US2] Actualizar `easyeat/frontend/src/pages/OrderConfirmationTrackingPage.tsx` (depende de `T022`, `T023`) implementando vista provisional para `PENDING_ACCREDITATION` (sin banner verde, sin aviso de comprobante ni barra activa de cocina, con polling suave cada 5 s y enlace a `"Mis pedidos"`).
 
 **Checkpoint**: `US1 + US2` forman el primer corte operativo completo en Render (preferencia, webhook seguro, confirmación atómica, comprobante y seguimiento fiel).
 

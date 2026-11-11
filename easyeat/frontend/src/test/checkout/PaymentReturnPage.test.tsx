@@ -61,6 +61,7 @@ describe('T023: PaymentReturnPage Component Tests (AS-2, AS-3, AS-4, Q2, Q4)', (
         ticketId: 'ticket-1',
         ticketNumber: 142,
         status: 'QUEUED',
+        queuedAt: new Date().toISOString(),
       },
       idempotentReplay: false,
     });
@@ -102,11 +103,11 @@ describe('T023: PaymentReturnPage Component Tests (AS-2, AS-3, AS-4, Q2, Q4)', (
   };
 
   it.each([
-    { label: 'payment APPROVED + order PAID', orderStatus: 'PAID' as const, paymentStatus: 'APPROVED' },
-    { label: 'order CONFIRMED', orderStatus: 'CONFIRMED' as const, paymentStatus: 'IN_PROCESS' },
-    { label: 'order IN_PROGRESS', orderStatus: 'IN_PROGRESS' as const, paymentStatus: 'APPROVED' },
-    { label: 'order READY_FOR_PICKUP', orderStatus: 'READY_FOR_PICKUP' as const, paymentStatus: 'APPROVED' },
-    { label: 'order COMPLETED', orderStatus: 'COMPLETED' as const, paymentStatus: 'APPROVED' },
+    { label: 'payment APPROVED + order PAID', orderStatus: 'PAID' as const, paymentStatus: 'APPROVED' as const },
+    { label: 'order CONFIRMED', orderStatus: 'CONFIRMED' as const, paymentStatus: 'IN_PROCESS' as const },
+    { label: 'order IN_PROGRESS', orderStatus: 'IN_PROGRESS' as const, paymentStatus: 'APPROVED' as const },
+    { label: 'order READY_FOR_PICKUP', orderStatus: 'READY_FOR_PICKUP' as const, paymentStatus: 'APPROVED' as const },
+    { label: 'order COMPLETED', orderStatus: 'COMPLETED' as const, paymentStatus: 'APPROVED' as const },
   ])(
     'clears cart and redirects to /checkout/confirmacion/:orderId when $label',
     async ({ orderStatus, paymentStatus }) => {
