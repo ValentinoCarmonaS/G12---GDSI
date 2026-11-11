@@ -108,7 +108,7 @@
 ### Implementación frontend de US4
 
 - [X] T033 [P] [US4] Actualizar `easyeat/frontend/src/types/order.ts`, `easyeat/frontend/src/types/payment.ts` y `easyeat/frontend/src/api/orderApi.ts` incorporando `DinerOrderSummaryResponse`, `DinerOrderItemResponse`, `orderId?` en `OrderErrorProblemDetail`, `'ACTIVE_RESERVATION_EXISTS'` en `PaymentErrorCode` y la función `getMyOrders()`.
-- [ ] T034 [P] [US4] Crear `easyeat/frontend/src/components/profile/MyOrdersSection.tsx` (depende de `T033`) con tarjetas ordenadas, estado vacío, manejo de error, regla Q5 sin `redirectUrl`, y acciones `"Ver seguimiento"`, `"Retomar pago"` y `"Cancelar intento"`.
+- [X] T034 [P] [US4] Crear `easyeat/frontend/src/components/profile/MyOrdersSection.tsx` (depende de `T033`) con tarjetas ordenadas, estado vacío, manejo de error, regla Q5 sin `redirectUrl`, y acciones `"Ver seguimiento"`, `"Retomar pago"` y `"Cancelar intento"`.
 - [ ] T035 [US4] Actualizar `easyeat/frontend/src/pages/ProfilePage.tsx` (pestañas con soporte `#pedidos` invocando `getMyOrders` al abrir `"Mis pedidos"`) y `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` (enlace responsive `"Mis pedidos"` hacia `/perfil#pedidos` visible en escritorio y móvil).
 
 **Checkpoint**: `GET /api/v1/orders`, tipos compartidos, sección `"Mis pedidos"` y menú móvil/escritorio completos y verificados.
