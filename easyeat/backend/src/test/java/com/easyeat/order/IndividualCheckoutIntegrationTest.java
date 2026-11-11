@@ -306,6 +306,9 @@ class IndividualCheckoutIntegrationTest extends BaseIntegrationTest {
     @DisplayName("Contraste contra queryPayment cuando accessToken está configurado")
     class GatewayContrastWithAccessTokenTest {
 
+        @Autowired
+        private CheckoutConfirmationService checkoutConfirmationService;
+
         @MockBean
         private PaymentGatewayResolver paymentGatewayResolver;
 
