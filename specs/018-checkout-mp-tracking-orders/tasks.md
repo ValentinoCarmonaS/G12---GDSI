@@ -66,7 +66,7 @@
 
 ### Implementación backend de US2
 
-- [ ] T016 [P] [US2] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/service/WebhookSignatureValidator.java` para emitir `LOGGER.error` explícito cuando llegue `x-signature` con secreto vacío y advertencia inicial si hay `accessToken` sin `webhookSecret`.
+- [X] T016 [P] [US2] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/service/WebhookSignatureValidator.java` para emitir `LOGGER.error` explícito cuando llegue `x-signature` con secreto vacío y advertencia inicial si hay `accessToken` sin `webhookSecret`.
 - [ ] T017 [P] [US2] Actualizar `easyeat/backend/src/main/java/com/easyeat/auth/controller/GlobalExceptionHandler.java` añadiendo `@ExceptionHandler(InsufficientIngredientStockException.class)` con HTTP `409` y código `INSUFFICIENT_STOCK`.
 - [ ] T018 [P] [US2] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/service/PaymentWebhookService.java` y `easyeat/backend/src/main/java/com/easyeat/order/service/WebhookProcessingService.java` protegiendo rechazos/cancelaciones contra retroceso desde `IN_PROGRESS`, `READY_FOR_PICKUP`, `COMPLETED` o `EXPIRED`, y diferenciando `REJECTED` vs `CANCELLED`.
 - [ ] T019 [US2] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/PaymentWebhookController.java` (depende de `T016`, `T018`) para delegar notificaciones de pago en `WebhookProcessingService`, admitir query params IPN (`topic`, `id`, `data.id`) y JSON, responder `200 OK` ante tópicos no-pago (`merchant_order`), capturar `InvalidOrderStateException` Q3 con log de conciliación y `200 OK`, y propagar errores transitorios de pasarela o persistencia como `5xx` (Q4).
