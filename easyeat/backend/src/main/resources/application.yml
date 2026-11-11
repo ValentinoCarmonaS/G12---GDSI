@@ -33,10 +33,24 @@ spring:
     problemdetails:
       enabled: true
   jpa:
+    hibernate:
+      ddl-auto: validate
     open-in-view: false
     properties:
       hibernate:
         format_sql: true
+  mail:
+    # spring.mail.host se omite intencionalmente por defecto para que JavaMailSender solo se active
+    # cuando SPRING_MAIL_HOST este definido en el entorno (evita bloqueos SMTP en Render Free).
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_SMTP_AUTH:${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:false}}
+          starttls:
+            enable: ${SPRING_MAIL_STARTTLS_ENABLE:${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:false}}
 
 app:
   cors:

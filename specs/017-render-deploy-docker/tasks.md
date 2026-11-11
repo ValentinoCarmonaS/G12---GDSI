@@ -169,6 +169,18 @@
 
 ---
 
+## Phase 10: Remediación Pre-Despliegue Render & Neon (Q12, Q13)
+
+**Propósito**: Garantizar la compatibilidad de `V8` con los privilegios de Neon y la disponibilidad de `EmailSender` en perfiles productivos o sin perfil activo en Render Free.
+
+- [x] T033 [US4] Reemplazar `ALTER FUNCTION unaccent(text) IMMUTABLE;` por la función wrapper `immutable_unaccent(text)` en `easyeat/backend/src/main/resources/db/migration/V8__create_establishments.sql` (FR-017, Q12)
+- [x] T034 [P] [US6] Implementar `SmtpEmailSender` con `@Profile("!dev & !local & !test")` e inyección opcional de `JavaMailSender`, junto con su suite unitaria y de contexto Spring en `easyeat/backend/src/main/java/com/easyeat/profile/service/SmtpEmailSender.java` y `easyeat/backend/src/test/java/com/easyeat/profile/service/SmtpEmailSenderTest.java` (FR-024, Q13)
+- [x] T035 [P] Configurar `spring.jpa.hibernate.ddl-auto: validate` y las propiedades opcionales de correo (`spring.mail.port` y `spring.mail.properties.mail.smtp.*`, sin definir `spring.mail.host` por defecto) en `easyeat/backend/src/main/resources/application.yml` (Q13)
+- [x] T036 Ejecutar las pruebas unitarias e integración afectadas y la suite backend (`mvn clean verify`) en `easyeat/backend/` para validar que todas las pruebas pasen antes de desplegar en Render
+- [x] T037 Fijar `spring.flyway.locations: [classpath:db/migration]` en `easyeat/backend/src/test/resources/application-test.yml` para evitar que las semillas `db/dev` interfieran con los tests de integración previos que ejecutan `deleteAll()` sobre `users` y re-validar `mvn clean verify` más build/arranque Docker en perfil `prod`
+
+---
+
 ## Dependencias y Orden de Ejecución
 
 ```mermaid

@@ -77,6 +77,14 @@
 - **Q11: Tolerancia operativa y resiliencia ante auto-suspensión de Neon y Render en capa gratuita (HU-04 / CHK026)**: Render y Neon operan bajo sus respectivos planes gratuitos, por lo cual se suspenden automáticamente ante inactividad (Render entra en reposo tras 15 minutos y Neon escala a cero tras 5 minutos). ¿Cómo debe gobernar la aplicación este comportamiento?  
   → **A11**: Se documenta formalmente que la suspensión por inactividad es el comportamiento esperado y legítimo de la infraestructura gratuita del proyecto. Para tolerarlo sin degradación ni fallas permanentes: (1) Render tolera el arranque en frío (cold start) del backend con tiempos de gracia adecuados en su health check; y (2) el pool HikariCP en Spring Boot gestiona la reconexión automática transparente ante el despertar de Neon (scale-to-zero wake up) validando las conexiones antes de su uso (`isValid()`) y permitiendo un tiempo de espera de conexión (`connection-timeout`) de hasta 30 segundos, sin requerir reinicios manuales ni arrojar errores de socket caído a los usuarios finales.
 
+### Sesión 11/11/2026 (Validación previa a despliegue en Render y Neon)
+
+- **Q12: Privilegios de la extensión `unaccent` en `V8__create_establishments.sql` contra Neon PostgreSQL (HU-04 / FR-017)**: En PostgreSQL gestionado en la nube (Neon), las extensiones como `unaccent` pertenecen al rol interno `cloud_admin`, por lo que `ALTER FUNCTION unaccent(text) IMMUTABLE;` falla con `SQLState 42501` al inicializar una base limpia. ¿Cómo debe definirse el índice funcional en `V8`?  
+  → **A12**: Se reemplaza `ALTER FUNCTION unaccent(text) IMMUTABLE;` por una función wrapper inmutable propia del esquema (`immutable_unaccent(text)` que invoca `public.unaccent('public.unaccent', $1)`) y se crea el índice `idx_establishments_search` sobre `immutable_unaccent(LOWER(name))`, preservando la extensión `unaccent` y la compatibilidad completa tanto en Neon como en PostgreSQL local/Testcontainers.
+
+- **Q13: Disponibilidad del bean `EmailSender` y tolerancia a falta de SMTP en el plan gratuito de Render (HU-06 / FR-024)**: `EmailChangeService` exige un bean `EmailSender`, pero `LoggingEmailSender` solo se activa bajo `@Profile("dev | local | test")`, y el plan gratuito de Render bloquea los puertos SMTP salientes `25`, `465` y `587`. ¿Cómo debe operar el despacho de correos de verificación en Render?  
+  → **A13**: Se incorpora `SmtpEmailSender` con `@Profile("!dev & !local & !test")` y dependencia opcional `@Autowired(required = false) JavaMailSender`, y se agrega `spring.jpa.hibernate.ddl-auto: validate` junto con los parámetros SMTP opcionales en `application.yml` (omitiendo un `spring.mail.host` vacío por defecto para no activar `JavaMailSender` cuando no exista `SPRING_MAIL_HOST`). De este modo, el backend arranca sin errores tanto con `SPRING_PROFILES_ACTIVE=prod` como sin perfil definido y evita timeouts SMTP en el plan gratuito de Render hasta configurar un relay por HTTPS o puerto habilitado.
+
 ---
 
 ## Propósito
@@ -352,7 +360,7 @@ para completar transacciones y procesos de recuperación sin ser redirigido a `l
 - **FR-014**: La configuración de conexión a la base de datos DEBE utilizar la conexión directa de Neon (sin `-pooler`) para asegurar compatibilidad con bloqueos consultivos de Flyway (`pg_advisory_lock`), admitiendo parámetros de negociación segura SSL en la cadena JDBC provista por la variable `SPRING_DATASOURCE_URL` (incluyendo `sslmode=require`), y tolerando la suspensión por inactividad (scale-to-zero) propia de la capa gratuita mediante validación automática de conexiones en HikariCP (`isValid()`) y un tiempo de espera de conexión de hasta 30 segundos.
 - **FR-015**: Las credenciales de acceso a la base de datos DEBEN leerse exclusivamente de las variables de entorno `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` y `SPRING_DATASOURCE_PASSWORD`.
 - **FR-016**: La configuración de Flyway DEBE mantener activas las rutas de escaneo de migraciones y semillas en `classpath:db/migration` y `classpath:db/dev`.
-- **FR-017**: Al iniciar el backend contra la base de datos de Neon, Flyway DEBE ejecutar exitosamente la totalidad de migraciones versionadas desde `V1` hasta `V19` y los scripts repetibles de datos semilla `R__seed_dev_*`.
+- **FR-017**: Al iniciar el backend contra la base de datos de Neon, Flyway DEBE ejecutar exitosamente la totalidad de migraciones versionadas desde `V1` hasta `V19` (incluyendo la función wrapper `immutable_unaccent(text)` en `V8__create_establishments.sql` para compatibilidad sin privilegios de propietario sobre extensiones) y los scripts repetibles de datos semilla `R__seed_dev_*`.
 
 ### Módulo de contenedorización del frontend y enrutamiento SPA (HU-05)
 
@@ -365,7 +373,7 @@ para completar transacciones y procesos de recuperación sin ser redirigido a `l
 
 - **FR-022**: La variable de entorno `MERCADOPAGO_FRONTEND_BASE_URL` DEBE configurarse en el entorno de despliegue con el dominio público del frontend (sin barra final), y el backend DEBE construir las URLs de retorno (`back_urls`) concatenando `/checkout/payment-return`.
 - **FR-023**: El endpoint para webhooks de Mercado Pago DEBE quedar accesible públicamente bajo protocolo HTTPS en la ruta `/api/v1/payments/mercadopago/webhook`, exento de autenticación JWT.
-- **FR-024**: Las variables de entorno `APP_PASSWORD_RESET_BASE_URL` y `APP_EMAIL_VERIFICATION_BASE_URL` DEBEN configurarse en el backend apuntando a sus rutas correspondientes en el dominio público del frontend (`https://<frontend>/reset-password` y `https://<frontend>/verificar-email`).
+- **FR-024**: Las variables de entorno `APP_PASSWORD_RESET_BASE_URL` y `APP_EMAIL_VERIFICATION_BASE_URL` DEBEN configurarse en el backend apuntando a sus rutas correspondientes en el dominio público del frontend (`https://<frontend>/reset-password` y `https://<frontend>/verificar-email`), y el backend DEBE proveer una implementación de `EmailSender` (`SmtpEmailSender`) activa fuera de los perfiles `dev`, `local` y `test` con inyección opcional de `JavaMailSender` para tolerar despliegues sin servidor SMTP configurado.
 
 ---
 
