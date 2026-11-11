@@ -3,6 +3,7 @@ import type { DishCatalogItem } from '@/types/dinerCatalog';
 import { AllergenNeutralPill } from './AllergenNeutralPill';
 import { CartContext } from '@/context/CartContext';
 import { formatCurrency, calculateLineTotal } from '@/utils/currencyUtils';
+import { resolveApiMediaUrl } from '@/utils/mediaUtils';
 
 export interface DishDetailModalProps {
   dish: (DishCatalogItem & { availableStock?: number }) | null;
@@ -151,7 +152,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             )}
 
             <img
-              src={dish.photoUrl}
+              src={resolveApiMediaUrl(dish.photoUrl)}
               alt={dish.name}
               onLoad={() => setImageLoaded(true)}
               onError={() => setImageError(true)}

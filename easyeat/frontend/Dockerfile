@@ -13,10 +13,10 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 COPY package*.json ./
 RUN npm ci
 
-# Copia del código fuente y configuraciones
+# Copia del código fuente y configuraciones (tests/ requerido por tsconfig.json y re-exports en src/test/)
 COPY tsconfig*.json vite.config.ts tailwind.config.js postcss.config.js index.html ./
 COPY src/ ./src/
-COPY public/ ./public/
+COPY tests/ ./tests/
 
 # Compilación de la aplicación estática
 RUN npm run build

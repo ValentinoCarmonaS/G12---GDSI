@@ -181,6 +181,17 @@
 
 ---
 
+## Phase 11: Remediación Pre-Despliegue Frontend Render (Q14)
+
+**Propósito**: Corregir el fallo de build Docker por ausencia de `public/` y garantizar que fotos de platos y avatares resuelvan hacia el origen del backend cuando frontend y backend operan en dominios separados.
+
+- [x] T038 [US5] Eliminar `COPY public/ ./public/` e incorporar `COPY tests/ ./tests/` en etapa `build` de `easyeat/frontend/Dockerfile`, además de limpiar la referencia ausente `/vite.svg` en `easyeat/frontend/index.html` (FR-018, Q14)
+- [x] T039 [P] [US5] Implementar `resolveApiMediaUrl` en `easyeat/frontend/src/utils/mediaUtils.ts` e integrarlo en `easyeat/frontend/src/utils/avatarUtils.ts`, `DishCard.tsx`, `DishDetailModal.tsx` y `BasicIdentityStep.tsx` (FR-020, Q14)
+- [x] T040 [P] Agregar pruebas unitarias de `resolveApiMediaUrl` y resolución cross-origin de avatares en `easyeat/frontend/tests/utils/mediaUtils.test.ts` y `easyeat/frontend/tests/utils/avatarUtils.test.ts`
+- [x] T041 Ejecutar `npm run lint`, `npm run build`, `npm test` y verificar el build y arranque del contenedor Docker frontend en Nginx con `VITE_API_BASE_URL` apuntando al backend de Render y `PORT=10000` (HTTP 200 en `/` y `/checkout`)
+
+---
+
 ## Dependencias y Orden de Ejecución
 
 ```mermaid

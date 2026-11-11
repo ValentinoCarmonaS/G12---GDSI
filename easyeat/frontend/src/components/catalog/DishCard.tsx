@@ -4,6 +4,7 @@ import type { EnrichedDish } from '@/types/catalog';
 import { AllergenWarningBadge } from './AllergenWarningBadge';
 import { CartContext } from '@/context/CartContext';
 import { formatCurrency } from '@/utils/currencyUtils';
+import { resolveApiMediaUrl } from '@/utils/mediaUtils';
 
 export interface DishCardProps {
   dish: DishCatalogItem | EnrichedDish;
@@ -68,7 +69,7 @@ export const DishCard: React.FC<DishCardProps> = ({
       <div className="relative w-full h-44 bg-gray-100 overflow-hidden flex items-center justify-center">
         {photoUrl && !imageError ? (
           <img
-            src={photoUrl}
+            src={resolveApiMediaUrl(photoUrl)}
             alt={dish.name}
             onError={() => setImageError(true)}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
