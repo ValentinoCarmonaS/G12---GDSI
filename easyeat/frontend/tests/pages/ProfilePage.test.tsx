@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { profileApi } from '@/api/profileApi';
+import * as orderApi from '@/api/orderApi';
 import * as useCartModule from '@/hooks/useCart';
 import { AuthProvider } from '@/context/AuthContext';
 import type { ProfileResponse, DietaryRestrictionItem } from '@/types/profile';
@@ -18,11 +19,11 @@ describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
     email: 'valentino@example.com',
     pendingEmail: null,
     emailVerificationPending: false,
-    dietaryRestrictions: [{ code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' }],
+    dietaryRestrictions: [{ code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'COMMON_ALLERGEN' }],
   };
 
   const mockTaxonomy: DietaryRestrictionItem[] = [
-    { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' },
+    { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'COMMON_ALLERGEN' },
     { code: 'VEGAN', name: 'Vegano', category: 'DIETARY_LIFESTYLE' },
     { code: 'PEANUTS', name: 'Maní', category: 'COMMON_ALLERGEN' },
   ];
@@ -33,9 +34,9 @@ describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
     vi.spyOn(profileApi, 'updateDemographics').mockResolvedValue(mockProfile);
   });
 
-  const renderWithProviders = (ui: React.ReactElement) => {
+  const renderWithProviders = (ui: React.ReactElement, initialEntries: string[] = ['/perfil']) => {
     return render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         <AuthProvider>{ui}</AuthProvider>
       </MemoryRouter>
     );
@@ -123,7 +124,7 @@ describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
     const user = userEvent.setup();
     vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
     const updateSpy = vi.spyOn(profileApi, 'updateDietaryRestrictions').mockResolvedValueOnce([
-      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' },
+      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'COMMON_ALLERGEN' },
       { code: 'VEGAN', name: 'Vegano', category: 'DIETARY_LIFESTYLE' },
     ]);
 
@@ -152,7 +153,7 @@ describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
 
     vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
     vi.spyOn(profileApi, 'updateDietaryRestrictions').mockResolvedValueOnce([
-      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'DIETARY_LIFESTYLE' },
+      { code: 'CELIAC', name: 'Sin TACC / Celíaco', category: 'COMMON_ALLERGEN' },
     ]);
 
     renderWithProviders(<ProfilePage />);
@@ -164,5 +165,68 @@ describe('ProfilePage (T025, T038, COM-1.4.1 & COM-1.4.3)', () => {
     await waitFor(() => {
       expect(mockReEvaluate).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('renders "Datos y preferencias" and "Mis pedidos" tabs and lazily loads orders only on "Mis pedidos" (T029, FR-009)', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
+    const getMyOrdersSpy = vi.spyOn(orderApi, 'getMyOrders').mockResolvedValueOnce([
+      {
+        orderId: 'ord-lazy-1',
+        ticketNumber: 15,
+        establishmentId: 'est-1',
+        establishmentName: 'Cantina Norte',
+        status: 'IN_PROGRESS',
+        fulfillmentMode: 'IMMEDIATE',
+        pickupDate: '2026-11-11',
+        timeSlotStart: null,
+        timeSlotEnd: null,
+        totalAmount: 7500,
+        expiresAt: '2026-11-11T19:00:00Z',
+        createdAt: '2026-11-11T18:30:00Z',
+        redirectUrl: null,
+        trackingUrl: '/pedidos/ord-lazy-1/seguimiento',
+        items: [],
+      },
+    ]);
+
+    renderWithProviders(<ProfilePage />);
+
+    const profileTab = await screen.findByRole('tab', { name: /datos y preferencias/i });
+    const ordersTab = screen.getByRole('tab', { name: /mis pedidos/i });
+
+    expect(profileTab).toHaveAttribute('aria-selected', 'true');
+    expect(ordersTab).toHaveAttribute('aria-selected', 'false');
+    expect(getMyOrdersSpy).not.toHaveBeenCalled();
+
+    await user.click(ordersTab);
+
+    expect(ordersTab).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => {
+      expect(getMyOrdersSpy).toHaveBeenCalledTimes(1);
+    });
+    expect(await screen.findByText('Cantina Norte')).toBeInTheDocument();
+
+    await user.click(profileTab);
+    expect(profileTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByLabelText(/nombre/i)).toHaveValue('Valentino');
+  });
+
+  it('activates "Mis pedidos" tab directly when URL contains #pedidos hash (T029, FR-009)', async () => {
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValueOnce(mockProfile);
+    const getMyOrdersSpy = vi.spyOn(orderApi, 'getMyOrders').mockResolvedValueOnce([]);
+
+    renderWithProviders(<ProfilePage />, ['/perfil#pedidos']);
+
+    const ordersTab = await screen.findByRole('tab', { name: /mis pedidos/i });
+    expect(ordersTab).toHaveAttribute('aria-selected', 'true');
+
+    await waitFor(() => {
+      expect(getMyOrdersSpy).toHaveBeenCalledTimes(1);
+    });
+    expect(await screen.findByRole('link', { name: /catálogo|explorar platos/i })).toHaveAttribute(
+      'href',
+      '/catalogo'
+    );
   });
 });

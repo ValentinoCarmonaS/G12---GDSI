@@ -1,14 +1,22 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
-import { CheckoutPage } from '../../pages/CheckoutPage';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { CheckoutPage, generateWeeklyOperatingDays } from '../../pages/CheckoutPage';
 import { CartContext } from '../../context/CartContext';
+import * as paymentApi from '../../api/paymentApi';
 import * as orderApi from '../../api/orderApi';
 import { CartItem } from '../../types/cart';
+
+vi.mock('../../api/paymentApi', () => ({
+  initiatePayment: vi.fn(),
+  cancelPayment: vi.fn(),
+  getOrderPaymentStatus: vi.fn(),
+}));
 
 vi.mock('../../api/orderApi', () => ({
   createOrder: vi.fn(),
   cancelOrder: vi.fn(),
+  getMyOrders: vi.fn().mockResolvedValue([]),
   fetchPickupSlots: vi.fn().mockResolvedValue({
     establishmentId: 'est-123',
     date: '2026-11-03',
@@ -106,6 +114,9 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+    vi.mocked(orderApi.getMyOrders).mockResolvedValue([]);
   });
 
   it('renders empty cart state when no items in cart', () => {
@@ -135,28 +146,26 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
     expect(confirmButton).not.toBeDisabled();
   });
 
-  it('selects date and 15-minute slot from grid, submits order and transitions to 15:00 countdown timer view', async () => {
-    const mockOrderResponse: any = {
+  it('selects date and 15-minute slot from grid, submits order and initiates online payment redirect', async () => {
+    const originalLocation = window.location;
+    // @ts-ignore
+    delete window.location;
+    // @ts-ignore
+    window.location = { href: '', assign: vi.fn() };
+
+    const mockPaymentResponse: any = {
       orderId: 'order-999',
-      status: 'PENDING_PAYMENT',
-      fulfillmentMode: 'SCHEDULED',
-      pickupDate: '2026-11-03',
-      timeSlotStart: '13:00:00',
-      timeSlotEnd: '13:15:00',
-      totalAmount: 6200,
+      reservationId: 'res-999',
+      paymentId: 'pay-999',
+      gatewayPreferenceId: 'pref-999',
+      redirectUrl: 'https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-999',
+      sandbox: true,
       expiresAt: new Date(Date.now() + 900000).toISOString(),
-      serverTime: new Date().toISOString(),
-      items: [
-        {
-          dishId: 'dish-1',
-          dishName: 'Hamburguesa Completa',
-          quantity: 2,
-          unitPrice: 2500,
-            },
-      ],
+      totalAmount: 6200,
+      currency: 'ARS',
     };
 
-    vi.mocked(orderApi.createOrder).mockResolvedValueOnce(mockOrderResponse);
+    vi.mocked(paymentApi.initiatePayment).mockResolvedValueOnce(mockPaymentResponse);
 
     renderWithProviders();
 
@@ -170,8 +179,11 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
     });
 
     const dayButtons = screen.getAllByRole('button').filter((btn) => btn.className.includes('min-w-[70px]'));
-    expect(dayButtons.length).toBeGreaterThan(0);
-    fireEvent.click(dayButtons[0]);
+    expect(dayButtons.length).toBe(7);
+    expect(dayButtons[0]).toHaveTextContent(/Lun/i);
+    expect(dayButtons[6]).toHaveTextContent(/Dom/i);
+    const selectableDay = dayButtons.find((btn) => !btn.hasAttribute('disabled')) || dayButtons[0];
+    fireEvent.click(selectableDay);
 
     // 3. Select 15-minute time slot from grid
     await waitFor(() => {
@@ -187,21 +199,21 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
     // 5. Submit order
     fireEvent.click(confirmButton);
 
-    // 6. Smoothly transition to PendingOrderCountdown view
+    // 6. Smoothly invokes initiatePayment with selected slot and payment method
     await waitFor(() => {
-      expect(orderApi.createOrder).toHaveBeenCalledWith(
+      expect(paymentApi.initiatePayment).toHaveBeenCalledWith(
         expect.objectContaining({
           establishmentId: 'est-123',
           fulfillmentMode: 'SCHEDULED',
+          paymentMethod: 'MERCADO_PAGO',
           timeSlotStart: '13:00:00',
           timeSlotEnd: '13:15:00',
         })
       );
-      expect(clearCartMock).toHaveBeenCalled();
-      expect(screen.getByText(/reserva en espera de pago/i)).toBeInTheDocument();
-      expect(screen.getByText(/#order-99/i)).toBeInTheDocument();
-      expect(screen.getByText(/15:00|14:59/)).toBeInTheDocument();
     });
+
+    // @ts-ignore
+    window.location = originalLocation;
   });
 
   it('receives 409 conflict modal (SLOT_SOLD_OUT) and recovers without losing cart state', async () => {
@@ -215,7 +227,7 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
       },
     };
 
-    vi.mocked(orderApi.createOrder).mockRejectedValueOnce(error409);
+    vi.mocked(paymentApi.initiatePayment).mockRejectedValueOnce(error409);
 
     renderWithProviders();
 
@@ -229,7 +241,8 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
     });
 
     const dayButtons = screen.getAllByRole('button').filter((btn) => btn.className.includes('min-w-[70px]'));
-    fireEvent.click(dayButtons[0]);
+    const selectableDay = dayButtons.find((btn) => !btn.hasAttribute('disabled')) || dayButtons[0];
+    fireEvent.click(selectableDay);
 
     // Select Slot
     await waitFor(() => {
@@ -261,6 +274,263 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('conflict-notification-modal')).not.toBeInTheDocument();
       expect(screen.getByText('Hamburguesa Completa')).toBeInTheDocument();
+    });
+  });
+
+  describe('C-12: Week Structure starting on Monday & Empty Slots State', () => {
+    it('verifies that generateWeeklyOperatingDays starts the week on Monday (ISO 8601) and shows only up to Sunday of the same week', () => {
+      // Test reference date on Wednesday 2026-11-04
+      const wednesday = new Date(2026, 10, 4);
+      const days = generateWeeklyOperatingDays(wednesday);
+
+      expect(days).toHaveLength(7);
+      // Week starts on Monday 2026-11-02
+      expect(days[0].dayName).toBe('Lun');
+      expect(days[0].date).toBe('2026-11-02');
+      expect(days[0].isOperating).toBe(false); // Past day is disabled
+
+      // Tuesday 2026-11-03
+      expect(days[1].dayName).toBe('Mar');
+      expect(days[1].date).toBe('2026-11-03');
+      expect(days[1].isOperating).toBe(false); // Past day is disabled
+
+      // Wednesday 2026-11-04 (Today)
+      expect(days[2].dayName).toBe('Mié');
+      expect(days[2].date).toBe('2026-11-04');
+      expect(days[2].isOperating).toBe(true);
+
+      // Week ends on Sunday 2026-11-08 of the same week
+      expect(days[6].dayName).toBe('Dom');
+      expect(days[6].date).toBe('2026-11-08');
+      expect(days[6].isOperating).toBe(true);
+    });
+
+    it('verifies that Monday is operating and selectable when reference date is Monday', () => {
+      // Reference date is Monday 2026-11-02
+      const monday = new Date(2026, 10, 2);
+      const days = generateWeeklyOperatingDays(monday);
+
+      expect(days).toHaveLength(7);
+      expect(days[0].dayName).toBe('Lun');
+      expect(days[0].date).toBe('2026-11-02');
+      // On Monday itself, Monday is operating and selectable
+      expect(days[0].isOperating).toBe(true);
+      expect(days[6].dayName).toBe('Dom');
+      expect(days[6].date).toBe('2026-11-08');
+      expect(days[6].isOperating).toBe(true);
+    });
+
+    it('renders empty state message when API returns empty slots list (C-12 / FR-035)', async () => {
+      vi.mocked(orderApi.fetchPickupSlots).mockResolvedValueOnce({
+        establishmentId: 'est-123',
+        date: '2026-11-03',
+        timezone: 'America/Argentina/Buenos_Aires',
+        isOperatingDay: false,
+        leadTimeMinutes: 30,
+        slots: [],
+      });
+
+      renderWithProviders();
+
+      // Select Scheduled Mode
+      fireEvent.click(screen.getByText(/para más tarde/i));
+
+      // Select Date
+      await waitFor(() => {
+        expect(screen.getByText(/Seleccioná el día de retiro/i)).toBeInTheDocument();
+      });
+
+      const dayButtons = screen.getAllByRole('button').filter((btn) => btn.className.includes('min-w-[70px]'));
+      const selectableDay = dayButtons.find((btn) => !btn.hasAttribute('disabled')) || dayButtons[0];
+      fireEvent.click(selectableDay);
+
+      // Wait for empty state message
+      await waitFor(() => {
+        expect(screen.getByTestId('empty-slots-message')).toBeInTheDocument();
+        expect(screen.getByText(/No hay horarios de retiro disponibles para el día seleccionado/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('US3: Desbloqueo 409 ACTIVE_RESERVATION_EXISTS, detección proactiva y navegación a catálogo', () => {
+    it('handles 409 ACTIVE_RESERVATION_EXISTS with orderId, shows panel and focuses/scrolls it on "Ver mi reserva"', async () => {
+      const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+      const scrollIntoViewMock = vi.fn();
+      HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
+
+      try {
+        vi.mocked(paymentApi.initiatePayment).mockRejectedValueOnce({
+          response: {
+            status: 409,
+            data: {
+              code: 'ACTIVE_RESERVATION_EXISTS',
+              orderId: 'order-active-409',
+              detail: 'Ya tenés una reserva activa en curso pendiente de pago.',
+            },
+          },
+        });
+
+        vi.mocked(paymentApi.getOrderPaymentStatus).mockResolvedValueOnce({
+          orderId: 'order-active-409',
+          orderStatus: 'PENDING_PAYMENT',
+          reservation: {
+            id: 'res-active-409',
+            status: 'ACTIVE',
+            expiresAt: new Date(Date.now() + 600000).toISOString(),
+            remainingSeconds: 600,
+            releaseReason: null,
+          },
+          payment: {
+            id: 'pay-active-409',
+            status: 'IN_PROCESS',
+            statusDetail: null,
+            redirectUrl: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-409',
+            sandbox: false,
+          },
+          fulfillment: {
+            mode: 'IMMEDIATE',
+            pickupDate: '2026-11-11',
+            timeSlotStart: null,
+            timeSlotEnd: null,
+          },
+          totalAmount: 6200,
+          currency: 'ARS',
+          serverTime: new Date().toISOString(),
+        });
+
+        renderWithProviders();
+
+        fireEvent.click(screen.getByText(/lo antes posible/i));
+        fireEvent.click(screen.getByRole('button', { name: /confirmar pedido/i }));
+
+        await waitFor(() => {
+          expect(screen.getByTestId('conflict-notification-modal')).toBeInTheDocument();
+          expect(paymentApi.getOrderPaymentStatus).toHaveBeenCalledWith('order-active-409');
+        });
+
+        const panel = await screen.findByRole('region', { name: /panel de pago en curso/i });
+        expect(panel).toBeInTheDocument();
+
+        const viewBtn = screen.getByRole('button', { name: /ver mi reserva/i });
+        fireEvent.click(viewBtn);
+
+        await waitFor(() => {
+          expect(screen.queryByTestId('conflict-notification-modal')).not.toBeInTheDocument();
+        });
+
+        expect(scrollIntoViewMock).toHaveBeenCalled();
+        const activeEl = document.activeElement;
+        expect(
+          activeEl === panel || panel.contains(activeEl) || activeEl?.contains(panel)
+        ).toBe(true);
+      } finally {
+        HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+      }
+    });
+
+    it('detects active PENDING_PAYMENT order on mount even with empty cart and hides empty cart message', async () => {
+      vi.mocked(orderApi.getMyOrders).mockResolvedValueOnce([
+        {
+          orderId: 'order-mount-pending',
+          ticketNumber: null,
+          establishmentId: 'est-123',
+          establishmentName: 'Bistro Central',
+          status: 'PENDING_PAYMENT',
+          fulfillmentMode: 'IMMEDIATE',
+          pickupDate: '2026-11-11',
+          timeSlotStart: null,
+          timeSlotEnd: null,
+          totalAmount: 3500,
+          expiresAt: new Date(Date.now() + 600000).toISOString(),
+          createdAt: '2026-11-11T15:00:00Z',
+          redirectUrl: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-mount',
+          trackingUrl: '/pedidos/order-mount-pending/seguimiento',
+          items: [],
+        },
+      ]);
+
+      vi.mocked(paymentApi.getOrderPaymentStatus).mockResolvedValueOnce({
+        orderId: 'order-mount-pending',
+        orderStatus: 'PENDING_PAYMENT',
+        reservation: {
+          id: 'res-mount',
+          status: 'ACTIVE',
+          expiresAt: new Date(Date.now() + 600000).toISOString(),
+          remainingSeconds: 600,
+          releaseReason: null,
+        },
+        payment: {
+          id: 'pay-mount',
+          status: 'IN_PROCESS',
+          statusDetail: null,
+          redirectUrl: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-mount',
+          sandbox: false,
+        },
+        fulfillment: {
+          mode: 'IMMEDIATE',
+          pickupDate: '2026-11-11',
+          timeSlotStart: null,
+          timeSlotEnd: null,
+        },
+        totalAmount: 3500,
+        currency: 'ARS',
+        serverTime: new Date().toISOString(),
+      });
+
+      renderWithProviders([]);
+
+      await waitFor(() => {
+        expect(orderApi.getMyOrders).toHaveBeenCalled();
+        expect(paymentApi.getOrderPaymentStatus).toHaveBeenCalledWith('order-mount-pending');
+      });
+
+      expect(await screen.findByRole('region', { name: /panel de pago en curso/i })).toBeInTheDocument();
+      expect(screen.queryByText(/tu carrito está vacío/i)).not.toBeInTheDocument();
+    });
+
+    it('does not read legacy selectedEstablishmentId from localStorage and navigates to /catalogo', async () => {
+      window.localStorage.setItem('selectedEstablishmentId', 'est-legacy-999');
+      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
+
+      render(
+        <MemoryRouter initialEntries={['/checkout']}>
+          <Routes>
+            <Route
+              path="/checkout"
+              element={
+                <CartContext.Provider
+                  value={{
+                    items: [],
+                    addItem: vi.fn(),
+                    removeItem: vi.fn(),
+                    updateQuantity: vi.fn(),
+                    clearCart: clearCartMock,
+                    reEvaluateCompliance: vi.fn(),
+                    totalAmount: 0,
+                    totalCount: 0,
+                    hasConflictingItems: false,
+                    hasPausedItems: false,
+                    toastMessage: null,
+                  }}
+                >
+                  <CheckoutPage />
+                </CartContext.Provider>
+              }
+            />
+            <Route path="/catalogo" element={<div data-testid="catalogo-route">Catálogo destino</div>} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(orderApi.getMyOrders).toHaveBeenCalled();
+      });
+
+      expect(getItemSpy).not.toHaveBeenCalledWith('selectedEstablishmentId');
+      getItemSpy.mockRestore();
+
+      fireEvent.click(screen.getByRole('button', { name: /explorar carta/i }));
+      expect(await screen.findByTestId('catalogo-route')).toBeInTheDocument();
     });
   });
 });

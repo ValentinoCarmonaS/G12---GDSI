@@ -162,6 +162,12 @@ public class DishGovernanceService {
             throw new StaleDishPriceException(dishId, expectedRetailPrice, current);
         }
 
+        dish.setRetailPrice(retailPrice);
+        if (marginPct != null) {
+            dish.setMarginPercentage(marginPct);
+            dishRepository.save(dish);
+        }
+
         DishPriceHistory entry = DishPriceHistory.record(dishId, tenantId, resolveCurrentUserId(),
                 expectedRetailPrice, retailPrice,
                 foodCost == null ? BigDecimal.ZERO : foodCost);
@@ -248,6 +254,11 @@ public class DishGovernanceService {
                     .map(d -> d.getStatus().name())
                     .orElse(dish.getStatus().name());
             throw new DishAlreadyDecidedException(dishId, currentStatus, Instant.now());
+        }
+
+        if (marginPct != null) {
+            dish.setMarginPercentage(marginPct);
+            dishRepository.save(dish);
         }
 
         int cycleNumber = reviewHistoryRepository.findMaxCycleNumberByDishId(dishId).orElse(0) + 1;

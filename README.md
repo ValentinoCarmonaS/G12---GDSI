@@ -1,5 +1,8 @@
 # EasyEat
 
+[![CI Pipeline](https://github.com/ValentinoCarmonaS/G12---GDSI/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ValentinoCarmonaS/G12---GDSI/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/ValentinoCarmonaS/G12---GDSI/branch/main/graph/badge.svg)](https://codecov.io/gh/ValentinoCarmonaS/G12---GDSI)
+
 Sistema de autenticación y gestión para locales gastronómicos y comensales.
 
 ## Requisitos previos
@@ -73,8 +76,8 @@ El entorno de desarrollo (`dev`) inicializa automáticamente los siguientes usua
 | --- | --- | --- | --- |
 | ADMINISTRADOR | `admin@easyeat.com` | `SecurePass123` | Administrador general de la plataforma |
 | ADMINISTRADOR | `laura.admin@cafeparque.com` | `Password123` | Administrador de local (Café Parque) |
-| ENCARGADO | `maria.encargada@laesquina.com` | `Password123` | Encargado de salón y mostrador (La Esquina) |
-| CHEF | `carlos.chef@comedorcentral.com` | `Password123` | Personal de cocina (Comedor Central) |
+| ENCARGADO | `maria.encargada@cafeparque.com` | `Password123` | Encargado de salón y mostrador (Café Parque) |
+| CHEF | `carlos.chef@cafeparque.com` | `Password123` | Personal de cocina (Café Parque) |
 | COMENSAL | `juan.comensal@gmail.com` | `Password123` | Usuario comensal |
 
 ## Carrito de compras y datos demográficos del comensal (Feature 009)
@@ -85,3 +88,82 @@ Módulo implementado con arquitectura Spec-Driven Development (SDD):
 - **Botón flotante reactivo y cálculo monetario exacto en centavos (COM-6.1.2)**: Visibilidad biyectiva contextual (visible sólo si hay ítems en el catálogo), cálculo aritmético en centavos enteros para eliminar drift de punto flotante IEEE 754.
 - **Modificación interactiva, guardas de stock y rollback ante fallos de red (COM-6.1.3)**: Modificación con debounce de 300 ms, bloqueo visual al alcanzar stock límite de cocina (`POST /api/v1/cart/validate-stock`), remoción en cantidad 1 y reversión optimista determinista ante desconexión o errores del servidor.
 - **Datos demográficos y avatar de perfil (COM-1.4.2)**: Edición de edad biológica (14 a 120 años), género y domicilio de contacto (`PUT /api/v1/profile/demographics`). Carga de avatar JPEG/PNG/WebP de hasta 5 MB persistido en base de datos PostgreSQL mediante Flyway `V12__extend_user_demographics_and_avatar.sql` (`BYTEA`), con eliminación diferida sujeta a confirmación en formulario.
+
+## Confirmación de pago, tiempo estimado en vivo y branding (Feature 016)
+
+Módulo implementado para la trazabilidad completa pospago y personalización multi-tenant de marca:
+
+### 1. Confirmación de pago y emisión garantizada de comprobante (COM-7.3.1 - US1)
+- **Pantalla verde de confirmación**: Interfaz de éxito animada con número de orden asignado y franja horaria pactada de retiro (`/checkout/confirmacion/{orderId}`).
+- **Bloqueo preventivo de interfaz**: Deshabilita el botón de pago y despliega un indicador de procesamiento durante la comunicación con la pasarela para impedir cobros duplicados.
+- **Despacho asíncrono e idempotente de correo**: Escucha el evento `OrderPaymentApprovedEvent` y emite de forma no bloqueante el comprobante con enlace directo de seguimiento a través de `order_receipts` (`receipt-{orderId}`), garantizando entrega incluso ante cierres de ventana del navegador.
+
+### 2. Tiempo estimado de entrega y seguimiento en vivo (COM-7.3.2 - US2)
+- **Retiro inmediato (`IMMEDIATE`)**: Minutero dinámico y barra de progreso calculados a partir de la cola real de tickets en el KDS y el estado de preparación.
+- **Retiro programado (`SCHEDULED`)**: Exhibición fija del horario pactado y activación automática de cuenta regresiva dinámica en tiempo real al ingresar a los últimos 15 minutos previos al turno.
+- **Ajustes de cocina y transición a listo**: Polling reactivo cada 5 segundos que refleja silenciosamente incrementos globales de demora en cocina (`PUT /api/v1/kitchen/delay`) y conmuta de forma irrevocable al estado destacado `"¡Tu pedido está listo para retirar!"` (`POST /api/v1/kitchen/tickets/{ticketId}/ready-for-pickup`).
+
+### 3. Configuración de branding del restaurante (ADM-2.1.1 - US3)
+- **Gestión desde "Mi Local" (`/admin/mi-local`)**: Carga de logotipo binario en base de datos (PostgreSQL `BYTEA` vía `V21__create_restaurant_logos.sql`), nombre de fantasía, descripción comercial y tríada cromática hexadecimal (`#RRGGBB`).
+- **Contraste accesible WCAG 2.1**: Cálculo matemático automático de luminancia relativa para garantizar textos e iconos legibles (`#FFFFFF` o `#000000`).
+- **Inyección dinámica de estilos y fallback institucional**: Variables CSS (`--brand-primary`, `--brand-secondary`, `--brand-accent` y contrastes) aplicadas al catálogo del comensal, con fallback institucional neutro de EasyEat ante ausencia de personalización previa.
+
+### Endpoints principales
+
+| Método | Endpoint | Rol / Permiso | Descripción |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/orders/{orderId}/confirmation-tracking` | Público (Token / Comensal) | Obtiene cabecera de confirmación y estado inicial de seguimiento |
+| `GET` | `/api/v1/orders/{orderId}/live-tracking` | Público (Token / Comensal) | Consulta reactiva de estado, minutos restantes y barra de progreso |
+| `PUT` | `/api/v1/kitchen/delay` | `ROLE_CHEF` | Ajusta demora global de preparación para el establecimiento |
+| `POST` | `/api/v1/kitchen/tickets/{ticketId}/ready-for-pickup` | `ROLE_CHEF` | Marca un ticket de comanda listo para entrega |
+| `GET` | `/api/v1/establishments/{id}/branding` | Público | Consulta de tríada cromática y metadatos de marca (con fallback) |
+| `GET` | `/api/v1/establishments/{id}/logo` | Público | Descarga de contenido binario del logotipo (`image/png`, `image/jpeg`, etc.) |
+| `GET` | `/api/v1/admin/establishments/{id}/branding` | `ROLE_ADMINISTRADOR` | Obtiene la configuración de marca del restaurante propio |
+| `PUT` | `/api/v1/admin/establishments/{id}/branding` | `ROLE_ADMINISTRADOR` | Actualiza textos comerciales y tríada cromática |
+| `POST` | `/api/v1/admin/establishments/{id}/branding/logo` | `ROLE_ADMINISTRADOR` | Carga de archivo de logotipo (hasta 2 MB) |
+
+## Checkout con Mercado Pago, webhooks y sección Mis pedidos (Feature 018)
+
+Este incremento unifica la redirección hacia Checkout Pro (`init_point`), el procesamiento idempotente y fail-closed de webhooks, el desbloqueo ante reservas activas (`409 ACTIVE_RESERVATION_EXISTS`) y la consulta del historial de pedidos en `/perfil#pedidos` (`GET /api/v1/orders`). Para la puesta en marcha local y la validación completa en modo incógnito, consultar [specs/018-checkout-mp-tracking-orders/quickstart.md](specs/018-checkout-mp-tracking-orders/quickstart.md).
+
+### Configuración de Mercado Pago en Render
+
+En el servicio Web de backend desplegado en Render se deben configurar las siguientes variables:
+
+- `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_PUBLIC_KEY`: credenciales de la aplicación de Mercado Pago.
+- `MERCADOPAGO_WEBHOOK_SECRET`: clave secreta obligatoria para validar la firma `x-signature`. Si falta o está vacía al recibir notificaciones firmadas, el endpoint responde `401 Unauthorized` y registra la alerta correspondiente en logs.
+- `MERCADOPAGO_FRONTEND_BASE_URL`: URL pública HTTPS del frontend en Render para construir las URLs de retorno sin barras duplicadas.
+- `MERCADOPAGO_BACKEND_BASE_URL`: URL pública HTTPS del backend usada para informar `notification_url` al crear preferencias. Si no se define en Render, se utiliza automáticamente `RENDER_EXTERNAL_URL`. En local (`localhost`), `notification_url` se omite.
+- `MERCADOPAGO_SANDBOX`: indicador de entorno (`false` al operar con credenciales modernas `APP_USR-...`).
+
+En el panel de **Mercado Pago Developers → Webhooks**, configurar la URL `<URL_PUBLICA_BACKEND>/api/v1/payments/mercadopago/webhook` para el evento **Pagos (`payment`)**. Si el envío SMTP no se encuentra habilitado, el respaldo en `order_receipts`, el seguimiento en `/pedidos/{orderId}/seguimiento` y el acceso desde `/perfil#pedidos` permanecen disponibles sin depender del correo electrónico.
+
+### Tarjetas y estados de prueba de Mercado Pago
+
+Para simular pagos en entorno de prueba sin cruzar cuentas reales con cuentas de prueba (`invalid_users_types_error`: *"Una de las partes con la que intentás hacer el pago es de prueba"*), abrir el flujo en una **ventana de incógnito** e iniciar sesión con una **cuenta compradora de prueba** (o pagar sin sesión personal real activa) utilizando los datos de prueba de Mercado Pago Developers.
+
+| Campo | Valor de prueba |
+| --- | --- |
+| Número de tarjeta | `5031 7557 3453 0604` |
+| Titular | `APRO` (u otro código de estado según el escenario) |
+| Documento | `12345678` |
+| Vencimiento | `11/30` |
+| Código de seguridad (CVV/CCV) | `123` |
+
+Marcas contempladas en el panel de tarjetas de prueba de Mercado Pago Developers: `Mastercard Crédito`, `Visa Crédito`, `American Express Crédito`, `Mastercard Débito` y `Visa Débito`.
+
+Para simular distintos resultados de pago, reemplazar el campo **Titular** por el código correspondiente:
+
+| Código en Titular | Estado simulado | Prioridad |
+| --- | --- | --- |
+| `APRO` | Pago aprobado | Prioritario |
+| `OTHE` | Rechazado por error general | Prioritario |
+| `CONT` | Pendiente de pago | Prioritario |
+| `CALL` | Rechazado con validación para autorizar | Prioritario |
+| `FUND` | Rechazado por importe insuficiente | Estándar |
+| `SECU` | Rechazado por código de seguridad inválido | Estándar |
+| `EXPI` | Rechazado debido a un problema de fecha de vencimiento | Estándar |
+| `FORM` | Rechazado debido a un error de formulario | Estándar |
+
+
+

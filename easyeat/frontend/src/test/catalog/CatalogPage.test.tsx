@@ -85,6 +85,7 @@ describe('CatalogPage Component Tests (T026, US2, COM-4.1.1, FR-007, FR-008, FR-
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   const renderComponent = (
@@ -390,6 +391,77 @@ describe('CatalogPage Component Tests (T026, US2, COM-4.1.1, FR-007, FR-008, FR-
         expect(screen.getByText('Milanesa Napolitana con Papas Fritas')).toBeInTheDocument();
         expect(screen.getByText('Flan Casero con Dulce de Leche')).toBeInTheDocument();
         expect(screen.queryByTestId('empty-filter-results-notice')).not.toBeInTheDocument();
+      });
+    });
+
+    it('filters by lifestyle and excluded allergens with multidimensional intersection (C-13, FR-025, FR-026, FR-027, FR-028)', async () => {
+      const catalogWithDietary: CatalogResponse = {
+        ...mockCatalogData,
+        categories: [
+          {
+            category: 'Platos principales',
+            dishes: [
+              {
+                ...mockDishAvailableItem,
+                name: 'Milanesa Vegana Sin Gluten',
+                lifestyles: ['Vegano', 'Sin TACC / Celíaco'],
+                allergens: [],
+              },
+              {
+                ...mockDishAvailableItem,
+                id: 'dish-vegan-with-peanuts',
+                name: 'Curry Vegano con Maní',
+                lifestyles: ['Vegano'],
+                allergens: ['Maní'],
+              },
+              {
+                ...mockDishAvailableItem,
+                id: 'dish-carnivore',
+                name: 'Bife de Chorizo Clásico',
+                lifestyles: [],
+                allergens: [],
+              },
+            ],
+          },
+        ],
+      };
+
+      vi.spyOn(dinerCatalogApi, 'getEstablishmentCatalog').mockResolvedValueOnce(catalogWithDietary);
+      renderComponent();
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Vegana Sin Gluten')).toBeInTheDocument();
+        expect(screen.getByText('Curry Vegano con Maní')).toBeInTheDocument();
+        expect(screen.getByText('Bife de Chorizo Clásico')).toBeInTheDocument();
+      });
+
+      // Filter by lifestyle: Vegano (inclusion required)
+      const veganoCheckbox = screen.getByLabelText('Vegano');
+      fireEvent.click(veganoCheckbox);
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Vegana Sin Gluten')).toBeInTheDocument();
+        expect(screen.getByText('Curry Vegano con Maní')).toBeInTheDocument();
+        expect(screen.queryByText('Bife de Chorizo Clásico')).not.toBeInTheDocument();
+      });
+
+      // Also filter by allergen exclusion: Maní (must omit Curry Vegano con Maní)
+      const maniCheckbox = screen.getByLabelText('Sin Maní');
+      fireEvent.click(maniCheckbox);
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Vegana Sin Gluten')).toBeInTheDocument();
+        expect(screen.queryByText('Curry Vegano con Maní')).not.toBeInTheDocument();
+        expect(screen.queryByText('Bife de Chorizo Clásico')).not.toBeInTheDocument();
+      });
+
+      // Add another lifestyle requirement: Sin TACC / Celíaco
+      const celiacoCheckbox = screen.getByLabelText('Sin TACC / Celíaco');
+      fireEvent.click(celiacoCheckbox);
+
+      await waitFor(() => {
+        expect(screen.getByText('Milanesa Vegana Sin Gluten')).toBeInTheDocument();
+        expect(screen.queryByText('Curry Vegano con Maní')).not.toBeInTheDocument();
       });
     });
   });

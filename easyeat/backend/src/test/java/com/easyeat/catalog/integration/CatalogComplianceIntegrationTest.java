@@ -162,11 +162,11 @@ class CatalogComplianceIntegrationTest {
         userDietaryRestrictionRepository.save(new UserDietaryRestriction(new UserDietaryRestrictionId(testDiner.getId(), "CELIAC")));
 
         Dish dishCeliac = new Dish(tenantA, "Tarta Sin TACC", "Apta celíacos", new BigDecimal("7000.00"), true);
-        dishCeliac.setRestrictionCodes(Set.of("CELIAC"));
+        dishCeliac.setRestrictionCodes(Set.of());
         dishCeliac = dishRepository.save(dishCeliac);
 
         Dish dishNormal = new Dish(tenantA, "Pizza con Harina de Trigo", "Contiene gluten", new BigDecimal("8500.00"), true);
-        dishNormal.setRestrictionCodes(Set.of("WHEAT"));
+        dishNormal.setRestrictionCodes(Set.of("CELIAC", "WHEAT"));
         dishNormal = dishRepository.save(dishNormal);
 
         CartComplianceRequest request = new CartComplianceRequest(List.of(dishCeliac.getId(), dishNormal.getId()));

@@ -432,7 +432,7 @@ paths:
         - Chef Dishes
       summary: Update dietary restrictions and confirm allergen section (CHF-2.2.3)
       description: |
-        Persists dietary lifestyle tags (VEGAN, VEGETARIAN, CELIAC) and common allergen tags.
+        Persists dietary lifestyle tags (VEGAN, VEGETARIAN) and common allergen / medical restriction tags (CELIAC, DAIRY, etc. per C-11).
         Can explicitly mark section as confirmed (allergensConfirmed = true).
         Blocked if status is PENDING_PRICE.
       operationId: updateDishAllergens

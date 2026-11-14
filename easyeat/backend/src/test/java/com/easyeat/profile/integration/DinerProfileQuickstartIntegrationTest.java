@@ -195,7 +195,7 @@ class DinerProfileQuickstartIntegrationTest {
         mockMvc.perform(get("/api/v1/dietary-restrictions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(11)))
-                .andExpect(jsonPath("$[?(@.code == 'CELIAC')].category").value("DIETARY_LIFESTYLE"))
+                .andExpect(jsonPath("$[?(@.code == 'CELIAC')].category").value("COMMON_ALLERGEN"))
                 .andExpect(jsonPath("$[?(@.code == 'PEANUTS')].category").value("COMMON_ALLERGEN"));
 
         // 3b: Save diner dietary preferences -> 200 OK
@@ -224,18 +224,18 @@ class DinerProfileQuickstartIntegrationTest {
     void scenario4_automatedCatalogFilteringAndConjunction() throws Exception {
         UUID tenantId = UUID.randomUUID();
 
-        // Dish 1: Compliant (CELIAC + VEGETARIAN, no allergens)
+        // Dish 1: Compliant (VEGETARIAN lifestyle, free of CELIAC and PEANUTS allergens)
         Dish salad = new Dish(tenantId, "Ensalada Mediterránea", "Fresca", new BigDecimal("4500.00"), true);
         salad.setStatus(DishStatus.PUBLISHED);
         salad.setRetailPrice(new BigDecimal("4500.00"));
-        salad.setRestrictionCodes(Set.of("CELIAC", "VEGETARIAN"));
+        salad.setRestrictionCodes(Set.of("VEGETARIAN"));
         salad = dishRepository.save(salad);
 
-        // Dish 2: Conflicting (PEANUTS + SOY allergens, not celiac)
+        // Dish 2: Conflicting (contains PEANUTS, SOY and gluten/CELIAC allergens)
         Dish padThai = new Dish(tenantId, "Pad Thai con Maní", "Salteado con maní", new BigDecimal("6200.00"), true);
         padThai.setStatus(DishStatus.PUBLISHED);
         padThai.setRetailPrice(new BigDecimal("6200.00"));
-        padThai.setRestrictionCodes(Set.of("PEANUTS", "SOY"));
+        padThai.setRestrictionCodes(Set.of("PEANUTS", "SOY", "CELIAC"));
         padThai = dishRepository.save(padThai);
 
         // 4a: Retrieve catalog as guest (Public endpoint without Bearer token) -> 200 OK
@@ -272,11 +272,11 @@ class DinerProfileQuickstartIntegrationTest {
         UUID tenantId = UUID.randomUUID();
 
         Dish salad = new Dish(tenantId, "Ensalada Mediterránea", "Fresca", new BigDecimal("4500.00"), true);
-        salad.setRestrictionCodes(Set.of("CELIAC", "VEGETARIAN"));
+        salad.setRestrictionCodes(Set.of("VEGETARIAN"));
         salad = dishRepository.save(salad);
 
         Dish padThai = new Dish(tenantId, "Pad Thai con Maní", "Salteado con maní", new BigDecimal("6200.00"), true);
-        padThai.setRestrictionCodes(Set.of("PEANUTS", "SOY"));
+        padThai.setRestrictionCodes(Set.of("PEANUTS", "SOY", "CELIAC"));
         padThai = dishRepository.save(padThai);
 
         // Configure diner with CELIAC and PEANUTS

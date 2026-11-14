@@ -405,4 +405,52 @@ describe('RoleRouteGuard Component', () => {
     expect(screen.queryByText('Establishment Discovery View')).not.toBeInTheDocument();
     expect(screen.getByTestId('state-from')).toHaveTextContent('/descubrimiento');
   });
+
+  it('US3: preserves pathname, search query and hash in state.from when redirecting /checkout or /pedidos to /login', () => {
+    vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
+      isAuthenticated: false,
+      user: null,
+      token: null,
+      setToken: vi.fn(),
+      clearAuth: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/checkout?establishmentId=est-123#pago']}>
+        <Routes>
+          <Route path="/login" element={<div><p>Login Page</p><LocationWatcher /></div>} />
+          <Route
+            path="/checkout"
+            element={
+              <RoleRouteGuard allowedRoles={['COMENSAL']}>
+                <p>Checkout Protected</p>
+              </RoleRouteGuard>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('state-from')).toHaveTextContent('/checkout?establishmentId=est-123#pago');
+    unmount();
+
+    render(
+      <MemoryRouter initialEntries={['/pedidos/ord-55/seguimiento?source=mp#estado']}>
+        <Routes>
+          <Route path="/login" element={<div><p>Login Page</p><LocationWatcher /></div>} />
+          <Route
+            path="/pedidos/:orderId/seguimiento"
+            element={
+              <RoleRouteGuard allowedRoles={['COMENSAL']}>
+                <p>Order Tracking Protected</p>
+              </RoleRouteGuard>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('state-from')).toHaveTextContent('/pedidos/ord-55/seguimiento?source=mp#estado');
+  });
 });

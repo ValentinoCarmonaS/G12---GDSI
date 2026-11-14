@@ -3,6 +3,7 @@ package com.easyeat.inventory.service;
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.common.context.TenantContextHolder;
+import com.easyeat.dish.service.AutomaticPriceAdjustmentService;
 import com.easyeat.inventory.dto.*;
 import com.easyeat.inventory.entity.Ingredient;
 import com.easyeat.inventory.entity.IngredientBatch;
@@ -13,6 +14,7 @@ import com.easyeat.inventory.exception.ZeroDeltaAdjustmentException;
 import com.easyeat.inventory.repository.IngredientBatchRepository;
 import com.easyeat.inventory.repository.IngredientRepository;
 import com.easyeat.inventory.repository.StockAuditEntryRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -29,15 +31,26 @@ public class StockAdjustmentService {
     private final IngredientBatchRepository ingredientBatchRepository;
     private final StockAuditEntryRepository stockAuditEntryRepository;
     private final UserRepository userRepository;
+    private final AutomaticPriceAdjustmentService automaticPriceAdjustmentService;
 
     public StockAdjustmentService(IngredientRepository ingredientRepository,
                                   IngredientBatchRepository ingredientBatchRepository,
                                   StockAuditEntryRepository stockAuditEntryRepository,
                                   UserRepository userRepository) {
+        this(ingredientRepository, ingredientBatchRepository, stockAuditEntryRepository, userRepository, null);
+    }
+
+    @Autowired
+    public StockAdjustmentService(IngredientRepository ingredientRepository,
+                                  IngredientBatchRepository ingredientBatchRepository,
+                                  StockAuditEntryRepository stockAuditEntryRepository,
+                                  UserRepository userRepository,
+                                  @Autowired(required = false) AutomaticPriceAdjustmentService automaticPriceAdjustmentService) {
         this.ingredientRepository = ingredientRepository;
         this.ingredientBatchRepository = ingredientBatchRepository;
         this.stockAuditEntryRepository = stockAuditEntryRepository;
         this.userRepository = userRepository;
+        this.automaticPriceAdjustmentService = automaticPriceAdjustmentService;
     }
 
     @Transactional
@@ -51,6 +64,7 @@ public class StockAdjustmentService {
                 ? ingredient.getCurrentStock().setScale(4, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
 
+        BigDecimal previousUnitPurchaseCost = ingredient.getUnitPurchaseCost();
         StockAdjustmentAction action = request.resolveAction();
         BigDecimal rawQuantity = request.resolveQuantity();
 
@@ -197,6 +211,15 @@ public class StockAdjustmentService {
         );
         auditEntry = stockAuditEntryRepository.save(auditEntry);
 
+        // C-09: Trigger automatic price adjustment if ingredient purchase cost changed
+        if (automaticPriceAdjustmentService != null && action == StockAdjustmentAction.ADD && unitCost != null && unitCost.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal effectiveNewCost = ingredient.getUnitPurchaseCost();
+            if (previousUnitPurchaseCost == null || previousUnitPurchaseCost.compareTo(effectiveNewCost) != 0) {
+                automaticPriceAdjustmentService.processIngredientCostChange(
+                        tenantId, ingredientId, previousUnitPurchaseCost, effectiveNewCost, currentUserId);
+            }
+        }
+
         return new StockAdjustmentResponse(
                 ingredient.getId(),
                 ingredient.getName(),
@@ -242,15 +265,16 @@ public class StockAdjustmentService {
         Map<UUID, String> userNames = new HashMap<>();
 
         return entries.stream().map(entry -> {
-            String adminName = userNames.computeIfAbsent(entry.getUserId(), id -> {
-                if (id == null) return "System";
-                return userRepository.findById(id).map(User::getFullName).orElse("Unknown User");
-            });
+            UUID actorId = entry.getUserId();
+            String adminName = actorId == null
+                    ? "System"
+                    : userNames.computeIfAbsent(actorId, id ->
+                            userRepository.findById(id).map(User::getFullName).orElse("Unknown User"));
 
             return new StockAuditEntryResponse(
                     entry.getId(),
                     entry.getIngredientId(),
-                    entry.getUserId(),
+                    actorId,
                     adminName,
                     entry.getAdjustmentMode(),
                     entry.getPreviousStock(),
@@ -268,7 +292,7 @@ public class StockAdjustmentService {
     private UUID resolveCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getPrincipal() == null) {
-            return UUID.fromString("00000000-0000-0000-0000-000000000000");
+            return null;
         }
 
         if (auth.getPrincipal() instanceof User user) {
@@ -278,7 +302,7 @@ public class StockAdjustmentService {
         if (auth.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
             return userRepository.findByEmail(userDetails.getUsername())
                     .map(User::getId)
-                    .orElse(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+                    .orElse(null);
         }
 
         if (auth.getPrincipal() instanceof String principalStr) {
@@ -287,10 +311,10 @@ public class StockAdjustmentService {
             } catch (IllegalArgumentException e) {
                 return userRepository.findByEmail(principalStr)
                         .map(User::getId)
-                        .orElse(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+                        .orElse(null);
             }
         }
 
-        return UUID.fromString("00000000-0000-0000-0000-000000000000");
+        return null;
     }
 }

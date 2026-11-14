@@ -4,6 +4,12 @@ export interface ManualFiltersSidebarProps {
   categories: string[];
   selectedCategories: string[];
   onCategoryToggle: (category: string) => void;
+  lifestyles?: string[];
+  selectedLifestyles?: string[];
+  onLifestyleToggle?: (lifestyle: string) => void;
+  allergens?: string[];
+  selectedAllergens?: string[];
+  onAllergenToggle?: (allergen: string) => void;
   minPrice: string;
   maxPrice: string;
   onMinPriceChange: (value: string) => void;
@@ -15,6 +21,12 @@ export const ManualFiltersSidebar: React.FC<ManualFiltersSidebarProps> = ({
   categories,
   selectedCategories,
   onCategoryToggle,
+  lifestyles = [],
+  selectedLifestyles = [],
+  onLifestyleToggle,
+  allergens = [],
+  selectedAllergens = [],
+  onAllergenToggle,
   minPrice,
   maxPrice,
   onMinPriceChange,
@@ -74,6 +86,62 @@ export const ManualFiltersSidebar: React.FC<ManualFiltersSidebarProps> = ({
           )}
         </div>
       </div>
+
+      {/* Lifestyles / Diets Filter (AND inclusion logic - C-13) */}
+      {lifestyles.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            Estilos de vida / Dietas
+          </h4>
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {lifestyles.map((lifestyle) => {
+              const isChecked = selectedLifestyles.includes(lifestyle);
+              return (
+                <label
+                  key={lifestyle}
+                  className="flex items-center gap-2.5 text-xs text-gray-700 hover:text-gray-900 cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => onLifestyleToggle?.(lifestyle)}
+                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300 transition-colors"
+                  />
+                  <span>{lifestyle}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Allergens to Exclude Filter (Exclusion logic - C-13) */}
+      {allergens.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            Excluir alérgenos
+          </h4>
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {allergens.map((allergen) => {
+              const isChecked = selectedAllergens.includes(allergen);
+              return (
+                <label
+                  key={allergen}
+                  className="flex items-center gap-2.5 text-xs text-gray-700 hover:text-gray-900 cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => onAllergenToggle?.(allergen)}
+                    className="w-4 h-4 rounded text-red-600 focus:ring-red-500 border-gray-300 transition-colors"
+                  />
+                  <span>Sin {allergen}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Price Range Filter (Closed Interval [min, max]) */}
       <div className="space-y-3">

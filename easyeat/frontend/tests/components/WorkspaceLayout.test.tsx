@@ -39,9 +39,19 @@ describe('WorkspaceLayout (T026, FR-026, COM-1.4.1)', () => {
     expect(catalogoLink).toBeInTheDocument();
     expect(catalogoLink).toHaveAttribute('href', '/catalogo');
 
+    const myOrdersLink = screen.getByRole('link', { name: /mis pedidos/i });
+    expect(myOrdersLink).toBeInTheDocument();
+    expect(myOrdersLink).toHaveAttribute('href', '/perfil#pedidos');
+
     const perfilLink = screen.getByRole('link', { name: /mi perfil/i });
     expect(perfilLink).toBeInTheDocument();
     expect(perfilLink).toHaveAttribute('href', '/perfil');
+
+    const dinerNav = myOrdersLink.closest('nav');
+    expect(dinerNav).not.toBeNull();
+    expect(dinerNav).not.toHaveClass('hidden');
+    expect(dinerNav).toHaveClass('overflow-x-auto');
+    expect(dinerNav).toHaveClass('min-w-0');
 
     expect(screen.getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /iniciar sesión/i })).not.toBeInTheDocument();

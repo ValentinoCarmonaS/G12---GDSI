@@ -57,7 +57,7 @@ describe('TimeSlotGrid Component', () => {
     },
   ];
 
-  it('renders time slot chips with formatted times', () => {
+  it('renders active time slot chips with formatted times and omits disabled or sold out slots (C-12)', () => {
     const handleSelect = vi.fn();
     render(
       <TimeSlotGrid
@@ -67,13 +67,16 @@ describe('TimeSlotGrid Component', () => {
       />
     );
 
-    expect(screen.getByText('12:00 - 12:15')).toBeInTheDocument();
+    // Active slots are rendered
     expect(screen.getByText('12:30 - 12:45')).toBeInTheDocument();
     expect(screen.getByText('12:45 - 13:00')).toBeInTheDocument();
-    expect(screen.getByText('13:00 - 13:15')).toBeInTheDocument();
+
+    // Expired or sold out slots are omitted from the UI (C-12)
+    expect(screen.queryByText('12:00 - 12:15')).not.toBeInTheDocument();
+    expect(screen.queryByText('13:00 - 13:15')).not.toBeInTheDocument();
   });
 
-  it('disables slots that are not selectable due to lead-time or sold out', () => {
+  it('hides slots that are not selectable due to lead-time or sold out (C-12)', () => {
     const handleSelect = vi.fn();
     render(
       <TimeSlotGrid
@@ -83,11 +86,9 @@ describe('TimeSlotGrid Component', () => {
       />
     );
 
-    const leadTimeButton = screen.getByText('12:00 - 12:15').closest('button');
-    expect(leadTimeButton).toBeDisabled();
-
-    const soldOutButton = screen.getByText('13:00 - 13:15').closest('button');
-    expect(soldOutButton).toBeDisabled();
+    // Slots with lead-time violation or sold-out must not be in the DOM
+    expect(screen.queryByText('12:00 - 12:15')).toBeNull();
+    expect(screen.queryByText('13:00 - 13:15')).toBeNull();
 
     const selectableButton = screen.getByText('12:30 - 12:45').closest('button');
     expect(selectableButton).not.toBeDisabled();
@@ -111,22 +112,32 @@ describe('TimeSlotGrid Component', () => {
     expect(highDemandButton?.className).toContain('border-amber-300');
   });
 
-  it('renders Agotado badge and disabled state for 100% saturation', () => {
+  it('displays informative empty state when all slots are sold out or unavailable (C-12 / FR-035)', () => {
+    const soldOutSlots: TimeSlotAvailability[] = [
+      {
+        startTime: '13:00:00',
+        endTime: '13:15:00',
+        date: '2026-11-02',
+        maxCapacity: 10,
+        bookedCount: 10,
+        occupancyPercentage: 100,
+        status: 'SOLD_OUT',
+        isSelectable: false,
+      },
+    ];
+
     const handleSelect = vi.fn();
     render(
       <TimeSlotGrid
-        slots={mockSlots}
+        slots={soldOutSlots}
         selectedSlot={null}
         onSelectSlot={handleSelect}
       />
     );
 
-    const soldOutBadge = screen.getByText('Agotado');
-    expect(soldOutBadge).toBeInTheDocument();
-
-    const soldOutButton = screen.getByText('13:00 - 13:15').closest('button');
-    expect(soldOutButton).toBeDisabled();
-    expect(soldOutButton?.className).toContain('cursor-not-allowed');
+    expect(
+      screen.getByText('No hay horarios de retiro disponibles para el día seleccionado.')
+    ).toBeInTheDocument();
   });
 
   it('triggers onSelectSlot callback when an available slot is clicked', () => {

@@ -113,7 +113,7 @@ describe('profileApi (T020, COM-1.4.1 & COM-1.4.3)', () => {
 
   it('calls GET /dietary-restrictions and returns taxonomy list', async () => {
     const mockTaxonomy: DietaryRestrictionItem[] = [
-      { code: 'CELIAC', name: 'Sin TACC', category: 'DIETARY_LIFESTYLE' },
+      { code: 'CELIAC', name: 'Sin TACC', category: 'COMMON_ALLERGEN' },
       { code: 'PEANUTS', name: 'Maní', category: 'COMMON_ALLERGEN' },
     ];
 
@@ -127,7 +127,7 @@ describe('profileApi (T020, COM-1.4.1 & COM-1.4.3)', () => {
   it('calls PUT /profile/dietary-restrictions and returns updated restrictions', async () => {
     const codes = ['CELIAC', 'PEANUTS'];
     const mockUpdated: DietaryRestrictionItem[] = [
-      { code: 'CELIAC', name: 'Sin TACC', category: 'DIETARY_LIFESTYLE' },
+      { code: 'CELIAC', name: 'Sin TACC', category: 'COMMON_ALLERGEN' },
       { code: 'PEANUTS', name: 'Maní', category: 'COMMON_ALLERGEN' },
     ];
 

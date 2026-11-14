@@ -4,7 +4,16 @@
 
 export type FulfillmentMode = 'IMMEDIATE' | 'SCHEDULED';
 
-export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED';
+export type OrderStatus =
+  | 'PENDING_PAYMENT'
+  | 'PENDING_ACCREDITATION'
+  | 'IN_PROGRESS'
+  | 'READY_FOR_PICKUP'
+  | 'COMPLETED'
+  | 'PAID'
+  | 'CONFIRMED'
+  | 'CANCELLED'
+  | 'EXPIRED';
 
 export type SlotStatus = 'AVAILABLE' | 'HIGH_DEMAND' | 'SOLD_OUT' | 'EXPIRED_OR_LEAD_TIME';
 
@@ -99,6 +108,32 @@ export interface OrderSummaryResponse {
   message: string;
 }
 
+export interface DinerOrderItemResponse {
+  dishId: string;
+  dishName: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+}
+
+export interface DinerOrderSummaryResponse {
+  orderId: string;
+  ticketNumber: number | null;
+  establishmentId: string;
+  establishmentName: string;
+  status: OrderStatus;
+  fulfillmentMode: FulfillmentMode;
+  pickupDate: string | null;
+  timeSlotStart: string | null;
+  timeSlotEnd: string | null;
+  totalAmount: number;
+  expiresAt: string | null;
+  createdAt: string;
+  redirectUrl: string | null;
+  trackingUrl: string;
+  items: DinerOrderItemResponse[];
+}
+
 export interface OrderErrorProblemDetail {
   type?: string;
   title: string;
@@ -106,5 +141,6 @@ export interface OrderErrorProblemDetail {
   detail: string;
   instance?: string;
   code?: OrderErrorCode | string;
+  orderId?: string;
   errors?: Record<string, string[]>;
 }

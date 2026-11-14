@@ -22,7 +22,7 @@ public class StockAuditEntry {
     @Column(name = "ingredient_id", nullable = false)
     private UUID ingredientId;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id")
     private UUID userId;
 
     @Enumerated(EnumType.STRING)

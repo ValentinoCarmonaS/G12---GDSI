@@ -50,6 +50,14 @@ export const StickyCategoryNav: React.FC<StickyCategoryNavProps> = ({
             type="button"
             data-testid="nav-category-all"
             onClick={handleAllClick}
+            style={
+              isAllActive
+                ? {
+                    backgroundColor: 'var(--brand-secondary, #065F46)',
+                    color: 'var(--brand-secondary-contrast, #FFFFFF)',
+                  }
+                : undefined
+            }
             className={`px-4 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
               isAllActive
                 ? 'bg-amber-600 text-white shadow-xs'
@@ -67,6 +75,14 @@ export const StickyCategoryNav: React.FC<StickyCategoryNavProps> = ({
               type="button"
               data-testid={`nav-category-${category}`}
               onClick={() => handleCategoryClick(category)}
+              style={
+                isActive
+                  ? {
+                      backgroundColor: 'var(--brand-secondary, #065F46)',
+                      color: 'var(--brand-secondary-contrast, #FFFFFF)',
+                    }
+                  : undefined
+              }
               className={`px-4 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                 isActive
                   ? 'bg-amber-600 text-white shadow-xs'

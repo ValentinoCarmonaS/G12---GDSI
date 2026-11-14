@@ -28,8 +28,16 @@ import {
 } from '../components/catalog/CatalogSearchFilter';
 import { ManualFiltersSidebar } from '../components/catalog/ManualFiltersSidebar';
 import { EmptyFilterResultsNotice } from '../components/catalog/EmptyFilterResultsNotice';
+import { BrandThemeProvider, useBrandTheme } from '../components/common/BrandThemeProvider';
+import { resolveApiMediaUrl } from '../utils/mediaUtils';
 
-export const CatalogView: React.FC = () => {
+const CatalogContent: React.FC = () => {
+  const { branding } = useBrandTheme();
+  const [logoFailed, setLogoFailed] = useState(false);
+
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [branding.logoUrl]);
   const navigate = useNavigate();
   const tenantContext = useContext(TenantContext);
   const tenant = tenantContext?.tenant;
@@ -41,10 +49,14 @@ export const CatalogView: React.FC = () => {
     isFilterActive,
     setIsFilterActive,
     selectedCategories,
+    selectedLifestyles,
+    selectedAllergens,
     minPrice,
     maxPrice,
     searchQuery,
     toggleCategory,
+    toggleLifestyle,
+    toggleAllergen,
     setMinPrice,
     setMaxPrice,
     setSearchQuery,
@@ -125,15 +137,44 @@ export const CatalogView: React.FC = () => {
     return catalogData.categories.map((c) => c.category);
   }, [catalogData]);
 
+  const availableLifestyles = useMemo(() => {
+    if (!catalogData?.categories) return [];
+    const set = new Set<string>();
+    catalogData.categories.forEach((cat) => {
+      cat.dishes.forEach((d) => {
+        d.lifestyles?.forEach((l) => set.add(l));
+      });
+    });
+    return Array.from(set).sort();
+  }, [catalogData]);
+
+  const availableAllergens = useMemo(() => {
+    if (!catalogData?.categories) return [];
+    const set = new Set<string>();
+    catalogData.categories.forEach((cat) => {
+      cat.dishes.forEach((d) => {
+        d.allergens?.forEach((a) => set.add(a));
+      });
+    });
+    return Array.from(set).sort();
+  }, [catalogData]);
+
   const isQueryActive = normalizeSearchTerm(searchQuery).length > 0;
   const isCategoryFilterActive = selectedCategories.length > 0;
+  const isLifestyleFilterActive = selectedLifestyles.length > 0;
+  const isAllergenFilterActive = selectedAllergens.length > 0;
   const minPriceNum = minPrice.trim() !== '' ? Number(minPrice) : null;
   const maxPriceNum = maxPrice.trim() !== '' ? Number(maxPrice) : null;
   const isPriceFilterValid =
     !(minPriceNum !== null && maxPriceNum !== null && !isNaN(minPriceNum) && !isNaN(maxPriceNum) && minPriceNum > maxPriceNum);
 
   const isAnyManualFilterActive =
-    isCategoryFilterActive || minPrice.trim() !== '' || maxPrice.trim() !== '' || isQueryActive;
+    isCategoryFilterActive ||
+    isLifestyleFilterActive ||
+    isAllergenFilterActive ||
+    minPrice.trim() !== '' ||
+    maxPrice.trim() !== '' ||
+    isQueryActive;
 
   const filteredCategoryGroups = useMemo(() => {
     if (!catalogData?.categories) return [];
@@ -147,7 +188,7 @@ export const CatalogView: React.FC = () => {
       })
       .map((group) => {
         const matchingDishes = group.dishes.filter((dish) => {
-          // Dietary restriction filter
+          // Dietary restriction filter (profile compliance)
           if (
             isAuthenticated &&
             activeRestrictionsCount > 0 &&
@@ -160,6 +201,24 @@ export const CatalogView: React.FC = () => {
           // Manual category filter: OR disjunction between selected categories
           if (isCategoryFilterActive && !selectedCategories.includes(group.category)) {
             return false;
+          }
+
+          // C-13: Lifestyles filter - mandatory inclusion (AND between selected lifestyles)
+          if (isLifestyleFilterActive) {
+            const dishLifestyles = dish.lifestyles || [];
+            const hasAllLifestyles = selectedLifestyles.every((l) => dishLifestyles.includes(l));
+            if (!hasAllLifestyles) {
+              return false;
+            }
+          }
+
+          // C-13: Allergens filter - exclusion (omit dish if it contains ANY selected allergen)
+          if (isAllergenFilterActive) {
+            const dishAllergens = dish.allergens || [];
+            const hasAnyExcludedAllergen = selectedAllergens.some((a) => dishAllergens.includes(a));
+            if (hasAnyExcludedAllergen) {
+              return false;
+            }
           }
 
           // Price range filter: closed inclusive interval [min, max]
@@ -194,6 +253,10 @@ export const CatalogView: React.FC = () => {
     isQueryActive,
     selectedCategories,
     isCategoryFilterActive,
+    selectedLifestyles,
+    isLifestyleFilterActive,
+    selectedAllergens,
+    isAllergenFilterActive,
     minPriceNum,
     maxPriceNum,
     isPriceFilterValid,
@@ -257,7 +320,11 @@ export const CatalogView: React.FC = () => {
     setActiveCategory(undefined);
   };
 
-  const pageTitle = catalogData?.establishment?.name || tenant?.name || 'Catálogo de Productos';
+  const pageTitle =
+    (!branding.isDefaultFallback && branding.fantasyName ? branding.fantasyName : null) ||
+    catalogData?.establishment?.name ||
+    tenant?.name ||
+    'Catálogo de Productos';
 
   return (
     <WorkspaceLayout
@@ -283,6 +350,42 @@ export const CatalogView: React.FC = () => {
             <div />
           )}
         </div>
+
+        {/* Branded Restaurant Header (Contract 08, AS-9, Q7/A7, INV-009) */}
+        <header
+          data-testid="restaurant-branding-header"
+          style={{
+            backgroundColor: branding.secondaryColor || 'var(--brand-secondary, #065F46)',
+            color: branding.secondaryContrastColor || 'var(--brand-secondary-contrast, #FFFFFF)',
+          }}
+          className="py-6 px-6 shadow-sm rounded-2xl transition-colors"
+        >
+          <div className="flex items-center gap-4">
+            {branding.logoUrl && !logoFailed ? (
+              <img
+                src={resolveApiMediaUrl(branding.logoUrl)}
+                alt={branding.fantasyName || 'Logo'}
+                onError={() => setLogoFailed(true)}
+                data-testid="restaurant-branding-logo"
+                className="h-16 w-16 rounded-2xl object-cover bg-white/10 p-1 border-2 border-white/20 shadow-sm"
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-2xl bg-white/20 flex items-center justify-center font-bold text-2xl border-2 border-white/20 shadow-sm">
+                {(branding.fantasyName || pageTitle || 'E').charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <h1 className="text-2xl font-black tracking-tight" data-testid="restaurant-branding-name">
+                {branding.fantasyName || pageTitle}
+              </h1>
+              {branding.description && (
+                <p className="text-sm opacity-90 mt-1" data-testid="restaurant-branding-desc">
+                  {branding.description}
+                </p>
+              )}
+            </div>
+          </div>
+        </header>
 
         {/* Guest Banner (FR-026, spec 003) */}
         {!isAuthenticated && (
@@ -440,12 +543,18 @@ export const CatalogView: React.FC = () => {
 
             {/* Layout with Sidebar + Catalog Grid */}
             <div className="flex flex-col lg:flex-row gap-6 items-start">
-              {/* Manual Filters Sidebar (COM-4.2.2, FR-016, FR-017, FR-022) */}
+              {/* Manual Filters Sidebar (COM-4.2.2, FR-016, FR-017, FR-022, C-13) */}
               {categories.length > 0 && (
                 <ManualFiltersSidebar
                   categories={categories}
                   selectedCategories={selectedCategories}
                   onCategoryToggle={toggleCategory}
+                  lifestyles={availableLifestyles}
+                  selectedLifestyles={selectedLifestyles}
+                  onLifestyleToggle={toggleLifestyle}
+                  allergens={availableAllergens}
+                  selectedAllergens={selectedAllergens}
+                  onAllergenToggle={toggleAllergen}
                   minPrice={minPrice}
                   maxPrice={maxPrice}
                   onMinPriceChange={setMinPrice}
@@ -469,7 +578,7 @@ export const CatalogView: React.FC = () => {
                 ) : filteredCategoryGroups.length === 0 ? (
                   !isAnyManualFilterActive && isAuthenticated && activeRestrictionsCount > 0 && isFilterActive ? (
                     <EmptyCatalogDietaryState onViewFullMenu={() => setIsFilterActive(false)} />
-                  ) : (isCategoryFilterActive || minPrice.trim() !== '' || maxPrice.trim() !== '') ? (
+                  ) : (isCategoryFilterActive || isLifestyleFilterActive || isAllergenFilterActive || minPrice.trim() !== '' || maxPrice.trim() !== '') ? (
                     <EmptyFilterResultsNotice onClearFilters={handleClearUnifiedFilters} />
                   ) : (
                     <div
@@ -613,6 +722,16 @@ export const CatalogView: React.FC = () => {
         }}
       />
     </WorkspaceLayout>
+  );
+};
+
+export const CatalogView: React.FC = () => {
+  const tenantContext = useContext(TenantContext);
+  const tenant = tenantContext?.tenant;
+  return (
+    <BrandThemeProvider establishmentId={tenant?.id}>
+      <CatalogContent />
+    </BrandThemeProvider>
   );
 };
 

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,7 +23,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Configuration
@@ -60,8 +67,38 @@ public class SecurityConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${app.cors.allowed-origins:http://localhost:3000}") String allowedOriginsConfig) {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        List<String> origins = null;
+        if (allowedOriginsConfig != null && !allowedOriginsConfig.isBlank()) {
+            origins = Arrays.stream(allowedOriginsConfig.split(","))
+                    .map(String::trim)
+                    .map(origin -> origin.replaceAll("/+$", ""))
+                    .filter(origin -> !origin.isBlank())
+                    .toList();
+        }
+
+        if (origins == null || origins.isEmpty()) {
+            origins = List.of("http://localhost:3000");
+        }
+
+        configuration.setAllowedOrigins(origins);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.cacheControl(Customizer.withDefaults()))
@@ -70,6 +107,7 @@ public class SecurityConfig {
                         // is re-evaluated as an unauthenticated request and ends up as a 401.
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(
+                                "/actuator/health",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/password-reset/**",
@@ -77,9 +115,13 @@ public class SecurityConfig {
                                 "/api/v1/dietary-restrictions",
                                 "/api/v1/profile/email-change/confirm",
                                 "/api/v1/establishments/*/dishes",
-                                "/api/v1/establishments/{tenantId}/dishes"
+                                "/api/v1/establishments/{tenantId}/dishes",
+                                "/api/v1/payments/*/webhook",
+                                "/api/v1/payments/mercadopago/webhook"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/dishes/*/photo").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/establishments/*/logo").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/establishments/*/branding").permitAll()
                         .requestMatchers("/api/v1/auth/logout").authenticated()
                         .requestMatchers(
                                 "/api/v1/establishments",

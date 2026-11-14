@@ -1,6 +1,7 @@
 import { apiClient } from './apiClient';
 import {
   CreateOrderRequest,
+  DinerOrderSummaryResponse,
   OrderDetailResponse,
   OrderSummaryResponse,
   PickupSlotCatalogResponse,
@@ -48,4 +49,12 @@ export async function cancelOrder(orderId: string): Promise<OrderSummaryResponse
   const response = await apiClient.post<OrderSummaryResponse>(`/orders/${orderId}/cancel`);
   const data = response.data;
   return { ...data, orderId: data.orderId || data.id || orderId };
+}
+
+/**
+ * Retrieves the authenticated diner's orders sorted newest first.
+ */
+export async function getMyOrders(): Promise<DinerOrderSummaryResponse[]> {
+  const response = await apiClient.get<DinerOrderSummaryResponse[]>('/orders');
+  return response.data;
 }

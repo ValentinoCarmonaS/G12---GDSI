@@ -109,7 +109,15 @@ public class Order {
     }
 
     public boolean isExpired(Instant now) {
-        return expiresAt != null && now != null && now.isAfter(expiresAt);
+        return expiresAt != null && now != null && !expiresAt.isAfter(now);
+    }
+
+    public boolean isPendingAccreditation() {
+        return status == OrderStatus.PENDING_ACCREDITATION;
+    }
+
+    public boolean isInProgress() {
+        return status == OrderStatus.IN_PROGRESS;
     }
 
     public UUID getId() {

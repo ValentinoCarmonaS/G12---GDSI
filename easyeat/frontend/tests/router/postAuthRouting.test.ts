@@ -120,4 +120,29 @@ describe('postAuthRouting Policy (Canonical Spanish Routes)', () => {
       expect(resolvePostAuthRedirect('ENCARGADO', '/cocina/pedidos')).toBe('/mostrador');
     });
   });
+
+  describe('US3: /checkout and /pedidos routes with query string and hash preservation for COMENSAL', () => {
+    it('allows /checkout and /pedidos prefixes for COMENSAL ignoring query and hash', () => {
+      expect(isRouteAllowedForRole('COMENSAL', '/checkout')).toBe(true);
+      expect(isRouteAllowedForRole('COMENSAL', '/checkout?establishmentId=est-123#pago')).toBe(true);
+      expect(isRouteAllowedForRole('COMENSAL', '/checkout/confirmacion/ord-123')).toBe(true);
+      expect(isRouteAllowedForRole('COMENSAL', '/pedidos')).toBe(true);
+      expect(isRouteAllowedForRole('COMENSAL', '/pedidos/ord-123/seguimiento?source=mp#estado')).toBe(true);
+      expect(isRouteAllowedForRole('COMENSAL', '/perfil#pedidos')).toBe(true);
+      expect(isRouteAllowedForRole('COMENSAL', '/catalogo?tenant=est-1')).toBe(true);
+      expect(isRouteAllowedForRole('COMENSAL', '/checkout-fake')).toBe(false);
+      expect(isRouteAllowedForRole('COMENSAL', '/mostrador?tab=1#pedidos')).toBe(false);
+    });
+
+    it('preserves full path with query string and hash on resolvePostAuthRedirect for COMENSAL', () => {
+      expect(resolvePostAuthRedirect('COMENSAL', '/checkout?establishmentId=est-123#resumen')).toBe(
+        '/checkout?establishmentId=est-123#resumen'
+      );
+      expect(resolvePostAuthRedirect('COMENSAL', '/pedidos/ord-99/seguimiento?from=mp#timeline')).toBe(
+        '/pedidos/ord-99/seguimiento?from=mp#timeline'
+      );
+      expect(resolvePostAuthRedirect('COMENSAL', '/perfil#pedidos')).toBe('/perfil#pedidos');
+      expect(resolvePostAuthRedirect('COMENSAL', '/admin?view=all#top')).toBe('/descubrimiento');
+    });
+  });
 });
