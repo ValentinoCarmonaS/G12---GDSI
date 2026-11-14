@@ -45,5 +45,12 @@ public interface TemporaryReservationRepository extends JpaRepository<TemporaryR
     """)
     int sumReservedPortionsByDishId(@Param("dishId") UUID dishId, @Param("now") Instant now);
 
+    @Query("""
+        SELECT COUNT(r) FROM TemporaryReservation r
+        WHERE r.order.establishmentId = :establishmentId
+          AND r.status = com.easyeat.order.domain.ReservationStatus.ACTIVE
+    """)
+    long countActiveByEstablishmentId(@Param("establishmentId") UUID establishmentId);
+
     Optional<TemporaryReservation> findByIdempotencyKey(String idempotencyKey);
 }

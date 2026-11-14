@@ -127,15 +127,15 @@ class AtomicReservationConcurrencyIntegrationTest extends BaseIntegrationTest {
         readyLatch.await(5, TimeUnit.SECONDS);
         startLatch.countDown();
         boolean completed = doneLatch.await(15, TimeUnit.SECONDS);
+        executor.shutdown();
+        executor.awaitTermination(5, TimeUnit.SECONDS);
 
         assertThat(completed).isTrue();
         assertThat(successCount.get()).isEqualTo(1);
         assertThat(slotRejectedCount.get() + stockRejectedCount.get()).isEqualTo(19);
         assertThat(otherErrorsCount.get()).isEqualTo(0);
 
-        long activeReservations = temporaryReservationRepository.findAll().stream()
-                .filter(r -> r.getStatus() == ReservationStatus.ACTIVE)
-                .count();
+        long activeReservations = temporaryReservationRepository.countActiveByEstablishmentId(establishment.getId());
         assertThat(activeReservations).isEqualTo(1);
     }
 }
