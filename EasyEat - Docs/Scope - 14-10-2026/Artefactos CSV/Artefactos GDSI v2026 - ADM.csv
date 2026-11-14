@@ -1,0 +1,317 @@
+ROL: ADMINISTRADOR,,,
+Nro: 1.1.1,Título: Ingresar al Back-Office web,Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador (Owner/Gerente)
+Quiero iniciar sesión en la plataforma web utilizando mis credenciales de máxima autoridad
+Para poder gestionar todos los aspectos de mi establecimiento.
+",,,
+"Criterios de Aceptación:
+
+- Dado que un usuario con perfil Administrador inicia sesión desde la pantalla unificada con credenciales válidas, cuando el sistema confirma la autenticación, entonces lo redirige automáticamente a la vista principal del panel de administración del back-office (/admin), permitiéndole gestionar únicamente los datos de su propio establecimiento (tenant).
+- Dado que el administrador opera dentro del panel de control del back-office, cuando visualiza o modifica configuraciones, empleados, platos o materias primas, entonces el sistema restringe estrictamente el alcance al establecimiento asignado, imposibilitando el acceso o visualización de información de otros locales o marcas.
+- Dado que un usuario con rol no administrativo (como comensal, encargado o chef) intenta ingresar manualmente a la ruta /admin o a cualquier subsección administrativa, cuando el guard de enrutamiento evalúa sus privilegios, entonces rechaza el ingreso a la interfaz administrativa y redirige al usuario de vuelta a su propio espacio de trabajo.
+- Dado que se intenta ingresar credenciales administrativas incorrectas o inexistentes en el formulario de login, cuando se solicita el acceso, entonces el sistema rechaza la solicitud mostrando el mensaje genérico de error de autenticación sin revelar la existencia de la cuenta.",,,
+,,,
+Nro: 1.2.1,Título: Recuperar contraseña,Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador
+Quiero poder restablecer mi contraseña vía correo electrónico
+Para no perder el acceso a la gestión de mi negocio si me olvido la clave.
+",,,
+"Criterios de Aceptación:
+
+- Dado que el administrador se encuentra en la pantalla unificada de inicio de sesión y selecciona ""Olvidé mi contraseña"", cuando ingresa su correo registrado y confirma el envío, entonces el sistema canaliza la solicitud a ￹través del servicio centralizado de recuperación, despacha un enlace seguro con vigencia de 15 minutos y muestra un mensaje de confirmación.
+- Dado que se ingresa un correo que no pertenece a ningún usuario registrado, cuando se envía la solicitud de recuperación, entonces el sistema muestra exactamente el mismo mensaje de confirmación sin disparar correos para ￹evitar la enumeración de cuentas.
+- Dado que el administrador accede al enlace de recuperación dentro de los 15 minutos de vigencia, cuando ingresa y confirma una nueva contraseña que cumple los requisitos de seguridad de la plataforma, entonces el sistema ￹actualiza sus credenciales, revoca de inmediato cualquier sesión activa previa y lo redirige a la pantalla unificada de inicio de sesión con un mensaje de éxito.
+- Dado que el administrador inicia sesión tras el restablecimiento con su nueva clave, cuando la autenticación resulta exitosa, entonces el sistema detecta su rol y lo redirige automáticamente a su panel de gestión del ￹back-office (/admin).
+- Dado que el administrador intenta utilizar un enlace que ya superó los 15 minutos de expiración o que ya fue consumido con anterioridad, cuando ingresa a la página de restablecimiento, entonces el sistema bloquea el cambio de credenciales y le solicita generar un nuevo pedido de blanqueo.
+- Dado que el administrador se encuentra en el formulario de solicitud de recuperación de clave, cuando decide no continuar y presiona ""Volver al inicio de sesión"", entonces el sistema interrumpe el flujo sin enviar correos ￹y retorna a la pantalla unificada de inicio de sesión.",,,
+,,,
+Nro: 2.1.1,Título: Configurar branding del restaurante,Prioridad:,Estimación: 8
+"Descripción:
+
+Como administrador
+Quiero subir el logo, editar el nombre de fantasía, la descripción y elegir los colores primarios
+Para que la vista del comensal respete la identidad visual de mi marca.
+",,,
+"Criterios de Aceptación:
+Dado que el administrador guarda los cambios en ""Mi Local"", Cuando un comensal entra a pedir, Entonces la plataforma adopta la paleta de colores y el logo configurado.",,,
+,,,
+Nro: 2.2.1,Título: Configurar horarios comerciales,Prioridad:,Estimación: 5
+"Descripción:
+
+Como administrador
+Quiero definir los días y horarios exactos de apertura y cierre
+Para evitar que entren pedidos de retiro cuando la cocina está cerrada.
+",,,
+"Criterios de Aceptación:
+Dado que el restaurante cierra a las 16:00, Cuando son las 16:01, Entonces el sistema bloquea automáticamente la entrada de nuevas reservas para ese día.",,,
+,,,
+Nro: 2.2.2,Título: Configurar capacidad máxima por franja horaria,Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador
+Quiero definir cuántos pedidos máximo (slots) podemos preparar y entregar en cada bloque de 15 minutos
+Para evitar la saturación de la cocina y garantizar las entregas a tiempo.
+",,,
+"Criterios de Aceptación:
+Dado que la capacidad es de 50 pedidos en la franja de 12:00, Cuando el pedido 50 se aprueba, Entonces esa franja se marca como ""Agotada"" en el selector del comensal.",,,
+,,,
+Nro: 2.2.3,Título: Habilitar métodos de pago,Prioridad:,Estimación: 2
+"Descripción:
+
+Como administrador
+Quiero poder prender o apagar métodos de pago online (ej: MercadoPago, Stripe)
+Para adaptarme a las comisiones y cuentas bancarias de mi empresa.
+",,,
+"Criterios de Aceptación:
+Dado que el admin apaga un método, Cuando el comensal llega al checkout, Entonces esa opción ya no está disponible. (Nota de Scope: Todo es mediante pasarelas online por software, sin integración de hardware fiscal).",,,
+,,,
+Nro: 3.1.1,Título: Alta de staff,Prioridad:,Estimación: 5
+"Descripción:
+
+Como administrador
+Quiero dar de alta nuevas cuentas con correo y contraseña generada para mi equipo
+Para que cada uno tenga su propio acceso sin compartir claves.
+",,,
+"Criterios de Aceptación:
+
+- Dado que el administrador se encuentra en la sección de gestión de personal de su local, cuando completa y envía el formulario de registro con nombre completo, correo electrónico y rol operativo (ADMINISTRADOR, CHEF o ENCARGADO), entonces el sistema da de alta al empleado en estado ""Pendiente de primer inicio"" y muestra en pantalla una credencial temporal segura por única vez con opción de copiado al portapapeles.
+- Dado que el administrador descarta o cierra la ventana de la credencial temporal generada, entonces el sistema no permite volver a visualizar dicha clave en texto plano bajo ninguna circunstancia por motivos de seguridad.
+- Dado que el administrador intenta registrar un empleado con un correo electrónico que ya existe en la plataforma (en cualquier establecimiento), entonces el sistema rechaza el alta e informa que el correo ya se encuentra en uso.
+- Dado que el administrador ingresa un correo con combinaciones de mayúsculas o espacios circundantes, cuando envía el registro, entonces el sistema normaliza el correo a minúsculas y sin espacios antes de verificar su disponibilidad y persistirlo.
+- Dado que un empleado registrado ingresa al sistema por primera vez con su credencial temporal, cuando se autentica exitosamente, entonces el sistema detecta el estado pendiente y lo redirige forzosamente a la pantalla de cambio obligatorio de contraseña, bloqueando el acceso a las funciones operativas hasta que defina una nueva clave segura.
+- Dado que el administrador visualiza la nómina de empleados de su local, cuando edita los datos personales o reasigna el rol de un colaborador, entonces los cambios se guardan y se reflejan de inmediato en el listado del personal.
+- Dado que el administrador intenta modificar o revocar su propio rol de administrador, cuando dicha acción dejaría al establecimiento sin ningún administrador activo, entonces el sistema bloquea la operación para impedir que el local quede huérfano de gestión.",,,
+,,,
+Nro: 3.1.2,Título: Asignación de Roles (RBAC),Prioridad:,Estimación: 5
+"Descripción:
+
+Como administrador
+Quiero asignar a cada cuenta un rol específico (Chef o Encargado de Mostrador)
+Para restringir el acceso y que solo vean la pantalla que les corresponde usar (KDS o Despacho).
+",,,
+"Criterios de Aceptación:
+
+- Dado que un usuario autenticado posee el rol de Administrador, cuando opera sobre los módulos de gestión de personal, catálogo de ingredientes y ajustes de inventario de su establecimiento, entonces el sistema autoriza todas las operaciones dentro de su local.
+- Dado que un usuario autenticado posee el rol de Chef, cuando intenta consultar el catálogo de ingredientes activos de su local, entonces el sistema autoriza el acceso en modo solo lectura.
+- Dado que un usuario con rol de Chef intenta dar de alta, editar o discontinuar un ingrediente, registrar movimientos de stock o acceder a la administración del personal, entonces el sistema rechaza la petición con una respuesta de acceso prohibido (403 Forbidden).
+- Dado que un usuario con rol de Encargado de mostrador o Comensal intenta acceder a cualquier endpoint o recurso de personal, ingredientes o inventario, entonces el sistema deniega el acceso con una respuesta 403 Forbidden.
+- Dado que cualquier usuario autenticado intenta consultar o modificar datos de personal o de inventario pertenecientes a otro establecimiento (cross-tenant), entonces el sistema bloquea la solicitud y garantiza que la información de terceros nunca sea expuesta.
+- Dado que ocurre un intento de acceso no autorizado (por violación de rol o intento de cruce de establecimiento), cuando el sistema intercepta la infracción, entonces registra un evento de auditoría de seguridad detallando ￹identidad, marca temporal, recurso intentado y motivo del rechazo.",,,
+,,,
+Nro: 3.1.3,Título: Baja de exempleados,Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador
+Quiero suspender o eliminar cuentas del personal que ya no trabaja más en el local
+Para mantener la seguridad del sistema y que no puedan acceder desde afuera.
+",,,
+"Criterios de Aceptación:
+Dado que el admin inactiva una cuenta, Cuando ese usuario intenta entrar, Entonces el sistema rechaza el login. (Nota de Scope: No hace cálculo de sueldos o aguinaldos, solo control de acceso a la plataforma).",,,
+,,,
+Nro: 4.1.1,"Título: Crear, editar y eliminar ingredientes del inventario",Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador 
+Quiero crear, editar y eliminar ingredientes del inventario base p
+Para mantener el catálogo de insumos actualizado y disponible para que el chef arme sus recetas.
+",,,
+"Criterios de Aceptación:
+
+- Dado que el administrador accede al módulo de materias primas de su local, cuando envía el formulario con nombre, categoría (ej. Carnes, Verduras, Lácteos, Almacén) y unidad de medida (g, kg, ml, l, u), entonces el sistema registra el insumo con estado ""Activo"", stock inicial en 0 y lo hace visible en el catálogo de cocina.
+- Dado que el administrador intenta crear un ingrediente cuyo nombre ya existe en el establecimiento, cuando envía la solicitud, entonces el sistema impide la creación e informa el error de duplicidad.
+- Dado que el administrador edita un ingrediente existente, cuando modifica su nombre o categoría, entonces los cambios se guardan y se actualizan de inmediato en el catálogo general.
+- Dado que un ingrediente posee registros de stock o lotes asociados (stock mayor a cero), cuando el administrador intenta modificar su unidad de medida, entonces el sistema bloquea el cambio para evitar inconsistencias métricas y corrupción de datos.
+- Dado que un ingrediente se encuentra en estado ""Activo"", cuando el administrador selecciona la acción ""Discontinuar"", entonces el sistema cambia su estado a ""Discontinuado"", lo excluye del catálogo visible del chef y ￹bloquea nuevos ingresos de stock, preservando intactos sus lotes y su historial de movimientos.
+- Dado que un ingrediente figura en estado ""Discontinuado"", cuando el administrador selecciona ""Reactivar"", entonces el sistema lo restablece al estado ""Activo"" y lo vuelve a poner inmediatamente a disposición del equipo de ￹cocina sin bloqueos terminales.",,,
+,,,
+Nro: 4.1.2,Título:  Ingresar y actualizar manualmente las cantidades de los ingredientes ,Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador 
+Quiero ingresar y actualizar manualmente el stock inicial (cantidades) de los ingredientes p
+Para reflejar la realidad de la alacena y permitir que el sistema descuente el stock automáticamente con cada venta.
+",,,
+"Criterios de Aceptación:
+
+- Dado que el administrador recibe un nuevo cargamento de mercadería, cuando ingresa a ""Agregar stock"" e indica la cantidad recibida y el costo de compra unitario obligatorio de esa entrega, entonces el sistema crea un ￹nuevo lote independiente con fecha y precio de adquisición, sumando la cantidad al stock global del ingrediente y generando un registro inmutable de auditoría.
+- Dado que el administrador necesita registrar mermas, caducidades o roturas de mercadería, cuando selecciona ""Restar stock"", entonces el sistema despliega los lotes activos del ingrediente que poseen saldo disponible (> 0), detallando su remanente, fecha de ingreso y costo unitario de compra.
+- Dado que el administrador selecciona un lote específico y una cantidad a deducir acompañada de una justificación obligatoria, cuando confirma la merma, entonces el sistema descuenta la cantidad del saldo de dicho lote, reduce el stock global, calcula la pérdida financiera exacta (cantidad × costo unitario del lote) y genera un registro de auditoría inmutable.
+- Dado que el administrador intenta deducir una cantidad superior al saldo remanente del lote seleccionado, cuando confirma la operación, entonces el sistema rechaza la deducción exigiendo que el descuento no supere el disponible del lote.
+- Dado que el saldo de un lote llega a cero tras un ajuste, cuando se inicien futuros descuentos, entonces el sistema excluye automáticamente el lote agotado de las opciones de deducción activas, conservándolo únicamente ￹para trazabilidad histórica.
+- Dado que existen registros de auditoría de movimientos de stock generados, cuando cualquier usuario o proceso intenta editar o eliminar una entrada de auditoría previa, entonces el sistema impide la modificación ￹garantizando la inmutabilidad histórica del inventario.",,,
+,,,
+Nro: 4.1.3,Título:  Definir el umbral de stock Critico ,Prioridad:,Estimación: 2
+"Descripción:
+
+Como administrador
+Quiero definir un nivel de ""stock mínimo"" individual para cada ingrediente
+Para que el sistema tenga un parámetro de cuándo debe advertirme que es necesario reponer mercadería.
+",,,
+"Criterios de Aceptación:
+Dado que el admin crea o edita un ingrediente en el inventario, Cuando ingresa un valor numérico en el campo ""Stock mínimo/crítico"", Entonces el sistema guarda este límite como referencia para disparar futuras alertas. (Nota de Scope: El valor se configura de manera individual por insumo, ya que la tolerancia de urgencia varía entre un producto y otro).",,,
+,,,
+Nro: 4.1.4,Título: Visualizar alertas de reabastecimiento en estado de umbral Critico ,Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador
+Quiero visualizar una alerta o indicador en el sistema cuando un ingrediente caiga por debajo de su umbral mínimo
+Para identificar rápidamente qué insumos debo comprar a los proveedores sin tener que revisar la lista completa manualmente.
+",,,
+"Criterios de Aceptación:
+Dado que la cantidad disponible de un insumo cruza la barrera de su stock crítico (ya sea por una venta o ajuste manual), Cuando el admin ingresa al módulo de inventario, Entonces el sistema resalta ese ingrediente (ej. con un ícono rojo o etiqueta de ""Falta de Stock""). (Nota de Scope: La alerta es únicamente visual dentro del panel Back-Office; no envía correos a proveedores ni automatiza órdenes de compra).",,,
+,,,
+Nro: 5.1.1,Título: Ver platos pendientes,Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador
+Quiero ver una bandeja de entrada con todos los platos nuevos que el Chef me mandó a revisar
+Para no perder el rastro de la nueva oferta que hay que lanzar al público.
+",,,
+"Criterios de Aceptación:
+
+- Dado que existen platos en estado ""Pendiente de Precio"" enviados por los Chefs del local, cuando el Administrador ingresa a la bandeja de revisión, entonces la vista ""Pendientes"" lista los platos ordenados por fecha de envío ascendente (FIFO: el más antiguo primero), paginados de a 20 por página y con un contador total de pendientes.
+- Dado que se listan platos en la bandeja, cuando se renderizan las tarjetas, entonces el sistema identifica claramente si se trata de un primer envío o de un reenvío posterior a un rechazo previo.
+- Dado que un establecimiento no tiene platos en estado ""Pendiente de Precio"", cuando el Administrador abre la pestaña ""Pendientes"", entonces el sistema muestra un estado vacío amigable e informativo sin errores.
+- Dado que un Administrador selecciona un plato de la bandeja, cuando carga el panel de detalle, entonces el sistema muestra la identidad del plato (nombre, categoría, descripción, foto), sellos dietarios/alérgenos y la auditoría detallada de Food Cost (insumos, cantidades, costo unitario, subtotal y alertas de insumos sin costear).
+- Dado que un Administrador navega por la bandeja, cuando alterna entre pestañas, entonces puede consultar las vistas segmentadas de ""Pendientes"", ""Publicados"" (catálogo activo) e ""Historial / Rechazados"" (ciclos de revisión anteriores).
+- Dado que un usuario con rol Chef o personal no administrador intenta ingresar a la bandeja administrativa, cuando se evalúa el acceso, entonces el sistema deniega el acceso con error de autorización (HTTP 403 Forbidden).
+- Dado que un Administrador pertenece a un establecimiento determinado, cuando accede a la bandeja, entonces los platos de otros locales quedan estrictamente excluidos garantizando el aislamiento multi-tenant.",,,
+,,,
+Nro: 5.1.2,Título: Auditoría de receta y food cost,Prioridad:,Estimación: 2
+"Descripción:
+
+Como administrador financiero
+Quiero leer los ingredientes que el Chef cargó en el plato y analizar su impacto
+Para entender qué rentabilidad me va a dejar.
+",,,
+"Criterios de Aceptación:
+
+- Dado que un Administrador autenticado consulta un plato en estado ""Pendiente de Precio"" con receta guardada, cuando solicita la auditoría de costos, entonces el sistema calcula y retorna el Food Cost total junto a una lista detallada con: ID, nombre del insumo, cantidad por porción, unidad de medida, costo unitario de adquisición, subtotal por línea y los códigos de restricciones dietarias/alérgenos asociados.
+- Dado que un Administrador intenta solicitar la auditoría de costos de un plato que aún está en estado ""Borrador"", cuando se procesa la solicitud, entonces el sistema rechaza la operación informando que el plato debe estar en estado ""Pendiente de Precio"" (HTTP 409 Conflict) para poder ser auditado.
+- Dado que el costo de adquisición de un ingrediente se actualiza posteriormente en el catálogo de inventario, cuando el Administrador vuelve a consultar la auditoría del plato, entonces el sistema recalcula dinámicamente y refleja el nuevo costo unitario y total al instante, sin requerir re-envíos de la receta.
+- Dado que un ingrediente activo de la receta posee un costo de adquisición en cero (0.00) o no fue valorizado aún en inventario, cuando se calcula la auditoría, entonces el sistema computa esa línea como 0.00, activa la advertencia ""has_unpriced_ingredients = true"", lista el insumo afectado en notas de advertencia y calcula el resto con normalidad.
+- Dado que un Administrador intenta consultar la auditoría de costos de un plato perteneciente a otro establecimiento (multi-tenant), cuando se evalúa la petición, entonces el sistema deniega el acceso (HTTP 403 / 404) garantizando el aislamiento estricto entre sucursales.
+- Dado que un plato no posee ingredientes asignados en su receta técnica, cuando se solicita su auditoría de costos, entonces el sistema rechaza la solicitud indicando que el plato carece de una receta definida (HTTP 400 Bad Request).
+- Dado que un usuario con rol Chef (o cualquier rol no administrador) intenta acceder al endpoint o vista de auditoría de costos, cuando se evalúan los permisos, entonces el sistema deniega el acceso (HTTP 403 Forbidden) preservando la confidencialidad de los costos financieros.
+- Dado que un Administrador autenticado visualiza los platos pendientes en el Back-Office, cuando presiona la acción ""Auditar Costo"" sobre la notificación de un plato en revisión, entonces la interfaz abre la vista dedicada de auditoría desplegando el panel con la tabla itemizada de costos, alertas de insumos sin precio y las insignias de restricciones dietarias.
+",,,
+,,,
+Nro: 5.2.1,Título: Costeo (Fijar PVP),Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador
+Quiero ingresarle un precio de venta al público (PVP) al plato antes de publicarlo
+Para asegurar el margen de ganancia de la empresa.
+",,,
+"Criterios de Aceptación:
+
+- Dado que un plato en revisión tiene un Food Cost conocido, cuando el Administrador ingresa un porcentaje de margen comercial objetivo, entonces el sistema calcula y muestra reactivamente el PVP sugerido con redondeo exacto a 2 decimales.
+- Dado que un plato en revisión tiene un Food Cost conocido, cuando el Administrador ingresa un precio de venta (PVP) directo, entonces el sistema calcula y muestra reactivamente el porcentaje de margen comercial resultante.
+- Dado que un Administrador asigna un precio de venta positivo y válido (> 0), cuando guarda los cambios, entonces el precio se asocia al plato, se genera un registro inmutable en el historial de precios (con actor, timestamp, precio anterior, precio nuevo y Food Cost) y el plato permanece en ""Pendiente de Precio"" hasta su aprobación formal.
+- Dado que un plato ya se encuentra en estado ""Publicado"", cuando el Administrador actualiza su precio de venta, entonces el nuevo precio impacta en el catálogo activo registrando la auditoría correspondiente y sin alterar la receta técnica.
+- Dado que el Administrador ingresa un precio de venta inferior al Food Cost (margen negativo o venta a pérdida), cuando intenta guardar, entonces el sistema emite una advertencia explícita requiriendo confirmación consciente antes de persistir.
+- Dado que el Administrador ingresa un precio menor o igual a cero, no numérico o con más de 2 decimales, cuando intenta guardar, entonces el sistema rechaza la operación con error de validación (HTTP 400 Bad Request).
+- Dado que el Administrador ingresa un margen objetivo mayor o igual al 100%, cuando se procesa, entonces el sistema bloquea el cálculo informando que representa una asíntota matemática imposible.
+- Dado que un plato posee ingredientes sin costo de adquisición cargado en inventario (Food Cost en 0.00), cuando se abre el panel de precios, entonces el sistema desactiva el cálculo automático de margen solicitando ingresar el PVP directamente junto a una alerta visual.
+- Dado un precio de venta (PVP) calculado a partir de un margen objetivo, cuando se re-deriva el margen comercial a partir del precio guardado a 2 decimales, entonces el margen resultante coincide con el objetivo original dentro de una tolerancia de ±0.01 puntos porcentuales para valores sobre el umbral de precisión, o bien el sistema informa la desviación real alcanzable si se encuentra por debajo de dicho umbral.
+",,,
+,,,
+Nro: 5.2.2,Título: Aprobar y Publicar,Prioridad:,Estimación: 2
+"Descripción:
+
+Como administrador
+Quiero tocar un botón para ""Aprobar"" el plato
+Para que impacte inmediatamente en el catálogo visible de los comensales.
+",,,
+"Criterios de Aceptación:
+
+- Dado que un plato en ""Pendiente de Precio"" cuenta con PVP asignado, al menos un ingrediente activo en su receta y alérgenos confirmados, cuando el Administrador presiona ""Aprobar"", entonces el sistema transiciona el estado a ""Publicado"", registra la auditoría de aprobación y lo remueve de la bandeja de pendientes.
+- Dado que un plato en revisión no tiene precio de venta asignado (PVP nulo o cero), cuando se intenta aprobar, entonces el sistema bloquea la aprobación exigiendo fijar un precio previamente.
+- Dado que la receta de un plato quedó vacía o todos sus insumos fueron discontinuados en inventario, cuando se intenta aprobar, entonces el sistema bloquea la transición exigiendo al menos una materia prima activa.
+- Dado que un plato posee ingredientes sin precio en inventario o un margen comercial negativo, cuando el Administrador presiona ""Aprobar"", entonces el sistema despliega un modal de confirmación detallando las advertencias y requiere una confirmación explícita para autorizar la publicación.
+- Dado que un plato aún está en estado ""Borrador"" (en cocina), cuando un Administrador intenta aprobarlo, entonces el sistema rechaza la acción por conflicto de estado (HTTP 409 Conflict).
+- Dado que dos Administradores actúan en simultáneo sobre el mismo plato (uno aprueba y otro rechaza), cuando llegan las solicitudes, entonces la primera petición se procesa exitosamente y la segunda se rechaza por control de concurrencia optimista (HTTP 409 Conflict).
+- Dado que un plato en estado ""Pendiente de Precio"" nunca tuvo su sección de alérgenos confirmada por el personal de cocina, cuando el Administrador intenta aprobarlo, entonces el sistema bloquea la transición mostrando un error que exige resolver las declaraciones de alérgenos.
+- Dado que un Administrador aprueba un plato que ya se encuentra en estado ""Publicado"", cuando se procesa la acción, entonces el sistema retorna éxito de forma idempotente sin crear registros duplicados en el catálogo ni alterar la bitácora de auditoría.
+",,,
+,,,
+Nro: 5.2.3,Título: Rechazar al Chef con feedback,Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador
+Quiero rechazar un plato devolviéndolo al Chef con un comentario de texto
+Para pedirle correcciones (ej: ""Ingrediente muy caro, cambialo por otro"").
+",,,
+"Criterios de Aceptación:
+
+- Dado que un Administrador decide rechazar un plato en revisión, cuando ingresa un motivo explicativo de entre 10 y 1000 caracteres y confirma, entonces el plato transiciona a ""Borrador"", se registra la entrada inmutable en el historial de revisiones (con ciclo, actor, fecha y comentario) y desaparece de la bandeja de pendientes.
+- Dado que un plato es devuelto a cocina por rechazo, cuando el Chef abre su borrador, entonces el plato vuelve a ser 100% editable y visualiza una alerta destacada con el comentario y feedback del Administrador.
+- Dado que un Administrador intenta rechazar un plato omitiendo el comentario, ingresando solo espacios o con menos de 10 caracteres, entonces el sistema impide el rechazo exigiendo una justificación válida.
+- Dado que el Chef consulta el feedback de rechazo en su cocina, cuando visualiza la nota, entonces el sistema expone únicamente el texto y la fecha, manteniendo estrictamente ocultos los costos de compra, Food Cost y márgenes financieros.
+- Dado que un plato ha pasado por múltiples ciclos de rechazo y reenvío, cuando el Administrador consulta su historial, entonces se listan cronológicamente todas las devoluciones pasadas con sus respectivos comentarios.
+- Dado que un plato ya se encuentra en estado ""Publicado"", cuando se intenta ejecutar la acción de rechazo, entonces el sistema bloquea la operación (HTTP 409 Conflict) ya que la despublicación no forma parte de este flujo.
+- Dado que un Administrador ingresa un comentario de rechazo que supera los 1000 caracteres, cuando se valida el envío, entonces el sistema impide la operación e indica la violación del límite máximo de caracteres.",,,
+,,,
+Nro: 5.3.1,Título: Configurar promociones dinámicas,Prioridad:,Estimación: 8
+"Descripción:
+
+Como administrador
+Quiero configurar las reglas y porcentajes de descuento (ej: 10% off por suscripción semanal)
+Para incentivar la venta por volumen y asegurar la retención de comensales.
+",,,
+"Criterios de Aceptación:
+Dado que existe una política de descuentos, Cuando el admin fija un porcentaje en el panel de promociones, Entonces el motor de reglas aplica ese descuento automáticamente en el checkout del comensal.",,,
+,,,
+Nro: 5.3.2,Título: Destacar Plato del Día,Prioridad:,Estimación: 2
+"Descripción:
+
+Como administrador comercial
+Quiero poder marcar manualmente un plato específico como el ""Plato del Día""
+Para que el sistema se lo recomiende a los comensales y así potenciar su venta (ej: porque hay sobrestock de esos ingredientes).
+",,,
+"Criterios de Aceptación:
+Dado que un plato está ""Publicado"", Cuando el admin toca el botón ""Destacar como Plato del Día"", Entonces ese ítem aparece primero y resaltado en la vista principal del catálogo del comensal.",,,
+,,,
+Nro: 6.1.1,Título: Estadísticas de ingresos y volumen,Prioridad:,Estimación: 8
+"Descripción:
+
+Como administrador
+Quiero ver paneles que muestren mis ingresos totales y la cantidad de pedidos concretados
+Para tener un pantallazo rápido de la salud financiera del día, semana o mes.
+",,,
+"Criterios de Aceptación:
+Dado que ingresaron pedidos, Cuando el admin entra al dashboard de BI, Entonces ve métricas financieras en formato de tabla o gráfico. (Nota de Scope: Provee estadísticas mediante reportes, pero no es un ERP contable complejo de uso generalizado).",,,
+,,,
+Nro: 6.1.2,Título: Mapa de calor de franjas horarias,Prioridad:,Estimación: 8
+"Descripción:
+
+Como administrador
+Quiero ver gráficos de concurrencia segmentados por bloques de tiempo
+Para identificar cuáles son las horas pico y redistribuir el personal si hace falta.
+",,,
+"Criterios de Aceptación:
+Dado que se registran múltiples ventas en distintos horarios, Cuando se visualiza el gráfico, Entonces se identifican fácilmente las franjas más demandadas.",,,
+,,,
+Nro: 6.2.1,Título: Ranking de Platos,Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador
+Quiero tener un ranking siempre actualizado de los ""Platos más vendidos""
+Para saber qué sacar del catálogo y qué promocionar más.
+",,,
+"Criterios de Aceptación:
+Dado que existen históricos de venta, Cuando se abre el reporte, Entonces los platos se ordenan descendentemente por cantidad de unidades.",,,
+,,,
+Nro: 6.2.2,Título: Monitoreo de reputación (Reviews),Prioridad:,Estimación: 3
+"Descripción:
+
+Como administrador enfocado en la calidad
+Quiero ver el promedio de estrellas de cada plato y leer las críticas dejadas por los comensales
+Para poder auditar la calidad de la cocina y tomar decisiones.
+",,,
+"Criterios de Aceptación:
+Dado que un comensal dejó una review, Cuando el admin entra al detalle de métricas del plato, Entonces puede leer el feedback. (Nota de Scope: Formato de solo lectura, sin posibilidad de crear hilos de discusión social).",,,

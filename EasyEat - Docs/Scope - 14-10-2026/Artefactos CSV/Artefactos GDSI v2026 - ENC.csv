@@ -1,0 +1,118 @@
+ROL: ENCARGADO DE MOSTRADOR,,,
+Nro: 1.1.1,Título: Ingreso con credenciales de empleado,Prioridad:,Estimación: 3
+"Descripción:
+
+Como encargado de mostrador
+Quiero ingresar a la plataforma web utilizando mis credenciales provistas por la administración
+Para poder acceder a las herramientas de gestión de entregas del local.
+
+",,,
+"Criterios de Aceptación:
+
+- Dado que el usuario posee una cuenta activa con rol de Encargado y se encuentra en la pantalla unificada de inicio de sesión, cuando ingresa su correo electrónico registrado y contraseña correcta y presiona ""Iniciar sesión"", entonces el sistema lo autentica exitosamente y establece su sesión operativa vinculada a su establecimiento.
+- Dado que el usuario ingresa un formato de correo inválido o deja campos obligatorios vacíos en el formulario de acceso, cuando intenta iniciar sesión, entonces el sistema bloquea el envío y resalta visualmente los campos requeridos.
+- Dado que se ingresa un correo no registrado o una contraseña incorrecta para un perfil de empleado, cuando se solicita el ingreso, entonces el sistema rechaza la autenticación y despliega un mensaje genérico de credenciales inválidas para evitar la enumeración de cuentas.
+- Dado que la cuenta del encargado figura como inactiva o suspendida por la administración, cuando intenta iniciar sesión con credenciales correctas, entonces el sistema rechaza el acceso y le informa que su usuario no se encuentra habilitado para operar.
+- Dado que el encargado ingresa su correo con espacios accidentales al inicio o final o con caracteres en mayúsculas, cuando envía el formulario con la clave correcta, entonces el sistema normaliza el correo y completa la autenticación sin inconvenientes.",,,
+,,,
+Nro: 1.2.1,Título: Redirección automática a la vista de mostrador,Prioridad:,Estimación: 3
+"Descripción:
+
+Como encargado de mostrador
+Quiero ser redirigido automáticamente a la ""Vista de Mostrador"" tras iniciar sesión
+Para no perder tiempo navegando por menús que no me corresponden (como el KDS del Chef o la vista del Comensal).
+
+",,,
+"Criterios de Aceptación:
+
+- Dado que un usuario con rol Encargado inicia sesión exitosamente sin haber ingresado a través de un enlace específico previo, cuando se completa la autenticación, entonces el sistema lo redirige de forma inmediata y automática al panel de despacho del mostrador (/mostrador), reemplazando el historial de navegación para evitar volver al login con el botón de retroceso.
+- Dado que un encargado no autenticado intenta acceder directamente a una ruta protegida propia de su labor (por ejemplo, el detalle de un pedido en mostrador), cuando inicia sesión con sus credenciales válidas, entonces el sistema respeta el destino original y lo redirige a la ruta específica solicitada.
+- Dado que un encargado intenta ingresar directamente a una ruta protegida que no corresponde a su rol (por ejemplo, la vista de cocina /cocina o la de administración /admin), cuando el guard de enrutamiento evalúa los permisos, entonces descarta el destino ajeno y lo redirige automáticamente a su propio panel de mostrador (/mostrador).",,,
+,,,
+Nro: 2.1.1,Título: Visualizar pedidos listos para entregar,Prioridad:,Estimación: 8
+"Descripción:
+
+Como encargado de mostrador
+Quiero ver en tiempo real una lista de los pedidos que la cocina marcó como ""Listos""
+Para saber qué bandejas o bolsas ya están disponibles para despachar a los comensales.
+
+",,,
+"Criterios de Aceptación:
+Dado que el Chef toca ""LISTO"" en su KDS, Cuando el estado del pedido cambia, Entonces la tarjeta de ese pedido aparece instantáneamente en la pantalla del mostrador (vía WebSockets).",,,
+,,,
+Nro: 2.1.2,Título: Ver detalles rápidos del pedido,Prioridad:,Estimación: 2
+"Descripción:
+
+Como encargado de mostrador
+Quiero ver de un vistazo el número de orden, el nombre del comensal y los ítems del pedido
+Para poder armar la bolsa o bandeja rápidamente y sin errores.
+
+",,,
+"Criterios de Aceptación:
+Dado que un pedido está en la lista de ""Listos"", Cuando el encargado mira la tarjeta, Entonces visualiza claramente el nombre, el código y el resumen de los platos que lo componen.",,,
+,,,
+Nro: 2.2.1,Título: Anticipar pedidos en preparación,Prioridad:,Estimación: 3
+"Descripción:
+
+Como encargado de mostrador
+Quiero visualizar una lista secundaria con los pedidos que están ""En preparación""
+Para ir anticipando el armado de servilletas, cubiertos o bebidas frías antes de que salga la comida caliente de la cocina.
+
+",,,
+"Criterios de Aceptación:
+Dado que el Chef empieza a cocinar un pedido, Cuando el encargado mira su pantalla, Entonces ve ese pedido en una columna de ""Próximos a salir"".",,,
+,,,
+Nro: 2.2.2,Título: Alertas de espera prolongada en mostrador,Prioridad:,Estimación: 3
+"Descripción:
+
+Como encargado de mostrador
+Quiero recibir una alerta visual si un pedido ""Listo"" lleva mucho tiempo esperando ser retirado
+Para poder llamar por el nombre al comensal o apartar la comida para que no estorbe en la zona de entrega.
+
+",,,
+"Criterios de Aceptación:
+Dado que un pedido lleva más de un tiempo prudencial en estado ""Listo"", Cuando pasa ese límite, Entonces la tarjeta del pedido parpadea en rojo o destaca un contador de demora.",,,
+,,,
+Nro: 3.1.1,Título: Escanear código QR del comensal,Prioridad:,Estimación: 5
+"Descripción:
+
+Como encargado de mostrador
+Quiero poder usar la cámara de mi dispositivo (tablet/PC/móvil) para escanear el código QR del dispositivo del comensal
+Para validar su identidad de forma rápida, segura y sin fricciones.
+
+",,,
+"Criterios de Aceptación:
+Dado que la vista de escáner está abierta, Cuando el encargado apunta al QR de retiro del comensal, Entonces el sistema lo decodifica y localiza la orden asociada instantáneamente.",,,
+,,,
+Nro: 3.2.1,Título: Ingresar código numérico manualmente,Prioridad:,Estimación: 2
+"Descripción:
+
+Como encargado de mostrador
+Quiero poder ingresar el código de la orden manualmente en un buscador
+Para poder entregar el pedido en caso de que la cámara del mostrador falle o el dispositivo del comensal se haya quedado sin batería.
+
+",,,
+"Criterios de Aceptación:
+Dado que el QR no puede ser leído, Cuando el encargado tipea el código alfanumérico en la barra de búsqueda, Entonces el sistema encuentra el pedido correspondiente para su validación.",,,
+,,,
+Nro: 3.3.1,Título: Visualizar match exitoso,Prioridad:,Estimación: 2
+"Descripción:
+
+Como encargado de mostrador
+Quiero ver una confirmación verde y prominente en pantalla indicando que el código escaneado coincide con un pedido listo
+Para estar 100% seguro de que le estoy entregando la comida correcta a la persona correcta.
+
+",,,
+"Criterios de Aceptación:
+Dado que el QR o código ingresado es válido y corresponde a un pedido ""Listo"", Cuando el backend procesa la solicitud, Entonces aparece un mensaje de éxito (Match) mostrando los detalles finales del pedido a entregar.",,,
+,,,
+Nro: 3.3.2,Título: Marcar pedido como Entregado,Prioridad:,Estimación: 3
+"Descripción:
+
+Como encargado de mostrador
+Quiero que, tras la confirmación, el pedido se marque automáticamente como ""Entregado"" (o tener un botón explícito para hacerlo)
+Para sacarlo definitivamente de mi cola activa y que pase al historial de ventas.
+
+",,,
+"Criterios de Aceptación:
+Dado que se validó la entrega exitosamente, Cuando el encargado confirma el retiro de la bandeja, Entonces el pedido desaparece de la pantalla del mostrador y su estado en la base de datos pasa a ""Entregado"".",,,

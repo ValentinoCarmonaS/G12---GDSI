@@ -135,4 +135,32 @@ En el servicio Web de backend desplegado en Render se deben configurar las sigui
 
 En el panel de **Mercado Pago Developers → Webhooks**, configurar la URL `<URL_PUBLICA_BACKEND>/api/v1/payments/mercadopago/webhook` para el evento **Pagos (`payment`)**. Si el envío SMTP no se encuentra habilitado, el respaldo en `order_receipts`, el seguimiento en `/pedidos/{orderId}/seguimiento` y el acceso desde `/perfil#pedidos` permanecen disponibles sin depender del correo electrónico.
 
+### Tarjetas y estados de prueba de Mercado Pago
+
+Para simular pagos en entorno de prueba sin cruzar cuentas reales con cuentas de prueba (`invalid_users_types_error`: *"Una de las partes con la que intentás hacer el pago es de prueba"*), abrir el flujo en una **ventana de incógnito** e iniciar sesión con una **cuenta compradora de prueba** (o pagar sin sesión personal real activa) utilizando los datos de prueba de Mercado Pago Developers.
+
+| Campo | Valor de prueba |
+| --- | --- |
+| Número de tarjeta | `5031 7557 3453 0604` |
+| Titular | `APRO` (u otro código de estado según el escenario) |
+| Documento | `12345678` |
+| Vencimiento | `11/30` |
+| Código de seguridad (CVV/CCV) | `123` |
+
+Marcas contempladas en el panel de tarjetas de prueba de Mercado Pago Developers: `Mastercard Crédito`, `Visa Crédito`, `American Express Crédito`, `Mastercard Débito` y `Visa Débito`.
+
+Para simular distintos resultados de pago, reemplazar el campo **Titular** por el código correspondiente:
+
+| Código en Titular | Estado simulado | Prioridad |
+| --- | --- | --- |
+| `APRO` | Pago aprobado | Prioritario |
+| `OTHE` | Rechazado por error general | Prioritario |
+| `CONT` | Pendiente de pago | Prioritario |
+| `CALL` | Rechazado con validación para autorizar | Prioritario |
+| `FUND` | Rechazado por importe insuficiente | Estándar |
+| `SECU` | Rechazado por código de seguridad inválido | Estándar |
+| `EXPI` | Rechazado debido a un problema de fecha de vencimiento | Estándar |
+| `FORM` | Rechazado debido a un error de formulario | Estándar |
+
+
 
