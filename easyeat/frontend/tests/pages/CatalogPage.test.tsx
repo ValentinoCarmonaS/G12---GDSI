@@ -37,6 +37,7 @@ describe('CatalogPage Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   const renderWithAuth = (

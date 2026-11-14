@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DISH_CATEGORIES, type DishCategory, type CreateDishRequest } from '@/types/dish';
+import { resolveApiMediaUrl } from '@/utils/mediaUtils';
 
 export interface BasicIdentityStepProps {
   initialData?: Partial<CreateDishRequest & { photoUrl?: string | null }>;
@@ -209,7 +210,7 @@ export const BasicIdentityStep: React.FC<BasicIdentityStepProps> = ({
         {previewUrl && (
           <div className="mt-4 flex items-center space-x-4 p-3 bg-zinc-50 dark:bg-zinc-800/60 rounded-lg border border-zinc-200 dark:border-zinc-700">
             <img
-              src={previewUrl}
+              src={resolveApiMediaUrl(previewUrl)}
               alt="Vista previa del plato"
               className="w-20 h-20 object-cover rounded-md border border-zinc-200 dark:border-zinc-700"
             />

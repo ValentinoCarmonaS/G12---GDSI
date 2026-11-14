@@ -10,6 +10,7 @@ import {
 import { ColorPickerInput } from '../components/admin/ColorPickerInput';
 import { LogoUploader } from '../components/admin/LogoUploader';
 import { getOptimalContrastColor, isValidHexColor } from '../utils/colorContrastUtils';
+import { resolveApiMediaUrl } from '../utils/mediaUtils';
 import { CheckCircle2, AlertCircle, Eye, Store } from 'lucide-react';
 
 export const AdminBrandingPage: React.FC = () => {
@@ -244,7 +245,7 @@ export const AdminBrandingPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   {logoUrl && !previewImageError ? (
                     <img
-                      src={logoUrl}
+                      src={resolveApiMediaUrl(logoUrl)}
                       alt="Logo local"
                       onError={() => setPreviewImageError(true)}
                       className="w-12 h-12 rounded-lg object-contain bg-white/10 p-1"

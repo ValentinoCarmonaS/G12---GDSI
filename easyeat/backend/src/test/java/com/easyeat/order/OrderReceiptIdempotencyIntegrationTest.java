@@ -50,7 +50,6 @@ public class OrderReceiptIdempotencyIntegrationTest extends BaseIntegrationTest 
     @BeforeEach
     void setUp() {
         orderReceiptRepository.deleteAll();
-        orderRepository.deleteAll();
         testEstablishment = createTestEstablishment("Idempotency Bistro");
         testDiner = createTestDiner("diner.idempotent." + UUID.randomUUID() + "@test.com");
         when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));

@@ -45,7 +45,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   children,
 }) => {
   const { user, logout } = useAuth();
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const roleColor = user?.role ? ROLE_BADGE_COLORS[user.role] || 'bg-gray-100 text-gray-800' : 'bg-gray-100 text-gray-800';
 
   const [notifications, setNotifications] = useState<AdminNotificationResponse[]>([]);
@@ -166,16 +166,37 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               </nav>
             )}
             {user?.role === 'COMENSAL' && (
-              <nav className="ml-4 hidden sm:flex items-center space-x-2 text-xs">
+              <nav
+                aria-label="Navegación de comensal"
+                className="ml-2 flex min-w-0 items-center gap-1 overflow-x-auto text-xs"
+              >
                 <Link
                   to="/catalogo"
-                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-gray-700 font-medium"
+                  className={`px-2.5 py-1 rounded whitespace-nowrap ${
+                    pathname.startsWith('/catalogo')
+                      ? 'bg-green-50 text-green-700 font-semibold'
+                      : 'hover:bg-gray-100 text-gray-700 font-medium'
+                  }`}
                 >
                   Catálogo
                 </Link>
                 <Link
+                  to="/perfil#pedidos"
+                  className={`px-2.5 py-1 rounded whitespace-nowrap ${
+                    pathname === '/perfil' && hash === '#pedidos'
+                      ? 'bg-green-50 text-green-700 font-semibold'
+                      : 'hover:bg-gray-100 text-gray-700 font-medium'
+                  }`}
+                >
+                  Mis pedidos
+                </Link>
+                <Link
                   to="/perfil"
-                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-green-700 font-semibold"
+                  className={`px-2.5 py-1 rounded whitespace-nowrap ${
+                    pathname === '/perfil' && hash !== '#pedidos'
+                      ? 'bg-green-50 text-green-700 font-semibold'
+                      : 'hover:bg-gray-100 text-green-700 font-semibold'
+                  }`}
                 >
                   Mi perfil
                 </Link>

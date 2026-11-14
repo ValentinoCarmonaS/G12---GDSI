@@ -119,3 +119,48 @@ Módulo implementado para la trazabilidad completa pospago y personalización mu
 | `PUT` | `/api/v1/admin/establishments/{id}/branding` | `ROLE_ADMINISTRADOR` | Actualiza textos comerciales y tríada cromática |
 | `POST` | `/api/v1/admin/establishments/{id}/branding/logo` | `ROLE_ADMINISTRADOR` | Carga de archivo de logotipo (hasta 2 MB) |
 
+## Checkout con Mercado Pago, webhooks y sección Mis pedidos (Feature 018)
+
+Este incremento unifica la redirección hacia Checkout Pro (`init_point`), el procesamiento idempotente y fail-closed de webhooks, el desbloqueo ante reservas activas (`409 ACTIVE_RESERVATION_EXISTS`) y la consulta del historial de pedidos en `/perfil#pedidos` (`GET /api/v1/orders`). Para la puesta en marcha local y la validación completa en modo incógnito, consultar [specs/018-checkout-mp-tracking-orders/quickstart.md](specs/018-checkout-mp-tracking-orders/quickstart.md).
+
+### Configuración de Mercado Pago en Render
+
+En el servicio Web de backend desplegado en Render se deben configurar las siguientes variables:
+
+- `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_PUBLIC_KEY`: credenciales de la aplicación de Mercado Pago.
+- `MERCADOPAGO_WEBHOOK_SECRET`: clave secreta obligatoria para validar la firma `x-signature`. Si falta o está vacía al recibir notificaciones firmadas, el endpoint responde `401 Unauthorized` y registra la alerta correspondiente en logs.
+- `MERCADOPAGO_FRONTEND_BASE_URL`: URL pública HTTPS del frontend en Render para construir las URLs de retorno sin barras duplicadas.
+- `MERCADOPAGO_BACKEND_BASE_URL`: URL pública HTTPS del backend usada para informar `notification_url` al crear preferencias. Si no se define en Render, se utiliza automáticamente `RENDER_EXTERNAL_URL`. En local (`localhost`), `notification_url` se omite.
+- `MERCADOPAGO_SANDBOX`: indicador de entorno (`false` al operar con credenciales modernas `APP_USR-...`).
+
+En el panel de **Mercado Pago Developers → Webhooks**, configurar la URL `<URL_PUBLICA_BACKEND>/api/v1/payments/mercadopago/webhook` para el evento **Pagos (`payment`)**. Si el envío SMTP no se encuentra habilitado, el respaldo en `order_receipts`, el seguimiento en `/pedidos/{orderId}/seguimiento` y el acceso desde `/perfil#pedidos` permanecen disponibles sin depender del correo electrónico.
+
+### Tarjetas y estados de prueba de Mercado Pago
+
+Para simular pagos en entorno de prueba sin cruzar cuentas reales con cuentas de prueba (`invalid_users_types_error`: *"Una de las partes con la que intentás hacer el pago es de prueba"*), abrir el flujo en una **ventana de incógnito** e iniciar sesión con una **cuenta compradora de prueba** (o pagar sin sesión personal real activa) utilizando los datos de prueba de Mercado Pago Developers.
+
+| Campo | Valor de prueba |
+| --- | --- |
+| Número de tarjeta | `5031 7557 3453 0604` |
+| Titular | `APRO` (u otro código de estado según el escenario) |
+| Documento | `12345678` |
+| Vencimiento | `11/30` |
+| Código de seguridad (CVV/CCV) | `123` |
+
+Marcas contempladas en el panel de tarjetas de prueba de Mercado Pago Developers: `Mastercard Crédito`, `Visa Crédito`, `American Express Crédito`, `Mastercard Débito` y `Visa Débito`.
+
+Para simular distintos resultados de pago, reemplazar el campo **Titular** por el código correspondiente:
+
+| Código en Titular | Estado simulado | Prioridad |
+| --- | --- | --- |
+| `APRO` | Pago aprobado | Prioritario |
+| `OTHE` | Rechazado por error general | Prioritario |
+| `CONT` | Pendiente de pago | Prioritario |
+| `CALL` | Rechazado con validación para autorizar | Prioritario |
+| `FUND` | Rechazado por importe insuficiente | Estándar |
+| `SECU` | Rechazado por código de seguridad inválido | Estándar |
+| `EXPI` | Rechazado debido a un problema de fecha de vencimiento | Estándar |
+| `FORM` | Rechazado debido a un error de formulario | Estándar |
+
+
+

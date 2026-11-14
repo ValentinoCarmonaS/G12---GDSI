@@ -1,9 +1,14 @@
 package com.easyeat.order;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.easyeat.order.service.WebhookSignatureValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -92,5 +97,31 @@ class WebhookSignatureValidatorTest {
         assertThat(validator.isValidSignature("invalid_header_without_ts_or_v1", "req-999", "12345")).isFalse();
         assertThat(validator.isValidSignature("ts=123456", "req-999", "12345")).isFalse();
         assertThat(validator.isValidSignature("v1=abcdef", "req-999", "12345")).isFalse();
+    }
+
+    @Test
+    @DisplayName("Q4: Rechaza fail-closed con log ERROR explícito cuando llega x-signature sin MERCADOPAGO_WEBHOOK_SECRET configurado")
+    void shouldFailClosedWithErrorLogWhenWebhookSecretMissing() {
+        Logger validatorLogger = (Logger) LoggerFactory.getLogger(WebhookSignatureValidator.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        validatorLogger.addAppender(appender);
+        try {
+            WebhookSignatureValidator unconfiguredValidator = new WebhookSignatureValidator("");
+            long currentTimestamp = Instant.now().getEpochSecond();
+            String xSignatureHeader = "ts=" + currentTimestamp + ",v1=0123456789abcdef";
+
+            boolean isValid = unconfiguredValidator.isValidSignature(xSignatureHeader, "req-missing-secret", "12345");
+
+            assertThat(isValid).isFalse();
+            assertThat(appender.list)
+                    .anySatisfy(event -> {
+                        assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+                        assertThat(event.getFormattedMessage()).contains("MERCADOPAGO_WEBHOOK_SECRET");
+                    });
+        } finally {
+            validatorLogger.detachAppender(appender);
+            appender.stop();
+        }
     }
 }

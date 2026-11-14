@@ -1,11 +1,15 @@
 package com.easyeat.order;
 
+import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.order.domain.FulfillmentMode;
+import com.easyeat.order.domain.KdsTicket;
+import com.easyeat.order.domain.KdsTicketStatus;
 import com.easyeat.order.domain.Order;
 import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.domain.EstablishmentKdsSettings;
 import com.easyeat.order.dto.OrderLiveTrackingResponse;
 import com.easyeat.order.repository.EstablishmentKdsSettingsRepository;
+import com.easyeat.order.repository.KdsTicketRepository;
 import com.easyeat.order.repository.OrderRepository;
 import com.easyeat.order.service.OrderLiveTrackingService;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +38,9 @@ class LiveTrackingSaturationCalculationTest {
 
     @Mock
     private EstablishmentKdsSettingsRepository kdsSettingsRepository;
+
+    @Mock
+    private KdsTicketRepository kdsTicketRepository;
 
     @InjectMocks
     private OrderLiveTrackingService liveTrackingService;
@@ -127,5 +134,28 @@ class LiveTrackingSaturationCalculationTest {
         assertThat(response.progressPercentage()).isEqualTo(92);
         assertThat(response.message()).isEqualTo("Dando los últimos toques a tu pedido");
         assertThat(response.isReadyForPickup()).isFalse();
+    }
+
+    @Test
+    @DisplayName("Obtiene ticketNumber real desde KdsTicketRepository y null si no existe comanda")
+    void shouldUseKdsTicketNumberOrNullWithoutFakeHashCode() {
+        Establishment est = new Establishment();
+        est.setId(establishmentId);
+        KdsTicket ticket = new KdsTicket(
+                UUID.randomUUID(), orderId, est, 88,
+                KdsTicketStatus.IN_PREPARATION, FulfillmentMode.IMMEDIATE,
+                java.time.LocalDate.now(), java.time.LocalTime.of(12, 0), java.time.LocalTime.of(12, 30), Instant.now()
+        );
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.countActiveOrdersAhead(eq(establishmentId), any(Instant.class))).thenReturn(0L);
+        when(kdsSettingsRepository.findById(establishmentId)).thenReturn(Optional.empty());
+        when(kdsTicketRepository.findByOrderId(orderId)).thenReturn(Optional.of(ticket));
+
+        OrderLiveTrackingResponse withTicket = liveTrackingService.getLiveTracking(orderId, userId);
+        assertThat(withTicket.ticketNumber()).isEqualTo(88);
+
+        when(kdsTicketRepository.findByOrderId(orderId)).thenReturn(Optional.empty());
+        OrderLiveTrackingResponse withoutTicket = liveTrackingService.getLiveTracking(orderId, userId);
+        assertThat(withoutTicket.ticketNumber()).isNull();
     }
 }

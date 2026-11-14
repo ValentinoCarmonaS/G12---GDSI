@@ -53,7 +53,6 @@ public class OrderReceiptEmailDispatchIntegrationTest extends BaseIntegrationTes
     @BeforeEach
     void setUp() {
         orderReceiptRepository.deleteAll();
-        orderRepository.deleteAll();
         testEstablishment = createTestEstablishment("Café Palermo Test");
         testDiner = createTestDiner("diner.dispatch." + UUID.randomUUID() + "@test.com");
         when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));

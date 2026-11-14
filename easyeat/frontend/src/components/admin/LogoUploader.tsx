@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { resolveApiMediaUrl } from '../../utils/mediaUtils';
 
 interface LogoUploaderProps {
   currentLogoUrl?: string | null;
@@ -75,7 +76,7 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
         <div className="w-20 h-20 rounded-xl border-2 border-dashed border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-inner">
           {displayLogoUrl && !imageError ? (
             <img
-              src={displayLogoUrl}
+              src={resolveApiMediaUrl(displayLogoUrl)}
               alt="Logotipo de la marca"
               onError={() => setImageError(true)}
               className="w-full h-full object-contain p-1"

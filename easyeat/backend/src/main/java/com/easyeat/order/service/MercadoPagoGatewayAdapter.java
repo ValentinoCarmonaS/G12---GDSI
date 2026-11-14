@@ -14,6 +14,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.Duration;
 import java.util.*;
 
@@ -56,14 +57,15 @@ public class MercadoPagoGatewayAdapter implements PaymentGatewayPort {
             // Emulated sandbox response when credentials are not configured
             String fakePrefId = "pref-" + UUID.randomUUID();
             String fakeInitPoint = "https://sandbox.mercadopago.com.ar/checkout/v1/redirect?pref_id=" + fakePrefId;
-            return new PreferenceResult(fakePrefId, fakeInitPoint, fakeInitPoint, true);
+            boolean sandboxFlag = properties == null || properties.sandbox();
+            return new PreferenceResult(fakePrefId, fakeInitPoint, fakeInitPoint, sandboxFlag);
         }
 
-        String url = properties.baseUrl() + "/checkout/preferences";
+        String url = sanitizeBaseUrl(properties.baseUrl()) + "/checkout/preferences";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(properties.accessToken() != null ? properties.accessToken() : "");
+        headers.setBearerAuth(properties.accessToken());
         if (command.idempotencyKey() != null && !command.idempotencyKey().isBlank()) {
             headers.set("X-Idempotency-Key", command.idempotencyKey());
         }
@@ -84,13 +86,18 @@ public class MercadoPagoGatewayAdapter implements PaymentGatewayPort {
         body.put("items", items);
         body.put("external_reference", command.externalReference());
 
-        String frontBase = properties.frontendBaseUrl();
+        String frontBase = sanitizeBaseUrl(properties.frontendBaseUrl());
         Map<String, String> backUrls = new HashMap<>();
         backUrls.put("success", frontBase + "/checkout/payment-return");
         backUrls.put("pending", frontBase + "/checkout/payment-return");
         backUrls.put("failure", frontBase + "/checkout/payment-return");
         body.put("back_urls", backUrls);
         body.put("auto_return", "approved");
+
+        String backendBase = sanitizeBaseUrl(properties.backendBaseUrl());
+        if (isPublicNotificationBaseUrl(backendBase)) {
+            body.put("notification_url", backendBase + "/api/v1/payments/mercadopago/webhook");
+        }
 
         if (command.payerEmail() != null) {
             Map<String, String> payer = new HashMap<>();
@@ -104,9 +111,9 @@ public class MercadoPagoGatewayAdapter implements PaymentGatewayPort {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 JsonNode resBody = response.getBody();
-                String prefId = resBody.path("id").asText();
-                String initPoint = resBody.path("init_point").asText();
-                String sandboxInitPoint = resBody.path("sandbox_init_point").asText();
+                String prefId = readTextOrNull(resBody, "id");
+                String initPoint = readTextOrNull(resBody, "init_point");
+                String sandboxInitPoint = readTextOrNull(resBody, "sandbox_init_point");
 
                 return new PreferenceResult(
                         prefId,
@@ -121,6 +128,45 @@ public class MercadoPagoGatewayAdapter implements PaymentGatewayPort {
             log.error("MercadoPagoGatewayAdapter: Error calling Mercado Pago API (502 / network timeout)", e);
             throw new RuntimeException("Mercado Pago API communication failure: 502 Bad Gateway", e);
         }
+    }
+
+    private static String sanitizeBaseUrl(String rawUrl) {
+        if (rawUrl == null) {
+            return "";
+        }
+        return rawUrl.trim().replaceAll("/+$", "");
+    }
+
+    private static boolean isPublicNotificationBaseUrl(String sanitizedBaseUrl) {
+        if (sanitizedBaseUrl == null || sanitizedBaseUrl.isBlank()) {
+            return false;
+        }
+        String lower = sanitizedBaseUrl.toLowerCase(Locale.ROOT);
+        if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
+            return false;
+        }
+        try {
+            String host = URI.create(sanitizedBaseUrl).getHost();
+            if (host == null || host.isBlank()) {
+                return false;
+            }
+            String hostLower = host.toLowerCase(Locale.ROOT);
+            return !hostLower.contains("localhost") && !hostLower.contains("127.0.0.1");
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private static String readTextOrNull(JsonNode node, String fieldName) {
+        if (node == null) {
+            return null;
+        }
+        JsonNode field = node.get(fieldName);
+        if (field == null || field.isNull() || !field.isValueNode()) {
+            return null;
+        }
+        String text = field.asText();
+        return text.isBlank() ? null : text.trim();
     }
 
     @Override

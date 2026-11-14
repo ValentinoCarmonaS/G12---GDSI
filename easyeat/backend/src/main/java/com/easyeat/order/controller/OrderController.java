@@ -2,6 +2,7 @@ package com.easyeat.order.controller;
 
 import com.easyeat.auth.domain.User;
 import com.easyeat.order.dto.CreateOrderRequest;
+import com.easyeat.order.dto.DinerOrderSummaryResponse;
 import com.easyeat.order.dto.OrderCreatedResponse;
 import com.easyeat.order.dto.OrderDetailResponse;
 import com.easyeat.order.dto.OrderSummaryResponse;
@@ -14,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,6 +26,16 @@ public class OrderController {
 
     public OrderController(OrderService orderService) {
         this.orderService = orderService;
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ROLE_COMENSAL') or hasRole('COMENSAL')")
+    public ResponseEntity<List<DinerOrderSummaryResponse>> getDinerOrders(
+            @AuthenticationPrincipal User user,
+            Authentication authentication
+    ) {
+        UUID userId = resolveUserId(user, authentication);
+        return ResponseEntity.ok(orderService.getDinerOrders(userId));
     }
 
     @PostMapping

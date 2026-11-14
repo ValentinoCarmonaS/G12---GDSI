@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
@@ -14,10 +14,10 @@ import { PaymentAlertBanner } from '../components/checkout/PaymentAlertBanner';
 import { useCart } from '../context/CartContext';
 import { useCheckoutFulfillment } from '../hooks/useCheckoutFulfillment';
 import { useTimeSlotPolling } from '../hooks/useTimeSlotPolling';
-import { cancelOrder, createOrder } from '../api/orderApi';
+import { cancelOrder, createOrder, getMyOrders } from '../api/orderApi';
 import { initiatePayment, cancelPayment, getOrderPaymentStatus } from '../api/paymentApi';
 import { confirmZeroAmountOrder } from '../api/checkoutApi';
-import { OrderDetailResponse } from '../types/order';
+import { DinerOrderSummaryResponse, OrderDetailResponse } from '../types/order';
 import { PaymentInitiationRequest, OrderPaymentStatusResponse, PaymentMethod } from '../types/payment';
 
 /**
@@ -85,10 +85,6 @@ export const CheckoutPage: React.FC = () => {
   const { items, totalAmount, clearCart } = useCart();
 
   const establishmentId = useMemo(() => {
-    const fromStorage =
-      typeof window !== 'undefined' && window.localStorage
-        ? window.localStorage.getItem('selectedEstablishmentId')
-        : null;
     const fromActiveTenant =
       typeof window !== 'undefined' && window.sessionStorage
         ? (() => {
@@ -101,7 +97,7 @@ export const CheckoutPage: React.FC = () => {
           })()
         : null;
 
-    return searchParams.get('establishmentId') || items[0]?.tenantId || fromActiveTenant || fromStorage || '';
+    return searchParams.get('establishmentId') || items[0]?.tenantId || fromActiveTenant || '';
   }, [searchParams, items]);
 
   const operatingDays = useMemo(() => generateWeeklyOperatingDays(), []);
@@ -128,6 +124,66 @@ export const CheckoutPage: React.FC = () => {
   const [isCancelling, setIsCancelling] = useState<boolean>(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const inProcessPanelRef = useRef<HTMLDivElement | null>(null);
+
+  const buildFallbackInProcessStatus = useCallback(
+    (orderId: string, fallbackSummary?: DinerOrderSummaryResponse): OrderPaymentStatusResponse => ({
+      orderId,
+      orderStatus: fallbackSummary?.status ?? 'PENDING_PAYMENT',
+      reservation: null,
+      payment: fallbackSummary
+        ? {
+            id: orderId,
+            status: 'IN_PROCESS',
+            statusDetail: null,
+            redirectUrl: fallbackSummary.redirectUrl,
+            sandbox: false,
+          }
+        : null,
+      fulfillment: {
+        mode: fallbackSummary?.fulfillmentMode ?? 'IMMEDIATE',
+        pickupDate: fallbackSummary?.pickupDate ?? null,
+        timeSlotStart: fallbackSummary?.timeSlotStart ?? null,
+        timeSlotEnd: fallbackSummary?.timeSlotEnd ?? null,
+      },
+      totalAmount: fallbackSummary?.totalAmount ?? totalAmount,
+      currency: 'ARS',
+      serverTime: new Date().toISOString(),
+    }),
+    [totalAmount]
+  );
+
+  const fetchInProcessPaymentByOrderId = useCallback(
+    async (orderId: string, fallbackSummary?: DinerOrderSummaryResponse) => {
+      try {
+        const statusRes = await getOrderPaymentStatus(orderId);
+        setInProcessPayment(statusRes);
+      } catch {
+        setInProcessPayment(buildFallbackInProcessStatus(orderId, fallbackSummary));
+      }
+    },
+    [buildFallbackInProcessStatus]
+  );
+
+  const refreshActivePendingOrder = useCallback(async () => {
+    try {
+      const orders = await getMyOrders();
+      const pending = Array.isArray(orders)
+        ? orders.find((o) => o.status === 'PENDING_PAYMENT')
+        : undefined;
+      if (!pending) {
+        setInProcessPayment(null);
+        return;
+      }
+      await fetchInProcessPaymentByOrderId(pending.orderId, pending);
+    } catch {
+      // No bloquear checkout si no se pudo consultar el historial al montar
+    }
+  }, [fetchInProcessPaymentByOrderId]);
+
+  useEffect(() => {
+    refreshActivePendingOrder();
+  }, [refreshActivePendingOrder]);
 
   // Read alert messages passed from redirect location state (e.g. from PaymentReturnPage)
   useEffect(() => {
@@ -173,6 +229,52 @@ export const CheckoutPage: React.FC = () => {
     return true;
   }, [items, fulfillmentMode, selectedDate, selectedSlot, selectedPaymentMethod, isZeroAmount]);
 
+  const handle409Conflict = async (data: any, allowSlotRefresh: boolean) => {
+    const code = data?.code;
+
+    if (code === 'INSUFFICIENT_STOCK') {
+      setConcurrencyModal({
+        isOpen: true,
+        type: 'INSUFFICIENT_STOCK',
+        message:
+          data?.detail ||
+          'Los insumos de uno o más platos se agotaron por alta demanda concurrente.',
+        unavailableDishes: data?.unavailableDishes || [],
+      });
+      return;
+    }
+
+    if (code === 'SLOT_CAPACITY_EXCEEDED') {
+      setConcurrencyModal({
+        isOpen: true,
+        type: 'SLOT_CAPACITY_EXCEEDED',
+        message: data?.detail || 'La franja horaria seleccionada acaba de agotarse.',
+      });
+      return;
+    }
+
+    if (
+      (code === 'PAYMENT_IN_PROCESS' || code === 'ACTIVE_RESERVATION_EXISTS') &&
+      data?.orderId
+    ) {
+      await fetchInProcessPaymentByOrderId(data.orderId);
+    }
+
+    setConflictModal({
+      isOpen: true,
+      errorCode: code || 'SLOT_SOLD_OUT',
+      errorMessage:
+        data?.detail ||
+        data?.message ||
+        'La franja horaria seleccionada acaba de agotarse o ya tenés un pago en curso.',
+    });
+
+    if (allowSlotRefresh && (code === 'SLOT_SOLD_OUT' || !code)) {
+      refreshSlots();
+      setSelectedSlot(null);
+    }
+  };
+
   // Handler for Confirmar pedido / Checkout Payment (T035, AS-1, AS-5, FR-001, FR-002)
   const handleConfirmOrder = async () => {
     if (!isFormValid || !establishmentId || isSubmitting || inProcessPayment) return;
@@ -206,26 +308,10 @@ export const CheckoutPage: React.FC = () => {
       } catch (err: any) {
         const status = err?.response?.status;
         const data = err?.response?.data;
-        const code = data?.code;
 
         if (status === 409) {
-          if (code === 'INSUFFICIENT_STOCK') {
-            setConcurrencyModal({
-              isOpen: true,
-              type: 'INSUFFICIENT_STOCK',
-              message: data?.detail || 'Insumos agotados por concurrencia para preparar el menú.',
-              unavailableDishes: data?.unavailableDishes || [],
-            });
-            return;
-          }
-          if (code === 'SLOT_CAPACITY_EXCEEDED') {
-            setConcurrencyModal({
-              isOpen: true,
-              type: 'SLOT_CAPACITY_EXCEEDED',
-              message: data?.detail || 'La franja horaria seleccionada acaba de agotarse.',
-            });
-            return;
-          }
+          await handle409Conflict(data, false);
+          return;
         }
         setSubmissionError(data?.detail || data?.message || 'Error al confirmar orden bonificada.');
       } finally {
@@ -250,60 +336,23 @@ export const CheckoutPage: React.FC = () => {
     try {
       const response = await initiatePayment(payload);
 
-      // Save ongoing payment info in state and redirect immediately to Sandbox/Production init_point
-      if (response.redirectUrl) {
-        window.location.href = response.redirectUrl;
-      } else if (response.orderId) {
-        navigate(`/checkout/confirmacion/${response.orderId}`);
+      // Redirect immediately to Mercado Pago init_point when available
+      if (response.redirectUrl && response.redirectUrl.trim().length > 0) {
+        window.location.href = response.redirectUrl.trim();
+      } else {
+        setSubmissionError(
+          'No pudimos obtener el enlace de pago de Mercado Pago. Podés cancelar el intento activo y volver a intentarlo.'
+        );
+        if (response.orderId) {
+          await fetchInProcessPaymentByOrderId(response.orderId);
+        }
       }
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
-      const code = data?.code;
 
       if (status === 409) {
-        if (code === 'INSUFFICIENT_STOCK') {
-          setConcurrencyModal({
-            isOpen: true,
-            type: 'INSUFFICIENT_STOCK',
-            message: data?.detail || 'Los insumos de uno o más platos se agotaron por alta demanda concurrente.',
-            unavailableDishes: data?.unavailableDishes || [],
-          });
-          return;
-        }
-
-        if (code === 'SLOT_CAPACITY_EXCEEDED') {
-          setConcurrencyModal({
-            isOpen: true,
-            type: 'SLOT_CAPACITY_EXCEEDED',
-            message: data?.detail || 'La franja horaria seleccionada acaba de agotarse.',
-          });
-          return;
-        }
-
-        if (code === 'PAYMENT_IN_PROCESS' && data?.orderId) {
-          // Fetch existing in-process payment details to display panel
-          try {
-            const statusRes = await getOrderPaymentStatus(data.orderId);
-            setInProcessPayment(statusRes);
-          } catch {
-            // fallback
-          }
-        }
-
-        setConflictModal({
-          isOpen: true,
-          errorCode: code || 'SLOT_SOLD_OUT',
-          errorMessage:
-            data?.detail ||
-            data?.message ||
-            'La franja horaria seleccionada acaba de agotarse o ya tenés un pago en curso.',
-        });
-
-        if (code === 'SLOT_SOLD_OUT' || !code) {
-          refreshSlots();
-          setSelectedSlot(null);
-        }
+        await handle409Conflict(data, true);
       } else if (status === 502) {
         setSubmissionError(
           data?.message || 'Fallo al conectar con Mercado Pago. No se realizó ningún cargo. Podés intentar nuevamente.'
@@ -325,6 +374,7 @@ export const CheckoutPage: React.FC = () => {
       await cancelPayment({ orderId: inProcessPayment.orderId });
       setInProcessPayment(null);
       setInfoMessage('El intento de pago fue cancelado y los recursos fueron liberados.');
+      await refreshActivePendingOrder();
     } catch (err: any) {
       setSubmissionError('Error al cancelar el intento de pago.');
     } finally {
@@ -355,7 +405,7 @@ export const CheckoutPage: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         <button
           type="button"
-          onClick={() => navigate('/catalog')}
+          onClick={() => navigate('/catalogo')}
           className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-emerald-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -378,13 +428,15 @@ export const CheckoutPage: React.FC = () => {
           />
         )}
 
-        {/* Panel de pago en curso (AS-5, FR-010, Q3) */}
+        {/* Panel de pago en curso (AS-5, FR-010, Q3, US3) */}
         {inProcessPayment && (
-          <InProcessPaymentPanel
-            redirectUrl={inProcessPayment.payment?.redirectUrl}
-            onCancelAttempt={handleCancelPaymentAttempt}
-            isCancelling={isCancelling}
-          />
+          <div ref={inProcessPanelRef} tabIndex={-1} className="outline-none">
+            <InProcessPaymentPanel
+              redirectUrl={inProcessPayment.payment?.redirectUrl}
+              onCancelAttempt={handleCancelPaymentAttempt}
+              isCancelling={isCancelling}
+            />
+          </div>
         )}
 
         {/* View 1: Active Pending Order (Countdown & Post-Checkout State) */}
@@ -427,7 +479,7 @@ export const CheckoutPage: React.FC = () => {
               </div>
             </div>
           </div>
-        ) : items.length === 0 ? (
+        ) : items.length === 0 && !inProcessPayment ? (
           /* Empty Cart State */
           <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm space-y-4">
             <div className="inline-flex p-4 rounded-full bg-gray-100 text-gray-400">
@@ -440,14 +492,14 @@ export const CheckoutPage: React.FC = () => {
             <div className="pt-2">
               <button
                 type="button"
-                onClick={() => navigate('/catalog')}
+                onClick={() => navigate('/catalogo')}
                 className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm"
               >
                 Explorar carta
               </button>
             </div>
           </div>
-        ) : (
+        ) : items.length > 0 ? (
           /* View 2: Checkout Selection & Configuration */
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
@@ -555,7 +607,7 @@ export const CheckoutPage: React.FC = () => {
               </button>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* 409 Conflict Recovery Modal */}
         <ConflictNotificationModal
@@ -569,6 +621,11 @@ export const CheckoutPage: React.FC = () => {
           }}
           onViewExistingOrder={() => {
             setConflictModal((prev) => ({ ...prev, isOpen: false }));
+            const panelContainer = inProcessPanelRef.current;
+            if (panelContainer) {
+              panelContainer.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+              panelContainer.focus();
+            }
           }}
         />
 

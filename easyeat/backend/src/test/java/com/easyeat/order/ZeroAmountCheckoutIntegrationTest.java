@@ -59,7 +59,7 @@ class ZeroAmountCheckoutIntegrationTest extends BaseIntegrationTest {
     @DisplayName("AS-4: Confirmación directa de orden bonificada 100% (monto 0) descuenta stock, envía a KDS y omite pasarela")
     void shouldConfirmZeroAmountOrderBypassingGatewayAndDebitingStock() {
         Establishment establishment = createTestEstablishment("Restaurante Promocional");
-        Dish dish = createTestDish(establishment.getId(), "Menú Degustación Bonificado", BigDecimal.ZERO);
+        Dish dish = createTestDish(establishment.getId(), "Menú Degustación Bonificado", new BigDecimal("4500.00"));
         User diner = createTestDiner("diner_zero@test.com");
 
         Ingredient vegetable = new Ingredient(establishment.getId(), "Verduras Frescas", IngredientCategory.PRODUCE, UnitOfMeasure.KG, new BigDecimal("400.00"));
@@ -86,7 +86,7 @@ class ZeroAmountCheckoutIntegrationTest extends BaseIntegrationTest {
         order.setExpiresAt(Instant.now().plusSeconds(900));
         orderRepository.save(order);
 
-        OrderItem item = new OrderItem(order, dish.getId(), dish.getName(), BigDecimal.ZERO, 1, BigDecimal.ZERO);
+        OrderItem item = new OrderItem(order, dish.getId(), dish.getName(), dish.getPrice(), 1, dish.getPrice());
         orderItemRepository.save(item);
 
         TemporaryReservation reservation = new TemporaryReservation(

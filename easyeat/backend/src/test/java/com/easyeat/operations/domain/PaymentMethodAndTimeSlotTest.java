@@ -24,6 +24,31 @@ class PaymentMethodAndTimeSlotTest {
     }
 
     @Test
+    @DisplayName("fromWebhookSlug resolves supported provider slugs uniformly ignoring case and '-'/'_' separators")
+    void fromWebhookSlugResolvesKnownSlugsUniformly() {
+        assertThat(PaymentMethod.fromWebhookSlug("mercadopago")).contains(PaymentMethod.MERCADO_PAGO);
+        assertThat(PaymentMethod.fromWebhookSlug("mercado-pago")).contains(PaymentMethod.MERCADO_PAGO);
+        assertThat(PaymentMethod.fromWebhookSlug("mercado_pago")).contains(PaymentMethod.MERCADO_PAGO);
+        assertThat(PaymentMethod.fromWebhookSlug("MERCADOPAGO")).contains(PaymentMethod.MERCADO_PAGO);
+        assertThat(PaymentMethod.fromWebhookSlug("Mercado-Pago")).contains(PaymentMethod.MERCADO_PAGO);
+        assertThat(PaymentMethod.fromWebhookSlug("stripe")).contains(PaymentMethod.STRIPE);
+        assertThat(PaymentMethod.fromWebhookSlug("STRIPE")).contains(PaymentMethod.STRIPE);
+    }
+
+    @Test
+    @DisplayName("fromWebhookSlug returns empty for null, blank, whitespace or unknown provider slugs")
+    void fromWebhookSlugReturnsEmptyForInvalidOrUnknownSlugs() {
+        assertThat(PaymentMethod.fromWebhookSlug(null)).isEmpty();
+        assertThat(PaymentMethod.fromWebhookSlug("")).isEmpty();
+        assertThat(PaymentMethod.fromWebhookSlug("   ")).isEmpty();
+        assertThat(PaymentMethod.fromWebhookSlug("mercado pago")).isEmpty();
+        assertThat(PaymentMethod.fromWebhookSlug(" mercadopago")).isEmpty();
+        assertThat(PaymentMethod.fromWebhookSlug("mercadopago ")).isEmpty();
+        assertThat(PaymentMethod.fromWebhookSlug("paypal")).isEmpty();
+        assertThat(PaymentMethod.fromWebhookSlug("custom-provider")).isEmpty();
+    }
+
+    @Test
     @DisplayName("INV-5: a slot lasts exactly 15 minutes")
     void slotLastsFifteenMinutes() {
         TimeSlot slot = new TimeSlot(DAY, LocalTime.of(12, 0));

@@ -1,8 +1,12 @@
 -- 0. Enable unaccent extension for diacritic-insensitive search
 CREATE EXTENSION IF NOT EXISTS unaccent;
 
--- Allow unaccent in functional index expressions by marking it IMMUTABLE
-ALTER FUNCTION unaccent(text) IMMUTABLE;
+-- Allow unaccent in functional index expressions without altering extension-owned function privileges (Neon compatibility)
+CREATE OR REPLACE FUNCTION immutable_unaccent(text)
+    RETURNS text AS
+$func$
+SELECT public.unaccent('public.unaccent', $1)
+$func$ LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT;
 
 -- 1. Create establishments table
 CREATE TABLE IF NOT EXISTS establishments (
@@ -18,7 +22,7 @@ CREATE TABLE IF NOT EXISTS establishments (
 );
 
 CREATE INDEX IF NOT EXISTS idx_establishments_search
-    ON establishments(status, unaccent(LOWER(name)));
+    ON establishments(status, immutable_unaccent(LOWER(name)));
 
 -- 2. Seed development establishments
 INSERT INTO establishments (id, name, status, opening_time, closing_time, timezone)

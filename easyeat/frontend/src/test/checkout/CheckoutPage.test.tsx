@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { CheckoutPage, generateWeeklyOperatingDays } from '../../pages/CheckoutPage';
 import { CartContext } from '../../context/CartContext';
 import * as paymentApi from '../../api/paymentApi';
@@ -16,6 +16,7 @@ vi.mock('../../api/paymentApi', () => ({
 vi.mock('../../api/orderApi', () => ({
   createOrder: vi.fn(),
   cancelOrder: vi.fn(),
+  getMyOrders: vi.fn().mockResolvedValue([]),
   fetchPickupSlots: vi.fn().mockResolvedValue({
     establishmentId: 'est-123',
     date: '2026-11-03',
@@ -113,6 +114,9 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+    vi.mocked(orderApi.getMyOrders).mockResolvedValue([]);
   });
 
   it('renders empty cart state when no items in cart', () => {
@@ -345,6 +349,188 @@ describe('T044: CheckoutPage End-to-End Integration Tests', () => {
         expect(screen.getByTestId('empty-slots-message')).toBeInTheDocument();
         expect(screen.getByText(/No hay horarios de retiro disponibles para el día seleccionado/i)).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('US3: Desbloqueo 409 ACTIVE_RESERVATION_EXISTS, detección proactiva y navegación a catálogo', () => {
+    it('handles 409 ACTIVE_RESERVATION_EXISTS with orderId, shows panel and focuses/scrolls it on "Ver mi reserva"', async () => {
+      const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+      const scrollIntoViewMock = vi.fn();
+      HTMLElement.prototype.scrollIntoView = scrollIntoViewMock;
+
+      try {
+        vi.mocked(paymentApi.initiatePayment).mockRejectedValueOnce({
+          response: {
+            status: 409,
+            data: {
+              code: 'ACTIVE_RESERVATION_EXISTS',
+              orderId: 'order-active-409',
+              detail: 'Ya tenés una reserva activa en curso pendiente de pago.',
+            },
+          },
+        });
+
+        vi.mocked(paymentApi.getOrderPaymentStatus).mockResolvedValueOnce({
+          orderId: 'order-active-409',
+          orderStatus: 'PENDING_PAYMENT',
+          reservation: {
+            id: 'res-active-409',
+            status: 'ACTIVE',
+            expiresAt: new Date(Date.now() + 600000).toISOString(),
+            remainingSeconds: 600,
+            releaseReason: null,
+          },
+          payment: {
+            id: 'pay-active-409',
+            status: 'IN_PROCESS',
+            statusDetail: null,
+            redirectUrl: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-409',
+            sandbox: false,
+          },
+          fulfillment: {
+            mode: 'IMMEDIATE',
+            pickupDate: '2026-11-11',
+            timeSlotStart: null,
+            timeSlotEnd: null,
+          },
+          totalAmount: 6200,
+          currency: 'ARS',
+          serverTime: new Date().toISOString(),
+        });
+
+        renderWithProviders();
+
+        fireEvent.click(screen.getByText(/lo antes posible/i));
+        fireEvent.click(screen.getByRole('button', { name: /confirmar pedido/i }));
+
+        await waitFor(() => {
+          expect(screen.getByTestId('conflict-notification-modal')).toBeInTheDocument();
+          expect(paymentApi.getOrderPaymentStatus).toHaveBeenCalledWith('order-active-409');
+        });
+
+        const panel = await screen.findByRole('region', { name: /panel de pago en curso/i });
+        expect(panel).toBeInTheDocument();
+
+        const viewBtn = screen.getByRole('button', { name: /ver mi reserva/i });
+        fireEvent.click(viewBtn);
+
+        await waitFor(() => {
+          expect(screen.queryByTestId('conflict-notification-modal')).not.toBeInTheDocument();
+        });
+
+        expect(scrollIntoViewMock).toHaveBeenCalled();
+        const activeEl = document.activeElement;
+        expect(
+          activeEl === panel || panel.contains(activeEl) || activeEl?.contains(panel)
+        ).toBe(true);
+      } finally {
+        HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+      }
+    });
+
+    it('detects active PENDING_PAYMENT order on mount even with empty cart and hides empty cart message', async () => {
+      vi.mocked(orderApi.getMyOrders).mockResolvedValueOnce([
+        {
+          orderId: 'order-mount-pending',
+          ticketNumber: null,
+          establishmentId: 'est-123',
+          establishmentName: 'Bistro Central',
+          status: 'PENDING_PAYMENT',
+          fulfillmentMode: 'IMMEDIATE',
+          pickupDate: '2026-11-11',
+          timeSlotStart: null,
+          timeSlotEnd: null,
+          totalAmount: 3500,
+          expiresAt: new Date(Date.now() + 600000).toISOString(),
+          createdAt: '2026-11-11T15:00:00Z',
+          redirectUrl: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-mount',
+          trackingUrl: '/pedidos/order-mount-pending/seguimiento',
+          items: [],
+        },
+      ]);
+
+      vi.mocked(paymentApi.getOrderPaymentStatus).mockResolvedValueOnce({
+        orderId: 'order-mount-pending',
+        orderStatus: 'PENDING_PAYMENT',
+        reservation: {
+          id: 'res-mount',
+          status: 'ACTIVE',
+          expiresAt: new Date(Date.now() + 600000).toISOString(),
+          remainingSeconds: 600,
+          releaseReason: null,
+        },
+        payment: {
+          id: 'pay-mount',
+          status: 'IN_PROCESS',
+          statusDetail: null,
+          redirectUrl: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-mount',
+          sandbox: false,
+        },
+        fulfillment: {
+          mode: 'IMMEDIATE',
+          pickupDate: '2026-11-11',
+          timeSlotStart: null,
+          timeSlotEnd: null,
+        },
+        totalAmount: 3500,
+        currency: 'ARS',
+        serverTime: new Date().toISOString(),
+      });
+
+      renderWithProviders([]);
+
+      await waitFor(() => {
+        expect(orderApi.getMyOrders).toHaveBeenCalled();
+        expect(paymentApi.getOrderPaymentStatus).toHaveBeenCalledWith('order-mount-pending');
+      });
+
+      expect(await screen.findByRole('region', { name: /panel de pago en curso/i })).toBeInTheDocument();
+      expect(screen.queryByText(/tu carrito está vacío/i)).not.toBeInTheDocument();
+    });
+
+    it('does not read legacy selectedEstablishmentId from localStorage and navigates to /catalogo', async () => {
+      window.localStorage.setItem('selectedEstablishmentId', 'est-legacy-999');
+      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
+
+      render(
+        <MemoryRouter initialEntries={['/checkout']}>
+          <Routes>
+            <Route
+              path="/checkout"
+              element={
+                <CartContext.Provider
+                  value={{
+                    items: [],
+                    addItem: vi.fn(),
+                    removeItem: vi.fn(),
+                    updateQuantity: vi.fn(),
+                    clearCart: clearCartMock,
+                    reEvaluateCompliance: vi.fn(),
+                    totalAmount: 0,
+                    totalCount: 0,
+                    hasConflictingItems: false,
+                    hasPausedItems: false,
+                    toastMessage: null,
+                  }}
+                >
+                  <CheckoutPage />
+                </CartContext.Provider>
+              }
+            />
+            <Route path="/catalogo" element={<div data-testid="catalogo-route">Catálogo destino</div>} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(orderApi.getMyOrders).toHaveBeenCalled();
+      });
+
+      expect(getItemSpy).not.toHaveBeenCalledWith('selectedEstablishmentId');
+      getItemSpy.mockRestore();
+
+      fireEvent.click(screen.getByRole('button', { name: /explorar carta/i }));
+      expect(await screen.findByTestId('catalogo-route')).toBeInTheDocument();
     });
   });
 });

@@ -59,5 +59,27 @@ class PaymentGatewayResolverTest {
         PaymentGatewayPort defaultGateway = resolver.resolveDefault();
         assertThat(defaultGateway).isEqualTo(mercadoPagoAdapter);
     }
+
+    @Test
+    @DisplayName("findAdapter returns matching adapter when registered")
+    void findAdapterReturnsPresentWhenRegistered() {
+        when(mercadoPagoAdapter.getPaymentMethod()).thenReturn(PaymentMethod.MERCADO_PAGO);
+
+        PaymentGatewayResolver resolver = new PaymentGatewayResolver(List.of(mercadoPagoAdapter));
+
+        assertThat(resolver.findAdapter(PaymentMethod.MERCADO_PAGO)).contains(mercadoPagoAdapter);
+    }
+
+    @Test
+    @DisplayName("findAdapter returns empty for unregistered method or null without changing resolve(null) fallback")
+    void findAdapterReturnsEmptyWhenUnregisteredOrNull() {
+        when(mercadoPagoAdapter.getPaymentMethod()).thenReturn(PaymentMethod.MERCADO_PAGO);
+
+        PaymentGatewayResolver resolver = new PaymentGatewayResolver(List.of(mercadoPagoAdapter));
+
+        assertThat(resolver.findAdapter(PaymentMethod.STRIPE)).isEmpty();
+        assertThat(resolver.findAdapter(null)).isEmpty();
+        assertThat(resolver.resolve(null)).isEqualTo(mercadoPagoAdapter);
+    }
 }
 

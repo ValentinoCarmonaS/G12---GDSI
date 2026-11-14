@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getAuthenticatedAvatarUrl } from '../../src/utils/avatarUtils';
 
 describe('avatarUtils (getAuthenticatedAvatarUrl)', () => {
   beforeEach(() => {
     sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('returns empty string when url is falsy', () => {
@@ -29,5 +33,14 @@ describe('avatarUtils (getAuthenticatedAvatarUrl)', () => {
     sessionStorage.setItem('access_token', 'mock-jwt-token');
     const result = getAuthenticatedAvatarUrl('/api/v1/profile/avatar?foo=bar');
     expect(result).toContain('/api/v1/profile/avatar?foo=bar&token=mock-jwt-token');
+  });
+
+  it('prepends backend origin when VITE_API_BASE_URL is an absolute cross-origin URL', () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://easyeat-backend.onrender.com/api/v1');
+    sessionStorage.setItem('access_token', 'mock-jwt-token');
+    const result = getAuthenticatedAvatarUrl('/api/v1/profile/avatar');
+    expect(result).toMatch(
+      /^https:\/\/easyeat-backend\.onrender\.com\/api\/v1\/profile\/avatar\?token=mock-jwt-token&_t=\d+$/
+    );
   });
 });

@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -32,8 +33,9 @@ public class WebhookProcessingService {
     }
 
     public void processAsynchronousNotification(String provider, String gatewayPaymentId, String orderIdStr, String status, String statusDetail) {
+        String normalizedStatus = status != null ? status.trim().toLowerCase(Locale.ROOT) : "";
         log.info("Processing webhook for provider={}, gatewayPaymentId={}, orderId={}, status={}",
-                provider, gatewayPaymentId, orderIdStr, status);
+                provider, gatewayPaymentId, orderIdStr, normalizedStatus);
 
         UUID orderId;
         try {
@@ -43,12 +45,12 @@ public class WebhookProcessingService {
             return;
         }
 
-        if ("approved".equalsIgnoreCase(status)) {
-            checkoutConfirmationService.confirmPayment(null, new PaymentConfirmationRequest(orderId, gatewayPaymentId, status));
-        } else if ("pending".equalsIgnoreCase(status) || "in_process".equalsIgnoreCase(status)) {
+        if ("approved".equals(normalizedStatus)) {
+            checkoutConfirmationService.confirmPayment(null, new PaymentConfirmationRequest(orderId, gatewayPaymentId, normalizedStatus));
+        } else if ("pending".equals(normalizedStatus) || "in_process".equals(normalizedStatus)) {
             checkoutConfirmationService.registerPendingPayment(null, new PendingPaymentRequest(orderId, gatewayPaymentId, statusDetail));
         } else {
-            paymentWebhookService.processPaymentUpdate(provider, gatewayPaymentId, orderIdStr, status, statusDetail);
+            paymentWebhookService.processPaymentUpdate(provider, gatewayPaymentId, orderIdStr, normalizedStatus, statusDetail);
         }
     }
 }

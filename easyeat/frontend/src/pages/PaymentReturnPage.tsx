@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, Clock } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { PendingAccreditationBanner } from '../components/checkout/PendingAccreditationBanner';
@@ -7,6 +7,14 @@ import { useCart } from '../context/CartContext';
 import { getOrderPaymentStatus } from '../api/paymentApi';
 import { confirmPayment, registerPendingPayment } from '../api/checkoutApi';
 import { OrderPaymentStatusResponse } from '../types/payment';
+
+const CONFIRMED_ORDER_STATUSES = new Set([
+  'PAID',
+  'CONFIRMED',
+  'IN_PROGRESS',
+  'READY_FOR_PICKUP',
+  'COMPLETED',
+]);
 
 export const PaymentReturnPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -31,6 +39,8 @@ export const PaymentReturnPage: React.FC = () => {
 
     const verifyStatus = async () => {
       try {
+        let conflictMessage: string | null = null;
+
         if (collectionStatus === 'pending' || collectionStatus === 'in_process') {
           setIsPending(true);
           try {
@@ -39,8 +49,12 @@ export const PaymentReturnPage: React.FC = () => {
               gatewayPaymentId: paymentId || 'mp-pending',
               statusDetail: 'pending_contingency',
             });
-          } catch {
-            // best-effort
+          } catch (err: any) {
+            if (err?.response?.status === 409) {
+              conflictMessage =
+                err?.response?.data?.detail ||
+                'La orden ya se encuentra cancelada o expirada. Tu carrito sigue preservado.';
+            }
           }
         } else if (collectionStatus === 'approved') {
           try {
@@ -49,25 +63,74 @@ export const PaymentReturnPage: React.FC = () => {
               gatewayPaymentId: paymentId || 'mp-approved',
               status: 'approved',
             });
-          } catch {
-            // best-effort if already confirmed by webhook
+          } catch (err: any) {
+            if (err?.response?.status === 409) {
+              conflictMessage =
+                err?.response?.data?.detail ||
+                'La orden expiró, fue cancelada o no dispone de stock suficiente. Tu carrito sigue preservado.';
+            }
           }
         }
 
         const response = await getOrderPaymentStatus(orderId);
         setPaymentStatus(response);
 
-        if (response.payment?.status === 'APPROVED' || response.orderStatus === 'PAID' || response.orderStatus === 'IN_PROGRESS') {
+        const isExpiredOrRejected =
+          response.orderStatus === 'EXPIRED' ||
+          response.payment?.status === 'EXPIRED' ||
+          response.orderStatus === 'CANCELLED' ||
+          response.payment?.status === 'REJECTED';
+
+        if (CONFIRMED_ORDER_STATUSES.has(response.orderStatus) && !isExpiredOrRejected) {
           clearCart();
-        } else if (response.payment?.status === 'REJECTED' || response.orderStatus === 'CANCELLED') {
+          navigate(`/checkout/confirmacion/${orderId}`, { replace: true });
+          return;
+        }
+
+        if (response.orderStatus === 'EXPIRED' || response.payment?.status === 'EXPIRED') {
+          navigate('/checkout', {
+            state: {
+              paymentError:
+                conflictMessage ||
+                'La reserva temporal de tu pedido expiró antes de completarse el pago. Tu carrito sigue preservado para intentar nuevamente.',
+            },
+          });
+          return;
+        }
+
+        if (response.payment?.status === 'REJECTED' || response.orderStatus === 'CANCELLED') {
           // Si el pago fue rechazado, redirigir a checkout preservando carrito (AS-3, Q2)
           navigate('/checkout', {
             state: {
               paymentError:
+                conflictMessage ||
                 'El pago fue rechazado por la entidad bancaria o fondos insuficientes. Tu carrito y franja siguen preservados.',
             },
           });
-        } else if (response.orderStatus === 'PENDING_ACCREDITATION' || response.payment?.status === 'PENDING' || collectionStatus === 'pending' || collectionStatus === 'in_process') {
+          return;
+        }
+
+        if (conflictMessage) {
+          navigate('/checkout', {
+            state: {
+              paymentError: conflictMessage,
+            },
+          });
+          return;
+        }
+
+        if (response.payment?.status === 'APPROVED') {
+          clearCart();
+          navigate(`/checkout/confirmacion/${orderId}`, { replace: true });
+          return;
+        }
+
+        if (
+          response.orderStatus === 'PENDING_ACCREDITATION' ||
+          response.payment?.status === 'PENDING' ||
+          collectionStatus === 'pending' ||
+          collectionStatus === 'in_process'
+        ) {
           setIsPending(true);
         } else if (collectionStatus === 'null' || !collectionStatus) {
           // Abandono voluntario sin pago
@@ -128,14 +191,26 @@ export const PaymentReturnPage: React.FC = () => {
                   Tu orden ya se encuentra registrada. En cuanto Mercado Pago notifique la aprobación definitiva, tu pedido pasará automáticamente a cocina.
                 </p>
               </div>
-              <div className="pt-2 flex justify-center">
+              <div className="pt-2 flex flex-col sm:flex-row justify-center gap-3">
+                <Link
+                  to={`/pedidos/${orderId}/seguimiento`}
+                  className="px-6 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition-colors shadow-md flex items-center justify-center gap-2"
+                >
+                  <span>Seguir pedido</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  to="/perfil#pedidos"
+                  className="px-6 py-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-semibold rounded-xl text-sm transition-colors shadow-sm flex items-center justify-center"
+                >
+                  Mis pedidos
+                </Link>
                 <button
                   type="button"
-                  onClick={() => navigate('/catalog')}
+                  onClick={() => navigate('/catalogo')}
                   className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-md flex items-center justify-center gap-2"
                 >
                   <span>Volver al catálogo</span>
-                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -169,7 +244,7 @@ export const PaymentReturnPage: React.FC = () => {
             <div className="pt-2 flex flex-col sm:flex-row justify-center gap-3">
               <button
                 type="button"
-                onClick={() => navigate('/catalog')}
+                onClick={() => navigate('/catalogo')}
                 className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-md flex items-center justify-center gap-2"
               >
                 <span>Seguir explorando</span>

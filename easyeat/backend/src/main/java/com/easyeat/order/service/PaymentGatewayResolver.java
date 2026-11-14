@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Dynamic resolver for payment gateways based on PaymentMethod enum.
@@ -30,11 +31,20 @@ public class PaymentGatewayResolver {
 
     public PaymentGatewayPort resolve(PaymentMethod method) {
         PaymentMethod targetMethod = method != null ? method : PaymentMethod.MERCADO_PAGO;
-        PaymentGatewayPort adapter = adapters.get(targetMethod);
-        if (adapter == null) {
-            throw new IllegalArgumentException("No payment gateway adapter registered for method: " + targetMethod);
+        return findAdapter(targetMethod)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No payment gateway adapter registered for method: " + targetMethod));
+    }
+
+    /**
+     * Looks up a registered adapter for the given {@link PaymentMethod} without throwing
+     * or falling back to a default gateway when {@code method} is {@code null}.
+     */
+    public Optional<PaymentGatewayPort> findAdapter(PaymentMethod method) {
+        if (method == null) {
+            return Optional.empty();
         }
-        return adapter;
+        return Optional.ofNullable(adapters.get(method));
     }
 
     public PaymentGatewayPort resolveDefault() {

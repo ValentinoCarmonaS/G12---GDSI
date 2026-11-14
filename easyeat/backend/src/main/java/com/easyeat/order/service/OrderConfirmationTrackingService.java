@@ -4,21 +4,25 @@ import com.easyeat.auth.domain.User;
 import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.order.domain.KdsTicket;
 import com.easyeat.order.domain.Order;
 import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.dto.OrderConfirmationTrackingResponse;
 import com.easyeat.order.event.OrderPaymentApprovedEvent;
 import com.easyeat.order.exception.InvalidOrderStateException;
 import com.easyeat.order.exception.OrderNotFoundException;
+import com.easyeat.order.repository.KdsTicketRepository;
 import com.easyeat.order.repository.OrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -29,11 +33,19 @@ import java.util.UUID;
 public class OrderConfirmationTrackingService {
 
     private static final Logger log = LoggerFactory.getLogger(OrderConfirmationTrackingService.class);
+    private static final Set<OrderStatus> APPROVED_STATUSES = Set.of(
+            OrderStatus.IN_PROGRESS,
+            OrderStatus.READY_FOR_PICKUP,
+            OrderStatus.COMPLETED,
+            OrderStatus.PAID,
+            OrderStatus.CONFIRMED
+    );
 
     private final OrderRepository orderRepository;
     private final EstablishmentRepository establishmentRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final KdsTicketRepository kdsTicketRepository;
 
     public OrderConfirmationTrackingService(
             OrderRepository orderRepository,
@@ -41,10 +53,22 @@ public class OrderConfirmationTrackingService {
             UserRepository userRepository,
             ApplicationEventPublisher eventPublisher
     ) {
+        this(orderRepository, establishmentRepository, userRepository, eventPublisher, null);
+    }
+
+    @Autowired
+    public OrderConfirmationTrackingService(
+            OrderRepository orderRepository,
+            EstablishmentRepository establishmentRepository,
+            UserRepository userRepository,
+            ApplicationEventPublisher eventPublisher,
+            @Autowired(required = false) KdsTicketRepository kdsTicketRepository
+    ) {
         this.orderRepository = orderRepository;
         this.establishmentRepository = establishmentRepository;
         this.userRepository = userRepository;
         this.eventPublisher = eventPublisher;
+        this.kdsTicketRepository = kdsTicketRepository;
     }
 
     /**
@@ -64,14 +88,14 @@ public class OrderConfirmationTrackingService {
             throw new OrderNotFoundException(orderId);
         }
 
-        if (order.getStatus() == OrderStatus.CANCELLED) {
-            throw new InvalidOrderStateException("La orden se encuentra cancelada");
+        if (order.getStatus() == OrderStatus.CANCELLED
+                || order.getStatus() == OrderStatus.EXPIRED
+                || order.getStatus() == OrderStatus.PENDING_PAYMENT) {
+            throw new InvalidOrderStateException("La orden en estado " + order.getStatus() + " no admite vista de confirmación");
         }
 
         // INV-001: Authoritative approval condition
-        boolean isApproved = order.getStatus() == OrderStatus.IN_PROGRESS
-                || order.getStatus() == OrderStatus.READY_FOR_PICKUP
-                || order.getStatus() == OrderStatus.COMPLETED;
+        boolean isApproved = APPROVED_STATUSES.contains(order.getStatus());
 
         String approvalStatus = isApproved ? "APPROVED" : "PENDING";
 
@@ -79,7 +103,11 @@ public class OrderConfirmationTrackingService {
                 .map(Establishment::getName)
                 .orElse("Restaurante");
 
-        int ticketNumber = Math.abs(order.getId().hashCode() % 900) + 100;
+        Integer ticketNumber = (kdsTicketRepository != null)
+                ? kdsTicketRepository.findByOrderId(order.getId())
+                        .map(KdsTicket::getTicketNumber)
+                        .orElse(null)
+                : null;
 
         List<OrderConfirmationTrackingResponse.OrderTrackingItemDto> items = order.getItems().stream()
                 .map(item -> new OrderConfirmationTrackingResponse.OrderTrackingItemDto(

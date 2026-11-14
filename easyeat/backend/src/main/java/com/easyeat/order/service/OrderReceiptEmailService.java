@@ -36,19 +36,22 @@ public class OrderReceiptEmailService {
     private final OrderRepository orderRepository;
     private final EstablishmentRepository establishmentRepository;
     private final String fromEmail;
+    private final String frontendBaseUrl;
 
     public OrderReceiptEmailService(
             @Autowired(required = false) JavaMailSender mailSender,
             OrderReceiptRepository orderReceiptRepository,
             OrderRepository orderRepository,
             EstablishmentRepository establishmentRepository,
-            @Value("${app.mail.from:${spring.mail.username:noreply@easyeat.com}}") String fromEmail
+            @Value("${app.mail.from:${spring.mail.username:noreply@easyeat.com}}") String fromEmail,
+            @Value("${mercadopago.frontend-base-url:http://localhost:3000}") String frontendBaseUrl
     ) {
         this.mailSender = mailSender;
         this.orderReceiptRepository = orderReceiptRepository;
         this.orderRepository = orderRepository;
         this.establishmentRepository = establishmentRepository;
         this.fromEmail = fromEmail != null && !fromEmail.isBlank() ? fromEmail.trim() : "noreply@easyeat.com";
+        this.frontendBaseUrl = frontendBaseUrl != null && !frontendBaseUrl.isBlank() ? frontendBaseUrl.trim().replaceAll("/+$", "") : "http://localhost:3000";
     }
 
     public String getFromEmail() {
@@ -175,7 +178,18 @@ public class OrderReceiptEmailService {
                 event.orderId().toString(),
                 establishmentName,
                 event.totalAmount() != null ? event.totalAmount().toPlainString() : "0.00",
-                event.trackingUrl() != null ? event.trackingUrl() : "#"
+                resolveAbsoluteTrackingUrl(event.trackingUrl())
         );
+    }
+
+    private String resolveAbsoluteTrackingUrl(String trackingUrl) {
+        if (trackingUrl == null || trackingUrl.isBlank()) {
+            return "#";
+        }
+        if (trackingUrl.startsWith("http://") || trackingUrl.startsWith("https://")) {
+            return trackingUrl;
+        }
+        String cleanPath = trackingUrl.startsWith("/") ? trackingUrl : "/" + trackingUrl;
+        return frontendBaseUrl + cleanPath;
     }
 }

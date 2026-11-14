@@ -27,7 +27,6 @@ import java.util.*;
 public class StockDeductionServiceImpl implements StockDeductionService {
 
     private static final Logger log = LoggerFactory.getLogger(StockDeductionServiceImpl.class);
-    private static final UUID SYSTEM_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     private final IngredientRepository ingredientRepository;
     private final DishRecipeIngredientRepository dishRecipeIngredientRepository;
@@ -168,7 +167,7 @@ public class StockDeductionServiceImpl implements StockDeductionService {
             StockAuditEntry auditEntry = new StockAuditEntry(
                     tenantId,
                     ingredient.getId(),
-                    SYSTEM_USER_ID,
+                    null,
                     StockAdjustmentMode.SUBTRACT,
                     previousStock,
                     newStock,

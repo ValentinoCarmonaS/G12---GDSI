@@ -122,4 +122,32 @@ describe('T014 [US1]: Order Confirmation and Tracking Coexistence upon Reload or
       expect(screen.queryByText(/checkout page \(cart\)/i)).not.toBeInTheDocument();
     });
   });
+
+  it('maintains provisional view safely across reload on /pedidos/:orderId/seguimiento when PENDING_ACCREDITATION with ticketNumber null', async () => {
+    vi.mocked(orderTrackingApi.getConfirmationTracking).mockResolvedValueOnce({
+      ...sampleOrder,
+      status: 'PENDING_ACCREDITATION',
+      approvalStatus: 'PENDING',
+      ticketNumber: null,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/pedidos/order-persist-777/seguimiento']}>
+        <Routes>
+          <Route path="/pedidos/:orderId/seguimiento" element={<OrderConfirmationTrackingPage />} />
+          <Route path="/checkout" element={<div>Checkout Page (Cart)</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/pago pendiente de confirmación/i)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId('order-success-green-banner')).not.toBeInTheDocument();
+    expect(screen.queryByText(/comprobante emitido/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByText(/#0\b|#null/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/checkout page \(cart\)/i)).not.toBeInTheDocument();
+  });
 });

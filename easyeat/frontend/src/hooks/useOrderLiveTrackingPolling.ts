@@ -2,6 +2,21 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { orderTrackingApi } from '../api/orderTrackingApi';
 import type { OrderLiveTrackingResponse } from '../types/orderTracking';
 
+const TERMINAL_TRACKING_STATUSES = new Set<string>([
+  'READY_FOR_PICKUP',
+  'COMPLETED',
+  'CANCELLED',
+  'EXPIRED',
+]);
+
+function isTerminalTracking(current: OrderLiveTrackingResponse | null): boolean {
+  if (!current) return false;
+  return (
+    current.isReadyForPickup === true ||
+    TERMINAL_TRACKING_STATUSES.has(current.status)
+  );
+}
+
 export interface UseOrderLiveTrackingPollingResult {
   tracking: OrderLiveTrackingResponse | null;
   isLoading: boolean;
@@ -27,7 +42,7 @@ export function useOrderLiveTrackingPolling(
     if (!orderId) return;
 
     // Halt permanently if already terminal
-    if (trackingRef.current?.isReadyForPickup || trackingRef.current?.status === 'READY_FOR_PICKUP') {
+    if (isTerminalTracking(trackingRef.current)) {
       return;
     }
 
@@ -51,10 +66,6 @@ export function useOrderLiveTrackingPolling(
   useEffect(() => {
     let isMounted = true;
 
-    // Check if current order state is terminal
-    const isTerminal = (current: OrderLiveTrackingResponse | null) =>
-      current?.isReadyForPickup === true || current?.status === 'READY_FOR_PICKUP';
-
     const getCadence = (current: OrderLiveTrackingResponse | null) => {
       // 3000ms if proximity countdown active, 5000ms normal cadence
       if (current?.isCountdownActive && (current?.estimatedMinutesRemaining != null && current.estimatedMinutesRemaining <= 15)) {
@@ -65,13 +76,13 @@ export function useOrderLiveTrackingPolling(
 
     const scheduleNext = () => {
       if (!isMounted) return;
-      if (isTerminal(trackingRef.current)) return;
+      if (isTerminalTracking(trackingRef.current)) return;
       if (document.visibilityState === 'hidden') return;
 
       const intervalMs = getCadence(trackingRef.current);
       timerRef.current = setTimeout(async () => {
         if (!isMounted) return;
-        if (isTerminal(trackingRef.current)) return;
+        if (isTerminalTracking(trackingRef.current)) return;
         if (document.visibilityState === 'hidden') return;
 
         await fetchTracking();
@@ -91,7 +102,7 @@ export function useOrderLiveTrackingPolling(
     // Handle Page Visibility API
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        if (!isTerminal(trackingRef.current)) {
+        if (!isTerminalTracking(trackingRef.current)) {
           if (timerRef.current) clearTimeout(timerRef.current);
           fetchTracking().then(() => {
             scheduleNext();

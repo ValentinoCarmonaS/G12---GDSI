@@ -1,0 +1,223 @@
+ROL: CHEF,,,
+Nro: 1.1.1,Título: Ingreso con credenciales de empleado,Prioridad:,Estimación: 2
+"Descripción:
+
+Como chef
+Quiero ingresar a la plataforma web utilizando mis credenciales provistas por la administración
+Para acceder de forma segura a mi entorno de cocina.",,,
+"Criterios de Aceptación:
+
+- Dado que el usuario posee una cuenta activa con rol de Chef y se encuentra en la pantalla unificada de login, cuando ingresa su correo electrónico de empleado y su contraseña válida, entonces el sistema valida sus credenciales y habilita su sesión operativa vinculada al establecimiento gastronómico correspondiente.
+- Dado que el usuario ingresa un correo no registrado o una contraseña errónea al intentar acceder como cocinero, cuando presiona ""Iniciar sesión"", entonces el sistema rechaza el intento y muestra un mensaje genérico de error impidiendo la enumeración de usuarios.
+- Dado que la cuenta del cocinero se encuentra marcada en estado suspendido o inhabilitado por el administrador, cuando se ingresan las credenciales correctas, entonces el sistema deniega el acceso e impide la apertura del turno de cocina.
+- Dado que el chef ingresa su correo con caracteres en mayúscula o con espacios en blanco circundantes, cuando confirma el acceso con su clave válida, entonces el sistema normaliza el texto y procesa la autenticación de manera transparente",,,
+,,,
+Nro: 1.2.1,Título: Redirección automática a la vista de cocina (KDS),Prioridad:,Estimación: 3
+"Descripción:
+
+Como chef
+Quiero ser redirigido automáticamente a la ""Vista de Cocina (KDS)"" tras iniciar sesión
+Para no perder tiempo navegando y poder empezar a cocinar los pedidos pendientes de inmediato.",,,
+"Criterios de Aceptación:
+
+- Dado que un usuario con rol Chef completa exitosamente su autenticación en el sistema, cuando finaliza el inicio de sesión, entonces el navegador lo conduce de manera automática e inmediata a la pantalla de cocina del Kitchen Display System (/cocina), sustituyendo la entrada de login en el historial del navegador.
+- Dado que un chef no autenticado intentaba entrar a una subvista de estación o comanda de cocina específica, cuando se autentica correctamente con su rol, entonces el sistema preserva el enlace solicitado y lo redirige a dicha pantalla de trabajo en cocina.
+- Dado que un usuario autenticado con otro rol (comensal o encargado) intenta navegar directamente hacia la pantalla de cocina (/cocina), cuando el sistema procesa la navegación a través del guard de protección de rutas, entonces bloquea el acceso a la cocina y redirige al usuario a su respectivo espacio operativo.",,,
+,,,
+Nro: 2.1.1,Título: Visualizar el catálogo de ingredientes disponibles,Prioridad:,Estimación: 5
+"Descripción:
+
+Como chef
+Quiero poder visualizar el catálogo de ingredientes registrados en el sistema
+Para poder seleccionarlos al momento de crear o editar las recetas de mis platos, sin tener acceso para modificar las cantidades del inventario general.",,,
+"Criterios de Aceptación:
+
+- Dado que un usuario con rol Chef ingresa a la sección de ingredientes de la cocina (/cocina/ingredientes), cuando se renderiza la pantalla, entonces el sistema presenta un catálogo paginado de 20 materias primas por página ordenadas alfabéticamente (A-Z) pertenecientes a su establecimiento, mostrando nombre, categoría, unidad de medida e indicador de disponibilidad de stock.
+- Dado que un ingrediente activo no posee stock disponible en la alacena (stock igual a cero), cuando el chef visualiza el catálogo, entonces el ingrediente se mantiene visible pero señalizado con la etiqueta visual ￹""Agotado"", permitiéndole considerarlo para el diseño de recetas.
+- Dado que un ingrediente fue marcado como ""Discontinuado"" por la administración, cuando el chef consulta el catálogo, entonces el sistema excluye dicho ingrediente de la lista visible de cocina.
+- Dado que el chef consulta el catálogo de materias primas, cuando navega por la interfaz, entonces el sistema nunca muestra costos de compra, precios de adquisición de lotes ni historiales financieros de ajuste de stock ￹por ser información confidencial de la administración.
+- Dado que el chef desea ubicar un insumo rápidamente, cuando ingresa texto en el buscador o selecciona un filtro por categoría (ej. Carnes, Lácteos, Verduras), entonces el catálogo filtra en tiempo real los ingredientes ￹coincidentes.",,,
+,,,
+Nro: 2.2.1,Título: Crear ficha base del plato,Prioridad:,Estimación: 5
+"Descripción:
+
+Como chef creador
+Quiero armar la ficha de un nuevo plato subiendo su foto, nombre, categoría y descripción
+Para presentar la nueva oferta culinaria de manera atractiva al comensal.",,,
+"Criterios de Aceptación:
+
+- Dado que un Chef completa el formulario ""Nuevo Plato"", cuando ingresa un nombre válido y selecciona una categoría fija (omitiendo descripción y foto), entonces el sistema crea el plato con estado ""Borrador"" y lo lista en la bandeja de gestión de cocina.
+- Dado que un Chef adjunta una imagen al plato, cuando el archivo es de formato JPEG, PNG o WebP y su tamaño no supera los 5 MB, entonces el sistema la asocia exitosamente como la foto representativa del plato.
+- Dado que un Chef adjunta un archivo que supera los 5 MB o posee un formato no soportado, cuando intenta subirlo, entonces el sistema rechaza el archivo, muestra un mensaje de error con las restricciones y conserva la imagen anterior si existía.
+- Dado que un Chef ingresa un nombre de plato que ya existe en su establecimiento (en cualquier estado), cuando intenta guardar, entonces el sistema bloquea el guardado por violación de unicidad y notifica al usuario.
+- Dado que un Chef envía el formulario ""Nuevo Plato"", cuando el campo de nombre está vacío o contiene solo espacios en blanco, entonces el sistema impide el guardado y resalta el nombre como campo obligatorio.
+- Dado que un Chef envía el formulario ""Nuevo Plato"", cuando no se selecciona ninguna categoría, entonces el sistema impide el guardado y exige seleccionar una categoría de la lista fija (Entradas, Platos principales, Postres, Bebidas, Ensaladas).
+- Dado que un Chef ingresa un nombre superior a 100 caracteres o una descripción superior a 500 caracteres, cuando intenta guardar, entonces el sistema bloquea la acción indicando el exceso de caracteres permitido.
+- Dado que un plato se encuentra en estado ""Borrador"", cuando el Chef reingresa a modificar sus datos básicos (nombre, categoría, descripción o foto), entonces el sistema persiste los cambios manteniendo el estado ""Borrador"".
+- Dado que un plato en estado ""Borrador"" posee una foto cargada, cuando el Chef presiona la opción de quitar foto y guarda, entonces el plato persiste sin archivo multimedia asociado.
+- Dado que un Chef decide descartar un plato en estado ""Borrador"", cuando confirma la eliminación, entonces el sistema remueve definitivamente el registro junto con sus ingredientes y etiquetas asociadas.",,,
+,,,
+Nro: 2.2.2,Título: Asignar receta (Listado de ingredientes),Prioridad:,Estimación: 8
+"Descripción:
+
+Como chef
+Quiero seleccionar qué ingredientes y en qué cantidades exactas conforman una porción de este plato
+Para que el sistema sepa exactamente cuánto descontar del stock general cada vez que se venda uno.",,,
+"Criterios de Aceptación:
+
+- Dado que un Chef edita la receta de un borrador, cuando selecciona un ingrediente Activo e ingresa una cantidad estrictamente positiva, entonces el sistema lo vincula a la ficha técnica con la cantidad ingresada y la unidad de medida heredada del inventario.
+- Dado que un Chef ingresa una cantidad para un ingrediente de la receta, cuando el valor es menor o igual a cero, entonces el sistema rechaza la entrada y exige un valor estrictamente positivo.
+- Dado que un Chef intenta agregar un ingrediente que ya está presente en la receta, cuando intenta incorporarlo, entonces el sistema advierte sobre la duplicación y ofrece actualizar la cantidad existente en vez de crear una fila repetida.
+- Dado que un Chef busca ingredientes en el selector de la receta, cuando se lista el catálogo, entonces el sistema solo muestra materias primas con estado Activo (excluyendo automáticamente Discontinuados y Archivados).
+- Dado que un Chef busca o filtra insumos para la receta, cuando utiliza el buscador o categorías, entonces el selector pagina de a 20 resultados por página ordenados alfabéticamente (A-Z).
+- Dado que un Chef edita la receta de un borrador, cuando elimina un ingrediente previamente agregado, entonces el sistema desvincula el insumo de la ficha técnica.
+- Dado que un plato se encuentra en estado ""Pendiente de Precio"", cuando un Chef intenta agregar, modificar o quitar ingredientes de la receta, entonces el sistema bloquea cualquier modificación e informa que la ficha está en revisión.
+",,,
+,,,
+Nro: 2.2.3,Título: Configurar alérgenos y etiquetas dietarias,Prioridad:,Estimación: 3
+"Descripción:
+
+Como chef responsable
+Quiero marcar explícitamente si el plato contiene alérgenos (TACC, lácteos, frutos secos) y detalles dietarios
+Para brindar seguridad alimentaria y permitir que los filtros automáticos del comensal funcionen correctamente.",,,
+"Criterios de Aceptación:
+
+- Dado que un Chef ingresa a la sección de alérgenos de un borrador, cuando se renderiza la interfaz, entonces el sistema presenta la taxonomía oficial dividida en Estilos Dietarios y Alérgenos Comunes, diferenciando etiquetas de aptitud positiva (Vegano, Vegetariano) de las etiquetas de advertencia (Celíaco/Contiene Gluten, Lácteos, Huevo, Pescado, Mariscos, Maní, Frutos Secos, Soja, Trigo).
+- Dado que un Chef selecciona las etiquetas pertinentes (o ninguna en caso de no aplicar), cuando presiona el botón explícito de ""Confirmar sección de alérgenos"", entonces el sistema guarda las etiquetas como metadatos del plato y marca la sección como confirmada formalmente.
+- Dado que un Chef seleccionó etiquetas pero no presionó el botón de confirmación explícita, cuando se valida la completitud del plato para enviarlo a revisión, entonces el sistema considera la sección como incompleta e impide el envío.
+- Dado que un plato en estado ""Borrador"" ya cuenta con su sección de alérgenos confirmada, cuando el Chef modifica las etiquetas seleccionadas y vuelve a guardar, entonces el sistema persiste los cambios conservando el estado de sección confirmada.
+- Dado que un plato se encuentra en estado ""Pendiente de Precio"", cuando un Chef intenta modificar las etiquetas o re-confirmar la sección, entonces el sistema bloquea cualquier cambio manteniendo las etiquetas en modo solo lectura.",,,
+,,,
+Nro: 2.2.4,Título: Enviar a revisión del Administrador,Prioridad:,Estimación: 3
+"Descripción:
+
+Como chef
+Quiero enviar el borrador completo del plato al Administrador
+Para que él lo evalúe, le asigne un precio final (costeo) y lo publique en el menú oficial.",,,
+"Criterios de Aceptación:
+
+- Dado que un Chef visualiza un plato en ""Borrador"" completo (nombre, categoría, al menos un ingrediente con cantidad válida, todos sus insumos Activos y alérgenos confirmados, con foto opcional), cuando presiona ""Enviar a Revisión"", entonces el sistema transiciona el estado a ""Pendiente de Precio"", bloquea todas las acciones de edición y emite un mensaje de éxito.
+- Dado que un Chef intenta enviar a revisión un borrador que incumple alguna condición (falta nombre/categoría, receta vacía, sección de alérgenos sin confirmar o contiene materias primas discontinuadas), cuando se evalúa el envío, entonces el sistema impide la transición e indica explícitamente cuáles son los requisitos faltantes.
+- Dado que un plato cambia exitosamente a estado ""Pendiente de Precio"", cuando se procesa la notificación, entonces el sistema genera una alerta interna en el panel del Administrador especificando el nombre del plato y el nombre del Chef remitente.
+- Dado que un plato se encuentra en estado ""Pendiente de Precio"", cuando cualquier Chef intenta modificar algún dato o eliminar el plato, entonces el sistema rechaza y bloquea la operación garantizando la inmutabilidad de la ficha.
+- Dado que un Chef visualiza su listado de platos en cocina, cuando se renderiza la vista, entonces se listan ordenados por fecha de última actualización descendente, paginados de a 20 elementos con controles de navegación, y con filtros por ""Todos"", ""Borrador"" y ""Pendiente de Precio"".
+- Dado que un plato está en estado ""Pendiente de Precio"", cuando el Chef lo visualiza en la bandeja de gestión, entonces el sistema lo señaliza claramente con un indicador de ""En revisión"" en modo de solo lectura.
+- Dado que un Chef visualiza el listado de borradores, cuando un plato cumple con todas las condiciones de completitud, entonces el botón ""Enviar a Revisión"" se muestra visualmente habilitado; de lo contrario, se muestra deshabilitado con un indicador que detalla los requisitos faltantes.
+",,,
+,,,
+Nro: 2.2.5,Título: Pausa manual de platos,Prioridad:,Estimación: 2
+"Descripción:
+
+Como chef
+Quiero poder pausar o inhabilitar manualmente un plato del catálogo con un botón tipo toggle
+Para ocultarlo del menú temporalmente de forma arbitraria (ej: se quemó la plancha o hay demora excesiva), sin depender del stock.",,,
+"Criterios de Aceptación:
+Dado que un plato está activo en el menú, Cuando el chef apaga el toggle de visibilidad, Entonces el plato desaparece instantáneamente de la vista del comensal.",,,
+,,,
+Nro: 3.1.1,Título: Visualización en tiempo real,Prioridad:,Estimación: 8
+"Descripción:
+
+Como chef trabajando en la línea
+Quiero ver aparecer los nuevos tickets en la pantalla del KDS sin necesidad de refrescar la página
+Para no retrasarme nunca con el flujo de trabajo.",,,
+"Criterios de Aceptación:
+Dado que el KDS está abierto, Cuando un comensal confirma el pago de una orden, Entonces la tarjeta de la orden (Comanda) entra instantáneamente a la pantalla de cocina (vía WebSockets).",,,
+,,,
+Nro: 3.1.2,Título: Priorización automática de la cola,Prioridad:,Estimación: 3
+"Descripción:
+
+Como chef
+Quiero que el sistema organice automáticamente las comandas basándose primero en la franja horaria de retiro más próxima y luego en el orden de llegada
+Para cocinar primero lo más urgente sin tener que calcular tiempos mentalmente.",,,
+"Criterios de Aceptación:
+Dado que hay múltiples pedidos pendientes, Cuando la vista se renderiza, Entonces se ordenan visualmente dando máxima prioridad a la franja horaria crítica reservada por el usuario.",,,
+,,,
+Nro: 3.2.1,Título: Leer la comanda,Prioridad:,Estimación: 2
+"Descripción:
+
+Como chef
+Quiero leer claramente los platos requeridos y, sobre todo, las modificaciones u observaciones breves ingresadas en el pedido (ej: ""Sin sal"")
+Para preparar la comida respetando los pedidos especiales.",,,
+"Criterios de Aceptación:
+Dado que la tarjeta del pedido está en pantalla, Cuando el chef la revisa, Entonces los platos y cualquier texto extra de ""observación"" figuran en un tamaño legible.",,,
+,,,
+Nro: 4.1.1,Título: Empezar a cocinar,Prioridad:,Estimación: 3
+"Descripción:
+
+Como chef
+Quiero tocar un botón para marcar que un pedido pasó a estado ""En preparación""
+Para que la orden quede fijada y el mostrador sepa que ya empecé a trabajar en ella.",,,
+"Criterios de Aceptación:
+Dado que la orden está ""Nueva"", Cuando el chef toca el botón de iniciar, Entonces el estado en la base de datos cambia y el cronómetro de preparación (Count-Up visualizado en el UI mockup previo) se inicia.",,,
+,,,
+Nro: 4.1.2,Título: Check incremental por ítem (Tap-to-Toggle),Prioridad:,Estimación: 5
+"Descripción:
+
+Como chef en un pedido grande
+Quiero ir tachando o marcando individualmente cada plato dentro de una misma comanda a medida que los voy terminando
+Para llevar un control visual exacto de qué me falta y evitar olvidos (como pactamos en el análisis de UX/UI).",,,
+"Criterios de Aceptación:
+Dado que la orden está ""En preparación"", Cuando el chef toca sobre un ítem específico de la lista, Entonces este se marca visualmente (tachado/grisado).",,,
+,,,
+Nro: 4.1.3,Título: Finalizar el pedido por completo,Prioridad:,Estimación: 3
+"Descripción:
+
+Como chef
+Quiero marcar todo el ticket como ""Listo"" presionando un botón principal
+Para sacarlo de mi KDS y avisarle al mostrador que vengan a buscar las bandejas.",,,
+"Criterios de Aceptación:
+Dado que todos los ítems individuales están tachados, Cuando el chef toca ""LISTO"", Entonces la tarjeta desaparece del KDS del chef y pasa al flujo del Encargado. (Validación: El botón de Listo solo se habilita si todos los ítems fueron checkeados).",,,
+,,,
+Nro: 4.1.4,Título: Cronómetro de preparación (Count-Up),Prioridad:,Estimación: 3
+"Descripción:
+
+Como chef trabajando en la línea
+Quiero ver un contador de tiempo que avanza (Count-Up) en cada tarjeta de pedido ""En preparación""
+Para saber exactamente cuántos minutos y segundos lleva ese pedido ocupando lugar en la cocina.",,,
+"Criterios de Aceptación:
+Dado que un pedido cambia a ""En preparación"", Cuando el estado impacta, Entonces se inicia un reloj visible que cuenta el tiempo transcurrido desde ese momento exacto.",,,
+,,,
+Nro: 4.1.5,Título: Alerta visual de demora en KDS,Prioridad:,Estimación: 3
+"Descripción:
+
+Como chef
+Quiero que la tarjeta del pedido cambie visualmente (ej: fondo amarillo o borde naranja) si pasa demasiado tiempo
+Para darme cuenta de inmediato qué pedidos se me están atrasando.",,,
+"Criterios de Aceptación:
+Dado que el tiempo estándar global de preparación está configurado (ej: 15 min), Cuando el cronómetro (Count-Up) de un pedido supera ese límite, Entonces la interfaz de la tarjeta cambia su color normal a color amarillo.",,,
+,,,
+Nro: 4.2.1,Título: Gatillar alerta al comensal,Prioridad:,Estimación: 3
+"Descripción:
+
+Como chef
+Quiero que al marcar un pedido como ""Listo"", el sistema le actualice por su cuenta al comensal el estado
+Para no tener que llamarlo a los gritos ni perder tiempo enviando mensajes manuales.",,,
+"Criterios de Aceptación:
+Dado que el chef completa el ticket, Cuando la orden pasa a estado Listo, Entonces el backend actualiza el estado del pedido y en el dispositivo del cliente se actualiza automaticamente a ""Listo"".",,,
+,,,
+Nro: 4.2.2,Título: Sincronización con Mostrador (Próximos),Prioridad:,Estimación: 3
+"Descripción:
+
+Como chef
+Quiero que el mostrador se entere automáticamente cuando empiezo a cocinar una orden
+Para que el Encargado vaya adelantando el armado de servilletas y bebidas frías.",,,
+"Criterios de Aceptación:
+Dado que paso la orden a ""En preparación"", Cuando el estado impacta, Entonces aparece en la columna de ""Próximos a salir"" de la vista del Encargado.",,,
+,,,
+Nro: 4.2.3,Título: Sincronización con Mostrador (Listos),Prioridad:,Estimación: 2
+"Descripción:
+
+Como chef
+Quiero que la orden se traslade directamente al mostrador cuando la termino
+Para liberar mi línea de montaje físico y digital.",,,
+"Criterios de Aceptación:
+Dado que presiono ""LISTO"", Cuando mi KDS se actualiza, Entonces la orden entra en la cola principal de ""Listos para retirar"" del Encargado.",,,
+,,,
+Nro: 5.1.1,Título: Descuento de stock transaccional,Prioridad:,Estimación: 8
+"Descripción:
+
+Como chef responsable de cocina
+Quiero que el sistema le descuente automáticamente a mi inventario la cantidad exacta de ingredientes de la receta (ej: 2 panes, 150g carne) ni bien un comensal confirma y paga un pedido
+Para garantizar que la oferta del menú está atada a la realidad y evitar vender comida que ya no podemos preparar.",,,
+"Criterios de Aceptación:
+Dado que un pago de cliente se aprueba, Cuando la orden ingresa al sistema, Entonces se restan las cantidades de la receta de cada insumo en la base de datos de forma atómica y estricta.",,,
