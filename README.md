@@ -1,5 +1,8 @@
 # EasyEat
 
+[![CI Pipeline](https://github.com/ValentinoCarmonaS/G12---GDSI/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ValentinoCarmonaS/G12---GDSI/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/ValentinoCarmonaS/G12---GDSI/branch/main/graph/badge.svg)](https://codecov.io/gh/ValentinoCarmonaS/G12---GDSI)
+
 Sistema de autenticación y gestión para locales gastronómicos y comensales.
 
 ## Requisitos previos
