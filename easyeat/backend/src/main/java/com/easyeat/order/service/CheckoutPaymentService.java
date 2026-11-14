@@ -19,6 +19,7 @@ import com.easyeat.order.repository.TemporaryReservationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,7 +75,16 @@ public class CheckoutPaymentService {
 
         Instant nowInstant = clock.instant();
 
-        // 1. Verificar si ya existe una orden pendiente con reserva activa para este comensal (Anti-acaparamiento INV-05)
+        // 1. Expirar pendientes vencidas del comensal y verificar si persiste alguna reserva activa (INV-05, US3)
+        expirePendingOrdersForUser(userId, nowInstant);
+
+        List<Order> activeOrders = orderRepository.findActivePendingOrders(userId, nowInstant);
+        if (activeOrders != null && !activeOrders.isEmpty()) {
+            throw new ActiveReservationExistsException(
+                    "Ya tenés un pedido o pago en curso pendiente.",
+                    activeOrders.get(0).getId()
+            );
+        }
         if (orderRepository.hasActivePendingOrder(userId, nowInstant)) {
             throw new ActiveReservationExistsException("Ya tenés un pedido o pago en curso pendiente.");
         }
@@ -238,6 +248,13 @@ public class CheckoutPaymentService {
 
         PaymentGatewayPort.PreferenceResult prefResult = gatewayPort.createPreference(command);
 
+        String normalizedInitPoint = normalizeBlankToNull(prefResult.initPoint());
+        String normalizedSandboxInitPoint = normalizeBlankToNull(prefResult.sandboxInitPoint());
+        String chosenRedirectUrl = normalizedInitPoint != null ? normalizedInitPoint : normalizedSandboxInitPoint;
+        if (chosenRedirectUrl == null) {
+            throw new RuntimeException("Mercado Pago no devolvió una URL de redirección válida para iniciar el pago.");
+        }
+
         // 7. Persistir registro de Payment en estado IN_PROCESS
         Payment payment = new Payment(
                 order,
@@ -247,13 +264,8 @@ public class CheckoutPaymentService {
                 totalAmount,
                 paymentIdempotency
         );
-        payment.assignGatewayPreference(prefResult.preferenceId(), prefResult.initPoint(), prefResult.sandboxInitPoint());
+        payment.assignGatewayPreference(prefResult.preferenceId(), normalizedInitPoint, normalizedSandboxInitPoint);
         paymentRepository.save(payment);
-
-        String chosenRedirectUrl = prefResult.sandbox() ? prefResult.sandboxInitPoint() : prefResult.initPoint();
-        if (chosenRedirectUrl == null || chosenRedirectUrl.isBlank()) {
-            chosenRedirectUrl = prefResult.initPoint();
-        }
 
         return new PaymentInitiationResponse(
                 order.getId(),
@@ -268,24 +280,33 @@ public class CheckoutPaymentService {
         );
     }
 
+    private static String normalizeBlankToNull(String value) {
+        return (value == null || value.isBlank()) ? null : value.trim();
+    }
+
     /**
      * Cancelar voluntariamente un intento de pago en curso (AS-4, FR-007, Q3).
      */
     @Transactional
     public CancelPaymentResponse cancelPaymentAttempt(UUID userId, CancelPaymentRequest request) {
         Order order = orderRepository.findById(request.orderId())
-                .orElseThrow(() -> new NoSuchElementException("Orden no encontrada: " + request.orderId()));
+                .orElseThrow(() -> new OrderNotFoundException(request.orderId()));
 
         if (!order.getUserId().equals(userId)) {
-            throw new SecurityException("No tenés autorización para cancelar esta orden");
+            throw new AccessDeniedException("No tenés autorización para cancelar esta orden");
         }
 
+        Instant nowInstant = clock.instant();
         if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
             throw new IllegalStateException("La orden no se encuentra en estado cancelable: " + order.getStatus());
         }
+        if (order.isExpired(nowInstant)) {
+            expireSingleOrder(order, nowInstant);
+            throw new IllegalStateException("La orden ya expiró");
+        }
 
         order.setStatus(OrderStatus.CANCELLED);
-        order.setUpdatedAt(clock.instant());
+        order.setUpdatedAt(nowInstant);
         orderRepository.save(order);
 
         Optional<TemporaryReservation> resOpt = temporaryReservationRepository.findActiveByOrderId(order.getId());
@@ -312,5 +333,37 @@ public class CheckoutPaymentService {
                 finalPayStatus,
                 "Intento de pago cancelado exitosamente y recursos restituidos."
         );
+    }
+
+    private void expirePendingOrdersForUser(UUID userId, Instant nowInstant) {
+        List<Order> userOrders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        if (userOrders == null) {
+            return;
+        }
+        for (Order candidate : userOrders) {
+            if (candidate.getStatus() == OrderStatus.PENDING_PAYMENT && candidate.isExpired(nowInstant)) {
+                expireSingleOrder(candidate, nowInstant);
+            }
+        }
+    }
+
+    private void expireSingleOrder(Order order, Instant nowInstant) {
+        order.setStatus(OrderStatus.EXPIRED);
+        order.setUpdatedAt(nowInstant);
+        Order saved = orderRepository.save(order);
+
+        temporaryReservationRepository.findActiveByOrderId(saved.getId()).ifPresent(reservation -> {
+            if (reservation.getStatus() == ReservationStatus.ACTIVE) {
+                reservation.expire();
+                temporaryReservationRepository.save(reservation);
+            }
+        });
+
+        paymentRepository.findTopByOrderIdOrderByCreatedAtDesc(saved.getId()).ifPresent(payment -> {
+            if (payment.getStatus() == PaymentStatus.IN_PROCESS) {
+                payment.expire();
+                paymentRepository.save(payment);
+            }
+        });
     }
 }

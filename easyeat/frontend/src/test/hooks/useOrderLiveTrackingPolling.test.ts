@@ -130,4 +130,27 @@ describe('T027 [US2]: useOrderLiveTrackingPolling Hook Unit Tests', () => {
 
     expect(orderTrackingApi.getLiveTracking).toHaveBeenCalledTimes(1);
   });
+
+  it.each(['READY_FOR_PICKUP', 'COMPLETED', 'CANCELLED', 'EXPIRED'] as const)(
+    'halts polling permanently when terminal status is %s',
+    async (terminalStatus) => {
+      const terminalData: OrderLiveTrackingResponse = {
+        ...mockTrackingData,
+        status: terminalStatus,
+        isReadyForPickup: terminalStatus === 'READY_FOR_PICKUP',
+        estimatedMinutesRemaining: null,
+        progressPercentage: terminalStatus === 'READY_FOR_PICKUP' || terminalStatus === 'COMPLETED' ? 100 : 0,
+      };
+
+      vi.mocked(orderTrackingApi.getLiveTracking).mockResolvedValue(terminalData);
+
+      renderHook(() => useOrderLiveTrackingPolling('order-123', terminalData));
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15000);
+      });
+
+      expect(orderTrackingApi.getLiveTracking).not.toHaveBeenCalled();
+    }
+  );
 });

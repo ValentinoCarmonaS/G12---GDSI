@@ -3,7 +3,7 @@ import { CheckCircle2, Clock, Store, Ticket } from 'lucide-react';
 import type { FulfillmentMode } from '../../types/orderTracking';
 
 export interface OrderSuccessGreenBannerProps {
-  ticketNumber: number;
+  ticketNumber: number | null;
   pickupDate: string;
   timeSlotStart: string;
   timeSlotEnd: string;
@@ -55,15 +55,27 @@ export const OrderSuccessGreenBanner: React.FC<OrderSuccessGreenBannerProps> = (
         {/* Right column: Prominent Ticket Badge & Pickup Slot Detail */}
         <div className="flex flex-col sm:flex-row items-center gap-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 shadow-sm w-full md:w-auto">
           {/* Ticket Number in Large Format */}
-          <div className="text-center px-4 py-2 bg-white text-emerald-800 rounded-xl shadow-md min-w-[120px]">
-            <span className="text-[11px] font-bold tracking-wider uppercase text-emerald-600 block flex items-center justify-center gap-1">
-              <Ticket className="w-3.5 h-3.5" />
-              Ticket
-            </span>
-            <span className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900">
-              #{ticketNumber}
-            </span>
-          </div>
+          {ticketNumber != null ? (
+            <div className="text-center px-4 py-2 bg-white text-emerald-800 rounded-xl shadow-md min-w-[120px]">
+              <span className="text-[11px] font-bold tracking-wider uppercase text-emerald-600 block flex items-center justify-center gap-1">
+                <Ticket className="w-3.5 h-3.5" />
+                Ticket
+              </span>
+              <span className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900">
+                #{ticketNumber}
+              </span>
+            </div>
+          ) : (
+            <div className="text-center px-4 py-2 bg-white text-emerald-800 rounded-xl shadow-md min-w-[120px]">
+              <span className="text-[11px] font-bold tracking-wider uppercase text-emerald-600 block flex items-center justify-center gap-1">
+                <Ticket className="w-3.5 h-3.5" />
+                Comanda
+              </span>
+              <span className="text-base sm:text-lg font-bold tracking-tight text-gray-900">
+                En asignación
+              </span>
+            </div>
+          )}
 
           {/* Time Slot and Pickup Date */}
           <div className="text-left space-y-1 text-xs sm:text-sm text-emerald-50 pr-2">

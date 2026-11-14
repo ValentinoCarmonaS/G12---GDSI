@@ -16,6 +16,7 @@ describe('CartContext & useCart (T055, US3, FR-015, FR-021, FR-022)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    localStorage.clear();
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -68,9 +69,10 @@ describe('CartContext & useCart (T055, US3, FR-015, FR-021, FR-022)', () => {
     expect(result.current.hasConflictingItems).toBe(true);
     expect(result.current.items[1].riskConfirmed).toBe(true);
 
-    // Verify sessionStorage sync
-    const stored = JSON.parse(sessionStorage.getItem('easyeat_cart') || '[]');
+    // Verify localStorage sync
+    const stored = JSON.parse(localStorage.getItem('easyeat_cart') || '[]');
     expect(stored).toHaveLength(2);
+    expect(sessionStorage.getItem('easyeat_cart')).toBeNull();
   });
 
   it('increments quantity when adding same dish multiple times', () => {
@@ -109,8 +111,8 @@ describe('CartContext & useCart (T055, US3, FR-015, FR-021, FR-022)', () => {
     expect(result.current.totalCount).toBe(5);
     expect(result.current.totalAmount).toBe(4500 * 5);
 
-    // Verify sessionStorage persists the accumulated quantity
-    const stored = JSON.parse(sessionStorage.getItem('easyeat_cart') || '[]');
+    // Verify localStorage persists the accumulated quantity
+    const stored = JSON.parse(localStorage.getItem('easyeat_cart') || '[]');
     expect(stored).toHaveLength(1);
     expect(stored[0].dishId).toBe(mockCompliantDish.id);
     expect(stored[0].quantity).toBe(5);
@@ -196,7 +198,7 @@ describe('CartContext & useCart (T055, US3, FR-015, FR-021, FR-022)', () => {
       result.current.clearCart();
     });
     expect(result.current.items).toHaveLength(0);
-    expect(sessionStorage.getItem('easyeat_cart')).toBeNull();
+    expect(localStorage.getItem('easyeat_cart')).toBeNull();
   });
 
   it('proactively re-evaluates compliance against backend API (FR-015)', async () => {
@@ -272,6 +274,52 @@ describe('CartContext & useCart (T055, US3, FR-015, FR-021, FR-022)', () => {
       // Nothing added to cart, items remain empty
       expect(result.current.items).toHaveLength(0);
       expect(result.current.toastMessage).toMatch(/insuficiente|disponibilidad/i);
+    });
+  });
+
+  describe('User Story 3 - Shared localStorage cart without leaking sessionStorage credentials (T037, FR-007)', () => {
+    it('persists easyeat_cart in localStorage while preserving access_token and easyeat_active_tenant in sessionStorage', () => {
+      sessionStorage.setItem('access_token', 'jwt-tab-1');
+      sessionStorage.setItem('easyeat_active_tenant', 'tenant-tab-1');
+
+      const { result } = renderHook(() => useCart(), { wrapper });
+
+      act(() => {
+        result.current.addItem(mockCompliantDish, 2);
+      });
+
+      const localCart = JSON.parse(localStorage.getItem('easyeat_cart') || '[]');
+      expect(localCart).toHaveLength(1);
+      expect(localCart[0].dishId).toBe(mockCompliantDish.id);
+      expect(sessionStorage.getItem('easyeat_cart')).toBeNull();
+      expect(localStorage.getItem('access_token')).toBeNull();
+      expect(localStorage.getItem('easyeat_active_tenant')).toBeNull();
+      expect(sessionStorage.getItem('access_token')).toBe('jwt-tab-1');
+      expect(sessionStorage.getItem('easyeat_active_tenant')).toBe('tenant-tab-1');
+    });
+
+    it('hydrates cart from localStorage when opening a fresh tab with empty sessionStorage', () => {
+      localStorage.setItem(
+        'easyeat_cart',
+        JSON.stringify([
+          {
+            dishId: mockCompliantDish.id,
+            tenantId: mockCompliantDish.tenantId,
+            name: mockCompliantDish.name,
+            price: mockCompliantDish.price,
+            quantity: 3,
+            isCompliant: true,
+            conflictingRestrictions: [],
+            riskConfirmed: false,
+          },
+        ])
+      );
+
+      const { result } = renderHook(() => useCart(), { wrapper });
+
+      expect(result.current.items).toHaveLength(1);
+      expect(result.current.items[0].dishId).toBe(mockCompliantDish.id);
+      expect(result.current.totalCount).toBe(3);
     });
   });
 });

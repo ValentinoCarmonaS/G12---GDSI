@@ -23,7 +23,18 @@ public class WebhookSignatureValidator {
     private final String secretKey;
 
     public WebhookSignatureValidator(@Value("${mercadopago.webhook-secret:}") String secretKey) {
+        this(secretKey, "");
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public WebhookSignatureValidator(
+            @Value("${mercadopago.webhook-secret:}") String secretKey,
+            @Value("${mercadopago.access-token:}") String accessToken
+    ) {
         this.secretKey = secretKey;
+        if ((secretKey == null || secretKey.isBlank()) && accessToken != null && !accessToken.isBlank()) {
+            log.warn("MERCADOPAGO_ACCESS_TOKEN is configured without MERCADOPAGO_WEBHOOK_SECRET; signed webhooks will be rejected fail-closed");
+        }
     }
 
     /**
@@ -32,7 +43,11 @@ public class WebhookSignatureValidator {
      * Formato de manifest según Mercado Pago: "id:[data.id];request-id:[x-request-id];ts:[ts];"
      */
     public boolean isValidSignature(String xSignatureHeader, String xRequestId, String dataId) {
-        if (xSignatureHeader == null || xSignatureHeader.isBlank() || secretKey == null || secretKey.isBlank()) {
+        if (xSignatureHeader == null || xSignatureHeader.isBlank()) {
+            return false;
+        }
+        if (secretKey == null || secretKey.isBlank()) {
+            log.error("Received webhook signature header x-signature but MERCADOPAGO_WEBHOOK_SECRET is not configured (fail-closed rejection for xRequestId={}, dataId={})", xRequestId, dataId);
             return false;
         }
 

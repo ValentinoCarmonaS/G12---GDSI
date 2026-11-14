@@ -4,6 +4,8 @@ import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.order.domain.EstablishmentKdsSettings;
 import com.easyeat.order.domain.FulfillmentMode;
+import com.easyeat.order.domain.KdsTicket;
+import com.easyeat.order.domain.KdsTicketStatus;
 import com.easyeat.order.domain.Order;
 import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.dto.KdsDelayAdjustmentRequest;
@@ -12,6 +14,7 @@ import com.easyeat.order.dto.KdsTicketResponse;
 import com.easyeat.order.dto.OrderLiveTrackingResponse;
 import com.easyeat.order.exception.OrderNotFoundException;
 import com.easyeat.order.repository.EstablishmentKdsSettingsRepository;
+import com.easyeat.order.repository.KdsTicketRepository;
 import com.easyeat.order.repository.OrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +30,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -38,6 +42,7 @@ public class OrderLiveTrackingService {
     private EstablishmentKdsSettingsRepository kdsSettingsRepository;
     private EstablishmentRepository establishmentRepository;
     private Clock clock;
+    private KdsTicketRepository kdsTicketRepository;
 
     public OrderLiveTrackingService() {
         this.clock = Clock.systemUTC();
@@ -47,7 +52,16 @@ public class OrderLiveTrackingService {
             OrderRepository orderRepository,
             EstablishmentKdsSettingsRepository kdsSettingsRepository
     ) {
-        this(orderRepository, kdsSettingsRepository, null, Clock.systemUTC());
+        this(orderRepository, kdsSettingsRepository, null, Clock.systemUTC(), null);
+    }
+
+    public OrderLiveTrackingService(
+            OrderRepository orderRepository,
+            EstablishmentKdsSettingsRepository kdsSettingsRepository,
+            EstablishmentRepository establishmentRepository,
+            Clock clock
+    ) {
+        this(orderRepository, kdsSettingsRepository, establishmentRepository, clock, null);
     }
 
     @Autowired
@@ -55,12 +69,14 @@ public class OrderLiveTrackingService {
             OrderRepository orderRepository,
             EstablishmentKdsSettingsRepository kdsSettingsRepository,
             @Autowired(required = false) EstablishmentRepository establishmentRepository,
-            @Autowired(required = false) Clock clock
+            @Autowired(required = false) Clock clock,
+            @Autowired(required = false) KdsTicketRepository kdsTicketRepository
     ) {
         this.orderRepository = orderRepository;
         this.kdsSettingsRepository = kdsSettingsRepository;
         this.establishmentRepository = establishmentRepository;
         this.clock = (clock != null) ? clock : Clock.systemUTC();
+        this.kdsTicketRepository = kdsTicketRepository;
     }
 
     private Instant currentInstant() {
@@ -72,6 +88,15 @@ public class OrderLiveTrackingService {
             return clock.getZone();
         }
         return ZoneId.of("America/Argentina/Buenos_Aires");
+    }
+
+    private Integer resolveTicketNumber(UUID orderId) {
+        if (kdsTicketRepository == null || orderId == null) {
+            return null;
+        }
+        return kdsTicketRepository.findByOrderId(orderId)
+                .map(KdsTicket::getTicketNumber)
+                .orElse(null);
     }
 
     @Transactional(readOnly = true)
@@ -88,7 +113,7 @@ public class OrderLiveTrackingService {
             throw new OrderNotFoundException(orderId);
         }
 
-        int ticketNumber = Math.abs(order.getId().hashCode() % 900) + 100;
+        Integer ticketNumber = resolveTicketNumber(order.getId());
         Instant now = currentInstant();
 
         // Terminal state: READY_FOR_PICKUP or COMPLETED (D-05, AS-8, INV-008, CB-008)
@@ -104,6 +129,23 @@ public class OrderLiveTrackingService {
                     true,
                     null,
                     "¡Tu pedido está listo! Por favor, acercate al mostrador para retirar tu comida.",
+                    now
+            );
+        }
+
+        // Orders not yet active in kitchen or already terminal/cancelled/expired never show active countdown
+        if (order.getStatus() != OrderStatus.IN_PROGRESS) {
+            return new OrderLiveTrackingResponse(
+                    order.getId(),
+                    ticketNumber,
+                    order.getStatus(),
+                    order.getFulfillmentMode(),
+                    false,
+                    null,
+                    0,
+                    false,
+                    null,
+                    resolveInactiveStatusMessage(order.getStatus()),
                     now
             );
         }
@@ -267,22 +309,79 @@ public class OrderLiveTrackingService {
     }
 
     @Transactional
-    public KdsTicketResponse markTicketReadyForPickup(UUID ticketId, UUID userId) {
-        Order order = orderRepository.findById(ticketId)
-                .orElseThrow(() -> new OrderNotFoundException(ticketId));
+    public KdsTicketResponse markTicketReadyForPickup(UUID ticketOrOrderId, UUID userId) {
+        Instant now = currentInstant();
+        if (kdsTicketRepository != null) {
+            Optional<KdsTicket> ticketOpt = kdsTicketRepository.findById(ticketOrOrderId);
+            if (ticketOpt.isPresent()) {
+                KdsTicket ticket = ticketOpt.get();
+                Order order = orderRepository.findById(ticket.getOrderId())
+                        .orElseThrow(() -> new OrderNotFoundException(ticket.getOrderId()));
+
+                ticket.setStatus(KdsTicketStatus.READY_FOR_PICKUP);
+                ticket.setReadyAt(now);
+                kdsTicketRepository.save(ticket);
+
+                order.setStatus(OrderStatus.READY_FOR_PICKUP);
+                order.setUpdatedAt(now);
+                orderRepository.save(order);
+
+                return new KdsTicketResponse(
+                        ticket.getId(),
+                        order.getId(),
+                        ticket.getTicketNumber(),
+                        OrderStatus.READY_FOR_PICKUP,
+                        now
+                );
+            }
+        }
+
+        Order order = orderRepository.findById(ticketOrOrderId)
+                .orElseThrow(() -> new OrderNotFoundException(ticketOrOrderId));
 
         order.setStatus(OrderStatus.READY_FOR_PICKUP);
-        order.setUpdatedAt(currentInstant());
+        order.setUpdatedAt(now);
         orderRepository.save(order);
 
-        int ticketNumber = Math.abs(order.getId().hashCode() % 900) + 100;
+        UUID resolvedTicketId = ticketOrOrderId;
+        Integer resolvedTicketNumber = null;
+        if (kdsTicketRepository != null) {
+            Optional<KdsTicket> linkedTicketOpt = kdsTicketRepository.findByOrderId(order.getId());
+            if (linkedTicketOpt.isPresent()) {
+                KdsTicket ticket = linkedTicketOpt.get();
+                ticket.setStatus(KdsTicketStatus.READY_FOR_PICKUP);
+                ticket.setReadyAt(now);
+                kdsTicketRepository.save(ticket);
+                resolvedTicketId = ticket.getId();
+                resolvedTicketNumber = ticket.getTicketNumber();
+            }
+        }
 
         return new KdsTicketResponse(
-                ticketId,
+                resolvedTicketId,
                 order.getId(),
-                ticketNumber,
+                resolvedTicketNumber,
                 OrderStatus.READY_FOR_PICKUP,
-                currentInstant()
+                now
         );
+    }
+
+    private String resolveInactiveStatusMessage(OrderStatus status) {
+        if (status == null) {
+            return "Estado de seguimiento en actualización.";
+        }
+        return switch (status) {
+            case PENDING_ACCREDITATION ->
+                    "Tu pago está pendiente de acreditación. El seguimiento en cocina comenzará cuando se confirme.";
+            case PENDING_PAYMENT ->
+                    "Tu pedido aún aguarda la confirmación de pago antes de ingresar a cocina.";
+            case PAID, CONFIRMED ->
+                    "Tu pago fue aprobado. Estamos asignando tu comanda a la cocina.";
+            case CANCELLED ->
+                    "Este pedido fue cancelado.";
+            case EXPIRED ->
+                    "Este intento de pedido expiró por tiempo antes de completarse el pago.";
+            default -> "El pedido aún no se encuentra en preparación.";
+        };
     }
 }

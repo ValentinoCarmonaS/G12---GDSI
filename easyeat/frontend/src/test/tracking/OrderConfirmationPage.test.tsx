@@ -1,5 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor, act, within } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { OrderConfirmationTrackingPage } from '../../pages/OrderConfirmationTrackingPage';
 import { orderTrackingApi } from '../../api/orderTrackingApi';
@@ -69,6 +69,10 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const renderWithRoute = (orderId = 'order-uuid-999') => {
     return render(
       <MemoryRouter initialEntries={[`/checkout/confirmacion/${orderId}`]}>
@@ -127,5 +131,43 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
     await waitFor(() => {
       expect(screen.getAllByText(/no pudimos cargar la información del pedido/i).length).toBeGreaterThanOrEqual(1);
     });
+  });
+
+  it('renders provisional PENDING_ACCREDITATION view without green banner, receipt notice, progressbar or fake ticketNumber and polls softly until approved', async () => {
+    vi.useFakeTimers();
+    const pendingData: OrderConfirmationTrackingResponse = {
+      ...mockOrderData,
+      status: 'PENDING_ACCREDITATION',
+      approvalStatus: 'PENDING',
+      ticketNumber: null,
+    };
+
+    vi.mocked(orderTrackingApi.getConfirmationTracking)
+      .mockResolvedValueOnce(pendingData)
+      .mockResolvedValueOnce(mockOrderData);
+
+    renderWithRoute();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(screen.queryByTestId('order-success-green-banner')).not.toBeInTheDocument();
+    expect(screen.queryByText(/comprobante emitido con respaldo por correo/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByText(/#0\b|#null/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/pago pendiente de confirmación/i)).toBeInTheDocument();
+    expect(within(screen.getByRole('main')).getByRole('link', { name: /mis pedidos/i })).toHaveAttribute(
+      'href',
+      '/perfil#pedidos'
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+
+    expect(orderTrackingApi.getConfirmationTracking).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('order-success-green-banner')).toBeInTheDocument();
+    expect(screen.getAllByText(/#142/).length).toBeGreaterThanOrEqual(1);
   });
 });

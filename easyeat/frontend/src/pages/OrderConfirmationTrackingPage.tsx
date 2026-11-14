@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, AlertCircle, Utensils } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
+import { PendingAccreditationBanner } from '../components/checkout/PendingAccreditationBanner';
 import { OrderSuccessGreenBanner } from '../components/tracking/OrderSuccessGreenBanner';
 import { LiveTrackingWidget } from '../components/tracking/LiveTrackingWidget';
 import { orderTrackingApi } from '../api/orderTrackingApi';
@@ -15,7 +16,7 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchOrderDetails = async () => {
+  const fetchOrderDetails = useCallback(async () => {
     if (!orderId) {
       setErrorMessage('Identificador de pedido no proporcionado.');
       setIsLoading(false);
@@ -37,11 +38,38 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [orderId]);
 
   useEffect(() => {
     fetchOrderDetails();
-  }, [orderId]);
+  }, [fetchOrderDetails]);
+
+  const isPendingApproval = Boolean(
+    order && (order.status === 'PENDING_ACCREDITATION' || order.approvalStatus === 'PENDING')
+  );
+
+  useEffect(() => {
+    if (!orderId || !isPendingApproval) {
+      return;
+    }
+
+    let cancelled = false;
+    const timerId = setTimeout(async () => {
+      try {
+        const updated = await orderTrackingApi.getConfirmationTracking(orderId);
+        if (!cancelled) {
+          setOrder(updated);
+        }
+      } catch {
+        // Mantiene vista provisional ante errores transitorios y reintenta en el próximo ciclo
+      }
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timerId);
+    };
+  }, [orderId, order, isPendingApproval]);
 
   return (
     <WorkspaceLayout
@@ -91,38 +119,62 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
           </div>
         )}
 
-        {/* Successful Confirmation View */}
+        {/* Provisional / Confirmation View */}
         {!isLoading && order && (
           <div className="space-y-8">
-            {/* Green Success Banner (AS-1, AS-3, INV-004) */}
-            <OrderSuccessGreenBanner
-              ticketNumber={order.ticketNumber}
-              pickupDate={order.pickupDate}
-              timeSlotStart={order.timeSlotStart}
-              timeSlotEnd={order.timeSlotEnd}
-              establishmentName={order.establishmentName}
-              fulfillmentMode={order.fulfillmentMode}
-            />
-
-            {/* Live Tracking Widget (FR-006, FR-007, FR-008, FR-009, AS-5, AS-6, AS-7, AS-8) */}
-            <LiveTrackingWidget
-              orderId={order.orderId}
-              ticketNumber={order.ticketNumber}
-              fulfillmentMode={order.fulfillmentMode}
-              timeSlotStart={order.timeSlotStart}
-              timeSlotEnd={order.timeSlotEnd}
-            />
-
-            {/* Email Guarantee Notice (AS-2, FR-002) */}
-            <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200/60 text-emerald-900 text-sm flex items-start gap-3">
-              <span className="text-lg">📧</span>
-              <div>
-                <p className="font-bold">Comprobante emitido con respaldo por correo</p>
-                <p className="text-xs text-emerald-700 mt-0.5">
-                  Te enviamos el comprobante formal con los datos de retiro y el enlace directo de seguimiento a tu casilla registrada.
-                </p>
+            {isPendingApproval ? (
+              <div className="space-y-6">
+                <PendingAccreditationBanner orderId={order.orderId} />
+                <div className="bg-white rounded-3xl border border-amber-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="space-y-1">
+                    <h2 className="text-lg font-bold text-gray-900">
+                      Esperando acreditación de pago
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      Actualizamos el estado automáticamente cada 5 segundos. Cuando Mercado Pago acredite el pago, tu pedido pasará a cocina y verás el comprobante completo.
+                    </p>
+                  </div>
+                  <Link
+                    to="/perfil#pedidos"
+                    className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl font-semibold text-sm bg-neutral-900 text-white hover:bg-neutral-800 transition-colors shrink-0"
+                  >
+                    Mis pedidos
+                  </Link>
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Green Success Banner (AS-1, AS-3, INV-004) */}
+                <OrderSuccessGreenBanner
+                  ticketNumber={order.ticketNumber}
+                  pickupDate={order.pickupDate}
+                  timeSlotStart={order.timeSlotStart}
+                  timeSlotEnd={order.timeSlotEnd}
+                  establishmentName={order.establishmentName}
+                  fulfillmentMode={order.fulfillmentMode}
+                />
+
+                {/* Live Tracking Widget (FR-006, FR-007, FR-008, FR-009, AS-5, AS-6, AS-7, AS-8) */}
+                <LiveTrackingWidget
+                  orderId={order.orderId}
+                  ticketNumber={order.ticketNumber}
+                  fulfillmentMode={order.fulfillmentMode}
+                  timeSlotStart={order.timeSlotStart}
+                  timeSlotEnd={order.timeSlotEnd}
+                />
+
+                {/* Email Guarantee Notice (AS-2, FR-002) */}
+                <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200/60 text-emerald-900 text-sm flex items-start gap-3">
+                  <span className="text-lg">📧</span>
+                  <div>
+                    <p className="font-bold">Comprobante emitido con respaldo por correo</p>
+                    <p className="text-xs text-emerald-700 mt-0.5">
+                      Te enviamos el comprobante formal con los datos de retiro y el enlace directo de seguimiento a tu casilla registrada.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Order Items Breakdown & Summary (AS-3) */}
             <div className="bg-white rounded-3xl border border-gray-200/80 p-6 sm:p-8 shadow-sm space-y-6">
@@ -162,10 +214,10 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
               <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
                 <div>
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">
-                    Total Abonado
+                    {isPendingApproval ? 'Total del Pedido' : 'Total Abonado'}
                   </span>
-                  <span className="text-xs text-emerald-600 font-medium">
-                    Abonado mediante pasarela segura
+                  <span className={`text-xs font-medium ${isPendingApproval ? 'text-amber-700' : 'text-emerald-600'}`}>
+                    {isPendingApproval ? 'Acreditación pendiente' : 'Abonado mediante pasarela segura'}
                   </span>
                 </div>
                 <span className="text-2xl sm:text-3xl font-extrabold text-gray-900">

@@ -11,7 +11,16 @@ export const ROLE_ALLOWED_PREFIXES: Record<Role, string[]> = {
   ENCARGADO: ['/mostrador', '/counter'],
   CHEF: ['/cocina', '/kds'],
   ADMINISTRADOR: ['/admin'],
-  COMENSAL: ['/catalogo', '/catalog', '/descubrimiento', '/discovery', '/perfil', '/profile'],
+  COMENSAL: [
+    '/catalogo',
+    '/catalog',
+    '/descubrimiento',
+    '/discovery',
+    '/perfil',
+    '/profile',
+    '/checkout',
+    '/pedidos',
+  ],
 };
 
 /**
@@ -40,19 +49,20 @@ export function getRoleDefaultRoute(role?: Role | null): string {
 }
 
 /**
- * Determines whether a requested path belongs to the authorized perimeter of a role.
+ * Determines whether a requested path (ignoring query/hash) belongs to the authorized perimeter of a role.
  */
 export function isRouteAllowedForRole(role: Role, path: string): boolean {
+  const basePath = path.split(/[?#]/)[0] || '/';
   const allowedPrefixes = ROLE_ALLOWED_PREFIXES[role] || [];
   return allowedPrefixes.some(
-    (prefix) => path === prefix || path.startsWith(`${prefix}/`)
+    (prefix) => basePath === prefix || basePath.startsWith(`${prefix}/`)
   );
 }
 
 /**
  * Resolves the final destination URL following authentication:
  * - If mustChangePassword is true, forces redirection to '/first-login-password-change'.
- * - If target URL is provided and authorized for the user's role, it is preserved.
+ * - If target URL is provided and authorized for the user's role, it is preserved (with query/hash).
  * - If target URL is unauthorized, root '/', or '/login', it falls back to the role's default workspace.
  */
 export function resolvePostAuthRedirect(
@@ -66,7 +76,12 @@ export function resolvePostAuthRedirect(
 
   const defaultRoute = getRoleDefaultRoute(role);
 
-  if (!targetUrl || targetUrl === '/' || targetUrl === '/login') {
+  if (!targetUrl) {
+    return defaultRoute;
+  }
+
+  const basePath = targetUrl.split(/[?#]/)[0] || '/';
+  if (basePath === '/' || basePath === '/login') {
     return defaultRoute;
   }
 

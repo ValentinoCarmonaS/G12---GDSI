@@ -4,6 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { CheckoutPage } from '../../src/pages/CheckoutPage';
 import { CartContext } from '../../src/context/CartContext';
 import * as checkoutApi from '../../src/api/checkoutApi';
+import * as orderApi from '../../src/api/orderApi';
+import * as paymentApi from '../../src/api/paymentApi';
 import { CartItem } from '../../src/types/cart';
 
 vi.mock('../../src/api/checkoutApi', () => ({
@@ -24,6 +26,7 @@ vi.mock('../../src/api/orderApi', () => ({
     status: 'PENDING_PAYMENT',
   }),
   cancelOrder: vi.fn(),
+  getMyOrders: vi.fn().mockResolvedValue([]),
   fetchPickupSlots: vi.fn().mockResolvedValue({
     establishmentId: 'est-123',
     date: '2026-11-10',
@@ -70,6 +73,7 @@ describe('T015: IndividualCheckoutPayment frontend tests (AS-4, AS-5, FR-005, FR
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(orderApi.getMyOrders).mockResolvedValue([]);
     window.sessionStorage.setItem('easyeat_active_tenant', JSON.stringify({ id: 'est-123' }));
   });
 
@@ -139,5 +143,69 @@ describe('T015: IndividualCheckoutPayment frontend tests (AS-4, AS-5, FR-005, FR
       expect(checkoutApi.confirmZeroAmountOrder).toHaveBeenCalledWith({ orderId: 'order-zero-123' });
       expect(clearCartMock).toHaveBeenCalled();
     });
+  });
+
+  it('handles 409 ACTIVE_RESERVATION_EXISTS in zero-amount branch by opening modal and loading InProcessPaymentPanel', async () => {
+    const zeroItems: CartItem[] = [
+      {
+        dishId: 'dish-free-1',
+        tenantId: 'est-123',
+        name: 'Plato 100% Bonificado',
+        price: 0,
+        quantity: 1,
+      },
+    ];
+
+    vi.mocked(orderApi.createOrder).mockRejectedValueOnce({
+      response: {
+        status: 409,
+        data: {
+          code: 'ACTIVE_RESERVATION_EXISTS',
+          orderId: 'order-existing-zero-409',
+          detail: 'Ya tenés una reserva activa pendiente de pago.',
+        },
+      },
+    });
+
+    vi.mocked(paymentApi.getOrderPaymentStatus).mockResolvedValueOnce({
+      orderId: 'order-existing-zero-409',
+      orderStatus: 'PENDING_PAYMENT',
+      reservation: {
+        id: 'res-zero-409',
+        status: 'ACTIVE',
+        expiresAt: new Date(Date.now() + 600000).toISOString(),
+        remainingSeconds: 600,
+        releaseReason: null,
+      },
+      payment: {
+        id: 'pay-zero-409',
+        status: 'IN_PROCESS',
+        statusDetail: null,
+        redirectUrl: 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-zero-409',
+        sandbox: false,
+      },
+      fulfillment: {
+        mode: 'IMMEDIATE',
+        pickupDate: '2026-11-11',
+        timeSlotStart: null,
+        timeSlotEnd: null,
+      },
+      totalAmount: 1500,
+      currency: 'ARS',
+      serverTime: new Date().toISOString(),
+    });
+
+    renderComponent(zeroItems);
+
+    fireEvent.click(screen.getByText(/inmediato|lo antes posible/i));
+    fireEvent.click(screen.getByRole('button', { name: /confirmar pedido bonificado/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('conflict-notification-modal')).toBeInTheDocument();
+      expect(paymentApi.getOrderPaymentStatus).toHaveBeenCalledWith('order-existing-zero-409');
+    });
+
+    expect(await screen.findByRole('region', { name: /panel de pago en curso/i })).toBeInTheDocument();
+    expect(clearCartMock).not.toHaveBeenCalled();
   });
 });

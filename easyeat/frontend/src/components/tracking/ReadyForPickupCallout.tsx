@@ -2,7 +2,7 @@ import React from 'react';
 import { CheckCircle } from 'lucide-react';
 
 export interface ReadyForPickupCalloutProps {
-  ticketNumber: number;
+  ticketNumber: number | null;
   message?: string;
 }
 
@@ -21,14 +21,22 @@ export const ReadyForPickupCallout: React.FC<ReadyForPickupCalloutProps> = ({
       <h2 className="text-2xl font-bold tracking-tight">
         {message || '¡Tu pedido está listo para retirar!'}
       </h2>
-      <p className="text-green-100 text-sm mt-1">
-        Por favor, acercate al mostrador y presentá tu número de pedido:
-      </p>
-      <div className="mt-5 py-4 px-8 bg-white rounded-2xl shadow-inner inline-block">
-        <span className="text-5xl font-black text-gray-900 tracking-wider">
-          #{ticketNumber}
-        </span>
-      </div>
+      {ticketNumber != null ? (
+        <>
+          <p className="text-green-100 text-sm mt-1">
+            Por favor, acercate al mostrador y presentá tu número de pedido:
+          </p>
+          <div className="mt-5 py-4 px-8 bg-white rounded-2xl shadow-inner inline-block">
+            <span className="text-5xl font-black text-gray-900 tracking-wider">
+              #{ticketNumber}
+            </span>
+          </div>
+        </>
+      ) : (
+        <p className="text-green-100 text-sm mt-1">
+          Por favor, acercate al mostrador para retirar tu pedido.
+        </p>
+      )}
       <p className="text-xs text-green-200 mt-4">
         Presentá este comprobante en la zona de entrega de pedidos.
       </p>

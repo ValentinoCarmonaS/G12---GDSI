@@ -44,6 +44,7 @@ import com.easyeat.catalog.exception.EstablishmentNotFoundException;
 import com.easyeat.catalog.exception.InvalidSearchQueryException;
 import com.easyeat.dish.exception.*;
 import com.easyeat.common.exception.TenantViolationException;
+import com.easyeat.inventory.exception.InsufficientIngredientStockException;
 import com.easyeat.inventory.exception.NegativeStockException;
 import com.easyeat.operations.exception.InvalidCapacityException;
 import com.easyeat.operations.exception.InvalidScheduleException;
@@ -656,6 +657,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setTitle("Conflict");
         problem.setInstance(URI.create(request.getRequestURI()));
         problem.setProperty("code", "ACTIVE_RESERVATION_EXISTS");
+        if (ex.getOrderId() != null) {
+            problem.setProperty("orderId", ex.getOrderId());
+        }
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }
 
@@ -711,6 +715,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setTitle("Conflict");
         problem.setInstance(URI.create(request.getRequestURI()));
         problem.setProperty("code", "INVALID_ORDER_STATE");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
+    }
+
+    /** 409: insufficient recipe ingredient stock when confirming order (US2). */
+    @ExceptionHandler(InsufficientIngredientStockException.class)
+    public ResponseEntity<ProblemDetail> handleInsufficientIngredientStock(
+            InsufficientIngredientStockException ex,
+            HttpServletRequest request
+    ) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setType(URI.create("https://easyeat.com/errors/insufficient-stock"));
+        problem.setTitle("Conflict");
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("code", "INSUFFICIENT_STOCK");
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }
 

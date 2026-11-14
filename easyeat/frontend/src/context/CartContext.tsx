@@ -30,7 +30,7 @@ export const CartContext = createContext<CartContextType | undefined>(undefined)
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
-      const stored = sessionStorage.getItem(CART_STORAGE_KEY);
+      const stored = localStorage.getItem(CART_STORAGE_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -60,16 +60,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Sync to sessionStorage
+  // Sync to localStorage
   useEffect(() => {
     try {
       if (items.length > 0) {
-        sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
       } else {
-        sessionStorage.removeItem(CART_STORAGE_KEY);
+        localStorage.removeItem(CART_STORAGE_KEY);
       }
     } catch (e) {
-      console.error('Failed to persist cart to sessionStorage', e);
+      console.error('Failed to persist cart to localStorage', e);
     }
   }, [items]);
 
@@ -158,9 +158,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearCart = useCallback(() => {
     setItems([]);
     try {
-      sessionStorage.removeItem(CART_STORAGE_KEY);
+      localStorage.removeItem(CART_STORAGE_KEY);
     } catch (e) {
-      console.error('Failed to clear cart in sessionStorage', e);
+      console.error('Failed to clear cart in localStorage', e);
     }
   }, []);
 

@@ -1,19 +1,25 @@
 package com.easyeat.order.controller;
 
+import com.easyeat.auth.domain.User;
+import com.easyeat.order.config.MercadoPagoProperties;
 import com.easyeat.order.domain.*;
 import com.easyeat.order.dto.OrderPaymentStatusResponse;
+import com.easyeat.order.exception.OrderNotFoundException;
 import com.easyeat.order.repository.OrderRepository;
 import com.easyeat.order.repository.PaymentRepository;
 import com.easyeat.order.repository.TemporaryReservationRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,34 +31,54 @@ public class OrderPaymentStatusController {
     private final TemporaryReservationRepository temporaryReservationRepository;
     private final PaymentRepository paymentRepository;
     private final Clock clock;
+    private final MercadoPagoProperties mercadoPagoProperties;
+
+    @Autowired
+    public OrderPaymentStatusController(
+            OrderRepository orderRepository,
+            TemporaryReservationRepository temporaryReservationRepository,
+            PaymentRepository paymentRepository,
+            @Autowired(required = false) Clock clock,
+            @Autowired(required = false) MercadoPagoProperties mercadoPagoProperties) {
+        this.orderRepository = orderRepository;
+        this.temporaryReservationRepository = temporaryReservationRepository;
+        this.paymentRepository = paymentRepository;
+        this.clock = (clock != null) ? clock : Clock.systemDefaultZone();
+        this.mercadoPagoProperties = mercadoPagoProperties;
+    }
 
     public OrderPaymentStatusController(
             OrderRepository orderRepository,
             TemporaryReservationRepository temporaryReservationRepository,
             PaymentRepository paymentRepository,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) Clock clock) {
-        this.orderRepository = orderRepository;
-        this.temporaryReservationRepository = temporaryReservationRepository;
-        this.paymentRepository = paymentRepository;
-        this.clock = (clock != null) ? clock : Clock.systemDefaultZone();
+            Clock clock) {
+        this(orderRepository, temporaryReservationRepository, paymentRepository, clock, null);
     }
 
     @GetMapping("/{orderId}/payment-status")
+    @PreAuthorize("hasRole('ROLE_COMENSAL') or hasRole('COMENSAL')")
     @Transactional
-    public ResponseEntity<OrderPaymentStatusResponse> getOrderPaymentStatus(@PathVariable("orderId") UUID orderId) {
+    public ResponseEntity<OrderPaymentStatusResponse> getOrderPaymentStatus(
+            @PathVariable("orderId") UUID orderId,
+            @AuthenticationPrincipal User authenticatedUser,
+            Authentication authentication) {
+        UUID currentUserId = resolveUserId(authenticatedUser, authentication);
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NoSuchElementException("Orden no encontrada: " + orderId));
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        if (order.getUserId() == null || !order.getUserId().equals(currentUserId)) {
+            throw new AccessDeniedException("No tenés autorización para consultar el estado de pago de esta orden");
+        }
 
         Instant now = clock.instant();
 
-        Optional<TemporaryReservation> resOpt = temporaryReservationRepository.findAll().stream()
-                .filter(r -> r.getOrder() != null && r.getOrder().getId().equals(orderId))
-                .findFirst();
-
+        Optional<TemporaryReservation> resOpt = temporaryReservationRepository.findByOrderId(orderId);
         Optional<Payment> payOpt = paymentRepository.findTopByOrderIdOrderByCreatedAtDesc(orderId);
 
-        // Expiración perezosa (Lazy expiration): Si expiró y sigue PENDING_PAYMENT, transicionar en el acto
-        if (order.getStatus() == OrderStatus.PENDING_PAYMENT && order.getExpiresAt() != null && order.getExpiresAt().isBefore(now)) {
+        // Expiración perezosa (Lazy expiration): Si expiró (<= now) y sigue PENDING_PAYMENT, transicionar en el acto
+        if (order.getStatus() == OrderStatus.PENDING_PAYMENT
+                && order.getExpiresAt() != null
+                && !order.getExpiresAt().isAfter(now)) {
             order.setStatus(OrderStatus.EXPIRED);
             order.setUpdatedAt(now);
             orderRepository.save(order);
@@ -90,13 +116,16 @@ public class OrderPaymentStatusController {
         OrderPaymentStatusResponse.PaymentSummary paySummary = null;
         if (payOpt.isPresent()) {
             Payment p = payOpt.get();
-            String redirect = p.getSandboxInitPoint() != null ? p.getSandboxInitPoint() : p.getInitPoint();
+            String initPoint = normalizeBlankToNull(p.getInitPoint());
+            String sandboxInitPoint = normalizeBlankToNull(p.getSandboxInitPoint());
+            String redirect = initPoint != null ? initPoint : sandboxInitPoint;
+            boolean sandbox = mercadoPagoProperties == null || mercadoPagoProperties.sandbox();
             paySummary = new OrderPaymentStatusResponse.PaymentSummary(
                     p.getId(),
                     p.getStatus(),
                     p.getStatusDetail(),
                     redirect,
-                    p.getSandboxInitPoint() != null
+                    sandbox
             );
         }
 
@@ -119,5 +148,31 @@ public class OrderPaymentStatusController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    private UUID resolveUserId(User user, Authentication authentication) {
+        if (user != null && user.getId() != null) {
+            return user.getId();
+        }
+        if (authentication != null) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof User u && u.getId() != null) {
+                return u.getId();
+            }
+            if (principal instanceof UUID uid) {
+                return uid;
+            }
+            if (principal instanceof String str) {
+                try {
+                    return UUID.fromString(str);
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+        }
+        throw new AccessDeniedException("No authenticated diner found in security context");
+    }
+
+    private static String normalizeBlankToNull(String value) {
+        return (value == null || value.isBlank()) ? null : value.trim();
     }
 }

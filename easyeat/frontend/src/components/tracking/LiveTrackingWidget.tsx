@@ -7,7 +7,7 @@ import type { FulfillmentMode, OrderLiveTrackingResponse } from '../../types/ord
 
 export interface LiveTrackingWidgetProps {
   orderId: string;
-  ticketNumber: number;
+  ticketNumber: number | null;
   fulfillmentMode: FulfillmentMode;
   timeSlotStart?: string | null;
   timeSlotEnd?: string | null;
@@ -24,7 +24,7 @@ export const LiveTrackingWidget: React.FC<LiveTrackingWidgetProps> = ({
 }) => {
   const { tracking } = useOrderLiveTrackingPolling(orderId, initialTracking);
 
-  const effectiveTicketNumber = tracking?.ticketNumber || ticketNumber;
+  const effectiveTicketNumber = tracking?.ticketNumber ?? ticketNumber ?? null;
   const isReady = tracking?.isReadyForPickup === true || tracking?.status === 'READY_FOR_PICKUP';
 
   // Terminal state: ready for pickup
@@ -69,7 +69,9 @@ export const LiveTrackingWidget: React.FC<LiveTrackingWidgetProps> = ({
               {tracking?.message || 'Preparando tu pedido'}
             </h3>
             <p className="text-xs text-gray-500">
-              Pedido #{effectiveTicketNumber} • Retiro en mostrador
+              {effectiveTicketNumber != null
+                ? `Pedido #${effectiveTicketNumber} • Retiro en mostrador`
+                : 'Retiro en mostrador'}
             </p>
           </div>
         </div>

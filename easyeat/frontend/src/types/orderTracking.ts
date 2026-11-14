@@ -12,9 +12,9 @@ export interface OrderTrackingItem {
 
 export interface OrderConfirmationTrackingResponse {
   orderId: string;
-  ticketNumber: number;
+  ticketNumber: number | null;
   status: OrderStatus;
-  approvalStatus: 'APPROVED' | string;
+  approvalStatus: 'APPROVED' | 'PENDING' | string;
   establishmentId: string;
   establishmentName: string;
   fulfillmentMode: FulfillmentMode;
@@ -37,7 +37,7 @@ export interface KdsQueueSaturation {
 
 export interface OrderLiveTrackingResponse {
   orderId: string;
-  ticketNumber: number;
+  ticketNumber: number | null;
   status: OrderStatus;
   fulfillmentMode: FulfillmentMode;
   isCountdownActive: boolean;
@@ -63,7 +63,7 @@ export interface KdsDelayAdjustmentResponse {
 export interface KdsTicketReadyResponse {
   ticketId: string;
   orderId: string;
-  ticketNumber: number;
+  ticketNumber: number | null;
   status: 'READY_FOR_PICKUP';
   readyAt: string;
 }
