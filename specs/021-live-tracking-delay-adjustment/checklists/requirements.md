@@ -34,4 +34,4 @@
 - Proceso de clarificación mediante `/grill-me` completado y formalizado en la sección de Clarifications.
 - Cobertura 100% verificable de las historias de usuario `COM-8.1.1` (P1) y `COM-7.3.2 (BIS)` (P2).
 - Comportamiento observable y reglas deterministas alineadas con las especificaciones previas del sistema (001 a 020).
-- La especificación está aprobada y lista para avanzar a la fase de planificación (`/speckit-plan`).
+- La especificación se encuentra en estado Borrador (pendiente de revisión y aprobación explícita del usuario antes de avanzar a planificación).

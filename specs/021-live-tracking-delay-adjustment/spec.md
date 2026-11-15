@@ -3,7 +3,7 @@
 **Identificador de especificación**: `021-live-tracking-delay-adjustment`  
 **Rama de trabajo**: `021-live-tracking-delay-adjustment`  
 **Fecha de creación**: 15/11/2026  
-**Estado**: Aprobado  
+**Estado**: Borrador (pendiente de aprobación)  
 **Entrada**: Requerimientos funcionales derivados de las historias de usuario `COM-8.1.1` y `COM-7.3.2 (BIS)`.
 
 ---
