@@ -3,7 +3,7 @@
 **Identificador de especificación**: `019-kds-queue-preparation`  
 **Rama de trabajo**: `019-kds-queue-preparation`  
 **Fecha de creación**: 15/11/2026  
-**Estado**: Borrador inicial  
+**Estado**: Aprobado  
 **Entrada**: Requerimientos funcionales derivados de las historias de usuario `CHF-3.1.2`, `CHF-3.2.1`, `CHF-4.1.1`, `CHF-4.1.4` y `CHF-4.1.5`.
 
 ---
