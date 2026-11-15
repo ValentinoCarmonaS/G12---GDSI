@@ -11,7 +11,7 @@
 
 ---
 
-## Fase 1: Preparación compartida (Setup)
+## Fase 1: Preparación compartida (Setup) — [GitHub Issue #337](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/337)
 
 **Propósito**: Crear los DTOs y tipos de dominio base requeridos por los contratos HTTP en backend y frontend.
 
@@ -22,7 +22,7 @@
 
 ---
 
-## Fase 2: Base fundamental (Foundational)
+## Fase 2: Base fundamental (Foundational) — [GitHub Issue #338](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/338)
 
 **Propósito**: Establecer el índice optimizado de cola, el bloqueo pesimista en persistencia y las utilidades compartidas de tiempo antes de implementar las historias operativas.
 
@@ -34,7 +34,7 @@
 
 ---
 
-## Fase 3: Historia de usuario 1 — Priorización automática de la cola de preparación: FIFO unificado por turno (Prioridad: P1) 🎯 MVP
+## Fase 3: Historia de usuario 1 — Priorización automática de la cola de preparación: FIFO unificado por turno (Prioridad: P1) 🎯 MVP — [GitHub Issue #339](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/339)
 
 **Objetivo**: Ordenar determinísticamente la cola activa (`pickup_date ASC, time_slot_start ASC, queued_at ASC, id ASC`), excluir pedidos futuros (`pickup_date > hoy`), otorgar precedencia a turnos vencidos, unificar FIFO entre inmediatos y programados, y normalizar pedidos `IMMEDIATE` al bloque de 15 minutos en curso.
 
@@ -61,7 +61,7 @@
 
 ---
 
-## Fase 4: Historia de usuario 2 — Iniciar preparación de comanda: transición a Columna 2 (Prioridad: P1)
+## Fase 4: Historia de usuario 2 — Iniciar preparación de comanda: transición a Columna 2 (Prioridad: P1) — [GitHub Issue #340](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/340)
 
 **Objetivo**: Transicionar comanda de `QUEUED` a `IN_PREPARATION` al pulsar "EMPEZAR", fijar `started_at = Instant.now()`, asegurar `Order.status = IN_PROGRESS` y garantizar idempotencia atómica ante reintentos o concurrencia.
 
@@ -86,7 +86,7 @@
 
 ---
 
-## Fase 5: Historia de usuario 3 — Lectura ergonómica de comanda táctil (Prioridad: P2)
+## Fase 5: Historia de usuario 3 — Lectura ergonómica de comanda táctil (Prioridad: P2) — [GitHub Issue #341](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/341)
 
 **Objetivo**: Renderizar tarjeta compacta en Columna 1 (scroll táctil continuo sin paginación), tarjeta expandida en Columna 2 con formato `[Cantidad]x [Nombre del Plato]`, omitir placeholders de notas vacías y mantener layout fijo de dos columnas con mensajes neutrales para estados vacíos.
 
@@ -109,7 +109,7 @@
 
 ---
 
-## Fase 6: Historia de usuario 4 — Cronómetro progresivo de preparación en minutos: Count-Up (Prioridad: P2)
+## Fase 6: Historia de usuario 4 — Cronómetro progresivo de preparación en minutos: Count-Up (Prioridad: P2) — [GitHub Issue #342](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/342)
 
 **Objetivo**: Exhibir en la cabecera de comanda de Columna 2 el tiempo transcurrido en `MM min`, calculado contra `started_at` del servidor, con refresco cada 60 s y persistencia ante recarga o visualización multi-dispositivo sin reiniciarse.
 
@@ -131,7 +131,7 @@
 
 ---
 
-## Fase 7: Historia de usuario 5 — Alerta visual por demora excesiva en KDS: umbral de 15 minutos (Prioridad: P2)
+## Fase 7: Historia de usuario 5 — Alerta visual por demora excesiva en KDS: umbral de 15 minutos (Prioridad: P2) — [GitHub Issue #343](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/343)
 
 **Objetivo**: Conmutar reactivamente a color ámbar (`#EAB308` / `#F59E0B`) el borde exterior y la insignia de tiempo de la tarjeta de Columna 2 cuando `tiempo >= 15 min`, conservando el cuerpo de platos con tipografía y fondo neutros.
 
@@ -152,7 +152,7 @@
 
 ---
 
-## Fase 8: Pulido y validación cross-cutting
+## Fase 8: Pulido y validación cross-cutting — [GitHub Issue #344](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/344)
 
 **Propósito**: Ejecución integral de suites automatizadas y validación manual de escenarios operativos.
 
