@@ -33,10 +33,10 @@ Implementar la arquitectura técnica incremental para el seguimiento adaptativo 
   - Frontend: React 18.3.1, React Router DOM 6.27.0, Axios 1.7.7, Tailwind CSS 3.4.13, Lucide React 0.453.0, Vitest 2.1.3.
 - **Persistencia**:
   - PostgreSQL: tablas `orders`, `kds_tickets`, `order_items`.
-  - Migración incremental Flyway: `V27__kds_specific_delay_minutes.sql` incorporando `specific_delay_minutes INTEGER NOT NULL DEFAULT 0` con check `specific_delay_minutes >= 0` en `kds_tickets`.
+  - Migración incremental Flyway: `V27__kds_specific_delay_minutes.sql` incorporando `specific_delay_minutes INTEGER NOT NULL DEFAULT 0` con check `specific_delay_minutes >= 0` en `kds_tickets`, y la columna `security_code VARCHAR(4) NULL` en `orders` de forma idempotente (`ADD COLUMN IF NOT EXISTS`).
 - **Pruebas**:
   - Backend: JUnit 5, Mockito, Spring `@WebMvcTest`, Testcontainers PostgreSQL (`BaseIntegrationTest`).
-  - Frontend: Vitest + React Testing Library (ejecutando en `easyeat/frontend/tests/` y `easyeat/frontend/src/test/`).
+  - Frontend: Vitest + React Testing Library (ejecutando en `easyeat/frontend/src/test/` y `easyeat/frontend/tests/`).
 - **Plataforma objetivo**: Entorno Docker / Render (Backend Linux), terminales táctiles de cocina y pantallas de comensales en dispositivos móviles y de escritorio (Frontend).
 - **Tipo de proyecto**: Aplicación Web Full-Stack (Backend REST API + Frontend SPA).
 - **Objetivos de rendimiento**:
@@ -88,11 +88,12 @@ specs/021-live-tracking-delay-adjustment/
 #### Backend (`easyeat/backend/`)
 
 - `src/main/resources/db/migration/V27__kds_specific_delay_minutes.sql`:
-  - Migración Flyway para agregar `specific_delay_minutes INTEGER NOT NULL DEFAULT 0` con check `CHECK (specific_delay_minutes >= 0)` en `kds_tickets`.
-- `src/main/java/com/easyeat/order/domain/KdsTicket.java`:
-  - Mapear atributo `specificDelayMinutes` (`Integer`) con valor por defecto 0 y sus respectivos getters y setters.
+  - Migración Flyway para agregar `specific_delay_minutes INTEGER NOT NULL DEFAULT 0` con check `CHECK (specific_delay_minutes >= 0)` en `kds_tickets`, y la columna `security_code VARCHAR(4) NULL` en `orders` de forma idempotente (`ADD COLUMN IF NOT EXISTS`).
+- `src/main/java/com/easyeat/order/domain/KdsTicket.java` y `Order.java`:
+  - En `KdsTicket`: mapear atributo `specificDelayMinutes` (`Integer`) con valor por defecto 0 y sus respectivos getters y setters.
+  - En `Order`: mapear atributo `securityCode` (`@Column(name = "security_code", length = 4)`) con getter y setter.
 - `src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`:
-  - Agregar consulta `countQueuedTicketsAhead(UUID establishmentId, LocalDate pickupDate, LocalTime timeSlotStart, Instant queuedAt, UUID ticketId, LocalDate today)` para cálculo determinista de $N$.
+  - Agregar consulta `countQueuedTicketsAhead(UUID establishmentId, LocalDate pickupDate, LocalTime timeSlotStart, Instant queuedAt, UUID ticketId, LocalDate today)` para cálculo determinista de $N$ y método `findByIdForUpdate(@Param("id") UUID id)` con `@Lock(LockModeType.PESSIMISTIC_WRITE)`.
 - `src/main/java/com/easyeat/order/dto/KdsDelayIncrementResponse.java`:
   - Nuevo DTO de respuesta para `POST .../add-delay` con `ticketId`, `orderId`, `ticketNumber`, `specificDelayMinutes`, `estimatedTotalMinutes`, `updatedAt`.
 - `src/main/java/com/easyeat/order/dto/OrderLiveTrackingResponse.java`:
@@ -107,11 +108,11 @@ specs/021-live-tracking-delay-adjustment/
 #### Frontend (`easyeat/frontend/`)
 
 - `src/types/orderTracking.ts` y `src/types/kds.ts`:
-  - Extender interfaces de tracking y KDS incorporando `specificDelayMinutes`, `positionAhead`, `remainingMinutes`, `progressPercent`, `securityCode` y `KdsDelayIncrementResponse`.
+  - Extender interfaces de tracking y KDS incorporando `specificDelayMinutes`, `positionAhead`, `remainingMinutes`, `progressPercent`, `securityCode`, `KdsDelayIncrementResponse` y `isDisconnected: boolean` en `UseOrderLiveTrackingPollingResult`.
 - `src/api/orderTrackingApi.ts` y `src/api/kitchenKdsApi.ts`:
   - Agregar función `addTicketDelay(ticketId: string): Promise<KdsDelayIncrementResponse>`.
 - `src/hooks/useOrderLiveTrackingPolling.ts`:
-  - Ajustar cadencia a 6 segundos, cabeceras `no-cache`, pausa con `document.visibilityState === 'hidden'`, umbral de 15 s para corte de red e idempotencia visual con `useRef`.
+  - Ajustar cadencia a 6 segundos, cabeceras `no-cache`, pausa con `document.visibilityState === 'hidden'`, umbral de 15 s para corte de red con exposición de `isDisconnected: boolean` e idempotencia visual con `useRef`.
 - `src/components/common/ConnectionStatusBadge.tsx`:
   - Componente de cabecera no bloqueante `"Sin conexión — Reintentando..."` ante desconexión $> 15 \text{ s}$.
 - `src/components/tracking/LiveTrackingWidget.tsx`:
@@ -123,8 +124,8 @@ specs/021-live-tracking-delay-adjustment/
   - Integrar la insignia de desconexión y el renderizado adaptativo.
 - `src/router/AppRoutes.tsx`:
   - Declarar la ruta directa `/seguimiento/:orderId` vinculada a la experiencia de seguimiento adaptativo en vivo del comensal.
-- `src/components/kitchen/KitchenKanbanBoard.tsx` (o tarjeta de Columna 2 en `KitchenWorkspacePage.tsx`):
-  - Incorporar en el pie de la tarjeta el control táctil "+5" y la insignia de demora acumulada contigua (`+5 min`, `+10 min`...).
+- `src/components/kitchen/KitchenTicketDelayControl.tsx` (montado en `KitchenWorkspacePage.tsx`):
+  - Componente modular de control táctil "+5" con debounce en vuelo e insignia de demora acumulada contigua (`+5 min`, `+10 min`...), integrado en `KitchenWorkspacePage.tsx` y reutilizable en el tablero KDS.
 
 ---
 

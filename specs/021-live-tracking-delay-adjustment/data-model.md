@@ -28,7 +28,7 @@ erDiagram
         time time_slot_end
         decimal total_amount
         timestamptz ready_at "Spec 020 (V26)"
-        varchar security_code "Spec 020 (V26) - 4 digitos"
+        varchar security_code "Spec 021 (V27) - 4 digitos"
         timestamptz created_at
         timestamptz updated_at
     }
@@ -67,7 +67,7 @@ erDiagram
 
 ```sql
 -- ====================================================================
--- EasyEat V27: Granular Kitchen Delay (+5) on KDS Tickets (Spec 021)
+-- EasyEat V27: Granular Kitchen Delay (+5) on KDS Tickets & Security Code (Spec 021)
 -- ====================================================================
 
 ALTER TABLE kds_tickets
@@ -82,6 +82,13 @@ ALTER TABLE kds_tickets
 
 COMMENT ON COLUMN kds_tickets.specific_delay_minutes IS 
     'Demora acumulada en minutos (+5 por pulsacion) agregada por el personal de cocina.';
+
+-- Garantizar la columna de codigo de seguridad numerico de 4 digitos en orders para retiro
+ALTER TABLE orders
+    ADD COLUMN IF NOT EXISTS security_code VARCHAR(4) NULL;
+
+COMMENT ON COLUMN orders.security_code IS 
+    'Codigo numerico de seguridad de 4 digitos para retiro verbal en mostrador (RF-021).';
 ```
 
 ### 2.2 Tabla `kds_tickets` (Estado resultante con Spec 021)
@@ -304,6 +311,14 @@ export interface KdsDelayIncrementResponse {
   specificDelayMinutes: number;
   estimatedTotalMinutes: number;
   updatedAt: string;
+}
+
+export interface UseOrderLiveTrackingPollingResult {
+  tracking: OrderLiveTrackingData | null;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
+  isDisconnected: boolean;
 }
 ```
 

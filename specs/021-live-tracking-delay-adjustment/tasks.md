@@ -17,7 +17,7 @@
 
 - [ ] T001 [P] Crear DTO de respuesta `KdsDelayIncrementResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/` con campos `ticketId`, `orderId`, `ticketNumber`, `specificDelayMinutes`, `estimatedTotalMinutes`, `updatedAt`.
 - [ ] T002 [P] Extender el DTO `OrderLiveTrackingResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/` incorporando `positionAhead`, `estimatedTotalMinutes`, `elapsedMinutes`, `remainingMinutes`, `progressPercent`, `specificDelayMinutes`, `securityCode`, `startedAt`, `readyAt`, y record `LiveTrackingItemDto(dishName, quantity)`.
-- [ ] T003 [P] Extender interfaces TypeScript de seguimiento en `easyeat/frontend/src/types/orderTracking.ts` y de cocina en `easyeat/frontend/src/types/kds.ts` incorporando `OrderLiveTrackingData`, `KdsDelayIncrementResponse` y `LiveTrackingItem`.
+- [ ] T003 [P] Extender interfaces TypeScript de seguimiento en `easyeat/frontend/src/types/orderTracking.ts` y de cocina en `easyeat/frontend/src/types/kds.ts` incorporando `OrderLiveTrackingData`, `KdsDelayIncrementResponse`, `LiveTrackingItem` y tipado `isDisconnected: boolean` en `UseOrderLiveTrackingPollingResult`.
 - [ ] T004 [P] Actualizar clientes HTTP en `easyeat/frontend/src/api/orderTrackingApi.ts` y `easyeat/frontend/src/api/kitchenKdsApi.ts` exponiendo `addTicketDelay(ticketId)` y tipando la respuesta de `getLiveTracking`.
 
 **Checkpoint**: Modelos de transporte definidos y consistentes entre backend y frontend.
@@ -26,14 +26,14 @@
 
 ## Fase 2: Base fundamental (Foundational)
 
-**Propósito**: Establecer la migración de base de datos Flyway V27 (`specific_delay_minutes`), mapeo de entidades JPA, consulta de posición de cola y componente de conectividad antes de abordar las historias operativas.
+**Propósito**: Establecer la migración de base de datos Flyway V27 (`specific_delay_minutes` en `kds_tickets` y `security_code` en `orders`), mapeo de entidades JPA, métodos de repositorio pesimista y FIFO, y componente de conectividad antes de abordar las historias operativas.
 
-- [ ] T005 [P] Crear migración Flyway `V27__kds_specific_delay_minutes.sql` en `easyeat/backend/src/main/resources/db/migration/` incorporando la columna `specific_delay_minutes INTEGER NOT NULL DEFAULT 0` con restricción `CHECK (specific_delay_minutes >= 0)` en `kds_tickets`.
-- [ ] T006 [P] Extender entidad JPA `KdsTicket.java` en `easyeat/backend/src/main/java/com/easyeat/order/domain/` mapeando la propiedad `specificDelayMinutes` con valor por defecto 0, getters y setters.
-- [ ] T007 [P] Agregar método `countQueuedTicketsAhead` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java` computando las órdenes pendientes en estado `QUEUED` que preceden al ticket bajo orden FIFO (`pickupDate ASC, timeSlotStart ASC, queuedAt ASC, id ASC`) para el mismo establecimiento con `pickupDate <= :today`.
+- [ ] T005 [P] Crear migración Flyway `V27__kds_specific_delay_minutes.sql` en `easyeat/backend/src/main/resources/db/migration/` incorporando la columna `specific_delay_minutes INTEGER NOT NULL DEFAULT 0` con restricción `CHECK (specific_delay_minutes >= 0)` en `kds_tickets`, y la columna `security_code VARCHAR(4) NULL` en `orders` de forma idempotente (`ADD COLUMN IF NOT EXISTS`).
+- [ ] T006 [P] Extender entidad JPA `KdsTicket.java` mapeando la propiedad `specificDelayMinutes` (default 0, getters/setters) y entidad JPA `Order.java` en `easyeat/backend/src/main/java/com/easyeat/order/domain/` mapeando `securityCode` (`@Column(name = "security_code", length = 4)`, getters/setters).
+- [ ] T007 [P] Agregar métodos `countQueuedTicketsAhead` (cómputo FIFO de cola activa para `pickupDate <= :today`) y `findByIdForUpdate(@Param("id") UUID id)` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
 - [ ] T008 [P] Crear componente de advertencia de conectividad `ConnectionStatusBadge.tsx` en `easyeat/frontend/src/components/common/` exhibiendo la leyenda "Sin conexión — Reintentando..." de forma sutil y no bloqueante.
 
-**Checkpoint**: Base de persistencia (columna en base de datos, entidad y consulta de cola) e infraestructura UI de conectividad listas para implementar historias.
+**Checkpoint**: Base de persistencia (columnas en base de datos, entidades y métodos de repositorio) e infraestructura UI de conectividad listas para implementar historias.
 
 ---
 
@@ -49,14 +49,14 @@
 
 - [ ] T009 [P] [US1] Crear prueba de integración transaccional en `easyeat/backend/src/test/java/com/easyeat/order/KdsQueueFifoPositionIntegrationTest.java` verificando el conteo determinista de órdenes precedentes en cola (`countQueuedTicketsAhead`) bajo regla FIFO (`pickup_date, time_slot_start, queued_at, id`), exclusión de tickets en `IN_PREPARATION` del conteo de cola previa y caso frontera $N=0$ cuando el ticket está al tope.
 - [ ] T010 [P] [US1] Crear prueba `@WebMvcTest` en `easyeat/backend/src/test/java/com/easyeat/order/OrderLiveTrackingControllerIntegrationTest.java` verificando `GET /api/v1/orders/{orderId}/live-tracking` para rol `COMENSAL` en los 3 estados: `QUEUED` (con `positionAhead`, minutero/barra nulos), `IN_PREPARATION` (con minutero activo, barra y leyenda de cola ausente) y `READY_FOR_PICKUP` (con `securityCode`, métricas purgadas y cabeceras `Cache-Control: no-cache, no-store, must-revalidate`).
-- [ ] T011 [P] [US1] Crear pruebas unitarias en `easyeat/frontend/tests/hooks/useOrderLiveTrackingPolling.test.ts` verificando ciclo de polling silencioso de 6 segundos, cabeceras `no-cache`, cancelación con `AbortController` al desmontar, pausa ante `document.visibilityState === 'hidden'`, activación del flag `isDisconnected = true` tras fallas consecutivas $>15$ segundos y retiro automático al primer éxito.
-- [ ] T012 [P] [US1] Crear pruebas de componente en `easyeat/frontend/tests/components/LiveTrackingWidget.test.tsx` verificando renderizado de `QUEUED` (insignia "En cola en cocina", leyenda "Tenés N pedidos por delante", caso literal "Tenés 0 pedidos por delante", ausencia de minutero y barra), renderizado de `IN_PREPARATION` (icono dinámico, temporizador y barra visibles) y renderizado de `READY_FOR_PICKUP` (panel verde de éxito, código de seguridad de 4 dígitos, platos y purga de minutero/barra).
+- [ ] T011 [P] [US1] Actualizar y extender pruebas unitarias en `easyeat/frontend/src/test/hooks/useOrderLiveTrackingPolling.test.ts` adaptando la suite preexistente de Spec 016 para verificar ciclo de polling regular de 6 segundos, cabeceras `no-cache`, cancelación con `AbortController` al desmontar, pausa ante `document.visibilityState === 'hidden'`, activación del flag `isDisconnected = true` tras fallas consecutivas $>15$ segundos y retiro automático al primer éxito.
+- [ ] T012 [P] [US1] Actualizar y extender pruebas de componente en `easyeat/frontend/src/test/tracking/LiveTrackingWidget.test.tsx` adaptando la suite preexistente de Spec 016 para verificar renderizado de `QUEUED` (insignia "En cola en cocina", leyenda "Tenés N pedidos por delante", caso literal "Tenés 0 pedidos por delante", ausencia de minutero y barra), renderizado de `IN_PREPARATION` (icono dinámico, temporizador y barra visibles) y renderizado de `READY_FOR_PICKUP` (panel verde de éxito, código de seguridad de 4 dígitos, platos y purga de minutero/barra).
 
 ### Implementación de US1 (Green Implementation)
 
 - [ ] T013 [US1] Implementar cálculo adaptativo en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderLiveTrackingService.java` resolviendo `positionAhead` mediante `countQueuedTicketsAhead` en `QUEUED`, activación de métricas temporales en `IN_PREPARATION` y purga visual con provisión de `securityCode` en `READY_FOR_PICKUP`.
 - [ ] T014 [US1] Actualizar `getLiveTracking` en `easyeat/backend/src/main/java/com/easyeat/order/controller/OrderConfirmationTrackingController.java` mapeando la orden y comanda a `OrderLiveTrackingResponse` asegurando cabeceras `no-cache, no-store, must-revalidate`.
-- [ ] T015 [US1] Implementar hook `useOrderLiveTrackingPolling.ts` en `easyeat/frontend/src/hooks/` con intervalo regular de 6 s, `visibilitychange`, `AbortController`, seguimiento de umbral de 15 s para `isDisconnected` e idempotencia visual con `useRef` para evitar parpadeos y reinicios ante datos idénticos.
+- [ ] T015 [US1] Implementar hook `useOrderLiveTrackingPolling.ts` en `easyeat/frontend/src/hooks/` con intervalo regular de 6 s, `visibilitychange`, `AbortController`, exposición de `isDisconnected: boolean` tras umbral de 15 s e idempotencia visual con `useRef` para evitar parpadeos y reinicios ante datos idénticos.
 - [ ] T016 [US1] Adaptar `LiveTrackingWidget.tsx` en `easyeat/frontend/src/components/tracking/` para renderizar las tres etapas operativas (`QUEUED`, `IN_PREPARATION`, `READY_FOR_PICKUP`) con sus insignias, leyendas, código de 4 dígitos e integración de `ConnectionStatusBadge`.
 - [ ] T017 [US1] Configurar la ruta `/seguimiento/:orderId` en `easyeat/frontend/src/router/AppRoutes.tsx` y actualizar `easyeat/frontend/src/pages/OrderConfirmationTrackingPage.tsx` para consumir el widget adaptativo.
 
@@ -76,15 +76,15 @@
 
 - [ ] T018 [P] [US2] Crear prueba de integración transaccional en `easyeat/backend/src/test/java/com/easyeat/order/KdsDelayAdjustmentIntegrationTest.java` verificando `POST /api/v1/kitchen/tickets/{ticketId}/add-delay` bajo concurrencia (bloqueo pesimista `PESSIMISTIC_WRITE`, incremento acumulativo lineal, 3 pulsaciones rápidas = $+15 \text{ min}$, error 404 para ticket inexistente, 403 para otro establecimiento y 409 si el ticket no está en `IN_PREPARATION`).
 - [ ] T019 [P] [US2] Crear pruebas unitarias de cálculo temporal en `easyeat/backend/src/test/java/com/easyeat/order/LiveTrackingDelayCalculationTest.java` verificando `remainingMinutes = max(1, (20 + specificDelayMinutes) - elapsedMinutes)`, cota de piso en "1 min restante" al superar el estimado, techo de `progressPercent` en 92% y recálculo proporcional ante adiciones sucesivas de $+5$.
-- [ ] T020 [P] [US2] Crear prueba de componente en `easyeat/frontend/tests/components/KitchenTicketDelayControl.test.tsx` verificando botón táctil "+5" en la tarjeta de Columna 2 de cocina, debounce/bloqueo momentáneo en vuelo, llamada a la API y renderizado inmediato de la insignia acumulada (`+5 min`, `+10 min`...).
-- [ ] T021 [P] [US2] Crear prueba de integración de UI en `easyeat/frontend/tests/components/LiveTrackingWidgetDelay.test.tsx` verificando transición reactiva de $M \to M + 5$, recálculo fluido de la barra de progreso sin parpadeos, persistencia de 1 min y 92% ante tiempo excedido, y purga completa de indicadores de demora al recibir `READY_FOR_PICKUP`.
+- [ ] T020 [P] [US2] Crear prueba de componente en `easyeat/frontend/src/test/kitchen/KitchenTicketDelayControl.test.tsx` verificando botón táctil "+5" en el componente modular de cocina, debounce/bloqueo momentáneo en vuelo, llamada a la API y renderizado inmediato de la insignia acumulada (`+5 min`, `+10 min`...).
+- [ ] T021 [P] [US2] Crear prueba de integración de UI en `easyeat/frontend/src/test/tracking/LiveTrackingWidgetDelay.test.tsx` verificando transición reactiva de $M \to M + 5$, recálculo fluido de la barra de progreso sin parpadeos, persistencia de 1 min y 92% ante tiempo excedido, y purga completa de indicadores de demora al recibir `READY_FOR_PICKUP`.
 
 ### Implementación de US2 (Green Implementation)
 
 - [ ] T022 [US2] Implementar método transaccional `addTicketDelay(ticketId, establishmentId)` en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java` y `KdsQueueService.java` ejecutando `findByIdForUpdate`, validando estado `IN_PREPARATION`, sumando 5 a `specificDelayMinutes` y persistiendo la comanda.
 - [ ] T023 [US2] Exponer endpoint `POST /api/v1/kitchen/tickets/{ticketId}/add-delay` en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` restringido a roles `CHEF` y `ADMINISTRADOR`.
 - [ ] T024 [US2] Actualizar `OrderLiveTrackingService.java` en `easyeat/backend/src/main/java/com/easyeat/order/service/` para incorporar `specificDelayMinutes` en el cálculo de `estimatedTotalMinutes = 20 + specificDelayMinutes`, minutero con piso en 1 y barra con techo en 92%.
-- [ ] T025 [US2] Incorporar botón táctil "+5", debounce durante llamada en vuelo e insignia de demora acumulada contigua en la tarjeta de comanda activa de cocina en `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` (y componente de tablero KDS asociado).
+- [ ] T025 [US2] Crear componente modular `KitchenTicketDelayControl.tsx` en `easyeat/frontend/src/components/kitchen/` (con botón táctil "+5", debounce durante llamada en vuelo e insignia de demora acumulada contigua) e integrarlo en la comanda activa de cocina en `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` (dejándolo listo para su posterior consumo en el tablero KDS).
 
 **Checkpoint**: `US1 + US2` integradas completamente (seguimiento adaptativo en vivo y ajuste granular reactivo de demoras de cocina operativo end-to-end).
 
@@ -94,7 +94,7 @@
 
 **Propósito**: Validar fronteras con especificaciones adyacentes, ejecutar la guía de validación rápida y asegurar la suite completa de pruebas de regresión.
 
-- [ ] T026 [P] Verificar fronteras de aislamiento técnico con Spec 019 (el cronómetro Count-Up de Columna 2 en KDS no altera su avance cronológico por adiciones de `+5`) y Spec 020 (la pantalla `/mostrador` computa el tiempo exclusivamente desde `ready_at` sin verse afectada por `specific_delay_minutes`) en `easyeat/backend/src/test/java/com/easyeat/order/KdsBoundariesTest.java`.
+- [ ] T026 [P] Verificar fronteras de aislamiento técnico de dominio en `easyeat/backend/src/test/java/com/easyeat/order/KdsBoundariesTest.java` comprobando que la mutación `addTicketDelay` incrementa exclusivamente `specificDelayMinutes` sin alterar `startedAt` (base inmutable del cronómetro Count-Up de cocina) ni `readyAt` (base inmutable de mostrador).
 - [ ] T027 Ejecutar manualmente los 13 escenarios de validación guiada de `quickstart.md` (`specs/021-live-tracking-delay-adjustment/quickstart.md`) verificando transiciones, $N=0$, clics rápidos (+15 min), desconexión >15 s y purga de entrega.
 - [ ] T028 [P] Ejecutar la suite completa de pruebas unitarias y de integración de backend (`./mvnw test`) y frontend (`npm test`), asegurando 100% de éxito y ausencia de regresiones.
 
@@ -141,7 +141,7 @@ Fase 5: Pulido final y verificación transversal
 - `T001` (DTOs backend) y `T002` (DTO live tracking) pueden desarrollarse en paralelo con `T003` (tipos frontend) y `T004` (APIs frontend).
 
 ### Paralelismo en Fase 2 (Foundational)
-- `T005` (migración V27), `T006` (entidad KdsTicket), `T007` (consulta KdsTicketRepository) y `T008` (componente ConnectionStatusBadge) operan sobre archivos independientes y pueden crearse simultáneamente.
+- `T005` (migración V27), `T006` (entidades KdsTicket y Order), `T007` (métodos FIFO y pesimista en KdsTicketRepository) y `T008` (componente ConnectionStatusBadge) operan sobre archivos independientes y pueden crearse simultáneamente.
 
 ### Paralelismo en Fase 3 (US1 - Red Tests)
 - `T009` (prueba de integración FIFO), `T010` (prueba WebMvcTest), `T011` (prueba hook polling) y `T012` (prueba componente LiveTrackingWidget) pueden redactarse en paralelo.
