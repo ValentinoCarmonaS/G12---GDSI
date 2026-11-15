@@ -20,7 +20,7 @@ Este documento especifica los contratos de interfaz HTTP REST para la operación
 - **Método y ruta**: `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation`
 - **Componente responsable**: `KitchenKdsController` / `KdsQueueService`
 - **Consumidores**: Botón "EMPEZAR" de la Columna 1 en `KitchenWorkspacePage.tsx`
-- **Seguridad**: Requiere autenticación con rol `CHEF`, `ENCARGADO` o `ADMINISTRADOR` (`@PreAuthorize("hasAnyRole('CHEF', 'ENCARGADO', 'ADMINISTRADOR')")`).
+- **Seguridad**: Requiere autenticación exclusiva con rol `CHEF` (`@PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF')")`).
 
 ### 2.2 Parámetros de petición
 
@@ -96,7 +96,7 @@ Date: Sun, 15 Nov 2026 15:30:00 GMT
 - **Método y ruta**: `GET /api/v1/kitchen/orders`
 - **Componente responsable**: `KitchenKdsController` / `KdsTicketRepository`
 - **Consumidores**: Hook de polling `useKdsQueuePolling` en `KitchenWorkspacePage.tsx`
-- **Seguridad**: Requiere autenticación con rol `CHEF`, `ENCARGADO` o `ADMINISTRADOR`.
+- **Seguridad**: Requiere autenticación exclusiva con rol `CHEF` (`@PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF')")`).
 
 ### 3.2 Parámetros de consulta (Query params)
 

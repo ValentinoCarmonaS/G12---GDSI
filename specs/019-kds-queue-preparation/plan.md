@@ -34,7 +34,7 @@ Implementar la pantalla y lógica operativa del Kitchen Display System (KDS) par
 - **Dependencias principales**:
   - Backend: Spring Boot 3.3.4 (Spring Web, Spring Data JPA, Spring Security, Validation), PostgreSQL Driver, Flyway.
   - Frontend: React 18, React Router DOM 6, Axios, Tailwind CSS, Lucide React, Vitest.
-- **Persistencia**: PostgreSQL (tabla `kds_tickets` con índices `idx_kds_tickets_establishment_status` y nuevo índice compuesto `idx_kds_tickets_active_queue`, tabla `orders`, tabla `order_items`). Sin migraciones destructivas ni cambio de tablas existentes.
+- **Persistencia**: PostgreSQL (tabla `kds_tickets` con índices `idx_kds_tickets_establishment_status` y nuevo índice compuesto `idx_kds_tickets_active_queue` mediante migración Flyway `V25__idx_kds_tickets_active_queue.sql`, tabla `orders`, tabla `order_items`). Sin migraciones destructivas ni cambio de tablas existentes.
 - **Pruebas**:
   - Backend: JUnit 5, Mockito, Spring `@WebMvcTest`, Testcontainers PostgreSQL (`BaseIntegrationTest`).
   - Frontend: Vitest + React Testing Library (ejecutando en `easyeat/frontend/tests/` y `easyeat/frontend/src/test/`).
@@ -64,7 +64,7 @@ Implementar la pantalla y lógica operativa del Kitchen Display System (KDS) par
 - **VII. Trazabilidad, consistencia y documentación**: Cumplido. Trazabilidad completa `spec.md` ↔ `research.md` ↔ `data-model.md` ↔ `contracts/` ↔ `quickstart.md` ↔ `plan.md`.
 - **VIII. Evidencia sobre supuestos**: Cumplido. La existencia de tablas, columnas y patrones de bloqueo pesimista fue auditada directamente en el código fuente antes de formular el diseño.
 - **IX. Ingeniería sobre conveniencia y X. Rebanadas verticales (Full-Stack)**: Cumplido. El incremento abarca el ciclo vertical completo: capa de datos, lógica de dominio, endpoint REST seguro, cliente API en frontend, componentes UI del tablero Kanban y suite de pruebas en ambas capas.
-- **Flujo de desarrollo (excepción justificada)**: Las historias `CHF-3.1.2`, `CHF-3.2.1`, `CHF-4.1.1`, `CHF-4.1.4` y `CHF-4.1.5` forman una unidad operacional inseparable (la visualización de cola y la preparación activa en pantalla), agrupadas en la rama `019-kds-queue-preparation` según lo establecido en la especificación aprobada.
+- **Flujo de desarrollo (excepción justificada y ratificada)**: Las historias `CHF-3.1.2`, `CHF-3.2.1`, `CHF-4.1.1`, `CHF-4.1.4` y `CHF-4.1.5` forman una unidad operacional inseparable (la visualización de cola y la preparación activa en pantalla), agrupadas en la rama `019-kds-queue-preparation` según lo establecido en la especificación aprobada y ratificado formalmente por el usuario en el análisis de consistencia.
 
 ---
 
@@ -86,10 +86,13 @@ specs/019-kds-queue-preparation/
 
 ### Archivos de código afectados
 
-#### Backend (`easyeat/backend/src/main/java/com/easyeat/`)
+#### Backend (`easyeat/backend/src/main/java/com/easyeat/` y `resources/`)
 
+- `src/main/resources/db/migration/V25__idx_kds_tickets_active_queue.sql`:
+  - Migración Flyway para crear el índice compuesto `idx_kds_tickets_active_queue ON kds_tickets(establishment_id, status, pickup_date, time_slot_start, queued_at, id)`.
 - `order/domain/KdsTicket.java`:
   - Asegurar constructores y setters de `startedAt`, `timeSlotStart` y `timeSlotEnd`.
+  - Mapear el nuevo índice `idx_kds_tickets_active_queue` en la anotación `@Table(indexes = ...)`.
 - `order/repository/KdsTicketRepository.java`:
   - Agregar `findByIdForUpdate(@Param("id") UUID id)` con `@Lock(LockModeType.PESSIMISTIC_WRITE)`.
   - Agregar `findActiveQueueTickets(UUID establishmentId, Collection<KdsTicketStatus> statuses, LocalDate today)` con ordenamiento `ORDER BY k.pickupDate ASC, k.timeSlotStart ASC, k.queuedAt ASC, k.id ASC`.
@@ -101,8 +104,8 @@ specs/019-kds-queue-preparation/
 - `order/dto/KdsActiveQueueTicketResponse.java` y `order/dto/KdsStartPreparationResponse.java`:
   - DTOs específicos para transporte de comanda activa con `startedAt`, items tipados y desempate total.
 - `order/controller/KitchenKdsController.java`:
-  - Exponer `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation`.
-  - Ampliar `GET /api/v1/kitchen/orders` con soporte de `activeQueue=true` (retornando la lista ordenada de comandas activas con `startedAt` incluido en cada comanda).
+  - Exponer `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` protegido exclusivamente para rol `CHEF` (`@PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF')")`).
+  - Ampliar `GET /api/v1/kitchen/orders` con soporte de `activeQueue=true` (retornando la lista ordenada de comandas activas con `startedAt` incluido en cada comanda) manteniendo acceso exclusivo para `CHEF`.
 
 #### Frontend (`easyeat/frontend/src/`)
 

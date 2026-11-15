@@ -24,12 +24,13 @@
 
 ## Fase 2: Base fundamental (Foundational)
 
-**Propósito**: Establecer el bloqueo pesimista en persistencia y las utilidades compartidas de tiempo antes de implementar las historias operativas.
+**Propósito**: Establecer el índice optimizado de cola, el bloqueo pesimista en persistencia y las utilidades compartidas de tiempo antes de implementar las historias operativas.
 
+- [ ] T002b [P] Crear migración Flyway `V25__idx_kds_tickets_active_queue.sql` en `easyeat/backend/src/main/resources/db/migration/` y mapear el `@Index` en `easyeat/backend/src/main/java/com/easyeat/order/domain/KdsTicket.java`.
 - [ ] T003 [P] Agregar método `findByIdForUpdate(@Param("id") UUID id)` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
 - [ ] T004 [P] Crear utilitario de cálculo temporal y formateo en `easyeat/frontend/src/utils/kdsTimeUtils.ts` (`calculateElapsedMinutes`, `isTicketDelayed` y `formatDishItem`).
 
-**Checkpoint**: Bloqueo pesimista de persistencia y utilidades de tiempo disponibles para las historias.
+**Checkpoint**: Base de persistencia (índice y bloqueo pesimista) y utilidades de tiempo disponibles para las historias.
 
 ---
 
@@ -52,7 +53,7 @@
 - [ ] T008 [P] [US1] Agregar método `findActiveQueueTickets` con orden determinista y filtro `pickupDate <= :today` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
 - [ ] T009 [US1] Normalizar franja de pedidos `IMMEDIATE` (`floor(M / 15) * 15`) en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` y en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutPaymentService.java`.
 - [ ] T010 [US1] Asegurar normalización de `timeSlotStart` y `timeSlotEnd` para `FulfillmentMode.IMMEDIATE` al construir la comanda en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java`.
-- [ ] T011 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` para exponer `GET /api/v1/kitchen/orders` con parámetro `activeQueue=true`, mapeo de `startedAt` y consumo de `findActiveQueueTickets`.
+- [ ] T011 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` para exponer `GET /api/v1/kitchen/orders` con parámetro `activeQueue=true`, mapeo de `startedAt` y consumo de `findActiveQueueTickets`, restringido al rol `CHEF`.
 - [ ] T012 [P] [US1] Actualizar `fetchKitchenOrders` en `easyeat/frontend/src/api/kitchenKdsApi.ts` para soportar parámetro `activeQueue` y retorno tipado de `startedAt`.
 - [ ] T013 [US1] Implementar hook de polling silencioso en `easyeat/frontend/src/hooks/useKdsQueuePolling.ts` consumiendo `fetchKitchenOrders`.
 
@@ -77,7 +78,7 @@
 ### Implementación de US2 (Green Implementation)
 
 - [ ] T017 [US2] Agregar método `startTicketPreparation(UUID ticketId, UUID establishmentId)` en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueService.java` y `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java` con bloqueo pesimista, idempotencia y sincronización de `Order.status = IN_PROGRESS`.
-- [ ] T018 [US2] Exponer endpoint `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` protegido con `@PreAuthorize("hasAnyRole('CHEF', 'ENCARGADO', 'ADMINISTRADOR')")`.
+- [ ] T018 [US2] Exponer endpoint `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` protegido exclusivamente con `@PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF')")`.
 - [ ] T019 [P] [US2] Agregar función `startTicketPreparation(ticketId: string)` en `easyeat/frontend/src/api/kitchenKdsApi.ts`.
 - [ ] T020 [US2] Conectar la acción de inicio de preparación en `easyeat/frontend/src/components/kds/KitchenKanbanBoard.tsx` (deshabilitación preventiva de botón y llamada a `startTicketPreparation`).
 
@@ -192,6 +193,7 @@ T001: "Crear DTOs KdsActiveQueueTicketResponse y KdsStartPreparationResponse en 
 T002: "Extender tipos de dominio en frontend/src/types/kds.ts"
 
 # Paralelo Fase 2 (Foundational):
+T002b: "Crear migración Flyway V25 y mapear @Index en KdsTicket.java"
 T003: "Agregar findByIdForUpdate en KdsTicketRepository.java"
 T004: "Crear kdsTimeUtils.ts en frontend/src/utils/kdsTimeUtils.ts"
 
