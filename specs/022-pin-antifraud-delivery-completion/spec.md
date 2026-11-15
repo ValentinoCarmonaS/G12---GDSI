@@ -3,7 +3,7 @@
 **Identificador de especificación**: `022-pin-antifraud-delivery-completion`  
 **Rama de trabajo**: `022-pin-antifraud-delivery-completion`  
 **Fecha de creación**: 15/11/2026  
-**Estado**: Draft  
+**Estado**: Aprobado  
 **Entrada**: Requerimientos funcionales derivados de las historias de usuario `ENC-3.2.1`, `ENC-3.3.1` y `ENC-3.3.2`.
 
 ---
