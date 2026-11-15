@@ -31,7 +31,7 @@
 
 ## Notes
 
-- Todos los criterios de calidad fueron validados exhaustivamente y se encuentran satisfechos.
-- Cobertura 100% fiel, unívoca y sin invención de reglas de las historias de usuario `COM-8.1.1` (P1) y `COM-7.3.2 (BIS)` (P2).
-- Cumplimiento estricto del lenguaje agnóstico a la tecnología, con traducción íntegra de conceptos operativos al comportamiento funcional observable.
-- La especificación está lista para avanzar a la fase de planificación (`/speckit-plan`).
+- Proceso de clarificación mediante `/grill-me` completado y formalizado en la sección de Clarifications.
+- Cobertura 100% verificable de las historias de usuario `COM-8.1.1` (P1) y `COM-7.3.2 (BIS)` (P2).
+- Comportamiento observable y reglas deterministas alineadas con las especificaciones previas del sistema (001 a 020).
+- La especificación está aprobada y lista para avanzar a la fase de planificación (`/speckit-plan`).
