@@ -2,6 +2,7 @@
 
 **Entrada**: Documentos de diseño desde `/specs/022-pin-antifraud-delivery-completion/` (`spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md`)  
 **Prerrequisitos**: Plan técnico aprobado, modelo de datos definido, contratos establecidos.  
+**Prerrequisito de integración secuencial**: Requiere la implementación e integración previa de la especificación 020 (`020-counter-dispatch-ready-orders`), que establece el tablero de pedidos listos (`CounterWorkspacePage.tsx`), la tarjeta base de comanda (`CounterTicketCard.tsx`), el hook de sondeo (`useCounterOrdersPolling.ts`) y el endpoint `GET /api/v1/counter/orders`.  
 **Estrategia de pruebas**: TDD estricto (Red-Green-Refactor). Cada historia de usuario implementa primero las pruebas automatizadas (RED) que deben fallar antes de escribir el código de producción (GREEN).
 
 ---

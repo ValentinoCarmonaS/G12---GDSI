@@ -1,7 +1,13 @@
 # Plan de implementación: protocolo antifraude de entrega y cierre de orden
 
 **Rama**: `022-pin-antifraud-delivery-completion` | **Fecha**: 15/11/2026 | **Especificación**: [spec.md](./spec.md)  
-**Entrada**: Especificación funcional desde `/specs/022-pin-antifraud-delivery-completion/spec.md`
+**Entrada**: Especificación funcional desde `/specs/022-pin-antifraud-delivery-completion/spec.md`  
+**Prerrequisito de integración**: Requiere la implementación e integración previa de la especificación `020-counter-dispatch-ready-orders` (proveedora de `CounterTicketCard.tsx`, `useCounterOrdersPolling.ts`, `CounterWorkspacePage.tsx` y `GET /api/v1/counter/orders`).
+
+---
+
+> [!IMPORTANT]
+> **Estrategia de precedencia y cohesión**: Para garantizar máxima cohesión de dominio y mínimo acoplamiento (evitando reimplementaciones paralelas o colisiones en Git), la presente especificación extiende de forma quirúrgica los componentes de mostrador provistos por la especificación 020. Su implementación en código debe ejecutarse de forma secuencial una vez estabilizada la 020.
 
 ---
 
