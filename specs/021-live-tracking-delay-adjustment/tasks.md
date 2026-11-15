@@ -11,7 +11,7 @@
 
 ---
 
-## Fase 1: Preparación compartida (Setup)
+## Fase 1: Preparación compartida (Setup) — [GitHub Issue #352](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/352)
 
 **Propósito**: Crear los DTOs y modelos de transporte compartidos requeridos por los contratos HTTP en backend y frontend.
 
@@ -24,7 +24,7 @@
 
 ---
 
-## Fase 2: Base fundamental (Foundational)
+## Fase 2: Base fundamental (Foundational) — [GitHub Issue #353](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/353)
 
 **Propósito**: Establecer la migración de base de datos Flyway V27 (`specific_delay_minutes` en `kds_tickets` y `security_code` en `orders`), mapeo de entidades JPA, métodos de repositorio pesimista y FIFO, y componente de conectividad antes de abordar las historias operativas.
 
@@ -37,7 +37,7 @@
 
 ---
 
-## Fase 3: Historia de usuario 1 — Visualización base del seguimiento en vivo por estados y posición en cola (Prioridad: P1) 🎯 MVP
+## Fase 3: Historia de usuario 1 — Visualización base del seguimiento en vivo por estados y posición en cola (Prioridad: P1) 🎯 MVP — [GitHub Issue #354](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/354)
 
 **Objetivo**: Pantalla del comensal (`/seguimiento/{orderId}`) adaptativa con polling silencioso cada 6 s (cabeceras `no-cache`); en `QUEUED` muestra `#ticketNumber`, "En cola en cocina", "Tenés $N$ pedidos por delante" (o "Tenés 0 pedidos por delante" cuando $N=0$) con minutero y barra ocultos; al pulsar "EMPEZAR" conmuta a `IN_PREPARATION` con icono dinámico, minutero y barra; al pulsar "LISTO" conmuta a `READY_FOR_PICKUP` con panel verde, código de 4 dígitos y platos, purgando minutero y barra; tolera cortes transitorios y despliega insignia sutil ante cortes $>15 \text{ s}$ (`COM-8.1.1` — `RF-001` a `RF-011`, `RF-018` a `RF-026`).
 
@@ -64,7 +64,7 @@
 
 ---
 
-## Fase 4: Historia de usuario 2 — Tiempo estimado en vivo y ajuste granular de demora (+5) (Prioridad: P2)
+## Fase 4: Historia de usuario 2 — Tiempo estimado en vivo y ajuste granular de demora (+5) (Prioridad: P2) — [GitHub Issue #355](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/355)
 
 **Objetivo**: Control táctil "+5" en la comanda en preparación activa (Columna 2 del KDS) que incrementa atómicamente `specific_delay_minutes` bajo bloqueo pesimista `PESSIMISTIC_WRITE` e informa visualmente la demora acumulada (`+5 min`, `+10 min`...); el comensal refleja reactivamente $M \to M + 5$ en $\le 8$ s recalculando proporcionalmente la barra; cota de piso en 1 minuto y cota de techo de barra en 92% ante exceso de tiempo estimado; purga visual total de demora al conmutar a "LISTO" (`COM-7.3.2 (BIS)` — `RF-012` a `RF-017`, `RF-019`).
 
@@ -90,7 +90,7 @@
 
 ---
 
-## Fase 5: Pulido final y aspectos transversales (Polish & Cross-Cutting Concerns)
+## Fase 5: Pulido final y aspectos transversales (Polish & Cross-Cutting Concerns) — [GitHub Issue #356](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/356)
 
 **Propósito**: Validar fronteras con especificaciones adyacentes, ejecutar la guía de validación rápida y asegurar la suite completa de pruebas de regresión.
 
