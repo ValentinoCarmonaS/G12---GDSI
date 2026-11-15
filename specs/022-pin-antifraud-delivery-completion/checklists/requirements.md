@@ -31,7 +31,8 @@
 
 ## Notes
 
-- Todos los criterios de calidad fueron verificados satisfactoriamente.
+- Proceso interactivo de auditoría y clarificación completado mediante `/grill-me` y `/speckit-clarify` (10 decisiones formalizadas).
+- Todos los criterios de calidad fueron verificados satisfactoriamente (16/16).
 - Cobertura exhaustiva, determinista y trazable de las historias de usuario `ENC-3.2.1` (P1), `ENC-3.3.1` (P2) y `ENC-3.3.2` (P1).
 - Comportamiento observable y reglas deterministas estrictamente alineadas con las especificaciones previas del sistema (001 a 021).
-- La especificación se encuentra en estado Borrador/Draft lista para la aprobación del usuario antes de avanzar a la fase de planificación (`/speckit-plan`).
+- La especificación se encuentra lista para avanzar a la fase de planificación (`/speckit-plan`).
