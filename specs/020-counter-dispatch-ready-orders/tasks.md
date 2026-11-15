@@ -11,7 +11,7 @@
 
 ---
 
-## Fase 1: Preparación compartida (Setup)
+## Fase 1: Preparación compartida (Setup) — [GitHub Issue #345](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/345)
 
 **Propósito**: Crear los DTOs y tipos de transporte compartidos requeridos por los contratos HTTP en backend y frontend.
 
@@ -23,7 +23,7 @@
 
 ---
 
-## Fase 2: Base fundamental (Foundational)
+## Fase 2: Base fundamental (Foundational) — [GitHub Issue #346](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/346)
 
 **Propósito**: Establecer la migración de base de datos Flyway V26 (`orders.ready_at`, `orders.security_code`, índice compuesto de mostrador), mapeo de entidades JPA y utilidades de tiempo antes de implementar las historias operativas.
 
@@ -36,7 +36,7 @@
 
 ---
 
-## Fase 3: Historia de usuario 1 — Finalizar comanda completa y pasar a estado "Listo" (Prioridad: P1) 🎯 MVP
+## Fase 3: Historia de usuario 1 — Finalizar comanda completa y pasar a estado "Listo" (Prioridad: P1) 🎯 MVP — [GitHub Issue #347](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/347)
 
 **Objetivo**: Botón directo y prominente "LISTO" en la Columna 2 de cocina, transición atómica e indivisible a `READY_FOR_PICKUP` de `KdsTicket` y `Order` con `ready_at` idéntico, bloqueo pesimista `PESSIMISTIC_WRITE`, idempotencia estricta y remoción inmediata de la comanda en KDS sin checklist ni confirmaciones emergentes (`CHF-4.1.3` — `RF-001` a `RF-004`).
 
@@ -61,7 +61,7 @@
 
 ---
 
-## Fase 4: Historia de usuario 2 — Sincronización reactiva con la cola de mostrador (Prioridad: P1)
+## Fase 4: Historia de usuario 2 — Sincronización reactiva con la cola de mostrador (Prioridad: P1) — [GitHub Issue #348](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/348)
 
 **Objetivo**: Polling silencioso en mostrador cada 4 s con cabeceras `Cache-Control: no-cache`, cancelación con `AbortController` al desmontar, pausa en pestaña oculta, backoff acotado e insignia sutil no bloqueante ("Sin conexión — Reintentando...") tras >15 s sin respuesta exitosa, con retiro automático al restablecer la conexión (`CHF-4.2.3` — `RF-014`, `RF-018`).
 
@@ -83,7 +83,7 @@
 
 ---
 
-## Fase 5: Historia de usuario 3 — Tablero de pedidos listos para entrega: diseño plegable/expandible (Prioridad: P1)
+## Fase 5: Historia de usuario 3 — Tablero de pedidos listos para entrega: diseño plegable/expandible (Prioridad: P1) — [GitHub Issue #349](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/349)
 
 **Objetivo**: Pantalla `/mostrador` con grilla de tarjetas compactas cerradas por defecto (`#ticketNumber`, turno `HH:mm - HH:mm`, contador Count-Up `MM min` derivado de `ready_at`), toggle en cabecera/zona neutral con protección `stopPropagation` interior, soporte simultáneo de múltiples tarjetas abiertas en `expandedTicketIds`, orden determinista `ready_at ASC, ticket_number ASC` y estado vacío neutral (`ENC-2.1.1` — `RF-005` a `RF-011`, `RF-015` a `RF-017`, `RF-019`).
 
@@ -107,7 +107,7 @@
 
 ---
 
-## Fase 6: Historia de usuario 4 — Verificación rápida de comanda física en mostrador (Prioridad: P2)
+## Fase 6: Historia de usuario 4 — Verificación rápida de comanda física en mostrador (Prioridad: P2) — [GitHub Issue #350](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/350)
 
 **Objetivo**: Tarjeta desplegada exhibe código de seguridad oral de 4 dígitos, nombre completo del comensal, fotografía de perfil (u omisión limpia), desglose completo de platos en formato `[Cantidad]x [Plato]`, contenedor visual del botón de entrega y omisión estricta de importes o datos financieros (`ENC-2.1.2` — `RF-012`, `RF-013`).
 
@@ -132,7 +132,7 @@
 
 ---
 
-## Fase 7: Pulido y aspectos transversales (Polish & Cross-Cutting Concerns)
+## Fase 7: Pulido y aspectos transversales (Polish & Cross-Cutting Concerns) — [GitHub Issue #351](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/351)
 
 **Propósito**: Validar la consistencia global, documentación y ejecución completa de pruebas sin regresiones.
 
