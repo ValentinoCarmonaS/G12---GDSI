@@ -15,7 +15,7 @@
 
 **Propósito**: Crear los DTOs y tipos de transporte compartidos requeridos por los contratos HTTP en backend y frontend.
 
-- [ ] T001 [P] Crear DTOs de mostrador y despacho `CounterReadyOrderResponse.java` y `KdsTicketReadyResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/`.
+- [ ] T001 [P] Crear DTO de mostrador `CounterReadyOrderResponse.java` y validar reutilización de `KdsTicketResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/`.
 - [ ] T002 [P] Definir tipos TypeScript de mostrador en `easyeat/frontend/src/types/counter.ts` incorporando `CounterReadyOrder`, `CounterTimeSlot`, `CounterCustomerSummary`, `CounterOrderItem` y `CounterOrdersPollingState`.
 - [ ] T003 [P] Crear cliente de API de mostrador en `easyeat/frontend/src/api/counterApi.ts` exponiendo la función tipada `fetchCounterOrders`.
 
@@ -29,7 +29,7 @@
 
 - [ ] T004 [P] Crear migración Flyway `V26__counter_dispatch_and_security_code.sql` en `easyeat/backend/src/main/resources/db/migration/` incorporando columnas `ready_at`, `security_code` en `orders`, backfill seguro e índice compuesto `idx_kds_tickets_counter_ready` en `kds_tickets`.
 - [ ] T005 [P] Extender entidades JPA `Order.java` y `KdsTicket.java` en `easyeat/backend/src/main/java/com/easyeat/order/domain/` mapeando `readyAt`, `securityCode` y el nuevo índice compuesto.
-- [ ] T006 [P] Extender `KdsTicketRepository.java` en `easyeat/backend/src/main/java/com/easyeat/order/repository/` con `findCounterReadyTickets` ordenado determinísticamente por `readyAt ASC, ticketNumber ASC` filtrando por `establishmentId`, `status = READY_FOR_PICKUP` y `pickupDate = :today`.
+- [ ] T006 [P] Extender `KdsTicketRepository.java` en `easyeat/backend/src/main/java/com/easyeat/order/repository/` incorporando `findByIdForUpdate` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` y `findCounterReadyTickets` ordenado determinísticamente por `readyAt ASC, ticketNumber ASC` filtrando por `establishmentId`, `status = READY_FOR_PICKUP` y `pickupDate = :today`.
 - [ ] T007 [P] Crear utilitario de temporización y formateo de espera en `easyeat/frontend/src/utils/counterTimeUtils.ts` (`calculateWaitMinutes`, `formatWaitMinutes`).
 
 **Checkpoint**: Base de persistencia (columnas, índice y repositorio) y utilidades de tiempo disponibles para las historias.
@@ -71,8 +71,8 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T017`–`T018`.
 
-- [ ] T015 [P] [US2] Crear pruebas unitarias en `easyeat/frontend/src/test/hooks/useCounterOrdersPolling.test.ts` verificando ciclo periódico de 4 segundos, cabeceras `no-cache`, cancelación con `AbortController` al desmontar, suspensión ante `document.visibilityState === 'hidden'` y reactivación inmediata al volver a `visible`.
-- [ ] T016 [P] [US2] Ampliar `easyeat/frontend/src/test/hooks/useCounterOrdersPolling.test.ts` verificando que ante fallos continuados de red superiores a 15 segundos se activa el flag `isDisconnected = true`, y se restablece a `false` tras el primer sondeo exitoso.
+- [ ] T015 [P] [US2] Crear pruebas unitarias en `easyeat/frontend/tests/hooks/useCounterOrdersPolling.test.ts` verificando ciclo periódico de 4 segundos, cabeceras `no-cache`, cancelación con `AbortController` al desmontar, suspensión ante `document.visibilityState === 'hidden'` y reactivación inmediata al volver a `visible`.
+- [ ] T016 [P] [US2] Ampliar `easyeat/frontend/tests/hooks/useCounterOrdersPolling.test.ts` verificando que ante fallos continuados de red superiores a 15 segundos se activa el flag `isDisconnected = true`, y se restablece a `false` tras el primer sondeo exitoso.
 
 ### Implementación de US2 (Green Implementation)
 
@@ -94,7 +94,7 @@
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T022`–`T024`.
 
 - [ ] T019 [P] [US3] Crear prueba `@WebMvcTest` en `easyeat/backend/src/test/java/com/easyeat/order/CounterOrderControllerIntegrationTest.java` verificando `GET /api/v1/counter/orders` con rol `ENCARGADO`, filtro de jornada actual `pickup_date = hoy`, ordenamiento total `ready_at ASC, ticket_number ASC`, y exclusión de fechas futuras.
-- [ ] T020 [P] [US3] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/counterTimeUtils.test.ts` verificando `calculateWaitMinutes` con valor inicial `0 min` entre 0 y 59 segundos, conmutación determinista a `1 min` a los 60 segundos y compensación de desfasaje de reloj servidor/cliente.
+- [ ] T020 [P] [US3] Crear pruebas unitarias en `easyeat/frontend/tests/utils/counterTimeUtils.test.ts` verificando `calculateWaitMinutes` con valor inicial `0 min` entre 0 y 59 segundos, conmutación determinista a `1 min` a los 60 segundos y compensación de desfasaje de reloj servidor/cliente.
 - [ ] T021 [P] [US3] Crear pruebas de componente en `easyeat/frontend/tests/components/CounterTicketCard.test.tsx` y `easyeat/frontend/tests/pages/CounterWorkspacePage.test.tsx` verificando renderizado cerrado inicial, alternancia al hacer clic en cabecera, detención de propagación en clics interiores y mensaje neutral de estado vacío.
 
 ### Implementación de US3 (Green Implementation)
@@ -124,7 +124,7 @@
 ### Implementación de US4 (Green Implementation)
 
 - [ ] T028 [US4] Implementar generación de `securityCode` de 4 dígitos (`1000..9999`) al confirmar órdenes en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` (y backfill en migración V26).
-- [ ] T029 [US4] Implementar endpoint de lectura de avatares `GET /api/v1/profile/users/{userId}/avatar` en `easyeat/backend/src/main/java/com/easyeat/profile/controller/ProfileAvatarController.java` protegido para roles `ENCARGADO`, `CHEF`, `ADMINISTRADOR`.
+- [ ] T029 [US4] Implementar endpoint de lectura de avatares `GET /api/v1/profile/users/{userId}/avatar` en `easyeat/backend/src/main/java/com/easyeat/profile/controller/ProfileAvatarController.java` (refactorizando el mapeo de clase a `@RequestMapping("/api/v1/profile")`) protegido para roles `ENCARGADO`, `CHEF`, `ADMINISTRADOR`.
 - [ ] T030 [US4] Mapear `securityCode`, `customer` (`fullName`, `photoUrl`) e `items` en `CounterOrderController.java` y `CounterReadyOrderResponse.java` garantizando estricta exclusión de datos financieros.
 - [ ] T031 [US4] Actualizar la sección expandida de `CounterTicketCard.tsx` en `easyeat/frontend/src/components/counter/` renderizando el código de seguridad de 4 dígitos con espaciado amplio, nombre del comensal, elemento `<img>` condicional (omisión limpia), lista de platos `[Cantidad]x [Plato]` y contenedor visual del botón de entrega.
 
@@ -175,7 +175,7 @@ flowchart TD
 ### En Fase 1 (Setup):
 ```bash
 # Lanzar DTOs y tipos simultáneamente:
-Task T001: DTOs en backend (CounterReadyOrderResponse.java, KdsTicketReadyResponse.java)
+Task T001: DTOs en backend (CounterReadyOrderResponse.java, reutilización de KdsTicketResponse.java)
 Task T002: Tipos TypeScript en frontend (types/counter.ts)
 Task T003: Cliente API en frontend (api/counterApi.ts)
 ```
@@ -185,7 +185,7 @@ Task T003: Cliente API en frontend (api/counterApi.ts)
 # Lanzar base de datos y utilitarios simultáneamente:
 Task T004: Migración Flyway V26
 Task T005: Mapeo de entidades JPA (Order, KdsTicket)
-Task T006: Método de repositorio en KdsTicketRepository
+Task T006: Métodos de repositorio en KdsTicketRepository (findByIdForUpdate, findCounterReadyTickets)
 Task T007: Utilitario de tiempo en frontend (counterTimeUtils.ts)
 ```
 

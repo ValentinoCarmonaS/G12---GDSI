@@ -110,8 +110,8 @@ specs/020-counter-dispatch-ready-orders/
 - `order/controller/CounterOrderController.java` (nuevo):
   - Exponer `GET /api/v1/counter/orders` protegido para `ENCARGADO` y `ADMINISTRADOR`, retornando lista ordenada de `CounterReadyOrderResponse`.
 - `profile/controller/ProfileAvatarController.java`:
-  - Incorporar endpoint `GET /api/v1/profile/users/{userId}/avatar` protegido para roles de personal (`ENCARGADO`, `CHEF`, `ADMINISTRADOR`).
-- `order/dto/CounterReadyOrderResponse.java` (nuevo) y `order/dto/KdsTicketReadyResponse.java`:
+  - Refactorizar mapeo a nivel de clase a `@RequestMapping("/api/v1/profile")`, preservando los endpoints existentes bajo `/avatar` para el comensal propio e incorporando endpoint `GET /users/{userId}/avatar` protegido para roles de personal (`ENCARGADO`, `CHEF`, `ADMINISTRADOR`).
+- `order/dto/CounterReadyOrderResponse.java` (nuevo) y `order/dto/KdsTicketResponse.java` (reutilizado):
   - DTOs tipados estrictamente desprovistos de campos monetarios.
 
 #### Frontend (`easyeat/frontend/src/`)
@@ -121,7 +121,7 @@ specs/020-counter-dispatch-ready-orders/
 - `api/counterApi.ts` (nuevo):
   - Función `fetchCounterOrders(): Promise<CounterReadyOrder[]>`.
 - `api/orderTrackingApi.ts`:
-  - Consolidar `markTicketReadyForPickup(ticketId: string): Promise<KdsTicketReadyResponse>`.
+  - Consolidar `markTicketReadyForPickup(ticketId: string): Promise<KdsTicketResponse>`.
 - `hooks/useCounterOrdersPolling.ts` (nuevo):
   - Hook de polling silencioso cada 4 segundos con `no-cache`, `AbortController`, pausa ante `document.visibilityState === 'hidden'`, umbral de 15 segundos para activación de insignia de desconexión y retiro automático al reconectar.
 - `utils/counterTimeUtils.ts` (nuevo):

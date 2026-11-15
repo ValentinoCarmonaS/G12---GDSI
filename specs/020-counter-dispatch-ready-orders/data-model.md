@@ -190,7 +190,9 @@ stateDiagram-v2
 
 ## 5. Proyecciones y Data Transfer Objects (DTOs)
 
-### 5.1 DTO de respuesta para finalización en cocina: `KdsTicketReadyResponse`
+### 5.1 DTO de respuesta para finalización en cocina: `KdsTicketResponse` (Reutilizado)
+
+Se reutiliza el DTO preexistente `com.easyeat.order.dto.KdsTicketResponse` que ya expone de forma idéntica los atributos requeridos por la operación atómica de finalización en cocina:
 
 ```java
 package com.easyeat.order.dto;
@@ -199,7 +201,7 @@ import com.easyeat.order.domain.OrderStatus;
 import java.time.Instant;
 import java.util.UUID;
 
-public record KdsTicketReadyResponse(
+public record KdsTicketResponse(
         UUID ticketId,
         UUID orderId,
         Integer ticketNumber,
@@ -253,10 +255,11 @@ public record CounterReadyOrderResponse(
 
 ## 6. Consulta de cola en base de datos (`KdsTicketRepository`)
 
+Dado que en `KdsTicket` el atributo `orderId` es un identificador escalar (`UUID`) y no una asociación relacional gestionada (`@OneToOne`), la consulta JPQL recupera directamente las comandas listas ordenadas determinísticamente por índice, delegando la hidratación de órdenes, ítems y clientes a la capa de servicio (`orderRepository.findAllById(...)`) para evitar errores sintácticos de JPA (`cannot fetch join a non-association`):
+
 ```java
 @Query("""
     SELECT k FROM KdsTicket k
-    JOIN FETCH Order o ON o.id = k.orderId
     WHERE k.establishment.id = :establishmentId
       AND k.status = com.easyeat.order.domain.KdsTicketStatus.READY_FOR_PICKUP
       AND k.pickupDate = :today
