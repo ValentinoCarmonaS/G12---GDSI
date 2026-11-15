@@ -15,7 +15,7 @@
 
 ---
 
-## Phase 1: Setup (Infraestructura compartida y base)
+## Phase 1: Setup (Infraestructura compartida y base) — [GitHub Issue #357](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/357)
 
 **Propósito**: Inicialización de esquemas relacionales, contratos y clientes base.
 
@@ -25,7 +25,7 @@
 
 ---
 
-## Phase 2: Foundational (Prerrequisitos bloqueantes)
+## Phase 2: Foundational (Prerrequisitos bloqueantes) — [GitHub Issue #358](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/358)
 
 **Propósito**: Modelos de datos centrales y componentes base reutilizables. Ninguna historia de usuario puede completarse sin esta fase.
 
@@ -40,7 +40,7 @@
 
 ---
 
-## Phase 3: User Story 1 - Código numérico de seguridad de retiro oral (Protocolo Antifraude) (Prioridad: P1) 🎯 MVP
+## Phase 3: User Story 1 - Código numérico de seguridad de retiro oral (Protocolo Antifraude) (Prioridad: P1) 🎯 MVP — [GitHub Issue #359](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/359)
 
 **Objetivo**: Generar y persistir un PIN de 4 dígitos en $[1000, 9999]$ al registrar/pagar la orden y exhibirlo en formato monospace amplio (`d d d d`) en la pantalla de seguimiento del comensal y en la tarjeta de mostrador para cotejo oral humano sin hardware óptico (`ENC-3.2.1`).
 
@@ -63,7 +63,7 @@
 
 ---
 
-## Phase 4: User Story 2 - Marcar pedido como "Entregado" y archivar ciclo de orden (Prioridad: P1)
+## Phase 4: User Story 2 - Marcar pedido como "Entregado" y archivar ciclo de orden (Prioridad: P1) — [GitHub Issue #360](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/360)
 
 **Objetivo**: Cierre terminal atómico (`Order.status = COMPLETED`, `KdsTicket.status = COMPLETED`, `completed_at = now`), idempotencia absoluta en reintentos, remoción de mostrador sin layout shift, mensaje final en seguimiento del comensal, purga total del PIN en red y cese de polling (`ENC-3.3.2`).
 
@@ -94,7 +94,7 @@
 
 ---
 
-## Phase 5: User Story 3 - Confirmación de coincidencia y acción directa de entrega (Prioridad: P2)
+## Phase 5: User Story 3 - Confirmación de coincidencia y acción directa de entrega (Prioridad: P2) — [GitHub Issue #361](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/361)
 
 **Objetivo**: Incorporar en la tarjeta desplegada de mostrador el botón directo "ENTREGAR PEDIDO", inhabilitación síncrona instantánea contra doble clic (`isSubmitting = true`), retroalimentación verde inmediata ("Entrega Confirmada") sin modales y aviso no intrusivo ante errores de red (`ENC-3.3.1`).
 
@@ -115,7 +115,7 @@
 
 ---
 
-## Phase 6: Polish & Cross-Cutting Concerns
+## Phase 6: Polish & Cross-Cutting Concerns — [GitHub Issue #362](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/362)
 
 **Propósito**: Verificación de fronteras, pruebas de regresión completas y validación operativa.
 
