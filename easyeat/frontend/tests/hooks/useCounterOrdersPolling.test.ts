@@ -153,4 +153,67 @@ describe('useCounterOrdersPolling (T015, US2, CHF-4.2.3, RF-014)', () => {
     });
     expect(counterApi.fetchCounterOrders).toHaveBeenCalledTimes(3);
   });
+
+  it('T016: activates isDisconnected = true only after >15s without a successful poll while preserving previous orders, and resets to false on first recovery', async () => {
+    const secondOrder: CounterReadyOrder = {
+      ...sampleOrder,
+      ticketId: 'a15c329b-81d3-4e89-b620-7f2cb14197e2',
+      orderId: '50e932b1-12c8-4ec7-9104-58a47de0281b',
+      ticketNumber: 105,
+    };
+
+    // Initial poll at t=0s succeeds
+    vi.mocked(counterApi.fetchCounterOrders).mockResolvedValueOnce([sampleOrder]);
+
+    const { result } = renderHook(() => useCounterOrdersPolling());
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.orders).toEqual([sampleOrder]);
+    expect(result.current.isDisconnected).toBe(false);
+
+    // Subsequent polls fail with network error at t=4s, t=8s, t=12s (<= 15s threshold)
+    vi.mocked(counterApi.fetchCounterOrders).mockRejectedValue(
+      new Error('Network Error')
+    );
+
+    await act(async () => {
+      vi.advanceTimersByTime(4000); // t = 4s
+    });
+    expect(result.current.isDisconnected).toBe(false);
+    expect(result.current.orders).toEqual([sampleOrder]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(4000); // t = 8s
+    });
+    expect(result.current.isDisconnected).toBe(false);
+
+    await act(async () => {
+      vi.advanceTimersByTime(4000); // t = 12s
+    });
+    expect(result.current.isDisconnected).toBe(false);
+    expect(result.current.orders).toEqual([sampleOrder]);
+
+    // At t = 16s (> 15s since last successful sync at t=0s), isDisconnected becomes true
+    await act(async () => {
+      vi.advanceTimersByTime(4000); // t = 16s
+    });
+    expect(result.current.isDisconnected).toBe(true);
+    // Previously loaded orders remain preserved and visible (RF-018, Caso borde 1)
+    expect(result.current.orders).toEqual([sampleOrder]);
+
+    // Connection recovers on next poll at t = 20s -> isDisconnected resets to false immediately
+    vi.mocked(counterApi.fetchCounterOrders).mockResolvedValueOnce([
+      sampleOrder,
+      secondOrder,
+    ]);
+
+    await act(async () => {
+      vi.advanceTimersByTime(4000); // t = 20s
+    });
+    expect(result.current.isDisconnected).toBe(false);
+    expect(result.current.orders).toEqual([sampleOrder, secondOrder]);
+  });
 });
