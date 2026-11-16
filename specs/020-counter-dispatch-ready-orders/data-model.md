@@ -231,7 +231,9 @@ public record CounterReadyOrderResponse(
         List<CounterOrderItemDto> items
 ) {
     public record TimeSlotDto(
+            @JsonFormat(pattern = "HH:mm")
             LocalTime start,
+            @JsonFormat(pattern = "HH:mm")
             LocalTime end
     ) {}
 

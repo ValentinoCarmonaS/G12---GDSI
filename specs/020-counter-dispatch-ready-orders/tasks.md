@@ -15,9 +15,9 @@
 
 **Propósito**: Crear los DTOs y tipos de transporte compartidos requeridos por los contratos HTTP en backend y frontend.
 
-- [ ] T001 [P] Crear DTO de mostrador `CounterReadyOrderResponse.java` y validar reutilización de `KdsTicketResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/`.
-- [ ] T002 [P] Definir tipos TypeScript de mostrador en `easyeat/frontend/src/types/counter.ts` incorporando `CounterReadyOrder`, `CounterTimeSlot`, `CounterCustomerSummary`, `CounterOrderItem` y `CounterOrdersPollingState`.
-- [ ] T003 [P] Crear cliente de API de mostrador en `easyeat/frontend/src/api/counterApi.ts` exponiendo la función tipada `fetchCounterOrders`.
+- [X] T001 [P] Crear DTO de mostrador `CounterReadyOrderResponse.java` y validar reutilización de `KdsTicketResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/`.
+- [X] T002 [P] Definir tipos TypeScript de mostrador en `easyeat/frontend/src/types/counter.ts` incorporando `CounterReadyOrder`, `CounterTimeSlot`, `CounterCustomerSummary`, `CounterOrderItem` y `CounterOrdersPollingState`.
+- [X] T003 [P] Crear cliente de API de mostrador en `easyeat/frontend/src/api/counterApi.ts` exponiendo la función tipada `fetchCounterOrders`.
 
 **Checkpoint**: Modelos de transporte definidos y consistentes entre backend y frontend.
 
