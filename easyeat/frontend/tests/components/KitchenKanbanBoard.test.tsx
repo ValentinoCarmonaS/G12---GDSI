@@ -238,4 +238,83 @@ describe('T016: KitchenKanbanBoard Component - Start Preparation (US2)', () => {
       expect(screen.getByText('7 min')).toBeInTheDocument();
     });
   });
+
+  describe('Fase 7: Alerta visual por demora excesiva en KDS: umbral de 15 minutos (T031, US5, RF-013, RF-014)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-11-16T12:20:00.000Z').getTime());
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('debe mantener estilo neutral cuando tiempo < 15 minutos (14 min)', () => {
+      const ticketNormal: KdsTicket = {
+        ticketId: 'ticket-prep-14min',
+        ticketNumber: 501,
+        orderId: 'order-501-uuid',
+        fulfillmentMode: 'IMMEDIATE',
+        status: 'IN_PREPARATION',
+        pickupDate: '2026-11-16',
+        timeSlotStart: '12:00:00',
+        timeSlotEnd: '12:15:00',
+        queuedAt: '2026-11-16T12:00:00.000Z',
+        startedAt: '2026-11-16T12:06:00.000Z', // 14 min transcurridos a las 12:20:00
+        items: [{ dishId: 'dish-1', dishName: 'Hamburguesa Completa', quantity: 1 }],
+      };
+
+      render(
+        <KitchenKanbanBoard
+          tickets={[ticketNormal]}
+          onStartPreparation={vi.fn()}
+        />
+      );
+
+      const card = screen.getByTestId('in-preparation-card-ticket-prep-14min');
+      const badge = screen.getByTestId('countup-badge-ticket-prep-14min');
+
+      expect(card).not.toHaveClass('border-amber-500');
+      expect(card).not.toHaveClass('ring-2');
+      expect(badge).not.toHaveClass('bg-amber-100');
+    });
+
+    it('debe conmutar borde exterior e insignia a ámbar cuando tiempo >= 15 minutos, manteniendo platos neutros', () => {
+      const ticketDelayed: KdsTicket = {
+        ticketId: 'ticket-prep-15min',
+        ticketNumber: 502,
+        orderId: 'order-502-uuid',
+        fulfillmentMode: 'IMMEDIATE',
+        status: 'IN_PREPARATION',
+        pickupDate: '2026-11-16',
+        timeSlotStart: '12:00:00',
+        timeSlotEnd: '12:15:00',
+        queuedAt: '2026-11-16T12:00:00.000Z',
+        startedAt: '2026-11-16T12:05:00.000Z', // 15 min exactos a las 12:20:00
+        items: [{ dishId: 'dish-1', dishName: 'Bife de Chorizo', quantity: 2 }],
+      };
+
+      render(
+        <KitchenKanbanBoard
+          tickets={[ticketDelayed]}
+          onStartPreparation={vi.fn()}
+        />
+      );
+
+      const card = screen.getByTestId('in-preparation-card-ticket-prep-15min');
+      const badge = screen.getByTestId('countup-badge-ticket-prep-15min');
+
+      // Alerta visual perimetral e insignia
+      expect(card).toHaveClass('border-amber-500');
+      expect(card).toHaveClass('ring-2');
+      expect(badge).toHaveClass('bg-amber-100');
+      expect(badge).toHaveClass('text-amber-800');
+
+      // Verificación de fondo e ítems neutros (legibilidad sin teñir textos de platos)
+      const dishItem = screen.getByText('2x Bife de Chorizo');
+      expect(dishItem).toHaveClass('text-slate-100');
+      expect(dishItem).not.toHaveClass('text-amber-500');
+      expect(dishItem).not.toHaveClass('text-amber-800');
+    });
+  });
 });
