@@ -22,13 +22,6 @@ Esta especificación establece las reglas de ordenamiento determinista, la anato
 
 ## Clarifications
 
-### Session 2026-11-16
-
-- Q: ¿Cómo debe estructurarse la cabecera (header) de la interfaz de cocina para el rol CHEF en el KDS? → A: Se remueve el título textual redundante ("Kitchen Display System (KDS)") dejando únicamente "EasyEat". Los enlaces horizontales de navegación se reemplazan por un menú desplegable de 3 barritas (botón hamburguesa) con acceso a las tres rutas canónicas de cocina (`/cocina`, `/cocina/platos`, `/cocina/ingredientes`), manteniendo indicador de sección activa `aria-current="page"`. Asimismo, se elimina el enlace y avatar de "Mi perfil" dado que el rol CHEF no cuenta con edición de perfil.
-- Q: ¿Dónde deben ubicarse los datos de sesión y la acción de logout del cocinero? → A: Se trasladan al pie de página (footer) de la interfaz de cocina, alojando la insignia de rol CHEF, el correo electrónico del usuario, el identificador del local y el botón "Cerrar sesión".
-- Q: ¿Cómo se visualiza el local en el pie de página de cocina? → A: El frontend consulta el endpoint público existente de branding (`GET /api/v1/establishments/{tenantId}/branding`) para exhibir el nombre comercial de fantasía (`Local: Café Parque`), implementando un fallback automático al identificador corto (`Local: 1aa45e0c`) con tooltip del UUID completo en caso de error o ausencia de nombre configurado.
-- Q: ¿Qué elementos provisionales o placeholders deben removerse de `KitchenWorkspacePage` para dar protagonismo absoluto al tablero KDS? → A: Se eliminan el subtítulo ("Comandas en preparación..."), el bloque provisional de demora global (+5 min, reasignado a spec 021), el formulario manual de despacho por UUID (reemplazado por el botón LISTO de spec 020), la tarjeta estática de ingredientes (accesible ahora en el menú hamburguesa), el banner condicional de rechazo de platos (trasladado a la gestión de platos) y las cuatro tarjetas estadísticas de métricas del pie ("En Cola", "En Preparación", "Para Retirar", "Completadas hoy") con su polling asociado. El tablero Kanban KDS queda como el único elemento central de la pantalla.
-
 ### Session 2026-11-15
 
 - Q: ¿Qué horizonte de fechas debe abarcar la cola activa de comandas en el KDS para evitar saturación de pedidos futuros? → A: La cola activa abarca la fecha operativa actual (`hoy`) más comandas incompletas de turnos previos si existieran; los pedidos programados para fechas futuras quedan excluidos de la vista de producción activa de hoy para evitar saturación visual.
@@ -186,36 +179,6 @@ Como chef trabajando en una cocina con alta demanda, quiero que la tarjeta en pr
 
 ---
 
-### Historia de usuario 6 — Limpieza y ergonomía del entorno de trabajo KDS (Prioridad: P2)
-
-**Identificador de referencia**: `CHF-4.1.2`  
-**Persona**: Chef operando la pantalla táctil de cocina.
-
-Como chef en la estación de cocina, quiero disponer de un entorno visual despejado y libre de marcadores provisionales o controles ajenos al KDS, con un menú de navegación compacto tipo hamburguesa y un pie de página con los datos de sesión y local, para maximizar el área de visualización del tablero Kanban táctil sin distracciones operativas.
-
-**Por qué tiene prioridad P2**: Elimina la deuda técnica visual acumulada por placeholders de versiones previas, optimiza la ergonomía en monitores táctiles y centraliza la navegación de cocina sin sobrecargar la cabecera.
-
-**Prueba independiente**: Puede comprobarse ingresando a `/cocina` con rol `CHEF`: la cabecera muestra únicamente "EasyEat" y el menú hamburguesa con las 3 secciones; la página contiene exclusivamente el tablero Kanban (sin bloques de demora, despacho manual, ingredientes ni métricas); y el pie de página exhibe el nombre comercial del local, la insignia CHEF, el correo electrónico y la acción de logout.
-
-**Escenarios de aceptación**:
-
-1. **AC-1 (Cabecera simplificada con menú desplegable para rol CHEF)**:
-   - **Dado** que un usuario con rol `CHEF` accede a las vistas de cocina (`/cocina`, `/cocina/platos`, `/cocina/ingredientes`),
-   - **Cuando** se renderiza la cabecera superior,
-   - **Entonces** se omite el título textual redundante del KDS y el enlace de avatar/perfil, exhibiendo un botón de menú desplegable (hamburguesa) que al accionarse despliega las rutas "Comandas KDS", "Gestionar Platos" e "Ingredientes" con indicador `aria-current="page"` para la ruta activa.
-
-2. **AC-2 (Pie de página operativo con datos del establecimiento y sesión)**:
-   - **Dado** un usuario autenticado con rol `CHEF`,
-   - **Cuando** se visualiza el pie de página de la aplicación,
-   - **Entonces** exhibe el nombre comercial del local obtenido desde el branding del establecimiento (o el identificador corto como fallback), la insignia de rol `CHEF`, el correo electrónico del usuario y el botón "Cerrar sesión".
-
-3. **AC-3 (Supresión de placeholders y foco exclusivo en Kanban)**:
-   - **Dado** que el chef opera sobre la vista principal del KDS (`/cocina`),
-   - **Cuando** la página completa su carga,
-   - **Entonces** no se visualizan el subtítulo de página, el control provisional de demora global, el formulario manual de despacho por UUID, la tarjeta estática de catálogo de ingredientes, el banner de rechazo de platos ni las cuatro tarjetas estadísticas de métricas del turno, ocupando el tablero `KitchenKanbanBoard` la totalidad del área operativa.
-
----
-
 ## Requisitos funcionales
 
 - **RF-001**: El sistema debe organizar las comandas activas del KDS en dos columnas operativas exclusivas: Columna 1 ("Pendientes") para órdenes no iniciadas y Columna 2 ("En preparación") para órdenes en elaboración activa.
@@ -234,9 +197,6 @@ Como chef en la estación de cocina, quiero disponer de un entorno visual despej
 - **RF-014**: Al alcanzar o superar los 15 minutos inclusive (`tiempo >= 15 min`), el sistema debe destacar el borde exterior de la tarjeta y la insignia del cronómetro en color ámbar/amarillo de alerta, sin alterar el contraste ni la legibilidad de la lista de platos.
 - **RF-015**: La pantalla del KDS debe actualizar de manera autónoma y continua la cola activa mediante consultas periódicas silenciosas a intervalos cortos (entre 3 y 5 segundos) para reflejar nuevos pedidos y transiciones de estado concurrentes sin requerir interacción manual del personal ni recargas de página.
 - **RF-016**: Cuando la Columna 1 o la Columna 2 no contengan comandas activas, el sistema debe preservar la estructura fija de dos columnas y renderizar en la columna correspondiente un mensaje neutral informativo (tales como "Sin pedidos pendientes" o "Sin pedidos en preparación"), evitando colapsos visuales o saltos bruscos en el diseño de pantalla.
-- **RF-017**: En las vistas del rol CHEF, la cabecera superior debe ocultar el título textual redundante del KDS y el enlace de avatar de perfil, ofreciendo un menú desplegable tipo hamburguesa accesible para conmutar entre "Comandas KDS", "Gestionar Platos" e "Ingredientes".
-- **RF-018**: La interfaz de cocina para el rol CHEF debe renderizar un pie de página operativo conteniendo el nombre comercial del establecimiento obtenido mediante el branding del local (con fallback al ID corto), la insignia de rol CHEF, el email del usuario autenticado y el botón de cierre de sesión.
-- **RF-019**: La página de cocina (`/cocina`) debe eliminar los bloques de ajuste manual de demoras, el despacho de órdenes por UUID, la tarjeta estática de acceso a ingredientes, el banner de rechazo de platos, el subtítulo y las cuatro tarjetas estadísticas de métricas del turno, reservando el 100% del área de trabajo para el tablero Kanban de comandas activas.
 
 ---
 
