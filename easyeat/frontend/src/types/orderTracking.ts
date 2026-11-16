@@ -47,7 +47,7 @@ export interface OrderLiveTrackingResponse {
   fulfillmentMode: FulfillmentMode;
   isCountdownActive: boolean;
   estimatedMinutesRemaining: number | null;
-  progressPercentage: number;
+  progressPercentage: number | null;
   isReadyForPickup: boolean;
   kdsQueueSaturation?: KdsQueueSaturation;
   message: string;
