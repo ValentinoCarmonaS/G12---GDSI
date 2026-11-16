@@ -5,9 +5,12 @@ import com.easyeat.order.domain.KdsTicket;
 import com.easyeat.order.domain.KdsTicketStatus;
 import com.easyeat.order.domain.Order;
 import com.easyeat.order.domain.OrderItem;
+import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.dto.KdsDashboardSummaryResponse;
+import com.easyeat.order.dto.KdsStartPreparationResponse;
 import com.easyeat.order.repository.KdsTicketRepository;
 import com.easyeat.order.repository.OrderRepository;
+import com.easyeat.order.service.KdsQueueService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -25,13 +28,16 @@ public class KitchenKdsController {
 
     private final KdsTicketRepository kdsTicketRepository;
     private final OrderRepository orderRepository;
+    private final KdsQueueService kdsQueueService;
 
     public KitchenKdsController(
             KdsTicketRepository kdsTicketRepository,
-            OrderRepository orderRepository
+            OrderRepository orderRepository,
+            KdsQueueService kdsQueueService
     ) {
         this.kdsTicketRepository = kdsTicketRepository;
         this.orderRepository = orderRepository;
+        this.kdsQueueService = kdsQueueService;
     }
 
     @GetMapping("/orders")
@@ -103,6 +109,19 @@ public class KitchenKdsController {
         long completed = kdsTicketRepository.countByEstablishmentIdAndStatusAndPickupDate(effectiveEstablishmentId, KdsTicketStatus.COMPLETED, today);
 
         return ResponseEntity.ok(new KdsDashboardSummaryResponse(queued, inPrep, ready, completed));
+    }
+
+    @PostMapping("/tickets/{ticketId}/start-preparation")
+    @PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF')")
+    public ResponseEntity<KdsStartPreparationResponse> startPreparation(
+            @PathVariable UUID ticketId,
+            @RequestParam(required = false) UUID establishmentId,
+            @AuthenticationPrincipal User user,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        UUID effectiveEstablishmentId = resolveEstablishmentId(user, authentication, establishmentId);
+        KdsStartPreparationResponse response = kdsQueueService.startTicketPreparation(ticketId, effectiveEstablishmentId);
+        return ResponseEntity.ok(response);
     }
 
     private UUID resolveEstablishmentId(User user, org.springframework.security.core.Authentication authentication, UUID establishmentIdParam) {

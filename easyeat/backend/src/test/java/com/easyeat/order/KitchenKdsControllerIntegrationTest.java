@@ -29,6 +29,7 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
@@ -248,7 +249,7 @@ class KitchenKdsControllerIntegrationTest {
                         .principal(auth))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.code").value("INVALID_ORDER_STATE"))
+                .andExpect(jsonPath("$.properties.code").value("INVALID_ORDER_STATE"))
                 .andExpect(jsonPath("$.detail").value("La comanda ya ha finalizado su etapa de preparación activa."));
     }
 }
