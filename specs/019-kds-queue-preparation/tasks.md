@@ -15,8 +15,8 @@
 
 **Propósito**: Crear los DTOs y tipos de dominio base requeridos por los contratos HTTP en backend y frontend.
 
-- [ ] T001 [P] Crear DTOs de comanda activa `KdsActiveQueueTicketResponse.java` y `KdsStartPreparationResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/`.
-- [ ] T002 [P] Extender tipos de dominio de cocina en `easyeat/frontend/src/types/kds.ts` incorporando `KdsTicket`, `KdsOrderItem`, `KdsStartPreparationResponse` y `KdsTicketStatus`.
+- [X] T001 [P] Crear DTOs de comanda activa `KdsActiveQueueTicketResponse.java` y `KdsStartPreparationResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/`.
+- [X] T002 [P] Extender tipos de dominio de cocina en `easyeat/frontend/src/types/kds.ts` incorporando `KdsTicket`, `KdsOrderItem`, `KdsStartPreparationResponse` y `KdsTicketStatus`.
 
 **Checkpoint**: Modelos de transporte definidos y consistentes entre backend y frontend.
 
@@ -26,9 +26,9 @@
 
 **Propósito**: Establecer el índice optimizado de cola, el bloqueo pesimista en persistencia y las utilidades compartidas de tiempo antes de implementar las historias operativas.
 
-- [ ] T002b [P] Crear migración Flyway `V25__idx_kds_tickets_active_queue.sql` en `easyeat/backend/src/main/resources/db/migration/` y mapear el `@Index` en `easyeat/backend/src/main/java/com/easyeat/order/domain/KdsTicket.java`.
-- [ ] T003 [P] Agregar método `findByIdForUpdate(@Param("id") UUID id)` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
-- [ ] T004 [P] Crear utilitario de cálculo temporal y formateo en `easyeat/frontend/src/utils/kdsTimeUtils.ts` (`calculateElapsedMinutes`, `isTicketDelayed` y `formatDishItem`).
+- [X] T002b [P] Crear migración Flyway `V25__idx_kds_tickets_active_queue.sql` en `easyeat/backend/src/main/resources/db/migration/` y mapear el `@Index` en `easyeat/backend/src/main/java/com/easyeat/order/domain/KdsTicket.java`.
+- [X] T003 [P] Agregar método `findByIdForUpdate(@Param("id") UUID id)` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
+- [X] T004 [P] Crear utilitario de cálculo temporal y formateo en `easyeat/frontend/src/utils/kdsTimeUtils.ts` (`calculateElapsedMinutes`, `isTicketDelayed` y `formatDishItem`).
 
 **Checkpoint**: Base de persistencia (índice y bloqueo pesimista) y utilidades de tiempo disponibles para las historias.
 
@@ -44,18 +44,18 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T008`–`T013`.
 
-- [ ] T005 [P] [US1] Crear prueba de integración `easyeat/backend/src/test/java/com/easyeat/order/KdsQueueDeterministicOrderTest.java` verificando orden determinista total (`pickupDate`, `timeSlotStart`, `queuedAt`, `id`), exclusión de `pickupDate > hoy`, precedencia de turnos vencidos y FIFO unificado.
-- [ ] T006 [P] [US1] Crear prueba `@WebMvcTest` en `easyeat/backend/src/test/java/com/easyeat/order/KitchenKdsControllerIntegrationTest.java` verificando `GET /api/v1/kitchen/orders?activeQueue=true` con rol `CHEF`, filtro `pickup_date <= hoy` y mapeo de `startedAt`.
-- [ ] T007 [P] [US1] Crear prueba unitaria `easyeat/frontend/src/test/hooks/useKdsQueuePolling.test.ts` verificando polling silencioso cada 4 segundos, suspensión al ocultar pestaña (`document.visibilityState === 'hidden'`), cancelación al desmontar y backoff ante fallos de red.
+- [X] T005 [P] [US1] Crear prueba de integración `easyeat/backend/src/test/java/com/easyeat/order/KdsQueueDeterministicOrderTest.java` verificando orden determinista total (`pickupDate`, `timeSlotStart`, `queuedAt`, `id`), exclusión de `pickupDate > hoy`, precedencia de turnos vencidos y FIFO unificado.
+- [X] T006 [P] [US1] Crear prueba `@WebMvcTest` en `easyeat/backend/src/test/java/com/easyeat/order/KitchenKdsControllerIntegrationTest.java` verificando `GET /api/v1/kitchen/orders?activeQueue=true` con rol `CHEF`, filtro `pickup_date <= hoy` y mapeo de `startedAt`.
+- [X] T007 [P] [US1] Crear prueba unitaria `easyeat/frontend/src/test/hooks/useKdsQueuePolling.test.ts` verificando polling silencioso cada 4 segundos, suspensión al ocultar pestaña (`document.visibilityState === 'hidden'`), cancelación al desmontar y backoff ante fallos de red.
 
 ### Implementación de US1 (Green Implementation)
 
-- [ ] T008 [P] [US1] Agregar método `findActiveQueueTickets` con orden determinista y filtro `pickupDate <= :today` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
-- [ ] T009 [US1] Normalizar franja de pedidos `IMMEDIATE` (`floor(M / 15) * 15`) en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` y en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutPaymentService.java`.
-- [ ] T010 [US1] Asegurar normalización de `timeSlotStart` y `timeSlotEnd` para `FulfillmentMode.IMMEDIATE` al construir la comanda en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java`.
-- [ ] T011 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` para exponer `GET /api/v1/kitchen/orders` con parámetro `activeQueue=true`, mapeo de `startedAt` y consumo de `findActiveQueueTickets`, restringido al rol `CHEF`.
-- [ ] T012 [P] [US1] Actualizar `fetchKitchenOrders` en `easyeat/frontend/src/api/kitchenKdsApi.ts` para soportar parámetro `activeQueue` y retorno tipado de `startedAt`.
-- [ ] T013 [US1] Implementar hook de polling silencioso en `easyeat/frontend/src/hooks/useKdsQueuePolling.ts` consumiendo `fetchKitchenOrders`.
+- [X] T008 [P] [US1] Agregar método `findActiveQueueTickets` con orden determinista y filtro `pickupDate <= :today` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
+- [X] T009 [US1] Normalizar franja de pedidos `IMMEDIATE` (`floor(M / 15) * 15`) en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` y en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutPaymentService.java`.
+- [X] T010 [US1] Asegurar normalización de `timeSlotStart` y `timeSlotEnd` para `FulfillmentMode.IMMEDIATE` al construir la comanda en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java`.
+- [X] T011 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` para exponer `GET /api/v1/kitchen/orders` con parámetro `activeQueue=true`, mapeo de `startedAt` y consumo de `findActiveQueueTickets`, restringido al rol `CHEF`.
+- [X] T012 [P] [US1] Actualizar `fetchKitchenOrders` en `easyeat/frontend/src/api/kitchenKdsApi.ts` para soportar parámetro `activeQueue` y retorno tipado de `startedAt`.
+- [X] T013 [US1] Implementar hook de polling silencioso en `easyeat/frontend/src/hooks/useKdsQueuePolling.ts` consumiendo `fetchKitchenOrders`.
 
 **Checkpoint**: `US1` completa e independientemente verificable como MVP (cola unificada en backend y polling funcional en frontend).
 
@@ -71,16 +71,16 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T017`–`T020`.
 
-- [ ] T014 [P] [US2] Ampliar `easyeat/backend/src/test/java/com/easyeat/order/KitchenKdsControllerIntegrationTest.java` verificando `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` (`200 OK` en éxito, `404` ticket inexistente, `403` establecimiento ajeno, `409` comanda en estado terminal).
-- [ ] T015 [P] [US2] Crear prueba de concurrencia e idempotencia en `easyeat/backend/src/test/java/com/easyeat/order/KdsStartPreparationIdempotencyTest.java` verificando que peticiones concurrentes ejecutan un único cambio de estado y preservan el `started_at` original.
-- [ ] T016 [P] [US2] Crear prueba de componente en `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando pulsación de botón "EMPEZAR", deshabilitación durante la mutación, llamada a la API y traslado reactivo de la tarjeta a Columna 2.
+- [X] T014 [P] [US2] Ampliar `easyeat/backend/src/test/java/com/easyeat/order/KitchenKdsControllerIntegrationTest.java` verificando `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` (`200 OK` en éxito, `404` ticket inexistente, `403` establecimiento ajeno, `409` comanda en estado terminal).
+- [X] T015 [P] [US2] Crear prueba de concurrencia e idempotencia en `easyeat/backend/src/test/java/com/easyeat/order/KdsStartPreparationIdempotencyTest.java` verificando que peticiones concurrentes ejecutan un único cambio de estado y preservan el `started_at` original.
+- [X] T016 [P] [US2] Crear prueba de componente en `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando pulsación de botón "EMPEZAR", deshabilitación durante la mutación, llamada a la API y traslado reactivo de la tarjeta a Columna 2.
 
 ### Implementación de US2 (Green Implementation)
 
-- [ ] T017 [US2] Agregar método `startTicketPreparation(UUID ticketId, UUID establishmentId)` en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueService.java` y `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java` con bloqueo pesimista, idempotencia y sincronización de `Order.status = IN_PROGRESS`.
-- [ ] T018 [US2] Exponer endpoint `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` protegido exclusivamente con `@PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF')")`.
-- [ ] T019 [P] [US2] Agregar función `startTicketPreparation(ticketId: string)` en `easyeat/frontend/src/api/kitchenKdsApi.ts`.
-- [ ] T020 [US2] Conectar la acción de inicio de preparación en `easyeat/frontend/src/components/kds/KitchenKanbanBoard.tsx` (deshabilitación preventiva de botón y llamada a `startTicketPreparation`).
+- [X] T017 [US2] Agregar método `startTicketPreparation(UUID ticketId, UUID establishmentId)` en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueService.java` y `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java` con bloqueo pesimista, idempotencia y sincronización de `Order.status = IN_PROGRESS`.
+- [X] T018 [US2] Exponer endpoint `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` protegido exclusivamente con `@PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF')")`.
+- [X] T019 [P] [US2] Agregar función `startTicketPreparation(ticketId: string)` en `easyeat/frontend/src/api/kitchenKdsApi.ts`.
+- [X] T020 [US2] Conectar la acción de inicio de preparación en `easyeat/frontend/src/components/kds/KitchenKanbanBoard.tsx` (deshabilitación preventiva de botón y llamada a `startTicketPreparation`).
 
 **Checkpoint**: `US1 + US2` completamente integradas (flujo transaccional e idempotente de inicio de elaboración entre Columna 1 y Columna 2).
 
@@ -96,14 +96,14 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T023`–`T025`.
 
-- [ ] T021 [P] [US3] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsFormatters.test.ts` verificando el formateo unificado de ítems `formatDishItem` (`"[Cantidad]x [Nombre]"`) y manejo de cantidades múltiples.
-- [ ] T022 [P] [US3] Ampliar `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando la visualización de platos en renglones dedicados, ausencia total de placeholders de notas ("Sin notas", "Observaciones: ninguna"), scroll vertical en Columna 1 y mensajes neutrales de columna vacía.
+- [X] T021 [P] [US3] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsFormatters.test.ts` verificando el formateo unificado de ítems `formatDishItem` (`"[Cantidad]x [Nombre]"`) y manejo de cantidades múltiples.
+- [X] T022 [P] [US3] Ampliar `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando la visualización de platos en renglones dedicados, ausencia total de placeholders de notas ("Sin notas", "Observaciones: ninguna"), scroll vertical en Columna 1 y mensajes neutrales de columna vacía.
 
 ### Implementación de US3 (Green Implementation)
 
-- [ ] T023 [P] [US3] Crear subcomponentes de tarjeta `KdsQueuedCard.tsx` (compacta) y `KdsInPreparationCard.tsx` (expandida) en `easyeat/frontend/src/components/kds/`.
-- [ ] T024 [US3] Implementar estructura Kanban fija de 2 columnas con contenedor de scroll táctil continuo y mensajes neutrales de estado vacío en `easyeat/frontend/src/components/kds/KitchenKanbanBoard.tsx`.
-- [ ] T025 [US3] Integrar `KitchenKanbanBoard` dentro de `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` como vista operativa central.
+- [X] T023 [P] [US3] Crear subcomponentes de tarjeta `KdsQueuedCard.tsx` (compacta) y `KdsInPreparationCard.tsx` (expandida) en `easyeat/frontend/src/components/kds/`.
+- [X] T024 [US3] Implementar estructura Kanban fija de 2 columnas con contenedor de scroll táctil continuo y mensajes neutrales de estado vacío en `easyeat/frontend/src/components/kds/KitchenKanbanBoard.tsx`.
+- [X] T025 [US3] Integrar `KitchenKanbanBoard` dentro de `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` como vista operativa central.
 
 **Checkpoint**: Ergonomía visual de cocina verificada en ambas columnas y adaptada a monitores táctiles.
 
@@ -119,13 +119,13 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T028`–`T029`.
 
-- [ ] T026 [P] [US4] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsCountUpUtils.test.ts` verificando el cálculo de minutos enteros `floor((now - startedAt) / 60)`, tolerancia a desfasaje de reloj (`clockOffsetMs`) y persistencia ante diferentes timestamps.
-- [ ] T027 [P] [US4] Crear prueba de hook en `easyeat/frontend/src/test/hooks/useKdsCountUp.test.ts` verificando el incremento periódico cada 60 segundos sin realizar peticiones HTTP de red adicionales.
+- [X] T026 [P] [US4] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsCountUpUtils.test.ts` verificando el cálculo de minutos enteros `floor((now - startedAt) / 60)`, tolerancia a desfasaje de reloj (`clockOffsetMs`) y persistencia ante diferentes timestamps.
+- [X] T027 [P] [US4] Crear prueba de hook en `easyeat/frontend/src/test/hooks/useKdsCountUp.test.ts` verificando el incremento periódico cada 60 segundos sin realizar peticiones HTTP de red adicionales.
 
 ### Implementación de US4 (Green Implementation)
 
-- [ ] T028 [P] [US4] Implementar hook reactivo `useKdsCountUp.ts` en `easyeat/frontend/src/hooks/useKdsCountUp.ts` sincronizado contra `startedAt` y el reloj local ajustado por la cabecera `Date` del servidor.
-- [ ] T029 [US4] Integrar `useKdsCountUp` en la cabecera de `KdsInPreparationCard` dentro de `easyeat/frontend/src/components/kds/` renderizando el formato `MM min`.
+- [X] T028 [P] [US4] Implementar hook reactivo `useKdsCountUp.ts` en `easyeat/frontend/src/hooks/useKdsCountUp.ts` sincronizado contra `startedAt` y el reloj local ajustado por la cabecera `Date` del servidor.
+- [X] T029 [US4] Integrar `useKdsCountUp` en la cabecera de `KdsInPreparationCard` dentro de `easyeat/frontend/src/components/kds/` renderizando el formato `MM min`.
 
 **Checkpoint**: Cronómetro progresivo funcional, sereno y sincronizado entre múltiples terminales.
 
@@ -141,12 +141,12 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T032`.
 
-- [ ] T030 [P] [US5] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsAlertThreshold.test.ts` verificando la función `isTicketDelayed` (`false` en 14 min 59 s, `true` en 15 min 00 s y superior).
-- [ ] T031 [P] [US5] Ampliar `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando que al superar los 15 minutos solo el borde perimetral y la insignia conmutan a ámbar, mientras el cuerpo de platos mantiene tipografía y fondo neutros.
+- [X] T030 [P] [US5] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsAlertThreshold.test.ts` verificando la función `isTicketDelayed` (`false` en 14 min 59 s, `true` en 15 min 00 s y superior).
+- [X] T031 [P] [US5] Ampliar `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando que al superar los 15 minutos solo el borde perimetral y la insignia conmutan a ámbar, mientras el cuerpo de platos mantiene tipografía y fondo neutros.
 
 ### Implementación de US5 (Green Implementation)
 
-- [ ] T032 [US5] Aplicar clases de advertencia perimetral ámbar (`border-amber-500`, `ring-2 ring-amber-500`, insignia `bg-amber-100 text-amber-800`) en `KdsInPreparationCard` dentro de `easyeat/frontend/src/components/kds/` condicionadas a `isTicketDelayed`.
+- [X] T032 [US5] Aplicar clases de advertencia perimetral ámbar (`border-amber-500`, `ring-2 ring-amber-500`, insignia `bg-amber-100 text-amber-800`) en `KdsInPreparationCard` dentro de `easyeat/frontend/src/components/kds/` condicionadas a `isTicketDelayed`.
 
 **Checkpoint**: Alerta visual preventiva activa y verificada sin degradar legibilidad en producción.
 
@@ -156,9 +156,9 @@
 
 **Propósito**: Ejecución integral de suites automatizadas y validación manual de escenarios operativos.
 
-- [ ] T033 [P] Ejecutar la suite completa de pruebas backend `mvn test -Dtest="*Kds*,*Kitchen*"` en `easyeat/backend/`.
-- [ ] T034 [P] Ejecutar la suite completa de pruebas frontend `npm test -- --run` y verificar compilación limpia `npm run build` en `easyeat/frontend/`.
-- [ ] T035 Ejecutar el protocolo manual de validación end-to-end según [quickstart.md](./quickstart.md) (verificación de los 9 escenarios operativos).
+- [X] T033 [P] Ejecutar la suite completa de pruebas backend `mvn test -Dtest="*Kds*,*Kitchen*"` en `easyeat/backend/`.
+- [X] T034 [P] Ejecutar la suite completa de pruebas frontend `npm test -- --run` y verificar compilación limpia `npm run build` en `easyeat/frontend/`.
+- [X] T035 Ejecutar el protocolo manual de validación end-to-end según [quickstart.md](./quickstart.md) (verificación de los 9 escenarios operativos).
 
 ---
 
