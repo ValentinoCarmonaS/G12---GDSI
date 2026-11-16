@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import { KdsDashboardSummaryResponse, KdsTicketStatus } from '../types/kds';
+import { KdsDashboardSummaryResponse, KdsStartPreparationResponse, KdsTicketStatus } from '../types/kds';
 
 export interface KitchenOrderPageResponse {
   content: Array<{
@@ -49,6 +49,15 @@ export const fetchKitchenOrders = async (
 export const fetchDashboardSummary = async (): Promise<KdsDashboardSummaryResponse> => {
   const response = await apiClient.get<KdsDashboardSummaryResponse>(
     '/kitchen/dashboard/summary'
+  );
+  return response.data;
+};
+
+export const startTicketPreparation = async (
+  ticketId: string
+): Promise<KdsStartPreparationResponse> => {
+  const response = await apiClient.post<KdsStartPreparationResponse>(
+    `/kitchen/tickets/${ticketId}/start-preparation`
   );
   return response.data;
 };
