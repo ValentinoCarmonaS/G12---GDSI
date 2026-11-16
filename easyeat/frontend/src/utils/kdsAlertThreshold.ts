@@ -1,0 +1,1 @@
+export { isTicketDelayed } from './kdsTimeUtils';

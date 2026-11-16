@@ -141,12 +141,12 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T032`.
 
-- [ ] T030 [P] [US5] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsAlertThreshold.test.ts` verificando la función `isTicketDelayed` (`false` en 14 min 59 s, `true` en 15 min 00 s y superior).
-- [ ] T031 [P] [US5] Ampliar `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando que al superar los 15 minutos solo el borde perimetral y la insignia conmutan a ámbar, mientras el cuerpo de platos mantiene tipografía y fondo neutros.
+- [X] T030 [P] [US5] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsAlertThreshold.test.ts` verificando la función `isTicketDelayed` (`false` en 14 min 59 s, `true` en 15 min 00 s y superior).
+- [X] T031 [P] [US5] Ampliar `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando que al superar los 15 minutos solo el borde perimetral y la insignia conmutan a ámbar, mientras el cuerpo de platos mantiene tipografía y fondo neutros.
 
 ### Implementación de US5 (Green Implementation)
 
-- [ ] T032 [US5] Aplicar clases de advertencia perimetral ámbar (`border-amber-500`, `ring-2 ring-amber-500`, insignia `bg-amber-100 text-amber-800`) en `KdsInPreparationCard` dentro de `easyeat/frontend/src/components/kds/` condicionadas a `isTicketDelayed`.
+- [X] T032 [US5] Aplicar clases de advertencia perimetral ámbar (`border-amber-500`, `ring-2 ring-amber-500`, insignia `bg-amber-100 text-amber-800`) en `KdsInPreparationCard` dentro de `easyeat/frontend/src/components/kds/` condicionadas a `isTicketDelayed`.
 
 **Checkpoint**: Alerta visual preventiva activa y verificada sin degradar legibilidad en producción.
 
