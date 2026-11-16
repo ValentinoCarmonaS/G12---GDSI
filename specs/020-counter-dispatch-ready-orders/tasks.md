@@ -117,7 +117,7 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T028`–`T031`.
 
-- [ ] T025 [P] [US4] Crear prueba en `easyeat/backend/src/test/java/com/easyeat/profile/controller/ProfileAvatarStaffControllerTest.java` verificando `GET /api/v1/profile/users/{userId}/avatar` con rol `ENCARGADO` (retorno de stream binario para usuario con avatar y 404 para usuario sin avatar).
+- [X] T025 [P] [US4] Crear prueba en `easyeat/backend/src/test/java/com/easyeat/profile/controller/ProfileAvatarStaffControllerTest.java` verificando `GET /api/v1/profile/users/{userId}/avatar` con rol `ENCARGADO` (retorno de stream binario para usuario con avatar y 404 para usuario sin avatar).
 - [ ] T026 [P] [US4] Ampliar `CounterOrderControllerIntegrationTest.java` en `easyeat/backend/src/test/java/com/easyeat/order/` verificando que el payload JSON de `GET /api/v1/counter/orders` contiene `securityCode` de 4 dígitos, `customer.fullName`, `customer.photoUrl`, `items` tipados y ausencia total de campos de precio (`unitPrice`, `subtotal`, `totalAmount`).
 - [ ] T027 [P] [US4] Ampliar pruebas de componente en `easyeat/frontend/tests/components/CounterTicketCard.test.tsx` verificando renderizado de código de 4 dígitos con tipografía monospace, nombre del comensal, omisión limpia del contenedor de imagen cuando `photoUrl` es nulo, formateo de platos `[Cantidad]x [Plato]` y presencia de contenedor del botón de entrega sin datos monetarios.
 
