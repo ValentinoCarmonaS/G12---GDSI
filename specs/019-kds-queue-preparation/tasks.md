@@ -162,6 +162,27 @@
 
 ---
 
+## Fase 9: Historia de usuario 6 — Limpieza y ergonomía del entorno de trabajo KDS (Prioridad: P2)
+
+**Objetivo**: Depurar la interfaz de cocina removiendo placeholders y elementos no pertenecientes al KDS, dotar al rol `CHEF` de un menú de navegación compacto tipo hamburguesa (3 barritas), trasladar los datos de sesión y local al pie de página con branding comercial (con fallback a ID corto), suprimir el acceso a perfil/avatar para chef y dejar el tablero `KitchenKanbanBoard` como foco exclusivo.
+
+**Prueba independiente**: Acceder a `/cocina` con rol `CHEF`: verificar que la cabecera solo exhibe "EasyEat" y el botón desplegable de 3 barritas hacia las 3 rutas; la página renderiza únicamente el tablero Kanban sin controles de demora, despacho por UUID, catálogo de ingredientes ni estadísticas; y el pie de página presenta el nombre del local, rol, email y botón de logout.
+
+### Pruebas TDD de US6 (Red Tests)
+
+> **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de abordar la implementación `T038`–`T039`.
+
+- [ ] T036 [P] [US6] Crear pruebas unitarias en `easyeat/frontend/tests/components/WorkspaceLayout.test.tsx` verificando para el rol `CHEF` el menú hamburguesa (apertura/cierre, enlaces canónicos y `aria-current`), la ausencia total del avatar y enlace a `/perfil`, y el renderizado en el pie de página del badge `CHEF`, email, botón "Cerrar sesión" y local comercial (con fallback a ID corto).
+- [ ] T037 [P] [US6] Actualizar pruebas en `easyeat/frontend/tests/pages/KitchenWorkspacePage.test.tsx` verificando la eliminación de los controles de demora global, despacho manual por UUID, tarjeta de ingredientes, banner de rechazo, subtítulo y tarjetas estadísticas del pie, confirmando el protagonismo exclusivo del tablero `KitchenKanbanBoard`.
+
+### Implementación de US6 (Green Implementation)
+
+- [ ] T038 [US6] Implementar en `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` la adaptación ergonómica para el rol `CHEF`: menú hamburguesa desplegable con `CHEF_SECTIONS`, ocultamiento del título KDS y del avatar/perfil, y nuevo pie de página operativo con branding de establecimiento (`GET /api/v1/establishments/{tenantId}/branding`), badge `CHEF`, email del usuario y botón "Cerrar sesión".
+- [ ] T039 [US6] Depurar `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` removiendo los bloques de ajuste de demora global, despacho manual por UUID, catálogo de ingredientes, banner de rechazo, subtítulo, las cuatro tarjetas estadísticas de métricas del pie y sus estados/efectos asociados, dejando el tablero `KitchenKanbanBoard` como elemento principal.
+- [ ] T040 [P] [US6] Ejecutar suite de pruebas frontend `npm test --prefix easyeat/frontend -- --run` y verificar compilación limpia `npm run build --prefix easyeat/frontend`.
+
+---
+
 ## Dependencias y orden de ejecución
 
 ### Dependencias entre fases
@@ -174,6 +195,7 @@
    - `US3` (Fase 5): Depende de `US2` para montar el tablero completo con tarjetas compactas y expandidas.
    - `US4` (Fase 6): Depende de `US3` (agrega el cronómetro en la cabecera de la tarjeta expandida).
    - `US5` (Fase 7): Depende de `US4` (el umbral de alerta reacciona a los minutos de preparación acumulados).
+   - `US6` (Fase 9): Depende de `US3` (limpia y consolida el entorno visual y la cabecera de cocina sobre la que opera el Kanban).
 4. **Pulido (Fase 8)**: Depende de la conclusión de todas las historias de usuario.
 
 ### Dependencias internas por historia de usuario (TDD)
@@ -206,6 +228,10 @@ T007: "useKdsQueuePolling.test.ts en frontend"
 T014: "start-preparation en KitchenKdsControllerIntegrationTest.java"
 T015: "KdsStartPreparationIdempotencyTest.java en backend"
 T016: "KitchenKanbanBoard.test.tsx acción EMPEZAR en frontend"
+
+# Paralelo Pruebas TDD de US6:
+T036: "WorkspaceLayout.test.tsx menú hamburguesa, perfil y pie de página en frontend"
+T037: "KitchenWorkspacePage.test.tsx eliminación de placeholders en frontend"
 ```
 
 ---
@@ -220,5 +246,7 @@ T016: "KitchenKanbanBoard.test.tsx acción EMPEZAR en frontend"
    - Perfecciona la ergonomía táctil con el listado de platos `[Cantidad]x [Nombre]` y mensajes de columnas vacías.
 4. **Incremento 4 y 5 (Fase 6 + 7)**:
    - Incorpora el Count-Up sereno en minutos enteros y la alerta ámbar a los 15 minutos sin teñir los textos.
-5. **Cierre (Fase 8)**:
+5. **Incremento 6 (Fase 9)**:
+   - Limpieza integral y ergonomía del entorno de cocina: menú hamburguesa (3 barritas), pie de página operativo con datos del establecimiento y sesión, supresión de perfil y retiro de elementos provisionales.
+6. **Cierre (Fase 8)**:
    - Validación integral automatizada y manual.

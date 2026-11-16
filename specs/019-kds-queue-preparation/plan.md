@@ -126,6 +126,10 @@ specs/019-kds-queue-preparation/
   - Columna 2: Tarjeta expandida con `#ticketNumber`, turno `HH:mm - HH:mm`, cronómetro `MM min` con conmutación reactiva a alerta ámbar a los 15 min y lista de platos con alto contraste.
 - `pages/KitchenWorkspacePage.tsx`:
   - Integrar `KitchenKanbanBoard` como elemento central de la interfaz de cocina `/cocina`.
+  - Limpieza integral de la página: eliminación de subtítulo, banner de rechazo de platos, control provisional de demora global (+5 min), formulario manual de despacho por UUID, tarjeta estática de catálogo de ingredientes y las cuatro tarjetas estadísticas de métricas del pie junto con su polling.
+- `components/common/WorkspaceLayout.tsx`:
+  - Adaptación condicional para rol `CHEF`: remoción del título textual redundante del KDS, reemplazo de enlaces horizontales por menú desplegable tipo hamburguesa (3 barritas) con las tres secciones de cocina (`/cocina`, `/cocina/platos`, `/cocina/ingredientes`), y supresión del avatar/perfil.
+  - Nuevo pie de página operativo para el rol `CHEF`: consulta al endpoint de branding (`GET /api/v1/establishments/{tenantId}/branding`) para exhibir el nombre comercial con fallback al ID corto, badge `CHEF`, email del usuario y botón "Cerrar sesión".
 
 #### Tests (`easyeat/backend/src/test/` y `easyeat/frontend/tests/`)
 
@@ -133,7 +137,8 @@ specs/019-kds-queue-preparation/
   - `KitchenKdsControllerIntegrationTest.java`: Pruebas de endpoint `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` (transición `QUEUED -> IN_PREPARATION`, idempotencia en segundo llamado, `404` ticket inexistente, `403` establecimiento incorrecto, `409` estado terminal).
   - `KdsQueueDeterministicOrderTest.java`: Pruebas de repositorio y servicio verificando FIFO unificado entre `IMMEDIATE` y `SCHEDULED`, orden ascendente por `pickup_date`, `time_slot_start`, `queued_at`, precedencia de turnos vencidos y exclusión de fechas futuras.
 - **Frontend tests**:
-  - `KitchenKanbanBoard.test.tsx` / `tests/pages/KitchenWorkspacePage.test.tsx`: Pruebas de renderizado de dos columnas, botón "EMPEZAR", transición reactiva de tarjeta, formato de platos `[Cantidad]x [Nombre]`, ausencia de notas libres, estado de columnas vacías sin layout shifts.
+  - `KitchenKanbanBoard.test.tsx` / `tests/pages/KitchenWorkspacePage.test.tsx`: Pruebas de renderizado de dos columnas, botón "EMPEZAR", transición reactiva de tarjeta, formato de platos `[Cantidad]x [Nombre]`, ausencia de notas libres, estado de columnas vacías sin layout shifts. Actualización de pruebas de `KitchenWorkspacePage` validando la ausencia de placeholders y métricas secundarias.
+  - `WorkspaceLayout.test.tsx`: Pruebas del menú hamburguesa de cocina, ausencia de avatar/perfil para rol `CHEF`, y renderizado en pie de página de local, rol, email y botón de logout.
   - `useKdsQueuePolling.test.ts` y `kdsTimeUtils.test.ts`: Pruebas unitarias de polling, backoff, recálculo reactivo de cronómetro y conmutación perimetral a ámbar a los 15:00 min exactos.
 
 ---
