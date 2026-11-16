@@ -54,7 +54,7 @@
 - [X] T009 [US1] Normalizar franja de pedidos `IMMEDIATE` (`floor(M / 15) * 15`) en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` y en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutPaymentService.java`.
 - [X] T010 [US1] Asegurar normalización de `timeSlotStart` y `timeSlotEnd` para `FulfillmentMode.IMMEDIATE` al construir la comanda en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java`.
 - [X] T011 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` para exponer `GET /api/v1/kitchen/orders` con parámetro `activeQueue=true`, mapeo de `startedAt` y consumo de `findActiveQueueTickets`, restringido al rol `CHEF`.
-- [ ] T012 [P] [US1] Actualizar `fetchKitchenOrders` en `easyeat/frontend/src/api/kitchenKdsApi.ts` para soportar parámetro `activeQueue` y retorno tipado de `startedAt`.
+- [X] T012 [P] [US1] Actualizar `fetchKitchenOrders` en `easyeat/frontend/src/api/kitchenKdsApi.ts` para soportar parámetro `activeQueue` y retorno tipado de `startedAt`.
 - [ ] T013 [US1] Implementar hook de polling silencioso en `easyeat/frontend/src/hooks/useKdsQueuePolling.ts` consumiendo `fetchKitchenOrders`.
 
 **Checkpoint**: `US1` completa e independientemente verificable como MVP (cola unificada en backend y polling funcional en frontend).

@@ -2,7 +2,6 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useKdsQueuePolling } from '../../hooks/useKdsQueuePolling';
 import * as kitchenKdsApi from '../../api/kitchenKdsApi';
-import { KdsTicketStatus } from '../../types/kds';
 
 vi.mock('../../api/kitchenKdsApi', () => ({
   fetchKitchenOrders: vi.fn(),
@@ -15,7 +14,7 @@ describe('T007 [P] [US1]: useKdsQueuePolling Hook Unit Tests', () => {
         ticketId: 't-1',
         ticketNumber: 101,
         orderId: 'o-1',
-        status: KdsTicketStatus.QUEUED,
+        status: 'QUEUED',
         fulfillmentMode: 'IMMEDIATE',
         pickupDate: '2026-11-15',
         timeSlotStart: '12:00:00',

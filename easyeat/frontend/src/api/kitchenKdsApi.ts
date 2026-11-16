@@ -12,6 +12,7 @@ export interface KitchenOrderPageResponse {
     timeSlotStart: string;
     timeSlotEnd: string;
     queuedAt: string;
+    startedAt: string | null;
     items: Array<{
       dishId: string;
       dishName: string;
@@ -29,11 +30,15 @@ export interface KitchenOrderPageResponse {
 export const fetchKitchenOrders = async (
   status?: KdsTicketStatus,
   page = 0,
-  size = 20
+  size = 20,
+  activeQueue = false
 ): Promise<KitchenOrderPageResponse> => {
   const params: Record<string, any> = { page, size };
   if (status) {
     params.status = status;
+  }
+  if (activeQueue) {
+    params.activeQueue = true;
   }
   const response = await apiClient.get<KitchenOrderPageResponse>('/kitchen/orders', {
     params,
