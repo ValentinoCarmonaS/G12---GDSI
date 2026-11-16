@@ -216,15 +216,18 @@ public class OrderLiveTrackingService {
             );
         }
 
-        // Spec 021: Adaptive state IN_PREPARATION (COM-8.1.1)
+        // Spec 021: Adaptive state IN_PREPARATION (COM-8.1.1, COM-7.3.2 BIS, T024)
         if (ticketOpt.isPresent() && ticketOpt.get().getStatus() == KdsTicketStatus.IN_PREPARATION) {
             KdsTicket ticket = ticketOpt.get();
             Instant startedAt = ticket.getStartedAt() != null ? ticket.getStartedAt() : (order.getCreatedAt() != null ? order.getCreatedAt() : now);
             int elapsedMinutes = (int) Math.max(0, Duration.between(startedAt, now).toMinutes());
             int specificDelay = ticket.getSpecificDelayMinutes();
+            // COM-7.3.2 BIS: Base estimada de 20 min + specificDelayMinutes
             int totalEstimatedMinutes = 20 + specificDelay;
+            // Floor de 1 minuto restante ante tiempo excedido (RF-016)
             int remainingMinutes = Math.max(1, totalEstimatedMinutes - elapsedMinutes);
 
+            // Ceiling de 92% para la barra de progreso ante tiempo excedido (RF-016)
             double ratio = (double) elapsedMinutes / (double) totalEstimatedMinutes;
             int rawProgress = (int) Math.floor(15.0 + (ratio * 77.0));
             int progressPercent = Math.min(92, Math.max(15, rawProgress));
