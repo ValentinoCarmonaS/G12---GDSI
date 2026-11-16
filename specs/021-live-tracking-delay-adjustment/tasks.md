@@ -15,10 +15,10 @@
 
 **Propósito**: Crear los DTOs y modelos de transporte compartidos requeridos por los contratos HTTP en backend y frontend.
 
-- [X] T001 [P] Crear DTO de respuesta `KdsDelayIncrementResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/` con campos `ticketId`, `orderId`, `ticketNumber`, `specificDelayMinutes`, `estimatedTotalMinutes`, `updatedAt`.
-- [X] T002 [P] Extender el DTO `OrderLiveTrackingResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/` incorporando `positionAhead`, `estimatedTotalMinutes`, `elapsedMinutes`, `remainingMinutes`, `progressPercent`, `specificDelayMinutes`, `securityCode`, `startedAt`, `readyAt`, y record `LiveTrackingItemDto(dishName, quantity)`.
-- [X] T003 [P] Extender interfaces TypeScript de seguimiento en `easyeat/frontend/src/types/orderTracking.ts` y de cocina en `easyeat/frontend/src/types/kds.ts` incorporando `OrderLiveTrackingData`, `KdsDelayIncrementResponse`, `LiveTrackingItem` y tipado `isDisconnected: boolean` en `UseOrderLiveTrackingPollingResult`.
-- [X] T004 [P] Actualizar clientes HTTP en `easyeat/frontend/src/api/orderTrackingApi.ts` y `easyeat/frontend/src/api/kitchenKdsApi.ts` exponiendo `addTicketDelay(ticketId)` y tipando la respuesta de `getLiveTracking`.
+- [x] T001 [P] Crear DTO de respuesta `KdsDelayIncrementResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/` con campos `ticketId`, `orderId`, `ticketNumber`, `specificDelayMinutes`, `estimatedTotalMinutes`, `updatedAt`.
+- [x] T002 [P] Extender el DTO `OrderLiveTrackingResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/` incorporando `positionAhead`, `estimatedTotalMinutes`, `elapsedMinutes`, `remainingMinutes`, `progressPercent`, `specificDelayMinutes`, `securityCode`, `startedAt`, `readyAt`, y record `LiveTrackingItemDto(dishName, quantity)`.
+- [x] T003 [P] Extender interfaces TypeScript de seguimiento en `easyeat/frontend/src/types/orderTracking.ts` y de cocina en `easyeat/frontend/src/types/kds.ts` incorporando `OrderLiveTrackingData`, `KdsDelayIncrementResponse`, `LiveTrackingItem` y tipado `isDisconnected: boolean` en `UseOrderLiveTrackingPollingResult`.
+- [x] T004 [P] Actualizar clientes HTTP en `easyeat/frontend/src/api/orderTrackingApi.ts` y `easyeat/frontend/src/api/kitchenKdsApi.ts` exponiendo `addTicketDelay(ticketId)` y tipando la respuesta de `getLiveTracking`.
 
 **Checkpoint**: Modelos de transporte definidos y consistentes entre backend y frontend.
 
