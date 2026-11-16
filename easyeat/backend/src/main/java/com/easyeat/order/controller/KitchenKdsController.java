@@ -8,6 +8,7 @@ import com.easyeat.order.domain.OrderItem;
 import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.dto.KdsActiveQueueTicketResponse;
 import com.easyeat.order.dto.KdsDashboardSummaryResponse;
+import com.easyeat.order.dto.KdsDelayIncrementResponse;
 import com.easyeat.order.dto.KdsOrderItemResponse;
 import com.easyeat.order.dto.KdsQueuePageResponse;
 import com.easyeat.order.dto.KdsStartPreparationResponse;
@@ -144,6 +145,19 @@ public class KitchenKdsController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/tickets/{ticketId}/add-delay")
+    @PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF') or hasRole('ROLE_ADMINISTRADOR') or hasRole('ADMINISTRADOR') or hasRole('ROLE_ADMIN') or hasRole('ADMIN')")
+    public ResponseEntity<KdsDelayIncrementResponse> addTicketDelay(
+            @PathVariable UUID ticketId,
+            @RequestParam(required = false) UUID establishmentId,
+            @AuthenticationPrincipal User user,
+            org.springframework.security.core.Authentication authentication
+    ) {
+        UUID effectiveEstablishmentId = resolveEstablishmentId(user, authentication, establishmentId);
+        KdsDelayIncrementResponse response = kdsQueueService.addTicketDelay(ticketId, effectiveEstablishmentId);
+        return ResponseEntity.ok(response);
+    }
+
     private UUID resolveEstablishmentId(User user, org.springframework.security.core.Authentication authentication, UUID establishmentIdParam) {
         if (establishmentIdParam != null) {
             return establishmentIdParam;
@@ -180,6 +194,7 @@ public class KitchenKdsController {
                 ticket.getTimeSlotEnd(),
                 ticket.getQueuedAt(),
                 ticket.getStartedAt(),
+                ticket.getSpecificDelayMinutes(),
                 items
         );
     }

@@ -6,11 +6,13 @@ import { KdsInPreparationCard } from './KdsInPreparationCard';
 export interface KitchenKanbanBoardProps {
   tickets: KdsTicket[];
   onStartPreparation: (ticketId: string) => Promise<void> | void;
+  onDelayUpdated?: (ticketId: string, newDelayMinutes: number) => void;
 }
 
 export const KitchenKanbanBoard: React.FC<KitchenKanbanBoardProps> = ({
   tickets,
   onStartPreparation,
+  onDelayUpdated,
 }) => {
   const [loadingTicketIds, setLoadingTicketIds] = useState<Record<string, boolean>>({});
 
@@ -85,6 +87,7 @@ export const KitchenKanbanBoard: React.FC<KitchenKanbanBoardProps> = ({
               <KdsInPreparationCard
                 key={ticket.ticketId}
                 ticket={ticket}
+                onDelayUpdated={(mins) => onDelayUpdated?.(ticket.ticketId, mins)}
               />
             ))
           )}

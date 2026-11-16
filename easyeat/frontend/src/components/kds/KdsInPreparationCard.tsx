@@ -3,12 +3,17 @@ import type { KdsTicket } from '../../types/kds';
 import { formatDishItem } from '../../utils/kdsFormatters';
 import { useKdsCountUp } from '../../hooks/useKdsCountUp';
 import { isTicketDelayed } from '../../utils/kdsAlertThreshold';
+import { KitchenTicketDelayControl } from '../kitchen/KitchenTicketDelayControl';
 
 export interface KdsInPreparationCardProps {
   ticket: KdsTicket;
+  onDelayUpdated?: (newDelayMinutes: number) => void;
 }
 
-export const KdsInPreparationCard: React.FC<KdsInPreparationCardProps> = ({ ticket }) => {
+export const KdsInPreparationCard: React.FC<KdsInPreparationCardProps> = ({
+  ticket,
+  onDelayUpdated,
+}) => {
   const { elapsedMinutes, formattedTime } = useKdsCountUp(ticket.startedAt);
   const delayed = isTicketDelayed(elapsedMinutes);
 
@@ -48,6 +53,11 @@ export const KdsInPreparationCard: React.FC<KdsInPreparationCardProps> = ({ tick
           <span className="text-sm font-bold px-2.5 py-1 bg-slate-700/90 text-slate-100 rounded-md font-mono">
             {formatSlot(ticket.timeSlotStart, ticket.timeSlotEnd)}
           </span>
+          <KitchenTicketDelayControl
+            ticketId={ticket.ticketId}
+            initialDelayMinutes={ticket.specificDelayMinutes ?? 0}
+            onDelayUpdated={onDelayUpdated}
+          />
         </div>
       </div>
 
