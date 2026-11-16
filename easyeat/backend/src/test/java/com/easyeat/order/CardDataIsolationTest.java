@@ -79,6 +79,8 @@ class CardDataIsolationTest {
         Field[] fields = clazz.getDeclaredFields();
         List<String> detectedCardFields = Arrays.stream(fields)
                 .map(Field::getName)
+                // Excluir securityCode en OrderLiveTrackingResponse (código PIN de 4 dígitos para retiro verbal en mostrador, no es dato de tarjeta bancaria)
+                .filter(name -> !(name.equals("securityCode") && clazz.equals(OrderLiveTrackingResponse.class)))
                 .filter(name -> forbiddenCardPatterns.stream().anyMatch(pattern -> name.toLowerCase().contains(pattern)))
                 .collect(Collectors.toList());
 
