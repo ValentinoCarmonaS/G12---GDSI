@@ -5,11 +5,22 @@ import { authApi } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { chefReviewFeedbackApi } from '../api/chefReviewFeedbackApi';
 import { orderTrackingApi } from '../api/orderTrackingApi';
-import { fetchDashboardSummary } from '../api/kitchenKdsApi';
+import {
+  fetchDashboardSummary,
+  fetchKitchenOrders,
+  type KitchenOrderPageResponse,
+} from '../api/kitchenKdsApi';
 import { DishRejectionFeedbackBanner } from '../components/chef/DishRejectionFeedbackBanner';
 import type { ChefReviewFeedbackEntry } from '../types/dishReview';
 import type { KdsDashboardSummaryResponse } from '../types/kds';
 import { Clock, CheckCircle2, AlertTriangle, Send } from 'lucide-react';
+
+type ActiveKitchenTicket = KitchenOrderPageResponse['content'][number];
+
+const formatSlotBoundary = (timeValue: string): string => {
+  if (!timeValue) return '';
+  return timeValue.length >= 5 ? timeValue.slice(0, 5) : timeValue;
+};
 
 export const KitchenWorkspacePage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -25,8 +36,12 @@ export const KitchenWorkspacePage: React.FC = () => {
   // KDS ticket completion state
   const [ticketIdInput, setTicketIdInput] = useState<string>('');
   const [isCompletingTicket, setIsCompletingTicket] = useState<boolean>(false);
+  const [completingTicketIds, setCompletingTicketIds] = useState<Set<string>>(new Set());
   const [ticketSuccessMsg, setTicketSuccessMsg] = useState<string | null>(null);
   const [ticketErrorMsg, setTicketErrorMsg] = useState<string | null>(null);
+
+  // Column 2 active preparation tickets (Spec 020 - US1, RF-001..RF-004)
+  const [inPreparationTickets, setInPreparationTickets] = useState<ActiveKitchenTicket[]>([]);
 
   // KDS live dashboard metrics (T027, Contract 07)
   const [kdsSummary, setKdsSummary] = useState<KdsDashboardSummaryResponse>({
@@ -51,17 +66,30 @@ export const KitchenWorkspacePage: React.FC = () => {
   }, [returnedDishId]);
 
   useEffect(() => {
-    const loadKdsSummary = async () => {
+    const loadKdsData = async () => {
       try {
         const summary = await fetchDashboardSummary();
-        setKdsSummary(summary);
-      } catch (err) {
+        if (summary) {
+          setKdsSummary(summary);
+        }
+      } catch {
+        // non-blocking fallback
+      }
+
+      try {
+        const page = await fetchKitchenOrders('IN_PREPARATION');
+        if (page && Array.isArray(page.content)) {
+          setInPreparationTickets(
+            page.content.filter((t) => t.status === 'IN_PREPARATION')
+          );
+        }
+      } catch {
         // non-blocking fallback
       }
     };
 
-    loadKdsSummary();
-    const interval = setInterval(loadKdsSummary, 10000);
+    loadKdsData();
+    const interval = setInterval(loadKdsData, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -94,6 +122,39 @@ export const KitchenWorkspacePage: React.FC = () => {
     }
   };
 
+  const handleDispatchTicketFromCard = async (ticketId: string) => {
+    if (!ticketId || completingTicketIds.has(ticketId)) return;
+
+    setCompletingTicketIds((prev) => new Set(prev).add(ticketId));
+    setTicketErrorMsg(null);
+
+    try {
+      const res = await orderTrackingApi.markTicketReadyForPickup(ticketId);
+      // RF-004 / AC-3 / Invariante 4: immediate removal from Column 2 upon confirmation
+      setInPreparationTickets((prev) =>
+        prev.filter((ticket) => ticket.ticketId !== ticketId)
+      );
+      setKdsSummary((prev) => ({
+        ...prev,
+        inPreparationOrdersCount: Math.max(0, prev.inPreparationOrdersCount - 1),
+        readyForPickupOrdersCount: prev.readyForPickupOrdersCount + 1,
+      }));
+      setTicketSuccessMsg(
+        `¡Pedido #${res.ticketNumber} marcado como LISTO PARA RETIRAR en mostrador!`
+      );
+    } catch (err: any) {
+      setTicketErrorMsg(
+        err?.response?.data?.detail || 'No se pudo finalizar la comanda seleccionada.'
+      );
+    } finally {
+      setCompletingTicketIds((prev) => {
+        const next = new Set(prev);
+        next.delete(ticketId);
+        return next;
+      });
+    }
+  };
+
   const handleMarkReadyForPickup = async (e: React.FormEvent) => {
     e.preventDefault();
     const targetId = ticketIdInput.trim();
@@ -105,6 +166,9 @@ export const KitchenWorkspacePage: React.FC = () => {
 
     try {
       const res = await orderTrackingApi.markTicketReadyForPickup(targetId);
+      setInPreparationTickets((prev) =>
+        prev.filter((ticket) => ticket.ticketId !== targetId && ticket.orderId !== targetId)
+      );
       setTicketSuccessMsg(
         `¡Pedido #${res.ticketNumber} marcado como LISTO PARA RETIRAR en mostrador!`
       );
@@ -129,6 +193,74 @@ export const KitchenWorkspacePage: React.FC = () => {
           <DishRejectionFeedbackBanner entries={feedbackEntries} />
         </div>
       )}
+
+      {/* Columna 2: Comandas en Preparación Activa (Spec 020 - US1, RF-001..RF-004) */}
+      <section
+        data-testid="kds-column-in-preparation"
+        aria-label="Columna 2: En preparación activa"
+        className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-8"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-blue-600" />
+            <h3 className="text-base font-bold text-gray-900">
+              Columna 2 — Comandas en preparación activa
+            </h3>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+            {inPreparationTickets.length} activas
+          </span>
+        </div>
+
+        {inPreparationTickets.length === 0 ? (
+          <p className="text-xs text-gray-500 py-4 text-center">
+            Sin pedidos en preparación activa en este momento.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {inPreparationTickets.map((ticket) => {
+              const isDispatching = completingTicketIds.has(ticket.ticketId);
+              const slotRange = `${formatSlotBoundary(ticket.timeSlotStart)} - ${formatSlotBoundary(ticket.timeSlotEnd)}`;
+
+              return (
+                <article
+                  key={ticket.ticketId}
+                  data-testid={`kds-ticket-card-${ticket.ticketId}`}
+                  className="p-4 rounded-xl border border-blue-200 bg-blue-50/30 flex flex-col justify-between gap-4 shadow-sm"
+                >
+                  <div>
+                    <div className="flex items-center justify-between border-b border-blue-100 pb-2 mb-3">
+                      <span className="text-lg font-extrabold text-gray-900">
+                        #{ticket.ticketNumber}
+                      </span>
+                      <span className="text-xs font-semibold text-blue-800 bg-blue-100 px-2.5 py-1 rounded-lg">
+                        {slotRange}
+                      </span>
+                    </div>
+
+                    <ul className="space-y-1.5 text-sm text-gray-800 font-medium">
+                      {ticket.items.map((item, idx) => (
+                        <li key={`${ticket.ticketId}-${item.dishId}-${idx}`}>
+                          {item.quantity}x {item.dishName}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isDispatching}
+                    onClick={() => handleDispatchTicketFromCard(ticket.ticketId)}
+                    className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-extrabold uppercase tracking-wide rounded-xl shadow-sm transition-colors"
+                  >
+                    LISTO
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Operational Controls: Delay & Dispatch */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
