@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { User as UserIcon } from 'lucide-react';
+import { User as UserIcon, Menu as MenuIcon, X as CloseIcon } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { profileApi } from '../../api/profileApi';
 import { adminNotificationApi } from '../../api/adminNotificationApi';
+import { getDinerBranding } from '../../api/brandingApi';
 import { AdminNotificationBell } from '../notification/AdminNotificationBell';
 import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
 import type { AdminNotificationResponse } from '../../types/notification';
@@ -52,8 +53,61 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
+  // Chef hamburger dropdown menu state
+  const [isChefMenuOpen, setIsChefMenuOpen] = useState<boolean>(false);
+  const chefMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Chef operational footer branding state
+  const [commercialName, setCommercialName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.role !== 'CHEF' || !user.tenantId) {
+      setCommercialName(null);
+      return;
+    }
+    let isMounted = true;
+    try {
+      const promise = getDinerBranding(user.tenantId);
+      if (promise && typeof promise.then === 'function') {
+        promise
+          .then((branding) => {
+            if (isMounted && branding?.fantasyName?.trim()) {
+              setCommercialName(branding.fantasyName.trim());
+            }
+          })
+          .catch(() => {
+            // Fallback to null; will display short tenant ID
+          });
+      }
+    } catch {
+      // Ignored non-blocking
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.role, user?.tenantId]);
+
+  // Close chef menu on route change or outside click
+  useEffect(() => {
+    setIsChefMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (chefMenuRef.current && !chefMenuRef.current.contains(e.target as Node)) {
+        setIsChefMenuOpen(false);
+      }
+    };
+    if (isChefMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isChefMenuOpen]);
+
   const fetchAvatar = useCallback(async () => {
-    if (!user) {
+    if (!user || user.role === 'CHEF') {
       setAvatarUrl(null);
       return;
     }
@@ -111,31 +165,56 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <span className="font-extrabold text-xl text-gray-900 tracking-tight">EasyEat</span>
-            <span className="text-gray-300">|</span>
-            <span className="font-medium text-gray-700">{title}</span>
+            {user?.role !== 'CHEF' && (
+              <>
+                <span className="text-gray-300">|</span>
+                <span className="font-medium text-gray-700">{title}</span>
+              </>
+            )}
+
             {user?.role === 'CHEF' && (
-              <nav
-                aria-label="Secciones de cocina"
-                className="ml-2 flex min-w-0 items-center gap-1 overflow-x-auto text-xs"
-              >
-                {CHEF_SECTIONS.map((section) => {
-                  const active = isChefSectionActive(pathname, section.to);
-                  return (
-                    <Link
-                      key={section.to}
-                      to={section.to}
-                      aria-current={active ? 'page' : undefined}
-                      className={`px-2.5 py-1 rounded whitespace-nowrap ${
-                        active
-                          ? 'bg-orange-50 text-orange-700 font-semibold'
-                          : 'hover:bg-gray-100 text-gray-700 font-medium'
-                      }`}
-                    >
-                      {section.label}
-                    </Link>
-                  );
-                })}
-              </nav>
+              <div className="relative ml-2" ref={chefMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsChefMenuOpen((prev) => !prev)}
+                  aria-expanded={isChefMenuOpen}
+                  aria-haspopup="true"
+                  aria-label="Menú de navegación de cocina"
+                  className="flex items-center justify-center p-2 rounded-lg text-gray-700 hover:bg-gray-100 border border-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  {isChefMenuOpen ? (
+                    <CloseIcon className="w-5 h-5 text-gray-800" />
+                  ) : (
+                    <MenuIcon className="w-5 h-5 text-gray-800" />
+                  )}
+                </button>
+
+                {isChefMenuOpen && (
+                  <nav
+                    aria-label="Secciones de cocina"
+                    className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
+                  >
+                    {CHEF_SECTIONS.map((section) => {
+                      const active = isChefSectionActive(pathname, section.to);
+                      return (
+                        <Link
+                          key={section.to}
+                          to={section.to}
+                          aria-current={active ? 'page' : undefined}
+                          onClick={() => setIsChefMenuOpen(false)}
+                          className={`block px-4 py-2.5 text-sm transition-colors ${
+                            active
+                              ? 'bg-orange-50 text-orange-700 font-bold'
+                              : 'text-gray-700 hover:bg-gray-50 font-medium'
+                          }`}
+                        >
+                          {section.label}
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                )}
+              </div>
             )}
             {user?.role === 'ADMINISTRADOR' && (
               <nav className="ml-4 hidden sm:flex items-center space-x-2 text-xs">
@@ -206,61 +285,66 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
           <div className="flex items-center gap-4">
             {user ? (
-              <>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${roleColor}`}
-                  >
-                    {user.role}
-                  </span>
-
-                  {user.tenantId && (
+              user.role === 'CHEF' ? (
+                // For CHEF, session details and logout are relocated to the operational footer
+                null
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
                     <span
-                      data-testid="tenant-badge"
-                      className="px-2 py-0.5 rounded text-xs font-mono bg-gray-100 text-gray-700 border border-gray-200 hidden sm:inline"
-                      title={`Tenant: ${user.tenantId}`}
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${roleColor}`}
                     >
-                      Local: {user.tenantId.slice(0, 8)}
+                      {user.role}
                     </span>
-                  )}
 
-                  <span className="text-sm text-gray-600 hidden md:inline">{user.email}</span>
-
-                  {/* Reactive user avatar with institutional fallback */}
-                  <Link
-                    to="/perfil"
-                    title="Mi perfil"
-                    aria-label="Avatar de usuario"
-                    className="flex items-center justify-center w-8 h-8 rounded-full overflow-hidden border border-gray-200 bg-gray-100 hover:ring-2 hover:ring-amber-500 transition-all shrink-0"
-                  >
-                    {avatarUrl ? (
-                      <img
-                        src={getAuthenticatedAvatarUrl(avatarUrl)}
-                        alt="Avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <UserIcon className="w-4 h-4 text-gray-500" />
+                    {user.tenantId && (
+                      <span
+                        data-testid="tenant-badge"
+                        className="px-2 py-0.5 rounded text-xs font-mono bg-gray-100 text-gray-700 border border-gray-200 hidden sm:inline"
+                        title={`Tenant: ${user.tenantId}`}
+                      >
+                        Local: {user.tenantId.slice(0, 8)}
+                      </span>
                     )}
-                  </Link>
 
-                  {user.role === 'ADMINISTRADOR' && (
-                    <AdminNotificationBell
-                      notifications={notifications}
-                      unreadCount={unreadCount}
-                      onMarkAsRead={handleMarkAsRead}
-                      onRefresh={fetchNotifications}
-                    />
-                  )}
-                </div>
+                    <span className="text-sm text-gray-600 hidden md:inline">{user.email}</span>
 
-                <button
-                  onClick={handleLogout}
-                  className="text-sm font-medium text-gray-600 hover:text-red-600 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors"
-                >
-                  Cerrar sesión
-                </button>
-              </>
+                    {/* Reactive user avatar with institutional fallback */}
+                    <Link
+                      to="/perfil"
+                      title="Mi perfil"
+                      aria-label="Avatar de usuario"
+                      className="flex items-center justify-center w-8 h-8 rounded-full overflow-hidden border border-gray-200 bg-gray-100 hover:ring-2 hover:ring-amber-500 transition-all shrink-0"
+                    >
+                      {avatarUrl ? (
+                        <img
+                          src={getAuthenticatedAvatarUrl(avatarUrl)}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <UserIcon className="w-4 h-4 text-gray-500" />
+                      )}
+                    </Link>
+
+                    {user.role === 'ADMINISTRADOR' && (
+                      <AdminNotificationBell
+                        notifications={notifications}
+                        unreadCount={unreadCount}
+                        onMarkAsRead={handleMarkAsRead}
+                        onRefresh={fetchNotifications}
+                      />
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleLogout}
+                    className="text-sm font-medium text-gray-600 hover:text-red-600 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors"
+                  >
+                    Cerrar sesión
+                  </button>
+                </>
+              )
             ) : (
               <div className="flex items-center gap-2">
                 <Link
@@ -290,6 +374,40 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         )}
         {children}
       </main>
+
+      {/* Operational footer dedicated to CHEF role */}
+      {user?.role === 'CHEF' && (
+        <footer
+          role="contentinfo"
+          className="bg-white border-t border-gray-200 mt-auto py-3 px-4 sm:px-6 lg:px-8 shadow-xs"
+        >
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-600">
+            <div className="flex items-center gap-3">
+              <span
+                data-testid="tenant-badge"
+                className="px-2.5 py-1 rounded-md font-medium bg-gray-100 text-gray-800 border border-gray-200"
+                title={user.tenantId ? `Tenant: ${user.tenantId}` : undefined}
+              >
+                Local: {commercialName || (user.tenantId ? user.tenantId.slice(0, 8) : 'General')}
+              </span>
+              <span className={`px-2 py-0.5 rounded-full font-bold border ${roleColor}`}>
+                CHEF
+              </span>
+              <span className="font-medium text-gray-700">{user.email}</span>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="font-medium text-gray-600 hover:text-red-600 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors"
+              >
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        </footer>
+      )}
     </div>
   );
 };
