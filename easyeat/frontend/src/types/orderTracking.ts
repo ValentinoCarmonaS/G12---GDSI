@@ -67,3 +67,5 @@ export interface KdsTicketReadyResponse {
   status: 'READY_FOR_PICKUP';
   readyAt: string;
 }
+
+export type KdsTicketResponse = KdsTicketReadyResponse;

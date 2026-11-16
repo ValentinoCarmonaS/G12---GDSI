@@ -54,7 +54,7 @@
 
 - [X] T011 [US1] Refactorizar `markTicketReadyForPickup` en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderLiveTrackingService.java` implementando bloqueo pesimista `findByIdForUpdate`, verificación de idempotencia y actualización atómica de `KdsTicket.readyAt`, `KdsTicket.status`, `Order.readyAt` y `Order.status`.
 - [X] T012 [US1] Asegurar el endpoint `POST /api/v1/kitchen/tickets/{ticketId}/ready-for-pickup` en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenTicketDispatchController.java` restringido a roles autorizados (`CHEF`, `ENCARGADO`, `ADMINISTRADOR`).
-- [ ] T013 [P] [US1] Consolidar la función `markTicketReadyForPickup` en `easyeat/frontend/src/api/orderTrackingApi.ts`.
+- [X] T013 [P] [US1] Consolidar la función `markTicketReadyForPickup` en `easyeat/frontend/src/api/orderTrackingApi.ts`.
 - [ ] T014 [US1] Conectar el botón "LISTO" en `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` (y tablero KDS asociado) ejecutando la llamada a la API y la remoción inmediata de la tarjeta de la Columna 2 tras la confirmación exitosa.
 
 **Checkpoint**: `US1` completa e independientemente verificable como MVP (despacho transaccional en cocina con remoción inmediata).
