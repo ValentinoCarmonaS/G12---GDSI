@@ -165,5 +165,30 @@ Para simular distintos resultados de pago, reemplazar el campo **Titular** por e
 | `EXPI` | Rechazado debido a un problema de fecha de vencimiento | Estándar |
 | `FORM` | Rechazado debido a un error de formulario | Estándar |
 
+## Despacho a mostrador y sincronización de pedidos listos (Feature 020)
+
+Módulo implementado para la transición atómica desde la cocina hacia el tablero de despacho en mostrador (`CHF-4.1.3`, `CHF-4.2.3`, `ENC-2.1.1`, `ENC-2.1.2`):
+
+- **Finalización atómica e idempotente en cocina (`CHF-4.1.3`)**: El botón "LISTO" en la Columna 2 del tablero KDS (`/cocina`) invoca `POST /api/v1/kitchen/tickets/{ticketId}/ready-for-pickup`, remueve de inmediato la tarjeta de preparación activa y persiste en una única transacción `KdsTicket.status = READY_FOR_PICKUP` y `Order.status = READY_FOR_PICKUP` con marca temporal coincidente (`ready_at`).
+- **Sincronización periódica reactiva y resiliencia offline (`CHF-4.2.3`)**: El tablero de mostrador (`/mostrador`) ejecuta polling silencioso cada 4 segundos (`VITE_COUNTER_POLL_INTERVAL_MS`), calcula el desfase de reloj mediante la cabecera HTTP `Date` y exhibe la insignia no bloqueante `"Sin conexión — Reintentando..."` tras 15 segundos sin respuesta exitosa, preservando el estado de las tarjetas desplegadas.
+- **Tablero de mostrador con tarjetas plegables (`ENC-2.1.1`)**: Las tarjetas ingresan cerradas por defecto mostrando número correlativo (`#N`), franja horaria completa (`HH:mm - HH:mm`) y contador progresivo en minutos enteros (`N min`), ordenadas de forma determinista por mayor tiempo de espera (`ready_at ASC`, desempate por `ticket_number ASC`). Soporta despliegue simultáneo y protección de clics interiores (`stopPropagation`).
+- **Verificación rápida y exclusión estricta de precios (`ENC-2.1.2`)**: Al desplegar una tarjeta se exhibe el código numérico de seguridad de 4 dígitos (`1000..9999`), nombre completo del comensal, fotografía de perfil con omisión limpia cuando no posee avatar, desglose `[Cantidad]x [Plato]` y contenedor del botón "ENTREGAR PEDIDO", omitiendo todo dato financiero o monetario.
+
+### Endpoints de despacho y mostrador
+
+| Método | Endpoint | Rol / Permiso | Descripción |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/kitchen/tickets/{ticketId}/ready-for-pickup` | `ROLE_CHEF`, `ROLE_ADMINISTRADOR` | Transiciona atómicamente e idempotentemente el ticket y la orden a `READY_FOR_PICKUP` con `ready_at` coincidente |
+| `GET` | `/api/v1/counter/orders` | `ROLE_ENCARGADO`, `ROLE_ADMINISTRADOR` | Lista las órdenes en `READY_FOR_PICKUP` de la jornada operativa actual ordenadas por `ready_at ASC, ticket_number ASC` sin campos monetarios |
+| `GET` | `/api/v1/profile/users/{userId}/avatar` | `ROLE_ENCARGADO`, `ROLE_CHEF`, `ROLE_ADMINISTRADOR` | Transmite el avatar binario del comensal (`Cache-Control: private, max-age=3600`) o responde `404 Not Found` (`ProblemDetail`) |
+
+### Variables de entorno adicionales
+
+- Frontend (`easyeat/frontend/.env.example`):
+  - `VITE_API_BASE_URL`: URL base de la API (`/api/v1` por defecto en desarrollo).
+  - `VITE_COUNTER_POLL_INTERVAL_MS`: intervalo en milisegundos del polling reactivo del tablero de mostrador (`4000` por defecto).
+- Para el recorrido completo de validación de extremo a extremo (12 escenarios operativos), consultar [specs/020-counter-dispatch-ready-orders/quickstart.md](specs/020-counter-dispatch-ready-orders/quickstart.md).
+
+
 
 
