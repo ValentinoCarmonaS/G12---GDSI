@@ -71,13 +71,13 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T017`–`T018`.
 
-- [ ] T015 [P] [US2] Crear pruebas unitarias en `easyeat/frontend/tests/hooks/useCounterOrdersPolling.test.ts` verificando ciclo periódico de 4 segundos, cabeceras `no-cache`, cancelación con `AbortController` al desmontar, suspensión ante `document.visibilityState === 'hidden'` y reactivación inmediata al volver a `visible`.
-- [ ] T016 [P] [US2] Ampliar `easyeat/frontend/tests/hooks/useCounterOrdersPolling.test.ts` verificando que ante fallos continuados de red superiores a 15 segundos se activa el flag `isDisconnected = true`, y se restablece a `false` tras el primer sondeo exitoso.
+- [X] T015 [P] [US2] Crear pruebas unitarias en `easyeat/frontend/tests/hooks/useCounterOrdersPolling.test.ts` verificando ciclo periódico de 4 segundos, cabeceras `no-cache`, cancelación con `AbortController` al desmontar, suspensión ante `document.visibilityState === 'hidden'` y reactivación inmediata al volver a `visible`.
+- [X] T016 [P] [US2] Ampliar `easyeat/frontend/tests/hooks/useCounterOrdersPolling.test.ts` verificando que ante fallos continuados de red superiores a 15 segundos se activa el flag `isDisconnected = true`, y se restablece a `false` tras el primer sondeo exitoso.
 
 ### Implementación de US2 (Green Implementation)
 
-- [ ] T017 [US2] Implementar hook `useCounterOrdersPolling` en `easyeat/frontend/src/hooks/useCounterOrdersPolling.ts` consumiendo `counterApi.fetchCounterOrders` con temporizador nominal de 4 s, cabeceras `no-cache`, `visibilitychange`, `AbortController` y seguimiento de umbral de 15 s para `isDisconnected`.
-- [ ] T018 [US2] Implementar componente de insignia de estado de conexión `CounterConnectionBanner.tsx` en `easyeat/frontend/src/components/counter/` exhibiendo la leyenda "Sin conexión — Reintentando..." de forma sutil y no bloqueante.
+- [X] T017 [US2] Implementar hook `useCounterOrdersPolling` en `easyeat/frontend/src/hooks/useCounterOrdersPolling.ts` consumiendo `counterApi.fetchCounterOrders` con temporizador nominal de 4 s, cabeceras `no-cache`, `visibilitychange`, `AbortController` y seguimiento de umbral de 15 s para `isDisconnected`.
+- [X] T018 [US2] Implementar componente de insignia de estado de conexión `CounterConnectionBanner.tsx` en `easyeat/frontend/src/components/counter/` exhibiendo la leyenda "Sin conexión — Reintentando..." de forma sutil y no bloqueante.
 
 **Checkpoint**: `US1 + US2` integradas (despacho en cocina sincronizado con la cola de mostrador en tiempo cuasi-real con resiliencia de conectividad).
 
