@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { KdsTicket } from '../../types/kds';
-import { formatDishItem } from '../../utils/kdsTimeUtils';
+import { KdsQueuedCard } from './KdsQueuedCard';
+import { KdsInPreparationCard } from './KdsInPreparationCard';
 
 export interface KitchenKanbanBoardProps {
   tickets: KdsTicket[];
@@ -26,13 +27,6 @@ export const KitchenKanbanBoard: React.FC<KitchenKanbanBoardProps> = ({
     }
   };
 
-  const formatSlot = (start?: string, end?: string) => {
-    if (!start) return '';
-    const cleanStart = start.slice(0, 5);
-    const cleanEnd = end ? end.slice(0, 5) : '';
-    return cleanEnd ? `${cleanStart} - ${cleanEnd}` : cleanStart;
-  };
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
       {/* Columna 1: Pendientes */}
@@ -55,33 +49,14 @@ export const KitchenKanbanBoard: React.FC<KitchenKanbanBoardProps> = ({
               Sin pedidos pendientes
             </div>
           ) : (
-            queuedTickets.map((ticket) => {
-              const isLoading = !!loadingTicketIds[ticket.ticketId];
-              return (
-                <div
-                  key={ticket.ticketId}
-                  className="bg-slate-800/80 border border-slate-700/60 rounded-lg p-4 flex flex-col gap-3 shadow-sm hover:border-slate-600 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-black text-amber-400 tracking-wide">
-                      #{ticket.ticketNumber}
-                    </span>
-                    <span className="text-xs font-semibold px-2 py-1 bg-slate-700 text-slate-200 rounded">
-                      {formatSlot(ticket.timeSlotStart, ticket.timeSlotEnd)}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleStart(ticket.ticketId)}
-                    disabled={isLoading}
-                    className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider text-sm"
-                  >
-                    {isLoading ? 'INICIANDO...' : 'EMPEZAR'}
-                  </button>
-                </div>
-              );
-            })
+            queuedTickets.map((ticket) => (
+              <KdsQueuedCard
+                key={ticket.ticketId}
+                ticket={ticket}
+                isLoading={!!loadingTicketIds[ticket.ticketId]}
+                onStartPreparation={handleStart}
+              />
+            ))
           )}
         </div>
       </div>
@@ -107,34 +82,10 @@ export const KitchenKanbanBoard: React.FC<KitchenKanbanBoardProps> = ({
             </div>
           ) : (
             inPreparationTickets.map((ticket) => (
-              <div
+              <KdsInPreparationCard
                 key={ticket.ticketId}
-                className="bg-slate-800/90 border border-slate-700 rounded-lg p-4 flex flex-col gap-3 shadow-md"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-black text-amber-400 tracking-wide">
-                    #{ticket.ticketNumber}
-                  </span>
-                  <span className="text-xs font-semibold px-2 py-1 bg-slate-700 text-slate-200 rounded">
-                    {formatSlot(ticket.timeSlotStart, ticket.timeSlotEnd)}
-                  </span>
-                </div>
-
-                <div className="border-t border-slate-700/60 pt-2 flex flex-col gap-1.5">
-                  {ticket.items && ticket.items.length > 0 ? (
-                    ticket.items.map((item, idx) => (
-                      <div
-                        key={`${item.dishId}-${idx}`}
-                        className="text-sm text-slate-100 font-medium"
-                      >
-                        {formatDishItem(item.quantity, item.dishName)}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-slate-400 italic">Sin platos detallados</div>
-                  )}
-                </div>
-              </div>
+                ticket={ticket}
+              />
             ))
           )}
         </div>

@@ -96,14 +96,14 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T023`–`T025`.
 
-- [ ] T021 [P] [US3] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsFormatters.test.ts` verificando el formateo unificado de ítems `formatDishItem` (`"[Cantidad]x [Nombre]"`) y manejo de cantidades múltiples.
-- [ ] T022 [P] [US3] Ampliar `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando la visualización de platos en renglones dedicados, ausencia total de placeholders de notas ("Sin notas", "Observaciones: ninguna"), scroll vertical en Columna 1 y mensajes neutrales de columna vacía.
+- [X] T021 [P] [US3] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsFormatters.test.ts` verificando el formateo unificado de ítems `formatDishItem` (`"[Cantidad]x [Nombre]"`) y manejo de cantidades múltiples.
+- [X] T022 [P] [US3] Ampliar `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando la visualización de platos en renglones dedicados, ausencia total de placeholders de notas ("Sin notas", "Observaciones: ninguna"), scroll vertical en Columna 1 y mensajes neutrales de columna vacía.
 
 ### Implementación de US3 (Green Implementation)
 
-- [ ] T023 [P] [US3] Crear subcomponentes de tarjeta `KdsQueuedCard.tsx` (compacta) y `KdsInPreparationCard.tsx` (expandida) en `easyeat/frontend/src/components/kds/`.
-- [ ] T024 [US3] Implementar estructura Kanban fija de 2 columnas con contenedor de scroll táctil continuo y mensajes neutrales de estado vacío en `easyeat/frontend/src/components/kds/KitchenKanbanBoard.tsx`.
-- [ ] T025 [US3] Integrar `KitchenKanbanBoard` dentro de `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` como vista operativa central.
+- [X] T023 [P] [US3] Crear subcomponentes de tarjeta `KdsQueuedCard.tsx` (compacta) y `KdsInPreparationCard.tsx` (expandida) en `easyeat/frontend/src/components/kds/`.
+- [X] T024 [US3] Implementar estructura Kanban fija de 2 columnas con contenedor de scroll táctil continuo y mensajes neutrales de estado vacío en `easyeat/frontend/src/components/kds/KitchenKanbanBoard.tsx`.
+- [X] T025 [US3] Integrar `KitchenKanbanBoard` dentro de `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` como vista operativa central.
 
 **Checkpoint**: Ergonomía visual de cocina verificada en ambas columnas y adaptada a monitores táctiles.
 

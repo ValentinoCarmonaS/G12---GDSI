@@ -114,4 +114,90 @@ describe('T016: KitchenKanbanBoard Component - Start Preparation (US2)', () => {
     expect(screen.getByTestId('in-preparation-column')).toContainElement(screen.getByText('#101'));
     expect(screen.getByTestId('in-preparation-column')).toContainElement(screen.getByText('#102'));
   });
+
+  describe('T022: Ergonomía visual de comanda táctil (US3 - CHF-3.2.1)', () => {
+    it('debe visualizar cada plato en un renglón dedicado bajo el formato [Cantidad]x [Nombre] en Columna 2', () => {
+      const ticketsWithMultipleDishes: KdsTicket[] = [
+        {
+          ticketId: 'ticket-multi-uuid',
+          ticketNumber: 301,
+          orderId: 'order-301-uuid',
+          status: 'IN_PREPARATION',
+          fulfillmentMode: 'IMMEDIATE',
+          pickupDate: '2026-11-16',
+          timeSlotStart: '13:00:00',
+          timeSlotEnd: '13:15:00',
+          queuedAt: '2026-11-16T16:00:00Z',
+          startedAt: '2026-11-16T16:05:00Z',
+          items: [
+            { dishId: 'dish-1', dishName: 'Burger Deluxe', quantity: 2 },
+            { dishId: 'dish-2', dishName: 'Papas Rústicas', quantity: 1 },
+            { dishId: 'dish-3', dishName: 'Ensalada César', quantity: 3 },
+          ],
+        },
+      ];
+
+      render(
+        <KitchenKanbanBoard
+          tickets={ticketsWithMultipleDishes}
+          onStartPreparation={vi.fn()}
+        />
+      );
+
+      const inPrepCol = screen.getByTestId('in-preparation-column');
+      expect(inPrepCol).toContainElement(screen.getByText('#301'));
+      expect(screen.getByText('2x Burger Deluxe')).toBeInTheDocument();
+      expect(screen.getByText('1x Papas Rústicas')).toBeInTheDocument();
+      expect(screen.getByText('3x Ensalada César')).toBeInTheDocument();
+    });
+
+    it('no debe contener placeholders de notas vacías como "Sin notas" u "Observaciones: ninguna"', () => {
+      render(
+        <KitchenKanbanBoard
+          tickets={mockTickets}
+          onStartPreparation={vi.fn()}
+        />
+      );
+
+      expect(screen.queryByText(/sin notas/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/observaciones/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/ninguna/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/modificaciones/i)).not.toBeInTheDocument();
+    });
+
+    it('debe exhibir contenedor con scroll táctil vertical (overflow-y-auto) en Columna 1 y Columna 2', () => {
+      render(
+        <KitchenKanbanBoard
+          tickets={mockTickets}
+          onStartPreparation={vi.fn()}
+        />
+      );
+
+      const queuedCol = screen.getByTestId('queued-column');
+      const inPrepCol = screen.getByTestId('in-preparation-column');
+
+      const queuedScrollContainer = queuedCol.querySelector('.overflow-y-auto');
+      const inPrepScrollContainer = inPrepCol.querySelector('.overflow-y-auto');
+
+      expect(queuedScrollContainer).toBeInTheDocument();
+      expect(inPrepScrollContainer).toBeInTheDocument();
+    });
+
+    it('debe mostrar mensajes neutrales de columna vacía sin alterar el layout fijo de 2 columnas', () => {
+      render(
+        <KitchenKanbanBoard
+          tickets={[]}
+          onStartPreparation={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Sin pedidos pendientes')).toBeInTheDocument();
+      expect(screen.getByText('Sin pedidos en preparación')).toBeInTheDocument();
+
+      const queuedCol = screen.getByTestId('queued-column');
+      const inPrepCol = screen.getByTestId('in-preparation-column');
+      expect(queuedCol).toBeInTheDocument();
+      expect(inPrepCol).toBeInTheDocument();
+    });
+  });
 });

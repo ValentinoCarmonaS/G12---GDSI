@@ -49,6 +49,11 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
     expect(screen.getByText('En Preparación')).toBeInTheDocument();
     expect(screen.getByText('Para Retirar')).toBeInTheDocument();
     expect(screen.getByText('Completadas hoy')).toBeInTheDocument();
+
+    // T025: Verify KitchenKanbanBoard is embedded into KitchenWorkspacePage
+    expect(screen.getByTestId('kds-kanban-section')).toBeInTheDocument();
+    expect(screen.getByTestId('queued-column')).toBeInTheDocument();
+    expect(screen.getByTestId('in-preparation-column')).toBeInTheDocument();
   });
 
   it('invokes authApi.me on mount to validate token version and session liveness', () => {
@@ -88,6 +93,11 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
     expect(screen.getByText('En Preparación')).toBeInTheDocument();
     expect(screen.getByText('Para Retirar')).toBeInTheDocument();
     expect(screen.getByText('Completadas hoy')).toBeInTheDocument();
+
+    // T025: Verify KitchenKanbanBoard is embedded into KitchenWorkspacePage
+    expect(screen.getByTestId('kds-kanban-section')).toBeInTheDocument();
+    expect(screen.getByTestId('queued-column')).toBeInTheDocument();
+    expect(screen.getByTestId('in-preparation-column')).toBeInTheDocument();
   });
 
   describe('a draft returned by rejection (FR-020, FR-023)', () => {
