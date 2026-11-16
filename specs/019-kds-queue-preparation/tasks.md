@@ -28,7 +28,7 @@
 
 - [X] T002b [P] Crear migración Flyway `V25__idx_kds_tickets_active_queue.sql` en `easyeat/backend/src/main/resources/db/migration/` y mapear el `@Index` en `easyeat/backend/src/main/java/com/easyeat/order/domain/KdsTicket.java`.
 - [X] T003 [P] Agregar método `findByIdForUpdate(@Param("id") UUID id)` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
-- [ ] T004 [P] Crear utilitario de cálculo temporal y formateo en `easyeat/frontend/src/utils/kdsTimeUtils.ts` (`calculateElapsedMinutes`, `isTicketDelayed` y `formatDishItem`).
+- [X] T004 [P] Crear utilitario de cálculo temporal y formateo en `easyeat/frontend/src/utils/kdsTimeUtils.ts` (`calculateElapsedMinutes`, `isTicketDelayed` y `formatDishItem`).
 
 **Checkpoint**: Base de persistencia (índice y bloqueo pesimista) y utilidades de tiempo disponibles para las historias.
 
