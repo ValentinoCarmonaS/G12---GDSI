@@ -17,7 +17,7 @@ export interface UseKdsCountUpResult {
  * @param startedAt Timestamp ISO-8601 del instante de inicio fijado por el servidor.
  * @param clockOffsetMs Opcional: desfase en ms entre cliente y servidor.
  */
-export function useKdsCountUp(startedAt?: string, clockOffsetMs = 0): UseKdsCountUpResult {
+export function useKdsCountUp(startedAt?: string | null, clockOffsetMs = 0): UseKdsCountUpResult {
   const [elapsedMinutes, setElapsedMinutes] = useState<number>(() => {
     if (!startedAt) return 0;
     return calculateElapsedMinutes(startedAt, clockOffsetMs);

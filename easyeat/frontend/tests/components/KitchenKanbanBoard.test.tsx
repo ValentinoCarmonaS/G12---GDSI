@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { KitchenKanbanBoard } from '../../src/components/kds/KitchenKanbanBoard';
 import type { KdsTicket } from '../../src/types/kds';
@@ -214,7 +214,9 @@ describe('T016: KitchenKanbanBoard Component - Start Preparation (US2)', () => {
     it('debe renderizar el cronómetro con formato "MM min" en la cabecera de la tarjeta en preparación', () => {
       const ticketInPrep: KdsTicket = {
         ticketId: 'ticket-prep-10',
-        ticketNumber: '401',
+        ticketNumber: 401,
+        orderId: 'order-401-uuid',
+        fulfillmentMode: 'IMMEDIATE',
         status: 'IN_PREPARATION',
         pickupDate: '2026-11-16',
         timeSlotStart: '12:00:00',
