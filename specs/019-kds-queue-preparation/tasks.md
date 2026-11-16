@@ -103,7 +103,7 @@
 
 - [X] T023 [P] [US3] Crear subcomponentes de tarjeta `KdsQueuedCard.tsx` (compacta) y `KdsInPreparationCard.tsx` (expandida) en `easyeat/frontend/src/components/kds/`.
 - [X] T024 [US3] Implementar estructura Kanban fija de 2 columnas con contenedor de scroll táctil continuo y mensajes neutrales de estado vacío en `easyeat/frontend/src/components/kds/KitchenKanbanBoard.tsx`.
-- [ ] T025 [US3] Integrar `KitchenKanbanBoard` dentro de `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` como vista operativa central.
+- [X] T025 [US3] Integrar `KitchenKanbanBoard` dentro de `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` como vista operativa central.
 
 **Checkpoint**: Ergonomía visual de cocina verificada en ambas columnas y adaptada a monitores táctiles.
 

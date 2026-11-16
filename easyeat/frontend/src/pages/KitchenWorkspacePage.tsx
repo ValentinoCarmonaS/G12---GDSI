@@ -5,8 +5,10 @@ import { authApi } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { chefReviewFeedbackApi } from '../api/chefReviewFeedbackApi';
 import { orderTrackingApi } from '../api/orderTrackingApi';
-import { fetchDashboardSummary } from '../api/kitchenKdsApi';
+import { fetchDashboardSummary, startTicketPreparation } from '../api/kitchenKdsApi';
 import { DishRejectionFeedbackBanner } from '../components/chef/DishRejectionFeedbackBanner';
+import { KitchenKanbanBoard } from '../components/kds/KitchenKanbanBoard';
+import { useKdsQueuePolling } from '../hooks/useKdsQueuePolling';
 import type { ChefReviewFeedbackEntry } from '../types/dishReview';
 import type { KdsDashboardSummaryResponse } from '../types/kds';
 import { Clock, CheckCircle2, AlertTriangle, Send } from 'lucide-react';
@@ -16,6 +18,9 @@ export const KitchenWorkspacePage: React.FC = () => {
   const returnedDishId = searchParams.get('dishId');
   const [feedbackEntries, setFeedbackEntries] = useState<ChefReviewFeedbackEntry[]>([]);
   const { user } = useAuth();
+
+  // KDS active queue polling for Kanban board
+  const { tickets, refetch: refetchQueue } = useKdsQueuePolling();
 
   // KDS delay state
   const [currentDelay, setCurrentDelay] = useState<number>(0);
@@ -65,6 +70,11 @@ export const KitchenWorkspacePage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const handleStartPreparation = async (ticketId: string) => {
+    await startTicketPreparation(ticketId);
+    await refetchQueue();
+  };
+
   const handleUpdateDelay = async (minutes: number) => {
     const establishmentId = user?.tenantId;
     if (!establishmentId) {
@@ -109,6 +119,7 @@ export const KitchenWorkspacePage: React.FC = () => {
         `¡Pedido #${res.ticketNumber} marcado como LISTO PARA RETIRAR en mostrador!`
       );
       setTicketIdInput('');
+      refetchQueue();
     } catch (err: any) {
       console.error('Error marking ticket ready for pickup:', err);
       setTicketErrorMsg(
@@ -129,6 +140,14 @@ export const KitchenWorkspacePage: React.FC = () => {
           <DishRejectionFeedbackBanner entries={feedbackEntries} />
         </div>
       )}
+
+      {/* Main KDS Kanban Board (T025, CHF-3.2.1) */}
+      <div className="mb-8" data-testid="kds-kanban-section">
+        <KitchenKanbanBoard
+          tickets={tickets}
+          onStartPreparation={handleStartPreparation}
+        />
+      </div>
 
       {/* Operational Controls: Delay & Dispatch */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
