@@ -1,12 +1,15 @@
 import React from 'react';
 import type { KdsTicket } from '../../types/kds';
 import { formatDishItem } from '../../utils/kdsFormatters';
+import { useKdsCountUp } from '../../hooks/useKdsCountUp';
 
 export interface KdsInPreparationCardProps {
   ticket: KdsTicket;
 }
 
 export const KdsInPreparationCard: React.FC<KdsInPreparationCardProps> = ({ ticket }) => {
+  const { formattedTime } = useKdsCountUp(ticket.startedAt);
+
   const formatSlot = (start?: string, end?: string) => {
     if (!start) return '';
     const cleanStart = start.slice(0, 5);
@@ -23,9 +26,19 @@ export const KdsInPreparationCard: React.FC<KdsInPreparationCardProps> = ({ tick
         <span className="text-xl font-black text-amber-400 tracking-wide">
           #{ticket.ticketNumber}
         </span>
-        <span className="text-xs font-semibold px-2 py-1 bg-slate-700 text-slate-200 rounded">
-          {formatSlot(ticket.timeSlotStart, ticket.timeSlotEnd)}
-        </span>
+        <div className="flex items-center gap-2">
+          {ticket.startedAt && (
+            <span
+              data-testid={`countup-badge-${ticket.ticketId}`}
+              className="text-xs font-bold px-2 py-0.5 bg-slate-700 text-slate-200 rounded font-mono"
+            >
+              {formattedTime}
+            </span>
+          )}
+          <span className="text-xs font-semibold px-2 py-1 bg-slate-700 text-slate-200 rounded">
+            {formatSlot(ticket.timeSlotStart, ticket.timeSlotEnd)}
+          </span>
+        </div>
       </div>
 
       <div className="border-t border-slate-700/60 pt-2 flex flex-col gap-1.5">
