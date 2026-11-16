@@ -124,7 +124,7 @@
 ### Implementación de US4 (Green Implementation)
 
 - [X] T028 [US4] Implementar generación de `securityCode` de 4 dígitos (`1000..9999`) al confirmar órdenes en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` (y backfill en migración V26).
-- [ ] T029 [US4] Implementar endpoint de lectura de avatares `GET /api/v1/profile/users/{userId}/avatar` en `easyeat/backend/src/main/java/com/easyeat/profile/controller/ProfileAvatarController.java` (refactorizando el mapeo de clase a `@RequestMapping("/api/v1/profile")`) protegido para roles `ENCARGADO`, `CHEF`, `ADMINISTRADOR`.
+- [X] T029 [US4] Implementar endpoint de lectura de avatares `GET /api/v1/profile/users/{userId}/avatar` en `easyeat/backend/src/main/java/com/easyeat/profile/controller/ProfileAvatarController.java` (refactorizando el mapeo de clase a `@RequestMapping("/api/v1/profile")`) protegido para roles `ENCARGADO`, `CHEF`, `ADMINISTRADOR`.
 - [ ] T030 [US4] Mapear `securityCode`, `customer` (`fullName`, `photoUrl`) e `items` en `CounterOrderController.java` y `CounterReadyOrderResponse.java` garantizando estricta exclusión de datos financieros.
 - [ ] T031 [US4] Actualizar la sección expandida de `CounterTicketCard.tsx` en `easyeat/frontend/src/components/counter/` renderizando el código de seguridad de 4 dígitos con espaciado amplio, nombre del comensal, elemento `<img>` condicional (omisión limpia), lista de platos `[Cantidad]x [Plato]` y contenedor visual del botón de entrega.
 
