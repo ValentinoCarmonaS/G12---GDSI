@@ -188,3 +188,25 @@ Esta guía establece el procedimiento determinista y reproducible para validar d
   2. Consultar la pantalla de `/mostrador`.
 - **Resultado esperado**:
   - El pedido no aparece en la grilla de mostrador de la jornada en curso.
+
+---
+
+## 4. Registro de verificación automatizada de extremo a extremo (T033)
+
+Fecha de ejecución: 16/11/2026.
+
+| Escenario | Cobertura automatizada | Estado |
+| --- | --- | --- |
+| Escenario 1 (`CHF-4.1.3` — Finalización atómica y remoción inmediata) | `KitchenReadyForPickupIntegrationTest` + `KitchenDashboardPage.test.tsx` (`T008`–`T014`) | PASS |
+| Escenario 2 (`CHF-4.2.3`, `ENC-2.1.1` — Sincronización automática y estado cerrado) | `useCounterReadyOrdersPolling.test.ts` + `CounterTicketCard.test.tsx` (`T015`, `T021`) | PASS |
+| Escenario 3 (`ENC-2.1.1`, `ENC-2.1.2` — Despliegue, datos operativos y sin precios) | `CounterOrderControllerIntegrationTest` + `CounterTicketCard.test.tsx` (`T026`, `T027`) | PASS |
+| Escenario 4 (`ENC-2.1.1` — Omisión limpia sin fotografía / `404`) | `ProfileAvatarStaffControllerTest` + `CounterTicketCard.test.tsx` (`T025`, `T027`) | PASS |
+| Escenario 5 (`ENC-2.1.1` — Alternancia bidireccional y `stopPropagation`) | `CounterTicketCard.test.tsx` (`T021`) | PASS |
+| Escenario 6 (`ENC-2.1.1` — Despliegue simultáneo y preservación ante polling) | `CounterBoardPage.test.tsx` (`T021`) | PASS |
+| Escenario 7 (`ENC-2.1.1` — Ordenamiento FIFO `ready_at ASC, ticket_number ASC`) | `CounterOrderControllerIntegrationTest` (`T019`) + `CounterBoardPage.test.tsx` (`T021`) | PASS |
+| Escenario 8 (`ENC-2.1.1` — Contador Count-Up en minutos enteros) | `counterTimeUtils.test.ts` (`T020`) | PASS |
+| Escenario 9 (`CHF-4.2.3` — Insignia de desconexión tras 15 s y auto-recuperación) | `useCounterReadyOrdersPolling.test.ts` (`T015`) + `CounterBoardPage.test.tsx` (`T021`) | PASS |
+| Escenario 10 (`ENC-2.1.1` — Estado vacío `"No hay pedidos listos para entrega"`) | `CounterBoardPage.test.tsx` (`T021`) | PASS |
+| Escenario 11 (`CHF-4.1.3` — Idempotencia estricta ante reintentos) | `KitchenReadyForPickupIntegrationTest` (`T008`, `T009`) | PASS |
+| Escenario 12 (`ENC-2.1.1` — Exclusión de pedidos con fecha futura) | `CounterOrderControllerIntegrationTest` (`T019`) | PASS |
+
