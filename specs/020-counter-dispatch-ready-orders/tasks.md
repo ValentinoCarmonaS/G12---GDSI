@@ -99,7 +99,7 @@
 
 ### Implementación de US3 (Green Implementation)
 
-- [ ] T022 [US3] Implementar controlador `CounterOrderController.java` en `easyeat/backend/src/main/java/com/easyeat/order/controller/` exponiendo `GET /api/v1/counter/orders` con anotación `@PreAuthorize("hasAnyRole('ENCARGADO', 'ADMINISTRADOR')")` consumiendo `kdsTicketRepository.findCounterReadyTickets`.
+- [X] T022 [US3] Implementar controlador `CounterOrderController.java` en `easyeat/backend/src/main/java/com/easyeat/order/controller/` exponiendo `GET /api/v1/counter/orders` con anotación `@PreAuthorize("hasAnyRole('ENCARGADO', 'ADMINISTRADOR')")` consumiendo `kdsTicketRepository.findCounterReadyTickets`.
 - [ ] T023 [US3] Implementar componente `CounterTicketCard.tsx` en `easyeat/frontend/src/components/counter/` soportando modo cerrado (cabecera con `#ticketNumber`, franja horaria `HH:mm - HH:mm`, contador Count-Up) y modo desplegado con `e.stopPropagation()` en el cuerpo interior.
 - [ ] T024 [US3] Actualizar `CounterWorkspacePage.tsx` en `easyeat/frontend/src/pages/` integrando `useCounterOrdersPolling`, gestión de `expandedTicketIds: Set<string>`, grilla de tarjetas `CounterTicketCard`, `CounterConnectionBanner` y mensaje neutral de estado vacío ("No hay pedidos listos para entrega").
 
