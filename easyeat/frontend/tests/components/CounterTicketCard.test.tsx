@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CounterTicketCard } from '../../src/components/counter/CounterTicketCard';
 import type { CounterReadyOrder } from '../../src/types/counter';
@@ -106,5 +106,92 @@ describe('CounterTicketCard (T021, US3, ENC-2.1.1, RF-006..RF-011)', () => {
     await user.click(header);
     expect(onToggle).toHaveBeenCalledTimes(1);
     expect(onToggle).toHaveBeenCalledWith(sampleOrder.ticketId);
+  });
+
+  it('T027: renders expanded verification block with 4-digit monospace PIN, diner fullName, avatar image, "[Cantidad]x [Plato]" items, delivery button container and zero monetary symbols', () => {
+    const onToggle = vi.fn();
+    const { container } = render(
+      <CounterTicketCard
+        order={sampleOrder}
+        isExpanded={true}
+        onToggle={onToggle}
+        nowMs={readyAtMs + 2 * 60_000}
+      />
+    );
+
+    const securityCodeEl = screen.getByTestId('counter-card-security-code');
+    expect(securityCodeEl).toHaveTextContent('4821');
+    expect(securityCodeEl.className).toContain('font-mono');
+    expect(securityCodeEl.className).toContain('tracking-widest');
+
+    expect(screen.getByText('Valentino Carmona')).toBeInTheDocument();
+    const avatarImg = screen.getByTestId(
+      'counter-card-customer-avatar'
+    ) as HTMLImageElement;
+    expect(avatarImg).toBeInTheDocument();
+    expect(avatarImg.getAttribute('src')).toBe(
+      '/api/v1/profile/users/c71e2289-4b68-45e0-a7d1-e6e7d6928e01/avatar'
+    );
+
+    expect(
+      screen.getByText('2x Hamburguesa Completa con Papas')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('1x Limonada con Menta y Jengibre')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId('counter-card-delivery-container')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTestId('counter-card-delivery-button')
+    ).toHaveTextContent('ENTREGAR PEDIDO');
+
+    expect(container.textContent).not.toContain('$');
+  });
+
+  it('T027: cleanly omits avatar image container when photoUrl is null or when avatar <img> emits onError (404)', () => {
+    const onToggle = vi.fn();
+    const orderWithoutPhoto: CounterReadyOrder = {
+      ...sampleOrder,
+      customer: {
+        ...sampleOrder.customer,
+        photoUrl: null,
+      },
+    };
+
+    const { rerender } = render(
+      <CounterTicketCard
+        order={orderWithoutPhoto}
+        isExpanded={true}
+        onToggle={onToggle}
+        nowMs={readyAtMs + 60_000}
+      />
+    );
+
+    expect(
+      screen.queryByTestId('counter-card-customer-avatar')
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Valentino Carmona')).toBeInTheDocument();
+
+    // Rerender with photoUrl present, then simulate image 404/error
+    rerender(
+      <CounterTicketCard
+        order={sampleOrder}
+        isExpanded={true}
+        onToggle={onToggle}
+        nowMs={readyAtMs + 60_000}
+      />
+    );
+
+    const avatarImg = screen.getByTestId('counter-card-customer-avatar');
+    expect(avatarImg).toBeInTheDocument();
+
+    fireEvent.error(avatarImg);
+
+    expect(
+      screen.queryByTestId('counter-card-customer-avatar')
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Valentino Carmona')).toBeInTheDocument();
   });
 });
