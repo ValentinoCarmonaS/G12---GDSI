@@ -77,7 +77,7 @@ class KdsStartPreparationIdempotencyTest extends BaseIntegrationTest {
         diner.setPasswordHash("encoded_pwd");
         diner.setRole(UserRole.COMENSAL);
         diner.setStatus(UserStatus.ACTIVE);
-        diner.setTenantId(testEstablishment.getId());
+        diner.setTenantId(null);
         User savedDiner = userRepository.save(diner);
 
         Order order = new Order();
