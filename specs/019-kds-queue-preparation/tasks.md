@@ -173,7 +173,7 @@
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de abordar la implementación `T038`–`T039`.
 
 - [X] T036 [P] [US6] Crear pruebas unitarias en `easyeat/frontend/tests/components/WorkspaceLayout.test.tsx` verificando para el rol `CHEF` el menú hamburguesa (apertura/cierre, enlaces canónicos y `aria-current`), la ausencia total del avatar y enlace a `/perfil`, y el renderizado en el pie de página del badge `CHEF`, email, botón "Cerrar sesión" y local comercial (con fallback a ID corto).
-- [ ] T037 [P] [US6] Actualizar pruebas en `easyeat/frontend/tests/pages/KitchenWorkspacePage.test.tsx` verificando la eliminación de los controles de demora global, despacho manual por UUID, tarjeta de ingredientes, banner de rechazo, subtítulo y tarjetas estadísticas del pie, confirmando el protagonismo exclusivo del tablero `KitchenKanbanBoard`.
+- [X] T037 [P] [US6] Actualizar pruebas en `easyeat/frontend/tests/pages/KitchenWorkspacePage.test.tsx` verificando la eliminación de los controles de demora global, despacho manual por UUID, tarjeta de ingredientes, banner de rechazo, subtítulo y tarjetas estadísticas del pie, confirmando el protagonismo exclusivo del tablero `KitchenKanbanBoard`.
 
 ### Implementación de US6 (Green Implementation)
 
