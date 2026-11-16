@@ -35,14 +35,34 @@ public class KitchenKdsController {
     }
 
     @GetMapping("/orders")
-    @PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF') or hasRole('ROLE_ADMIN') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF')")
     public ResponseEntity<Map<String, Object>> getKitchenOrders(
+            @RequestParam(required = false, defaultValue = "false") boolean activeQueue,
             @RequestParam(required = false) KdsTicketStatus status,
             @RequestParam(required = false) UUID establishmentId,
             @PageableDefault(size = 20) Pageable pageable,
-            @AuthenticationPrincipal User user
+            @AuthenticationPrincipal User user,
+            org.springframework.security.core.Authentication authentication
     ) {
-        UUID effectiveEstablishmentId = resolveEstablishmentId(user, establishmentId);
+        UUID effectiveEstablishmentId = resolveEstablishmentId(user, authentication, establishmentId);
+
+        if (activeQueue) {
+            LocalDate today = LocalDate.now();
+            List<KdsTicket> activeTickets = kdsTicketRepository.findActiveQueueTickets(effectiveEstablishmentId, today);
+            List<Map<String, Object>> content = activeTickets.stream()
+                    .map(this::mapTicketToKdsResponse)
+                    .toList();
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("content", content);
+            response.put("pageable", Map.of(
+                    "pageNumber", 0,
+                    "pageSize", Math.max(content.size(), 100)
+            ));
+            response.put("totalElements", content.size());
+            response.put("totalPages", 1);
+            return ResponseEntity.ok(response);
+        }
 
         Page<KdsTicket> ticketsPage;
         if (status != null) {
@@ -71,9 +91,10 @@ public class KitchenKdsController {
     @PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF') or hasRole('ROLE_ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<KdsDashboardSummaryResponse> getDashboardSummary(
             @RequestParam(required = false) UUID establishmentId,
-            @AuthenticationPrincipal User user
+            @AuthenticationPrincipal User user,
+            org.springframework.security.core.Authentication authentication
     ) {
-        UUID effectiveEstablishmentId = resolveEstablishmentId(user, establishmentId);
+        UUID effectiveEstablishmentId = resolveEstablishmentId(user, authentication, establishmentId);
         LocalDate today = LocalDate.now();
 
         long queued = kdsTicketRepository.countByEstablishmentIdAndStatus(effectiveEstablishmentId, KdsTicketStatus.QUEUED);
@@ -84,12 +105,15 @@ public class KitchenKdsController {
         return ResponseEntity.ok(new KdsDashboardSummaryResponse(queued, inPrep, ready, completed));
     }
 
-    private UUID resolveEstablishmentId(User user, UUID establishmentIdParam) {
+    private UUID resolveEstablishmentId(User user, org.springframework.security.core.Authentication authentication, UUID establishmentIdParam) {
         if (establishmentIdParam != null) {
             return establishmentIdParam;
         }
         if (user != null && user.getTenantId() != null) {
             return user.getTenantId();
+        }
+        if (authentication != null && authentication.getPrincipal() instanceof User u && u.getTenantId() != null) {
+            return u.getTenantId();
         }
         throw new IllegalArgumentException("No establishment identified for current user");
     }
@@ -105,6 +129,7 @@ public class KitchenKdsController {
         dto.put("timeSlotStart", ticket.getTimeSlotStart());
         dto.put("timeSlotEnd", ticket.getTimeSlotEnd());
         dto.put("queuedAt", ticket.getQueuedAt());
+        dto.put("startedAt", ticket.getStartedAt());
 
         Optional<Order> orderOpt = orderRepository.findById(ticket.getOrderId());
         List<Map<String, Object>> items = new ArrayList<>();
