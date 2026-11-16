@@ -177,7 +177,7 @@
 
 ### Implementación de US6 (Green Implementation)
 
-- [ ] T038 [US6] Implementar en `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` la adaptación ergonómica para el rol `CHEF`: menú hamburguesa desplegable con `CHEF_SECTIONS`, ocultamiento del título KDS y del avatar/perfil, y nuevo pie de página operativo con branding de establecimiento (`GET /api/v1/establishments/{tenantId}/branding`), badge `CHEF`, email del usuario y botón "Cerrar sesión".
+- [X] T038 [US6] Implementar en `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` la adaptación ergonómica para el rol `CHEF`: menú hamburguesa desplegable con `CHEF_SECTIONS`, ocultamiento del título KDS y del avatar/perfil, y nuevo pie de página operativo con branding de establecimiento (`GET /api/v1/establishments/{tenantId}/branding`), badge `CHEF`, email del usuario y botón "Cerrar sesión".
 - [ ] T039 [US6] Depurar `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` removiendo los bloques de ajuste de demora global, despacho manual por UUID, catálogo de ingredientes, banner de rechazo, subtítulo, las cuatro tarjetas estadísticas de métricas del pie y sus estados/efectos asociados, dejando el tablero `KitchenKanbanBoard` como elemento principal.
 - [ ] T040 [P] [US6] Ejecutar suite de pruebas frontend `npm test --prefix easyeat/frontend -- --run` y verificar compilación limpia `npm run build --prefix easyeat/frontend`.
 
