@@ -47,6 +47,12 @@ public class Order {
     @Column(name = "expires_at")
     private Instant expiresAt;
 
+    @Column(name = "ready_at")
+    private Instant readyAt;
+
+    @Column(name = "security_code", length = 4)
+    private String securityCode;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -198,6 +204,22 @@ public class Order {
 
     public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
+    }
+
+    public Instant getReadyAt() {
+        return readyAt;
+    }
+
+    public void setReadyAt(Instant readyAt) {
+        this.readyAt = readyAt;
+    }
+
+    public String getSecurityCode() {
+        return securityCode;
+    }
+
+    public void setSecurityCode(String securityCode) {
+        this.securityCode = securityCode;
     }
 
     public Instant getCreatedAt() {
