@@ -119,7 +119,7 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T028`–`T029`.
 
-- [ ] T026 [P] [US4] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsCountUpUtils.test.ts` verificando el cálculo de minutos enteros `floor((now - startedAt) / 60)`, tolerancia a desfasaje de reloj (`clockOffsetMs`) y persistencia ante diferentes timestamps.
+- [X] T026 [P] [US4] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsCountUpUtils.test.ts` verificando el cálculo de minutos enteros `floor((now - startedAt) / 60)`, tolerancia a desfasaje de reloj (`clockOffsetMs`) y persistencia ante diferentes timestamps.
 - [ ] T027 [P] [US4] Crear prueba de hook en `easyeat/frontend/src/test/hooks/useKdsCountUp.test.ts` verificando el incremento periódico cada 60 segundos sin realizar peticiones HTTP de red adicionales.
 
 ### Implementación de US4 (Green Implementation)
