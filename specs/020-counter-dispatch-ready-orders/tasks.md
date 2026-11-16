@@ -46,16 +46,16 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T011`–`T014`.
 
-- [ ] T008 [P] [US1] Crear prueba de integración en `easyeat/backend/src/test/java/com/easyeat/order/KitchenReadyForPickupIntegrationTest.java` verificando `POST /api/v1/kitchen/tickets/{ticketId}/ready-for-pickup` (transición atómica conjunta de `KdsTicket` y `Order`, coincidencia temporal de `ready_at`, respuesta 200, errores 404, 403 y 409).
-- [ ] T009 [P] [US1] Crear prueba de idempotencia y concurrencia pesimista en `easyeat/backend/src/test/java/com/easyeat/order/KdsReadyForPickupIdempotencyTest.java` verificando que peticiones concurrentes o reintentos ejecutan un único cambio de estado y preservan el `ready_at` original.
-- [ ] T010 [P] [US1] Crear prueba de componente en `easyeat/frontend/tests/components/KitchenTicketReadyDispatch.test.tsx` verificando botón prominente "LISTO" en Columna 2, ausencia de diálogos emergentes, llamada a la API y remoción inmediata de la tarjeta del estado local de cocina.
+- [X] T008 [P] [US1] Crear prueba de integración en `easyeat/backend/src/test/java/com/easyeat/order/KitchenReadyForPickupIntegrationTest.java` verificando `POST /api/v1/kitchen/tickets/{ticketId}/ready-for-pickup` (transición atómica conjunta de `KdsTicket` y `Order`, coincidencia temporal de `ready_at`, respuesta 200, errores 404, 403 y 409).
+- [X] T009 [P] [US1] Crear prueba de idempotencia y concurrencia pesimista en `easyeat/backend/src/test/java/com/easyeat/order/KdsReadyForPickupIdempotencyTest.java` verificando que peticiones concurrentes o reintentos ejecutan un único cambio de estado y preservan el `ready_at` original.
+- [X] T010 [P] [US1] Crear prueba de componente en `easyeat/frontend/tests/components/KitchenTicketReadyDispatch.test.tsx` verificando botón prominente "LISTO" en Columna 2, ausencia de diálogos emergentes, llamada a la API y remoción inmediata de la tarjeta del estado local de cocina.
 
 ### Implementación de US1 (Green Implementation)
 
-- [ ] T011 [US1] Refactorizar `markTicketReadyForPickup` en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderLiveTrackingService.java` implementando bloqueo pesimista `findByIdForUpdate`, verificación de idempotencia y actualización atómica de `KdsTicket.readyAt`, `KdsTicket.status`, `Order.readyAt` y `Order.status`.
-- [ ] T012 [US1] Asegurar el endpoint `POST /api/v1/kitchen/tickets/{ticketId}/ready-for-pickup` en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenTicketDispatchController.java` restringido a roles autorizados (`CHEF`, `ENCARGADO`, `ADMINISTRADOR`).
-- [ ] T013 [P] [US1] Consolidar la función `markTicketReadyForPickup` en `easyeat/frontend/src/api/orderTrackingApi.ts`.
-- [ ] T014 [US1] Conectar el botón "LISTO" en `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` (y tablero KDS asociado) ejecutando la llamada a la API y la remoción inmediata de la tarjeta de la Columna 2 tras la confirmación exitosa.
+- [X] T011 [US1] Refactorizar `markTicketReadyForPickup` en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderLiveTrackingService.java` implementando bloqueo pesimista `findByIdForUpdate`, verificación de idempotencia y actualización atómica de `KdsTicket.readyAt`, `KdsTicket.status`, `Order.readyAt` y `Order.status`.
+- [X] T012 [US1] Asegurar el endpoint `POST /api/v1/kitchen/tickets/{ticketId}/ready-for-pickup` en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenTicketDispatchController.java` restringido a roles autorizados (`CHEF`, `ENCARGADO`, `ADMINISTRADOR`).
+- [X] T013 [P] [US1] Consolidar la función `markTicketReadyForPickup` en `easyeat/frontend/src/api/orderTrackingApi.ts`.
+- [X] T014 [US1] Conectar el botón "LISTO" en `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` (y tablero KDS asociado) ejecutando la llamada a la API y la remoción inmediata de la tarjeta de la Columna 2 tras la confirmación exitosa.
 
 **Checkpoint**: `US1` completa e independientemente verificable como MVP (despacho transaccional en cocina con remoción inmediata).
 
