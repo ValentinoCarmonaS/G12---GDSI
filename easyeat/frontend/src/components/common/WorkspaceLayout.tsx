@@ -165,6 +165,13 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <span className="font-extrabold text-xl text-gray-900 tracking-tight">EasyEat</span>
+            {/* In Chef workspace, omit visual redundant title for KDS while keeping non-KDS titles visible (RF-017) */}
+            {user?.role === 'CHEF' && title !== 'Kitchen Display System (KDS)' && (
+              <>
+                <span className="text-gray-300">|</span>
+                <span className="font-medium text-gray-700">{title}</span>
+              </>
+            )}
             {user?.role !== 'CHEF' && (
               <>
                 <span className="text-gray-300">|</span>
