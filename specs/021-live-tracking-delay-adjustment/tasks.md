@@ -7,7 +7,7 @@
 
 - **[P]**: Puede ejecutarse en paralelo (archivos distintos y sin dependencia de tareas incompletas en la misma fase).
 - **[USx]**: Historia de usuario a la que pertenece la tarea (`US1`, `US2`), omitida en preparación compartida, base fundamental y pulido final.
-- **Enfoque TDD**: En cada historia de usuario, las tareas de prueba (*Red Tests*) se redactan y ejecutan primero para constatar el fallo antes de abordar la implementación (*Green Implementation*).
+- **Enfoque TDD**: En cada historia de usuario, las tareas de prueba (_Red Tests_) se redactan y ejecutan primero para constatar el fallo antes de abordar la implementación (_Green Implementation_).
 
 ---
 
@@ -130,26 +130,30 @@ Fase 5: Pulido final y verificación transversal
 
 ### Flujo interno dentro de cada historia (TDD estricto)
 
-1. Escribir pruebas unitarias y de integración (*Red Tests*) y constatar su fallo.
+1. Escribir pruebas unitarias y de integración (_Red Tests_) y constatar su fallo.
 2. Implementar migraciones, entidades y métodos de repositorio.
 3. Implementar servicios de dominio transaccionales y controladores REST.
 4. Implementar hooks y componentes de interfaz en frontend.
-5. Ejecutar pruebas y validar paso a verde (*Green Implementation*).
+5. Ejecutar pruebas y validar paso a verde (_Green Implementation_).
 
 ---
 
 ## Oportunidades de ejecución paralela
 
 ### Paralelismo en Fase 1 (Setup)
+
 - `T001` (DTOs backend) y `T002` (DTO live tracking) pueden desarrollarse en paralelo con `T003` (tipos frontend) y `T004` (APIs frontend).
 
 ### Paralelismo en Fase 2 (Foundational)
+
 - `T005` (migración V27), `T006` (entidades KdsTicket y Order), `T007` (métodos FIFO y pesimista en KdsTicketRepository) y `T008` (componente ConnectionStatusBadge) operan sobre archivos independientes y pueden crearse simultáneamente.
 
 ### Paralelismo en Fase 3 (US1 - Red Tests)
+
 - `T009` (prueba de integración FIFO), `T010` (prueba WebMvcTest), `T011` (prueba hook polling) y `T012` (prueba componente LiveTrackingWidget) pueden redactarse en paralelo.
 
 ### Paralelismo en Fase 4 (US2 - Red Tests)
+
 - `T018` (prueba integración add-delay), `T019` (prueba cálculo temporal), `T020` (prueba componente KitchenDelayControl) y `T021` (prueba LiveTrackingWidgetDelay) pueden redactarse en paralelo.
 
 ---
@@ -157,10 +161,12 @@ Fase 5: Pulido final y verificación transversal
 ## Estrategia de implementación
 
 ### Enfoque MVP primero (Entrega de US1)
+
 1. Completar Fase 1 (Setup) y Fase 2 (Foundational).
 2. Implementar y verificar Fase 3 (US1): el comensal ya dispone de seguimiento en vivo adaptativo por etapas con recuento FIFO de pedidos por delante y aviso de retiro con código de seguridad.
 3. Demostrar y validar US1 de forma aislada como hito funcional completo.
 
 ### Incremento funcional (Entrega de US2)
+
 4. Implementar Fase 4 (US2): incorporar el botón táctil "+5" en la Columna 2 de cocina y la propagación reactiva al temporizador del comensal.
 5. Ejecutar Fase 5 (Pulido y validación de escenarios de `quickstart.md`).
