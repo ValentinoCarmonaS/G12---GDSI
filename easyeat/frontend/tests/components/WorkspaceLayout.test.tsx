@@ -1,10 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { WorkspaceLayout } from '@/components/common/WorkspaceLayout';
 import * as AuthModule from '@/hooks/useAuth';
+import * as brandingApi from '@/api/brandingApi';
 
 vi.mock('@/hooks/useAuth');
+vi.mock('@/api/brandingApi', () => ({
+  getDinerBranding: vi.fn(),
+}));
 
 describe('WorkspaceLayout (T026, FR-026, COM-1.4.1)', () => {
   beforeEach(() => {
@@ -117,8 +122,14 @@ describe('WorkspaceLayout chef header navigation (C-08, FR-027/FR-030/FR-031)', 
       </MemoryRouter>
     );
 
-  it('exposes the three chef sections with their canonical routes (FR-027)', () => {
+  it('exposes the three chef sections with their canonical routes (FR-027)', async () => {
+    const user = userEvent.setup();
     renderChefLayout('/cocina');
+
+    // Menu dropdown button exists and is accessible
+    const menuButton = screen.getByRole('button', { name: /menú de navegación|secciones de cocina/i });
+    expect(menuButton).toBeInTheDocument();
+    await user.click(menuButton);
 
     const kds = screen.getByRole('link', { name: 'Comandas KDS' });
     const dishes = screen.getByRole('link', { name: 'Gestionar Platos' });
@@ -129,8 +140,12 @@ describe('WorkspaceLayout chef header navigation (C-08, FR-027/FR-030/FR-031)', 
     expect(ingredients).toHaveAttribute('href', '/cocina/ingredientes');
   });
 
-  it('derives the active section from the route with aria-current="page" (FR-030)', () => {
+  it('derives the active section from the route with aria-current="page" (FR-030)', async () => {
+    const user = userEvent.setup();
     renderChefLayout('/cocina');
+
+    const menuButton = screen.getByRole('button', { name: /menú de navegación|secciones de cocina/i });
+    await user.click(menuButton);
 
     expect(screen.getByRole('link', { name: 'Comandas KDS' })).toHaveAttribute(
       'aria-current',
@@ -144,8 +159,12 @@ describe('WorkspaceLayout chef header navigation (C-08, FR-027/FR-030/FR-031)', 
     );
   });
 
-  it('lights up "Gestionar Platos" — never "Comandas KDS" — on nested dish routes (FR-030)', () => {
+  it('lights up "Gestionar Platos" — never "Comandas KDS" — on nested dish routes (FR-030)', async () => {
+    const user = userEvent.setup();
     renderChefLayout('/cocina/platos/nuevo');
+
+    const menuButton = screen.getByRole('button', { name: /menú de navegación|secciones de cocina/i });
+    await user.click(menuButton);
 
     expect(screen.getByRole('link', { name: 'Gestionar Platos' })).toHaveAttribute(
       'aria-current',
@@ -159,8 +178,12 @@ describe('WorkspaceLayout chef header navigation (C-08, FR-027/FR-030/FR-031)', 
     );
   });
 
-  it('lights up "Ingredientes" on the ingredients route (FR-030)', () => {
+  it('lights up "Ingredientes" on the ingredients route (FR-030)', async () => {
+    const user = userEvent.setup();
     renderChefLayout('/cocina/ingredientes');
+
+    const menuButton = screen.getByRole('button', { name: /menú de navegación|secciones de cocina/i });
+    await user.click(menuButton);
 
     expect(screen.getByRole('link', { name: 'Ingredientes' })).toHaveAttribute(
       'aria-current',
@@ -174,12 +197,62 @@ describe('WorkspaceLayout chef header navigation (C-08, FR-027/FR-030/FR-031)', 
     );
   });
 
-  it('keeps the chef navigation visible and horizontally scrollable instead of hidden below sm (FR-031)', () => {
+  it('omits avatar and profile link for CHEF role and removes redundant KDS title from header', () => {
     renderChefLayout('/cocina');
 
-    const nav = screen.getByRole('navigation', { name: /secciones de cocina/i });
-    expect(nav).not.toHaveClass('hidden');
-    expect(nav).toHaveClass('overflow-x-auto');
-    expect(nav).toHaveClass('min-w-0');
+    // Avatar and profile link are not rendered for CHEF
+    expect(screen.queryByTitle(/mi perfil/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/avatar de usuario/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /mi perfil/i })).not.toBeInTheDocument();
+
+    // Redundant textual title is omitted in header for CHEF, showing only EasyEat branding
+    const header = screen.getByRole('banner');
+    expect(header).toHaveTextContent('EasyEat');
+    expect(header).not.toHaveTextContent('Kitchen Display System (KDS)');
+  });
+
+  it('renders operational footer with branding fantasy name, CHEF badge, email and logout button', async () => {
+    vi.mocked(brandingApi.getDinerBranding).mockResolvedValueOnce({
+      establishmentId: 'tenant-comedor-1',
+      fantasyName: 'Café Parque',
+      description: 'El mejor café',
+      primaryColor: '#000000',
+      secondaryColor: '#ffffff',
+      accentColor: '#eab308',
+      primaryContrastColor: '#ffffff',
+      secondaryContrastColor: '#000000',
+      accentContrastColor: '#000000',
+      updatedAt: '2026-11-16T10:00:00Z',
+      isDefaultFallback: false,
+    });
+
+    renderChefLayout('/cocina');
+
+    const footer = screen.getByRole('contentinfo');
+    expect(footer).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(footer).toHaveTextContent('Café Parque');
+    });
+
+    expect(footer).toHaveTextContent('CHEF');
+    expect(footer).toHaveTextContent('chef@easyeat.com');
+    expect(footer).toHaveTextContent('Cerrar sesión');
+  });
+
+  it('renders fallback short ID with full UUID tooltip in footer when branding has no fantasy name or fails', async () => {
+    vi.mocked(brandingApi.getDinerBranding).mockRejectedValueOnce(new Error('Network error'));
+
+    renderChefLayout('/cocina');
+
+    const footer = screen.getByRole('contentinfo');
+    expect(footer).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(footer).toHaveTextContent('Local: tenant-c');
+    });
+
+    const tenantBadge = footer.querySelector('[title="Tenant: tenant-comedor-1"]');
+    expect(tenantBadge).toBeInTheDocument();
   });
 });

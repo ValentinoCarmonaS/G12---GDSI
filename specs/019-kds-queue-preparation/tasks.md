@@ -162,7 +162,7 @@
 
 ---
 
-## Fase 9: Historia de usuario 6 — Limpieza y ergonomía del entorno de trabajo KDS (Prioridad: P2)
+## Fase 9: Historia de usuario 6 — Limpieza y ergonomía del entorno de trabajo KDS (Prioridad: P2) — [GitHub Issue #378](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/378)
 
 **Objetivo**: Depurar la interfaz de cocina removiendo placeholders y elementos no pertenecientes al KDS, dotar al rol `CHEF` de un menú de navegación compacto tipo hamburguesa (3 barritas), trasladar los datos de sesión y local al pie de página con branding comercial (con fallback a ID corto), suprimir el acceso a perfil/avatar para chef y dejar el tablero `KitchenKanbanBoard` como foco exclusivo.
 
