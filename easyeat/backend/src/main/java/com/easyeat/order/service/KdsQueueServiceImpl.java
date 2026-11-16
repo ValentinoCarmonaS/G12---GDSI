@@ -47,6 +47,14 @@ public class KdsQueueServiceImpl implements KdsQueueService {
                 .map(max -> max + 1)
                 .orElse(1);
 
+        java.time.LocalTime slotStart = order.getTimeSlotStart();
+        java.time.LocalTime slotEnd = order.getTimeSlotEnd();
+        if (order.getFulfillmentMode() == com.easyeat.order.domain.FulfillmentMode.IMMEDIATE && slotStart != null) {
+            int normalizedMinute = (slotStart.getMinute() / 15) * 15;
+            slotStart = java.time.LocalTime.of(slotStart.getHour(), normalizedMinute, 0);
+            slotEnd = slotStart.plusMinutes(15);
+        }
+
         KdsTicket ticket = new KdsTicket(
                 null,
                 order.getId(),
@@ -55,8 +63,8 @@ public class KdsQueueServiceImpl implements KdsQueueService {
                 KdsTicketStatus.QUEUED,
                 order.getFulfillmentMode(),
                 order.getPickupDate(),
-                order.getTimeSlotStart(),
-                order.getTimeSlotEnd(),
+                slotStart,
+                slotEnd,
                 Instant.now()
         );
 
