@@ -146,7 +146,7 @@
 
 ### Implementación de US5 (Green Implementation)
 
-- [ ] T032 [US5] Aplicar clases de advertencia perimetral ámbar (`border-amber-500`, `ring-2 ring-amber-500`, insignia `bg-amber-100 text-amber-800`) en `KdsInPreparationCard` dentro de `easyeat/frontend/src/components/kds/` condicionadas a `isTicketDelayed`.
+- [X] T032 [US5] Aplicar clases de advertencia perimetral ámbar (`border-amber-500`, `ring-2 ring-amber-500`, insignia `bg-amber-100 text-amber-800`) en `KdsInPreparationCard` dentro de `easyeat/frontend/src/components/kds/` condicionadas a `isTicketDelayed`.
 
 **Checkpoint**: Alerta visual preventiva activa y verificada sin degradar legibilidad en producción.
 

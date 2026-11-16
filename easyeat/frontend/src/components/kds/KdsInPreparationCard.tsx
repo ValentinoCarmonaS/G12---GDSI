@@ -2,13 +2,15 @@ import React from 'react';
 import type { KdsTicket } from '../../types/kds';
 import { formatDishItem } from '../../utils/kdsFormatters';
 import { useKdsCountUp } from '../../hooks/useKdsCountUp';
+import { isTicketDelayed } from '../../utils/kdsAlertThreshold';
 
 export interface KdsInPreparationCardProps {
   ticket: KdsTicket;
 }
 
 export const KdsInPreparationCard: React.FC<KdsInPreparationCardProps> = ({ ticket }) => {
-  const { formattedTime } = useKdsCountUp(ticket.startedAt);
+  const { elapsedMinutes, formattedTime } = useKdsCountUp(ticket.startedAt);
+  const delayed = isTicketDelayed(elapsedMinutes);
 
   const formatSlot = (start?: string, end?: string) => {
     if (!start) return '';
@@ -20,7 +22,11 @@ export const KdsInPreparationCard: React.FC<KdsInPreparationCardProps> = ({ tick
   return (
     <div
       data-testid={`in-preparation-card-${ticket.ticketId}`}
-      className="bg-slate-800/90 border border-slate-700 rounded-lg p-4 flex flex-col gap-3 shadow-md"
+      className={`rounded-lg p-4 flex flex-col gap-3 shadow-md transition-colors ${
+        delayed
+          ? 'bg-slate-800/90 border border-amber-500 ring-2 ring-amber-500'
+          : 'bg-slate-800/90 border border-slate-700'
+      }`}
     >
       <div className="flex items-center justify-between">
         <span className="text-xl font-black text-amber-400 tracking-wide">
@@ -30,7 +36,11 @@ export const KdsInPreparationCard: React.FC<KdsInPreparationCardProps> = ({ tick
           {ticket.startedAt && (
             <span
               data-testid={`countup-badge-${ticket.ticketId}`}
-              className="text-xs font-bold px-2 py-0.5 bg-slate-700 text-slate-200 rounded font-mono"
+              className={`text-xs font-bold px-2 py-0.5 rounded font-mono transition-colors ${
+                delayed
+                  ? 'bg-amber-100 text-amber-800'
+                  : 'bg-slate-700 text-slate-200'
+              }`}
             >
               {formattedTime}
             </span>
