@@ -1,11 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { KitchenWorkspacePage } from '@/pages/KitchenWorkspacePage';
 import { authApi } from '@/api/authApi';
 import { chefReviewFeedbackApi } from '@/api/chefReviewFeedbackApi';
 import * as AuthModule from '@/hooks/useAuth';
-import type { ChefReviewFeedback } from '@/types/dishReview';
 
 vi.mock('@/hooks/useAuth');
 vi.mock('@/api/chefReviewFeedbackApi', () => ({
