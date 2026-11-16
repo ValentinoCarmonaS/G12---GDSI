@@ -136,6 +136,12 @@ public class KdsQueueServiceImpl implements KdsQueueService {
         );
     }
 
+    @Override
+    @Transactional
+    public com.easyeat.order.dto.KdsDelayIncrementResponse addTicketDelay(UUID ticketId, UUID establishmentId) {
+        throw new UnsupportedOperationException("T022: addTicketDelay not implemented yet");
+    }
+
     private void ensureOrderInProgress(UUID orderId) {
         orderRepository.findById(orderId).ifPresent(order -> {
             if (order.getStatus() != OrderStatus.IN_PROGRESS) {
