@@ -77,7 +77,7 @@
 ### Implementación de US2 (Green Implementation)
 
 - [X] T017 [US2] Implementar hook `useCounterOrdersPolling` en `easyeat/frontend/src/hooks/useCounterOrdersPolling.ts` consumiendo `counterApi.fetchCounterOrders` con temporizador nominal de 4 s, cabeceras `no-cache`, `visibilitychange`, `AbortController` y seguimiento de umbral de 15 s para `isDisconnected`.
-- [ ] T018 [US2] Implementar componente de insignia de estado de conexión `CounterConnectionBanner.tsx` en `easyeat/frontend/src/components/counter/` exhibiendo la leyenda "Sin conexión — Reintentando..." de forma sutil y no bloqueante.
+- [X] T018 [US2] Implementar componente de insignia de estado de conexión `CounterConnectionBanner.tsx` en `easyeat/frontend/src/components/counter/` exhibiendo la leyenda "Sin conexión — Reintentando..." de forma sutil y no bloqueante.
 
 **Checkpoint**: `US1 + US2` integradas (despacho en cocina sincronizado con la cola de mostrador en tiempo cuasi-real con resiliencia de conectividad).
 
