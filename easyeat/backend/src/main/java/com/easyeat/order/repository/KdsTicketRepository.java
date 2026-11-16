@@ -59,4 +59,16 @@ public interface KdsTicketRepository extends JpaRepository<KdsTicket, UUID> {
         WHERE k.establishment.id = :establishmentId
     """)
     Optional<Integer> findMaxTicketNumberByEstablishmentId(@Param("establishmentId") UUID establishmentId);
+
+    @Query("""
+        SELECT k FROM KdsTicket k
+        WHERE k.establishment.id = :establishmentId
+          AND k.status IN (com.easyeat.order.domain.KdsTicketStatus.QUEUED, com.easyeat.order.domain.KdsTicketStatus.IN_PREPARATION)
+          AND k.pickupDate <= :today
+        ORDER BY k.pickupDate ASC, k.timeSlotStart ASC, k.queuedAt ASC, k.id ASC
+    """)
+    List<KdsTicket> findActiveQueueTickets(
+            @Param("establishmentId") UUID establishmentId,
+            @Param("today") LocalDate today
+    );
 }

@@ -44,18 +44,18 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T008`–`T013`.
 
-- [ ] T005 [P] [US1] Crear prueba de integración `easyeat/backend/src/test/java/com/easyeat/order/KdsQueueDeterministicOrderTest.java` verificando orden determinista total (`pickupDate`, `timeSlotStart`, `queuedAt`, `id`), exclusión de `pickupDate > hoy`, precedencia de turnos vencidos y FIFO unificado.
-- [ ] T006 [P] [US1] Crear prueba `@WebMvcTest` en `easyeat/backend/src/test/java/com/easyeat/order/KitchenKdsControllerIntegrationTest.java` verificando `GET /api/v1/kitchen/orders?activeQueue=true` con rol `CHEF`, filtro `pickup_date <= hoy` y mapeo de `startedAt`.
-- [ ] T007 [P] [US1] Crear prueba unitaria `easyeat/frontend/src/test/hooks/useKdsQueuePolling.test.ts` verificando polling silencioso cada 4 segundos, suspensión al ocultar pestaña (`document.visibilityState === 'hidden'`), cancelación al desmontar y backoff ante fallos de red.
+- [X] T005 [P] [US1] Crear prueba de integración `easyeat/backend/src/test/java/com/easyeat/order/KdsQueueDeterministicOrderTest.java` verificando orden determinista total (`pickupDate`, `timeSlotStart`, `queuedAt`, `id`), exclusión de `pickupDate > hoy`, precedencia de turnos vencidos y FIFO unificado.
+- [X] T006 [P] [US1] Crear prueba `@WebMvcTest` en `easyeat/backend/src/test/java/com/easyeat/order/KitchenKdsControllerIntegrationTest.java` verificando `GET /api/v1/kitchen/orders?activeQueue=true` con rol `CHEF`, filtro `pickup_date <= hoy` y mapeo de `startedAt`.
+- [X] T007 [P] [US1] Crear prueba unitaria `easyeat/frontend/src/test/hooks/useKdsQueuePolling.test.ts` verificando polling silencioso cada 4 segundos, suspensión al ocultar pestaña (`document.visibilityState === 'hidden'`), cancelación al desmontar y backoff ante fallos de red.
 
 ### Implementación de US1 (Green Implementation)
 
-- [ ] T008 [P] [US1] Agregar método `findActiveQueueTickets` con orden determinista y filtro `pickupDate <= :today` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
-- [ ] T009 [US1] Normalizar franja de pedidos `IMMEDIATE` (`floor(M / 15) * 15`) en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` y en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutPaymentService.java`.
-- [ ] T010 [US1] Asegurar normalización de `timeSlotStart` y `timeSlotEnd` para `FulfillmentMode.IMMEDIATE` al construir la comanda en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java`.
-- [ ] T011 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` para exponer `GET /api/v1/kitchen/orders` con parámetro `activeQueue=true`, mapeo de `startedAt` y consumo de `findActiveQueueTickets`, restringido al rol `CHEF`.
-- [ ] T012 [P] [US1] Actualizar `fetchKitchenOrders` en `easyeat/frontend/src/api/kitchenKdsApi.ts` para soportar parámetro `activeQueue` y retorno tipado de `startedAt`.
-- [ ] T013 [US1] Implementar hook de polling silencioso en `easyeat/frontend/src/hooks/useKdsQueuePolling.ts` consumiendo `fetchKitchenOrders`.
+- [X] T008 [P] [US1] Agregar método `findActiveQueueTickets` con orden determinista y filtro `pickupDate <= :today` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
+- [X] T009 [US1] Normalizar franja de pedidos `IMMEDIATE` (`floor(M / 15) * 15`) en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` y en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutPaymentService.java`.
+- [X] T010 [US1] Asegurar normalización de `timeSlotStart` y `timeSlotEnd` para `FulfillmentMode.IMMEDIATE` al construir la comanda en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java`.
+- [X] T011 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` para exponer `GET /api/v1/kitchen/orders` con parámetro `activeQueue=true`, mapeo de `startedAt` y consumo de `findActiveQueueTickets`, restringido al rol `CHEF`.
+- [X] T012 [P] [US1] Actualizar `fetchKitchenOrders` en `easyeat/frontend/src/api/kitchenKdsApi.ts` para soportar parámetro `activeQueue` y retorno tipado de `startedAt`.
+- [X] T013 [US1] Implementar hook de polling silencioso en `easyeat/frontend/src/hooks/useKdsQueuePolling.ts` consumiendo `fetchKitchenOrders`.
 
 **Checkpoint**: `US1` completa e independientemente verificable como MVP (cola unificada en backend y polling funcional en frontend).
 
