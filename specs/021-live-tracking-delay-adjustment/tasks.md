@@ -97,9 +97,9 @@
 
 **Propósito**: Validar fronteras con especificaciones adyacentes, ejecutar la guía de validación rápida y asegurar la suite completa de pruebas de regresión.
 
-- [ ] T026 [P] Verificar fronteras de aislamiento técnico de dominio en `easyeat/backend/src/test/java/com/easyeat/order/KdsBoundariesTest.java` comprobando que la mutación `addTicketDelay` incrementa exclusivamente `specificDelayMinutes` sin alterar `startedAt` (base inmutable del cronómetro Count-Up de cocina) ni `readyAt` (base inmutable de mostrador).
-- [ ] T027 Ejecutar manualmente los 13 escenarios de validación guiada de `quickstart.md` (`specs/021-live-tracking-delay-adjustment/quickstart.md`) verificando transiciones, $N=0$, clics rápidos (+15 min), desconexión >15 s y purga de entrega.
-- [ ] T028 [P] Ejecutar la suite completa de pruebas unitarias y de integración de backend (`./mvnw test`) y frontend (`npm test`), asegurando 100% de éxito y ausencia de regresiones.
+- [x] T026 [P] Verificar fronteras de aislamiento técnico de dominio en `easyeat/backend/src/test/java/com/easyeat/order/KdsBoundariesTest.java` comprobando que la mutación `addTicketDelay` incrementa exclusivamente `specificDelayMinutes` sin alterar `startedAt` (base inmutable del cronómetro Count-Up de cocina) ni `readyAt` (base inmutable de mostrador).
+- [x] T027 Ejecutar manualmente los 13 escenarios de validación guiada de `quickstart.md` (`specs/021-live-tracking-delay-adjustment/quickstart.md`) verificando transiciones, $N=0$, clics rápidos (+15 min), desconexión >15 s y purga de entrega.
+- [x] T028 [P] Ejecutar la suite completa de pruebas unitarias y de integración de backend (`./mvnw test`) y frontend (`npm test`), asegurando 100% de éxito y ausencia de regresiones.
 
 ---
 
