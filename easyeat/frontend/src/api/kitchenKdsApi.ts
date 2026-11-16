@@ -1,5 +1,10 @@
 import apiClient from './apiClient';
-import { KdsDashboardSummaryResponse, KdsStartPreparationResponse, KdsTicketStatus } from '../types/kds';
+import {
+  KdsDashboardSummaryResponse,
+  KdsDelayIncrementResponse,
+  KdsStartPreparationResponse,
+  KdsTicketStatus,
+} from '../types/kds';
 
 export interface KitchenOrderPageResponse {
   content: Array<{
@@ -13,6 +18,7 @@ export interface KitchenOrderPageResponse {
     timeSlotEnd: string;
     queuedAt: string;
     startedAt: string | null;
+    specificDelayMinutes?: number;
     items: Array<{
       dishId: string;
       dishName: string;
@@ -58,6 +64,15 @@ export const startTicketPreparation = async (
 ): Promise<KdsStartPreparationResponse> => {
   const response = await apiClient.post<KdsStartPreparationResponse>(
     `/kitchen/tickets/${ticketId}/start-preparation`
+  );
+  return response.data;
+};
+
+export const addTicketDelay = async (
+  ticketId: string
+): Promise<KdsDelayIncrementResponse> => {
+  const response = await apiClient.post<KdsDelayIncrementResponse>(
+    `/kitchen/tickets/${ticketId}/add-delay`
   );
   return response.data;
 };

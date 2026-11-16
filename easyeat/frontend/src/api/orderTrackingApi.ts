@@ -5,6 +5,7 @@ import type {
   KdsDelayAdjustmentRequest,
   KdsDelayAdjustmentResponse,
   KdsTicketReadyResponse,
+  KdsDelayIncrementResponse,
 } from '../types/orderTracking';
 
 export const orderTrackingApi = {
@@ -47,6 +48,16 @@ export const orderTrackingApi = {
   markTicketReadyForPickup: async (ticketId: string): Promise<KdsTicketReadyResponse> => {
     const response = await apiClient.post<KdsTicketReadyResponse>(
       `/kitchen/tickets/${ticketId}/ready-for-pickup`
+    );
+    return response.data;
+  },
+
+  /**
+   * Adds a granular 5-minute cumulative delay to an active preparation ticket (Spec 021).
+   */
+  addTicketDelay: async (ticketId: string): Promise<KdsDelayIncrementResponse> => {
+    const response = await apiClient.post<KdsDelayIncrementResponse>(
+      `/kitchen/tickets/${ticketId}/add-delay`
     );
     return response.data;
   },

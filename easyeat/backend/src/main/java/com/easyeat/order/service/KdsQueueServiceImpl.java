@@ -136,6 +136,41 @@ public class KdsQueueServiceImpl implements KdsQueueService {
         );
     }
 
+    @Override
+    @Transactional
+    public com.easyeat.order.dto.KdsDelayIncrementResponse addTicketDelay(UUID ticketId, UUID establishmentId) {
+        Objects.requireNonNull(ticketId, "ticketId cannot be null");
+        Objects.requireNonNull(establishmentId, "establishmentId cannot be null");
+
+        // Bloqueo pesimista para concurrencia atómica (RF-003, INV-03, T022)
+        KdsTicket ticket = kdsTicketRepository.findByIdForUpdate(ticketId)
+                .orElseThrow(() -> new NoSuchElementException("No se encontró el ticket de cocina con el identificador proporcionado."));
+
+        if (!ticket.getEstablishment().getId().equals(establishmentId)) {
+            throw new TenantViolationException("El ticket no pertenece al establecimiento del usuario autenticado.");
+        }
+
+        if (ticket.getStatus() != KdsTicketStatus.IN_PREPARATION) {
+            throw new InvalidOrderStateException("Solo se puede añadir demora a comandas en preparación activa.");
+        }
+
+        int newDelay = ticket.getSpecificDelayMinutes() + 5;
+        ticket.setSpecificDelayMinutes(newDelay);
+        KdsTicket saved = kdsTicketRepository.save(ticket);
+
+        Instant now = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        log.info("Ticket {} delay incremented by 5 min. New specificDelayMinutes={}, totalEstimated={}", ticketId, newDelay, 20 + newDelay);
+
+        return new com.easyeat.order.dto.KdsDelayIncrementResponse(
+                saved.getId(),
+                saved.getOrderId(),
+                saved.getTicketNumber(),
+                newDelay,
+                20 + newDelay,
+                now
+        );
+    }
+
     private void ensureOrderInProgress(UUID orderId) {
         orderRepository.findById(orderId).ifPresent(order -> {
             if (order.getStatus() != OrderStatus.IN_PROGRESS) {

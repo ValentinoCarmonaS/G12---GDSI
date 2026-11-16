@@ -11,7 +11,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -69,6 +71,27 @@ public interface KdsTicketRepository extends JpaRepository<KdsTicket, UUID> {
     """)
     List<KdsTicket> findActiveQueueTickets(
             @Param("establishmentId") UUID establishmentId,
+            @Param("today") LocalDate today
+    );
+
+    @Query("""
+        SELECT COUNT(k) FROM KdsTicket k
+        WHERE k.establishment.id = :establishmentId
+          AND k.status = com.easyeat.order.domain.KdsTicketStatus.QUEUED
+          AND k.pickupDate <= :today
+          AND (
+              k.pickupDate < :pickupDate
+              OR (k.pickupDate = :pickupDate AND k.timeSlotStart < :timeSlotStart)
+              OR (k.pickupDate = :pickupDate AND k.timeSlotStart = :timeSlotStart AND k.queuedAt < :queuedAt)
+              OR (k.pickupDate = :pickupDate AND k.timeSlotStart = :timeSlotStart AND k.queuedAt = :queuedAt AND k.id < :ticketId)
+          )
+    """)
+    long countQueuedTicketsAhead(
+            @Param("establishmentId") UUID establishmentId,
+            @Param("pickupDate") LocalDate pickupDate,
+            @Param("timeSlotStart") LocalTime timeSlotStart,
+            @Param("queuedAt") Instant queuedAt,
+            @Param("ticketId") UUID ticketId,
             @Param("today") LocalDate today
     );
 }
