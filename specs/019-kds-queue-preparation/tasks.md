@@ -46,7 +46,7 @@
 
 - [X] T005 [P] [US1] Crear prueba de integración `easyeat/backend/src/test/java/com/easyeat/order/KdsQueueDeterministicOrderTest.java` verificando orden determinista total (`pickupDate`, `timeSlotStart`, `queuedAt`, `id`), exclusión de `pickupDate > hoy`, precedencia de turnos vencidos y FIFO unificado.
 - [X] T006 [P] [US1] Crear prueba `@WebMvcTest` en `easyeat/backend/src/test/java/com/easyeat/order/KitchenKdsControllerIntegrationTest.java` verificando `GET /api/v1/kitchen/orders?activeQueue=true` con rol `CHEF`, filtro `pickup_date <= hoy` y mapeo de `startedAt`.
-- [ ] T007 [P] [US1] Crear prueba unitaria `easyeat/frontend/src/test/hooks/useKdsQueuePolling.test.ts` verificando polling silencioso cada 4 segundos, suspensión al ocultar pestaña (`document.visibilityState === 'hidden'`), cancelación al desmontar y backoff ante fallos de red.
+- [X] T007 [P] [US1] Crear prueba unitaria `easyeat/frontend/src/test/hooks/useKdsQueuePolling.test.ts` verificando polling silencioso cada 4 segundos, suspensión al ocultar pestaña (`document.visibilityState === 'hidden'`), cancelación al desmontar y backoff ante fallos de red.
 
 ### Implementación de US1 (Green Implementation)
 
