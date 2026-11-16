@@ -22,6 +22,7 @@ export interface UseOrderLiveTrackingPollingResult {
   isLoading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
+  isDisconnected?: boolean;
 }
 
 export function useOrderLiveTrackingPolling(
@@ -131,5 +132,6 @@ export function useOrderLiveTrackingPolling(
     isLoading,
     error,
     refetch: fetchTracking,
+    isDisconnected: false,
   };
 }
