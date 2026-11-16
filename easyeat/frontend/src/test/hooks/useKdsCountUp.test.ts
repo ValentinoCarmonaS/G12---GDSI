@@ -72,12 +72,24 @@ describe('useKdsCountUp Hook (T027, US4, RF-011, RF-012)', () => {
 
   it('limpia el timer al desmontarse para evitar fugas de memoria', () => {
     const startedAt = '2026-11-16T12:00:00.000Z';
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
     const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
 
     const { unmount } = renderHook(() => useKdsCountUp(startedAt));
+    
+    // Antes de que pase el primer minuto, cancela el timeout inicial
     unmount();
+    expect(clearTimeoutSpy).toHaveBeenCalled();
 
+    // Si ya pasó al intervalo continuo, cancela el intervalo
+    const { unmount: unmountAfterMinute } = renderHook(() => useKdsCountUp(startedAt));
+    act(() => {
+      vi.advanceTimersByTime(65000);
+    });
+    unmountAfterMinute();
     expect(clearIntervalSpy).toHaveBeenCalled();
+
+    clearTimeoutSpy.mockRestore();
     clearIntervalSpy.mockRestore();
   });
 });

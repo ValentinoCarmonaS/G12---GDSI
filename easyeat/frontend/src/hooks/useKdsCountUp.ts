@@ -29,17 +29,31 @@ export function useKdsCountUp(startedAt?: string | null, clockOffsetMs = 0): Use
       return;
     }
 
-    // Actualización inmediata por si cambió el prop
-    setElapsedMinutes(calculateElapsedMinutes(startedAt, clockOffsetMs));
-
-    // Intervalo regular de 1000ms o 60000ms: usando 10000ms o 60000ms.
-    // Un intervalo de 10s o 60s garantiza actualizar en el cambio de minuto
-    // respetando estrictamente el refresco periódico y sin consumo de red.
-    const interval = setInterval(() => {
+    const updateMinutes = () => {
       setElapsedMinutes(calculateElapsedMinutes(startedAt, clockOffsetMs));
-    }, 1000);
+    };
 
-    return () => clearInterval(interval);
+    updateMinutes();
+
+    let intervalId: NodeJS.Timeout | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    // Cálculo optimizado del desfase hasta el siguiente cambio de minuto exacto
+    const startedAtMs = new Date(startedAt).getTime();
+    const currentServerTime = Date.now() + clockOffsetMs;
+    const elapsedSeconds = Math.max(0, Math.floor((currentServerTime - startedAtMs) / 1000));
+    const secondsIntoCurrentMinute = elapsedSeconds % 60;
+    const msUntilNextMinute = (60 - secondsIntoCurrentMinute) * 1000;
+
+    timeoutId = setTimeout(() => {
+      updateMinutes();
+      intervalId = setInterval(updateMinutes, 60000);
+    }, msUntilNextMinute);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [startedAt, clockOffsetMs]);
 
   return {

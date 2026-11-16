@@ -135,7 +135,7 @@ class KitchenKdsControllerIntegrationTest {
 
         when(kdsTicketRepository.findActiveQueueTickets(eq(establishmentId), any(LocalDate.class)))
                 .thenReturn(List.of(ticket));
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findAllByIdWithItems(eq(List.of(orderId)))).thenReturn(List.of(order));
 
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                 chefUser,
