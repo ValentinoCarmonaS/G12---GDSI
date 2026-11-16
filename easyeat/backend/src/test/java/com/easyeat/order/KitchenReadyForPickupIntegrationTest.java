@@ -76,7 +76,12 @@ class KitchenReadyForPickupIntegrationTest {
     @BeforeEach
     void setUp() {
         controller = new KitchenTicketDispatchController(liveTrackingService);
-        objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .addMixIn(
+                        org.springframework.http.ProblemDetail.class,
+                        org.springframework.http.converter.json.ProblemDetailJacksonMixin.class
+                );
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(objectMapper);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)

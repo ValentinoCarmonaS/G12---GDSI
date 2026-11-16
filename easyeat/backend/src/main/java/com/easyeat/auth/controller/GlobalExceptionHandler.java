@@ -714,7 +714,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setType(URI.create("https://easyeat.com/errors/invalid-order-state"));
         problem.setTitle("Conflict");
         problem.setInstance(URI.create(request.getRequestURI()));
-        problem.setProperty("code", "INVALID_ORDER_STATE");
+        problem.setProperty("code", ex.getCode());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problem);
     }
 

@@ -1,7 +1,11 @@
 package com.easyeat.order.service;
 
+import com.easyeat.auth.domain.User;
+import com.easyeat.auth.domain.UserRole;
+import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.common.exception.TenantViolationException;
 import com.easyeat.order.domain.EstablishmentKdsSettings;
 import com.easyeat.order.domain.FulfillmentMode;
 import com.easyeat.order.domain.KdsTicket;
@@ -12,6 +16,7 @@ import com.easyeat.order.dto.KdsDelayAdjustmentRequest;
 import com.easyeat.order.dto.KdsDelayAdjustmentResponse;
 import com.easyeat.order.dto.KdsTicketResponse;
 import com.easyeat.order.dto.OrderLiveTrackingResponse;
+import com.easyeat.order.exception.InvalidOrderStateException;
 import com.easyeat.order.exception.OrderNotFoundException;
 import com.easyeat.order.repository.EstablishmentKdsSettingsRepository;
 import com.easyeat.order.repository.KdsTicketRepository;
@@ -43,6 +48,9 @@ public class OrderLiveTrackingService {
     private EstablishmentRepository establishmentRepository;
     private Clock clock;
     private KdsTicketRepository kdsTicketRepository;
+
+    @Autowired(required = false)
+    private UserRepository userRepository;
 
     public OrderLiveTrackingService() {
         this.clock = Clock.systemUTC();
@@ -310,19 +318,55 @@ public class OrderLiveTrackingService {
 
     @Transactional
     public KdsTicketResponse markTicketReadyForPickup(UUID ticketOrOrderId, UUID userId) {
-        Instant now = currentInstant();
         if (kdsTicketRepository != null) {
-            Optional<KdsTicket> ticketOpt = kdsTicketRepository.findById(ticketOrOrderId);
+            Optional<KdsTicket> ticketOpt = kdsTicketRepository.findByIdForUpdate(ticketOrOrderId)
+                    .or(() -> kdsTicketRepository.findById(ticketOrOrderId));
             if (ticketOpt.isPresent()) {
                 KdsTicket ticket = ticketOpt.get();
-                Order order = orderRepository.findById(ticket.getOrderId())
+                UUID ticketEstablishmentId = (ticket.getEstablishment() != null)
+                        ? ticket.getEstablishment().getId()
+                        : null;
+                validateUserTenantAccess(userId, ticketEstablishmentId);
+
+                if (ticket.getStatus() == KdsTicketStatus.COMPLETED) {
+                    throw new InvalidOrderStateException(
+                            "La orden ya ha sido completada y entregada al cliente.",
+                            "ORDER_ALREADY_COMPLETED"
+                    );
+                }
+
+                Order order = orderRepository.findByIdForUpdate(ticket.getOrderId())
+                        .or(() -> orderRepository.findById(ticket.getOrderId()))
                         .orElseThrow(() -> new OrderNotFoundException(ticket.getOrderId()));
 
+                if (order.getStatus() == OrderStatus.COMPLETED) {
+                    throw new InvalidOrderStateException(
+                            "La orden ya ha sido completada y entregada al cliente.",
+                            "ORDER_ALREADY_COMPLETED"
+                    );
+                }
+
+                // Idempotency: if already READY_FOR_PICKUP, return original readyAt without mutating
+                if (ticket.getStatus() == KdsTicketStatus.READY_FOR_PICKUP) {
+                    Instant existingReadyAt = ticket.getReadyAt() != null
+                            ? ticket.getReadyAt()
+                            : (order.getReadyAt() != null ? order.getReadyAt() : currentInstant());
+                    return new KdsTicketResponse(
+                            ticket.getId(),
+                            order.getId(),
+                            ticket.getTicketNumber(),
+                            OrderStatus.READY_FOR_PICKUP,
+                            existingReadyAt
+                    );
+                }
+
+                Instant now = currentInstant();
                 ticket.setStatus(KdsTicketStatus.READY_FOR_PICKUP);
                 ticket.setReadyAt(now);
                 kdsTicketRepository.save(ticket);
 
                 order.setStatus(OrderStatus.READY_FOR_PICKUP);
+                order.setReadyAt(now);
                 order.setUpdatedAt(now);
                 orderRepository.save(order);
 
@@ -336,25 +380,61 @@ public class OrderLiveTrackingService {
             }
         }
 
-        Order order = orderRepository.findById(ticketOrOrderId)
+        Order order = orderRepository.findByIdForUpdate(ticketOrOrderId)
+                .or(() -> orderRepository.findById(ticketOrOrderId))
                 .orElseThrow(() -> new OrderNotFoundException(ticketOrOrderId));
 
-        order.setStatus(OrderStatus.READY_FOR_PICKUP);
-        order.setUpdatedAt(now);
-        orderRepository.save(order);
+        validateUserTenantAccess(userId, order.getEstablishmentId());
+
+        if (order.getStatus() == OrderStatus.COMPLETED) {
+            throw new InvalidOrderStateException(
+                    "La orden ya ha sido completada y entregada al cliente.",
+                    "ORDER_ALREADY_COMPLETED"
+            );
+        }
 
         UUID resolvedTicketId = ticketOrOrderId;
         Integer resolvedTicketNumber = null;
+        KdsTicket linkedTicket = null;
         if (kdsTicketRepository != null) {
-            Optional<KdsTicket> linkedTicketOpt = kdsTicketRepository.findByOrderId(order.getId());
-            if (linkedTicketOpt.isPresent()) {
-                KdsTicket ticket = linkedTicketOpt.get();
-                ticket.setStatus(KdsTicketStatus.READY_FOR_PICKUP);
-                ticket.setReadyAt(now);
-                kdsTicketRepository.save(ticket);
-                resolvedTicketId = ticket.getId();
-                resolvedTicketNumber = ticket.getTicketNumber();
+            linkedTicket = kdsTicketRepository.findByOrderId(order.getId()).orElse(null);
+            if (linkedTicket != null) {
+                if (linkedTicket.getStatus() == KdsTicketStatus.COMPLETED) {
+                    throw new InvalidOrderStateException(
+                            "La orden ya ha sido completada y entregada al cliente.",
+                            "ORDER_ALREADY_COMPLETED"
+                    );
+                }
+                resolvedTicketId = linkedTicket.getId();
+                resolvedTicketNumber = linkedTicket.getTicketNumber();
             }
+        }
+
+        if (order.getStatus() == OrderStatus.READY_FOR_PICKUP) {
+            Instant existingReadyAt = order.getReadyAt() != null
+                    ? order.getReadyAt()
+                    : (linkedTicket != null && linkedTicket.getReadyAt() != null
+                            ? linkedTicket.getReadyAt()
+                            : currentInstant());
+            return new KdsTicketResponse(
+                    resolvedTicketId,
+                    order.getId(),
+                    resolvedTicketNumber,
+                    OrderStatus.READY_FOR_PICKUP,
+                    existingReadyAt
+            );
+        }
+
+        Instant now = currentInstant();
+        order.setStatus(OrderStatus.READY_FOR_PICKUP);
+        order.setReadyAt(now);
+        order.setUpdatedAt(now);
+        orderRepository.save(order);
+
+        if (linkedTicket != null) {
+            linkedTicket.setStatus(KdsTicketStatus.READY_FOR_PICKUP);
+            linkedTicket.setReadyAt(now);
+            kdsTicketRepository.save(linkedTicket);
         }
 
         return new KdsTicketResponse(
@@ -364,6 +444,23 @@ public class OrderLiveTrackingService {
                 OrderStatus.READY_FOR_PICKUP,
                 now
         );
+    }
+
+    private void validateUserTenantAccess(UUID userId, UUID resourceEstablishmentId) {
+        if (userRepository == null || userId == null || resourceEstablishmentId == null) {
+            return;
+        }
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            return;
+        }
+        User user = userOpt.get();
+        if (user.getRole() == UserRole.ADMINISTRADOR) {
+            return;
+        }
+        if (user.getTenantId() != null && !user.getTenantId().equals(resourceEstablishmentId)) {
+            throw new TenantViolationException("La comanda no pertenece al establecimiento del usuario autenticado.");
+        }
     }
 
     private String resolveInactiveStatusMessage(OrderStatus status) {
