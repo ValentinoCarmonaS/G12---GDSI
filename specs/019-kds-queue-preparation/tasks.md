@@ -124,7 +124,7 @@
 
 ### Implementación de US4 (Green Implementation)
 
-- [ ] T028 [P] [US4] Implementar hook reactivo `useKdsCountUp.ts` en `easyeat/frontend/src/hooks/useKdsCountUp.ts` sincronizado contra `startedAt` y el reloj local ajustado por la cabecera `Date` del servidor.
+- [X] T028 [P] [US4] Implementar hook reactivo `useKdsCountUp.ts` en `easyeat/frontend/src/hooks/useKdsCountUp.ts` sincronizado contra `startedAt` y el reloj local ajustado por la cabecera `Date` del servidor.
 - [ ] T029 [US4] Integrar `useKdsCountUp` en la cabecera de `KdsInPreparationCard` dentro de `easyeat/frontend/src/components/kds/` renderizando el formato `MM min`.
 
 **Checkpoint**: Cronómetro progresivo funcional, sereno y sincronizado entre múltiples terminales.
