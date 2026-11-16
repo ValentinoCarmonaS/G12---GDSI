@@ -45,7 +45,7 @@ public class KitchenTicketDispatchController {
      * Completes preparation and marks ticket/order as READY_FOR_PICKUP.
      */
     @PostMapping("/tickets/{ticketId}/ready-for-pickup")
-    @PreAuthorize("hasAnyRole('CHEF', 'ENCARGADO')")
+    @PreAuthorize("hasAnyRole('CHEF', 'ENCARGADO', 'ADMINISTRADOR')")
     public ResponseEntity<KdsTicketResponse> markTicketReadyForPickup(
             @PathVariable UUID ticketId,
             @AuthenticationPrincipal User user
