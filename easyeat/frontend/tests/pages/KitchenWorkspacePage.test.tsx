@@ -102,62 +102,26 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
     expect(screen.getByTestId('in-preparation-column')).toBeInTheDocument();
   });
 
-  describe('a draft returned by rejection (FR-020, FR-023)', () => {
-    const feedback: ChefReviewFeedback = {
-      dishId: 'dish-1',
-      entries: [
-        {
-          cycleNumber: 1,
-          reviewerName: 'Lucía Ferraro',
-          comment: 'El costo del salmón dispara el food cost. Usá merluza y reenviá la ficha.',
-          createdAt: '2026-10-29T10:00:00Z',
-        },
-      ],
-    };
-
-    it('renders the feedback banner when the URL names the returned draft', async () => {
-      vi.mocked(chefReviewFeedbackApi.getFeedback).mockResolvedValue(feedback);
-
+  describe('a draft returned by rejection (FR-020, FR-023, US6)', () => {
+    it('renders no feedback banner on KDS page even if URL names a draft (relocated to dish management)', () => {
       render(
         <MemoryRouter initialEntries={['/cocina?dishId=dish-1']}>
-          <KitchenWorkspacePage />
-        </MemoryRouter>
-      );
-
-      await waitFor(() =>
-        expect(screen.getByText(feedback.entries[0].comment as string)).toBeInTheDocument()
-      );
-      expect(screen.getByText(/Lucía Ferraro/)).toBeInTheDocument();
-    });
-
-    it('renders no banner when the URL names no draft', () => {
-      render(
-        <MemoryRouter>
           <KitchenWorkspacePage />
         </MemoryRouter>
       );
 
       expect(chefReviewFeedbackApi.getFeedback).not.toHaveBeenCalled();
       expect(screen.queryByTestId('rejection-feedback-banner')).not.toBeInTheDocument();
+      expect(screen.queryByText(/Lucía Ferraro/)).not.toBeInTheDocument();
     });
 
-    it('shows no acquisition cost, Food Cost or margin figure anywhere on the page', async () => {
-      vi.mocked(chefReviewFeedbackApi.getFeedback).mockResolvedValue(feedback);
-
+    it('shows no acquisition cost, Food Cost or margin figure anywhere on the page', () => {
       const { container } = render(
         <MemoryRouter initialEntries={['/cocina?dishId=dish-1']}>
           <KitchenWorkspacePage />
         </MemoryRouter>
       );
 
-      await waitFor(() =>
-        expect(screen.getByText(feedback.entries[0].comment as string)).toBeInTheDocument()
-      );
-
-      // The feedback comment legitimately mentions "costo"/"food cost" in prose — that is the
-      // Administrator's own words, not a financial field this page renders. The structural
-      // guarantee is that no element carries a numeric financial value, which this page has no
-      // way to render in the first place: it holds no dish price, margin or cost state at all.
       const amounts = container.querySelectorAll('[data-testid*="cost"], [data-testid*="price"], [data-testid*="margin"]');
       expect(amounts).toHaveLength(0);
     });
