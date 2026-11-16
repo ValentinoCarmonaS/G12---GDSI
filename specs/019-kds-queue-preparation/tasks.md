@@ -50,7 +50,7 @@
 
 ### Implementación de US1 (Green Implementation)
 
-- [ ] T008 [P] [US1] Agregar método `findActiveQueueTickets` con orden determinista y filtro `pickupDate <= :today` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
+- [X] T008 [P] [US1] Agregar método `findActiveQueueTickets` con orden determinista y filtro `pickupDate <= :today` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
 - [ ] T009 [US1] Normalizar franja de pedidos `IMMEDIATE` (`floor(M / 15) * 15`) en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderService.java` y en `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutPaymentService.java`.
 - [ ] T010 [US1] Asegurar normalización de `timeSlotStart` y `timeSlotEnd` para `FulfillmentMode.IMMEDIATE` al construir la comanda en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java`.
 - [ ] T011 [US1] Actualizar `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` para exponer `GET /api/v1/kitchen/orders` con parámetro `activeQueue=true`, mapeo de `startedAt` y consumo de `findActiveQueueTickets`, restringido al rol `CHEF`.
