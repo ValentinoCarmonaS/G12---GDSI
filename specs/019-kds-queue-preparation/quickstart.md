@@ -67,7 +67,7 @@ Ejecutar las suites de Vitest para los componentes, hooks y páginas de cocina:
 ```bash
 cd easyeat/frontend
 npm test -- --run tests/pages/KitchenWorkspacePage.test.tsx
-npm test -- --run src/test/kds/
+npm test -- --run src/test/utils/kds tests/components/KitchenKanbanBoard.test.tsx src/test/hooks/useKds
 ```
 
 Validar tipado y compilación limpia:

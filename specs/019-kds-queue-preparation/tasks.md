@@ -156,9 +156,9 @@
 
 **Propósito**: Ejecución integral de suites automatizadas y validación manual de escenarios operativos.
 
-- [ ] T033 [P] Ejecutar la suite completa de pruebas backend `mvn test -Dtest="*Kds*,*Kitchen*"` en `easyeat/backend/`.
-- [ ] T034 [P] Ejecutar la suite completa de pruebas frontend `npm test -- --run` y verificar compilación limpia `npm run build` en `easyeat/frontend/`.
-- [ ] T035 Ejecutar el protocolo manual de validación end-to-end según [quickstart.md](./quickstart.md) (verificación de los 9 escenarios operativos).
+- [X] T033 [P] Ejecutar la suite completa de pruebas backend `mvn test -Dtest="*Kds*,*Kitchen*"` en `easyeat/backend/`.
+- [X] T034 [P] Ejecutar la suite completa de pruebas frontend `npm test -- --run` y verificar compilación limpia `npm run build` en `easyeat/frontend/`.
+- [X] T035 Ejecutar el protocolo manual de validación end-to-end según [quickstart.md](./quickstart.md) (verificación de los 9 escenarios operativos).
 
 ---
 
