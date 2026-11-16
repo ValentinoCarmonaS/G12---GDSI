@@ -71,7 +71,7 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T017`–`T018`.
 
-- [ ] T015 [P] [US2] Crear pruebas unitarias en `easyeat/frontend/tests/hooks/useCounterOrdersPolling.test.ts` verificando ciclo periódico de 4 segundos, cabeceras `no-cache`, cancelación con `AbortController` al desmontar, suspensión ante `document.visibilityState === 'hidden'` y reactivación inmediata al volver a `visible`.
+- [X] T015 [P] [US2] Crear pruebas unitarias en `easyeat/frontend/tests/hooks/useCounterOrdersPolling.test.ts` verificando ciclo periódico de 4 segundos, cabeceras `no-cache`, cancelación con `AbortController` al desmontar, suspensión ante `document.visibilityState === 'hidden'` y reactivación inmediata al volver a `visible`.
 - [ ] T016 [P] [US2] Ampliar `easyeat/frontend/tests/hooks/useCounterOrdersPolling.test.ts` verificando que ante fallos continuados de red superiores a 15 segundos se activa el flag `isDisconnected = true`, y se restablece a `false` tras el primer sondeo exitoso.
 
 ### Implementación de US2 (Green Implementation)
