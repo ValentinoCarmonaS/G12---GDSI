@@ -36,24 +36,35 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
     });
   });
 
-  it('renders kitchen workspace layout with KDS title and order status cards (T029)', () => {
+  it('renders kitchen workspace with exclusive focus on KitchenKanbanBoard (US6, RF-019)', () => {
     render(
       <MemoryRouter>
         <KitchenWorkspacePage />
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/kitchen display system/i)).toBeInTheDocument();
-    expect(screen.getByText(/comandas en preparación.*despachos de cocina/i)).toBeInTheDocument();
-    expect(screen.getByText('En Cola')).toBeInTheDocument();
-    expect(screen.getByText('En Preparación')).toBeInTheDocument();
-    expect(screen.getByText('Para Retirar')).toBeInTheDocument();
-    expect(screen.getByText('Completadas hoy')).toBeInTheDocument();
-
-    // T025: Verify KitchenKanbanBoard is embedded into KitchenWorkspacePage
+    // Kanban board is present with its two columns
     expect(screen.getByTestId('kds-kanban-section')).toBeInTheDocument();
     expect(screen.getByTestId('queued-column')).toBeInTheDocument();
     expect(screen.getByTestId('in-preparation-column')).toBeInTheDocument();
+
+    // Placeholders and legacy controls are completely removed:
+    // 1. Subtitle
+    expect(screen.queryByText(/comandas en preparación.*despachos de cocina/i)).not.toBeInTheDocument();
+    // 2. Global delay modifier controls
+    expect(screen.queryByText(/ajuste de demora global de cocina/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /\+5 min/i })).not.toBeInTheDocument();
+    // 3. Counter dispatch form by UUID
+    expect(screen.queryByText(/despacho a mostrador/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/uuid de la comanda/i)).not.toBeInTheDocument();
+    // 4. Static ingredients card
+    expect(screen.queryByText(/catálogo de ingredientes y materias primas/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /ver ingredientes →/i })).not.toBeInTheDocument();
+    // 5. Four statistical status cards
+    expect(screen.queryByText('En Cola')).not.toBeInTheDocument();
+    expect(screen.queryByText('En Preparación')).not.toBeInTheDocument();
+    expect(screen.queryByText('Para Retirar')).not.toBeInTheDocument();
+    expect(screen.queryByText('Completadas hoy')).not.toBeInTheDocument();
   });
 
   it('invokes authApi.me on mount to validate token version and session liveness', () => {
@@ -66,7 +77,7 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
     expect(authApi.me).toHaveBeenCalledTimes(1);
   });
 
-  it('exposes dish management only through the header and keeps the KDS cards intact (C-08, FR-028)', () => {
+  it('exposes navigation through the header and keeps no nested cards or metrics (C-08, US6, RF-019)', () => {
     render(
       <MemoryRouter>
         <KitchenWorkspacePage />
@@ -77,24 +88,15 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
     expect(screen.queryByText(/gestión de platos y fichas técnicas/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /gestionar platos →/i })).not.toBeInTheDocument();
 
-    // ...the section itself lives in the shared header...
-    expect(screen.getByRole('link', { name: 'Gestionar Platos' })).toHaveAttribute(
-      'href',
-      '/cocina/platos'
-    );
+    // ...and the ingredients card plus the four order-statistics cards are purged from page body.
+    expect(screen.queryByText(/catálogo de ingredientes y materias primas/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /ver ingredientes →/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('En Cola')).not.toBeInTheDocument();
+    expect(screen.queryByText('En Preparación')).not.toBeInTheDocument();
+    expect(screen.queryByText('Para Retirar')).not.toBeInTheDocument();
+    expect(screen.queryByText('Completadas hoy')).not.toBeInTheDocument();
 
-    // ...and the ingredients card plus the four order-statistics cards are preserved.
-    expect(screen.getByText(/catálogo de ingredientes y materias primas/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ver ingredientes →/i })).toHaveAttribute(
-      'href',
-      '/cocina/ingredientes'
-    );
-    expect(screen.getByText('En Cola')).toBeInTheDocument();
-    expect(screen.getByText('En Preparación')).toBeInTheDocument();
-    expect(screen.getByText('Para Retirar')).toBeInTheDocument();
-    expect(screen.getByText('Completadas hoy')).toBeInTheDocument();
-
-    // T025: Verify KitchenKanbanBoard is embedded into KitchenWorkspacePage
+    // Verify KitchenKanbanBoard is embedded into KitchenWorkspacePage
     expect(screen.getByTestId('kds-kanban-section')).toBeInTheDocument();
     expect(screen.getByTestId('queued-column')).toBeInTheDocument();
     expect(screen.getByTestId('in-preparation-column')).toBeInTheDocument();
