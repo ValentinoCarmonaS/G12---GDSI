@@ -1,0 +1,110 @@
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { CounterTicketCard } from '../../src/components/counter/CounterTicketCard';
+import type { CounterReadyOrder } from '../../src/types/counter';
+
+const sampleOrder: CounterReadyOrder = {
+  ticketId: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+  orderId: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+  ticketNumber: 104,
+  timeSlot: {
+    start: '13:00',
+    end: '13:15',
+  },
+  readyAt: '2026-11-15T19:30:00.000Z',
+  customer: {
+    userId: 'c71e2289-4b68-45e0-a7d1-e6e7d6928e01',
+    fullName: 'Valentino Carmona',
+    photoUrl: '/api/v1/profile/users/c71e2289-4b68-45e0-a7d1-e6e7d6928e01/avatar',
+  },
+  securityCode: '4821',
+  items: [
+    {
+      quantity: 2,
+      dishName: 'Hamburguesa Completa con Papas',
+    },
+    {
+      quantity: 1,
+      dishName: 'Limonada con Menta y Jengibre',
+    },
+  ],
+};
+
+describe('CounterTicketCard (T021, US3, ENC-2.1.1, RF-006..RF-011)', () => {
+  const readyAtMs = Date.parse(sampleOrder.readyAt);
+
+  it('T021: renders compact closed state with #ticketNumber, timeSlot "HH:mm - HH:mm" and wait counter in minutes', () => {
+    const onToggle = vi.fn();
+    render(
+      <CounterTicketCard
+        order={sampleOrder}
+        isExpanded={false}
+        onToggle={onToggle}
+        nowMs={readyAtMs + 30_000}
+      />
+    );
+
+    expect(screen.getByText('#104')).toBeInTheDocument();
+    expect(screen.getByText('13:00 - 13:15')).toBeInTheDocument();
+    expect(screen.getByText('0 min')).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('counter-card-expanded-body')
+    ).not.toBeInTheDocument();
+  });
+
+  it('T021: toggles expansion when clicking the card header', async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+
+    render(
+      <CounterTicketCard
+        order={sampleOrder}
+        isExpanded={false}
+        onToggle={onToggle}
+        nowMs={readyAtMs + 5 * 60_000}
+      />
+    );
+
+    expect(screen.getByText('5 min')).toBeInTheDocument();
+
+    const header = screen.getByTestId('counter-card-header');
+    await user.click(header);
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onToggle).toHaveBeenCalledWith(sampleOrder.ticketId);
+  });
+
+  it('T021: stops propagation on clicks inside expanded body (items list and delivery button container) while allowing header click to collapse', async () => {
+    const user = userEvent.setup();
+    const onToggle = vi.fn();
+
+    render(
+      <CounterTicketCard
+        order={sampleOrder}
+        isExpanded={true}
+        onToggle={onToggle}
+        nowMs={readyAtMs + 2 * 60_000}
+      />
+    );
+
+    const expandedBody = screen.getByTestId('counter-card-expanded-body');
+    expect(expandedBody).toBeInTheDocument();
+
+    const itemsContainer = screen.getByTestId('counter-card-items');
+    await user.click(itemsContainer);
+    expect(onToggle).not.toHaveBeenCalled();
+
+    const deliveryContainer = screen.getByTestId(
+      'counter-card-delivery-container'
+    );
+    await user.click(deliveryContainer);
+    expect(onToggle).not.toHaveBeenCalled();
+
+    // Clicking the header collapses the card
+    const header = screen.getByTestId('counter-card-header');
+    await user.click(header);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(onToggle).toHaveBeenCalledWith(sampleOrder.ticketId);
+  });
+});

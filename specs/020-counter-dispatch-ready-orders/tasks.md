@@ -93,15 +93,15 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T022`–`T024`.
 
-- [ ] T019 [P] [US3] Crear prueba `@WebMvcTest` en `easyeat/backend/src/test/java/com/easyeat/order/CounterOrderControllerIntegrationTest.java` verificando `GET /api/v1/counter/orders` con rol `ENCARGADO`, filtro de jornada actual `pickup_date = hoy`, ordenamiento total `ready_at ASC, ticket_number ASC`, y exclusión de fechas futuras.
-- [ ] T020 [P] [US3] Crear pruebas unitarias en `easyeat/frontend/tests/utils/counterTimeUtils.test.ts` verificando `calculateWaitMinutes` con valor inicial `0 min` entre 0 y 59 segundos, conmutación determinista a `1 min` a los 60 segundos y compensación de desfasaje de reloj servidor/cliente.
-- [ ] T021 [P] [US3] Crear pruebas de componente en `easyeat/frontend/tests/components/CounterTicketCard.test.tsx` y `easyeat/frontend/tests/pages/CounterWorkspacePage.test.tsx` verificando renderizado cerrado inicial, alternancia al hacer clic en cabecera, detención de propagación en clics interiores y mensaje neutral de estado vacío.
+- [X] T019 [P] [US3] Crear prueba `@WebMvcTest` en `easyeat/backend/src/test/java/com/easyeat/order/CounterOrderControllerIntegrationTest.java` verificando `GET /api/v1/counter/orders` con rol `ENCARGADO`, filtro de jornada actual `pickup_date = hoy`, ordenamiento total `ready_at ASC, ticket_number ASC`, y exclusión de fechas futuras.
+- [X] T020 [P] [US3] Crear pruebas unitarias en `easyeat/frontend/tests/utils/counterTimeUtils.test.ts` verificando `calculateWaitMinutes` con valor inicial `0 min` entre 0 y 59 segundos, conmutación determinista a `1 min` a los 60 segundos y compensación de desfasaje de reloj servidor/cliente.
+- [X] T021 [P] [US3] Crear pruebas de componente en `easyeat/frontend/tests/components/CounterTicketCard.test.tsx` y `easyeat/frontend/tests/pages/CounterWorkspacePage.test.tsx` verificando renderizado cerrado inicial, alternancia al hacer clic en cabecera, detención de propagación en clics interiores y mensaje neutral de estado vacío.
 
 ### Implementación de US3 (Green Implementation)
 
-- [ ] T022 [US3] Implementar controlador `CounterOrderController.java` en `easyeat/backend/src/main/java/com/easyeat/order/controller/` exponiendo `GET /api/v1/counter/orders` con anotación `@PreAuthorize("hasAnyRole('ENCARGADO', 'ADMINISTRADOR')")` consumiendo `kdsTicketRepository.findCounterReadyTickets`.
-- [ ] T023 [US3] Implementar componente `CounterTicketCard.tsx` en `easyeat/frontend/src/components/counter/` soportando modo cerrado (cabecera con `#ticketNumber`, franja horaria `HH:mm - HH:mm`, contador Count-Up) y modo desplegado con `e.stopPropagation()` en el cuerpo interior.
-- [ ] T024 [US3] Actualizar `CounterWorkspacePage.tsx` en `easyeat/frontend/src/pages/` integrando `useCounterOrdersPolling`, gestión de `expandedTicketIds: Set<string>`, grilla de tarjetas `CounterTicketCard`, `CounterConnectionBanner` y mensaje neutral de estado vacío ("No hay pedidos listos para entrega").
+- [X] T022 [US3] Implementar controlador `CounterOrderController.java` en `easyeat/backend/src/main/java/com/easyeat/order/controller/` exponiendo `GET /api/v1/counter/orders` con anotación `@PreAuthorize("hasAnyRole('ENCARGADO', 'ADMINISTRADOR')")` consumiendo `kdsTicketRepository.findCounterReadyTickets`.
+- [X] T023 [US3] Implementar componente `CounterTicketCard.tsx` en `easyeat/frontend/src/components/counter/` soportando modo cerrado (cabecera con `#ticketNumber`, franja horaria `HH:mm - HH:mm`, contador Count-Up) y modo desplegado con `e.stopPropagation()` en el cuerpo interior.
+- [X] T024 [US3] Actualizar `CounterWorkspacePage.tsx` en `easyeat/frontend/src/pages/` integrando `useCounterOrdersPolling`, gestión de `expandedTicketIds: Set<string>`, grilla de tarjetas `CounterTicketCard`, `CounterConnectionBanner` y mensaje neutral de estado vacío ("No hay pedidos listos para entrega").
 
 **Checkpoint**: `US1 + US2 + US3` funcionales (tablero interactivo completo en mostrador con soporte de tarjetas plegables y contador de espera continuo).
 
