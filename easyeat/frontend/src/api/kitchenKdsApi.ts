@@ -18,6 +18,7 @@ export interface KitchenOrderPageResponse {
     timeSlotEnd: string;
     queuedAt: string;
     startedAt: string | null;
+    specificDelayMinutes?: number;
     items: Array<{
       dishId: string;
       dishName: string;

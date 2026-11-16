@@ -194,6 +194,7 @@ public class KitchenKdsController {
                 ticket.getTimeSlotEnd(),
                 ticket.getQueuedAt(),
                 ticket.getStartedAt(),
+                ticket.getSpecificDelayMinutes(),
                 items
         );
     }
