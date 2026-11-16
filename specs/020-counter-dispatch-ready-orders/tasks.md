@@ -138,7 +138,7 @@
 
 - [X] T032 [P] Actualizar documentación de endpoints y variables de entorno en `easyeat/backend/README.md` y `easyeat/frontend/README.md`.
 - [X] T033 Ejecutar validación de escenarios de extremo a extremo según la guía `specs/020-counter-dispatch-ready-orders/quickstart.md`.
-- [ ] T034 [P] Ejecutar suite completa de pruebas unitarias y de integración en backend (`mvn test`) y frontend (`npm test`) verificando 100% de éxito.
+- [X] T034 [P] Ejecutar suite completa de pruebas unitarias y de integración en backend (`mvn test`) y frontend (`npm test`) verificando 100% de éxito.
 
 ---
 
