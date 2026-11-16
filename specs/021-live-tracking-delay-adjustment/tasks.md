@@ -7,7 +7,7 @@
 
 - **[P]**: Puede ejecutarse en paralelo (archivos distintos y sin dependencia de tareas incompletas en la misma fase).
 - **[USx]**: Historia de usuario a la que pertenece la tarea (`US1`, `US2`), omitida en preparación compartida, base fundamental y pulido final.
-- **Enfoque TDD**: En cada historia de usuario, las tareas de prueba (*Red Tests*) se redactan y ejecutan primero para constatar el fallo antes de abordar la implementación (*Green Implementation*).
+- **Enfoque TDD**: En cada historia de usuario, las tareas de prueba (_Red Tests_) se redactan y ejecutan primero para constatar el fallo antes de abordar la implementación (_Green Implementation_).
 
 ---
 
@@ -15,10 +15,10 @@
 
 **Propósito**: Crear los DTOs y modelos de transporte compartidos requeridos por los contratos HTTP en backend y frontend.
 
-- [ ] T001 [P] Crear DTO de respuesta `KdsDelayIncrementResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/` con campos `ticketId`, `orderId`, `ticketNumber`, `specificDelayMinutes`, `estimatedTotalMinutes`, `updatedAt`.
-- [ ] T002 [P] Extender el DTO `OrderLiveTrackingResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/` incorporando `positionAhead`, `estimatedTotalMinutes`, `elapsedMinutes`, `remainingMinutes`, `progressPercent`, `specificDelayMinutes`, `securityCode`, `startedAt`, `readyAt`, y record `LiveTrackingItemDto(dishName, quantity)`.
-- [ ] T003 [P] Extender interfaces TypeScript de seguimiento en `easyeat/frontend/src/types/orderTracking.ts` y de cocina en `easyeat/frontend/src/types/kds.ts` incorporando `OrderLiveTrackingData`, `KdsDelayIncrementResponse`, `LiveTrackingItem` y tipado `isDisconnected: boolean` en `UseOrderLiveTrackingPollingResult`.
-- [ ] T004 [P] Actualizar clientes HTTP en `easyeat/frontend/src/api/orderTrackingApi.ts` y `easyeat/frontend/src/api/kitchenKdsApi.ts` exponiendo `addTicketDelay(ticketId)` y tipando la respuesta de `getLiveTracking`.
+- [x] T001 [P] Crear DTO de respuesta `KdsDelayIncrementResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/` con campos `ticketId`, `orderId`, `ticketNumber`, `specificDelayMinutes`, `estimatedTotalMinutes`, `updatedAt`.
+- [x] T002 [P] Extender el DTO `OrderLiveTrackingResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/` incorporando `positionAhead`, `estimatedTotalMinutes`, `elapsedMinutes`, `remainingMinutes`, `progressPercent`, `specificDelayMinutes`, `securityCode`, `startedAt`, `readyAt`, y record `LiveTrackingItemDto(dishName, quantity)`.
+- [x] T003 [P] Extender interfaces TypeScript de seguimiento en `easyeat/frontend/src/types/orderTracking.ts` y de cocina en `easyeat/frontend/src/types/kds.ts` incorporando `OrderLiveTrackingData`, `KdsDelayIncrementResponse`, `LiveTrackingItem` y tipado `isDisconnected: boolean` en `UseOrderLiveTrackingPollingResult`.
+- [x] T004 [P] Actualizar clientes HTTP en `easyeat/frontend/src/api/orderTrackingApi.ts` y `easyeat/frontend/src/api/kitchenKdsApi.ts` exponiendo `addTicketDelay(ticketId)` y tipando la respuesta de `getLiveTracking`.
 
 **Checkpoint**: Modelos de transporte definidos y consistentes entre backend y frontend.
 
@@ -56,7 +56,7 @@
 
 - [ ] T013 [US1] Implementar cálculo adaptativo en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderLiveTrackingService.java` resolviendo `positionAhead` mediante `countQueuedTicketsAhead` en `QUEUED`, activación de métricas temporales en `IN_PREPARATION` y purga visual con provisión de `securityCode` en `READY_FOR_PICKUP`.
 - [ ] T014 [US1] Actualizar `getLiveTracking` en `easyeat/backend/src/main/java/com/easyeat/order/controller/OrderConfirmationTrackingController.java` mapeando la orden y comanda a `OrderLiveTrackingResponse` asegurando cabeceras `no-cache, no-store, must-revalidate`.
-- [ ] T015 [US1] Implementar hook `useOrderLiveTrackingPolling.ts` en `easyeat/frontend/src/hooks/` con intervalo regular de 6 s, `visibilitychange`, `AbortController`, exposición de `isDisconnected: boolean` tras umbral de 15 s e idempotencia visual con `useRef` para evitar parpadeos y reinicios ante datos idénticos.
+- [ ] T015 [US1] Actualizar y extender el hook preexistente `useOrderLiveTrackingPolling.ts` en `easyeat/frontend/src/hooks/` (heredado de Spec 016) incorporando el seguimiento de umbral de 15 s de desconexión continua para exponer `isDisconnected: boolean` e idempotencia visual mediante comparación en `useRef` para prevenir re-renderizados innecesarios y parpadeos ante datos idénticos.
 - [ ] T016 [US1] Adaptar `LiveTrackingWidget.tsx` en `easyeat/frontend/src/components/tracking/` para renderizar las tres etapas operativas (`QUEUED`, `IN_PREPARATION`, `READY_FOR_PICKUP`) con sus insignias, leyendas, código de 4 dígitos e integración de `ConnectionStatusBadge`.
 - [ ] T017 [US1] Configurar la ruta `/seguimiento/:orderId` en `easyeat/frontend/src/router/AppRoutes.tsx` y actualizar `easyeat/frontend/src/pages/OrderConfirmationTrackingPage.tsx` para consumir el widget adaptativo.
 
@@ -65,6 +65,9 @@
 ---
 
 ## Fase 4: Historia de usuario 2 — Tiempo estimado en vivo y ajuste granular de demora (+5) (Prioridad: P2) — [GitHub Issue #355](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/355)
+
+> [!IMPORTANT]
+> **Prerrequisito de integración secuencial con Spec 019**: Dado que el diseño y la estructura visual de las comandas y columnas del KDS pertenecen formalmente a la especificación `019-kds-queue-preparation`, la integración en interfaz del botón táctil "+5" en cocina se coordina para montarse sobre los componentes definitivos del KDS provistos por la Spec 019, priorizando en esta iteración la entrega completa y verificable del seguimiento adaptativo del comensal (`COM-8.1.1` - Fases 1 a 3).
 
 **Objetivo**: Control táctil "+5" en la comanda en preparación activa (Columna 2 del KDS) que incrementa atómicamente `specific_delay_minutes` bajo bloqueo pesimista `PESSIMISTIC_WRITE` e informa visualmente la demora acumulada (`+5 min`, `+10 min`...); el comensal refleja reactivamente $M \to M + 5$ en $\le 8$ s recalculando proporcionalmente la barra; cota de piso en 1 minuto y cota de techo de barra en 92% ante exceso de tiempo estimado; purga visual total de demora al conmutar a "LISTO" (`COM-7.3.2 (BIS)` — `RF-012` a `RF-017`, `RF-019`).
 
@@ -127,26 +130,30 @@ Fase 5: Pulido final y verificación transversal
 
 ### Flujo interno dentro de cada historia (TDD estricto)
 
-1. Escribir pruebas unitarias y de integración (*Red Tests*) y constatar su fallo.
+1. Escribir pruebas unitarias y de integración (_Red Tests_) y constatar su fallo.
 2. Implementar migraciones, entidades y métodos de repositorio.
 3. Implementar servicios de dominio transaccionales y controladores REST.
 4. Implementar hooks y componentes de interfaz en frontend.
-5. Ejecutar pruebas y validar paso a verde (*Green Implementation*).
+5. Ejecutar pruebas y validar paso a verde (_Green Implementation_).
 
 ---
 
 ## Oportunidades de ejecución paralela
 
 ### Paralelismo en Fase 1 (Setup)
+
 - `T001` (DTOs backend) y `T002` (DTO live tracking) pueden desarrollarse en paralelo con `T003` (tipos frontend) y `T004` (APIs frontend).
 
 ### Paralelismo en Fase 2 (Foundational)
+
 - `T005` (migración V27), `T006` (entidades KdsTicket y Order), `T007` (métodos FIFO y pesimista en KdsTicketRepository) y `T008` (componente ConnectionStatusBadge) operan sobre archivos independientes y pueden crearse simultáneamente.
 
 ### Paralelismo en Fase 3 (US1 - Red Tests)
+
 - `T009` (prueba de integración FIFO), `T010` (prueba WebMvcTest), `T011` (prueba hook polling) y `T012` (prueba componente LiveTrackingWidget) pueden redactarse en paralelo.
 
 ### Paralelismo en Fase 4 (US2 - Red Tests)
+
 - `T018` (prueba integración add-delay), `T019` (prueba cálculo temporal), `T020` (prueba componente KitchenDelayControl) y `T021` (prueba LiveTrackingWidgetDelay) pueden redactarse en paralelo.
 
 ---
@@ -154,10 +161,12 @@ Fase 5: Pulido final y verificación transversal
 ## Estrategia de implementación
 
 ### Enfoque MVP primero (Entrega de US1)
+
 1. Completar Fase 1 (Setup) y Fase 2 (Foundational).
 2. Implementar y verificar Fase 3 (US1): el comensal ya dispone de seguimiento en vivo adaptativo por etapas con recuento FIFO de pedidos por delante y aviso de retiro con código de seguridad.
 3. Demostrar y validar US1 de forma aislada como hito funcional completo.
 
 ### Incremento funcional (Entrega de US2)
+
 4. Implementar Fase 4 (US2): incorporar el botón táctil "+5" en la Columna 2 de cocina y la propagación reactiva al temporizador del comensal.
 5. Ejecutar Fase 5 (Pulido y validación de escenarios de `quickstart.md`).

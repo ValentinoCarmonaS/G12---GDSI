@@ -2,9 +2,11 @@ package com.easyeat.order.repository;
 
 import com.easyeat.order.domain.KdsTicket;
 import com.easyeat.order.domain.KdsTicketStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,6 +18,10 @@ import java.util.UUID;
 
 @Repository
 public interface KdsTicketRepository extends JpaRepository<KdsTicket, UUID> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT k FROM KdsTicket k WHERE k.id = :id")
+    Optional<KdsTicket> findByIdForUpdate(@Param("id") UUID id);
 
     Optional<KdsTicket> findByOrderId(UUID orderId);
 
@@ -53,4 +59,16 @@ public interface KdsTicketRepository extends JpaRepository<KdsTicket, UUID> {
         WHERE k.establishment.id = :establishmentId
     """)
     Optional<Integer> findMaxTicketNumberByEstablishmentId(@Param("establishmentId") UUID establishmentId);
+
+    @Query("""
+        SELECT k FROM KdsTicket k
+        WHERE k.establishment.id = :establishmentId
+          AND k.status IN (com.easyeat.order.domain.KdsTicketStatus.QUEUED, com.easyeat.order.domain.KdsTicketStatus.IN_PREPARATION)
+          AND k.pickupDate <= :today
+        ORDER BY k.pickupDate ASC, k.timeSlotStart ASC, k.queuedAt ASC, k.id ASC
+    """)
+    List<KdsTicket> findActiveQueueTickets(
+            @Param("establishmentId") UUID establishmentId,
+            @Param("today") LocalDate today
+    );
 }
