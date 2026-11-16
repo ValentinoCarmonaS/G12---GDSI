@@ -278,6 +278,14 @@ export const AppRoutes: React.FC = () => {
           </RoleRouteGuard>
         }
       />
+      <Route
+        path="/seguimiento/:orderId"
+        element={
+          <RoleRouteGuard allowedRoles={['COMENSAL']}>
+            <OrderConfirmationTrackingPage />
+          </RoleRouteGuard>
+        }
+      />
 
       {/* Diner Home / Catalog View (Public for guests and diners) */}
       <Route path="/catalogo/*" element={<CatalogPage />} />
