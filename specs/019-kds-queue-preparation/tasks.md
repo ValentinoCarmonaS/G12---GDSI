@@ -26,7 +26,7 @@
 
 **Propósito**: Establecer el índice optimizado de cola, el bloqueo pesimista en persistencia y las utilidades compartidas de tiempo antes de implementar las historias operativas.
 
-- [ ] T002b [P] Crear migración Flyway `V25__idx_kds_tickets_active_queue.sql` en `easyeat/backend/src/main/resources/db/migration/` y mapear el `@Index` en `easyeat/backend/src/main/java/com/easyeat/order/domain/KdsTicket.java`.
+- [X] T002b [P] Crear migración Flyway `V25__idx_kds_tickets_active_queue.sql` en `easyeat/backend/src/main/resources/db/migration/` y mapear el `@Index` en `easyeat/backend/src/main/java/com/easyeat/order/domain/KdsTicket.java`.
 - [ ] T003 [P] Agregar método `findByIdForUpdate(@Param("id") UUID id)` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
 - [ ] T004 [P] Crear utilitario de cálculo temporal y formateo en `easyeat/frontend/src/utils/kdsTimeUtils.ts` (`calculateElapsedMinutes`, `isTicketDelayed` y `formatDishItem`).
 
