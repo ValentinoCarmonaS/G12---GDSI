@@ -28,10 +28,10 @@
 
 **Propósito**: Establecer la migración de base de datos Flyway V27 (`specific_delay_minutes` en `kds_tickets` y `security_code` en `orders`), mapeo de entidades JPA, métodos de repositorio pesimista y FIFO, y componente de conectividad antes de abordar las historias operativas.
 
-- [ ] T005 [P] Crear migración Flyway `V27__kds_specific_delay_minutes.sql` en `easyeat/backend/src/main/resources/db/migration/` incorporando la columna `specific_delay_minutes INTEGER NOT NULL DEFAULT 0` con restricción `CHECK (specific_delay_minutes >= 0)` en `kds_tickets`, y la columna `security_code VARCHAR(4) NULL` en `orders` de forma idempotente (`ADD COLUMN IF NOT EXISTS`).
-- [ ] T006 [P] Extender entidad JPA `KdsTicket.java` mapeando la propiedad `specificDelayMinutes` (default 0, getters/setters) y entidad JPA `Order.java` en `easyeat/backend/src/main/java/com/easyeat/order/domain/` mapeando `securityCode` (`@Column(name = "security_code", length = 4)`, getters/setters).
-- [ ] T007 [P] Agregar métodos `countQueuedTicketsAhead` (cómputo FIFO de cola activa para `pickupDate <= :today`) y `findByIdForUpdate(@Param("id") UUID id)` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
-- [ ] T008 [P] Crear componente de advertencia de conectividad `ConnectionStatusBadge.tsx` en `easyeat/frontend/src/components/common/` exhibiendo la leyenda "Sin conexión — Reintentando..." de forma sutil y no bloqueante.
+- [x] T005 [P] Crear migración Flyway `V27__kds_specific_delay_minutes.sql` en `easyeat/backend/src/main/resources/db/migration/` incorporando la columna `specific_delay_minutes INTEGER NOT NULL DEFAULT 0` con restricción `CHECK (specific_delay_minutes >= 0)` en `kds_tickets`, y la columna `security_code VARCHAR(4) NULL` en `orders` de forma idempotente (`ADD COLUMN IF NOT EXISTS`).
+- [x] T006 [P] Extender entidad JPA `KdsTicket.java` mapeando la propiedad `specificDelayMinutes` (default 0, getters/setters) y entidad JPA `Order.java` en `easyeat/backend/src/main/java/com/easyeat/order/domain/` mapeando `securityCode` (`@Column(name = "security_code", length = 4)`, getters/setters).
+- [x] T007 [P] Agregar métodos `countQueuedTicketsAhead` (cómputo FIFO de cola activa para `pickupDate <= :today`) y `findByIdForUpdate(@Param("id") UUID id)` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/order/repository/KdsTicketRepository.java`.
+- [x] T008 [P] Crear componente de advertencia de conectividad `ConnectionStatusBadge.tsx` en `easyeat/frontend/src/components/common/` exhibiendo la leyenda "Sin conexión — Reintentando..." de forma sutil y no bloqueante.
 
 **Checkpoint**: Base de persistencia (columnas en base de datos, entidades y métodos de repositorio) e infraestructura UI de conectividad listas para implementar historias.
 
