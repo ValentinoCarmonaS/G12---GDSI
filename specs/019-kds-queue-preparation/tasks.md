@@ -97,7 +97,7 @@
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T023`–`T025`.
 
 - [X] T021 [P] [US3] Crear pruebas unitarias en `easyeat/frontend/src/test/utils/kdsFormatters.test.ts` verificando el formateo unificado de ítems `formatDishItem` (`"[Cantidad]x [Nombre]"`) y manejo de cantidades múltiples.
-- [ ] T022 [P] [US3] Ampliar `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando la visualización de platos en renglones dedicados, ausencia total de placeholders de notas ("Sin notas", "Observaciones: ninguna"), scroll vertical en Columna 1 y mensajes neutrales de columna vacía.
+- [X] T022 [P] [US3] Ampliar `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando la visualización de platos en renglones dedicados, ausencia total de placeholders de notas ("Sin notas", "Observaciones: ninguna"), scroll vertical en Columna 1 y mensajes neutrales de columna vacía.
 
 ### Implementación de US3 (Green Implementation)
 
