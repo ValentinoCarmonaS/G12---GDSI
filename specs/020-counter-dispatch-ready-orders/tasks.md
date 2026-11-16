@@ -46,7 +46,7 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T011`–`T014`.
 
-- [ ] T008 [P] [US1] Crear prueba de integración en `easyeat/backend/src/test/java/com/easyeat/order/KitchenReadyForPickupIntegrationTest.java` verificando `POST /api/v1/kitchen/tickets/{ticketId}/ready-for-pickup` (transición atómica conjunta de `KdsTicket` y `Order`, coincidencia temporal de `ready_at`, respuesta 200, errores 404, 403 y 409).
+- [X] T008 [P] [US1] Crear prueba de integración en `easyeat/backend/src/test/java/com/easyeat/order/KitchenReadyForPickupIntegrationTest.java` verificando `POST /api/v1/kitchen/tickets/{ticketId}/ready-for-pickup` (transición atómica conjunta de `KdsTicket` y `Order`, coincidencia temporal de `ready_at`, respuesta 200, errores 404, 403 y 409).
 - [ ] T009 [P] [US1] Crear prueba de idempotencia y concurrencia pesimista en `easyeat/backend/src/test/java/com/easyeat/order/KdsReadyForPickupIdempotencyTest.java` verificando que peticiones concurrentes o reintentos ejecutan un único cambio de estado y preservan el `ready_at` original.
 - [ ] T010 [P] [US1] Crear prueba de componente en `easyeat/frontend/tests/components/KitchenTicketReadyDispatch.test.tsx` verificando botón prominente "LISTO" en Columna 2, ausencia de diálogos emergentes, llamada a la API y remoción inmediata de la tarjeta del estado local de cocina.
 
