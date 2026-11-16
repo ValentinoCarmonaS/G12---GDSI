@@ -22,41 +22,41 @@ export const KdsInPreparationCard: React.FC<KdsInPreparationCardProps> = ({ tick
   return (
     <div
       data-testid={`in-preparation-card-${ticket.ticketId}`}
-      className={`rounded-lg p-4 flex flex-col gap-3 shadow-md transition-colors ${
+      className={`rounded-xl p-4 flex flex-col gap-3.5 shadow-md transition-colors select-none ${
         delayed
           ? 'bg-slate-800/90 border border-amber-500 ring-2 ring-amber-500'
-          : 'bg-slate-800/90 border border-slate-700'
+          : 'bg-slate-800/90 border border-slate-700/80'
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xl font-black text-amber-400 tracking-wide">
+        <span className="text-2xl font-black text-amber-400 tracking-wide font-mono">
           #{ticket.ticketNumber}
         </span>
         <div className="flex items-center gap-2">
           {ticket.startedAt && (
             <span
               data-testid={`countup-badge-${ticket.ticketId}`}
-              className={`text-xs font-bold px-2 py-0.5 rounded font-mono transition-colors ${
+              className={`text-sm font-black px-2.5 py-1 rounded-md font-mono transition-colors shadow-sm ${
                 delayed
                   ? 'bg-amber-100 text-amber-800'
-                  : 'bg-slate-700 text-slate-200'
+                  : 'bg-slate-700 text-slate-100'
               }`}
             >
               {formattedTime}
             </span>
           )}
-          <span className="text-xs font-semibold px-2 py-1 bg-slate-700 text-slate-200 rounded">
+          <span className="text-sm font-bold px-2.5 py-1 bg-slate-700/90 text-slate-100 rounded-md font-mono">
             {formatSlot(ticket.timeSlotStart, ticket.timeSlotEnd)}
           </span>
         </div>
       </div>
 
-      <div className="border-t border-slate-700/60 pt-2 flex flex-col gap-1.5">
+      <div className="border-t border-slate-700/60 pt-2.5 flex flex-col gap-2">
         {ticket.items && ticket.items.length > 0 ? (
           ticket.items.map((item, idx) => (
             <div
               key={`${item.dishId}-${idx}`}
-              className="text-sm text-slate-100 font-medium tracking-normal"
+              className="text-base text-slate-100 font-bold tracking-normal leading-snug"
             >
               {formatDishItem(item.quantity, item.dishName)}
             </div>

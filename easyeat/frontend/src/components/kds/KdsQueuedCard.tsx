@@ -22,13 +22,13 @@ export const KdsQueuedCard: React.FC<KdsQueuedCardProps> = ({
   return (
     <div
       data-testid={`queued-card-${ticket.ticketId}`}
-      className="bg-slate-800/80 border border-slate-700/60 rounded-lg p-4 flex flex-col gap-3 shadow-sm hover:border-slate-600 transition-colors"
+      className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 flex flex-col gap-4 shadow-sm hover:border-slate-600 transition-colors select-none"
     >
       <div className="flex items-center justify-between">
-        <span className="text-xl font-black text-amber-400 tracking-wide">
+        <span className="text-2xl font-black text-amber-400 tracking-wide font-mono">
           #{ticket.ticketNumber}
         </span>
-        <span className="text-xs font-semibold px-2 py-1 bg-slate-700 text-slate-200 rounded">
+        <span className="text-sm font-bold px-2.5 py-1 bg-slate-700/90 text-slate-100 rounded-md font-mono">
           {formatSlot(ticket.timeSlotStart, ticket.timeSlotEnd)}
         </span>
       </div>
@@ -37,7 +37,7 @@ export const KdsQueuedCard: React.FC<KdsQueuedCardProps> = ({
         type="button"
         onClick={() => onStartPreparation(ticket.ticketId)}
         disabled={isLoading}
-        className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md uppercase tracking-wider text-sm"
+        className="w-full min-h-[56px] py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] disabled:bg-slate-700 disabled:cursor-not-allowed disabled:transform-none text-white font-black rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg uppercase tracking-wider text-lg"
       >
         {isLoading ? 'INICIANDO...' : 'EMPEZAR'}
       </button>
