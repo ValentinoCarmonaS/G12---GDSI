@@ -30,7 +30,7 @@
 - [X] T004 [P] Crear migración Flyway `V26__counter_dispatch_and_security_code.sql` en `easyeat/backend/src/main/resources/db/migration/` incorporando columnas `ready_at`, `security_code` en `orders`, backfill seguro e índice compuesto `idx_kds_tickets_counter_ready` en `kds_tickets`.
 - [X] T005 [P] Extender entidades JPA `Order.java` y `KdsTicket.java` en `easyeat/backend/src/main/java/com/easyeat/order/domain/` mapeando `readyAt`, `securityCode` y el nuevo índice compuesto.
 - [X] T006 [P] Extender `KdsTicketRepository.java` en `easyeat/backend/src/main/java/com/easyeat/order/repository/` incorporando `findByIdForUpdate` con `@Lock(LockModeType.PESSIMISTIC_WRITE)` y `findCounterReadyTickets` ordenado determinísticamente por `readyAt ASC, ticketNumber ASC` filtrando por `establishmentId`, `status = READY_FOR_PICKUP` y `pickupDate = :today`.
-- [ ] T007 [P] Crear utilitario de temporización y formateo de espera en `easyeat/frontend/src/utils/counterTimeUtils.ts` (`calculateWaitMinutes`, `formatWaitMinutes`).
+- [X] T007 [P] Crear utilitario de temporización y formateo de espera en `easyeat/frontend/src/utils/counterTimeUtils.ts` (`calculateWaitMinutes`, `formatWaitMinutes`).
 
 **Checkpoint**: Base de persistencia (columnas, índice y repositorio) y utilidades de tiempo disponibles para las historias.
 
