@@ -71,16 +71,16 @@
 
 > **NOTA TDD**: Escribir primero estas pruebas y confirmar que fallan antes de implementar `T017`–`T020`.
 
-- [ ] T014 [P] [US2] Ampliar `easyeat/backend/src/test/java/com/easyeat/order/KitchenKdsControllerIntegrationTest.java` verificando `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` (`200 OK` en éxito, `404` ticket inexistente, `403` establecimiento ajeno, `409` comanda en estado terminal).
-- [ ] T015 [P] [US2] Crear prueba de concurrencia e idempotencia en `easyeat/backend/src/test/java/com/easyeat/order/KdsStartPreparationIdempotencyTest.java` verificando que peticiones concurrentes ejecutan un único cambio de estado y preservan el `started_at` original.
-- [ ] T016 [P] [US2] Crear prueba de componente en `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando pulsación de botón "EMPEZAR", deshabilitación durante la mutación, llamada a la API y traslado reactivo de la tarjeta a Columna 2.
+- [X] T014 [P] [US2] Ampliar `easyeat/backend/src/test/java/com/easyeat/order/KitchenKdsControllerIntegrationTest.java` verificando `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` (`200 OK` en éxito, `404` ticket inexistente, `403` establecimiento ajeno, `409` comanda en estado terminal).
+- [X] T015 [P] [US2] Crear prueba de concurrencia e idempotencia en `easyeat/backend/src/test/java/com/easyeat/order/KdsStartPreparationIdempotencyTest.java` verificando que peticiones concurrentes ejecutan un único cambio de estado y preservan el `started_at` original.
+- [X] T016 [P] [US2] Crear prueba de componente en `easyeat/frontend/tests/components/KitchenKanbanBoard.test.tsx` verificando pulsación de botón "EMPEZAR", deshabilitación durante la mutación, llamada a la API y traslado reactivo de la tarjeta a Columna 2.
 
 ### Implementación de US2 (Green Implementation)
 
-- [ ] T017 [US2] Agregar método `startTicketPreparation(UUID ticketId, UUID establishmentId)` en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueService.java` y `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java` con bloqueo pesimista, idempotencia y sincronización de `Order.status = IN_PROGRESS`.
-- [ ] T018 [US2] Exponer endpoint `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` protegido exclusivamente con `@PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF')")`.
-- [ ] T019 [P] [US2] Agregar función `startTicketPreparation(ticketId: string)` en `easyeat/frontend/src/api/kitchenKdsApi.ts`.
-- [ ] T020 [US2] Conectar la acción de inicio de preparación en `easyeat/frontend/src/components/kds/KitchenKanbanBoard.tsx` (deshabilitación preventiva de botón y llamada a `startTicketPreparation`).
+- [X] T017 [US2] Agregar método `startTicketPreparation(UUID ticketId, UUID establishmentId)` en `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueService.java` y `easyeat/backend/src/main/java/com/easyeat/order/service/KdsQueueServiceImpl.java` con bloqueo pesimista, idempotencia y sincronización de `Order.status = IN_PROGRESS`.
+- [X] T018 [US2] Exponer endpoint `POST /api/v1/kitchen/tickets/{ticketId}/start-preparation` en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` protegido exclusivamente con `@PreAuthorize("hasRole('ROLE_CHEF') or hasRole('CHEF')")`.
+- [X] T019 [P] [US2] Agregar función `startTicketPreparation(ticketId: string)` en `easyeat/frontend/src/api/kitchenKdsApi.ts`.
+- [X] T020 [US2] Conectar la acción de inicio de preparación en `easyeat/frontend/src/components/kds/KitchenKanbanBoard.tsx` (deshabilitación preventiva de botón y llamada a `startTicketPreparation`).
 
 **Checkpoint**: `US1 + US2` completamente integradas (flujo transaccional e idempotente de inicio de elaboración entre Columna 1 y Columna 2).
 
