@@ -171,7 +171,7 @@ public class CounterOrderController {
                 ? ticket.getReadyAt()
                 : (order != null ? order.getReadyAt() : null);
 
-        String securityCode = (order != null) ? order.getSecurityCode() : null;
+        String securityCode = resolveFourDigitSecurityCode(order, ticket);
 
         return new CounterReadyOrderResponse(
                 ticket.getId(),
@@ -190,5 +190,22 @@ public class CounterOrderController {
                 securityCode,
                 itemDtos
         );
+    }
+
+    private String resolveFourDigitSecurityCode(Order order, KdsTicket ticket) {
+        if (order != null && order.getSecurityCode() != null) {
+            String trimmed = order.getSecurityCode().trim();
+            if (trimmed.matches("^[1-9][0-9]{3}$")) {
+                return trimmed;
+            }
+        }
+        UUID seedUuid = (order != null && order.getId() != null)
+                ? order.getId()
+                : (ticket != null && ticket.getOrderId() != null
+                        ? ticket.getOrderId()
+                        : (ticket != null ? ticket.getId() : null));
+        int hash = (seedUuid != null) ? (seedUuid.hashCode() & Integer.MAX_VALUE) : 0;
+        int pin = 1000 + (hash % 9000);
+        return String.valueOf(pin);
     }
 }

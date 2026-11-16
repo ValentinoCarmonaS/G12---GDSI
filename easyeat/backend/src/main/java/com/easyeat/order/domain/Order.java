@@ -93,6 +93,9 @@ public class Order {
         if (expiresAt == null && status == OrderStatus.PENDING_PAYMENT) {
             expiresAt = createdAt.plus(15, ChronoUnit.MINUTES);
         }
+        if (securityCode == null || securityCode.isBlank()) {
+            securityCode = com.easyeat.order.service.OrderService.generateSecurityCode();
+        }
     }
 
     @PreUpdate
