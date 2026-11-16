@@ -42,6 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -58,6 +59,13 @@ import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    public static String generateSecurityCode() {
+        int code = 1000 + SECURE_RANDOM.nextInt(9000);
+        return String.valueOf(code);
+    }
 
     private final OrderRepository orderRepository;
     private final EstablishmentRepository establishmentRepository;
@@ -274,6 +282,7 @@ public class OrderService {
         order.setTimeSlotStart(timeSlotStart);
         order.setTimeSlotEnd(timeSlotEnd);
         order.setStatus(OrderStatus.PENDING_PAYMENT);
+        order.setSecurityCode(generateSecurityCode());
 
         order.setCreatedAt(nowInstant);
         order.setUpdatedAt(nowInstant);
