@@ -27,6 +27,11 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
   nowMs,
 }) => {
   const [liveNowMs, setLiveNowMs] = useState<number>(() => Date.now());
+  const [avatarFailed, setAvatarFailed] = useState<boolean>(false);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [order.customer.photoUrl]);
 
   useEffect(() => {
     if (typeof nowMs === 'number') {
@@ -106,11 +111,12 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
               data-testid="counter-card-customer"
               className="flex items-center gap-3 min-w-0"
             >
-              {order.customer.photoUrl && (
+              {order.customer.photoUrl && !avatarFailed && (
                 <img
                   src={order.customer.photoUrl}
                   alt={order.customer.fullName}
                   data-testid="counter-card-customer-avatar"
+                  onError={() => setAvatarFailed(true)}
                   className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0"
                 />
               )}
