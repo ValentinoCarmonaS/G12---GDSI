@@ -43,5 +43,8 @@ class OrderLifecycleSupportTest {
         order.setStatus(OrderStatus.CONFIRMED);
         assertThat(order.isPendingAccreditation()).isFalse();
         assertThat(order.isInProgress()).isFalse();
+
+        order.setSecurityCode("4821");
+        assertThat(order.getSecurityCode()).isEqualTo("4821");
     }
 }
