@@ -200,4 +200,40 @@ describe('T016: KitchenKanbanBoard Component - Start Preparation (US2)', () => {
       expect(inPrepCol).toBeInTheDocument();
     });
   });
+
+  describe('Fase 6: Cronómetro progresivo de preparación Count-Up en Columna 2 (T029, US4, RF-011, RF-012)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-11-16T12:10:00.000Z').getTime());
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('debe renderizar el cronómetro con formato "MM min" en la cabecera de la tarjeta en preparación', () => {
+      const ticketInPrep: KdsTicket = {
+        ticketId: 'ticket-prep-10',
+        ticketNumber: '401',
+        status: 'IN_PREPARATION',
+        pickupDate: '2026-11-16',
+        timeSlotStart: '12:00:00',
+        timeSlotEnd: '12:15:00',
+        queuedAt: '2026-11-16T12:00:00.000Z',
+        startedAt: '2026-11-16T12:03:00.000Z', // 7 minutos transcurridos a las 12:10:00
+        items: [{ dishId: 'dish-1', dishName: 'Pizza Margarita', quantity: 1 }],
+      };
+
+      render(
+        <KitchenKanbanBoard
+          tickets={[ticketInPrep]}
+          onStartPreparation={vi.fn()}
+        />
+      );
+
+      const card = screen.getByTestId('in-preparation-card-ticket-prep-10');
+      expect(card).toBeInTheDocument();
+      expect(screen.getByText('7 min')).toBeInTheDocument();
+    });
+  });
 });
