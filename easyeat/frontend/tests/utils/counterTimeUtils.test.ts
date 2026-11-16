@@ -43,6 +43,36 @@ describe('counterTimeUtils (T007, T020, RF-007, RF-008, Invariante 8)', () => {
     it('returns 0 safely for invalid ISO date strings', () => {
       expect(calculateWaitMinutes('invalid-date', 0, baseReadyAtMs)).toBe(0);
     });
+
+    it('T020: formats continuous second-by-second progression across minute boundaries with server skew', () => {
+      // Simulate server clock 5s ahead of client clock (+5000 ms offset)
+      const serverOffsetMs = 5_000;
+      const clientAt54s = baseReadyAtMs + 54_000; // effective 59s -> 0 min
+      const clientAt55s = baseReadyAtMs + 55_000; // effective 60s -> 1 min
+      const clientAt114s = baseReadyAtMs + 114_000; // effective 119s -> 1 min
+      const clientAt115s = baseReadyAtMs + 115_000; // effective 120s -> 2 min
+
+      expect(
+        formatWaitMinutes(
+          calculateWaitMinutes(baseReadyAtIso, serverOffsetMs, clientAt54s)
+        )
+      ).toBe('0 min');
+      expect(
+        formatWaitMinutes(
+          calculateWaitMinutes(baseReadyAtIso, serverOffsetMs, clientAt55s)
+        )
+      ).toBe('1 min');
+      expect(
+        formatWaitMinutes(
+          calculateWaitMinutes(baseReadyAtIso, serverOffsetMs, clientAt114s)
+        )
+      ).toBe('1 min');
+      expect(
+        formatWaitMinutes(
+          calculateWaitMinutes(baseReadyAtIso, serverOffsetMs, clientAt115s)
+        )
+      ).toBe('2 min');
+    });
   });
 
   describe('formatWaitMinutes', () => {
