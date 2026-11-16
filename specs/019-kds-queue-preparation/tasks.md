@@ -15,8 +15,8 @@
 
 **Propósito**: Crear los DTOs y tipos de dominio base requeridos por los contratos HTTP en backend y frontend.
 
-- [ ] T001 [P] Crear DTOs de comanda activa `KdsActiveQueueTicketResponse.java` y `KdsStartPreparationResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/`.
-- [ ] T002 [P] Extender tipos de dominio de cocina en `easyeat/frontend/src/types/kds.ts` incorporando `KdsTicket`, `KdsOrderItem`, `KdsStartPreparationResponse` y `KdsTicketStatus`.
+- [X] T001 [P] Crear DTOs de comanda activa `KdsActiveQueueTicketResponse.java` y `KdsStartPreparationResponse.java` en `easyeat/backend/src/main/java/com/easyeat/order/dto/`.
+- [X] T002 [P] Extender tipos de dominio de cocina en `easyeat/frontend/src/types/kds.ts` incorporando `KdsTicket`, `KdsOrderItem`, `KdsStartPreparationResponse` y `KdsTicketStatus`.
 
 **Checkpoint**: Modelos de transporte definidos y consistentes entre backend y frontend.
 
