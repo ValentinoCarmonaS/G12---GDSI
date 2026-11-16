@@ -95,7 +95,7 @@
 
 - [X] T019 [P] [US3] Crear prueba `@WebMvcTest` en `easyeat/backend/src/test/java/com/easyeat/order/CounterOrderControllerIntegrationTest.java` verificando `GET /api/v1/counter/orders` con rol `ENCARGADO`, filtro de jornada actual `pickup_date = hoy`, ordenamiento total `ready_at ASC, ticket_number ASC`, y exclusión de fechas futuras.
 - [X] T020 [P] [US3] Crear pruebas unitarias en `easyeat/frontend/tests/utils/counterTimeUtils.test.ts` verificando `calculateWaitMinutes` con valor inicial `0 min` entre 0 y 59 segundos, conmutación determinista a `1 min` a los 60 segundos y compensación de desfasaje de reloj servidor/cliente.
-- [ ] T021 [P] [US3] Crear pruebas de componente en `easyeat/frontend/tests/components/CounterTicketCard.test.tsx` y `easyeat/frontend/tests/pages/CounterWorkspacePage.test.tsx` verificando renderizado cerrado inicial, alternancia al hacer clic en cabecera, detención de propagación en clics interiores y mensaje neutral de estado vacío.
+- [X] T021 [P] [US3] Crear pruebas de componente en `easyeat/frontend/tests/components/CounterTicketCard.test.tsx` y `easyeat/frontend/tests/pages/CounterWorkspacePage.test.tsx` verificando renderizado cerrado inicial, alternancia al hacer clic en cabecera, detención de propagación en clics interiores y mensaje neutral de estado vacío.
 
 ### Implementación de US3 (Green Implementation)
 
