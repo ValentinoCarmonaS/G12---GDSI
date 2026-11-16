@@ -30,6 +30,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -90,6 +91,24 @@ public class OrderLiveTrackingService {
         return ZoneId.of("America/Argentina/Buenos_Aires");
     }
 
+    private ZoneId resolveZoneId(UUID establishmentId) {
+        ZoneId zoneId = currentZoneId();
+        if (establishmentRepository != null && establishmentId != null) {
+            zoneId = establishmentRepository.findById(establishmentId)
+                    .map(Establishment::getTimezone)
+                    .filter(tz -> tz != null && !tz.isBlank())
+                    .map(tz -> {
+                        try {
+                            return ZoneId.of(tz);
+                        } catch (Exception ignored) {
+                            return null;
+                        }
+                    })
+                    .orElse(zoneId);
+        }
+        return zoneId;
+    }
+
     private Integer resolveTicketNumber(UUID orderId) {
         if (kdsTicketRepository == null || orderId == null) {
             return null;
@@ -113,11 +132,65 @@ public class OrderLiveTrackingService {
             throw new OrderNotFoundException(orderId);
         }
 
-        Integer ticketNumber = resolveTicketNumber(order.getId());
+        Optional<KdsTicket> ticketOpt = (kdsTicketRepository != null)
+                ? kdsTicketRepository.findByOrderId(order.getId())
+                : Optional.empty();
+
+        Integer ticketNumber = ticketOpt.map(KdsTicket::getTicketNumber).orElse(null);
         Instant now = currentInstant();
 
+        List<OrderLiveTrackingResponse.LiveTrackingItemDto> items = (order.getItems() != null)
+                ? order.getItems().stream()
+                    .map(i -> new OrderLiveTrackingResponse.LiveTrackingItemDto(i.getDishName(), i.getQuantity()))
+                    .toList()
+                : List.of();
+
         // Terminal state: READY_FOR_PICKUP or COMPLETED (D-05, AS-8, INV-008, CB-008)
-        if (order.getStatus() == OrderStatus.READY_FOR_PICKUP || order.getStatus() == OrderStatus.COMPLETED) {
+        boolean isReady = order.getStatus() == OrderStatus.READY_FOR_PICKUP ||
+                order.getStatus() == OrderStatus.COMPLETED ||
+                ticketOpt.map(t -> t.getStatus() == KdsTicketStatus.READY_FOR_PICKUP || t.getStatus() == KdsTicketStatus.COMPLETED).orElse(false);
+
+        if (isReady) {
+            return new OrderLiveTrackingResponse(
+                    order.getId(),
+                    ticketNumber,
+                    order.getStatus() == OrderStatus.COMPLETED ? OrderStatus.COMPLETED : OrderStatus.READY_FOR_PICKUP,
+                    order.getFulfillmentMode(),
+                    false,
+                    null,
+                    100,
+                    true,
+                    null,
+                    "¡Tu pedido está listo para retirar! Por favor, acercate al mostrador para retirar tu comida.",
+                    now,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    order.getSecurityCode(),
+                    ticketOpt.map(KdsTicket::getStartedAt).orElse(null),
+                    ticketOpt.map(KdsTicket::getReadyAt).orElse(null),
+                    items
+            );
+        }
+
+        // Spec 021: Adaptive state QUEUED (COM-8.1.1)
+        if (ticketOpt.isPresent() && ticketOpt.get().getStatus() == KdsTicketStatus.QUEUED) {
+            KdsTicket ticket = ticketOpt.get();
+            LocalDate today = LocalDate.now(resolveZoneId(order.getEstablishmentId()));
+            long ahead = 0;
+            if (kdsTicketRepository != null && order.getEstablishmentId() != null) {
+                ahead = kdsTicketRepository.countQueuedTicketsAhead(
+                        order.getEstablishmentId(),
+                        ticket.getPickupDate(),
+                        ticket.getTimeSlotStart(),
+                        ticket.getQueuedAt(),
+                        ticket.getId(),
+                        today
+                );
+            }
             return new OrderLiveTrackingResponse(
                     order.getId(),
                     ticketNumber,
@@ -125,15 +198,67 @@ public class OrderLiveTrackingService {
                     order.getFulfillmentMode(),
                     false,
                     null,
-                    100,
-                    true,
                     null,
-                    "¡Tu pedido está listo! Por favor, acercate al mostrador para retirar tu comida.",
-                    now
+                    false,
+                    null,
+                    "En cola en cocina",
+                    now,
+                    (int) ahead,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    items
             );
         }
 
-        // Orders not yet active in kitchen or already terminal/cancelled/expired never show active countdown
+        // Spec 021: Adaptive state IN_PREPARATION (COM-8.1.1)
+        if (ticketOpt.isPresent() && ticketOpt.get().getStatus() == KdsTicketStatus.IN_PREPARATION) {
+            KdsTicket ticket = ticketOpt.get();
+            Instant startedAt = ticket.getStartedAt() != null ? ticket.getStartedAt() : (order.getCreatedAt() != null ? order.getCreatedAt() : now);
+            int elapsedMinutes = (int) Math.max(0, Duration.between(startedAt, now).toMinutes());
+            int specificDelay = ticket.getSpecificDelayMinutes();
+            int totalEstimatedMinutes = 20 + specificDelay;
+            int remainingMinutes = Math.max(1, totalEstimatedMinutes - elapsedMinutes);
+
+            double ratio = (double) elapsedMinutes / (double) totalEstimatedMinutes;
+            int rawProgress = (int) Math.floor(15.0 + (ratio * 77.0));
+            int progressPercent = Math.min(92, Math.max(15, rawProgress));
+
+            String message = elapsedMinutes >= totalEstimatedMinutes
+                    ? "Dando los últimos toques a tu pedido"
+                    : "Cocinando / En preparación";
+
+            return new OrderLiveTrackingResponse(
+                    order.getId(),
+                    ticketNumber,
+                    order.getStatus(),
+                    order.getFulfillmentMode(),
+                    true,
+                    remainingMinutes,
+                    progressPercent,
+                    false,
+                    null,
+                    message,
+                    now,
+                    null,
+                    totalEstimatedMinutes,
+                    elapsedMinutes,
+                    remainingMinutes,
+                    progressPercent,
+                    specificDelay,
+                    null,
+                    startedAt,
+                    null,
+                    items
+            );
+        }
+
+        // Fallback when ticket is absent: orders not yet active in kitchen or already terminal/cancelled/expired
         if (order.getStatus() != OrderStatus.IN_PROGRESS) {
             return new OrderLiveTrackingResponse(
                     order.getId(),
@@ -146,11 +271,21 @@ public class OrderLiveTrackingService {
                     false,
                     null,
                     resolveInactiveStatusMessage(order.getStatus()),
-                    now
+                    now,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    items
             );
         }
 
-        // IMMEDIATE fulfillment mode (D-03, AS-5, INV-005, AS-7, INV-007)
+        // IMMEDIATE fulfillment mode fallback (D-03, AS-5, INV-005, AS-7, INV-007)
         if (order.getFulfillmentMode() == FulfillmentMode.IMMEDIATE) {
             long activeAhead = 0;
             if (orderRepository != null && order.getEstablishmentId() != null) {
@@ -212,11 +347,21 @@ public class OrderLiveTrackingService {
                     false,
                     saturationDto,
                     message,
-                    now
+                    now,
+                    null,
+                    totalEstimatedMinutes,
+                    (int) elapsedMinutes,
+                    estimatedMinutes,
+                    progressPercentage,
+                    0,
+                    null,
+                    createdAt,
+                    null,
+                    items
             );
         }
 
-        // SCHEDULED fulfillment mode (D-04, AS-6, INV-006, Q1/A1, CB-005, CB-006)
+        // SCHEDULED fulfillment mode fallback (D-04, AS-6, INV-006, Q1/A1, CB-005, CB-006)
         ZoneId zoneId = currentZoneId();
         if (establishmentRepository != null && order.getEstablishmentId() != null) {
             zoneId = establishmentRepository.findById(order.getEstablishmentId())
@@ -252,7 +397,17 @@ public class OrderLiveTrackingService {
                     false,
                     null,
                     "Tu turno de retiro está programado para hoy a las " + slotStart + " hs.",
-                    now
+                    now,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    items
             );
         } else if (minutesUntilSlot > 0) {
             // Proximity countdown phase (1..15 min): active countdown towards slot start
@@ -270,7 +425,17 @@ public class OrderLiveTrackingService {
                     false,
                     null,
                     "¡Tu turno se acerca! Preparación en curso",
-                    now
+                    now,
+                    null,
+                    null,
+                    null,
+                    minutesRemaining,
+                    progressPercentage,
+                    0,
+                    null,
+                    null,
+                    null,
+                    items
             );
         } else {
             // In-slot phase (<= 0 min): slot started, final touches before counter dispatch
@@ -285,7 +450,17 @@ public class OrderLiveTrackingService {
                     false,
                     null,
                     "¡Tu turno ha comenzado! La cocina está dando los últimos toques a tu pedido.",
-                    now
+                    now,
+                    null,
+                    20,
+                    0,
+                    1,
+                    92,
+                    0,
+                    null,
+                    now,
+                    null,
+                    items
             );
         }
     }
