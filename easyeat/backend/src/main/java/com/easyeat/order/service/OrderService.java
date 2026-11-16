@@ -171,8 +171,9 @@ public class OrderService {
 
         if (request.getFulfillmentMode() == FulfillmentMode.IMMEDIATE) {
             pickupDate = today;
-            timeSlotStart = nowTime.truncatedTo(ChronoUnit.MINUTES);
-            timeSlotEnd = timeSlotStart.plusMinutes(leadTime);
+            int normalizedMinute = (nowTime.getMinute() / 15) * 15;
+            timeSlotStart = LocalTime.of(nowTime.getHour(), normalizedMinute, 0);
+            timeSlotEnd = timeSlotStart.plusMinutes(15);
 
             boolean isOpenNow;
             if (operatingScheduleRepository != null) {

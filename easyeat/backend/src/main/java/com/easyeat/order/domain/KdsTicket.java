@@ -19,6 +19,7 @@ import java.util.UUID;
         indexes = {
                 @Index(name = "idx_kds_tickets_establishment_status", columnList = "establishment_id, status, pickup_date, time_slot_start"),
                 @Index(name = "idx_kds_tickets_order_id", columnList = "order_id"),
+                @Index(name = "idx_kds_tickets_active_queue", columnList = "establishment_id, status, pickup_date, time_slot_start, queued_at, id"),
                 @Index(name = "idx_kds_tickets_counter_ready", columnList = "establishment_id, status, pickup_date, ready_at, ticket_number")
         }
 )

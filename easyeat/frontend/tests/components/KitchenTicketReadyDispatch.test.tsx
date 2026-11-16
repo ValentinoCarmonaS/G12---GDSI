@@ -27,6 +27,7 @@ describe('KitchenTicketReadyDispatch (T010, US1, CHF-4.1.3, RF-001..RF-004, Inva
         timeSlotStart: '13:00',
         timeSlotEnd: '13:15',
         queuedAt: '2026-11-15T19:10:00Z',
+        startedAt: '2026-11-15T19:15:00Z',
         items: [
           {
             dishId: 'dish-1',
@@ -50,6 +51,7 @@ describe('KitchenTicketReadyDispatch (T010, US1, CHF-4.1.3, RF-001..RF-004, Inva
         timeSlotStart: '13:15',
         timeSlotEnd: '13:30',
         queuedAt: '2026-11-15T19:12:00Z',
+        startedAt: '2026-11-15T19:16:00Z',
         items: [
           {
             dishId: 'dish-3',

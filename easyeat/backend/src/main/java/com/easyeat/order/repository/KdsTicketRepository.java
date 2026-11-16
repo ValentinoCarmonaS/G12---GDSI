@@ -19,6 +19,10 @@ import java.util.UUID;
 @Repository
 public interface KdsTicketRepository extends JpaRepository<KdsTicket, UUID> {
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT k FROM KdsTicket k WHERE k.id = :id")
+    Optional<KdsTicket> findByIdForUpdate(@Param("id") UUID id);
+
     Optional<KdsTicket> findByOrderId(UUID orderId);
 
     boolean existsByOrderId(UUID orderId);
@@ -56,9 +60,17 @@ public interface KdsTicketRepository extends JpaRepository<KdsTicket, UUID> {
     """)
     Optional<Integer> findMaxTicketNumberByEstablishmentId(@Param("establishmentId") UUID establishmentId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT k FROM KdsTicket k WHERE k.id = :id")
-    Optional<KdsTicket> findByIdForUpdate(@Param("id") UUID id);
+    @Query("""
+        SELECT k FROM KdsTicket k
+        WHERE k.establishment.id = :establishmentId
+          AND k.status IN (com.easyeat.order.domain.KdsTicketStatus.QUEUED, com.easyeat.order.domain.KdsTicketStatus.IN_PREPARATION)
+          AND k.pickupDate <= :today
+        ORDER BY k.pickupDate ASC, k.timeSlotStart ASC, k.queuedAt ASC, k.id ASC
+    """)
+    List<KdsTicket> findActiveQueueTickets(
+            @Param("establishmentId") UUID establishmentId,
+            @Param("today") LocalDate today
+    );
 
     @Query("""
         SELECT k FROM KdsTicket k

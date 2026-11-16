@@ -111,8 +111,9 @@ public class CheckoutPaymentService {
 
         if (request.fulfillmentMode() == FulfillmentMode.IMMEDIATE) {
             pickupDate = today;
-            timeSlotStart = nowTime.truncatedTo(ChronoUnit.MINUTES);
-            timeSlotEnd = timeSlotStart.plusMinutes(leadTime);
+            int normalizedMinute = (nowTime.getMinute() / 15) * 15;
+            timeSlotStart = LocalTime.of(nowTime.getHour(), normalizedMinute, 0);
+            timeSlotEnd = timeSlotStart.plusMinutes(15);
 
             LocalTime ongoingSlot = establishment.calculateCurrentOngoingSlot(nowTime);
             if (ongoingSlot != null) {

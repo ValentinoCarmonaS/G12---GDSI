@@ -185,10 +185,10 @@ class DishApprovalPricingIntegrationTest {
         List<DishReviewHistory> history = reviewHistoryRepository
                 .findByDishIdAndTenantIdOrderByCreatedAtAsc(dish.getId(), tenantId);
         assertThat(history).hasSize(1);
-        assertThat(history.getFirst().getEventType()).isEqualTo(ReviewEventType.CANCELLED);
-        assertThat(history.getFirst().getCycleNumber()).isEqualTo(1);
-        assertThat(history.getFirst().getAdminId()).isEqualTo(admin.getId());
-        assertThat(history.getFirst().getComment()).isNull();
+        assertThat(history.get(0).getEventType()).isEqualTo(ReviewEventType.CANCELLED);
+        assertThat(history.get(0).getCycleNumber()).isEqualTo(1);
+        assertThat(history.get(0).getAdminId()).isEqualTo(admin.getId());
+        assertThat(history.get(0).getComment()).isNull();
     }
 
     @Test
