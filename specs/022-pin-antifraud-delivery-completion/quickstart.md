@@ -18,7 +18,7 @@
    cd easyeat/frontend
    npm run dev
    ```
-3. Base de datos PostgreSQL con migraciones Flyway aplicadas hasta `V25` inclusive.
+3. Base de datos PostgreSQL con migraciones Flyway aplicadas hasta `V28` inclusive (`V28__add_completed_at_to_orders.sql`).
 4. Usuarios de prueba disponibles:
    - `comensal@easyeat.com` (Rol `COMENSAL`)
    - `encargado@easyeat.com` (Rol `ENCARGADO`)
