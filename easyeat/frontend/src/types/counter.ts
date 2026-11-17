@@ -1,5 +1,6 @@
 /**
- * Domain types for Counter Dispatch and Ready-for-Pickup Orders (Spec 020).
+ * Domain types for Counter Dispatch and Ready-for-Pickup Orders (Spec 020)
+ * and delivery completion (Spec 022).
  * Strictly omits monetary/financial fields per RF-013 and Invariante 10.
  */
 
@@ -26,8 +27,21 @@ export interface CounterReadyOrder {
   timeSlot: CounterTimeSlot;
   readyAt: string;
   customer: CounterCustomerSummary;
-  securityCode: string;
+  /** Stored 4-digit code; `null` when the order lacks one (Spec 022 edge case 10). */
+  securityCode: string | null;
   items: CounterOrderItem[];
+}
+
+/**
+ * Payload of POST /counter/orders/{orderId}/complete-delivery (Spec 022 contract 01).
+ * Identical for the first delivery and for idempotent retries, which keep the original `completedAt`.
+ */
+export interface CompleteDeliveryResponse {
+  orderId: string;
+  ticketNumber: number;
+  status: 'COMPLETED';
+  completedAt: string;
+  message: string;
 }
 
 export interface CounterOrdersPollingState {
