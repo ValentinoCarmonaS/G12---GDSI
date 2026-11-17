@@ -7,12 +7,14 @@ export interface KitchenKanbanBoardProps {
   tickets: KdsTicket[];
   onStartPreparation: (ticketId: string) => Promise<void> | void;
   onReadyForPickup?: (ticketId: string) => Promise<void> | void;
+  onDelayUpdated?: (ticketId: string, newDelayMinutes: number) => void;
 }
 
 export const KitchenKanbanBoard: React.FC<KitchenKanbanBoardProps> = ({
   tickets,
   onStartPreparation,
   onReadyForPickup,
+  onDelayUpdated,
 }) => {
   const [loadingTicketIds, setLoadingTicketIds] = useState<Record<string, boolean>>({});
   const [loadingReadyTicketIds, setLoadingReadyTicketIds] = useState<Record<string, boolean>>({});
@@ -105,6 +107,7 @@ export const KitchenKanbanBoard: React.FC<KitchenKanbanBoardProps> = ({
                   ticket={ticket}
                   onReadyForPickup={onReadyForPickup ? handleReady : undefined}
                   isReadyLoading={!!loadingReadyTicketIds[ticket.ticketId]}
+                  onDelayUpdated={(mins) => onDelayUpdated?.(ticket.ticketId, mins)}
                 />
               ))
             )}

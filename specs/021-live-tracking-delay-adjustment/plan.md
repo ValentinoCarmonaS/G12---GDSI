@@ -1,7 +1,13 @@
 # Plan de implementación: seguimiento en vivo y demora granular (+5)
 
 **Rama**: `021-live-tracking-delay-adjustment` | **Fecha**: 15/11/2026 | **Especificación**: [spec.md](./spec.md)  
-**Entrada**: Especificación funcional desde `/specs/021-live-tracking-delay-adjustment/spec.md`
+**Entrada**: Especificación funcional desde `/specs/021-live-tracking-delay-adjustment/spec.md`  
+**Estrategia de reutilización e integración secuencial**: Esta funcionalidad reutiliza y extiende directamente la infraestructura de seguimiento dinámico y polling en tiempo real implementada en la **Spec 016** (`useOrderLiveTrackingPolling.ts`, `OrderLiveTrackingService.java`, `LiveTrackingWidget.tsx`), enfocando los cambios en los deltas de `COM-8.1.1`. A su vez, la integración de interfaz del botón "+5" en la tarjeta de cocina en KDS (`COM-7.3.2 BIS`) se coordina secuencialmente para montarse sobre los componentes definitivos provistos por la especificación `019-kds-queue-preparation`.
+
+---
+
+> [!IMPORTANT]
+> **Reutilización de Spec 016 y desacoplamiento de KDS**: Para evitar implementaciones redundantes y retrabajo de diseño en la cocina, la iteración prioriza la entrega de `COM-8.1.1` extendiendo quirúrgicamente el hook y widget preexistentes de la Spec 016. La inserción visual del control táctil "+5" en la comanda del chef se acopla formalmente a la tarjeta de cocina una vez consolidada la Spec 019.
 
 ---
 

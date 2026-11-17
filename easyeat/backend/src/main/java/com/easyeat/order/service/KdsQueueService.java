@@ -2,6 +2,7 @@ package com.easyeat.order.service;
 
 import com.easyeat.order.domain.KdsTicket;
 import com.easyeat.order.domain.Order;
+import com.easyeat.order.dto.KdsDelayIncrementResponse;
 import com.easyeat.order.dto.KdsStartPreparationResponse;
 import java.util.UUID;
 
@@ -25,4 +26,14 @@ public interface KdsQueueService {
      * @return DTO con datos de la comanda en preparación.
      */
     KdsStartPreparationResponse startTicketPreparation(UUID ticketId, UUID establishmentId);
+
+    /**
+     * Incrementa atómica y linealmente en 5 minutos la demora específica de una comanda activa
+     * bajo bloqueo pesimista PESSIMISTIC_WRITE.
+     *
+     * @param ticketId Identificador único del ticket KDS.
+     * @param establishmentId Identificador del establecimiento del chef autenticado.
+     * @return DTO con la demora acumulada consolidada y el tiempo estimado actualizado.
+     */
+    KdsDelayIncrementResponse addTicketDelay(UUID ticketId, UUID establishmentId);
 }

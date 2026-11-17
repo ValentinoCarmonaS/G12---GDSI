@@ -68,6 +68,9 @@ public class KdsTicket {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Column(name = "specific_delay_minutes", nullable = false)
+    private Integer specificDelayMinutes = 0;
+
     public KdsTicket() {
     }
 
@@ -93,6 +96,9 @@ public class KdsTicket {
         }
         if (this.status == null) {
             this.status = KdsTicketStatus.QUEUED;
+        }
+        if (this.specificDelayMinutes == null) {
+            this.specificDelayMinutes = 0;
         }
     }
 
@@ -198,5 +204,13 @@ public class KdsTicket {
 
     public void setCompletedAt(Instant completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Integer getSpecificDelayMinutes() {
+        return specificDelayMinutes != null ? specificDelayMinutes : 0;
+    }
+
+    public void setSpecificDelayMinutes(Integer specificDelayMinutes) {
+        this.specificDelayMinutes = specificDelayMinutes != null ? specificDelayMinutes : 0;
     }
 }

@@ -168,3 +168,24 @@ Para consultar los contratos de red y el modelo de datos detallado, referirse a:
 - **Acción**: Observar el cronómetro Count-Up de la Columna 2 de cocina antes y después de presionar "+5".
 - **Resultado esperado**:
   - El cronómetro Count-Up sigue marcando los minutos físicos transcurridos desde `started_at` sin alterarse por la adición de "+5".
+
+---
+
+## 4. Matriz de evidencia automatizada y verificación de escenarios (T027)
+
+| Escenario | Nombre | Suite de prueba automatizada | Resultado |
+|---|---|---|---|
+| Escenario A | Cola con pedidos previos ($N > 0$) | `OrderLiveTrackingControllerIntegrationTest.java` & `LiveTrackingWidget.test.tsx` | PASS (100%) |
+| Escenario B | Tope de cola ($N = 0$) | `KdsQueueFifoPositionIntegrationTest.java` & `LiveTrackingWidget.test.tsx` | PASS (100%) |
+| Escenario C | Transición a preparación ("EMPEZAR") | `KitchenKanbanBoard.test.tsx` & `OrderLiveTrackingControllerIntegrationTest.java` | PASS (100%) |
+| Escenario D | Control táctil "+5" e insignia acumulada | `KitchenTicketDelayControl.test.tsx` | PASS (100%) |
+| Escenario E | Reflejo reactivo $M \to M+5$ en comensal | `LiveTrackingWidgetDelay.test.tsx` & `LiveTrackingDelayCalculationTest.java` | PASS (100%) |
+| Escenario F | Clics rápidos (+15 min) y bloqueo pesimista | `KdsDelayAdjustmentIntegrationTest.java` & `KitchenTicketDelayControl.test.tsx` | PASS (100%) |
+| Escenario G | Piso en 1 min y techo en 92% | `LiveTrackingDelayCalculationTest.java` & `LiveTrackingWidgetDelay.test.tsx` | PASS (100%) |
+| Escenario H | Finalización ("LISTO") y purga métricas | `LiveTrackingWidget.test.tsx` & `LiveTrackingWidgetDelay.test.tsx` | PASS (100%) |
+| Escenario I | Salto terminal directo (+5 y LISTO) | `OrderLiveTrackingService.java` & `LiveTrackingWidgetDelay.test.tsx` | PASS (100%) |
+| Escenario J | Cortes de red e insignia de desconexión >15 s | `useOrderLiveTrackingPolling.test.ts` & `LiveTrackingWidget.test.tsx` | PASS (100%) |
+| Escenario K | Polling sostenido e idempotencia visual | `useOrderLiveTrackingPolling.test.ts` | PASS (100%) |
+| Escenario L | Frontera técnica Spec 020 (Mostrador) | `KdsBoundariesTest.java` (`readyAt` inmutable) | PASS (100%) |
+| Escenario M | Frontera técnica Spec 019 (KDS Cocina) | `KdsBoundariesTest.java` (`startedAt` inmutable) | PASS (100%) |
+

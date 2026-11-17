@@ -58,8 +58,8 @@ public class OrderConfirmationTrackingController {
     }
 
     /**
-     * Retrieves dynamic live tracking info for real-time progress, dynamic minutes and KDS queue saturation.
-     * Conforms to Contracts 04, 05, and 06 with no-cache headers.
+     * Retrieves dynamic live tracking info for real-time progress, dynamic minutes, queue position and security code.
+     * Conforms to Spec 021 (Contract 02) with no-cache headers.
      */
     @GetMapping("/{orderId}/live-tracking")
     @PreAuthorize("hasRole('COMENSAL')")

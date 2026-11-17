@@ -61,5 +61,12 @@ class KdsTicketTest {
         assertThat(ticket.getStartedAt()).isNull();
         assertThat(ticket.getReadyAt()).isNull();
         assertThat(ticket.getCompletedAt()).isNull();
+        assertThat(ticket.getSpecificDelayMinutes()).isEqualTo(0);
+
+        ticket.setSpecificDelayMinutes(15);
+        assertThat(ticket.getSpecificDelayMinutes()).isEqualTo(15);
+
+        ticket.setSpecificDelayMinutes(null);
+        assertThat(ticket.getSpecificDelayMinutes()).isEqualTo(0);
     }
 }

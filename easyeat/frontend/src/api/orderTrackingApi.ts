@@ -6,9 +6,10 @@ import type {
   KdsDelayAdjustmentResponse,
   KdsTicketReadyResponse,
   KdsTicketResponse,
+  KdsDelayIncrementResponse,
 } from '../types/orderTracking';
 
-export type { KdsTicketReadyResponse, KdsTicketResponse };
+export type { KdsTicketReadyResponse, KdsTicketResponse, KdsDelayIncrementResponse };
 
 /**
  * Marks a kitchen ticket as completed and ready for pickup at the counter (Spec 020 - US1 / Contrato 01).
@@ -18,6 +19,18 @@ export const markTicketReadyForPickup = async (
 ): Promise<KdsTicketResponse> => {
   const response = await apiClient.post<KdsTicketResponse>(
     `/kitchen/tickets/${ticketId}/ready-for-pickup`
+  );
+  return response.data;
+};
+
+/**
+ * Adds a granular 5-minute cumulative delay to an active preparation ticket (Spec 021).
+ */
+export const addTicketDelay = async (
+  ticketId: string
+): Promise<KdsDelayIncrementResponse> => {
+  const response = await apiClient.post<KdsDelayIncrementResponse>(
+    `/kitchen/tickets/${ticketId}/add-delay`
   );
   return response.data;
 };
@@ -64,4 +77,9 @@ export const orderTrackingApi = {
    * Marks a kitchen ticket as completed and ready for pickup at the counter (Spec 020 - US1).
    */
   markTicketReadyForPickup,
+
+  /**
+   * Adds a granular 5-minute cumulative delay to an active preparation ticket (Spec 021).
+   */
+  addTicketDelay,
 };
