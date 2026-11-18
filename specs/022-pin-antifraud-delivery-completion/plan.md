@@ -2,7 +2,7 @@
 
 **Rama**: `022-pin-antifraud-delivery-completion` | **Fecha**: 15/11/2026 | **Especificación**: [spec.md](./spec.md)  
 **Entrada**: Especificación funcional desde `/specs/022-pin-antifraud-delivery-completion/spec.md`  
-**Prerrequisito de integración**: Requiere la implementación e integración previa de la especificación `020-counter-dispatch-ready-orders` (proveedora de `CounterTicketCard.tsx`, `useCounterOrdersPolling.ts`, `CounterWorkspacePage.tsx` y `GET /api/v1/counter/orders`).
+**Prerrequisito de integración**: Requiere la implementación e integración previa de la especificación `020-counter-dispatch-ready-orders` (proveedora de `CounterTicketCard.tsx`, `useCounterOrdersPolling.ts`, `CounterWorkspacePage.tsx` y `GET /api/v1/counter/orders`). **Cumplido el 16/11/2026**: la rama de la spec se avanzó a `develop/sprint-5`, que integra 019, 020 y 021; los artefactos se alinearon con ese código (research §3).
 
 ---
 
@@ -16,8 +16,8 @@
 El presente plan diseña la arquitectura técnica vertical e incremental para el "Protocolo antifraude de entrega y cierre de orden", cubriendo las historias de usuario `ENC-3.2.1`, `ENC-3.3.1` y `ENC-3.3.2`:
 
 1. **Protocolo antifraude de verificación oral (`ENC-3.2.1` — `RF-001` a `RF-005`)**:
-   - Generación determinista del `security_code` aleatorio de 4 dígitos en el rango $[1000, 9999]$ centralizada en el hook `@PrePersist` de la entidad `Order.java` y persistida en base de datos mediante la migración Flyway `V25__add_security_code_and_completed_at_to_orders.sql` con restricción `CHECK (security_code IS NULL OR (security_code >= 1000 AND security_code <= 9999))`.
-   - Inmutabilidad estricta a nivel JPA (`updatable = false`) y ausencia de métodos de mutación pública.
+   - El `security_code` aleatorio de 4 dígitos en $[1000, 9999]$ ya existe (spec 020: `VARCHAR(4)` con `CHECK ~ '^[1-9][0-9]{3}$'`, migración `V26`, `String securityCode`, generado por `OrderService.generateSecurityCode()` y por el `@PrePersist` de `Order.java`). Esta spec agrega solo `orders.completed_at` mediante `V28__add_completed_at_to_orders.sql` (ver research §3).
+   - Inmutabilidad de escritura única en el dominio (`Order.assignSecurityCodeIfAbsent`), que reemplaza los `setSecurityCode` de los servicios (research D-02).
    - Componente visual compartido `components/common/SecurityPinDisplay.tsx` que aplica tipografía de ancho fijo destacada (`font-mono`) con espaciado amplio (`tracking-[0.25em]` estilo `d d d d`) y marcador neutral `- - - -` ante eventuales órdenes sin PIN (Caso Borde 10). Reutilizado idénticamente en la tarjeta de mostrador y en la pantalla de seguimiento del comensal.
 2. **Acción directa, confirmación verde y anti doble clic (`ENC-3.3.1` — `RF-006` a `RF-009`)**:
    - Botón directo "ENTREGAR PEDIDO" en la tarjeta desplegada de mostrador accionado con un único clic, sin modales ni cuadros emergentes de confirmación.
@@ -43,8 +43,8 @@ El presente plan diseña la arquitectura técnica vertical e incremental para el
   - Frontend: React 18, React Router DOM 6, Axios, Tailwind CSS, Lucide React, Vitest.
 - **Persistencia**:
   - Base de datos relacional PostgreSQL.
-  - Tablas afectadas: `orders` (agrega columnas `security_code INTEGER` y `completed_at TIMESTAMPTZ`), `kds_tickets` (utiliza su columna existente `completed_at`).
-  - Migración incremental Flyway: `V25__add_security_code_and_completed_at_to_orders.sql`.
+  - Tablas afectadas: `orders` (agrega `completed_at TIMESTAMPTZ`; reutiliza `security_code VARCHAR(4)` de la spec 020), `kds_tickets` (utiliza su columna existente `completed_at`).
+  - Migración incremental Flyway: `V28__add_completed_at_to_orders.sql` (registrada en `.specify/memory/migrations.md`).
 - **Pruebas**:
   - Backend: JUnit 5, Mockito, Spring `@WebMvcTest`, Testcontainers PostgreSQL (`BaseIntegrationTest`).
   - Frontend: Vitest + React Testing Library (`easyeat/frontend/tests/`).
@@ -60,7 +60,7 @@ El presente plan diseña la arquitectura técnica vertical e incremental para el
   - Idempotencia determinista en reintentos HTTP.
   - No exponer el PIN en la respuesta terminal de seguimiento.
 - **Alcance / Escala**:
-  - Vertical slice completo: 1 migración Flyway, 1 entidad extendida (`Order`), 1 servicio y controlador de mostrador (`CounterOrderService`, `CounterOrderController`), 1 servicio adaptado (`OrderLiveTrackingService`), 1 componente compartido (`SecurityPinDisplay`), extensión de tarjetas de mostrador (`CounterTicketCard`) y pantalla de seguimiento (`ReadyForPickupCallout`, `DeliveredOrderCallout`, `useOrderLiveTrackingPolling`).
+  - Vertical slice completo: 1 migración Flyway, 1 entidad extendida (`Order`), 1 servicio nuevo (`CounterOrderService`) y 1 controlador extendido (`CounterOrderController`, spec 020), 1 servicio adaptado (`OrderLiveTrackingService`), 1 componente compartido (`SecurityPinDisplay`), extensión de tarjetas de mostrador (`CounterTicketCard`) y pantalla de seguimiento (`ReadyForPickupCallout`, `DeliveredOrderCallout`, `useOrderLiveTrackingPolling`).
 
 ---
 
@@ -73,7 +73,7 @@ El presente plan diseña la arquitectura técnica vertical e incremental para el
 | **I. The Specification Is the Source of Truth** | **CUMPLE** | Todas las decisiones técnicas provienen directamente de los RF, invariantes y escenarios de aceptación de `spec.md` (`ENC-3.2.1`, `ENC-3.3.1`, `ENC-3.3.2`). No se alteraron reglas funcionales. |
 | **II. Specification Before Implementation** | **CUMPLE** | La especificación funcional fue previamente aprobada y auditada con checklist de calidad antes de generar este plan técnico. No se ha generado código de producción ni tareas de ejecución en esta fase. |
 | **III. Layered Verification Proportional to Risk** | **CUMPLE** | Se definen escenarios de prueba reproducibles en `quickstart.md` que cubren caminos felices, casos borde (1000/9999, ausencia de PIN, dobles clics rápidos, cortes de red, concurrencia entre terminales múltiples e idempotencia). |
-| **IV. Simple, Cohesive, and Justified Design** | **CUMPLE** | Se reutiliza el mecanismo nativo de JPA `@PrePersist` para la generación del PIN, el bloqueo pesimista ya disponible en `OrderRepository.findByIdForUpdate` y los componentes existentes de layout, evitando frameworks o brokers externos. |
+| **IV. Simple, Cohesive, and Justified Design** | **CUMPLE** | Se reutiliza la generación de PIN existente de la spec 020 (`@PrePersist` + `OrderService.generateSecurityCode()`), el bloqueo pesimista ya disponible en `OrderRepository.findByIdForUpdate` y los componentes existentes de layout, evitando frameworks o brokers externos. |
 | **V. Bounded Scope** | **CUMPLE** | El plan se ciñe estrictamente al protocolo antifraude oral, la acción directa de entrega y el archivado terminal. Se excluyeron taxativamente lectores biométricos/ópticos, validación por software del PIN, modales bloqueantes, gestión de no-show/merma y conciliación de pagos. |
 | **VI. Controlled Technical Debt** | **CUMPLE** | Se resuelve la parada prematura de polling detectada en `useOrderLiveTrackingPolling.ts` de la spec 021 sin arrastrar inconsistencias hacia el cierre definitivo. |
 | **VII. Traceability, Consistency, and Documentation** | **CUMPLE** | Trazabilidad completa en la cadena: `spec.md` → `research.md` → `data-model.md` → `/contracts/` → `quickstart.md` → `plan.md`. |
@@ -100,7 +100,8 @@ specs/022-pin-antifraud-delivery-completion/
 │   ├── 02-counter-orders-polling.md# GET /api/v1/counter/orders
 │   └── 03-order-live-tracking.md   # GET /api/v1/orders/{orderId}/live-tracking
 └── checklists/                     # Auditorías de calidad de requisitos
-    └── requirements-quality.md
+    ├── requirements.md
+    └── pin-antifraud-delivery-completion-quality.md
 ```
 
 ### Código fuente a impactar (`easyeat/`)
@@ -112,15 +113,15 @@ easyeat/
 │       ├── main/
 │       │   ├── java/com/easyeat/order/
 │       │   │   ├── controller/
-│       │   │   │   ├── CounterOrderController.java              # NUEVO: endpoints de mostrador y complete-delivery
+│       │   │   │   ├── CounterOrderController.java              # EXISTENTE (020): agregar complete-delivery; quitar PIN fabricado
 │       │   │   │   └── OrderConfirmationTrackingController.java # Mapeo de live-tracking
 │       │   │   ├── domain/
-│       │   │   │   ├── Order.java                               # Extender con security_code, completed_at, @PrePersist
+│       │   │   │   ├── Order.java                               # Extender con completed_at y escritura única de security_code
 │       │   │   │   └── KdsTicket.java                           # Reutilizar completed_at existente
 │       │   │   ├── dto/
 │       │   │   │   ├── CompleteDeliveryResponse.java            # NUEVO: payload de respuesta terminal
-│       │   │   │   ├── CounterReadyOrderResponse.java           # NUEVO: DTO de pedido listo para mostrador
-│       │   │   │   └── OrderLiveTrackingResponse.java           # Extender con securityCode nullable
+│       │   │   │   ├── CounterReadyOrderResponse.java           # EXISTENTE (020): sin cambios de forma
+│       │   │   │   └── OrderLiveTrackingResponse.java           # EXISTENTE (021): ya expone String securityCode
 │       │   │   ├── repository/
 │       │   │   │   ├── OrderRepository.java                     # Reutilizar findByIdForUpdate (PESSIMISTIC_WRITE)
 │       │   │   │   └── KdsTicketRepository.java                 # Consultas de ticket vinculado
@@ -129,7 +130,7 @@ easyeat/
 │       │   │       └── OrderLiveTrackingService.java            # Adaptar mensaje COMPLETED y omisión de PIN
 │       │   └── resources/
 │       │       └── db/migration/
-│       │           └── V25__add_security_code_and_completed_at_to_orders.sql # NUEVA migración Flyway
+│       │           └── V28__add_completed_at_to_orders.sql      # NUEVA migración Flyway
 │       └── test/java/com/easyeat/order/
 │           ├── controller/
 │           │   └── CounterOrderControllerTest.java              # Pruebas MVC unitarias
@@ -138,7 +139,7 @@ easyeat/
 └── frontend/
     └── src/
         ├── api/
-        │   ├── counterApi.ts                                    # NUEVO: cliente HTTP para complete-delivery y mostrador
+        │   ├── counterApi.ts                                    # EXISTENTE (020): agregar completeDelivery (T030)
         │   └── orderTrackingApi.ts                              # Tipado de respuesta live-tracking
         ├── components/
         │   ├── common/
@@ -155,8 +156,8 @@ easyeat/
         │   ├── CounterWorkspacePage.tsx                         # Integración de tablero de mostrador
         │   └── OrderConfirmationTrackingPage.tsx                # Integración de vista terminal
         ├── types/
-        │   ├── counter.ts                                       # NUEVO: contratos TypeScript de mostrador
-        │   └── orderTracking.ts                                 # Extender con securityCode y status COMPLETED
+        │   ├── counter.ts                                       # EXISTENTE (020): securityCode nullable + CompleteDeliveryResponse
+        │   └── orderTracking.ts                                 # EXISTENTE (021): ya incluye securityCode y COMPLETED
         └── test/
             ├── components/
             │   ├── SecurityPinDisplay.test.tsx                  # Pruebas de renderizado monospace y fallback
@@ -171,9 +172,9 @@ easyeat/
 
 | Decisión / Mecanismo | Por qué es necesaria | Alternativa más simple descartada |
 | :--- | :--- | :--- |
-| Migración Flyway `V25` para añadir `security_code` y `completed_at` a `orders` | El repositorio no contenía estas columnas en `orders`. Garantiza la persistencia relacional del PIN y la marca temporal inmutable de entrega (`RF-001`, `RF-011`). | Calcular o generar PINs en memoria en el DTO: descartado porque causaría divergencias entre terminales y violaría el principio de inmutabilidad estricta. |
+| Migración Flyway `V28` para añadir `completed_at` a `orders` | `orders` no contenía la marca temporal de entrega (`RF-011`); `security_code` ya existe desde la spec 020 (`V26`). | Reutilizar solo `kds_tickets.completed_at`: descartado porque la orden es la entidad del comensal y el contrato 01 devuelve `completedAt` de la orden. |
 | Bloqueo pesimista `orderRepository.findByIdForUpdate` en `complete-delivery` | Previene condiciones de carrera cuando dos encargados pulsan la entrega casi en simultáneo, serializando la transición y garantizando la idempotencia en el segundo hilo (`SC-005`, `SC-007`). | Bloqueo optimista (`@Version`): descartado porque requeriría agregar columnas de versión en tablas ya estabilizadas y arrojaría errores de concurrencia al usuario en lugar de responder `200 OK` idempotente. |
-| Hook `@PrePersist` en `Order.java` para generación de PIN | Centraliza la generación aleatoria uniforme en $[1000, 9999]$ en el ciclo de vida de la entidad, asegurando que cualquier orden persista con su PIN sin importar el canal de creación. | Lógica de generación duplicada en servicios: descartada por riesgo de omisión o inconsistencia. |
+| Escritura única `Order.assignSecurityCodeIfAbsent` | Hace cumplir RF-002 en todos los caminos sin perder la asignación tardía de PIN a órdenes heredadas en la confirmación (research D-02). | `@Column(updatable = false)`: descartado porque Hibernate omitiría la columna en el `UPDATE` de confirmación y el PIN se perdería en silencio. |
 | Componente React compartido `SecurityPinDisplay.tsx` | Garantiza consistencia tipográfica monospace y espaciado amplio idéntico (`d d d d`) entre mostrador y seguimiento móvil, centralizando el caso borde de PIN nulo. | Clases CSS aplicadas manualmente en cada pantalla: descartada por riesgo de deriva visual. |
 | Ajuste del ciclo de polling en `useOrderLiveTrackingPolling.ts` | Permite que el comensal conectado en ventanilla detecte en vivo la entrega sin recargar manualmente la página, deteniendo el sondeo únicamente tras recibir `COMPLETED`. | Dejar `READY_FOR_PICKUP` como estado de parada de polling: descartada porque incumplía el Caso Borde 8. |
 | Purga de `securityCode` en el payload de `COMPLETED` | Protege el PIN en origen a nivel de backend para evitar inspección en DevTools tras concretar la entrega (`RF-016`). | Ocultamiento exclusivo en React manteniendo el valor en el JSON: descartado por seguridad. |

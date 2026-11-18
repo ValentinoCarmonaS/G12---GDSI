@@ -38,6 +38,12 @@ Esta especificación es 100% agnóstica a la tecnología, no define endpoints, e
 - Q: ¿Debe permanecer visible el código de seguridad de 4 dígitos en la pantalla de seguimiento del comensal una vez completada la entrega? → A: Ocultamiento total del código: una vez completada la entrega, el PIN de 4 dígitos se remueve y oculta por completo de la pantalla para evitar reusos confusos o capturas de pantalla malintencionadas, dejando únicamente el mensaje final de agradecimiento y el resumen de compra.
 - Q: ¿Cómo deben gestionarse en mostrador los pedidos listos que no son retirados por el comensal durante la jornada? → A: Estrictamente fuera de alcance: esta especificación resuelve exclusivamente el flujo de entrega exitosa; la gestión de pedidos no retirados (no-show o merma) queda excluida y sujeta a reglas de cierre de jornada operativa del restaurante.
 
+### Sesión 16/11/2026 (Grill-Me de alineación con las especificaciones 019, 020 y 021 implementadas)
+
+- Q: Si una orden lista para retirar carece de código de seguridad registrado (Caso Borde 10), ¿puede la tarjeta de mostrador exhibir un código derivado o sustituto? → A: No. La tarjeta de mostrador exhibe exclusivamente el código almacenado en la orden, idéntico al que ve el comensal; ante su ausencia exhibe el indicador neutral `- - - -`. Exhibir un código que el comensal nunca recibió anularía el cotejo oral (Invariante 4).
+- Q: ¿Cómo se garantiza la inmutabilidad del código cuando una orden heredada sin código lo recibe recién al confirmarse el pago? → A: El código se asigna una única vez (escritura única): la primera asignación lo fija y todo intento posterior de reemplazarlo es rechazado. Esto preserva RF-001 para órdenes heredadas y RF-002 para todas.
+- Las decisiones técnicas de esa sesión (tipo de dato del código, numeración de la migración, alcance de la Fase 1) se registran en [research.md §3](./research.md).
+
 ---
 
 ## Personas

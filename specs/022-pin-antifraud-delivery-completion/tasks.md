@@ -3,7 +3,8 @@
 **Entrada**: Documentos de diseño desde `/specs/022-pin-antifraud-delivery-completion/` (`spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md`)  
 **Prerrequisitos**: Plan técnico aprobado, modelo de datos definido, contratos establecidos.  
 **Prerrequisito de integración secuencial**: Requiere la implementación e integración previa de la especificación 020 (`020-counter-dispatch-ready-orders`), que establece el tablero de pedidos listos (`CounterWorkspacePage.tsx`), la tarjeta base de comanda (`CounterTicketCard.tsx`), el hook de sondeo (`useCounterOrdersPolling.ts`) y el endpoint `GET /api/v1/counter/orders`.  
-**Estrategia de pruebas**: TDD estricto (Red-Green-Refactor). Cada historia de usuario implementa primero las pruebas automatizadas (RED) que deben fallar antes de escribir el código de producción (GREEN).
+**Estrategia de pruebas**: TDD estricto (Red-Green-Refactor). Cada historia de usuario implementa primero las pruebas automatizadas (RED) que deben fallar antes de escribir el código de producción (GREEN).  
+**Alineación 16/11/2026**: la redacción de T001–T007, T013, T014, T023 y T025 se corrigió y se agregó T016b para reflejar el código ya entregado por las specs 019, 020 y 021 (decisiones A-01 a A-09 en [research.md §3](./research.md)).
 
 ---
 
@@ -19,9 +20,9 @@
 
 **Propósito**: Inicialización de esquemas relacionales, contratos y clientes base.
 
-- [ ] T001 Crear migración Flyway `V25__add_security_code_and_completed_at_to_orders.sql` para columnas `security_code` y `completed_at` en `easyeat/backend/src/main/resources/db/migration/V25__add_security_code_and_completed_at_to_orders.sql`
-- [ ] T002 [P] Definir tipos TypeScript de mostrador y extender tipos de seguimiento (`CounterReadyOrder`, `securityCode`, `COMPLETED`) en `easyeat/frontend/src/types/counter.ts` y `easyeat/frontend/src/types/orderTracking.ts`
-- [ ] T003 [P] Configurar cliente API HTTP de mostrador en `easyeat/frontend/src/api/counterApi.ts`
+- [x] T001 Escribir RED test del script `easyeat/backend/src/test/java/com/easyeat/order/OrderCompletedAtMigrationTest.java` (ubica la migración por su descripción `add_completed_at_to_orders`, sin versión en el nombre, regla 5 de `.specify/memory/migrations.md`) y crear `easyeat/backend/src/main/resources/db/migration/V28__add_completed_at_to_orders.sql` que agrega solo `orders.completed_at TIMESTAMPTZ NULL`, registrando `V28` en `.specify/memory/migrations.md` (regla 3). *Antes*: `V25__add_security_code_and_completed_at_to_orders.sql`; `V25` ya está consumida y `security_code` ya existe desde `V26` (A-02, A-03, A-04). **DONE 2026-11-16** — RED observed: 4 of 4 failing (no `*__add_completed_at_to_orders.sql` on the classpath). GREEN: 4 of 4 passing; `FlywayMigrationV26Test`/`FlywayMigrationV27Test` still green. Version `V28` taken per rule 2 (highest on `develop/sprint-5` is `V27`). The registry row also flags, without fixing, that `V17`–`V27` are unregistered and that the 020/021 migration tests break rule 5.
+- [x] T002 [P] Escribir RED test `easyeat/frontend/tests/types/counterDelivery.test.ts` y extender `easyeat/frontend/src/types/counter.ts`: `CounterReadyOrder.securityCode: string | null` (Caso Borde 10, contrato 02) y nuevo `CompleteDeliveryResponse` (`orderId`, `ticketNumber`, `status: 'COMPLETED'`, `completedAt`, `message`, contrato 01). `CounterReadyOrder` y `orderTracking.ts` (`securityCode`, `COMPLETED`) ya existen desde 020/021 (A-05). **DONE 2026-11-16** — RED observed: 2 of 4 failing in Vitest (nullable `securityCode` and `CompleteDeliveryResponse` absent from the source) and 2 `tsc --noEmit` errors (TS2305 missing export, TS2322 `null` not assignable to `string`). GREEN: 4 of 4 passing, `tsc` clean, and the 020 counter suites (types, API, card, polling hook, page) still pass, 21 of 21. `ticketNumber` is a non-null `number` because `kds_tickets.ticket_number` is `NOT NULL`.
+- [x] T003 [P] Verificar el cliente API HTTP de mostrador `easyeat/frontend/src/api/counterApi.ts`, ya provisto por la spec 020 (`fetchCounterOrders`, cubierto por `easyeat/frontend/tests/api/counterApi.test.ts`). Sin cambios de código; `completeDelivery` corresponde a T030 (A-06). **DONE 2026-11-16** — Satisfied by spec 020; no code change, so no RED is possible (no new behavior). Evidence: `tests/api/counterApi.test.ts` 2 of 2 passing, with 100% statements, branches, functions and lines on `src/api/counterApi.ts`; it already exposes `fetchCounterOrders` against `GET /counter/orders` with no-cache headers, matching contract 02.
 
 ---
 
@@ -29,11 +30,11 @@
 
 **Propósito**: Modelos de datos centrales y componentes base reutilizables. Ninguna historia de usuario puede completarse sin esta fase.
 
-- [ ] T004 [P] Escribir RED test unitario para entidad `Order` (generación de PIN en `@PrePersist` [1000, 9999], inmutabilidad y setter de `completedAt`) en `easyeat/backend/src/test/java/com/easyeat/order/domain/OrderSecurityCodeTest.java`
-- [ ] T005 Implementar campos `securityCode`, `completedAt` y hook `@PrePersist` con `ThreadLocalRandom.current().nextInt(1000, 10000)` en `easyeat/backend/src/main/java/com/easyeat/order/domain/Order.java`
-- [ ] T006 [P] Escribir RED test de migración Flyway y restricciones de rango relacional (`CHECK >= 1000 AND <= 9999`) en `easyeat/backend/src/test/java/com/easyeat/order/repository/OrderSecurityCodeMigrationTest.java`
-- [ ] T007 Validar y aplicar migración Flyway `V25` sobre base de datos relacional
-- [ ] T008 [P] Escribir RED test unitario para componente compartido `SecurityPinDisplay` (formato `d d d d`, monospace, tracking amplio y fallback `- - - -`) en `easyeat/frontend/src/test/components/SecurityPinDisplay.test.tsx`
+- [ ] T004 [P] Escribir RED test unitario para entidad `Order` (escritura única `assignSecurityCodeIfAbsent`: asigna si falta, conserva un valor idéntico, lanza `IllegalStateException` al reemplazar; campo `completedAt`; generación en `@PrePersist` dentro de [1000, 9999]) en `easyeat/backend/src/test/java/com/easyeat/order/domain/OrderSecurityCodeTest.java`
+- [ ] T005 Implementar `completedAt` y `assignSecurityCodeIfAbsent` en `easyeat/backend/src/main/java/com/easyeat/order/domain/Order.java` y reemplazar los `setSecurityCode` de `OrderService`, `CheckoutPaymentService`, `CheckoutConfirmationServiceImpl` y `PaymentWebhookService` (se conserva `String securityCode` y `OrderService.generateSecurityCode()`; no se usa `updatable = false`, research D-02 / A-08)
+- [ ] T006 [P] Escribir test de integración Testcontainers del esquema aplicado en `easyeat/backend/src/test/java/com/easyeat/order/repository/OrderSecurityCodeMigrationTest.java`: `orders.completed_at` existe como `timestamptz` nulable (V28) y, como regresión, `chk_orders_security_code` acepta `1000`/`9999` y rechaza `0999`, `10000` y `abcd`. *Nota*: la migración ya nace en T001 con su RED; este test verifica su aplicación real contra PostgreSQL
+- [ ] T007 Validar y aplicar migración Flyway `V28` sobre base de datos relacional (Flyway `validate` + suite de T006 en verde)
+- [ ] T008 [P] Escribir RED test unitario para componente compartido `SecurityPinDisplay` (`pin: string | null | undefined`; formato `d d d d`, monospace, tracking amplio y fallback `- - - -`) en `easyeat/frontend/src/test/components/SecurityPinDisplay.test.tsx`
 - [ ] T009 Implementar componente visual compartido `SecurityPinDisplay.tsx` con tipografía monospace y tracking amplio en `easyeat/frontend/src/components/common/SecurityPinDisplay.tsx`
 
 **Punto de control**: Fundamentos listos. Las historias de usuario pueden proceder de manera independiente.
@@ -54,10 +55,11 @@
 
 ### Implementación para User Story 1 (GREEN)
 
-- [ ] T013 [US1] Extender record DTO `OrderLiveTrackingResponse` con campo `Integer securityCode` en `easyeat/backend/src/main/java/com/easyeat/order/dto/OrderLiveTrackingResponse.java`
-- [ ] T014 [US1] Exponer `securityCode` en `OrderLiveTrackingService.java` para órdenes en estado `READY_FOR_PICKUP` en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderLiveTrackingService.java`
+- [ ] T013 [US1] Verificar el record DTO `OrderLiveTrackingResponse`, que ya expone `String securityCode` desde la spec 021, en `easyeat/backend/src/main/java/com/easyeat/order/dto/OrderLiveTrackingResponse.java` (cambios solo si T011 lo exige)
+- [ ] T014 [US1] Verificar la exposición de `securityCode` en `READY_FOR_PICKUP`, ya incorporada por la spec 021, en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderLiveTrackingService.java` (cambios solo si T011 lo exige)
 - [ ] T015 [US1] Integrar `<SecurityPinDisplay />` en `ReadyForPickupCallout.tsx` para exhibición en pantalla de comensal en `easyeat/frontend/src/components/tracking/ReadyForPickupCallout.tsx`
 - [ ] T016 [US1] Integrar `<SecurityPinDisplay />` en la tarjeta de mostrador `CounterTicketCard.tsx` para el cotejo oral del operador en `easyeat/frontend/src/components/counter/CounterTicketCard.tsx`
+- [ ] T016b [US1] Escribir RED test y eliminar el PIN fabricado de `CounterOrderController.resolveFourDigitSecurityCode` (derivado del hash del UUID): ante un `security_code` ausente o inválido, `GET /api/v1/counter/orders` devuelve `securityCode: null` (Caso Borde 10, contrato 02 invariante 3) en `easyeat/backend/src/main/java/com/easyeat/order/controller/CounterOrderController.java` (A-07)
 
 **Punto de control**: User Story 1 completamente funcional y verificable como MVP.
 
@@ -80,9 +82,9 @@
 
 ### Implementación para User Story 2 (GREEN)
 
-- [ ] T023 [US2] Crear records DTO `CompleteDeliveryResponse` y `CounterReadyOrderResponse` en `easyeat/backend/src/main/java/com/easyeat/order/dto/`
+- [ ] T023 [US2] Crear el record DTO `CompleteDeliveryResponse` en `easyeat/backend/src/main/java/com/easyeat/order/dto/` (`CounterReadyOrderResponse` ya existe desde la spec 020)
 - [ ] T024 [US2] Implementar `CounterOrderService` con bloqueo pesimista `orderRepository.findByIdForUpdate`, validación de estado previo (409 Conflict), transición atómica e idempotencia en `easyeat/backend/src/main/java/com/easyeat/order/service/CounterOrderService.java`
-- [ ] T025 [US2] Implementar `CounterOrderController` exponiendo `POST /api/v1/counter/orders/{orderId}/complete-delivery` y `GET /api/v1/counter/orders` protegido con roles `ENCARGADO` y `ADMINISTRADOR` en `easyeat/backend/src/main/java/com/easyeat/order/controller/CounterOrderController.java`
+- [ ] T025 [US2] Extender `CounterOrderController` (spec 020, que ya expone `GET /api/v1/counter/orders`) con `POST /api/v1/counter/orders/{orderId}/complete-delivery` protegido con roles `ENCARGADO` y `ADMINISTRADOR` en `easyeat/backend/src/main/java/com/easyeat/order/controller/CounterOrderController.java`
 - [ ] T026 [US2] Adaptar `OrderLiveTrackingService` para retornar `status = COMPLETED`, mensaje terminal `"Pedido Entregado — ¡Que disfrutes tu comida!"` y purgar `securityCode = null` en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderLiveTrackingService.java`
 - [ ] T027 [US2] Ajustar `useOrderLiveTrackingPolling.ts` removiendo `READY_FOR_PICKUP` de los estados de detención y abortando el timer definitivamente ante `COMPLETED` en `easyeat/frontend/src/hooks/useOrderLiveTrackingPolling.ts`
 - [ ] T028 [US2] Implementar componente terminal `DeliveredOrderCallout.tsx` en `easyeat/frontend/src/components/tracking/DeliveredOrderCallout.tsx`
@@ -159,7 +161,7 @@ Phase 6: Polish & Cross-Cutting (Aislamiento KDS y Quickstart end-to-end)
 
 ### MVP First (User Story 1 únicamente)
 1. Completar Setup (`T001`–`T003`) y Foundational (`T004`–`T009`).
-2. Completar User Story 1 (`T010`–`T016`).
+2. Completar User Story 1 (`T010`–`T016b`).
 3. **Pausar y validar**: Generar orden pagada, verificar PIN en base de datos, en seguimiento comensal y en tarjeta de mostrador. Demostrable como MVP del protocolo antifraude oral.
 
 ### Entrega incremental

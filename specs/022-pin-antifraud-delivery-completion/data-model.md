@@ -24,8 +24,9 @@ erDiagram
         time time_slot_end
         string status
         decimal total_amount
-        integer security_code "NUEVO: [1000, 9999] inmutable"
-        timestamptz completed_at "NUEVO: instante de entrega inmutable"
+        varchar security_code "EXISTENTE V26 (spec 020): 4 digitos [1000, 9999], escritura unica"
+        timestamptz ready_at "EXISTENTE V26 (spec 020)"
+        timestamptz completed_at "NUEVO V28: instante de entrega inmutable"
         timestamptz expires_at
         timestamptz created_at
         timestamptz updated_at
@@ -77,8 +78,9 @@ Representa la orden comercial y el ciclo de vida del pedido del comensal.
 | `time_slot_end` | `TIME` | `LocalTime` | No | `time_slot_start < time_slot_end` | Hora de fin de la franja horaria. |
 | `status` | `VARCHAR(30)` | `OrderStatus` | No | `IN ('PENDING_PAYMENT', 'PENDING_ACCREDITATION', 'IN_PROGRESS', 'READY_FOR_PICKUP', 'COMPLETED', ...)` | Estado operativo actual. Transiciona a `COMPLETED`. |
 | `total_amount` | `DECIMAL(12,2)` | `BigDecimal` | No | `>= 0` | Importe monetario total de la orden. |
-| `security_code` | `INTEGER` | `Integer` | Sí (para órdenes heredadas) | `CHECK (security_code IS NULL OR (security_code >= 1000 AND security_code <= 9999))` | **NUEVO**. Código numérico de seguridad de 4 dígitos generado en `@PrePersist` en rango [1000, 9999]. Inmutable (`updatable = false`). |
-| `completed_at` | `TIMESTAMPTZ` | `Instant` | Sí | Inmutable una vez asignado | **NUEVO**. Instante exacto en que la entrega física fue confirmada en mostrador. |
+| `security_code` | `VARCHAR(4)` | `String` | Sí (para órdenes heredadas) | `chk_orders_security_code CHECK (security_code IS NULL OR security_code ~ '^[1-9][0-9]{3}$')` | **EXISTENTE** (`V26`, spec 020, con backfill). Código numérico de seguridad de 4 dígitos en [1000, 9999] generado por `OrderService.generateSecurityCode()`. Escritura única en el dominio (`assignSecurityCodeIfAbsent`, research D-02). |
+| `ready_at` | `TIMESTAMPTZ` | `Instant` | Sí | | **EXISTENTE** (`V26`, spec 020). Instante en que la orden quedó lista para retirar. |
+| `completed_at` | `TIMESTAMPTZ` | `Instant` | Sí | Inmutable una vez asignado | **NUEVO** (`V28`). Instante exacto en que la entrega física fue confirmada en mostrador. |
 | `expires_at` | `TIMESTAMPTZ` | `Instant` | Sí | | Límite temporal para completar el pago. |
 | `created_at` | `TIMESTAMPTZ` | `Instant` | No | Inmutable | Instante de creación del registro. |
 | `updated_at` | `TIMESTAMPTZ` | `Instant` | No | | Instante de última mutación. |
@@ -131,40 +133,32 @@ stateDiagram-v2
 
 ## 4. Migración de base de datos Flyway
 
-Se define la migración incremental en el repositorio:
-`easyeat/backend/src/main/resources/db/migration/V25__add_security_code_and_completed_at_to_orders.sql`
+*Revisada el 16/11/2026 (research §3, A-03).* `security_code` ya fue incorporado por la spec 020 (`V26`) y `V25` está consumida por la spec 019; la versión se toma según las reglas de `.specify/memory/migrations.md` (menor entero mayor que todas las versiones presentes en la rama de integración: `V27` → `V28`). La única migración de esta spec es:
+
+`easyeat/backend/src/main/resources/db/migration/V28__add_completed_at_to_orders.sql`
 
 ```sql
 -- ====================================================================
--- EasyEat V25: Security Code (PIN Antifraud) and Completed Timestamp in Orders
--- Conforms to ENC-3.2.1, ENC-3.3.1, ENC-3.3.2 (Spec 022)
+-- EasyEat V28: Delivery completion timestamp on orders (Spec 022)
+-- Conforms to ENC-3.3.2 (RF-011, Invariante 8)
 -- ====================================================================
 
--- 1. Agregar columna de código numérico de seguridad de 4 dígitos [1000, 9999]
 ALTER TABLE orders
-    ADD COLUMN IF NOT EXISTS security_code INTEGER;
+    ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ NULL;
 
--- 2. Restricción de rango estricto para el código de seguridad (sin ceros a la izquierda)
-ALTER TABLE orders
-    ADD CONSTRAINT chk_order_security_code
-    CHECK (security_code IS NULL OR (security_code >= 1000 AND security_code <= 9999));
-
--- 3. Agregar columna completed_at para registrar el instante de entrega definitiva
-ALTER TABLE orders
-    ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
-
--- 4. Índice para optimizar consultas de auditoría y análisis de órdenes completadas
-CREATE INDEX IF NOT EXISTS idx_orders_establishment_completed
-    ON orders(establishment_id, status, completed_at);
+COMMENT ON COLUMN orders.completed_at IS
+    'Instante inmutable de la entrega confirmada en mostrador (RF-011).';
 ```
+
+No se crea índice sobre `completed_at`: ninguna consulta de esta spec filtra u ordena por esa columna (el sondeo de mostrador consulta `kds_tickets`).
 
 ---
 
 ## 5. Invariantes del modelo de datos
 
-1. **Rango numérico estricto**: $1000 \le \text{security\_code} \le 9999$. No se admiten números negativos, números menores a 1000 ni mayores a 9999.
-2. **Inmutabilidad de `security_code`**: Una vez persistido, ningún `UPDATE` modifica este campo.
+1. **Rango numérico estricto**: $1000 \le \text{security\_code} \le 9999$, garantizado por `chk_orders_security_code` (`^[1-9][0-9]{3}$`): exactamente 4 dígitos sin ceros a la izquierda.
+2. **Inmutabilidad de `security_code`**: Escritura única. Una orden sin código puede recibirlo una sola vez (incluida la confirmación de órdenes heredadas); una vez asignado, ningún camino del dominio lo reemplaza.
 3. **Atomicidad de `completed_at`**: En la transición a `COMPLETED`, tanto `orders.completed_at` como `kds_tickets.completed_at` se actualizan al mismo `Instant` dentro de la misma transacción de base de datos.
 4. **Inmutabilidad de `completed_at`**: La primera confirmación exitosa fija el valor permanentemente. Las llamadas idempotentes subsecuentes devuelven el valor preexistente sin sobreescribirlo.
 5. **Irreversibilidad de `COMPLETED`**: Ninguna orden ni ticket en estado `COMPLETED` puede retornar a `READY_FOR_PICKUP`, `IN_PROGRESS` ni cancelarse.
-6. **Tolerancia a inconsistencias (Caso Borde 10)**: La columna `security_code` admite valores nulos en base de datos para no invalidar órdenes históricas creadas antes de la spec 022. La lógica de negocio maneja la ausencia de PIN con un fallback neutral `- - - -` permitiendo completar la entrega.
+6. **Tolerancia a inconsistencias (Caso Borde 10)**: La columna `security_code` admite valores nulos en base de datos para no invalidar órdenes históricas. La API devuelve `securityCode: null` (nunca un código sustituto) y la interfaz muestra el marcador neutral `- - - -` permitiendo completar la entrega.
