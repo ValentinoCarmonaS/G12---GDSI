@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Clock, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 import type { CounterReadyOrder } from '../../types/counter';
 import { SecurityPinDisplay } from '../common/SecurityPinDisplay';
 import {
@@ -11,8 +11,11 @@ export interface CounterTicketCardProps {
   order: CounterReadyOrder;
   isExpanded: boolean;
   onToggle: (ticketId: string) => void;
-  /** Spec 022 T031: confirms the physical delivery of this card's order. */
-  onDeliver?: (orderId: string) => void;
+  /**
+   * Spec 022 T031/T035: confirms the physical delivery of this card's order. The card stays in its confirmed
+   * state once the returned promise resolves; the page removes it from the board.
+   */
+  onDeliver?: (orderId: string) => Promise<void> | void;
   serverOffsetMs?: number;
   nowMs?: number;
 }
@@ -32,10 +35,26 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
 }) => {
   const [liveNowMs, setLiveNowMs] = useState<number>(() => Date.now());
   const [avatarFailed, setAvatarFailed] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isDelivered, setIsDelivered] = useState<boolean>(false);
+  // Clicks landing in the same turn run before `disabled` renders, so the guard must be synchronous (RF-008).
+  const deliveryLockRef = useRef<boolean>(false);
 
   useEffect(() => {
     setAvatarFailed(false);
   }, [order.customer.photoUrl]);
+
+  // Spec 022 US3 (RF-006..RF-009, D-08/D-09): direct action, instant disable and optimistic green feedback.
+  const handleDeliverClick = async () => {
+    if (!onDeliver || deliveryLockRef.current) {
+      return;
+    }
+    deliveryLockRef.current = true;
+    setIsSubmitting(true);
+    setIsDelivered(true);
+    await onDeliver(order.orderId);
+    setIsSubmitting(false);
+  };
 
   useEffect(() => {
     if (typeof nowMs === 'number') {
@@ -164,10 +183,27 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
             <button
               type="button"
               data-testid="counter-card-delivery-button"
-              onClick={() => onDeliver?.(order.orderId)}
-              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold uppercase tracking-wider rounded-xl shadow-sm transition-colors"
+              onClick={handleDeliverClick}
+              disabled={isSubmitting || isDelivered}
+              aria-busy={isSubmitting}
+              aria-live="polite"
+              className={`w-full py-2.5 px-4 text-xs font-extrabold uppercase tracking-wider rounded-xl shadow-sm transition-colors ${
+                isDelivered
+                  ? 'bg-emerald-50 border border-emerald-300 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
             >
-              ENTREGAR PEDIDO
+              {isDelivered ? (
+                <span
+                  data-testid="counter-card-delivery-confirmed"
+                  className="inline-flex items-center justify-center gap-1.5 text-emerald-800"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Entrega Confirmada
+                </span>
+              ) : (
+                'ENTREGAR PEDIDO'
+              )}
             </button>
           </div>
         </div>
