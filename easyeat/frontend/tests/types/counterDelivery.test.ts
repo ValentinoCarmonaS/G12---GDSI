@@ -39,6 +39,10 @@ describe('Counter delivery types (Spec 022 T002)', () => {
     expect(orderWithoutPin.securityCode).toBeNull();
   });
 
+  it('declares CompleteDeliveryResponse.ticketNumber as nullable for a ready order without KDS ticket (Spec 022 T030)', () => {
+    expect(source).toMatch(/interface CompleteDeliveryResponse \{[^}]*ticketNumber:\s*number\s*\|\s*null;/);
+  });
+
   it('models the first and the idempotent complete-delivery responses identically (contract 01)', () => {
     const first: CompleteDeliveryResponse = {
       orderId: 'b1a2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',

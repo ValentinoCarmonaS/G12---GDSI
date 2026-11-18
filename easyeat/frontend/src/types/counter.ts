@@ -38,7 +38,8 @@ export interface CounterReadyOrder {
  */
 export interface CompleteDeliveryResponse {
   orderId: string;
-  ticketNumber: number;
+  /** `null` for a ready order without KDS ticket (Spec 022 T030, contract 01 §3.1). */
+  ticketNumber: number | null;
   status: 'COMPLETED';
   completedAt: string;
   message: string;
