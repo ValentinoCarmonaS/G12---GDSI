@@ -49,7 +49,7 @@
 
 ### Pruebas para User Story 1 (TDD RED)
 
-- [ ] T010 [P] [US1] Escribir RED test de integración para persistencia y no nulidad de `security_code` en flujo de checkout en `easyeat/backend/src/test/java/com/easyeat/order/service/OrderPinCreationIntegrationTest.java`
+- [x] T010 [P] [US1] Escribir RED test de integración para persistencia y no nulidad de `security_code` en flujo de checkout en `easyeat/backend/src/test/java/com/easyeat/order/service/OrderPinCreationIntegrationTest.java` **DONE 2026-11-17** — Generation already exists (specs 020 and 022 T005), so there is no natural RED. Controlled sabotage instead (technique approved in the Phase 2 `grill-me`): with the assignment removed from `OrderService.createOrder`, `CheckoutPaymentService.initiatePayment` and the `@PrePersist` safety net, RED observed: 3 of 3 failing. Restored, GREEN: 3 of 3. Cases: both checkout paths persist a non-null PIN matching `^[1-9][0-9]{3}$` (RF-001, AC-1), and confirming the payment leaves the PIN generated at checkout unchanged (RF-002). The PIN is read from the row through JDBC, not from the entity. The sabotage leaves no trace in history.
 - [ ] T011 [P] [US1] Escribir RED test de contrato/endpoint para `GET /api/v1/orders/{orderId}/live-tracking` (debe exponer `securityCode` cuando `status == READY_FOR_PICKUP`) en `easyeat/backend/src/test/java/com/easyeat/order/controller/OrderLiveTrackingPinContractTest.java`
 - [ ] T012 [P] [US1] Escribir RED test de frontend para `ReadyForPickupCallout.tsx` (debe renderizar `<SecurityPinDisplay />` al estar listo) en `easyeat/frontend/src/test/tracking/ReadyForPickupCalloutPin.test.tsx`
 
