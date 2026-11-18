@@ -9,10 +9,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Entity
 @Table(name = "orders")
 public class Order {
+
+    /** Same rule as {@code chk_orders_security_code}: four digits in [1000, 9999]. */
+    private static final Pattern SECURITY_CODE_FORMAT = Pattern.compile("^[1-9][0-9]{3}$");
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -52,6 +56,9 @@ public class Order {
 
     @Column(name = "security_code", length = 4)
     private String securityCode;
+
+    @Column(name = "completed_at")
+    private Instant completedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -93,8 +100,8 @@ public class Order {
         if (expiresAt == null && status == OrderStatus.PENDING_PAYMENT) {
             expiresAt = createdAt.plus(15, ChronoUnit.MINUTES);
         }
-        if (securityCode == null || securityCode.isBlank()) {
-            securityCode = com.easyeat.order.service.OrderService.generateSecurityCode();
+        if (!hasSecurityCode()) {
+            assignSecurityCodeIfAbsent(com.easyeat.order.service.OrderService.generateSecurityCode());
         }
     }
 
@@ -221,8 +228,30 @@ public class Order {
         return securityCode;
     }
 
-    public void setSecurityCode(String securityCode) {
-        this.securityCode = securityCode;
+    /**
+     * Write-once assignment of the pickup PIN (research D-02, data-model invariant 2): assigns the code
+     * when the order has none, keeps an identical one, and refuses to replace a different one.
+     *
+     * @throws IllegalArgumentException if {@code code} is null, blank or outside [1000, 9999]
+     * @throws IllegalStateException    if the order already holds a different code
+     */
+    public void assignSecurityCodeIfAbsent(String code) {
+        if (code == null || !SECURITY_CODE_FORMAT.matcher(code).matches()) {
+            throw new IllegalArgumentException("Security code must be four digits in [1000, 9999]");
+        }
+        if (!hasSecurityCode()) {
+            this.securityCode = code;
+        } else if (!securityCode.equals(code)) {
+            throw new IllegalStateException("Order " + id + " already has a security code; it cannot be replaced");
+        }
+    }
+
+    private boolean hasSecurityCode() {
+        return securityCode != null && !securityCode.isBlank();
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
     }
 
     public Instant getCreatedAt() {

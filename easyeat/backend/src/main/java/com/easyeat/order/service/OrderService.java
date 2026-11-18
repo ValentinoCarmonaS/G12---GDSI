@@ -283,7 +283,7 @@ public class OrderService {
         order.setTimeSlotStart(timeSlotStart);
         order.setTimeSlotEnd(timeSlotEnd);
         order.setStatus(OrderStatus.PENDING_PAYMENT);
-        order.setSecurityCode(generateSecurityCode());
+        order.assignSecurityCodeIfAbsent(generateSecurityCode());
 
         order.setCreatedAt(nowInstant);
         order.setUpdatedAt(nowInstant);

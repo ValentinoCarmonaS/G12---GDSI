@@ -214,7 +214,7 @@ public class CheckoutPaymentService {
         order.setTimeSlotStart(timeSlotStart);
         order.setTimeSlotEnd(timeSlotEnd);
         order.setStatus(OrderStatus.PENDING_PAYMENT);
-        order.setSecurityCode(OrderService.generateSecurityCode());
+        order.assignSecurityCodeIfAbsent(OrderService.generateSecurityCode());
         order.setTotalAmount(totalAmount);
         order.setExpiresAt(expiresAt);
 
