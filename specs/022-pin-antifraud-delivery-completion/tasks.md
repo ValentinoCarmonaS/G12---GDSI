@@ -121,7 +121,7 @@
 
 **Propósito**: Verificación de fronteras, pruebas de regresión completas y validación operativa.
 
-- [ ] T037 [P] Escribir test de aislamiento con KDS de cocina (spec 019): verificar exclusión de órdenes `COMPLETED` en `easyeat/backend/src/test/java/com/easyeat/order/controller/KitchenKdsExclusionTest.java`
+- [x] T037 [P] Escribir test de aislamiento con KDS de cocina (spec 019): verificar exclusión de órdenes `COMPLETED` en `easyeat/backend/src/test/java/com/easyeat/order/controller/KitchenKdsExclusionTest.java` **DONE 2026-11-18** — No natural RED: spec 019 already filters the active queue to `QUEUED`/`IN_PREPARATION` (D-13), so the test passes 3 of 3 on the current code. Controlled sabotage, as approved for T006: adding `COMPLETED` to `KdsTicketRepository.findActiveQueueTickets` turns it RED, 1 of 3 failing (`totalElements` 3 instead of 2); the query was restored and only the test is committed. It is an integration test against PostgreSQL (Testcontainers, `BaseIntegrationTest`) that completes a real delivery through `POST /complete-delivery` and then reads the two endpoints the KDS consumes: `GET /api/v1/kitchen/orders?activeQueue=true` (`useKdsQueuePolling`) no longer lists the ticket, and `GET /api/v1/kitchen/dashboard/summary` moves it from ready to completed today. The third case checks that the other kitchen tickets keep their status and timestamps. No KDS code changed.
 - [ ] T038 [P] Ejecutar la suite completa de pruebas unitarias y de integración de backend: `./mvnw test`
 - [ ] T039 [P] Ejecutar la suite completa de pruebas de frontend: `npm run test`
 - [ ] T040 Ejecutar validación end-to-end de los 13 escenarios (a-m) conforme a `specs/022-pin-antifraud-delivery-completion/quickstart.md`
