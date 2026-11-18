@@ -137,7 +137,7 @@ Antes de definir el diseño técnico, se auditó exhaustivamente la base de cód
   - Aplica tipografía monoespaciada destacada (`font-mono font-bold tracking-[0.25em]`).
   - Formatea los dígitos separándolos con espacios: `pin.split('').join(' ')` (ejemplo: `4 8 2 1`).
   - Si el PIN no está disponible (caso borde 10), renderiza un marcador neutral `- - - -`. *Precisión 17/11/2026 (T008/T009)*: "no disponible" incluye cualquier valor que no cumpla `^[1-9][0-9]{3}$` (la regla de `chk_orders_security_code`), no solo `null`/`undefined`, para no exhibir nunca un código que no podría existir en la orden (Invariante 4).
-  - Se reutiliza tanto en la tarjeta de mostrador como en la llamada de retiro del comensal (`ReadyForPickupCallout.tsx`).
+  - Se reutiliza tanto en la tarjeta de mostrador como en la llamada de retiro del comensal (`ReadyForPickupCallout.tsx`). *Precisión 17/11/2026 (T012/T015)*: en la llamada del comensal, ante un PIN `null` no se renderiza el recuadro del código (comportamiento heredado de la spec 021); el marcador `- - - -` del Caso Borde 10 aplica a la tarjeta de mostrador. Divergencia deliberada aprobada por Luis en la sesión `grill-me`.
 - **Justificación**: Garantiza identidad visual idéntica entre la pantalla del comensal y la terminal de ventanilla (`RF-003`, `RF-004`, `Invariante 3`).
 - **Alternativas descartadas**:
   - *Formatear con cadenas dispersas en cada archivo*: Descartada por riesgo de divergencias en estilos tipográficos o tracking.
