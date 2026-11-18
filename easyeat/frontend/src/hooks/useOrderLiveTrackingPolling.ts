@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { orderTrackingApi } from '../api/orderTrackingApi';
 import type { OrderLiveTrackingResponse } from '../types/orderTracking';
 
+// Spec 022 (edge case 8, RF-017): READY_FOR_PICKUP is not terminal, so the diner at the counter sees the
+// delivery live; polling stops for good once the order is COMPLETED, CANCELLED or EXPIRED.
 const TERMINAL_TRACKING_STATUSES = new Set<string>([
-  'READY_FOR_PICKUP',
   'COMPLETED',
   'CANCELLED',
   'EXPIRED',
@@ -14,10 +15,7 @@ const DISCONNECTION_THRESHOLD_MS = 15000;
 
 function isTerminalTracking(current: OrderLiveTrackingResponse | null): boolean {
   if (!current) return false;
-  return (
-    current.isReadyForPickup === true ||
-    TERMINAL_TRACKING_STATUSES.has(current.status)
-  );
+  return TERMINAL_TRACKING_STATUSES.has(current.status);
 }
 
 export interface UseOrderLiveTrackingPollingResult {
