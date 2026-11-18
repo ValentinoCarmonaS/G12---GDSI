@@ -159,11 +159,12 @@ easyeat/
         │   ├── counter.ts                                       # EXISTENTE (020): securityCode nullable + CompleteDeliveryResponse
         │   └── orderTracking.ts                                 # EXISTENTE (021): ya incluye securityCode y COMPLETED
         └── test/
-            ├── components/
-            │   ├── SecurityPinDisplay.test.tsx                  # Pruebas de renderizado monospace y fallback
-            │   └── CounterTicketCard.test.tsx                   # Pruebas de acción directa, deshabilitado y feedback verde
             └── hooks/
-                └── useOrderLiveTrackingPolling.test.ts          # Pruebas de cese definitivo ante COMPLETED
+                └── useOrderLiveTrackingPolling.test.ts          # EXISTENTE (021): pruebas de cese definitivo ante COMPLETED
+    └── tests/
+        └── components/                                          # Ubicación real de las pruebas de componentes (corregido 17/11/2026, T008)
+            ├── SecurityPinDisplay.test.tsx                      # Pruebas de renderizado monospace y fallback
+            └── CounterTicketCard.test.tsx                       # EXISTENTE (020): acción directa, deshabilitado y feedback verde
 ```
 
 ---

@@ -24,7 +24,7 @@ class OrderLifecycleSupportTest {
 
         Instant readyAt = Instant.parse("2026-11-15T19:30:00Z");
         order.setReadyAt(readyAt);
-        order.setSecurityCode("4821");
+        order.assignSecurityCodeIfAbsent("4821");
 
         assertThat(order.getReadyAt()).isEqualTo(readyAt);
         assertThat(order.getSecurityCode()).isEqualTo("4821");
@@ -71,8 +71,5 @@ class OrderLifecycleSupportTest {
         order.setStatus(OrderStatus.CONFIRMED);
         assertThat(order.isPendingAccreditation()).isFalse();
         assertThat(order.isInProgress()).isFalse();
-
-        order.setSecurityCode("4821");
-        assertThat(order.getSecurityCode()).isEqualTo("4821");
     }
 }

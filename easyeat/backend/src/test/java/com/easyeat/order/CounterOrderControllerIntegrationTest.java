@@ -182,7 +182,7 @@ class CounterOrderControllerIntegrationTest {
         order104.setTimeSlotEnd(LocalTime.of(13, 15));
         order104.setStatus(OrderStatus.READY_FOR_PICKUP);
         order104.setReadyAt(Instant.parse("2026-11-15T16:30:00Z"));
-        order104.setSecurityCode("4821");
+        order104.assignSecurityCodeIfAbsent("4821");
         order104.setTotalAmount(new BigDecimal("18500.00"));
         order104.addItem(new OrderItem(order104, UUID.randomUUID(), "Hamburguesa Completa con Papas", new BigDecimal("8000.00"), 2, new BigDecimal("16000.00")));
         order104.addItem(new OrderItem(order104, UUID.randomUUID(), "Limonada con Menta y Jengibre", new BigDecimal("2500.00"), 1, new BigDecimal("2500.00")));
@@ -196,7 +196,7 @@ class CounterOrderControllerIntegrationTest {
         order105.setTimeSlotEnd(LocalTime.of(13, 30));
         order105.setStatus(OrderStatus.READY_FOR_PICKUP);
         order105.setReadyAt(Instant.parse("2026-11-15T16:33:45Z"));
-        order105.setSecurityCode("9102");
+        order105.assignSecurityCodeIfAbsent("9102");
         order105.setTotalAmount(new BigDecimal("9500.00"));
         order105.addItem(new OrderItem(order105, UUID.randomUUID(), "Ensalada Caesar con Pollo", new BigDecimal("9500.00"), 1, new BigDecimal("9500.00")));
 
@@ -287,7 +287,7 @@ class CounterOrderControllerIntegrationTest {
         order104.setTimeSlotEnd(LocalTime.of(13, 15));
         order104.setStatus(OrderStatus.READY_FOR_PICKUP);
         order104.setReadyAt(Instant.parse("2026-11-15T16:30:00Z"));
-        order104.setSecurityCode("4821");
+        order104.assignSecurityCodeIfAbsent("4821");
         order104.setTotalAmount(new BigDecimal("18500.00"));
         order104.addItem(new OrderItem(order104, UUID.randomUUID(), "Hamburguesa Completa con Papas", new BigDecimal("8000.00"), 2, new BigDecimal("16000.00")));
         order104.addItem(new OrderItem(order104, UUID.randomUUID(), "Limonada con Menta y Jengibre", new BigDecimal("2500.00"), 1, new BigDecimal("2500.00")));
@@ -302,7 +302,6 @@ class CounterOrderControllerIntegrationTest {
         order105.setTimeSlotEnd(LocalTime.of(13, 30));
         order105.setStatus(OrderStatus.READY_FOR_PICKUP);
         order105.setReadyAt(Instant.parse("2026-11-15T16:33:45Z"));
-        order105.setSecurityCode(null);
         order105.setTotalAmount(new BigDecimal("9500.00"));
         order105.addItem(new OrderItem(order105, UUID.randomUUID(), "Ensalada Caesar con Pollo", new BigDecimal("9500.00"), 1, new BigDecimal("9500.00")));
 

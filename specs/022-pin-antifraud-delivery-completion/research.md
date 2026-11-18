@@ -34,7 +34,7 @@ Antes de definir el diseño técnico, se auditó exhaustivamente la base de cód
   - *Generación dispersa sin red de seguridad en la entidad*: descartada por riesgo de omisión en nuevos caminos de creación.
 
 ### D-02: Garantía de inmutabilidad del `security_code`
-- **Decisión** (*revisada el 16/11/2026*): inmutabilidad de **escritura única** en el dominio. `Order` expone `assignSecurityCodeIfAbsent(String code)`, que asigna el código solo si la orden aún no lo posee y lanza `IllegalStateException` ante cualquier intento de reemplazar un código ya asignado por otro distinto. Los servicios (`OrderService`, `CheckoutPaymentService`, `CheckoutConfirmationServiceImpl`, `PaymentWebhookService`) dejan de invocar `setSecurityCode` y usan este método.
+- **Decisión** (*revisada el 16/11/2026*): inmutabilidad de **escritura única** en el dominio. `Order` expone `assignSecurityCodeIfAbsent(String code)`, que asigna el código solo si la orden aún no lo posee y lanza `IllegalStateException` ante cualquier intento de reemplazar un código ya asignado por otro distinto. *Ampliación 17/11/2026 (T004/T005)*: un argumento nulo, en blanco o fuera de `^[1-9][0-9]{3}$` (la regla de `chk_orders_security_code`) lanza `IllegalArgumentException` antes de la verificación de escritura única, sin modificar la orden; `Order` ya no expone `setSecurityCode`. Los servicios (`OrderService`, `CheckoutPaymentService`, `CheckoutConfirmationServiceImpl`, `PaymentWebhookService`) dejan de invocar `setSecurityCode` y usan este método.
 - **Justificación**: `CheckoutConfirmationServiceImpl` y `PaymentWebhookService` asignan el código en un `UPDATE` cuando una orden heredada carece de él. Con `@Column(updatable = false)` Hibernate omitiría la columna en ese `UPDATE` y el código se perdería en silencio, mientras la respuesta en memoria lo expondría al comensal: un PIN inexistente en la base. La escritura única cumple RF-001 (órdenes heredadas) y RF-002 (todas) en todos los caminos.
 - **Alternativas descartadas**:
   - *`@Column(updatable = false)`* (decisión original): descartada por la pérdida silenciosa descrita.
@@ -136,7 +136,7 @@ Antes de definir el diseño técnico, se auditó exhaustivamente la base de cód
   - Recibe `pin: string | null | undefined` (tipo alineado con el `securityCode: String` de las specs 020/021) y clases personalizables.
   - Aplica tipografía monoespaciada destacada (`font-mono font-bold tracking-[0.25em]`).
   - Formatea los dígitos separándolos con espacios: `pin.split('').join(' ')` (ejemplo: `4 8 2 1`).
-  - Si el PIN no está disponible (caso borde 10), renderiza un marcador neutral `- - - -`.
+  - Si el PIN no está disponible (caso borde 10), renderiza un marcador neutral `- - - -`. *Precisión 17/11/2026 (T008/T009)*: "no disponible" incluye cualquier valor que no cumpla `^[1-9][0-9]{3}$` (la regla de `chk_orders_security_code`), no solo `null`/`undefined`, para no exhibir nunca un código que no podría existir en la orden (Invariante 4).
   - Se reutiliza tanto en la tarjeta de mostrador como en la llamada de retiro del comensal (`ReadyForPickupCallout.tsx`).
 - **Justificación**: Garantiza identidad visual idéntica entre la pantalla del comensal y la terminal de ventanilla (`RF-003`, `RF-004`, `Invariante 3`).
 - **Alternativas descartadas**:

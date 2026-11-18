@@ -146,7 +146,7 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
 
         // Transition order to IN_PROGRESS
         if (order.getSecurityCode() == null || order.getSecurityCode().isBlank()) {
-            order.setSecurityCode(OrderService.generateSecurityCode());
+            order.assignSecurityCodeIfAbsent(OrderService.generateSecurityCode());
         }
         order.setStatus(OrderStatus.IN_PROGRESS);
         order.setUpdatedAt(Instant.now());
@@ -247,7 +247,7 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
 
         // Transition order to IN_PROGRESS
         if (order.getSecurityCode() == null || order.getSecurityCode().isBlank()) {
-            order.setSecurityCode(OrderService.generateSecurityCode());
+            order.assignSecurityCodeIfAbsent(OrderService.generateSecurityCode());
         }
         order.setStatus(OrderStatus.IN_PROGRESS);
         order.setUpdatedAt(Instant.now());
