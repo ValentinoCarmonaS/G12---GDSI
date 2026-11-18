@@ -74,7 +74,7 @@ Como encargado de mostrador, quiero cotejar visualmente en la tarjeta desplegada
 1. **AC-1 (Generación, formato y disponibilidad del código numérico de seguridad)**:
    - **Dado** que un comensal confirma y paga un pedido,
    - **Cuando** la orden queda registrada en el sistema,
-   - **Entonces** el sistema genera y almacena un código numérico de seguridad aleatorio de 4 dígitos, con rango comprendido entre 1000 y 9999 inclusive, manteniéndolo accesible y visible en la pantalla de seguimiento del comensal formateado con tipografía monospace y espaciado amplio entre caracteres (formato `d d d d`).
+   - **Entonces** el sistema genera y almacena un código numérico de seguridad aleatorio de 4 dígitos, con rango comprendido entre 1000 y 9999 inclusive, manteniéndolo accesible y visible en la pantalla de seguimiento del comensal a partir de que el pedido queda listo para retirar (*aclaración 17/11/2026*: antes de ese estado el seguimiento no exhibe el código, conforme al contrato de la spec 021 y al contrato 03), formateado con tipografía monospace y espaciado amplio entre caracteres (formato `d d d d`).
 
 2. **AC-2 (Cotejo visual y oral humano en ventanilla)**:
    - **Dado** que un comensal se presenta en el mostrador y recita verbalmente su código de seguridad de 4 dígitos,

@@ -30,7 +30,9 @@ Bajo la especificación 022, este contrato formaliza la bifurcación entre el es
 
 ### 3.1. Estado `READY_FOR_PICKUP`: Pedido listo para retiro (Con PIN de 4 dígitos)
 
-Retornado cuando la cocina finalizó la bandeja y la comida aguarda en mostrador.
+Retornado cuando la cocina finalizó la bandeja y la comida aguarda en mostrador. En los estados previos (`QUEUED`, `IN_PREPARATION`) el campo `securityCode` se devuelve `null`, como en el contrato de la spec 021.
+
+> *Alineación 17/11/2026 (T011)*: el texto de `message` se corrigió al que devuelve `OrderLiveTrackingService` desde la spec 021 (precedente A-09); antes decía "¡Tu pedido está listo! Por favor, …".
 
 ```json
 {
@@ -44,7 +46,7 @@ Retornado cuando la cocina finalizó la bandeja y la comida aguarda en mostrador
   "isReadyForPickup": true,
   "securityCode": "4821",
   "kdsQueueSaturation": null,
-  "message": "¡Tu pedido está listo! Por favor, acercate al mostrador para retirar tu comida.",
+  "message": "¡Tu pedido está listo para retirar! Por favor, acercate al mostrador para retirar tu comida.",
   "serverTime": "2026-11-15T18:15:30Z"
 }
 ```
