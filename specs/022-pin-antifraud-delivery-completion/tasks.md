@@ -104,7 +104,7 @@
 
 ### Pruebas para User Story 3 (TDD RED)
 
-- [ ] T032 [P] [US3] Escribir RED test para botón "ENTREGAR PEDIDO" en `CounterTicketCard` (acción directa sin modal, inhabilitación instantánea y feedback verde "Entrega Confirmada") en `easyeat/frontend/src/test/counter/CounterTicketCardDeliveryAction.test.tsx`
+- [x] T032 [P] [US3] Escribir RED test para botón "ENTREGAR PEDIDO" en `CounterTicketCard` (acción directa sin modal, inhabilitación instantánea y feedback verde "Entrega Confirmada") en `easyeat/frontend/src/test/counter/CounterTicketCardDeliveryAction.test.tsx` **DONE 2026-11-18** — RED observed: 3 of 5 failing (the control is never disabled, no `counter-card-delivery-confirmed` badge exists). The 2 passing cases guard behavior T031 already delivered: the button starts enabled and one click calls `onDeliver(orderId)` directly, with no `window.confirm` and no dialog. As decided in the 18/11 `grill-me`, the green state lasts while the request travels and survives the `200` until the page removes the card (T031); the test file lives in `src/test/counter/` as the task says, like the T022/T029 tests in `src/test/tracking/`.
 - [ ] T033 [P] [US3] Escribir RED test para protección anti doble clic (múltiples clics concurrentes generan una sola llamada a `completeDelivery`) en `easyeat/frontend/src/test/counter/CounterTicketCardAntiDoubleClick.test.tsx`
 - [ ] T034 [P] [US3] Escribir RED test para manejo de error de red (notificación no intrusiva, botón rehabilitado y tarjeta conservada) en `easyeat/frontend/src/test/counter/CounterTicketCardErrorRecovery.test.tsx`
 
