@@ -55,7 +55,7 @@
 
 ### Implementación para User Story 1 (GREEN)
 
-- [ ] T013 [US1] Verificar el record DTO `OrderLiveTrackingResponse`, que ya expone `String securityCode` desde la spec 021, en `easyeat/backend/src/main/java/com/easyeat/order/dto/OrderLiveTrackingResponse.java` (cambios solo si T011 lo exige)
+- [x] T013 [US1] Verificar el record DTO `OrderLiveTrackingResponse`, que ya expone `String securityCode` desde la spec 021, en `easyeat/backend/src/main/java/com/easyeat/order/dto/OrderLiveTrackingResponse.java` (cambios solo si T011 lo exige) **DONE 2026-11-17** — Verified, no change needed, so no RED applies. The record already declares `String securityCode` (18th component) and serializes it as `securityCode`; T011 reads it from the real JSON payload, 3 of 3 passing. `String` matches the frontend `orderTracking.ts` type and the `VARCHAR(4)` column (A-05, A-09).
 - [ ] T014 [US1] Verificar la exposición de `securityCode` en `READY_FOR_PICKUP`, ya incorporada por la spec 021, en `easyeat/backend/src/main/java/com/easyeat/order/service/OrderLiveTrackingService.java` (cambios solo si T011 lo exige)
 - [ ] T015 [US1] Integrar `<SecurityPinDisplay />` en `ReadyForPickupCallout.tsx` para exhibición en pantalla de comensal en `easyeat/frontend/src/components/tracking/ReadyForPickupCallout.tsx`
 - [ ] T016 [US1] Integrar `<SecurityPinDisplay />` en la tarjeta de mostrador `CounterTicketCard.tsx` para el cotejo oral del operador en `easyeat/frontend/src/components/counter/CounterTicketCard.tsx`
