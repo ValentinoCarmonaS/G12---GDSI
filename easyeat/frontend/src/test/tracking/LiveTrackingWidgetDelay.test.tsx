@@ -127,7 +127,7 @@ describe('T021 [US2]: LiveTrackingWidget Delay Integration Tests (Spec 021 - COM
     );
 
     expect(screen.getByText(/¡Tu pedido está listo para retirar!/i)).toBeInTheDocument();
-    expect(screen.getByText(/9182/)).toBeInTheDocument();
+    expect(screen.getByText('9 1 8 2')).toBeInTheDocument(); // Spec 022 RF-003: spaced digits
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.queryByText(/min restante|min/i)).not.toBeInTheDocument();
   });

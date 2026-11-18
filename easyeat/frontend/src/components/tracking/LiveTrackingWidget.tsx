@@ -3,6 +3,7 @@ import { Clock, AlertTriangle, ChefHat, Users } from 'lucide-react';
 import { useOrderLiveTrackingPolling } from '../../hooks/useOrderLiveTrackingPolling';
 import { ScheduledSlotCountdown } from './ScheduledSlotCountdown';
 import { ReadyForPickupCallout } from './ReadyForPickupCallout';
+import { DeliveredOrderCallout } from './DeliveredOrderCallout';
 import { ConnectionStatusBadge } from '../common/ConnectionStatusBadge';
 import type { FulfillmentMode, OrderLiveTrackingResponse } from '../../types/orderTracking';
 
@@ -28,7 +29,12 @@ export const LiveTrackingWidget: React.FC<LiveTrackingWidgetProps> = ({
   const effectiveTicketNumber = tracking?.ticketNumber ?? ticketNumber ?? null;
   const isReady = tracking?.isReadyForPickup === true || tracking?.status === 'READY_FOR_PICKUP';
 
-  // Terminal state: ready for pickup
+  // Spec 022 terminal state: delivered at the counter; no PIN and no further polling (RF-014, RF-015).
+  if (tracking?.status === 'COMPLETED') {
+    return <DeliveredOrderCallout ticketNumber={effectiveTicketNumber} message={tracking.message} />;
+  }
+
+  // Ready for pickup: the PIN is shown while the diner walks to the counter
   if (isReady) {
     return (
       <div className="space-y-4">

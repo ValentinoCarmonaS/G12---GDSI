@@ -105,7 +105,7 @@ public class PaymentWebhookService {
             }
 
             if (order.getSecurityCode() == null || order.getSecurityCode().isBlank()) {
-                order.setSecurityCode(OrderService.generateSecurityCode());
+                order.assignSecurityCodeIfAbsent(OrderService.generateSecurityCode());
             }
             order.setStatus(OrderStatus.PAID);
             order.setUpdatedAt(Instant.now());

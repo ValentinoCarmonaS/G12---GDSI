@@ -30,7 +30,9 @@ Bajo la especificación 022, este contrato formaliza la bifurcación entre el es
 
 ### 3.1. Estado `READY_FOR_PICKUP`: Pedido listo para retiro (Con PIN de 4 dígitos)
 
-Retornado cuando la cocina finalizó la bandeja y la comida aguarda en mostrador.
+Retornado cuando la cocina finalizó la bandeja y la comida aguarda en mostrador. En los estados previos (`QUEUED`, `IN_PREPARATION`) el campo `securityCode` se devuelve `null`, como en el contrato de la spec 021.
+
+> *Alineación 17/11/2026 (T011)*: el texto de `message` se corrigió al que devuelve `OrderLiveTrackingService` desde la spec 021 (precedente A-09); antes decía "¡Tu pedido está listo! Por favor, …".
 
 ```json
 {
@@ -42,9 +44,9 @@ Retornado cuando la cocina finalizó la bandeja y la comida aguarda en mostrador
   "estimatedMinutesRemaining": null,
   "progressPercentage": 100,
   "isReadyForPickup": true,
-  "securityCode": 4821,
+  "securityCode": "4821",
   "kdsQueueSaturation": null,
-  "message": "¡Tu pedido está listo! Por favor, acercate al mostrador para retirar tu comida.",
+  "message": "¡Tu pedido está listo para retirar! Por favor, acercate al mostrador para retirar tu comida.",
   "serverTime": "2026-11-15T18:15:30Z"
 }
 ```
@@ -80,7 +82,7 @@ Retornado cuando el personal de mostrador confirmó la entrega física mediante 
    - Renderiza el callout destacado de pedido listo.
    - Renderiza el número de pedido `#ticketNumber`.
    - Renderiza el código numérico de seguridad formateado monospace con espaciado amplio: `4 8 2 1`.
-   - Continúa el ciclo de polling a cadencia estándar de 5 segundos.
+   - Continúa el ciclo de polling a la cadencia de la spec 021 (RF-022: entre 5 y 8 segundos; 6 segundos en `useOrderLiveTrackingPolling.ts`).
 2. **Recepción de `COMPLETED`**:
    - Conmuta la vista al estado terminal permanente con el mensaje `"Pedido Entregado — ¡Que disfrutes tu comida!"`.
    - Purga y oculta de inmediato el código numérico de seguridad.

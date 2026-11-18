@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import apiClient from '../../src/api/apiClient';
-import { counterApi, fetchCounterOrders } from '../../src/api/counterApi';
+import { completeDelivery, counterApi, fetchCounterOrders } from '../../src/api/counterApi';
 import type { CounterReadyOrder } from '../../src/types/counter';
 
 vi.mock('../../src/api/apiClient', () => ({
   default: {
     get: vi.fn(),
+    post: vi.fn(),
   },
 }));
 
@@ -85,5 +86,41 @@ describe('counterApi — fetchCounterOrders (T003)', () => {
     });
     expect(onServerDate).toHaveBeenCalledWith(Date.parse('Sun, 15 Nov 2026 16:35:00 GMT'));
     expect(result).toEqual(sampleOrders);
+  });
+});
+
+describe('counterApi — completeDelivery (Spec 022 T030, contract 01)', () => {
+  const orderId = 'b1a2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('sends POST /counter/orders/{orderId}/complete-delivery with no body and returns the payload', async () => {
+    const payload = {
+      orderId,
+      ticketNumber: 42,
+      status: 'COMPLETED' as const,
+      completedAt: '2026-11-15T18:30:00Z',
+      message: 'Entrega completada exitosamente.',
+    };
+    vi.mocked(apiClient.post).mockResolvedValueOnce({ data: payload });
+
+    const result = await completeDelivery(orderId);
+
+    expect(apiClient.post).toHaveBeenCalledTimes(1);
+    expect(apiClient.post).toHaveBeenCalledWith(`/counter/orders/${orderId}/complete-delivery`);
+    expect(result).toEqual(payload);
+  });
+
+  it('is exposed on the counterApi object', () => {
+    expect(counterApi.completeDelivery).toBe(completeDelivery);
+  });
+
+  it('propagates HTTP errors (409, 404, 403) to the caller', async () => {
+    const conflict = Object.assign(new Error('Request failed with status code 409'), { response: { status: 409 } });
+    vi.mocked(apiClient.post).mockRejectedValueOnce(conflict);
+
+    await expect(completeDelivery(orderId)).rejects.toBe(conflict);
   });
 });

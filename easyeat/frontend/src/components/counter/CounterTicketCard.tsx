@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Clock, ChevronDown, ChevronUp, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { CounterReadyOrder } from '../../types/counter';
+import { SecurityPinDisplay } from '../common/SecurityPinDisplay';
 import {
   calculateWaitMinutes,
   formatWaitMinutes,
@@ -10,9 +11,30 @@ export interface CounterTicketCardProps {
   order: CounterReadyOrder;
   isExpanded: boolean;
   onToggle: (ticketId: string) => void;
+  /**
+   * Spec 022 T031/T035: confirms the physical delivery of this card's order. The card stays in its confirmed
+   * state once the returned promise resolves; the page removes it from the board.
+   */
+  onDeliver?: (orderId: string) => Promise<void> | void;
   serverOffsetMs?: number;
   nowMs?: number;
 }
+
+const COMMUNICATION_ERROR_MESSAGE = 'Error de comunicación al registrar la entrega. Por favor, reintentá.';
+
+/**
+ * Spec 022 T036 (RF-018, D-14, contract 01 §3.3–3.5): a 4xx carries an actionable `detail` (e.g. the order is no
+ * longer ready); a network error or a 5xx only says the request did not get through.
+ */
+const resolveDeliveryErrorMessage = (error: unknown): string => {
+  const response = (error as { response?: { status?: number; data?: { detail?: unknown } } } | null)?.response;
+  const status = response?.status ?? 0;
+  const detail = response?.data?.detail;
+  if (status >= 400 && status < 500 && typeof detail === 'string' && detail.trim() !== '') {
+    return detail;
+  }
+  return COMMUNICATION_ERROR_MESSAGE;
+};
 
 const formatSlotBoundary = (timeValue: string): string => {
   if (!timeValue) return '';
@@ -23,15 +45,42 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
   order,
   isExpanded,
   onToggle,
+  onDeliver,
   serverOffsetMs = 0,
   nowMs,
 }) => {
   const [liveNowMs, setLiveNowMs] = useState<number>(() => Date.now());
   const [avatarFailed, setAvatarFailed] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isDelivered, setIsDelivered] = useState<boolean>(false);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  // Clicks landing in the same turn run before `disabled` renders, so the guard must be synchronous (RF-008).
+  const deliveryLockRef = useRef<boolean>(false);
 
   useEffect(() => {
     setAvatarFailed(false);
   }, [order.customer.photoUrl]);
+
+  // Spec 022 US3 (RF-006..RF-009, D-08/D-09): direct action, instant disable and optimistic green feedback.
+  const handleDeliverClick = async () => {
+    if (!onDeliver || deliveryLockRef.current) {
+      return;
+    }
+    deliveryLockRef.current = true;
+    setDeliveryError(null);
+    setIsSubmitting(true);
+    setIsDelivered(true);
+    try {
+      await onDeliver(order.orderId);
+    } catch (error) {
+      // Rollback (RF-018): the card stays on the board with the button enabled for a manual retry.
+      deliveryLockRef.current = false;
+      setIsDelivered(false);
+      setDeliveryError(resolveDeliveryErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof nowMs === 'number') {
@@ -131,9 +180,9 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
               </span>
               <span
                 data-testid="counter-card-security-code"
-                className="font-mono text-base font-extrabold tracking-widest text-gray-900 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg inline-block"
+                className="bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg inline-block"
               >
-                {order.securityCode}
+                <SecurityPinDisplay pin={order.securityCode} className="text-base font-extrabold text-gray-900" />
               </span>
             </div>
           </div>
@@ -157,12 +206,40 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="pt-1"
           >
+            {deliveryError && (
+              <div
+                role="alert"
+                data-testid="counter-card-delivery-error"
+                className="mb-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900"
+              >
+                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                <span>{deliveryError}</span>
+              </div>
+            )}
             <button
               type="button"
               data-testid="counter-card-delivery-button"
-              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold uppercase tracking-wider rounded-xl shadow-sm transition-colors"
+              onClick={handleDeliverClick}
+              disabled={isSubmitting || isDelivered}
+              aria-busy={isSubmitting}
+              aria-live="polite"
+              className={`w-full py-2.5 px-4 text-xs font-extrabold uppercase tracking-wider rounded-xl shadow-sm transition-colors ${
+                isDelivered
+                  ? 'bg-emerald-50 border border-emerald-300 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
             >
-              ENTREGAR PEDIDO
+              {isDelivered ? (
+                <span
+                  data-testid="counter-card-delivery-confirmed"
+                  className="inline-flex items-center justify-center gap-1.5 text-emerald-800"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Entrega Confirmada
+                </span>
+              ) : (
+                'ENTREGAR PEDIDO'
+              )}
             </button>
           </div>
         </div>

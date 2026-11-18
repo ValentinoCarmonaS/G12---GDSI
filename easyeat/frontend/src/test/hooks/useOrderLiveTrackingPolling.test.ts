@@ -149,7 +149,8 @@ describe('T011 [US1]: useOrderLiveTrackingPolling Hook Unit Tests (Spec 021 & 01
     expect(orderTrackingApi.getLiveTracking).toHaveBeenCalledTimes(1);
   });
 
-  it('halts polling permanently once order reaches READY_FOR_PICKUP terminal state', async () => {
+  // Spec 022 T027: READY_FOR_PICKUP is no longer terminal; polling continues until COMPLETED (edge case 8).
+  it('keeps polling once order reaches READY_FOR_PICKUP, so the delivery is seen live', async () => {
     const readyData: OrderLiveTrackingData = {
       ...mockTrackingData,
       status: 'READY_FOR_PICKUP',
@@ -166,6 +167,6 @@ describe('T011 [US1]: useOrderLiveTrackingPolling Hook Unit Tests (Spec 021 & 01
       await vi.advanceTimersByTimeAsync(18000);
     });
 
-    expect(orderTrackingApi.getLiveTracking).not.toHaveBeenCalled();
+    expect(orderTrackingApi.getLiveTracking).toHaveBeenCalledTimes(3);
   });
 });
