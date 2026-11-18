@@ -136,7 +136,7 @@ Antes de definir el diseño técnico, se auditó exhaustivamente la base de cód
   - Recibe `pin: string | null | undefined` (tipo alineado con el `securityCode: String` de las specs 020/021) y clases personalizables.
   - Aplica tipografía monoespaciada destacada (`font-mono font-bold tracking-[0.25em]`).
   - Formatea los dígitos separándolos con espacios: `pin.split('').join(' ')` (ejemplo: `4 8 2 1`).
-  - Si el PIN no está disponible (caso borde 10), renderiza un marcador neutral `- - - -`.
+  - Si el PIN no está disponible (caso borde 10), renderiza un marcador neutral `- - - -`. *Precisión 17/11/2026 (T008/T009)*: "no disponible" incluye cualquier valor que no cumpla `^[1-9][0-9]{3}$` (la regla de `chk_orders_security_code`), no solo `null`/`undefined`, para no exhibir nunca un código que no podría existir en la orden (Invariante 4).
   - Se reutiliza tanto en la tarjeta de mostrador como en la llamada de retiro del comensal (`ReadyForPickupCallout.tsx`).
 - **Justificación**: Garantiza identidad visual idéntica entre la pantalla del comensal y la terminal de ventanilla (`RF-003`, `RF-004`, `Invariante 3`).
 - **Alternativas descartadas**:
