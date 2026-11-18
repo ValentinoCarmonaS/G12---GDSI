@@ -112,4 +112,21 @@ describe('CounterWorkspacePage delivery removal (Spec 022 T031)', () => {
     expect(within(card104).getByTestId('counter-card-expanded-body')).toBeInTheDocument();
     expect(screen.getByTestId('counter-ready-count')).toHaveTextContent('2');
   });
+
+  it('lets the failure reach the card, which shows its notice and re-enables the button (Spec 022 T034, RF-018)', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(counterApi, 'completeDelivery').mockRejectedValue(new Error('Network Error'));
+    renderPage();
+    await expandBoth(user);
+
+    const card104 = screen.getByTestId(`counter-ticket-card-${order104.ticketId}`);
+    await user.click(within(card104).getByTestId('counter-card-delivery-button'));
+
+    expect(await within(card104).findByRole('alert')).toHaveTextContent(
+      'Error de comunicación al registrar la entrega. Por favor, reintentá.'
+    );
+    expect(within(card104).getByTestId('counter-card-delivery-button')).toBeEnabled();
+    const card105 = screen.getByTestId(`counter-ticket-card-${order105.ticketId}`);
+    expect(within(card105).queryByRole('alert')).not.toBeInTheDocument();
+  });
 });
