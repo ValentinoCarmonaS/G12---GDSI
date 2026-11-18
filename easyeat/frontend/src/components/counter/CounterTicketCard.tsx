@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Clock, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
+import { Clock, ChevronDown, ChevronUp, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { CounterReadyOrder } from '../../types/counter';
 import { SecurityPinDisplay } from '../common/SecurityPinDisplay';
 import {
@@ -20,6 +20,22 @@ export interface CounterTicketCardProps {
   nowMs?: number;
 }
 
+const COMMUNICATION_ERROR_MESSAGE = 'Error de comunicación al registrar la entrega. Por favor, reintentá.';
+
+/**
+ * Spec 022 T036 (RF-018, D-14, contract 01 §3.3–3.5): a 4xx carries an actionable `detail` (e.g. the order is no
+ * longer ready); a network error or a 5xx only says the request did not get through.
+ */
+const resolveDeliveryErrorMessage = (error: unknown): string => {
+  const response = (error as { response?: { status?: number; data?: { detail?: unknown } } } | null)?.response;
+  const status = response?.status ?? 0;
+  const detail = response?.data?.detail;
+  if (status >= 400 && status < 500 && typeof detail === 'string' && detail.trim() !== '') {
+    return detail;
+  }
+  return COMMUNICATION_ERROR_MESSAGE;
+};
+
 const formatSlotBoundary = (timeValue: string): string => {
   if (!timeValue) return '';
   return timeValue.length >= 5 ? timeValue.slice(0, 5) : timeValue;
@@ -37,6 +53,7 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
   const [avatarFailed, setAvatarFailed] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isDelivered, setIsDelivered] = useState<boolean>(false);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
   // Clicks landing in the same turn run before `disabled` renders, so the guard must be synchronous (RF-008).
   const deliveryLockRef = useRef<boolean>(false);
 
@@ -50,10 +67,19 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
       return;
     }
     deliveryLockRef.current = true;
+    setDeliveryError(null);
     setIsSubmitting(true);
     setIsDelivered(true);
-    await onDeliver(order.orderId);
-    setIsSubmitting(false);
+    try {
+      await onDeliver(order.orderId);
+    } catch (error) {
+      // Rollback (RF-018): the card stays on the board with the button enabled for a manual retry.
+      deliveryLockRef.current = false;
+      setIsDelivered(false);
+      setDeliveryError(resolveDeliveryErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -180,6 +206,16 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
             onClick={(e) => e.stopPropagation()}
             className="pt-1"
           >
+            {deliveryError && (
+              <div
+                role="alert"
+                data-testid="counter-card-delivery-error"
+                className="mb-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900"
+              >
+                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                <span>{deliveryError}</span>
+              </div>
+            )}
             <button
               type="button"
               data-testid="counter-card-delivery-button"
