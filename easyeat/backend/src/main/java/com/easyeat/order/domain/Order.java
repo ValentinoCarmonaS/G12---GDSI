@@ -254,6 +254,25 @@ public class Order {
         return completedAt;
     }
 
+    /**
+     * Terminal delivery transition (spec 022, data-model invariants 4 and 5): a READY_FOR_PICKUP order becomes
+     * COMPLETED and its completion instant is fixed once and for all.
+     *
+     * @throws IllegalArgumentException if {@code deliveredAt} is null
+     * @throws IllegalStateException    if the order is not READY_FOR_PICKUP or was already delivered
+     */
+    public void markDelivered(Instant deliveredAt) {
+        if (deliveredAt == null) {
+            throw new IllegalArgumentException("The delivery instant is required");
+        }
+        if (status != OrderStatus.READY_FOR_PICKUP || completedAt != null) {
+            throw new IllegalStateException("Order " + id + " cannot be delivered from status " + status);
+        }
+        this.status = OrderStatus.COMPLETED;
+        this.completedAt = deliveredAt;
+        this.updatedAt = deliveredAt;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
