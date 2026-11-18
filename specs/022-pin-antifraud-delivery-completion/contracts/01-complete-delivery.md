@@ -42,6 +42,8 @@ Retornado cuando la orden se encontraba en estado `READY_FOR_PICKUP` y la entreg
 }
 ```
 
+> *Enmienda 18/11/2026 (T023, aprobada por Luis en `grill-me`)*: una orden en `READY_FOR_PICKUP` sin ticket KDS (posible por la rama de respaldo de `markTicketReadyForPickup`, spec 020) se completa igualmente y responde `200` con `"ticketNumber": null`; no se bloquea una entrega física real.
+
 ### 3.2. Éxito idempotente: `200 OK` (Reintento de red o petición concurrente)
 
 Retornado cuando la orden **ya se encuentra** en estado `COMPLETED`. El sistema no muta datos, no altera el `completedAt` original y no dispara efectos secundarios.
@@ -90,6 +92,7 @@ Retornado si el `orderId` especificado no existe en el sistema.
 
 - `401`: Token JWT faltante, inválido o expirado.
 - `403`: Usuario autenticado sin rol de mostrador o administración (`COMENSAL`, `CHEF` sin permisos cruzados).
+- `403`: Usuario `ENCARGADO` cuyo establecimiento (`tenantId`) no coincide con el de la orden, igual que en `ready-for-pickup` de cocina (`TenantViolationException`); el `ADMINISTRADOR` queda exento. La orden no se modifica. *Enmienda 18/11/2026 (T023, aprobada por Luis en `grill-me`).*
 
 ---
 

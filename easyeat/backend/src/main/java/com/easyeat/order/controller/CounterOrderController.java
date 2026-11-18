@@ -5,9 +5,11 @@ import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.order.domain.KdsTicket;
 import com.easyeat.order.domain.KdsTicketStatus;
 import com.easyeat.order.domain.Order;
+import com.easyeat.order.dto.CompleteDeliveryResponse;
 import com.easyeat.order.dto.CounterReadyOrderResponse;
 import com.easyeat.order.repository.KdsTicketRepository;
 import com.easyeat.order.repository.OrderRepository;
+import com.easyeat.order.service.CounterOrderService;
 import com.easyeat.profile.repository.UserPhotoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +20,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,6 +48,17 @@ public class CounterOrderController {
     private final UserRepository userRepository;
     private final UserPhotoRepository userPhotoRepository;
     private final Clock clock;
+    private final CounterOrderService counterOrderService;
+
+    public CounterOrderController(
+            KdsTicketRepository kdsTicketRepository,
+            OrderRepository orderRepository,
+            UserRepository userRepository,
+            UserPhotoRepository userPhotoRepository,
+            Clock clock
+    ) {
+        this(kdsTicketRepository, orderRepository, userRepository, userPhotoRepository, clock, null);
+    }
 
     @Autowired
     public CounterOrderController(
@@ -51,13 +66,15 @@ public class CounterOrderController {
             OrderRepository orderRepository,
             @Autowired(required = false) UserRepository userRepository,
             @Autowired(required = false) UserPhotoRepository userPhotoRepository,
-            @Autowired(required = false) Clock clock
+            @Autowired(required = false) Clock clock,
+            CounterOrderService counterOrderService
     ) {
         this.kdsTicketRepository = kdsTicketRepository;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.userPhotoRepository = userPhotoRepository;
         this.clock = (clock != null) ? clock : Clock.system(BUENOS_AIRES_ZONE);
+        this.counterOrderService = counterOrderService;
     }
 
     @GetMapping("/orders")
@@ -93,6 +110,19 @@ public class CounterOrderController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
                 .body(responses);
+    }
+
+    /**
+     * Confirms the physical delivery of a ready order (spec 022, US2, contract 01): 200 on the first and on
+     * idempotent calls, 409 when not ready, 404 when unknown, 403 for another establishment's staff.
+     */
+    @PostMapping("/orders/{orderId}/complete-delivery")
+    @PreAuthorize("hasAnyRole('ENCARGADO', 'ADMINISTRADOR')")
+    public ResponseEntity<CompleteDeliveryResponse> completeDelivery(
+            @PathVariable UUID orderId,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(counterOrderService.completeDelivery(orderId, resolveAuthenticatedUser(user)));
     }
 
     private UUID resolveEstablishmentId(User user, UUID establishmentIdParam) {

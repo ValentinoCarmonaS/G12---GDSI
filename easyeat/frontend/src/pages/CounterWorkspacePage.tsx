@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { authApi } from '../api/authApi';
+import { counterApi } from '../api/counterApi';
 import { useAuth } from '../hooks/useAuth';
 import { useCounterOrdersPolling } from '../hooks/useCounterOrdersPolling';
 import { CounterConnectionBanner } from '../components/counter/CounterConnectionBanner';
@@ -16,6 +17,23 @@ export const CounterWorkspacePage: React.FC = () => {
   const { orders, isDisconnected, serverOffsetMs } = useCounterOrdersPolling({
     establishmentId: user?.tenantId ?? undefined,
   });
+
+  // Spec 022 T031: orders confirmed as delivered leave the board at once; the next poll no longer returns them.
+  const [deliveredOrderIds, setDeliveredOrderIds] = useState<Set<string>>(() => new Set<string>());
+  const visibleOrders = useMemo(
+    () => orders.filter((order) => !deliveredOrderIds.has(order.orderId)),
+    [orders, deliveredOrderIds]
+  );
+
+  const handleDeliver = useCallback(async (orderId: string) => {
+    try {
+      await counterApi.completeDelivery(orderId);
+    } catch {
+      // The card stays on the board so the operator can retry (RF-018); the notice is US3 (T036).
+      return;
+    }
+    setDeliveredOrderIds((prev) => new Set(prev).add(orderId));
+  }, []);
 
   useEffect(() => {
     // Validate token_version against the backend on workspace mount.
@@ -50,7 +68,7 @@ export const CounterWorkspacePage: React.FC = () => {
             data-testid="counter-ready-count"
             className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200"
           >
-            {orders.length}
+            {visibleOrders.length}
           </span>
         </div>
 
@@ -58,7 +76,7 @@ export const CounterWorkspacePage: React.FC = () => {
       </div>
 
       {/* Empty state or deterministic grid of collapsible cards (RF-005..RF-019) */}
-      {orders.length === 0 ? (
+      {visibleOrders.length === 0 ? (
         <div
           data-testid="counter-empty-state"
           className="bg-white rounded-2xl border border-gray-200 p-10 text-center shadow-sm"
@@ -72,12 +90,13 @@ export const CounterWorkspacePage: React.FC = () => {
           data-testid="counter-orders-grid"
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start"
         >
-          {orders.map((order) => (
+          {visibleOrders.map((order) => (
             <CounterTicketCard
               key={order.ticketId}
               order={order}
               isExpanded={expandedTicketIds.has(order.ticketId)}
               onToggle={handleToggleCard}
+              onDeliver={handleDeliver}
               serverOffsetMs={serverOffsetMs}
             />
           ))}

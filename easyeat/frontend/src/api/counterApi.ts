@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import type { CounterReadyOrder } from '../types/counter';
+import type { CompleteDeliveryResponse, CounterReadyOrder } from '../types/counter';
 
 export interface FetchCounterOrdersOptions {
   status?: string;
@@ -43,6 +43,16 @@ export const fetchCounterOrders = async (
   return response.data;
 };
 
+/**
+ * Confirms the physical delivery of a ready order (Spec 022, contract 01). Idempotent on the server:
+ * a retry answers 200 with the original `completedAt`. HTTP errors (409, 404, 403) reach the caller.
+ */
+export const completeDelivery = async (orderId: string): Promise<CompleteDeliveryResponse> => {
+  const response = await apiClient.post<CompleteDeliveryResponse>(`/counter/orders/${orderId}/complete-delivery`);
+  return response.data;
+};
+
 export const counterApi = {
   fetchCounterOrders,
+  completeDelivery,
 };

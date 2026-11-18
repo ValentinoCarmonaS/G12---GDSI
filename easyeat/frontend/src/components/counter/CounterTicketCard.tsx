@@ -11,6 +11,8 @@ export interface CounterTicketCardProps {
   order: CounterReadyOrder;
   isExpanded: boolean;
   onToggle: (ticketId: string) => void;
+  /** Spec 022 T031: confirms the physical delivery of this card's order. */
+  onDeliver?: (orderId: string) => void;
   serverOffsetMs?: number;
   nowMs?: number;
 }
@@ -24,6 +26,7 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
   order,
   isExpanded,
   onToggle,
+  onDeliver,
   serverOffsetMs = 0,
   nowMs,
 }) => {
@@ -161,6 +164,7 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
             <button
               type="button"
               data-testid="counter-card-delivery-button"
+              onClick={() => onDeliver?.(order.orderId)}
               className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold uppercase tracking-wider rounded-xl shadow-sm transition-colors"
             >
               ENTREGAR PEDIDO

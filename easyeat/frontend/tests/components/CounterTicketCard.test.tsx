@@ -217,3 +217,22 @@ describe('CounterTicketCard PIN (Spec 022 T016, US1, RF-004, edge case 10)', () 
     expect(screen.getByTestId('counter-card-delivery-container')).toBeInTheDocument();
   });
 });
+
+describe('CounterTicketCard delivery action wiring (Spec 022 T031)', () => {
+  const nowMs = Date.parse(sampleOrder.readyAt) + 60_000;
+
+  it('calls onDeliver with the order id when "ENTREGAR PEDIDO" is pressed, without toggling the card', async () => {
+    const user = userEvent.setup();
+    const onDeliver = vi.fn();
+    const onToggle = vi.fn();
+    render(
+      <CounterTicketCard order={sampleOrder} isExpanded={true} onToggle={onToggle} onDeliver={onDeliver} nowMs={nowMs} />
+    );
+
+    await user.click(screen.getByTestId('counter-card-delivery-button'));
+
+    expect(onDeliver).toHaveBeenCalledTimes(1);
+    expect(onDeliver).toHaveBeenCalledWith(sampleOrder.orderId);
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+});
