@@ -2,7 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useOrderLiveTrackingPolling } from '../../hooks/useOrderLiveTrackingPolling';
 import { orderTrackingApi } from '../../api/orderTrackingApi';
-import type { OrderLiveTrackingResponse } from '../../types/orderTracking';
+import type { OrderLiveTrackingData } from '../../types/orderTracking';
 
 vi.mock('../../api/orderTrackingApi', () => ({
   orderTrackingApi: {
@@ -10,8 +10,8 @@ vi.mock('../../api/orderTrackingApi', () => ({
   },
 }));
 
-describe('T027 [US2]: useOrderLiveTrackingPolling Hook Unit Tests', () => {
-  const mockTrackingData: OrderLiveTrackingResponse = {
+describe('T011 [US1]: useOrderLiveTrackingPolling Hook Unit Tests (Spec 021 & 016)', () => {
+  const mockTrackingData: OrderLiveTrackingData = {
     orderId: 'order-123',
     ticketNumber: 142,
     status: 'IN_PROGRESS',
@@ -20,13 +20,18 @@ describe('T027 [US2]: useOrderLiveTrackingPolling Hook Unit Tests', () => {
     estimatedMinutesRemaining: 18,
     progressPercentage: 35,
     isReadyForPickup: false,
-    kdsQueueSaturation: {
-      activeOrdersAhead: 2,
-      kitchenStatus: 'NORMAL',
-      globalDelayAppliedMinutes: 0,
-    },
     message: 'Tu comida se está preparando en la cocina.',
     serverTime: new Date().toISOString(),
+    positionAhead: null,
+    estimatedTotalMinutes: 20,
+    elapsedMinutes: 2,
+    remainingMinutes: 18,
+    progressPercent: 35,
+    specificDelayMinutes: 0,
+    securityCode: null,
+    startedAt: new Date(Date.now() - 120000).toISOString(),
+    readyAt: null,
+    items: [{ dishName: 'Milanesa con Papas', quantity: 1 }],
   };
 
   beforeEach(() => {
@@ -38,64 +43,77 @@ describe('T027 [US2]: useOrderLiveTrackingPolling Hook Unit Tests', () => {
     vi.useRealTimers();
   });
 
-  it('AS-5/AS-7: polls getLiveTracking with 5000ms cadence during normal IN_PROGRESS preparation', async () => {
+  it('polls getLiveTracking with regular 6000ms cadence during active tracking (RF-022, SC-007)', async () => {
     vi.mocked(orderTrackingApi.getLiveTracking).mockResolvedValue(mockTrackingData);
 
     const { result } = renderHook(() => useOrderLiveTrackingPolling('order-123'));
 
     expect(result.current.isLoading).toBe(true);
 
-    // Initial fetch
+    // Initial fetch at t=0
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
     });
 
     expect(orderTrackingApi.getLiveTracking).toHaveBeenCalledTimes(1);
 
-    // Advance 5000ms
+    // Advance 6000ms
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(5000);
+      await vi.advanceTimersByTimeAsync(6000);
     });
 
     expect(orderTrackingApi.getLiveTracking).toHaveBeenCalledTimes(2);
-  });
 
-  it('AS-6/CB-006: accelerates cadence to 3000ms when isCountdownActive is true in proximity phase', async () => {
-    const proximityData: OrderLiveTrackingResponse = {
-      ...mockTrackingData,
-      isCountdownActive: true,
-      estimatedMinutesRemaining: 12,
-    };
-    vi.mocked(orderTrackingApi.getLiveTracking).mockResolvedValue(proximityData);
-
-    renderHook(() => useOrderLiveTrackingPolling('order-123', proximityData));
-
+    // Advance another 6000ms
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(3000);
+      await vi.advanceTimersByTimeAsync(6000);
     });
 
-    expect(orderTrackingApi.getLiveTracking).toHaveBeenCalledWith('order-123');
+    expect(orderTrackingApi.getLiveTracking).toHaveBeenCalledTimes(3);
   });
 
-  it('AS-8/INV-008: halts polling permanently once order reaches READY_FOR_PICKUP terminal state', async () => {
-    const readyData: OrderLiveTrackingResponse = {
-      ...mockTrackingData,
-      status: 'READY_FOR_PICKUP',
-      isReadyForPickup: true,
-      estimatedMinutesRemaining: null,
-      progressPercentage: 100,
-    };
+  it('activates isDisconnected = true after sustained network errors exceeding 15 seconds (RF-026, SC-008)', async () => {
+    vi.mocked(orderTrackingApi.getLiveTracking)
+      .mockResolvedValueOnce(mockTrackingData) // Initial success
+      .mockRejectedValue(new Error('Network offline')); // Subsequent failures
 
-    vi.mocked(orderTrackingApi.getLiveTracking).mockResolvedValue(readyData);
+    const { result } = renderHook(() => useOrderLiveTrackingPolling('order-123'));
 
-    renderHook(() => useOrderLiveTrackingPolling('order-123', readyData));
-
-    // Timers advance, but no network calls should be made
+    // t = 0: initial success
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(15000);
+      await vi.advanceTimersByTimeAsync(0);
     });
+    expect(result.current.isDisconnected).toBe(false);
+    expect(result.current.tracking).toEqual(mockTrackingData);
 
-    expect(orderTrackingApi.getLiveTracking).not.toHaveBeenCalled();
+    // t = 6000: first failure (elapsed 6s <= 15s) -> isDisconnected remains false
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6000);
+    });
+    expect(result.current.isDisconnected).toBe(false);
+    // Preserves last known valid tracking data
+    expect(result.current.tracking).toEqual(mockTrackingData);
+
+    // t = 12000: second failure (elapsed 12s <= 15s) -> isDisconnected remains false
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6000);
+    });
+    expect(result.current.isDisconnected).toBe(false);
+
+    // t = 18000: third failure (elapsed 18s > 15s threshold) -> isDisconnected becomes true
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6000);
+    });
+    expect(result.current.isDisconnected).toBe(true);
+    // Still preserves last known valid state
+    expect(result.current.tracking).toEqual(mockTrackingData);
+
+    // Recovery at t = 24000: network resumes with success -> isDisconnected clears to false
+    vi.mocked(orderTrackingApi.getLiveTracking).mockResolvedValueOnce(mockTrackingData);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6000);
+    });
+    expect(result.current.isDisconnected).toBe(false);
   });
 
   it('pauses polling when Page Visibility API reports hidden and resumes on visible', async () => {
@@ -111,7 +129,7 @@ describe('T027 [US2]: useOrderLiveTrackingPolling Hook Unit Tests', () => {
     document.dispatchEvent(new Event('visibilitychange'));
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(10000);
+      await vi.advanceTimersByTimeAsync(12000);
     });
 
     // Should not poll while hidden
@@ -131,26 +149,24 @@ describe('T027 [US2]: useOrderLiveTrackingPolling Hook Unit Tests', () => {
     expect(orderTrackingApi.getLiveTracking).toHaveBeenCalledTimes(1);
   });
 
-  it.each(['READY_FOR_PICKUP', 'COMPLETED', 'CANCELLED', 'EXPIRED'] as const)(
-    'halts polling permanently when terminal status is %s',
-    async (terminalStatus) => {
-      const terminalData: OrderLiveTrackingResponse = {
-        ...mockTrackingData,
-        status: terminalStatus,
-        isReadyForPickup: terminalStatus === 'READY_FOR_PICKUP',
-        estimatedMinutesRemaining: null,
-        progressPercentage: terminalStatus === 'READY_FOR_PICKUP' || terminalStatus === 'COMPLETED' ? 100 : 0,
-      };
+  // Spec 022 T027: READY_FOR_PICKUP is no longer terminal; polling continues until COMPLETED (edge case 8).
+  it('keeps polling once order reaches READY_FOR_PICKUP, so the delivery is seen live', async () => {
+    const readyData: OrderLiveTrackingData = {
+      ...mockTrackingData,
+      status: 'READY_FOR_PICKUP',
+      isReadyForPickup: true,
+      remainingMinutes: null,
+      progressPercent: null,
+    };
 
-      vi.mocked(orderTrackingApi.getLiveTracking).mockResolvedValue(terminalData);
+    vi.mocked(orderTrackingApi.getLiveTracking).mockResolvedValue(readyData);
 
-      renderHook(() => useOrderLiveTrackingPolling('order-123', terminalData));
+    renderHook(() => useOrderLiveTrackingPolling('order-123', readyData));
 
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(15000);
-      });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(18000);
+    });
 
-      expect(orderTrackingApi.getLiveTracking).not.toHaveBeenCalled();
-    }
-  );
+    expect(orderTrackingApi.getLiveTracking).toHaveBeenCalledTimes(3);
+  });
 });

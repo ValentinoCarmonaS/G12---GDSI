@@ -330,7 +330,7 @@ class DishBasicServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.totalElements()).isEqualTo(1);
             assertThat(response.content()).hasSize(1);
-            assertThat(response.content().getFirst().name()).isEqualTo(dish1.getName());
+            assertThat(response.content().get(0).name()).isEqualTo(dish1.getName());
         }
 
         @Test

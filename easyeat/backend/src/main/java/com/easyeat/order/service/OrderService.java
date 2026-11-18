@@ -42,6 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -58,6 +59,13 @@ import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+    public static String generateSecurityCode() {
+        int code = 1000 + SECURE_RANDOM.nextInt(9000);
+        return String.valueOf(code);
+    }
 
     private final OrderRepository orderRepository;
     private final EstablishmentRepository establishmentRepository;
@@ -163,8 +171,9 @@ public class OrderService {
 
         if (request.getFulfillmentMode() == FulfillmentMode.IMMEDIATE) {
             pickupDate = today;
-            timeSlotStart = nowTime.truncatedTo(ChronoUnit.MINUTES);
-            timeSlotEnd = timeSlotStart.plusMinutes(leadTime);
+            int normalizedMinute = (nowTime.getMinute() / 15) * 15;
+            timeSlotStart = LocalTime.of(nowTime.getHour(), normalizedMinute, 0);
+            timeSlotEnd = timeSlotStart.plusMinutes(15);
 
             boolean isOpenNow;
             if (operatingScheduleRepository != null) {
@@ -274,6 +283,7 @@ public class OrderService {
         order.setTimeSlotStart(timeSlotStart);
         order.setTimeSlotEnd(timeSlotEnd);
         order.setStatus(OrderStatus.PENDING_PAYMENT);
+        order.assignSecurityCodeIfAbsent(generateSecurityCode());
 
         order.setCreatedAt(nowInstant);
         order.setUpdatedAt(nowInstant);

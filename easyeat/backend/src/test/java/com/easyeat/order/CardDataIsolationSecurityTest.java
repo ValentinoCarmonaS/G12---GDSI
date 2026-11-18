@@ -119,7 +119,7 @@ class CardDataIsolationSecurityTest {
 
             for (Path sqlFile : sqlFiles) {
                 String content = Files.readString(sqlFile).toLowerCase();
-                for (String forbidden : List.of("card_number", "cardnumber", "pan", "cvv", "cvc", "security_code", "cardholder_name")) {
+                for (String forbidden : List.of("card_number", "cardnumber", "pan", "cvv", "cvc", "card_security_code", "cardholder_name")) {
                     assertThat(content)
                             .as("El script de migración %s no debe definir columnas de tarjetas (%s)", sqlFile.getFileName(), forbidden)
                             .doesNotContain(forbidden + " ");
@@ -145,6 +145,8 @@ class CardDataIsolationSecurityTest {
         Field[] fields = clazz.getDeclaredFields();
         List<String> detectedCardFields = Arrays.stream(fields)
                 .map(Field::getName)
+                // Excluir securityCode en Order y OrderLiveTrackingResponse (código PIN de 4 dígitos para retiro verbal en mostrador, no es dato de tarjeta bancaria)
+                .filter(name -> !(name.equals("securityCode") && (clazz.equals(Order.class) || clazz.equals(OrderLiveTrackingResponse.class))))
                 .filter(name -> FORBIDDEN_CARD_PATTERNS.stream().anyMatch(pattern -> name.toLowerCase().contains(pattern)))
                 .collect(Collectors.toList());
 

@@ -207,7 +207,7 @@ class DishReviewInboxServiceTest {
                     .thenReturn(pageOf(List.of(d), PageRequest.of(0, 20), 1));
 
             DishReviewInboxItemResponse item =
-                    service.getInbox(InboxTab.PENDING, 0, 20).items().getFirst();
+                    service.getInbox(InboxTab.PENDING, 0, 20).items().get(0);
 
             assertThat(item.isResubmission()).isFalse();
             assertThat(item.reviewCycleCount()).isZero();
@@ -223,7 +223,7 @@ class DishReviewInboxServiceTest {
                     .thenReturn(List.of(new DishRejectionCount(d.getId(), 2L)));
 
             DishReviewInboxItemResponse item =
-                    service.getInbox(InboxTab.PENDING, 0, 20).items().getFirst();
+                    service.getInbox(InboxTab.PENDING, 0, 20).items().get(0);
 
             assertThat(item.isResubmission()).isTrue();
             assertThat(item.reviewCycleCount())
@@ -244,7 +244,7 @@ class DishReviewInboxServiceTest {
                     .thenReturn(pageOf(List.of(d), PageRequest.of(0, 20), 1));
 
             DishReviewInboxItemResponse item =
-                    service.getInbox(InboxTab.PENDING, 0, 20).items().getFirst();
+                    service.getInbox(InboxTab.PENDING, 0, 20).items().get(0);
 
             assertThat(item.authorName())
                     .as("the copy 'Autor no registrado' is the interface's business, not the "
@@ -265,7 +265,7 @@ class DishReviewInboxServiceTest {
             when(userRepository.findAllById(any())).thenReturn(List.of(suspended));
 
             DishReviewInboxItemResponse item =
-                    service.getInbox(InboxTab.PENDING, 0, 20).items().getFirst();
+                    service.getInbox(InboxTab.PENDING, 0, 20).items().get(0);
 
             assertThat(item.authorName()).isEqualTo("Camila Duarte");
             assertThat(item.authorDeactivated())
@@ -284,7 +284,7 @@ class DishReviewInboxServiceTest {
                     .thenReturn(pageOf(List.of(d), PageRequest.of(0, 20), 1));
             when(userRepository.findAllById(any())).thenReturn(List.of(active));
 
-            assertThat(service.getInbox(InboxTab.PENDING, 0, 20).items().getFirst()
+            assertThat(service.getInbox(InboxTab.PENDING, 0, 20).items().get(0)
                     .authorDeactivated()).isFalse();
         }
 
@@ -296,7 +296,7 @@ class DishReviewInboxServiceTest {
                     .thenReturn(pageOf(List.of(d), PageRequest.of(0, 20), 1));
             when(userRepository.findAllById(any())).thenReturn(List.of());
 
-            assertThat(service.getInbox(InboxTab.PENDING, 0, 20).items().getFirst().authorName())
+            assertThat(service.getInbox(InboxTab.PENDING, 0, 20).items().get(0).authorName())
                     .as("a dangling created_by must not make the whole inbox unreadable")
                     .isNull();
         }

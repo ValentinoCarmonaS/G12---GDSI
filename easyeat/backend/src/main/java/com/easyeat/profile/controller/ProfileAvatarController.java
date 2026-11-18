@@ -15,9 +15,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/profile/avatar")
+@RequestMapping("/api/v1/profile")
 public class ProfileAvatarController {
 
     private final UserPhotoService userPhotoService;
@@ -26,7 +27,7 @@ public class ProfileAvatarController {
         this.userPhotoService = userPhotoService;
     }
 
-    @PostMapping
+    @PostMapping("/avatar")
     @PreAuthorize("hasRole('COMENSAL')")
     public ResponseEntity<AvatarUploadResponse> uploadAvatar(
             @AuthenticationPrincipal User user,
@@ -39,12 +40,32 @@ public class ProfileAvatarController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping
+    @GetMapping("/avatar")
     public ResponseEntity<?> getAvatar(@AuthenticationPrincipal User user) {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Optional<UserPhoto> photoOpt = userPhotoService.getPhoto(user.getId());
+        return buildAvatarResponse(user.getId(), "private, max-age=86400");
+    }
+
+    @GetMapping("/users/{userId}/avatar")
+    @PreAuthorize("hasAnyRole('ENCARGADO', 'CHEF', 'ADMINISTRADOR')")
+    public ResponseEntity<?> getUserAvatarById(@PathVariable UUID userId) {
+        return buildAvatarResponse(userId, "private, max-age=3600");
+    }
+
+    @DeleteMapping("/avatar")
+    @PreAuthorize("hasRole('COMENSAL')")
+    public ResponseEntity<Void> removeAvatar(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        userPhotoService.deletePhoto(user.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    private ResponseEntity<?> buildAvatarResponse(UUID userId, String cacheControl) {
+        Optional<UserPhoto> photoOpt = userPhotoService.getPhoto(userId);
         if (photoOpt.isEmpty()) {
             ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                     HttpStatus.NOT_FOUND,
@@ -59,18 +80,7 @@ public class ProfileAvatarController {
         String contentType = photo.getContentType() != null ? photo.getContentType() : "image/jpeg";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, contentType)
-                .header(HttpHeaders.CACHE_CONTROL, "private, max-age=86400")
+                .header(HttpHeaders.CACHE_CONTROL, cacheControl)
                 .body(photo.getData());
     }
-
-    @DeleteMapping
-    @PreAuthorize("hasRole('COMENSAL')")
-    public ResponseEntity<Void> removeAvatar(@AuthenticationPrincipal User user) {
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        userPhotoService.deletePhoto(user.getId());
-        return ResponseEntity.noContent().build();
-    }
 }
-

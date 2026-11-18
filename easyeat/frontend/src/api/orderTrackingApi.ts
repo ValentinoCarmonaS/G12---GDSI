@@ -5,13 +5,43 @@ import type {
   KdsDelayAdjustmentRequest,
   KdsDelayAdjustmentResponse,
   KdsTicketReadyResponse,
+  KdsTicketResponse,
+  KdsDelayIncrementResponse,
 } from '../types/orderTracking';
+
+export type { KdsTicketReadyResponse, KdsTicketResponse, KdsDelayIncrementResponse };
+
+/**
+ * Marks a kitchen ticket as completed and ready for pickup at the counter (Spec 020 - US1 / Contrato 01).
+ */
+export const markTicketReadyForPickup = async (
+  ticketId: string
+): Promise<KdsTicketResponse> => {
+  const response = await apiClient.post<KdsTicketResponse>(
+    `/kitchen/tickets/${ticketId}/ready-for-pickup`
+  );
+  return response.data;
+};
+
+/**
+ * Adds a granular 5-minute cumulative delay to an active preparation ticket (Spec 021).
+ */
+export const addTicketDelay = async (
+  ticketId: string
+): Promise<KdsDelayIncrementResponse> => {
+  const response = await apiClient.post<KdsDelayIncrementResponse>(
+    `/kitchen/tickets/${ticketId}/add-delay`
+  );
+  return response.data;
+};
 
 export const orderTrackingApi = {
   /**
    * Retrieves payment confirmation and tracking details for the green screen and order summary.
    */
-  getConfirmationTracking: async (orderId: string): Promise<OrderConfirmationTrackingResponse> => {
+  getConfirmationTracking: async (
+    orderId: string
+  ): Promise<OrderConfirmationTrackingResponse> => {
     const response = await apiClient.get<OrderConfirmationTrackingResponse>(
       `/orders/${orderId}/confirmation-tracking`
     );
@@ -21,7 +51,9 @@ export const orderTrackingApi = {
   /**
    * Retrieves dynamic live tracking status, KDS queue saturation and estimated time remaining.
    */
-  getLiveTracking: async (orderId: string): Promise<OrderLiveTrackingResponse> => {
+  getLiveTracking: async (
+    orderId: string
+  ): Promise<OrderLiveTrackingResponse> => {
     const response = await apiClient.get<OrderLiveTrackingResponse>(
       `/orders/${orderId}/live-tracking`
     );
@@ -42,12 +74,12 @@ export const orderTrackingApi = {
   },
 
   /**
-   * Marks a kitchen ticket as completed and ready for pickup at the counter (US2).
+   * Marks a kitchen ticket as completed and ready for pickup at the counter (Spec 020 - US1).
    */
-  markTicketReadyForPickup: async (ticketId: string): Promise<KdsTicketReadyResponse> => {
-    const response = await apiClient.post<KdsTicketReadyResponse>(
-      `/kitchen/tickets/${ticketId}/ready-for-pickup`
-    );
-    return response.data;
-  },
+  markTicketReadyForPickup,
+
+  /**
+   * Adds a granular 5-minute cumulative delay to an active preparation ticket (Spec 021).
+   */
+  addTicketDelay,
 };

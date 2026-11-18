@@ -2,19 +2,20 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { orderTrackingApi } from '../api/orderTrackingApi';
 import type { OrderLiveTrackingResponse } from '../types/orderTracking';
 
+// Spec 022 (edge case 8, RF-017): READY_FOR_PICKUP is not terminal, so the diner at the counter sees the
+// delivery live; polling stops for good once the order is COMPLETED, CANCELLED or EXPIRED.
 const TERMINAL_TRACKING_STATUSES = new Set<string>([
-  'READY_FOR_PICKUP',
   'COMPLETED',
   'CANCELLED',
   'EXPIRED',
 ]);
 
+const POLLING_CADENCE_MS = 6000;
+const DISCONNECTION_THRESHOLD_MS = 15000;
+
 function isTerminalTracking(current: OrderLiveTrackingResponse | null): boolean {
   if (!current) return false;
-  return (
-    current.isReadyForPickup === true ||
-    TERMINAL_TRACKING_STATUSES.has(current.status)
-  );
+  return TERMINAL_TRACKING_STATUSES.has(current.status);
 }
 
 export interface UseOrderLiveTrackingPollingResult {
@@ -22,6 +23,7 @@ export interface UseOrderLiveTrackingPollingResult {
   isLoading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
+  isDisconnected: boolean;
 }
 
 export function useOrderLiveTrackingPolling(
@@ -31,10 +33,12 @@ export function useOrderLiveTrackingPolling(
   const [tracking, setTracking] = useState<OrderLiveTrackingResponse | null>(initialTracking || null);
   const [isLoading, setIsLoading] = useState<boolean>(!initialTracking);
   const [error, setError] = useState<Error | null>(null);
+  const [isDisconnected, setIsDisconnected] = useState<boolean>(false);
 
   const trackingRef = useRef<OrderLiveTrackingResponse | null>(tracking);
   trackingRef.current = tracking;
 
+  const lastSuccessTimeRef = useRef<number>(Date.now());
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -51,12 +55,27 @@ export function useOrderLiveTrackingPolling(
       abortControllerRef.current = new AbortController();
 
       const data = await orderTrackingApi.getLiveTracking(orderId);
-      setTracking(data);
+      
+      // Visual idempotence: only update state if content actually changed
+      const currentJson = JSON.stringify(trackingRef.current);
+      const newJson = JSON.stringify(data);
+      if (currentJson !== newJson) {
+        setTracking(data);
+      }
       trackingRef.current = data;
+
+      lastSuccessTimeRef.current = Date.now();
+      setIsDisconnected(false);
       setError(null);
     } catch (err: unknown) {
       if ((err as Error)?.name !== 'AbortError') {
-        setError(err instanceof Error ? err : new Error('Error al consultar seguimiento en vivo'));
+        const errorObj = err instanceof Error ? err : new Error('Error al consultar seguimiento en vivo');
+        setError(errorObj);
+
+        const elapsed = Date.now() - lastSuccessTimeRef.current;
+        if (elapsed > DISCONNECTION_THRESHOLD_MS) {
+          setIsDisconnected(true);
+        }
       }
     } finally {
       setIsLoading(false);
@@ -66,20 +85,11 @@ export function useOrderLiveTrackingPolling(
   useEffect(() => {
     let isMounted = true;
 
-    const getCadence = (current: OrderLiveTrackingResponse | null) => {
-      // 3000ms if proximity countdown active, 5000ms normal cadence
-      if (current?.isCountdownActive && (current?.estimatedMinutesRemaining != null && current.estimatedMinutesRemaining <= 15)) {
-        return 3000;
-      }
-      return 5000;
-    };
-
     const scheduleNext = () => {
       if (!isMounted) return;
       if (isTerminalTracking(trackingRef.current)) return;
       if (document.visibilityState === 'hidden') return;
 
-      const intervalMs = getCadence(trackingRef.current);
       timerRef.current = setTimeout(async () => {
         if (!isMounted) return;
         if (isTerminalTracking(trackingRef.current)) return;
@@ -87,10 +97,9 @@ export function useOrderLiveTrackingPolling(
 
         await fetchTracking();
         scheduleNext();
-      }, intervalMs);
+      }, POLLING_CADENCE_MS);
     };
 
-    // If initial tracking not provided, fetch immediately at t=0
     if (!initialTracking) {
       fetchTracking().then(() => {
         scheduleNext();
@@ -131,5 +140,6 @@ export function useOrderLiveTrackingPolling(
     isLoading,
     error,
     refetch: fetchTracking,
+    isDisconnected,
   };
 }

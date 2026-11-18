@@ -18,7 +18,9 @@ import java.util.UUID;
         },
         indexes = {
                 @Index(name = "idx_kds_tickets_establishment_status", columnList = "establishment_id, status, pickup_date, time_slot_start"),
-                @Index(name = "idx_kds_tickets_order_id", columnList = "order_id")
+                @Index(name = "idx_kds_tickets_order_id", columnList = "order_id"),
+                @Index(name = "idx_kds_tickets_active_queue", columnList = "establishment_id, status, pickup_date, time_slot_start, queued_at, id"),
+                @Index(name = "idx_kds_tickets_counter_ready", columnList = "establishment_id, status, pickup_date, ready_at, ticket_number")
         }
 )
 public class KdsTicket {
@@ -66,6 +68,9 @@ public class KdsTicket {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Column(name = "specific_delay_minutes", nullable = false)
+    private Integer specificDelayMinutes = 0;
+
     public KdsTicket() {
     }
 
@@ -91,6 +96,9 @@ public class KdsTicket {
         }
         if (this.status == null) {
             this.status = KdsTicketStatus.QUEUED;
+        }
+        if (this.specificDelayMinutes == null) {
+            this.specificDelayMinutes = 0;
         }
     }
 
@@ -196,5 +204,13 @@ public class KdsTicket {
 
     public void setCompletedAt(Instant completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Integer getSpecificDelayMinutes() {
+        return specificDelayMinutes != null ? specificDelayMinutes : 0;
+    }
+
+    public void setSpecificDelayMinutes(Integer specificDelayMinutes) {
+        this.specificDelayMinutes = specificDelayMinutes != null ? specificDelayMinutes : 0;
     }
 }

@@ -88,4 +88,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         @Param("establishmentId") UUID establishmentId,
         @Param("createdAt") Instant createdAt
     );
+
+    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items WHERE o.id IN :orderIds")
+    List<Order> findAllByIdWithItems(@Param("orderIds") java.util.Collection<UUID> orderIds);
 }

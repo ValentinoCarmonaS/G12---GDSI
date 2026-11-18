@@ -1,17 +1,34 @@
 package com.easyeat.order.domain;
 
 import com.easyeat.catalog.domain.Establishment;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class KdsTicketTest {
+
+    @Test
+    @DisplayName("Should declare composite index idx_kds_tickets_counter_ready on KdsTicket @Table (T005)")
+    void shouldDeclareCounterReadyCompositeIndex() {
+        Table tableAnnotation = KdsTicket.class.getAnnotation(Table.class);
+        assertThat(tableAnnotation).isNotNull();
+
+        assertThat(Arrays.asList(tableAnnotation.indexes()))
+                .anySatisfy(index -> {
+                    assertThat(index.name()).isEqualTo("idx_kds_tickets_counter_ready");
+                    assertThat(index.columnList())
+                            .isEqualTo("establishment_id, status, pickup_date, ready_at, ticket_number");
+                });
+    }
 
     @Test
     @DisplayName("Should initialize KdsTicket with default QUEUED status and current queuedAt")
@@ -44,5 +61,12 @@ class KdsTicketTest {
         assertThat(ticket.getStartedAt()).isNull();
         assertThat(ticket.getReadyAt()).isNull();
         assertThat(ticket.getCompletedAt()).isNull();
+        assertThat(ticket.getSpecificDelayMinutes()).isEqualTo(0);
+
+        ticket.setSpecificDelayMinutes(15);
+        assertThat(ticket.getSpecificDelayMinutes()).isEqualTo(15);
+
+        ticket.setSpecificDelayMinutes(null);
+        assertThat(ticket.getSpecificDelayMinutes()).isEqualTo(0);
     }
 }

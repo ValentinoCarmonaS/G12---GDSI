@@ -145,6 +145,9 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
         debitIngredientsStock(order);
 
         // Transition order to IN_PROGRESS
+        if (order.getSecurityCode() == null || order.getSecurityCode().isBlank()) {
+            order.assignSecurityCodeIfAbsent(OrderService.generateSecurityCode());
+        }
         order.setStatus(OrderStatus.IN_PROGRESS);
         order.setUpdatedAt(Instant.now());
         orderRepository.save(order);
@@ -243,6 +246,9 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
         debitIngredientsStock(order);
 
         // Transition order to IN_PROGRESS
+        if (order.getSecurityCode() == null || order.getSecurityCode().isBlank()) {
+            order.assignSecurityCodeIfAbsent(OrderService.generateSecurityCode());
+        }
         order.setStatus(OrderStatus.IN_PROGRESS);
         order.setUpdatedAt(Instant.now());
         orderRepository.save(order);
