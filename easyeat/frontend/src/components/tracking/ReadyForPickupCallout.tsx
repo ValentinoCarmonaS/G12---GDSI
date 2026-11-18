@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle, ShieldCheck, Utensils } from 'lucide-react';
+import { SecurityPinDisplay } from '../common/SecurityPinDisplay';
 
 export interface ReadyForPickupItem {
   dishName: string;
@@ -55,9 +56,7 @@ export const ReadyForPickupCallout: React.FC<ReadyForPickupCalloutProps> = ({
             <ShieldCheck className="w-4 h-4 text-green-200" />
             <span>Código de retiro</span>
           </div>
-          <span className="text-3xl font-black tracking-widest text-white font-mono">
-            {securityCode}
-          </span>
+          <SecurityPinDisplay pin={securityCode} className="text-3xl font-black text-white" />
           <p className="text-[11px] text-green-200 mt-1">
             Dictale este código de 4 dígitos al personal de mostrador
           </p>

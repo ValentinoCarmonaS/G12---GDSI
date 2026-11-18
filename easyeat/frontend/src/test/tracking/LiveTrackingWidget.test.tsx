@@ -194,7 +194,7 @@ describe('T012 [US1]: LiveTrackingWidget Component Tests (Spec 021 & 016)', () =
 
     expect(screen.getByText(/#142/)).toBeInTheDocument();
     expect(screen.getByText(/¡Tu pedido está listo para retirar!/i)).toBeInTheDocument();
-    expect(screen.getByText(/4821/)).toBeInTheDocument();
+    expect(screen.getByText('4 8 2 1')).toBeInTheDocument(); // Spec 022 RF-003: spaced digits
     expect(screen.getByText(/Hamburguesa Completa/i)).toBeInTheDocument();
     expect(screen.getByText(/Papas Fritas/i)).toBeInTheDocument();
     // Métricas purgadas
