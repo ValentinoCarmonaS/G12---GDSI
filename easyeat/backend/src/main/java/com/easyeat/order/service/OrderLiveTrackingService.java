@@ -42,6 +42,8 @@ import java.util.UUID;
 @Service
 public class OrderLiveTrackingService {
 
+    static final String DELIVERED_MESSAGE = "Pedido Entregado — ¡Que disfrutes tu comida!";
+
     private static final Logger log = LoggerFactory.getLogger(OrderLiveTrackingService.class);
 
     private OrderRepository orderRepository;
@@ -153,16 +155,43 @@ public class OrderLiveTrackingService {
                     .toList()
                 : List.of();
 
-        // Terminal state: READY_FOR_PICKUP or COMPLETED (D-05, AS-8, INV-008, CB-008)
+        // Spec 022 terminal state: delivered at the counter. Not ready for pickup any more, final message,
+        // and the PIN purged at the source (contract 03 §3.2, RF-014, RF-015, edge case 12).
+        if (order.getStatus() == OrderStatus.COMPLETED) {
+            return new OrderLiveTrackingResponse(
+                    order.getId(),
+                    ticketNumber,
+                    OrderStatus.COMPLETED,
+                    order.getFulfillmentMode(),
+                    false,
+                    null,
+                    100,
+                    false,
+                    null,
+                    DELIVERED_MESSAGE,
+                    now,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    ticketOpt.map(KdsTicket::getStartedAt).orElse(null),
+                    ticketOpt.map(KdsTicket::getReadyAt).orElse(null),
+                    items
+            );
+        }
+
+        // Ready for pickup (D-05, AS-8, INV-008, CB-008): the only state that exposes the PIN.
         boolean isReady = order.getStatus() == OrderStatus.READY_FOR_PICKUP ||
-                order.getStatus() == OrderStatus.COMPLETED ||
-                ticketOpt.map(t -> t.getStatus() == KdsTicketStatus.READY_FOR_PICKUP || t.getStatus() == KdsTicketStatus.COMPLETED).orElse(false);
+                ticketOpt.map(t -> t.getStatus() == KdsTicketStatus.READY_FOR_PICKUP).orElse(false);
 
         if (isReady) {
             return new OrderLiveTrackingResponse(
                     order.getId(),
                     ticketNumber,
-                    order.getStatus() == OrderStatus.COMPLETED ? OrderStatus.COMPLETED : OrderStatus.READY_FOR_PICKUP,
+                    OrderStatus.READY_FOR_PICKUP,
                     order.getFulfillmentMode(),
                     false,
                     null,
