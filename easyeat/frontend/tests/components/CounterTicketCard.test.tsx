@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CounterTicketCard } from '../../src/components/counter/CounterTicketCard';
 import type { CounterReadyOrder } from '../../src/types/counter';
@@ -119,10 +119,10 @@ describe('CounterTicketCard (T021, US3, ENC-2.1.1, RF-006..RF-011)', () => {
       />
     );
 
-    const securityCodeEl = screen.getByTestId('counter-card-security-code');
-    expect(securityCodeEl).toHaveTextContent('4821');
-    expect(securityCodeEl.className).toContain('font-mono');
-    expect(securityCodeEl.className).toContain('tracking-widest');
+    // Spec 022 T016 (RF-004): the PIN is rendered by the shared SecurityPinDisplay as "d d d d".
+    const securityCodeEl = within(screen.getByTestId('counter-card-security-code')).getByTestId('security-pin-display');
+    expect(securityCodeEl.textContent).toBe('4 8 2 1');
+    expect(securityCodeEl).toHaveClass('font-mono', 'tracking-[0.25em]');
 
     expect(screen.getByText('Valentino Carmona')).toBeInTheDocument();
     const avatarImg = screen.getByTestId(
@@ -193,5 +193,27 @@ describe('CounterTicketCard (T021, US3, ENC-2.1.1, RF-006..RF-011)', () => {
       screen.queryByTestId('counter-card-customer-avatar')
     ).not.toBeInTheDocument();
     expect(screen.getByText('Valentino Carmona')).toBeInTheDocument();
+  });
+});
+
+describe('CounterTicketCard PIN (Spec 022 T016, US1, RF-004, edge case 10)', () => {
+  const nowMs = Date.parse(sampleOrder.readyAt) + 60_000;
+
+  it('shows the stored PIN through SecurityPinDisplay, never the bare unspaced string', () => {
+    render(<CounterTicketCard order={sampleOrder} isExpanded={true} onToggle={vi.fn()} nowMs={nowMs} />);
+
+    const box = screen.getByTestId('counter-card-security-code');
+    expect(within(box).getByTestId('security-pin-display').textContent).toBe('4 8 2 1');
+    expect(screen.queryByText('4821')).not.toBeInTheDocument();
+  });
+
+  it('shows the neutral "- - - -" without blocking the card or the delivery control when the PIN is null', () => {
+    const orderWithoutPin: CounterReadyOrder = { ...sampleOrder, securityCode: null };
+    render(<CounterTicketCard order={orderWithoutPin} isExpanded={true} onToggle={vi.fn()} nowMs={nowMs} />);
+
+    const box = screen.getByTestId('counter-card-security-code');
+    expect(within(box).getByTestId('security-pin-display').textContent).toBe('- - - -');
+    expect(screen.getByText('Valentino Carmona')).toBeInTheDocument();
+    expect(screen.getByTestId('counter-card-delivery-container')).toBeInTheDocument();
   });
 });

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import type { CounterReadyOrder } from '../../types/counter';
+import { SecurityPinDisplay } from '../common/SecurityPinDisplay';
 import {
   calculateWaitMinutes,
   formatWaitMinutes,
@@ -131,9 +132,9 @@ export const CounterTicketCard: React.FC<CounterTicketCardProps> = ({
               </span>
               <span
                 data-testid="counter-card-security-code"
-                className="font-mono text-base font-extrabold tracking-widest text-gray-900 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg inline-block"
+                className="bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg inline-block"
               >
-                {order.securityCode}
+                <SecurityPinDisplay pin={order.securityCode} className="text-base font-extrabold text-gray-900" />
               </span>
             </div>
           </div>
