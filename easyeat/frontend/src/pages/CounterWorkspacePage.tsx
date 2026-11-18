@@ -25,13 +25,9 @@ export const CounterWorkspacePage: React.FC = () => {
     [orders, deliveredOrderIds]
   );
 
+  // A failure propagates to the card, which keeps itself on the board and shows its notice (RF-018, T036).
   const handleDeliver = useCallback(async (orderId: string) => {
-    try {
-      await counterApi.completeDelivery(orderId);
-    } catch {
-      // The card stays on the board so the operator can retry (RF-018); the notice is US3 (T036).
-      return;
-    }
+    await counterApi.completeDelivery(orderId);
     setDeliveredOrderIds((prev) => new Set(prev).add(orderId));
   }, []);
 

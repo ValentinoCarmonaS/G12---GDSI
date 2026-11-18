@@ -157,3 +157,24 @@
    - Gracias al bloqueo `PESSIMISTIC_WRITE` (`findByIdForUpdate`), el primer hilo transiciona la orden y el segundo hilo responde con el `200 OK` idempotente.
    - En base de datos se registra un único `completed_at` sin colisiones ni errores 500.
    - Ambas pantallas remueven la tarjeta limpiamente.
+
+---
+
+## 3. Matriz de evidencia y prueba de humo (T040, 18/11/2026)
+
+El cuerpo de la tarea T040 mencionaba "13 escenarios (a–m)"; esta guía define **12 (A–L)**, y se validaron esos 12. La validación combina, según lo acordado en el `grill-me` del 18/11/2026: (1) las suites automatizadas que prueban cada escenario, todas en verde en T038 (1780 pruebas de backend) y T039 (1075 de frontend), y (2) una prueba de humo con `curl` contra el backend real (`java -jar`, perfil `local`, puerto `18080`) sobre un PostgreSQL 16 descartable con Flyway hasta `V28`, usando los usuarios semilla de `db/dev` y cinco pedidos de Café Parque insertados por SQL. En esa sesión no había navegador, así que los escenarios visuales (C, E, H y la parte de pantalla de D, G, I y L) quedan cubiertos por las pruebas de componentes (Testing Library) y no por una corrida manual en navegador.
+
+| Escenario | Nombre | Suites automatizadas | Humo con `curl` (backend real) | Resultado |
+|---|---|---|---|---|
+| A | PIN al confirmar el pedido | `OrderPinCreationIntegrationTest`, `OrderSecurityCodeTest`, `OrderSecurityCodeMigrationTest`, `LegacyOrderSecurityCodeAssignmentIntegrationTest` | `live-tracking` en `READY_FOR_PICKUP` devuelve `securityCode: "4821"` | PASS |
+| B | PIN y botón en la tarjeta de mostrador | `CounterOrderControllerSecurityCodeTest`, `CounterTicketCard.test.tsx`, `SecurityPinDisplay.test.tsx`, `ReadyForPickupCalloutPin.test.tsx` | `GET /counter/orders` lista #201 `4821`, #202 `9102`, #203 `null` | PASS |
+| C | Acción directa, inhabilitación y verde | `CounterTicketCardDeliveryAction.test.tsx` | `POST complete-delivery` → `200`, `"Entrega completada exitosamente."` | PASS |
+| D | Cierre atómico y remoción de la tarjeta | `CompleteDeliveryIntegrationTest`, `CounterOrderServiceTest`, `CounterWorkspacePageDelivery.test.tsx` | En BD, orden y ticket quedan `COMPLETED` con el mismo `completed_at`, no nulo | PASS |
+| E | Anti doble clic | `CounterTicketCardAntiDoubleClick.test.tsx` | — (solo de interfaz) | PASS |
+| F | Idempotencia ante reintentos | `CompleteDeliveryIntegrationTest`, `CounterOrderControllerTest` | El reintento devuelve `200` con el mismo `completedAt` y el mensaje idempotente; la fila no cambia (`status`, `completed_at`, `updated_at`) | PASS |
+| G | Vista terminal y fin del polling | `OrderLiveTrackingCompletedTest`, `useOrderLiveTrackingPollingCompleted.test.ts`, `DeliveredOrderCallout.test.tsx`, `DeliveredTrackingIntegration.test.tsx` | `live-tracking` → `COMPLETED`, `securityCode: null`, `"Pedido Entregado — ¡Que disfrutes tu comida!"` | PASS |
+| H | Error de comunicación | `CounterTicketCardErrorRecovery.test.tsx`, `CounterWorkspacePageDelivery.test.tsx` | Los errores que la tarjeta debe mostrar se observaron reales: `409 INVALID_ORDER_STATE` (pedido `IN_PROGRESS`), `404 ORDER_NOT_FOUND` y `403` para un `COMENSAL` | PASS |
+| I | Pedido sin PIN | `CounterTicketCard.test.tsx` (`- - - -`), `CompleteDeliveryIntegrationTest` | El pedido #203, sin PIN, se completa con `200` | PASS |
+| J | El mostrador deja de recibir los entregados | `CounterOrderControllerIntegrationTest`, `CounterWorkspacePageDelivery.test.tsx` | Después de las entregas, `GET /counter/orders` devuelve `[]` | PASS |
+| K | Aislamiento del KDS de cocina (spec 019) | `KitchenKdsExclusionTest` (T037) | Cola activa: solo #204 `IN_PREPARATION` y #205 `QUEUED`; resumen: `readyForPickup 0`, `completedToday 3` | PASS |
+| L | Dos terminales a la vez | `CompleteDeliveryIntegrationTest` (carrera de dos hilos) | Dos `POST` en paralelo sobre #202: los dos responden `200`; en BD queda un solo `completed_at` | PASS |
