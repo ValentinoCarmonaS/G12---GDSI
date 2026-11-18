@@ -292,7 +292,7 @@ class CounterOrderControllerIntegrationTest {
         order104.addItem(new OrderItem(order104, UUID.randomUUID(), "Hamburguesa Completa con Papas", new BigDecimal("8000.00"), 2, new BigDecimal("16000.00")));
         order104.addItem(new OrderItem(order104, UUID.randomUUID(), "Limonada con Menta y Jengibre", new BigDecimal("2500.00"), 1, new BigDecimal("2500.00")));
 
-        // Legacy/unfilled securityCode on order105 should still produce a deterministic 4-digit PIN (1000..9999)
+        // Legacy/unfilled securityCode on order105: the counter shows no code, never a derived one (Spec 022 T016b, edge case 10)
         Order order105 = new Order();
         order105.setId(orderId105);
         order105.setEstablishmentId(establishmentId);
@@ -357,8 +357,7 @@ class CounterOrderControllerIntegrationTest {
                 .doesNotContain("8000");
 
         com.fasterxml.jackson.databind.JsonNode root = new ObjectMapper().readTree(responseBody);
-        assertThat(root.get(1).get("securityCode").isNull()).isFalse();
-        assertThat(root.get(1).get("securityCode").asText()).matches("^[1-9][0-9]{3}$");
+        assertThat(root.get(1).get("securityCode").isNull()).isTrue();
     }
 
     @Test

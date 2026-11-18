@@ -171,7 +171,7 @@ public class CounterOrderController {
                 ? ticket.getReadyAt()
                 : (order != null ? order.getReadyAt() : null);
 
-        String securityCode = resolveFourDigitSecurityCode(order, ticket);
+        String securityCode = resolveStoredSecurityCode(order);
 
         return new CounterReadyOrderResponse(
                 ticket.getId(),
@@ -192,20 +192,15 @@ public class CounterOrderController {
         );
     }
 
-    private String resolveFourDigitSecurityCode(Order order, KdsTicket ticket) {
-        if (order != null && order.getSecurityCode() != null) {
-            String trimmed = order.getSecurityCode().trim();
-            if (trimmed.matches("^[1-9][0-9]{3}$")) {
-                return trimmed;
-            }
+    /**
+     * The counter shows exactly the PIN the diner received, or nothing: a missing or malformed code yields
+     * {@code null}, never a substitute (spec 022 edge case 10, contract 02 invariant 3).
+     */
+    private String resolveStoredSecurityCode(Order order) {
+        if (order == null || order.getSecurityCode() == null) {
+            return null;
         }
-        UUID seedUuid = (order != null && order.getId() != null)
-                ? order.getId()
-                : (ticket != null && ticket.getOrderId() != null
-                        ? ticket.getOrderId()
-                        : (ticket != null ? ticket.getId() : null));
-        int hash = (seedUuid != null) ? (seedUuid.hashCode() & Integer.MAX_VALUE) : 0;
-        int pin = 1000 + (hash % 9000);
-        return String.valueOf(pin);
+        String code = order.getSecurityCode().trim();
+        return code.matches("^[1-9][0-9]{3}$") ? code : null;
     }
 }
