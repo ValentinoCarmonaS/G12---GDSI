@@ -81,7 +81,6 @@ class DishRankingControllerIntegrationTest {
 
         Establishment est = new Establishment();
         est.setName("Restaurante Ranking");
-        est.setSlug("restaurante-ranking-" + UUID.randomUUID().toString().substring(0, 8));
         est.setTimezone("America/Argentina/Buenos_Aires");
         est = establishmentRepository.save(est);
         establishmentId = est.getId();
@@ -91,19 +90,19 @@ class DishRankingControllerIntegrationTest {
         admin.setPasswordHash(passwordEncoder.encode("Secret123!"));
         admin.setRole(UserRole.ADMINISTRADOR);
         admin.setStatus(UserStatus.ACTIVE);
-        admin.setEstablishmentId(establishmentId);
+        admin.setTenantId(establishmentId);
         admin = userRepository.save(admin);
 
         User chef = new User();
         chef.setEmail("chef-ranking@easyeat.com");
         chef.setPasswordHash(passwordEncoder.encode("Secret123!"));
-        chef.setRole(UserRole.COCINERO);
+        chef.setRole(UserRole.COMENSAL);
         chef.setStatus(UserStatus.ACTIVE);
-        chef.setEstablishmentId(establishmentId);
+        chef.setTenantId(establishmentId);
         chef = userRepository.save(chef);
 
-        adminToken = jwtService.generateAccessToken(admin);
-        chefToken = jwtService.generateAccessToken(chef);
+        adminToken = jwtService.generateToken(admin);
+        chefToken = jwtService.generateToken(chef);
     }
 
     private Order createOrder(OrderStatus status, Instant paidAt, List<OrderItem> items) {
@@ -112,8 +111,6 @@ class DishRankingControllerIntegrationTest {
         order.setStatus(status);
         order.setPaidAt(paidAt);
         order.setTotalAmount(new BigDecimal("1000.00"));
-        order.setCustomerName("Cliente Test");
-        order.setCustomerEmail("cliente@test.com");
         for (OrderItem item : items) {
             item.setOrder(order);
         }
