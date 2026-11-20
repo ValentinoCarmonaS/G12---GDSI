@@ -105,9 +105,9 @@ Como administrador, quiero consultar un ranking siempre actualizado de los plato
 - **Cuenta de personal suspendida con sesión activa previa**: La regla de rechazo opera de forma determinista ante el siguiente intento de inicio de sesión o renovación de credencial; el manejo de conexiones o sesiones concurrentes preexistentes queda fuera de la regla de login tratada en esta especificación.
 - **Intento de baja del último administrador del establecimiento**: El sistema rechaza atómicamente la solicitud informando que el establecimiento debe conservar siempre al menos un administrador activo.
 - **Intento de login con credenciales válidas en cuenta suspendida o eliminada**: El sistema debe rechazar el login con una respuesta genérica de error indistinguible de credenciales inválidas, sin revelar el estado de la cuenta.
-- **Panel financiero con exactamente un pedido concretado en el período**: Debe mostrar el importe exacto de dicho pedido como ingreso total y "1" como cantidad de pedidos concretados, renderizando correctamente tanto en tabla como en gráfico.
+- **Panel financiero con exactamente un pedido concretado en el período**: Debe mostrar el importe exacto de dicho pedido como ingreso total y "1" como cantidad de pedidos concretados, renderizando correctamente tanto en tabla de datos como en gráfico interactivo.
 - **Conmutación rápida de granularidades temporales (día / semana / mes)**: La vista debe actualizar de manera determinista los totales sin mezclar acumuladores ni conservar valores de la granularidad anterior.
-- **Platos del catálogo con cero unidades vendidas**: La visualización del ranking prioriza los platos con ventas efectivas; si se incluyen platos sin ventas, deben figurar al final con valor cero unidades vendidas ordenados alfabéticamente A-Z sin distorsionar el orden descendente.
+- **Platos del catálogo con cero unidades vendidas**: Los platos que no registran ventas efectivas en el período consultado se excluyen estrictamente del ranking de más vendidos; si el establecimiento no posee ninguna venta acreditada en el período, se presenta un estado informativo neutral descriptivo sin errores.
 - **Transición de medianoche en granularidad "día"**: Los pedidos concretados a las 23:59:59 pertenecen al día que cierra; a partir de las 00:00:00 del día siguiente, el panel de "día" inicia un nuevo ciclo con sus acumuladores correspondientes a la nueva fecha.
 
 ---
@@ -128,7 +128,7 @@ Como administrador, quiero consultar un ranking siempre actualizado de los plato
 - **FR-007**: El sistema DEBE permitir filtrar o seleccionar la información del panel financiero por tres granularidades temporales deterministas en curso: día actual, semana calendario en curso (Lunes a Domingo según ISO 8601) y mes calendario en curso.
 - **FR-008**: El sistema DEBE considerar como "pedido concretado" a toda orden que posea pago acreditado (`PAID`, `IN_PROGRESS`, `READY_FOR_PICKUP`, `COMPLETED`), sumando sus importes monetarios al total de ingresos.
 - **FR-009**: El sistema DEBE excluir estrictamente del cálculo financiero todo pedido cancelado (`CANCELLED`), expirado (`EXPIRED`) o con cobro pendiente (`PENDING_PAYMENT`, `PENDING_ACCREDITATION`).
-- **FR-010**: El sistema DEBE presentar las métricas financieras mediante formato de tabla de datos, gráfico visual o una combinación de ambos a disposición de la interfaz de usuario.
+- **FR-010**: El sistema DEBE presentar las métricas financieras mediante formato de tabla de datos, gráfico visual interactivo o una combinación de ambos a disposición de la interfaz de usuario.
 - **FR-011**: Cuando no existan pedidos concretados en la granularidad temporal consultada, el sistema DEBE informar explícitamente $0,00 en ingresos totales y 0 pedidos concretados.
 
 #### Ranking de platos más vendidos (Historia 6.2.1)
@@ -187,7 +187,7 @@ Como administrador, quiero consultar un ranking siempre actualizado de los plato
 - Liquidación de sueldos, jornales, aguinaldos, indemnizaciones, aportes patronales o previsionales.
 - Módulos de contabilidad general, libro diario, balances financieros, cálculo de márgenes netos, EBITDA o deducciones impositivas (IVA, ingresos brutos).
 - Revocación o terminación forzada en tiempo real de sesiones ya abiertas o tokens activos previos a la inactivación.
-- Mecanismos de reactivación de cuentas o reasignación masiva de permisos fuera del ámbito del bloqueo de login y orfandad administrativa.
+- Mecanismos complejos de reincorporación laboral, re-onboarding o reasignación masiva de permisos (la reactivación administrativa directa a estado activo mediante el cambio de estado sí está incluida).
 - Granularidades temporales adicionales a día, semana y mes (como filtros por horas, turnos, trimestres o períodos interanuales).
 - Funcionalidades de exportación de datos a formatos externos (PDF, Excel, CSV), reportes programados por email o alertas automáticas.
 - Filtros avanzados o segmentaciones multidimensionales por sucursal, categoría de plato o medios de pago.

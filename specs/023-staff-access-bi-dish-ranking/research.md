@@ -183,7 +183,7 @@ Cada seccion registra la decision adoptada, su justificacion tecnica y las alter
 
 * **Decision**:
   - **Historia 3.1.3**: Extender `StaffRosterTable.tsx` agregando la columna de accion "Suspender / Activar" con un modal de confirmacion explicito que advierte sobre la suspension y captura posibles errores de orfandad administrativa (409 Conflict).
-  - **Historias 6.1.1 y 6.2.1**: Crear la pagina unificada `AdminAnalyticsPage.tsx` en la ruta `/admin/analytics`, enlazada desde una nueva tarjeta en `AdminWorkspacePage` titulada *"Metricas y Rendimiento"*. La pagina presenta en la parte superior el selector de granularidad y las tarjetas de ingresos y pedidos, y en la seccion inferior la tabla de ranking de platos con su propio selector de alcance (historico global vs mismo periodo).
+  - **Historias 6.1.1 y 6.2.1**: Crear la pagina unificada `AdminAnalyticsPage.tsx` en la ruta `/admin/analytics`, enlazada desde una nueva tarjeta en `AdminWorkspacePage` titulada *"Metricas y Rendimiento"*. La pagina presenta en la parte superior el selector de granularidad, las tarjetas de ingresos y pedidos y el grafico visual interactivo `FinancialHealthChart.tsx` (utilizando Recharts para ingresos y pedidos), y en la seccion inferior la tabla de ranking de platos con su propio selector de alcance (historico global vs mismo periodo).
 * **Justificacion**:
   - Sigue los patrones existentes de `WorkspaceLayout`, TailwindCSS y Axios.
   - Ofrece al administrador un centro consolidado de inteligencia comercial en una unica pantalla, simplificando la navegacion y evitando dispersar informacion.
