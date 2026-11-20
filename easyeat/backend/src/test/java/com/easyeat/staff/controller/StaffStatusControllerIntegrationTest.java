@@ -70,13 +70,12 @@ class StaffStatusControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        userRepository.deleteAll();
         tenantId = UUID.randomUUID();
 
         admin1 = new User();
         admin1.setTenantId(tenantId);
         admin1.setFullName("Admin One");
-        admin1.setEmail("admin1@easyeat.com");
+        admin1.setEmail("admin1-" + tenantId + "@easyeat.com");
         admin1.setPasswordHash(passwordEncoder.encode("Password123!"));
         admin1.setRole(UserRole.ADMINISTRADOR);
         admin1.setStatus(UserStatus.ACTIVE);
@@ -86,7 +85,7 @@ class StaffStatusControllerIntegrationTest {
         chef = new User();
         chef.setTenantId(tenantId);
         chef.setFullName("Chef One");
-        chef.setEmail("chef1@easyeat.com");
+        chef.setEmail("chef1-" + tenantId + "@easyeat.com");
         chef.setPasswordHash(passwordEncoder.encode("Password123!"));
         chef.setRole(UserRole.CHEF);
         chef.setStatus(UserStatus.ACTIVE);
@@ -117,7 +116,7 @@ class StaffStatusControllerIntegrationTest {
         User otherTenantChef = new User();
         otherTenantChef.setTenantId(UUID.randomUUID());
         otherTenantChef.setFullName("Other Chef");
-        otherTenantChef.setEmail("other@easyeat.com");
+        otherTenantChef.setEmail("other-" + UUID.randomUUID() + "@easyeat.com");
         otherTenantChef.setPasswordHash(passwordEncoder.encode("Password123!"));
         otherTenantChef.setRole(UserRole.CHEF);
         otherTenantChef.setStatus(UserStatus.ACTIVE);
@@ -144,7 +143,7 @@ class StaffStatusControllerIntegrationTest {
         User admin2 = new User();
         admin2.setTenantId(tenantId);
         admin2.setFullName("Admin Two");
-        admin2.setEmail("admin2@easyeat.com");
+        admin2.setEmail("admin2-" + tenantId + "@easyeat.com");
         admin2.setPasswordHash(passwordEncoder.encode("Password123!"));
         admin2.setRole(UserRole.ADMINISTRADOR);
         admin2.setStatus(UserStatus.ACTIVE);
