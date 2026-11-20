@@ -4,6 +4,7 @@ import { StaffMemberResponse, StaffRole, StaffAccountStatus } from '../../types/
 export interface StaffRosterTableProps {
   staffMembers: StaffMemberResponse[];
   onEdit: (staff: StaffMemberResponse) => void;
+  onToggleStatus?: (staff: StaffMemberResponse) => void;
   isLoading?: boolean;
 }
 
@@ -34,6 +35,7 @@ const STATUS_BADGE_CLASSES: Record<StaffAccountStatus, string> = {
 export const StaffRosterTable: React.FC<StaffRosterTableProps> = ({
   staffMembers,
   onEdit,
+  onToggleStatus,
   isLoading = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -134,7 +136,7 @@ export const StaffRosterTable: React.FC<StaffRosterTableProps> = ({
                         {STATUS_LABELS[member.status] || member.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <td className="px-6 py-4 text-right whitespace-nowrap space-x-2">
                       <button
                         type="button"
                         onClick={() => onEdit(member)}
@@ -142,6 +144,19 @@ export const StaffRosterTable: React.FC<StaffRosterTableProps> = ({
                       >
                         Editar
                       </button>
+                      {onToggleStatus && (
+                        <button
+                          type="button"
+                          onClick={() => onToggleStatus(member)}
+                          className={`font-medium text-xs px-2.5 py-1 rounded border transition-colors ${
+                            member.status === 'SUSPENDED'
+                              ? 'text-green-700 hover:text-green-900 border-green-200 hover:bg-green-50'
+                              : 'text-red-600 hover:text-red-900 border-red-200 hover:bg-red-50'
+                          }`}
+                        >
+                          {member.status === 'SUSPENDED' ? 'Activar' : 'Suspender'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

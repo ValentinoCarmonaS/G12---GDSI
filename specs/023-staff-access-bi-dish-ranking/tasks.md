@@ -49,21 +49,21 @@
 
 ### Pruebas para User Story 1 (TDD RED)
 
-- [ ] T009 [P] [US1] Escribir RED test unitario en `easyeat/backend/src/test/java/com/easyeat/auth/service/AuthServiceSuspendedAccountTest.java` comprobando que `AuthService.login` con cuenta `SUSPENDED` o `UNVERIFIED` ejecuta verificacion de contrasena post-BCrypt, registra `ACCOUNT_SUSPENDED` en `SecurityAuditLogger` y lanza `InvalidCredentialsException` con mensaje `"The provided email or password is incorrect."` (HTTP 401).
-- [ ] T010 [P] [US1] Escribir RED test unitario en `easyeat/backend/src/test/java/com/easyeat/staff/service/StaffServiceStatusUpdateTest.java` para `updateStaffStatus` verificando mutacion de estado a `SUSPENDED` / `ACTIVE`, proteccion contra orfandad cuando `countByTenantIdAndRoleAndStatus <= 1` (lanza `OrphanedAdminException` 409) y exito si existen $\ge 2$ administradores activos.
-- [ ] T011 [P] [US1] Escribir RED test de integracion con Testcontainers en `easyeat/backend/src/test/java/com/easyeat/staff/controller/StaffStatusControllerIntegrationTest.java` para `PATCH /api/v1/admin/staff/{id}/status` (200 OK, 404 si no existe, 403 si pertenece a otro tenant, 409 si es unico admin activo, y prueba de carrera concurrente donde dos admins intentan suspenderse mutuamente).
-- [ ] T012 [P] [US1] Escribir RED test frontend en `easyeat/frontend/tests/components/StaffStatusModal.test.tsx` para el modal de confirmacion de suspension y captura de error 409 Conflict de orfandad administrativa.
-- [ ] T013 [P] [US1] Escribir RED test frontend en `easyeat/frontend/tests/components/StaffRosterTableActions.test.tsx` para el boton de accion "Suspender" / "Activar" en la tabla de nómina del establecimiento.
+- [x] T009 [P] [US1] Escribir RED test unitario en `easyeat/backend/src/test/java/com/easyeat/auth/service/AuthServiceSuspendedAccountTest.java` comprobando que `AuthService.login` con cuenta `SUSPENDED` o `UNVERIFIED` ejecuta verificacion de contrasena post-BCrypt, registra `ACCOUNT_SUSPENDED` en `SecurityAuditLogger` y lanza `InvalidCredentialsException` con mensaje `"The provided email or password is incorrect."` (HTTP 401).
+- [x] T010 [P] [US1] Escribir RED test unitario en `easyeat/backend/src/test/java/com/easyeat/staff/service/StaffServiceStatusUpdateTest.java` para `updateStaffStatus` verificando mutacion de estado a `SUSPENDED` / `ACTIVE`, proteccion contra orfandad cuando `countByTenantIdAndRoleAndStatus <= 1` (lanza `OrphanedAdminException` 409) y exito si existen $\ge 2$ administradores activos.
+- [x] T011 [P] [US1] Escribir RED test de integracion con Testcontainers en `easyeat/backend/src/test/java/com/easyeat/staff/controller/StaffStatusControllerIntegrationTest.java` para `PATCH /api/v1/admin/staff/{id}/status` (200 OK, 404 si no existe, 403 si pertenece a otro tenant, 409 si es unico admin activo, y prueba de carrera concurrente donde dos admins intentan suspenderse mutuamente).
+- [x] T012 [P] [US1] Escribir RED test frontend en `easyeat/frontend/tests/components/StaffStatusModal.test.tsx` para el modal de confirmacion de suspension y captura de error 409 Conflict de orfandad administrativa.
+- [x] T013 [P] [US1] Escribir RED test frontend en `easyeat/frontend/tests/components/StaffRosterTableActions.test.tsx` para el boton de accion "Suspender" / "Activar" en la tabla de nómina del establecimiento.
 
 ### Implementacion para User Story 1 (GREEN)
 
-- [ ] T014 [US1] Modificar `AuthService.login` en `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java` para validar el estado del usuario post-BCrypt y lanzar `InvalidCredentialsException` (HTTP 401) en lugar de `AccountSuspendedException`.
-- [ ] T015 [US1] Crear record DTO `StaffStatusUpdateRequest` en `easyeat/backend/src/main/java/com/easyeat/staff/dto/StaffStatusUpdateRequest.java` y agregar consulta con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/staff/repository/StaffUserRepository.java` para los administradores activos del tenant.
-- [ ] T016 [US1] Implementar metodo `updateStaffStatus(UUID id, StaffStatusUpdateRequest request)` en `easyeat/backend/src/main/java/com/easyeat/staff/service/StaffService.java` con validacion de orfandad administrativa bajo transaccion `@Transactional`.
-- [ ] T017 [US1] Exponer endpoint `PATCH /api/v1/admin/staff/{id}/status` en `easyeat/backend/src/main/java/com/easyeat/staff/controller/StaffController.java` protegido con roles `ADMINISTRADOR` / `ADMIN`.
-- [ ] T018 [US1] Extender `easyeat/frontend/src/api/staffApi.ts` implementando el metodo `updateStaffStatus(id: string, status: StaffAccountStatus)`.
-- [ ] T019 [US1] Implementar componente modal `StaffStatusModal.tsx` en `easyeat/frontend/src/components/staff/StaffStatusModal.tsx` con mensaje de advertencia y gestion de error 409.
-- [ ] T020 [US1] Integrar modal y acciones de suspension/activacion en `easyeat/frontend/src/components/staff/StaffRosterTable.tsx` y conectar con `fetchStaff` en `easyeat/frontend/src/pages/StaffManagementPage.tsx`.
+- [x] T014 [US1] Modificar `AuthService.login` en `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java` para validar el estado del usuario post-BCrypt y lanzar `InvalidCredentialsException` (HTTP 401) en lugar de `AccountSuspendedException`.
+- [x] T015 [US1] Crear record DTO `StaffStatusUpdateRequest` en `easyeat/backend/src/main/java/com/easyeat/staff/dto/StaffStatusUpdateRequest.java` y agregar consulta con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/staff/repository/StaffUserRepository.java` para los administradores activos del tenant.
+- [x] T016 [US1] Implementar metodo `updateStaffStatus(UUID id, StaffStatusUpdateRequest request)` en `easyeat/backend/src/main/java/com/easyeat/staff/service/StaffService.java` con validacion de orfandad administrativa bajo transaccion `@Transactional`.
+- [x] T017 [US1] Exponer endpoint `PATCH /api/v1/admin/staff/{id}/status` en `easyeat/backend/src/main/java/com/easyeat/staff/controller/StaffController.java` protegido con roles `ADMINISTRADOR` / `ADMIN`.
+- [x] T018 [US1] Extender `easyeat/frontend/src/api/staffApi.ts` implementando el metodo `updateStaffStatus(id: string, status: StaffAccountStatus)`.
+- [x] T019 [US1] Implementar componente modal `StaffStatusModal.tsx` en `easyeat/frontend/src/components/staff/StaffStatusModal.tsx` con mensaje de advertencia y gestion de error 409.
+- [x] T020 [US1] Integrar modal y acciones de suspension/activacion en `easyeat/frontend/src/components/staff/StaffRosterTable.tsx` y conectar con `fetchStaff` en `easyeat/frontend/src/pages/StaffManagementPage.tsx`.
 
 **Punto de control**: User Story 1 completamente funcional y verificable como MVP de seguridad.
 

@@ -111,10 +111,10 @@ public class AuthService {
             throw new InvalidCredentialsException("The provided email or password is incorrect.");
         }
 
-        // 4. Status validation
+        // 4. Status validation (post-BCrypt, generic 401 to prevent account status enumeration)
         if (user.getStatus() != UserStatus.ACTIVE && user.getStatus() != UserStatus.PENDING_FIRST_LOGIN) {
             securityAuditLogger.logLoginFailure(normalizedEmail, clientIp, "ACCOUNT_SUSPENDED");
-            throw new AccountSuspendedException("The account has been suspended or is not authorized to operate.");
+            throw new InvalidCredentialsException("The provided email or password is incorrect.");
         }
 
         // 5. Successful login resets failure counter, increments token_version (invalidating prior sessions), and issues JWT
