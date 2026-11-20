@@ -34,7 +34,7 @@
 - [x] T005 Implementar campo `Instant paidAt` con getter/setter en `easyeat/backend/src/main/java/com/easyeat/order/domain/Order.java` y asignar `order.setPaidAt(Instant.now())` en `easyeat/backend/src/main/java/com/easyeat/order/service/PaymentWebhookService.java` al transicionar la orden a `OrderStatus.PAID`.
 - [x] T006 [P] Escribir test de integracion con Testcontainers en `easyeat/backend/src/test/java/com/easyeat/order/repository/OrderPaidAtSchemaIntegrationTest.java` verificando la aplicacion real de `V29`, existencia de columna `paid_at`, backfill de ordenes previas y creacion del indice parcial compuesto `idx_orders_analytics`.
 - [x] T007 [P] Escribir RED test unitario de repositorio en `easyeat/backend/src/test/java/com/easyeat/analytics/repository/AnalyticsRepositoryTest.java` para el filtro de ordenes concretadas (`status IN ('PAID', 'IN_PROGRESS', 'READY_FOR_PICKUP', 'COMPLETED')`) y delimitacion de semi-intervalo temporal `[start, end)`.
-- [ ] T008 Crear paquete `com.easyeat.analytics.repository` e implementar `AnalyticsRepository.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/repository/AnalyticsRepository.java` con consultas agregadas de ingresos totales, cantidad de pedidos y unidades vendidas por plato.
+- [x] T008 Crear paquete `com.easyeat.analytics.repository` e implementar `AnalyticsRepository.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/repository/AnalyticsRepository.java` con consultas agregadas de ingresos totales, cantidad de pedidos y unidades vendidas por plato.
 
 **Punto de control**: Fundamentos listos. Las historias de usuario pueden proceder de manera independiente.
 
