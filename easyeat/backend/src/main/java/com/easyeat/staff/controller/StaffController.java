@@ -3,6 +3,7 @@ package com.easyeat.staff.controller;
 import com.easyeat.staff.dto.StaffMemberResponse;
 import com.easyeat.staff.dto.StaffRegistrationRequest;
 import com.easyeat.staff.dto.StaffRegistrationResponse;
+import com.easyeat.staff.dto.StaffStatusUpdateRequest;
 import com.easyeat.staff.dto.StaffUpdateRequest;
 import com.easyeat.staff.service.StaffService;
 import jakarta.validation.Valid;
@@ -46,5 +47,12 @@ public class StaffController {
             @PathVariable UUID id,
             @Valid @RequestBody StaffUpdateRequest request) {
         return ResponseEntity.ok(staffService.updateStaff(id, request));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<StaffMemberResponse> updateStaffStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody StaffStatusUpdateRequest request) {
+        return ResponseEntity.ok(staffService.updateStaffStatus(id, request));
     }
 }
