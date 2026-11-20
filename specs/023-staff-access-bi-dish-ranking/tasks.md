@@ -85,11 +85,11 @@
 
 ### Implementacion para User Story 2 (GREEN)
 
-- [ ] T025 [US2] Crear record DTO `FinancialHealthResponse` en `easyeat/backend/src/main/java/com/easyeat/analytics/dto/FinancialHealthResponse.java`.
-- [ ] T026 [US2] Implementar `FinancialHealthService.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/service/FinancialHealthService.java` calculando limites de granularidad en huso horario local y agregando `revenue` y `orderCount`.
-- [ ] T027 [US2] Crear `AdminAnalyticsController.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/controller/AdminAnalyticsController.java` exponiendo `GET /api/v1/admin/analytics/financial-health` protegido con `@PreAuthorize("hasRole('ADMINISTRADOR') or hasRole('ADMIN')")` y cabeceras `Cache-Control: no-cache`.
-- [ ] T028 [US2] Implementar componente `FinancialHealthPanel.tsx` en `easyeat/frontend/src/components/analytics/FinancialHealthPanel.tsx` con tarjetas de metricas, tabs dia/semana/mes y soporte de estado vacio `$0,00` / `0`.
-- [ ] T029 [US2] Implementar componente `FinancialHealthChart.tsx` en `easyeat/frontend/src/components/analytics/FinancialHealthChart.tsx` integrando Recharts para la visualizacion grafica e interactiva de ingresos y pedidos, con alternancia entre tabla de resumen y grafico.
+- [x] T025 [US2] Crear record DTO `FinancialHealthResponse` en `easyeat/backend/src/main/java/com/easyeat/analytics/dto/FinancialHealthResponse.java`.
+- [x] T026 [US2] Implementar `FinancialHealthService.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/service/FinancialHealthService.java` calculando limites de granularidad en huso horario local y agregando `revenue` y `orderCount`.
+- [x] T027 [US2] Crear `AdminAnalyticsController.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/controller/AdminAnalyticsController.java` exponiendo `GET /api/v1/admin/analytics/financial-health` protegido con `@PreAuthorize("hasRole('ADMINISTRADOR') or hasRole('ADMIN')")` y cabeceras `Cache-Control: no-cache`.
+- [x] T028 [US2] Implementar componente `FinancialHealthPanel.tsx` en `easyeat/frontend/src/components/analytics/FinancialHealthPanel.tsx` con tarjetas de metricas, tabs dia/semana/mes y soporte de estado vacio `$0,00` / `0`.
+- [x] T029 [US2] Implementar componente `FinancialHealthChart.tsx` en `easyeat/frontend/src/components/analytics/FinancialHealthChart.tsx` integrando Recharts para la visualizacion grafica e interactiva de ingresos y pedidos, con alternancia entre tabla de resumen y grafico.
 
 **Punto de control**: User Story 2 completamente funcional y sincronizada de extremo a extremo.
 
