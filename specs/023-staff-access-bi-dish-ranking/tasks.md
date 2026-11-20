@@ -78,18 +78,18 @@
 
 ### Pruebas para User Story 2 (TDD RED)
 
-- [ ] T021 [P] [US2] Escribir RED test unitario en `easyeat/backend/src/test/java/com/easyeat/analytics/service/FinancialHealthServiceTest.java` para calculo determinista de limites ISO 8601 (dia actual 00:00:00 a 23:59:59, semana lunes a domingo, mes calendario), resolucion de huso horario (`Establishment.timezone`) y estado vacio `$0.00` / `0`.
-- [ ] T022 [P] [US2] Escribir RED test de integracion con Testcontainers en `easyeat/backend/src/test/java/com/easyeat/analytics/controller/FinancialHealthControllerIntegrationTest.java` para `GET /api/v1/admin/analytics/financial-health` (200 OK para day/week/month, 400 Bad Request para parametro invalido, 403 sin admin, exclusion de `CANCELLED`/`EXPIRED`/`PENDING_PAYMENT`, y transicion de medianoche a las 23:59:59).
-- [ ] T023 [P] [US2] Escribir RED test frontend en `easyeat/frontend/tests/components/FinancialHealthPanel.test.tsx` para `FinancialHealthPanel` (tarjetas de ingresos formateados en moneda, pedidos concretados, selector dia/semana/mes reactivo en <2s sin acumuladores residuales, y estado vacio).
-- [ ] T024 [P] [US2] Escribir RED test frontend en `easyeat/frontend/tests/components/FinancialHealthChart.test.tsx` para `FinancialHealthChart` (grafico interactivo visual de ingresos y pedidos con Recharts, conmutacion con tabs dia/semana/mes, toggle entre vista tabular y grafico, y manejo de estado vacio).
+- [x] T021 [P] [US2] Escribir RED test unitario en `easyeat/backend/src/test/java/com/easyeat/analytics/service/FinancialHealthServiceTest.java` para calculo determinista de limites ISO 8601 (dia actual 00:00:00 a 23:59:59, semana lunes a domingo, mes calendario), resolucion de huso horario (`Establishment.timezone`) y estado vacio `$0.00` / `0`.
+- [x] T022 [P] [US2] Escribir RED test de integracion con Testcontainers en `easyeat/backend/src/test/java/com/easyeat/analytics/controller/FinancialHealthControllerIntegrationTest.java` para `GET /api/v1/admin/analytics/financial-health` (200 OK para day/week/month, 400 Bad Request para parametro invalido, 403 sin admin, exclusion de `CANCELLED`/`EXPIRED`/`PENDING_PAYMENT`, y transicion de medianoche a las 23:59:59).
+- [x] T023 [P] [US2] Escribir RED test frontend en `easyeat/frontend/tests/components/FinancialHealthPanel.test.tsx` para `FinancialHealthPanel` (tarjetas de ingresos formateados en moneda, pedidos concretados, selector dia/semana/mes reactivo en <2s sin acumuladores residuales, y estado vacio).
+- [x] T024 [P] [US2] Escribir RED test frontend en `easyeat/frontend/tests/components/FinancialHealthChart.test.tsx` para `FinancialHealthChart` (grafico interactivo visual de ingresos y pedidos con Recharts, conmutacion con tabs dia/semana/mes, toggle entre vista tabular y grafico, y manejo de estado vacio).
 
 ### Implementacion para User Story 2 (GREEN)
 
-- [ ] T025 [US2] Crear record DTO `FinancialHealthResponse` en `easyeat/backend/src/main/java/com/easyeat/analytics/dto/FinancialHealthResponse.java`.
-- [ ] T026 [US2] Implementar `FinancialHealthService.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/service/FinancialHealthService.java` calculando limites de granularidad en huso horario local y agregando `revenue` y `orderCount`.
-- [ ] T027 [US2] Crear `AdminAnalyticsController.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/controller/AdminAnalyticsController.java` exponiendo `GET /api/v1/admin/analytics/financial-health` protegido con `@PreAuthorize("hasRole('ADMINISTRADOR') or hasRole('ADMIN')")` y cabeceras `Cache-Control: no-cache`.
-- [ ] T028 [US2] Implementar componente `FinancialHealthPanel.tsx` en `easyeat/frontend/src/components/analytics/FinancialHealthPanel.tsx` con tarjetas de metricas, tabs dia/semana/mes y soporte de estado vacio `$0,00` / `0`.
-- [ ] T029 [US2] Implementar componente `FinancialHealthChart.tsx` en `easyeat/frontend/src/components/analytics/FinancialHealthChart.tsx` integrando Recharts para la visualizacion grafica e interactiva de ingresos y pedidos, con alternancia entre tabla de resumen y grafico.
+- [x] T025 [US2] Crear record DTO `FinancialHealthResponse` en `easyeat/backend/src/main/java/com/easyeat/analytics/dto/FinancialHealthResponse.java`.
+- [x] T026 [US2] Implementar `FinancialHealthService.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/service/FinancialHealthService.java` calculando limites de granularidad en huso horario local y agregando `revenue` y `orderCount`.
+- [x] T027 [US2] Crear `AdminAnalyticsController.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/controller/AdminAnalyticsController.java` exponiendo `GET /api/v1/admin/analytics/financial-health` protegido con `@PreAuthorize("hasRole('ADMINISTRADOR') or hasRole('ADMIN')")` y cabeceras `Cache-Control: no-cache`.
+- [x] T028 [US2] Implementar componente `FinancialHealthPanel.tsx` en `easyeat/frontend/src/components/analytics/FinancialHealthPanel.tsx` con tarjetas de metricas, tabs dia/semana/mes y soporte de estado vacio `$0,00` / `0`.
+- [x] T029 [US2] Implementar componente `FinancialHealthChart.tsx` en `easyeat/frontend/src/components/analytics/FinancialHealthChart.tsx` integrando Recharts para la visualizacion grafica e interactiva de ingresos y pedidos, con alternancia entre tabla de resumen y grafico.
 
 **Punto de control**: User Story 2 completamente funcional y sincronizada de extremo a extremo.
 
