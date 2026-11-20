@@ -15,16 +15,18 @@
 ---
 
 ## Phase 1: Setup (Infraestructura compartida y base)
+> **GitHub Issue**: [#434](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/434)
 
 **Proposito**: Inicializacion de scripts de base de datos, tipos compartidos y clientes HTTP base.
 
-- [ ] T001 [P] Escribir RED test de migracion Flyway en `easyeat/backend/src/test/java/com/easyeat/order/OrderPaidAtMigrationTest.java` (localiza el script por descripcion `add_paid_at_to_orders`, sin version en el nombre de la clase, regla 5 de `.specify/memory/migrations.md`), crear el script `easyeat/backend/src/main/resources/db/migration/V29__add_paid_at_to_orders.sql` agregando `orders.paid_at TIMESTAMPTZ NULL`, backfill desde `payments.approved_at`, e indice parcial `idx_orders_analytics`, y registrar `V29` en `.specify/memory/migrations.md` (regla 3).
-- [ ] T002 [P] Escribir RED test de tipos frontend en `easyeat/frontend/tests/types/analyticsTypes.test.ts`, instalar dependencias de graficos Recharts en `easyeat/frontend/package.json`, extender `easyeat/frontend/src/types/staff.ts` con `StaffStatusUpdateRequest` y crear `easyeat/frontend/src/types/analytics.ts` con `FinancialHealthGranularity`, `FinancialHealthResponse`, `DishRankingGranularity` y `DishRankingItemResponse`.
-- [ ] T003 [P] Escribir RED test para clientes HTTP de frontend en `easyeat/frontend/tests/api/analyticsApi.test.ts` y crear `easyeat/frontend/src/api/analyticsApi.ts` exponiendo `getFinancialHealth(granularity)` y `getDishRanking(granularity)` con cabeceras `Cache-Control: no-cache`.
+- [x] T001 [P] Escribir RED test de migracion Flyway en `easyeat/backend/src/test/java/com/easyeat/order/OrderPaidAtMigrationTest.java` (localiza el script por descripcion `add_paid_at_to_orders`, sin version en el nombre de la clase, regla 5 de `.specify/memory/migrations.md`), crear el script `easyeat/backend/src/main/resources/db/migration/V29__add_paid_at_to_orders.sql` agregando `orders.paid_at TIMESTAMPTZ NULL`, backfill desde `payments.approved_at`, e indice parcial `idx_orders_analytics`, y registrar `V29` en `.specify/memory/migrations.md` (regla 3).
+- [x] T002 [P] Escribir RED test de tipos frontend en `easyeat/frontend/tests/types/analyticsTypes.test.ts`, instalar dependencias de graficos Recharts en `easyeat/frontend/package.json`, extender `easyeat/frontend/src/types/staff.ts` con `StaffStatusUpdateRequest` y crear `easyeat/frontend/src/types/analytics.ts` con `FinancialHealthGranularity`, `FinancialHealthResponse`, `DishRankingGranularity` y `DishRankingItemResponse`.
+- [x] T003 [P] Escribir RED test para clientes HTTP de frontend en `easyeat/frontend/tests/api/analyticsApi.test.ts` y crear `easyeat/frontend/src/api/analyticsApi.ts` exponiendo `getFinancialHealth(granularity)` y `getDishRanking(granularity)` con cabeceras `Cache-Control: no-cache`.
 
 ---
 
 ## Phase 2: Foundational (Prerrequisitos bloqueantes)
+> **GitHub Issue**: [#435](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/435)
 
 **Proposito**: Modelos de dominio y capas de persistencia centrales. Ninguna historia de usuario puede completarse sin esta fase.
 
@@ -39,6 +41,7 @@
 ---
 
 ## Phase 3: User Story 1 - Baja y suspension de acceso de exempleados (Prioridad: P1) 🎯 MVP
+> **GitHub Issue**: [#436](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/436)
 
 **Objetivo**: Permitir al administrador suspender o inactivar personal de su establecimiento, bloqueando atómicamente la suspension si es el unico administrador activo (orfandad administrativa) y rechazando cualquier login posterior con HTTP 401 generico indistinguible de credenciales erroneas, preservando la auditoria historica.
 
@@ -67,6 +70,7 @@
 ---
 
 ## Phase 4: User Story 2 - Panel de salud financiera del local (Prioridad: P1)
+> **GitHub Issue**: [#437](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/437)
 
 **Objetivo**: Visualizar metricas consolidadas de ingresos totales acumulados y pedidos concretados (`PAID`, `IN_PROGRESS`, `READY_FOR_PICKUP`, `COMPLETED`) para el dia en curso, semana calendario ISO 8601 o mes calendario, con respuesta reactiva en <2s, estado vacio `$0,00` / `0`, componentes interactivos de tablas y graficos visuales (Recharts) y exclusion estricta de ordenes no acreditadas.
 
@@ -92,6 +96,7 @@
 ---
 
 ## Phase 5: User Story 3 - Ranking de platos mas vendidos (Prioridad: P2)
+> **GitHub Issue**: [#438](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/438)
 
 **Objetivo**: Consultar un reporte de platos comercializados en pedidos concretados, ordenados descendentemente por unidades vendidas con desempate alfabetico ascendente A-Z, con historico global acumulado por defecto y opcion de filtrar por el periodo del panel, omitiendo platos sin ventas.
 
@@ -115,6 +120,7 @@
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
+> **GitHub Issue**: [#439](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/439)
 
 **Proposito**: Integracion de vistas en pantalla principal, navegacion de rutas, verificacion de no-regresion y ejecucion del quickstart.
 
