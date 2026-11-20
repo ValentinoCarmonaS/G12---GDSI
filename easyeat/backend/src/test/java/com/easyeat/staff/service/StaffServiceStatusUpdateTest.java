@@ -3,7 +3,7 @@ package com.easyeat.staff.service;
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.domain.UserRole;
 import com.easyeat.auth.domain.UserStatus;
-import com.easyeat.auth.security.TenantContextHolder;
+import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.staff.dto.StaffAccountStatus;
 import com.easyeat.staff.dto.StaffMemberResponse;
 import com.easyeat.staff.dto.StaffStatusUpdateRequest;
