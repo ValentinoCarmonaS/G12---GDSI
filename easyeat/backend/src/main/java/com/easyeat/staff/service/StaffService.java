@@ -133,6 +133,38 @@ public class StaffService {
         return toStaffMemberResponse(savedUser);
     }
 
+    @Transactional
+    public StaffMemberResponse updateStaffStatus(UUID id, com.easyeat.staff.dto.StaffStatusUpdateRequest request) {
+        UUID tenantId = TenantContextHolder.getTenantId();
+        if (tenantId == null) {
+            throw new TenantViolationException("Active tenant context is required to update staff status");
+        }
+
+        User user = staffUserRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new NoSuchElementException("Staff member not found with ID: " + id));
+
+        UserStatus targetStatus = switch (request.status()) {
+            case ACTIVE -> UserStatus.ACTIVE;
+            case SUSPENDED -> UserStatus.SUSPENDED;
+            case PENDING_FIRST_LOGIN -> UserStatus.PENDING_FIRST_LOGIN;
+        };
+
+        if (user.getRole() == UserRole.ADMINISTRADOR
+                && user.getStatus() == UserStatus.ACTIVE
+                && targetStatus == UserStatus.SUSPENDED) {
+            List<User> activeAdmins = staffUserRepository.findActiveAdminsForUpdate(
+                    tenantId, UserRole.ADMINISTRADOR, UserStatus.ACTIVE);
+            if (activeAdmins.size() <= 1) {
+                throw new OrphanedAdminException(tenantId,
+                        "Cannot suspend the last active administrator for tenant " + tenantId);
+            }
+        }
+
+        user.setStatus(targetStatus);
+        User savedUser = staffUserRepository.save(user);
+        return toStaffMemberResponse(savedUser);
+    }
+
     private StaffMemberResponse toStaffMemberResponse(User user) {
         return new StaffMemberResponse(
                 user.getId(),
