@@ -60,6 +60,9 @@ public class Order {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Column(name = "paid_at")
+    private Instant paidAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -252,6 +255,14 @@ public class Order {
 
     public Instant getCompletedAt() {
         return completedAt;
+    }
+
+    public Instant getPaidAt() {
+        return paidAt;
+    }
+
+    public void setPaidAt(Instant paidAt) {
+        this.paidAt = paidAt;
     }
 
     /**
