@@ -4,7 +4,7 @@ import com.easyeat.analytics.dto.FinancialHealthResponse;
 import com.easyeat.analytics.repository.AnalyticsRepository;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.repository.EstablishmentRepository;
-import com.easyeat.common.context.TenantContext;
+import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.common.exception.TenantViolationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,13 +45,13 @@ class FinancialHealthServiceTest {
 
     @BeforeEach
     void setUp() {
-        TenantContext.setTenantId(tenantId);
+        TenantContextHolder.setTenantId(tenantId);
         service = new FinancialHealthService(analyticsRepository, establishmentRepository, fixedClock);
     }
 
     @AfterEach
     void tearDown() {
-        TenantContext.clear();
+        TenantContextHolder.clear();
     }
 
     private void mockEstablishmentTimezone(String timezone) {
@@ -157,8 +157,8 @@ class FinancialHealthServiceTest {
     }
 
     @Test
-    void getFinancialHealth_missingTenantContext_throwsTenantViolationException() {
-        TenantContext.clear();
+    void getFinancialHealth_missingTenantContextHolder_throwsTenantViolationException() {
+        TenantContextHolder.clear();
         assertThatThrownBy(() -> service.getFinancialHealth("day"))
                 .isInstanceOf(TenantViolationException.class);
     }
