@@ -78,7 +78,7 @@
 
 ### Pruebas para User Story 2 (TDD RED)
 
-- [ ] T021 [P] [US2] Escribir RED test unitario en `easyeat/backend/src/test/java/com/easyeat/analytics/service/FinancialHealthServiceTest.java` para calculo determinista de limites ISO 8601 (dia actual 00:00:00 a 23:59:59, semana lunes a domingo, mes calendario), resolucion de huso horario (`Establishment.timezone`) y estado vacio `$0.00` / `0`.
+- [x] T021 [P] [US2] Escribir RED test unitario en `easyeat/backend/src/test/java/com/easyeat/analytics/service/FinancialHealthServiceTest.java` para calculo determinista de limites ISO 8601 (dia actual 00:00:00 a 23:59:59, semana lunes a domingo, mes calendario), resolucion de huso horario (`Establishment.timezone`) y estado vacio `$0.00` / `0`.
 - [ ] T022 [P] [US2] Escribir RED test de integracion con Testcontainers en `easyeat/backend/src/test/java/com/easyeat/analytics/controller/FinancialHealthControllerIntegrationTest.java` para `GET /api/v1/admin/analytics/financial-health` (200 OK para day/week/month, 400 Bad Request para parametro invalido, 403 sin admin, exclusion de `CANCELLED`/`EXPIRED`/`PENDING_PAYMENT`, y transicion de medianoche a las 23:59:59).
 - [ ] T023 [P] [US2] Escribir RED test frontend en `easyeat/frontend/tests/components/FinancialHealthPanel.test.tsx` para `FinancialHealthPanel` (tarjetas de ingresos formateados en moneda, pedidos concretados, selector dia/semana/mes reactivo en <2s sin acumuladores residuales, y estado vacio).
 - [ ] T024 [P] [US2] Escribir RED test frontend en `easyeat/frontend/tests/components/FinancialHealthChart.test.tsx` para `FinancialHealthChart` (grafico interactivo visual de ingresos y pedidos con Recharts, conmutacion con tabs dia/semana/mes, toggle entre vista tabular y grafico, y manejo de estado vacio).
