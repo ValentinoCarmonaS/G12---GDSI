@@ -57,13 +57,13 @@
 
 ### Implementacion para User Story 1 (GREEN)
 
-- [ ] T014 [US1] Modificar `AuthService.login` en `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java` para validar el estado del usuario post-BCrypt y lanzar `InvalidCredentialsException` (HTTP 401) en lugar de `AccountSuspendedException`.
-- [ ] T015 [US1] Crear record DTO `StaffStatusUpdateRequest` en `easyeat/backend/src/main/java/com/easyeat/staff/dto/StaffStatusUpdateRequest.java` y agregar consulta con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/staff/repository/StaffUserRepository.java` para los administradores activos del tenant.
-- [ ] T016 [US1] Implementar metodo `updateStaffStatus(UUID id, StaffStatusUpdateRequest request)` en `easyeat/backend/src/main/java/com/easyeat/staff/service/StaffService.java` con validacion de orfandad administrativa bajo transaccion `@Transactional`.
-- [ ] T017 [US1] Exponer endpoint `PATCH /api/v1/admin/staff/{id}/status` en `easyeat/backend/src/main/java/com/easyeat/staff/controller/StaffController.java` protegido con roles `ADMINISTRADOR` / `ADMIN`.
-- [ ] T018 [US1] Extender `easyeat/frontend/src/api/staffApi.ts` implementando el metodo `updateStaffStatus(id: string, status: StaffAccountStatus)`.
-- [ ] T019 [US1] Implementar componente modal `StaffStatusModal.tsx` en `easyeat/frontend/src/components/staff/StaffStatusModal.tsx` con mensaje de advertencia y gestion de error 409.
-- [ ] T020 [US1] Integrar modal y acciones de suspension/activacion en `easyeat/frontend/src/components/staff/StaffRosterTable.tsx` y conectar con `fetchStaff` en `easyeat/frontend/src/pages/StaffManagementPage.tsx`.
+- [x] T014 [US1] Modificar `AuthService.login` en `easyeat/backend/src/main/java/com/easyeat/auth/service/AuthService.java` para validar el estado del usuario post-BCrypt y lanzar `InvalidCredentialsException` (HTTP 401) en lugar de `AccountSuspendedException`.
+- [x] T015 [US1] Crear record DTO `StaffStatusUpdateRequest` en `easyeat/backend/src/main/java/com/easyeat/staff/dto/StaffStatusUpdateRequest.java` y agregar consulta con `@Lock(LockModeType.PESSIMISTIC_WRITE)` en `easyeat/backend/src/main/java/com/easyeat/staff/repository/StaffUserRepository.java` para los administradores activos del tenant.
+- [x] T016 [US1] Implementar metodo `updateStaffStatus(UUID id, StaffStatusUpdateRequest request)` en `easyeat/backend/src/main/java/com/easyeat/staff/service/StaffService.java` con validacion de orfandad administrativa bajo transaccion `@Transactional`.
+- [x] T017 [US1] Exponer endpoint `PATCH /api/v1/admin/staff/{id}/status` en `easyeat/backend/src/main/java/com/easyeat/staff/controller/StaffController.java` protegido con roles `ADMINISTRADOR` / `ADMIN`.
+- [x] T018 [US1] Extender `easyeat/frontend/src/api/staffApi.ts` implementando el metodo `updateStaffStatus(id: string, status: StaffAccountStatus)`.
+- [x] T019 [US1] Implementar componente modal `StaffStatusModal.tsx` en `easyeat/frontend/src/components/staff/StaffStatusModal.tsx` con mensaje de advertencia y gestion de error 409.
+- [x] T020 [US1] Integrar modal y acciones de suspension/activacion en `easyeat/frontend/src/components/staff/StaffRosterTable.tsx` y conectar con `fetchStaff` en `easyeat/frontend/src/pages/StaffManagementPage.tsx`.
 
 **Punto de control**: User Story 1 completamente funcional y verificable como MVP de seguridad.
 
