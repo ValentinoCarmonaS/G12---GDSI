@@ -95,7 +95,7 @@ class FinancialHealthControllerIntegrationTest {
         User chef = new User();
         chef.setEmail("chef@bistro.com");
         chef.setPasswordHash(passwordEncoder.encode("Secret123!"));
-        chef.setRole(UserRole.COCINERO);
+        chef.setRole(UserRole.COMENSAL);
         chef.setStatus(UserStatus.ACTIVE);
         chef.setTenantId(tenantId);
         chef = userRepository.save(chef);
