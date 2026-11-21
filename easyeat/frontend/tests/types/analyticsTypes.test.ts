@@ -28,14 +28,13 @@ describe('Spec 023 - Staff & Analytics Types (T002)', () => {
   });
 
   it('defines DishRankingGranularity and DishRankingItemResponse', () => {
-    const granularity: DishRankingGranularity = 'week';
+    const granularity: DishRankingGranularity = 'all';
     const item: DishRankingItemResponse = {
       dishId: 'dish-1',
       dishName: 'Milanesa Napolitana',
       unitsSold: 42,
-      revenue: 42000,
     };
-    expect(granularity).toBe('week');
+    expect(granularity).toBe('all');
     expect(item.dishName).toBe('Milanesa Napolitana');
     expect(item.unitsSold).toBe(42);
   });

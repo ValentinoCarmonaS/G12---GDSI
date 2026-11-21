@@ -1,6 +1,8 @@
 package com.easyeat.analytics.controller;
 
+import com.easyeat.analytics.dto.DishRankingItemResponse;
 import com.easyeat.analytics.dto.FinancialHealthResponse;
+import com.easyeat.analytics.service.DishRankingService;
 import com.easyeat.analytics.service.FinancialHealthService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/analytics")
@@ -22,9 +25,14 @@ import java.net.URI;
 public class AdminAnalyticsController {
 
     private final FinancialHealthService financialHealthService;
+    private final DishRankingService dishRankingService;
 
-    public AdminAnalyticsController(FinancialHealthService financialHealthService) {
+    public AdminAnalyticsController(
+            FinancialHealthService financialHealthService,
+            DishRankingService dishRankingService
+    ) {
         this.financialHealthService = financialHealthService;
+        this.dishRankingService = dishRankingService;
     }
 
     @GetMapping("/financial-health")
@@ -32,6 +40,16 @@ public class AdminAnalyticsController {
             @RequestParam(defaultValue = "day") String granularity
     ) {
         FinancialHealthResponse response = financialHealthService.getFinancialHealth(granularity);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+                .body(response);
+    }
+
+    @GetMapping("/dish-ranking")
+    public ResponseEntity<List<DishRankingItemResponse>> getDishRanking(
+            @RequestParam(defaultValue = "all") String granularity
+    ) {
+        List<DishRankingItemResponse> response = dishRankingService.getDishRanking(granularity);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
                 .body(response);

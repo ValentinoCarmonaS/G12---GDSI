@@ -8,11 +8,10 @@ export interface FinancialHealthResponse {
   periodEnd: string;
 }
 
-export type DishRankingGranularity = 'day' | 'week' | 'month';
+export type DishRankingGranularity = 'all' | 'day' | 'week' | 'month';
 
 export interface DishRankingItemResponse {
   dishId: string;
   dishName: string;
   unitsSold: number;
-  revenue: number;
 }
