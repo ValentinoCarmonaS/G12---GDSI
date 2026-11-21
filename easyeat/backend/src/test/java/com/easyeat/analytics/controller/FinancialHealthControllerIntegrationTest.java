@@ -62,18 +62,23 @@ class FinancialHealthControllerIntegrationTest {
     private OrderRepository orderRepository;
 
     @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Autowired
     private JwtService jwtService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     private UUID tenantId;
+    private UUID adminId;
     private String adminToken;
     private String chefToken;
 
     @BeforeEach
     void setUp() {
         orderRepository.deleteAll();
+        jdbcTemplate.execute("DELETE FROM dishes");
         userRepository.deleteAll();
         establishmentRepository.deleteAll();
 
@@ -90,12 +95,13 @@ class FinancialHealthControllerIntegrationTest {
         admin.setStatus(UserStatus.ACTIVE);
         admin.setTenantId(tenantId);
         admin = userRepository.save(admin);
+        adminId = admin.getId();
         adminToken = jwtService.generateToken(admin);
 
         User chef = new User();
         chef.setEmail("chef@bistro.com");
         chef.setPasswordHash(passwordEncoder.encode("Secret123!"));
-        chef.setRole(UserRole.COMENSAL);
+        chef.setRole(UserRole.CHEF);
         chef.setStatus(UserStatus.ACTIVE);
         chef.setTenantId(tenantId);
         chef = userRepository.save(chef);
@@ -105,6 +111,11 @@ class FinancialHealthControllerIntegrationTest {
     private void createOrder(OrderStatus status, BigDecimal amount, Instant paidAt) {
         Order order = new Order();
         order.setEstablishmentId(tenantId);
+        order.setUserId(adminId);
+        order.setFulfillmentMode(com.easyeat.order.domain.FulfillmentMode.values()[0]);
+        order.setPickupDate(java.time.LocalDate.now());
+        order.setTimeSlotStart(java.time.LocalTime.of(12, 0));
+        order.setTimeSlotEnd(java.time.LocalTime.of(12, 30));
         order.setStatus(status);
         order.setTotalAmount(amount);
         order.setPaidAt(paidAt);

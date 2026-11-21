@@ -124,10 +124,10 @@
 
 **Proposito**: Integracion de vistas en pantalla principal, navegacion de rutas, verificacion de no-regresion y ejecucion del quickstart.
 
-- [ ] T037 [P] Escribir RED test frontend en `easyeat/frontend/tests/pages/AdminAnalyticsPage.test.tsx` y crear la pagina unificada `AdminAnalyticsPage.tsx` en `easyeat/frontend/src/pages/AdminAnalyticsPage.tsx` integrando `FinancialHealthPanel`, `FinancialHealthChart` y `DishRankingTable`.
-- [ ] T038 [P] Agregar la ruta protegida `/admin/analytics` en `easyeat/frontend/src/router/AppRoutes.tsx` con `RoleRouteGuard allowedRoles={['ADMINISTRADOR']}` y agregar la tarjeta de navegacion "Metricas y Rendimiento" en `easyeat/frontend/src/pages/AdminWorkspacePage.tsx`.
-- [ ] T039 [P] Escribir RED test de regresion en `easyeat/backend/src/test/java/com/easyeat/order/CrossModuleBoundaryRegressionTest.java` verificando que KDS (spec 019), mostrador (spec 020), seguimiento (spec 021) y PIN de entrega (spec 022) permanecen 100% operativos e inmutables tras las adiciones de analitica.
-- [ ] T040 Ejecutar la validacion completa de los 19 escenarios del quickstart en `specs/023-staff-access-bi-dish-ranking/quickstart.md` contra entorno relacional real (`mvn verify` en backend y `npm test` en frontend) y verificar cero errores.
+- [x] T037 [P] Escribir RED test frontend en `easyeat/frontend/tests/pages/AdminAnalyticsPage.test.tsx` y crear la pagina unificada `AdminAnalyticsPage.tsx` en `easyeat/frontend/src/pages/AdminAnalyticsPage.tsx` integrando `FinancialHealthPanel`, `FinancialHealthChart` y `DishRankingTable`.
+- [x] T038 [P] Agregar la ruta protegida `/admin/analytics` en `easyeat/frontend/src/router/AppRoutes.tsx` con `RoleRouteGuard allowedRoles={['ADMINISTRADOR']}` y agregar la tarjeta de navegacion "Metricas y Rendimiento" en `easyeat/frontend/src/pages/AdminWorkspacePage.tsx`.
+- [x] T039 [P] Escribir RED test de regresion en `easyeat/backend/src/test/java/com/easyeat/order/CrossModuleBoundaryRegressionTest.java` verificando que KDS (spec 019), mostrador (spec 020), seguimiento (spec 021) y PIN de entrega (spec 022) permanecen 100% operativos e inmutables tras las adiciones de analitica.
+- [x] T040 Ejecutar la validacion completa de los 19 escenarios del quickstart en `specs/023-staff-access-bi-dish-ranking/quickstart.md` contra entorno relacional real (`mvn verify` en backend y `npm test` en frontend) y verificar cero errores.
 
 ---
 

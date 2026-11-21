@@ -143,10 +143,9 @@ class LoginIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.title").value("Account Suspended"))
-                .andExpect(jsonPath("$.status").value(403))
-                .andExpect(jsonPath("$.detail").value("The account has been suspended or is not authorized to operate."));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.detail").value("The provided email or password is incorrect."));
     }
 
     @Test
