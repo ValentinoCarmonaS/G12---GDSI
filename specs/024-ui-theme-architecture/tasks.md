@@ -17,6 +17,7 @@
 ---
 
 ## Phase 1: Setup (Shared Infrastructure)
+> **GitHub Issue**: [#448](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/448)
 
 **Purpose**: Instalar activos tipográficos autoalojados, limpiar estilos base de entrada y extender Tailwind CSS 3.4 con utilidades semánticas sin alterar tokens heredados de `001`–`023`.
 
@@ -28,6 +29,7 @@
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
+> **GitHub Issue**: [#449](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/449)
 
 **Purpose**: Infraestructura bloqueante de tipos y hoja CSS multi-tema que todas las historias de usuario consumen.
 
@@ -42,6 +44,7 @@
 ---
 
 ## Phase 3: User Story 1 — Identidad visual aislada por rol y contratos remediados (Priority: P1) 🎯 MVP
+> **GitHub Issue**: [#450](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/450)
 
 **Goal**: Remediar constitucionalmente los cuatro contratos `.DESIGN.md`, exponer la fuente única de verdad de tokens + `DataVizThemeTokens` y aplicar de forma determinista el tema por ruta sin colisiones ni residuos entre transiciones.
 
@@ -73,6 +76,7 @@
 ---
 
 ## Phase 4: User Story 2 — Contenedores de navegación minimalistas y responsivos por rol (Priority: P1)
+> **GitHub Issue**: [#451](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/451)
 
 **Goal**: Entregar contenedores de navegación minimalistas por rol con menú desplegable hamburguesa accesible por teclado, las 7 secciones completas de Administrador, acceso directo C-08 en escritorio para Chef, endurecimiento WCAG 2.2 AA de `AdminNotificationBell` y aislamiento transitorio para `CounterWorkspacePage` y `AdminAnalyticsPage`.
 
@@ -103,6 +107,7 @@
 ---
 
 ## Phase 5: User Story 3 — Convivencia aislada con la identidad personalizada del establecimiento (Priority: P2)
+> **GitHub Issue**: [#452](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/452)
 
 **Goal**: Garantizar y verificar que la capa de marca personalizada por restaurante (`--brand-*`, Spec 016) coexista de forma estrictamente aislada por debajo del tema Comensal (`--ee-*`) sin colisiones ni filtraciones hacia otros roles o hacia `/admin/mi-local`.
 
@@ -118,6 +123,7 @@
 ---
 
 ## Phase 6: User Story 4 — Primitivos base accesibles adaptables a los cuatro temas (Priority: P2)
+> **GitHub Issue**: [#453](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/453)
 
 **Goal**: Construir y verificar los cinco primitivos base polimórficos (`Button`, `StatusBadge`, `FeedbackState`, `LoadingSkeleton`, `EmptyState`) gobernados exclusivamente por tokens `--ee-*`, sin lógica condicional acoplada a nombres de rol y validados en la matriz completa de 20 combinaciones (`5 primitivos × 4 temas`).
 
@@ -146,6 +152,7 @@
 ---
 
 ## Phase 7: Polish & Cross-Cutting Concerns
+> **GitHub Issue**: [#454](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/454)
 
 **Purpose**: Verificación integral de no regresión (`001`–`023`), autonomía tipográfica en bundle de producción, auditoría visual constitucional y cierre documental contra `quickstart.md`.
 
