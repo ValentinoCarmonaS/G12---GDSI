@@ -108,7 +108,9 @@ public class PaymentWebhookService {
                 order.assignSecurityCodeIfAbsent(OrderService.generateSecurityCode());
             }
             order.setStatus(OrderStatus.PAID);
-            order.setUpdatedAt(Instant.now());
+            Instant now = Instant.now();
+            order.setPaidAt(now);
+            order.setUpdatedAt(now);
             orderRepository.save(order);
 
             if (reservation != null) {

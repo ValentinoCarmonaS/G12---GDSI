@@ -1,5 +1,6 @@
 import { apiClient } from './apiClient';
 import type {
+  StaffAccountStatus,
   StaffMemberResponse,
   StaffRegistrationRequest,
   StaffRegistrationResponse,
@@ -28,6 +29,16 @@ export const staffApi = {
    */
   async updateStaff(id: string, request: StaffUpdateRequest): Promise<StaffMemberResponse> {
     const response = await apiClient.put<StaffMemberResponse>(`/admin/staff/${id}`, request);
+    return response.data;
+  },
+
+  /**
+   * Updates a staff member's account status (ACTIVE or SUSPENDED).
+   */
+  async updateStaffStatus(id: string, status: StaffAccountStatus): Promise<StaffMemberResponse> {
+    const response = await apiClient.patch<StaffMemberResponse>(`/admin/staff/${id}/status`, {
+      status,
+    });
     return response.data;
   },
 };

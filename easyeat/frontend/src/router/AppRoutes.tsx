@@ -27,6 +27,7 @@ import { CheckoutPage } from '../pages/CheckoutPage';
 import { OrderConfirmationTrackingPage } from '../pages/OrderConfirmationTrackingPage';
 import { PaymentReturnPage } from '../pages/PaymentReturnPage';
 import { AdminBrandingPage } from '../pages/AdminBrandingPage';
+import { AdminAnalyticsPage } from '../pages/AdminAnalyticsPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -202,6 +203,14 @@ export const AppRoutes: React.FC = () => {
         element={
           <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
             <AdminBrandingPage />
+          </RoleRouteGuard>
+        }
+      />
+      <Route
+        path="/admin/analytics"
+        element={
+          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
+            <AdminAnalyticsPage />
           </RoleRouteGuard>
         }
       />

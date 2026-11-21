@@ -114,6 +114,14 @@ export const AdminWorkspacePage: React.FC = () => {
         </Link>
 
         <Link
+          to="/admin/analytics"
+          className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-purple-300 hover:shadow transition-all block"
+        >
+          <h3 className="font-semibold text-gray-900 text-lg mb-2">Métricas y Rendimiento</h3>
+          <p className="text-xs text-gray-500 mt-1">Salud financiera y ranking de platos →</p>
+        </Link>
+
+        <Link
           to="/admin/mi-local"
           className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:border-purple-300 hover:shadow transition-all block"
         >

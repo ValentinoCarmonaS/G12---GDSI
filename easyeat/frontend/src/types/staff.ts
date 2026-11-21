@@ -24,6 +24,10 @@ export interface StaffUpdateRequest {
   role: StaffRole;
 }
 
+export interface StaffStatusUpdateRequest {
+  status: StaffAccountStatus;
+}
+
 export interface StaffMemberResponse {
   id: string;
   fullName: string;

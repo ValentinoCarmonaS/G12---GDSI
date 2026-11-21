@@ -43,6 +43,8 @@ Repeatable migrations carry no version and are re-applied whenever their content
 
 **Spec 022 (`022-pin-antifraud-delivery-completion`) claims `V28__add_completed_at_to_orders.sql`** (authored 2026-11-16 on `feat/022/phase-1-setup`, branched from `develop/sprint-5`, whose highest version is `V27`; rule 2). Adds only the nullable `orders.completed_at TIMESTAMPTZ` for the delivery-completion timestamp; `security_code` is not touched because spec 020 already added it in `V26`. Its test, `OrderCompletedAtMigrationTest`, locates the script by description (rule 5).
 
+**Spec 023 (`023-staff-access-bi-dish-ranking`) claims `V29__add_paid_at_to_orders.sql`** (authored 2026-11-20 on `feat/023/phase-1-setup`, branched from `023-staff-access-bi-dish-ranking`, whose highest version is `V28`; rule 2). Adds nullable `orders.paid_at TIMESTAMPTZ`, backfills from `payments.approved_at`, and creates partial composite index `idx_orders_analytics`. Its test, `OrderPaidAtMigrationTest`, locates the script by description (rule 5).
+
 > **Registry gap (not fixed here)**: `V17`–`V27` are present on `develop/sprint-5` (specs 013–021) but have no row in this file, and `FlywayMigrationV26Test`/`FlywayMigrationV27Test` (specs 020/021) carry a version in their class name against rule 5. Recorded so the next registry update backfills those rows; it is outside the scope of spec 022.
 
 ## Operational note
