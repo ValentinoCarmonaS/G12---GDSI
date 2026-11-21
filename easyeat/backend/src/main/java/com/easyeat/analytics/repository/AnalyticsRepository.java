@@ -55,8 +55,23 @@ public interface AnalyticsRepository extends JpaRepository<Order, UUID> {
             JOIN oi.order o
             WHERE o.establishmentId = :establishmentId
               AND o.status IN :statuses
-              AND (:start IS NULL OR o.paidAt >= :start)
-              AND (:end IS NULL OR o.paidAt < :end)
+            GROUP BY oi.dishId, oi.dishName
+            HAVING SUM(oi.quantity) > 0
+            ORDER BY SUM(oi.quantity) DESC, LOWER(oi.dishName) ASC
+            """)
+    List<DishRankingProjection> findDishRankingAll(
+            @Param("establishmentId") UUID establishmentId,
+            @Param("statuses") Set<OrderStatus> statuses
+    );
+
+    @Query("""
+            SELECT oi.dishId AS dishId, oi.dishName AS dishName, SUM(oi.quantity) AS unitsSold
+            FROM OrderItem oi
+            JOIN oi.order o
+            WHERE o.establishmentId = :establishmentId
+              AND o.status IN :statuses
+              AND o.paidAt >= :start
+              AND o.paidAt < :end
             GROUP BY oi.dishId, oi.dishName
             HAVING SUM(oi.quantity) > 0
             ORDER BY SUM(oi.quantity) DESC, LOWER(oi.dishName) ASC

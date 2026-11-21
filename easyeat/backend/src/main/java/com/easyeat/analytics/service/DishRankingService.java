@@ -64,47 +64,48 @@ public class DishRankingService {
             throw new TenantViolationException("Missing active establishment context");
         }
 
-        Instant start = null;
-        Instant end = null;
+        if (effectiveGranularity.equals("all")) {
+            return analyticsRepository.findDishRankingAll(
+                            tenantId,
+                            AnalyticsRepository.COMPLETED_ORDER_STATUSES
+                    ).stream()
+                    .map(p -> new DishRankingItemResponse(p.getDishId(), p.getDishName(), p.getUnitsSold()))
+                    .toList();
+        }
 
-        if (!effectiveGranularity.equals("all")) {
-            ZoneId zone = establishmentRepository.findById(tenantId)
-                    .map(Establishment::getTimezone)
-                    .filter(tz -> tz != null && !tz.isBlank())
-                    .map(ZoneId::of)
-                    .orElse(DEFAULT_ZONE);
+        ZoneId zone = establishmentRepository.findById(tenantId)
+                .map(Establishment::getTimezone)
+                .filter(tz -> tz != null && !tz.isBlank())
+                .map(ZoneId::of)
+                .orElse(DEFAULT_ZONE);
 
-            LocalDate today = ZonedDateTime.now(clock).withZoneSameInstant(zone).toLocalDate();
-            ZonedDateTime startZoned;
-            ZonedDateTime exclusiveEndZoned;
+        LocalDate today = ZonedDateTime.now(clock).withZoneSameInstant(zone).toLocalDate();
+        ZonedDateTime startZoned;
+        ZonedDateTime exclusiveEndZoned;
 
-            switch (effectiveGranularity) {
-                case "day" -> {
-                    startZoned = today.atStartOfDay(zone);
-                    exclusiveEndZoned = today.plusDays(1).atStartOfDay(zone);
-                }
-                case "week" -> {
-                    LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-                    startZoned = monday.atStartOfDay(zone);
-                    exclusiveEndZoned = monday.plusWeeks(1).atStartOfDay(zone);
-                }
-                case "month" -> {
-                    LocalDate firstOfMonth = today.withDayOfMonth(1);
-                    startZoned = firstOfMonth.atStartOfDay(zone);
-                    exclusiveEndZoned = firstOfMonth.plusMonths(1).atStartOfDay(zone);
-                }
-                default -> throw new IllegalStateException("Unexpected granularity: " + effectiveGranularity);
+        switch (effectiveGranularity) {
+            case "day" -> {
+                startZoned = today.atStartOfDay(zone);
+                exclusiveEndZoned = today.plusDays(1).atStartOfDay(zone);
             }
-
-            start = startZoned.toInstant();
-            end = exclusiveEndZoned.toInstant();
+            case "week" -> {
+                LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                startZoned = monday.atStartOfDay(zone);
+                exclusiveEndZoned = monday.plusWeeks(1).atStartOfDay(zone);
+            }
+            case "month" -> {
+                LocalDate firstOfMonth = today.withDayOfMonth(1);
+                startZoned = firstOfMonth.atStartOfDay(zone);
+                exclusiveEndZoned = firstOfMonth.plusMonths(1).atStartOfDay(zone);
+            }
+            default -> throw new IllegalStateException("Unexpected granularity: " + effectiveGranularity);
         }
 
         return analyticsRepository.findDishRanking(
                         tenantId,
                         AnalyticsRepository.COMPLETED_ORDER_STATUSES,
-                        start,
-                        end
+                        startZoned.toInstant(),
+                        exclusiveEndZoned.toInstant()
                 ).stream()
                 .map(p -> new DishRankingItemResponse(p.getDishId(), p.getDishName(), p.getUnitsSold()))
                 .toList();

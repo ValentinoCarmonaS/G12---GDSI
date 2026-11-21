@@ -5,8 +5,11 @@ import com.easyeat.auth.domain.UserRole;
 import com.easyeat.auth.domain.UserStatus;
 import com.easyeat.auth.repository.UserRepository;
 import com.easyeat.auth.security.JwtService;
+import com.easyeat.catalog.domain.Dish;
 import com.easyeat.catalog.domain.Establishment;
+import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.order.domain.FulfillmentMode;
 import com.easyeat.order.domain.Order;
 import com.easyeat.order.domain.OrderItem;
 import com.easyeat.order.domain.OrderStatus;
@@ -26,6 +29,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -64,29 +69,32 @@ class DishRankingControllerIntegrationTest {
     private OrderRepository orderRepository;
 
     @Autowired
+    private DishRepository dishRepository;
+
+    @Autowired
     private JwtService jwtService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     private UUID establishmentId;
+    private UUID dinerUserId;
     private String adminToken;
     private String chefToken;
 
     @BeforeEach
     void setUp() {
         orderRepository.deleteAll();
-        userRepository.deleteAll();
-        establishmentRepository.deleteAll();
 
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
         Establishment est = new Establishment();
-        est.setName("Restaurante Ranking");
+        est.setName("Restaurante Ranking " + suffix);
         est.setTimezone("America/Argentina/Buenos_Aires");
         est = establishmentRepository.save(est);
         establishmentId = est.getId();
 
         User admin = new User();
-        admin.setEmail("admin-ranking@easyeat.com");
+        admin.setEmail("admin-ranking-" + suffix + "@easyeat.com");
         admin.setPasswordHash(passwordEncoder.encode("Secret123!"));
         admin.setRole(UserRole.ADMINISTRADOR);
         admin.setStatus(UserStatus.ACTIVE);
@@ -94,13 +102,14 @@ class DishRankingControllerIntegrationTest {
         admin = userRepository.save(admin);
 
         User chef = new User();
-        chef.setEmail("chef-ranking@easyeat.com");
+        chef.setEmail("chef-ranking-" + suffix + "@easyeat.com");
         chef.setPasswordHash(passwordEncoder.encode("Secret123!"));
         chef.setRole(UserRole.COMENSAL);
         chef.setStatus(UserStatus.ACTIVE);
-        chef.setTenantId(establishmentId);
+        chef.setTenantId(null);
         chef = userRepository.save(chef);
 
+        dinerUserId = chef.getId();
         adminToken = jwtService.generateToken(admin);
         chefToken = jwtService.generateToken(chef);
     }
@@ -108,6 +117,11 @@ class DishRankingControllerIntegrationTest {
     private Order createOrder(OrderStatus status, Instant paidAt, List<OrderItem> items) {
         Order order = new Order();
         order.setEstablishmentId(establishmentId);
+        order.setUserId(dinerUserId);
+        order.setFulfillmentMode(FulfillmentMode.IMMEDIATE);
+        order.setPickupDate(LocalDate.now());
+        order.setTimeSlotStart(LocalTime.of(12, 0));
+        order.setTimeSlotEnd(LocalTime.of(13, 0));
         order.setStatus(status);
         order.setPaidAt(paidAt);
         order.setTotalAmount(new BigDecimal("1000.00"));
@@ -123,8 +137,15 @@ class DishRankingControllerIntegrationTest {
         oi.setDishId(dishId);
         oi.setDishName(dishName);
         oi.setQuantity(quantity);
-        oi.setUnitPrice(new BigDecimal("500.00"));
+        BigDecimal unitPrice = new BigDecimal("500.00");
+        oi.setUnitPrice(unitPrice);
+        oi.setSubtotal(unitPrice.multiply(BigDecimal.valueOf(quantity)));
         return oi;
+    }
+
+    private Dish createDish(String name) {
+        Dish dish = new Dish(establishmentId, name, "Descripcion " + name, new BigDecimal("500.00"), true);
+        return dishRepository.save(dish);
     }
 
     @Test
@@ -138,9 +159,10 @@ class DishRankingControllerIntegrationTest {
 
     @Test
     void getDishRanking_allAndPeriods_sortsDescWithAzTieBreakerAndExcludesNonCompleted() throws Exception {
-        UUID empanadaId = UUID.randomUUID();
-        UUID pizzaId = UUID.randomUUID();
-        UUID burgerId = UUID.randomUUID();
+        UUID empanadaId = createDish("Empanada de Carne Suave").getId();
+        UUID pizzaId = createDish("Pizza Muzzarella").getId();
+        UUID burgerId = createDish("Hamburguesa Clasica").getId();
+        createDish("Plato Sin Ventas");
 
         Instant now = Instant.now();
         Instant lastMonth = now.minus(40, ChronoUnit.DAYS);

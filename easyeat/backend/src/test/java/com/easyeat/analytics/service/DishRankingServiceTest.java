@@ -88,11 +88,9 @@ class DishRankingServiceTest {
         UUID d2 = UUID.randomUUID();
         UUID d3 = UUID.randomUUID();
 
-        when(analyticsRepository.findDishRanking(
+        when(analyticsRepository.findDishRankingAll(
                 eq(tenantId),
-                eq(AnalyticsRepository.COMPLETED_ORDER_STATUSES),
-                isNull(),
-                isNull()
+                eq(AnalyticsRepository.COMPLETED_ORDER_STATUSES)
         )).thenReturn(List.of(
                 projection(d1, "Empanada de Carne Suave", 85L),
                 projection(d2, "Hamburguesa Clasica", 42L),
