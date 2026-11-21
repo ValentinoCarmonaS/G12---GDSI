@@ -112,8 +112,8 @@
 
 - [x] T033 [US3] Crear record DTO `DishRankingItemResponse` en `easyeat/backend/src/main/java/com/easyeat/analytics/dto/DishRankingItemResponse.java`.
 - [x] T034 [US3] Implementar `DishRankingService.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/service/DishRankingService.java` ejecutando la consulta de unidades por plato con orden `unitsSold DESC, LOWER(dishName) ASC`.
-- [ ] T035 [US3] Extender `AdminAnalyticsController.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/controller/AdminAnalyticsController.java` exponiendo `GET /api/v1/admin/analytics/dish-ranking`.
-- [ ] T036 [US3] Implementar componente `DishRankingTable.tsx` en `easyeat/frontend/src/components/analytics/DishRankingTable.tsx` con tabla de ranking, selector de periodo (historico global / dia / semana / mes) y estado neutral descriptivo.
+- [x] T035 [US3] Extender `AdminAnalyticsController.java` en `easyeat/backend/src/main/java/com/easyeat/analytics/controller/AdminAnalyticsController.java` exponiendo `GET /api/v1/admin/analytics/dish-ranking`.
+- [x] T036 [US3] Implementar componente `DishRankingTable.tsx` en `easyeat/frontend/src/components/analytics/DishRankingTable.tsx` con tabla de ranking, selector de periodo (historico global / dia / semana / mes) y estado neutral descriptivo.
 
 **Punto de control**: User Story 3 completamente funcional y sincronizada de extremo a extremo.
 

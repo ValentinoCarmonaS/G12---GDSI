@@ -34,7 +34,7 @@ describe('Spec 023 - analyticsApi (T003)', () => {
 
   it('calls GET /admin/analytics/dish-ranking with granularity and Cache-Control: no-cache', async () => {
     const mockData = [
-      { dishId: 'd1', dishName: 'Pizza Muzza', unitsSold: 25, revenue: 25000 },
+      { dishId: 'd1', dishName: 'Pizza Muzza', unitsSold: 25 },
     ];
     vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockData });
 
