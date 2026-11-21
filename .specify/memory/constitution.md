@@ -1,13 +1,15 @@
 <!--
 Sync Impact Report
-- Version change: 1.2.0 -> 2.0.0
+- Version change: 2.0.0 -> 2.1.0
 - Modified principles: none
-- Added sections: none
-- Removed sections:
-  - Fundamental Principle XI: Continuous Upstream Synchronization Awareness
-  - Pre-execution check (Continuous upstream reference synchronization) under Development Workflow and Quality Gates
+- Added sections:
+  - Fundamental Principle XI: Role-Scoped Visual Governance and Non-Regressive UI Refactoring
+  - Frontend & Visual Governance Constraints (EasyEat) under Additional Constraints
+  - UI critique and regression verification gates under Development Workflow and Quality Gates
+- Removed sections: none
 - Templates requiring updates: none
-- Deferred items: none
+- Deferred items:
+  - TODO(DESIGN_CONTRACTS_REMEDIATION): Remediate comensal.DESIGN.md (uses prohibited Inter typography) and mostrador.DESIGN.md (uses #111827 text on #111111 surface, failing WCAG 2.2 AA contrast) before UI implementation for those roles.
 -->
 
 # SDD Project Constitution
@@ -134,12 +136,28 @@ Each principle includes its **Compliance** criteria (verifiable during a review 
 
 **Rationale**: prevent fragmented, non-functional silos and orphan user stories where frontend interfaces lack functional backend contracts or backend endpoints lack frontend consumer verification.
 
+### XI. Role-Scoped Visual Governance and Non-Regressive UI Refactoring
+
+- Every user-facing role interface MUST strictly implement the typography, semantic color palette, spacing, and WCAG 2.2 AA contrast rules defined in its corresponding role-scoped design contract.
+- Visual implementations MUST uphold intentional craft and MUST NOT introduce generic boilerplate patterns (default fallback typography, generic purple-to-blue gradients, nested cards-in-cards, or low-contrast text on colored surfaces).
+- Accessibility standards (WCAG 2.2 AA contrast) and anti-boilerplate prohibitions MUST take precedence over any conflicting token in a design contract. If a design contract contains a conflicting or non-compliant token, UI implementation for that role MUST halt and escalate for design-contract remediation before proceeding.
+- UI refactoring MUST preserve existing API contracts, client-side state business logic, and behavioral test guarantees without altering or weakening existing test assertions.
+
+**Compliance**: every UI change references its governing role design contract, passes visual critique and WCAG 2.2 AA contrast checks, and passes the full behavioral test suite with zero regressions or altered API and business-logic contracts.
+
+**Rationale**: ensure cohesive, accessible, role-tailored interfaces while protecting verified end-to-end functionality from regressions during visual refactoring.
+
 ## Additional Constraints
 
 This section contains the mechanisms and decisions declared by the project. They are NOT universal principles: they may be modified without altering the Fundamental Principles, although they remain subject to the amendment procedure.
 
 - **Human escalation mechanism**: the `grill-me` skill. Any reference to "designated escalation mechanism" in the principles resolves to this skill.
-- **Technological constraints**: none declared at this time.
+- **Technological constraints (Frontend & Visual Governance — EasyEat)**:
+  - **Role-Scoped Design Contracts**: Every EasyEat role UI (`Comensal`, `Mostrador`, `Chef`, `Admin`) MUST strictly implement the typography, semantic color palette, spacing, and WCAG 2.2 AA contrast rules defined in `.specify/memory/designs/<role>.DESIGN.md` (`comensal.DESIGN.md`, `mostrador.DESIGN.md`, `chef.DESIGN.md`, `admin.DESIGN.md`).
+  - **Shared & Authentication Views**: Public and diner authentication/recovery routes MUST inherit `comensal.DESIGN.md`; staff authentication and role-redirect routes MUST inherit `admin.DESIGN.md` or their target role's `.DESIGN.md`.
+  - **Zero AI-Slop Policy**: Default `Inter` typography, generic purple-to-blue gradients, nested cards-in-cards, and low-contrast gray text on colored surfaces are prohibited. All UI work MUST be audited via Impeccable `/critique`.
+  - **Conflict Precedence**: WCAG 2.2 AA contrast and Zero AI-Slop rules supersede conflicting tokens in `.specify/memory/designs/<role>.DESIGN.md`. Known defects (`Inter` in `comensal.DESIGN.md`; `#111827` text on `#111111` surface in `mostrador.DESIGN.md`) MUST be remediated before implementing UI for those roles.
+  - **Business Logic & Test Invariant**: UI refactoring MUST NOT alter Axios API contracts, state business logic, or break any existing Vitest + React Testing Library test suites from specs `001`–`023`.
 
 ## Development Workflow and Quality Gates
 
@@ -159,6 +177,7 @@ Atomic, traceable, and reversible delivery:
 - Each user story MUST be developed on an independent branch. When the workflow creates a branch per feature, each feature MUST contain a single user story.
 - Changes MUST be organized into atomic, traceable, and reasonably reversible commits. Each commit MUST represent a logical unit of change, maintain a clear relationship with the corresponding specification or task, have a descriptive message aligned with versioning best practices, and avoid mixing functional changes, refactorings, and unrelated modifications.
 - A user story can ONLY be considered integrated after passing the Pull Request and validation defined by the project.
+- For any change affecting UI components or styles, integration additionally requires passing the Impeccable `/critique` visual audit against the governing `.DESIGN.md` (with WCAG 2.2 AA and Zero AI-Slop precedence) and passing the full Vitest + React Testing Library test suites (specs `001`–`023`) with unchanged Axios API contracts and state business logic.
 
 ## Governance
 
@@ -169,4 +188,4 @@ Atomic, traceable, and reversible delivery:
 - **Periodic compliance review**: MUST be performed in each feature planning cycle via the plan's Constitution Check, and at least once per quarter across the entire project, verifying that plans and reviews comply with the principles.
 - **Mandatory principles vs. project decisions**: a mandatory principle applies regardless of technology and domain, and resides in Fundamental Principles. Any decision depending on a specific technology, tool, or context resides in Additional Constraints or in the specification and plan artifacts.
 
-**Version**: 2.0.0 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-10-31
+**Version**: 2.1.0 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-11-21
