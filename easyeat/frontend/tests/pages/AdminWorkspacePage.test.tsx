@@ -92,6 +92,7 @@ describe('AdminWorkspacePage (T035, ADM-1.1.1)', () => {
     expect(screen.getByText('Materias Primas')).toBeInTheDocument();
     expect(screen.getByText('Menú y Precios')).toBeInTheDocument();
     expect(screen.getByText('Auditoría de Sesiones')).toBeInTheDocument();
+    expect(screen.getByText('Métricas y Rendimiento').closest('a')).toHaveAttribute('href', '/admin/analytics');
     expect(screen.getByTestId('admin-tenant-scope')).toHaveTextContent('Tenant ID: tenant-restaurante-alpha');
   });
 
