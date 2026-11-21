@@ -1,6 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getFinancialHealth } from '../../api/analyticsApi';
 import type { FinancialHealthGranularity, FinancialHealthResponse } from '../../types/analytics';
+
+interface FinancialHealthPanelProps {
+  onDataChange?: (
+    data: FinancialHealthResponse | null,
+    granularity: FinancialHealthGranularity
+  ) => void;
+}
 
 const GRANULARITY_TABS: { key: FinancialHealthGranularity; label: string }[] = [
   { key: 'day', label: 'Día' },
@@ -15,26 +22,32 @@ const currencyFormatter = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 2,
 });
 
-export function FinancialHealthPanel() {
+export function FinancialHealthPanel({ onDataChange }: FinancialHealthPanelProps = {}) {
   const [granularity, setGranularity] = useState<FinancialHealthGranularity>('day');
   const [data, setData] = useState<FinancialHealthResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const onDataChangeRef = useRef(onDataChange);
+  onDataChangeRef.current = onDataChange;
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError(null);
+    setData(null);
+    onDataChangeRef.current?.(null, granularity);
 
     getFinancialHealth(granularity)
       .then((res) => {
         if (active) {
           setData(res);
+          onDataChangeRef.current?.(res, granularity);
         }
       })
       .catch(() => {
         if (active) {
           setError('No se pudieron cargar las métricas financieras.');
+          onDataChangeRef.current?.(null, granularity);
         }
       })
       .finally(() => {

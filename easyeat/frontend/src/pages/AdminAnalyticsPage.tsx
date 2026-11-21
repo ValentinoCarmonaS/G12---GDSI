@@ -1,35 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getFinancialHealth } from '../api/analyticsApi';
 import { DishRankingTable } from '../components/analytics/DishRankingTable';
 import { FinancialHealthChart } from '../components/analytics/FinancialHealthChart';
 import { FinancialHealthPanel } from '../components/analytics/FinancialHealthPanel';
-import type { FinancialHealthResponse } from '../types/analytics';
+import type { FinancialHealthGranularity, FinancialHealthResponse } from '../types/analytics';
 
-export function AdminAnalyticsPage() {
-  const [chartData, setChartData] = useState<FinancialHealthResponse>({
-    granularity: 'day',
+function createEmptyFinancialHealth(
+  granularity: FinancialHealthGranularity
+): FinancialHealthResponse {
+  return {
+    granularity,
     revenue: 0,
     orderCount: 0,
-    averageTicket: 0,
-  });
+    periodStart: '',
+    periodEnd: '',
+  };
+}
 
-  useEffect(() => {
-    let active = true;
-    getFinancialHealth('day')
-      .then((res) => {
-        if (active) {
-          setChartData(res);
-        }
-      })
-      .catch(() => {
-        // El panel principal maneja y muestra el estado de error de métricas financieras.
-      });
+export function AdminAnalyticsPage() {
+  const [chartData, setChartData] = useState<FinancialHealthResponse>(() =>
+    createEmptyFinancialHealth('day')
+  );
 
-    return () => {
-      active = false;
-    };
-  }, []);
+  const handleFinancialDataChange = useCallback(
+    (data: FinancialHealthResponse | null, granularity: FinancialHealthGranularity) => {
+      setChartData(data ?? createEmptyFinancialHealth(granularity));
+    },
+    []
+  );
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 text-neutral-100">
@@ -48,7 +46,7 @@ export function AdminAnalyticsPage() {
         </Link>
       </header>
 
-      <FinancialHealthPanel />
+      <FinancialHealthPanel onDataChange={handleFinancialDataChange} />
       <FinancialHealthChart data={chartData} />
       <DishRankingTable />
     </main>
