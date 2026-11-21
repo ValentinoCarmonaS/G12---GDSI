@@ -56,8 +56,9 @@ npx vitest run tests/theme/routeThemeScope.test.tsx
 ### Resultados esperados
 
 1. El 100% de las rutas de `easyeat/frontend/src/router/AppRoutes.tsx` resuelve el tema esperado al primer renderizado:
-   - `/login`, `/register`, `/forgot-password`, `/reset-password`, `/auth/reset-password`, `/verificar-email`, `/verify-email`, `/`, `*`, `/descubrimiento`, `/discovery`, `/catalogo/*`, `/catalog/*`, `/perfil`, `/profile`, `/checkout/*`, `/pedidos/*`, `/seguimiento/*` → `data-theme="comensal"`.
-   - `/login` con `location.state.from = "/mostrador"` y empleado autenticado en `/reset-password` → `data-theme="comensal"`.
+   - `/login` (sin deep-link de personal), `/register`, `/forgot-password`, `/reset-password`, `/auth/reset-password`, `/verificar-email`, `/verify-email`, `/` (sin sesión), `*`, `/descubrimiento`, `/discovery`, `/catalogo/*`, `/catalog/*`, `/perfil`, `/profile`, `/checkout/*`, `/pedidos/*`, `/seguimiento/*` → `data-theme="comensal"`.
+   - `/` con usuario autenticado → hereda el tema del rol destino (`ENCARGADO` → `mostrador`, `CHEF` → `chef`, `ADMINISTRADOR` → `admin`, `COMENSAL` → `comensal`).
+   - `/login` con `location.state.from = "/mostrador"` → `data-theme="mostrador"` (y análogamente `/cocina/*` → `chef`, `/admin/*` → `admin`).
    - `/mostrador/*` y `/counter/*` → `data-theme="mostrador"`.
    - `/cocina/*` y `/kds/*` → `data-theme="chef"`.
    - `/admin/*` → `data-theme="admin"`.
@@ -89,17 +90,17 @@ npx vitest run tests/theme/brandLayerIsolation.test.tsx
 
 ```bash
 cd easyeat/frontend
-npx vitest run tests/components/WorkspaceLayout.test.tsx tests/components/RoleLayoutShell.test.tsx
+npx vitest run tests/components/WorkspaceLayout.test.tsx tests/components/RoleLayoutShell.test.tsx tests/components/RoleHamburgerMenu.test.tsx tests/components/AdminNotificationBell.test.tsx
 ```
 
 ### Resultados esperados
 
-1. El botón hamburguesa expone `aria-expanded`, `aria-controls` y etiqueta accesible descriptiva, y abre/cierra el panel con clic, `Escape` (devolviendo foco al disparador), selección de ruta y clic exterior.
-2. Mapa completo verificado por rol con `aria-current="page"` dinámico:
-   - **Administrador**: 7 secciones (`Panel`, `Auditoría`, `Personal`, `Inventario`, `Operaciones`, `Mi local`, `Métricas`) + `AdminNotificationBell`.
-   - **Comensal**: 4 secciones (`Descubrimiento`, `Catálogo`, `Mis pedidos`, `Mi perfil`) + `Cerrar sesión`; estado invitado muestra `Iniciar sesión` y `Registrarse`.
-   - **Mostrador**: `Despacho en mostrador` + acceso perfil/sesión.
-   - **Chef**: 3 secciones (`Comandas KDS`, `Gestionar Platos`, `Ingredientes`) accesibles directamente en 1 interacción en cabecera de escritorio (C-08) y unificadas en el menú hamburguesa en móvil.
+1. El botón hamburguesa y `AdminNotificationBell` exponen `aria-expanded`, `aria-controls`/`aria-haspopup` y etiquetas accesibles descriptivas, objetivos `>= 44×44 px`, y cierran el panel con clic, `Escape` (devolviendo foco al disparador) y clic exterior.
+2. Mapa completo verificado por rol con `aria-current="page"` dinámico (y enlace a `/perfil` exclusivo de `COMENSAL`):
+   - **Administrador**: 7 secciones (`Panel`, `Auditoría`, `Personal`, `Inventario`, `Operaciones`, `Mi local`, `Métricas`) + `AdminNotificationBell` (sin enlace a `/perfil`).
+   - **Comensal**: 4 secciones (`Descubrimiento`, `Catálogo`, `Mis pedidos`, `Mi perfil`) + avatar navegable a `/perfil` + `Cerrar sesión`; estado invitado muestra `Iniciar sesión` y `Registrarse`.
+   - **Mostrador**: `Despacho en mostrador` + metadatos de cuenta y cierre de sesión (sin enlace a `/perfil`).
+   - **Chef**: 3 secciones (`Comandas KDS`, `Gestionar Platos`, `Ingredientes`) accesibles directamente en 1 interacción en cabecera de escritorio (C-08) y unificadas en el menú hamburguesa en móvil (sin enlace a `/perfil`).
 3. En `/admin/analytics`, el shell de Administrador envuelve la vista desde `AppRoutes` sin romper `AdminAnalyticsPage.test.tsx`, y tanto `AdminAnalyticsPage` (`data-legacy-surface="dark"`) como el contenido heredado de `CounterWorkspacePage` (`data-legacy-surface="light"`) conservan legibilidad íntegra.
 
 ---

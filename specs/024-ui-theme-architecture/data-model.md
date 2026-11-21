@@ -153,15 +153,15 @@ classDiagram
 
 ### Reglas deterministas de resolución (en orden estricto de precedencia)
 
-| Precedencia | Patrón de ruta (`pathname` normalizado) | Condición de sesión | Tema resuelto (`RoleThemeId`) |
+| Precedencia | Patrón de ruta (`pathname` normalizado) | Condición de sesión / navegación | Tema resuelto (`RoleThemeId`) |
 |---|---|---|---|
 | 1 | `/first-login-password-change` | `user.role === 'ENCARGADO'` → `'mostrador'`; `'CHEF'` → `'chef'`; `'ADMINISTRADOR'` → `'admin'`; `'COMENSAL'` → `'comensal'`; rol ausente/nulo → `'admin'` | Rol autenticado (respaldo `'admin'`) |
-| 2 | `/mostrador`, `/mostrador/*`, `/counter`, `/counter/*` | Independiente | `'mostrador'` |
-| 3 | `/cocina`, `/cocina/*`, `/kds`, `/kds/*` | Independiente | `'chef'` |
-| 4 | `/admin`, `/admin/*` | Independiente | `'admin'` |
-| 5 | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/auth/reset-password`, `/verificar-email`, `/verify-email` | Independiente (incluso con `location.state.from` a ruta de personal o usuario empleado autenticado) | `'comensal'` |
-| 6 | `/descubrimiento`, `/discovery`, `/catalogo`, `/catalogo/*`, `/catalog`, `/catalog/*`, `/perfil`, `/profile`, `/checkout`, `/checkout/*`, `/pedidos/*`, `/seguimiento/*` | Independiente | `'comensal'` |
-| 7 | `/`, `*` (comodín / rutas desconocidas / hidratación inicial) | Independiente | `'comensal'` (fallback universal) |
+| 2 | `/` (redirección por rol) | Si `user.role` está presente: `'ENCARGADO'` → `'mostrador'`, `'CHEF'` → `'chef'`, `'ADMINISTRADOR'` → `'admin'`, `'COMENSAL'` → `'comensal'`. Sin sesión → pasa a precedencia 7 | Rol destino (o `'comensal'` sin sesión) |
+| 3 | `/login` | Si `location.state.from` (`fromPath`) apunta a ruta de personal (`/mostrador*`, `/counter*` → `'mostrador'`; `/cocina*`, `/kds*` → `'chef'`; `/admin*` → `'admin'`); sin deep-link de personal → `'comensal'` | Rol destino de staff o `'comensal'` |
+| 4 | `/mostrador`, `/mostrador/*`, `/counter`, `/counter/*` | Independiente | `'mostrador'` |
+| 5 | `/cocina`, `/cocina/*`, `/kds`, `/kds/*` | Independiente | `'chef'` |
+| 6 | `/admin`, `/admin/*` | Independiente | `'admin'` |
+| 7 | `/register`, `/forgot-password`, `/reset-password`, `/auth/reset-password`, `/verificar-email`, `/verify-email`, rutas Comensal (`/descubrimiento`, `/discovery`, `/catalogo/*`, `/catalog/*`, `/perfil`, `/profile`, `/checkout/*`, `/pedidos/*`, `/seguimiento/*`), `/` sin sesión y `*` | Independiente | `'comensal'` (fallback público/comensal) |
 
 ### Transiciones de estado del ámbito de tema
 
@@ -189,11 +189,11 @@ stateDiagram-v2
 
 | Rol (`Role`) | Tema | Secciones en menú hamburguesa (móvil y escritorio) | Excepción cabecera escritorio | Controles esenciales en cabecera |
 |---|---|---|---|---|
-| `COMENSAL` (autenticado) | `comensal` | `Descubrimiento` (`/descubrimiento`), `Catálogo` (`/catalogo`), `Mis pedidos` (`/perfil#pedidos`), `Mi perfil` (`/perfil`) + `Cerrar sesión` | Ninguna (barra minimalista) | Marca, título, botón hamburguesa, avatar (`/perfil`), `Cerrar sesión` |
+| `COMENSAL` (autenticado) | `comensal` | `Descubrimiento` (`/descubrimiento`), `Catálogo` (`/catalogo`), `Mis pedidos` (`/perfil#pedidos`), `Mi perfil` (`/perfil`) + `Cerrar sesión` | Ninguna (barra minimalista) | Marca, título, botón hamburguesa, avatar navegable (`/perfil`), `Cerrar sesión` |
 | Invitado (`user === null`) | `comensal` | Sin menú de rol autenticado | Ninguna | Marca, título, enlaces `Iniciar sesión` (`/login`) y `Registrarse` (`/register`) |
-| `ENCARGADO` | `mostrador` | `Despacho en mostrador` (`/mostrador`), `Mi perfil` (`/perfil`) + `Cerrar sesión` | Ninguna (barra minimalista) | Marca, título, botón hamburguesa, badge `Local` (`tenant-badge`), avatar, `Cerrar sesión` |
-| `CHEF` | `chef` | `Comandas KDS` (`/cocina`), `Gestionar Platos` (`/cocina/platos`), `Ingredientes` (`/cocina/ingredientes`) + `Cerrar sesión` | **Sí (C-08)**: los 3 accesos directos visibles en cabecera en `>= 768px` (`md:flex`) con `aria-current="page"` | Marca, título, nav directo escritorio (`Secciones de cocina`), botón hamburguesa, badge `Local`, avatar, `Cerrar sesión` |
-| `ADMINISTRADOR` | `admin` | `Panel` (`/admin`), `Auditoría` (`/admin/dishes`), `Personal` (`/admin/staff`), `Inventario` (`/admin/inventory`), `Operaciones` (`/admin/operations`), `Mi local` (`/admin/mi-local`), `Métricas` (`/admin/analytics`) + `Cerrar sesión` | Ninguna (barra minimalista) | Marca, título, botón hamburguesa, badge `Local`, `AdminNotificationBell`, avatar, `Cerrar sesión` |
+| `ENCARGADO` | `mostrador` | `Despacho en mostrador` (`/mostrador`) + metadatos de cuenta y `Cerrar sesión` (sin enlace a `/perfil`) | Ninguna (barra minimalista) | Marca, título, botón hamburguesa, badge `Local` (`tenant-badge`), avatar informativo (no navegable), `Cerrar sesión` |
+| `CHEF` | `chef` | `Comandas KDS` (`/cocina`), `Gestionar Platos` (`/cocina/platos`), `Ingredientes` (`/cocina/ingredientes`) + metadatos de cuenta y `Cerrar sesión` (sin enlace a `/perfil`) | **Sí (C-08)**: los 3 accesos directos visibles en cabecera en `>= 768px` (`md:flex`) con `aria-current="page"` | Marca, título, nav directo escritorio (`Secciones de cocina`), botón hamburguesa, badge `Local`, avatar informativo (no navegable), `Cerrar sesión` |
+| `ADMINISTRADOR` | `admin` | `Panel` (`/admin`), `Auditoría` (`/admin/dishes`), `Personal` (`/admin/staff`), `Inventario` (`/admin/inventory`), `Operaciones` (`/admin/operations`), `Mi local` (`/admin/mi-local`), `Métricas` (`/admin/analytics`) + metadatos de cuenta y `Cerrar sesión` (sin enlace a `/perfil`) | Ninguna (barra minimalista) | Marca, título, botón hamburguesa, badge `Local`, `AdminNotificationBell` (WCAG 2.2 AA), avatar informativo (no navegable), `Cerrar sesión` |
 
 ### Máquina de estados del menú desplegable hamburguesa (`FR-010`)
 

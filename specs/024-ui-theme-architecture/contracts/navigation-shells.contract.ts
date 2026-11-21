@@ -81,12 +81,17 @@ export interface WorkspaceLayoutProps {
  * 4. Estado invitado (`user === null` en rutas públicas como `/catalogo`):
  *    - Oculta el menú de rol autenticado y `Cerrar sesión`.
  *    - Presenta accesos directos claros a `Iniciar sesión` (`/login`) y `Registrarse` (`/register`).
+ * 5. Enlace a `/perfil` y campana administrativa (`AdminNotificationBell`):
+ *    - Solo `COMENSAL` expone `Mi perfil` (`/perfil`) y avatar navegable hacia `/perfil`.
+ *    - `ENCARGADO`, `CHEF` y `ADMINISTRADOR` no enlazan a `/perfil` (avatar informativo no navegable).
+ *    - `AdminNotificationBell` cumple WCAG 2.2 AA (`--ee-*`, `aria-expanded`, `aria-haspopup`,
+ *      cierre por `Escape` con retorno de foco, objetivo `>= 44×44 px`, `sr-only` para no leídas y contraste `>= 4.5:1`).
  */
 export const ROLE_NAVIGATION_INVARIANT = {
   comensalSectionCount: 4, // Descubrimiento, Catálogo, Mis pedidos, Mi perfil
-  mostradorSectionCount: 1, // Despacho en mostrador (+ acceso perfil/sesión)
-  chefSectionCount: 3, // Comandas KDS, Gestionar Platos, Ingredientes (C-08)
-  adminSectionCount: 7, // Panel, Auditoría, Personal, Inventario, Operaciones, Mi local, Métricas
+  mostradorSectionCount: 1, // Despacho en mostrador (sin enlace a /perfil)
+  chefSectionCount: 3, // Comandas KDS, Gestionar Platos, Ingredientes (C-08; sin enlace a /perfil)
+  adminSectionCount: 7, // Panel, Auditoría, Personal, Inventario, Operaciones, Mi local, Métricas (sin enlace a /perfil)
   maxInteractionsMobileAndDesktop: 2,
   maxInteractionsChefDesktop: 1,
 } as const;

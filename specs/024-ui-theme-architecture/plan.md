@@ -14,7 +14,7 @@ El plan cubre cinco ejes técnicos trazables:
 
 1. **Remediación constitucional de los cuatro `.DESIGN.md`**: erradicación de `Inter` en Comensal (`DM Sans`), adopción de `Archivo` para cuerpo operativo en Mostrador conservando `Archivo Black` en display, corrección de contraste de Mostrador a `#F8FAFC` sobre `#111111`, y pares/tríadas WCAG 2.2 AA verificados matemáticamente para los cuatro temas (`Bento`, `Bold`, `Brutalism`, `Glassmorphism`), cerrando `TODO(DESIGN_CONTRACTS_REMEDIATION)` en la constitución.
 2. **Sistema tipográfico autoalojado en Vite**: empaquetado local vía `@fontsource/*` con subconjunto estricto de pesos por rol, `font-display: swap`, descarga selectiva por tema activo, cero peticiones a CDN externos y aprovechamiento de la política `Cache-Control: immutable` de `easyeat/frontend/nginx.conf`.
-3. **Ámbito determinista de tema por ruta y aislamiento por capas**: registro único de tokens (`themeRegistry.ts`) proyectado a variables CSS `--ee-*` bajo `[data-theme="<role>"]` mediante `ThemeScopeProvider` en `App.tsx`, con respaldo universal Comensal y excepción de sesión en `/first-login-password-change`, completamente aislado de las variables `--brand-*` de `BrandThemeProvider` (Spec 016).
+3. **Ámbito determinista de tema por ruta y aislamiento por capas**: registro único de tokens (`themeRegistry.ts`) proyectado a variables CSS `--ee-*` bajo `[data-theme="<role>"]` mediante `ThemeScopeProvider` en `App.tsx`, cumpliendo la restricción constitucional de vistas compartidas y redirecciones por rol (`/` autenticado y deep-links de staff en `/login` heredan el tema del rol destino; `/first-login-password-change` hereda el rol autenticado con respaldo `'admin'`; resto público/comensal usa Comensal), completamente aislado de las variables `--brand-*` de `BrandThemeProvider` (Spec 016).
 4. **Contenedores de navegación minimalistas (`RoleLayoutShell`)**: barra superior minimalista con menú desplegable hamburguesa accesible por teclado en móvil y escritorio para los cuatro roles (incluyendo las 7 secciones completas del Administrador y las 4 del Comensal), conservando acceso directo en 1 toque en cabecera escritorio para las 3 secciones del Chef (Spec 005 C-08), más contenedores transitorios `data-legacy-surface` para preservar legibilidad de `CounterWorkspacePage` y `AdminAnalyticsPage` hasta Specs `026` y `028`.
 5. **Cinco primitivos base polimórficos y sub-contrato de visualización de datos**: `Button`, `StatusBadge`, `FeedbackState`, `LoadingSkeleton` y `EmptyState` gobernados exclusivamente por tokens `--ee-*` sin condicionales por nombre de rol, junto con `DataVizThemeTokens` expuesto declarativa y programáticamente desde la misma fuente única de verdad.
 
@@ -51,7 +51,7 @@ El plan cubre cinco ejes técnicos trazables:
 | **VII. Traceability, Consistency, Documentation** | PASA | Cadena completa `spec.md` → `research.md` → `data-model.md` → `contracts/*` → `quickstart.md` → `plan.md`, además de `PRODUCT.md` vía `/impeccable init`. |
 | **VIII. Evidence Over Assumption & Escalation** | PASA | Se inspeccionaron `AppRoutes.tsx`, `WorkspaceLayout.tsx`, `BrandThemeProvider.tsx`, `AdminAnalyticsPage.tsx`, `CounterWorkspacePage.tsx` y `WorkspaceLayout.test.tsx`; toda tensión arquitectónica se escaló por `grill-me` antes de diseñar. |
 | **IX. Engineering Over Convenience** | PASA | Todos los ratios WCAG 2.2 AA fueron verificados matemáticamente (148 comprobaciones, 0 fallas) antes de fijar los tokens en `data-model.md`. |
-| **X. Full-Stack Integrity (Vertical Slices)** | PASA (Excepción autorizada) | Excepción `single-tier frontend-only` autorizada expresamente por el responsable del proyecto el 21/11/2026 y documentada en `spec.md`. |
+| **X. Full-Stack Integrity (Vertical Slices)** | PASA (Excepción autorizada) | Excepción `single-tier frontend-only` autorizada expresamente por el responsable del proyecto el 21/11/2026 y documentada en `spec.md`. Asimismo, la entrega en rama única `feat/024-ui-theme-architecture` con commits atómicos por corte vertical/historia cuenta con excepción documentada en `spec.md`. |
 | **XI. Role-Scoped Visual Governance & Non-Regressive UI** | PASA | Remediación WCAG 2.2 AA y Zero AI-Slop precede la implementación; Axios y lógica de negocio permanecen intactos; actualización mínima de aserciones de layout obsoletas en `WorkspaceLayout.test.tsx` expresamente autorizada preservando el 100% de las aserciones conductuales y `LogoutFlow.test.tsx`. |
 
 ### Reevaluación Post-Diseño (tras Phase 1)
@@ -104,8 +104,9 @@ easyeat/frontend/
 │   ├── styles/
 │   │   └── themes.css                      # Variables CSS --ee-* aisladas por [data-theme="comensal|mostrador|chef|admin"]
 │   ├── theme/
+│   │   ├── types.ts                        # Tipos ejecutables del contrato de temas y DataVizThemeTokens
 │   │   ├── themeRegistry.ts                # Fuente única de verdad de los 4 RoleVisualThemeContract y DataVizThemeTokens
-│   │   ├── routeThemeResolver.ts           # Función pura resolveThemeForRoute (FR-004)
+│   │   ├── routeThemeResolver.ts           # Función pura resolveThemeForRoute (FR-004, constitución L157)
 │   │   ├── ThemeScopeProvider.tsx          # Contexto React + sincronización síncrona de data-theme
 │   │   └── useRoleTheme.ts                 # Hooks useRoleTheme() y useDataVizTokens() (FR-019)
 │   ├── router/
@@ -114,8 +115,10 @@ easyeat/frontend/
 │   │   ├── common/
 │   │   │   ├── WorkspaceLayout.tsx         # Fachada compatible que delega en RoleLayoutShell
 │   │   │   └── BrandThemeProvider.tsx      # Intacto en contrato (--brand-*), verificado en aislamiento
+│   │   ├── notification/
+│   │   │   └── AdminNotificationBell.tsx   # Endurecimiento WCAG 2.2 AA en cabecera de Administrador (FR-007, FR-010)
 │   │   ├── layout/
-│   │   │   ├── roleNavigationConfig.ts     # Mapa de rutas por rol (4 Comensal, 1 Mostrador, 3 Chef C-08, 7 Admin)
+│   │   │   ├── roleNavigationConfig.ts     # Mapa de rutas por rol (4 Comensal, 1 Mostrador, 3 Chef C-08, 7 Admin; sin /perfil en staff)
 │   │   │   ├── RoleHamburgerMenu.tsx       # Menú desplegable accesible (teclado, Escape, clic exterior, foco)
 │   │   │   └── RoleLayoutShell.tsx         # Contenedor minimalista responsivo gobernado por --ee-*
 │   │   └── primitives/
@@ -131,12 +134,19 @@ easyeat/frontend/
 └── tests/
     ├── theme/
     │   ├── themeContractsContrast.test.ts  # Verificación WCAG 2.2 AA (148 pares + DataViz + 0 Inter)
-    │   ├── routeThemeScope.test.tsx        # Cobertura 100% rutas AppRoutes + transiciones sin residuos
+    │   ├── routeThemeScope.test.tsx        # Cobertura 100% rutas AppRoutes + / autenticado + deep-links /login + transiciones sin residuos
     │   └── brandLayerIsolation.test.tsx    # Aislamiento --ee-* vs --brand-* (Spec 016)
     ├── components/
-    │   ├── WorkspaceLayout.test.tsx        # Aserciones de layout actualizadas (autorizado); comportamiento intacto
-    │   ├── RoleLayoutShell.test.tsx        # Menú hamburguesa, teclado, 7 rutas Admin, 4 Comensal, C-08 Chef
+    │   ├── WorkspaceLayout.test.tsx        # Aserciones de layout inline actualizadas (autorizado en spec.md); comportamiento intacto
+    │   ├── RoleHamburgerMenu.test.tsx      # Menú desplegable accesible, Escape, retorno de foco y mapas por rol
+    │   ├── AdminNotificationBell.test.tsx  # Accesibilidad WCAG 2.2 AA de la campana administrativa
+    │   ├── RoleLayoutShell.test.tsx        # Contenedor minimalista, skip link, 7 rutas Admin, 4 Comensal, C-08 Chef, sin /perfil en staff
     │   └── primitives/
+    │       ├── Button.test.tsx             # Unitarias Button (5 variantes, targets táctiles, loading)
+    │       ├── StatusBadge.test.tsx        # Unitarias StatusBadge
+    │       ├── FeedbackState.test.tsx      # Unitarias FeedbackState
+    │       ├── LoadingSkeleton.test.tsx    # Unitarias LoadingSkeleton
+    │       ├── EmptyState.test.tsx         # Unitarias EmptyState
     │       └── PrimitivesMatrix.test.tsx   # Matriz 20 combinaciones (5 primitivos × 4 temas) + polimorfismo puro
 ```
 
@@ -162,11 +172,12 @@ easyeat/frontend/
 
 ### Módulo C — Contenedores de navegación minimalistas por rol y compatibilidad transitoria (`FR-007`–`FR-010`, `FR-018`)
 
-1. Definir `roleNavigationConfig.ts` con el mapa completo de rutas y estrategias de coincidencia activa (`exact`, `prefix`, `hash`) para los cuatro roles.
+1. Definir `roleNavigationConfig.ts` con el mapa completo de rutas y estrategias de coincidencia activa (`exact`, `prefix`, `hash`) para los cuatro roles, excluyendo `/perfil` de los roles de personal (`ENCARGADO`, `CHEF`, `ADMINISTRADOR`).
 2. Implementar `RoleHamburgerMenu.tsx` cumpliendo todas las reglas de `contracts/navigation-shells.contract.ts` (teclado, `Escape`, retorno de foco al disparador, clic exterior, cierre al navegar, `aria-expanded`, `aria-controls`, `aria-current="page"`, objetivos `>= 44×44 px`).
-3. Implementar `RoleLayoutShell.tsx` estilizado exclusivamente mediante `--ee-*` (con efecto `backdrop-filter: blur(12px)` en Administrador, bordes marcados y sombra dura en Chef, alto contraste oscuro en Mostrador y bloques cálidos suaves en Comensal), conservando el `<nav aria-label="Secciones de cocina">` directo en escritorio (`md:flex`) para Chef (C-08) y el menú hamburguesa para todos los roles.
-4. Adaptar `WorkspaceLayout.tsx` como fachada hacia `RoleLayoutShell.tsx`, manteniendo `AdminNotificationBell`, `tenant-badge`, avatar y botón `Cerrar sesión` (y `Iniciar sesión` / `Registrarse` para invitados).
-5. Proteger las dos pantallas heredadas con riesgo de contraste sin refactorizarlas:
+3. Endurecer `AdminNotificationBell.tsx` con tokens `--ee-*`, `aria-expanded`, `aria-haspopup`, cierre por `Escape` con retorno de foco, objetivo táctil `>= 44×44 px`, texto `sr-only` para no leídas y contraste `>= 4.5:1` en fechas (`FR-007`, `FR-010`).
+4. Implementar `RoleLayoutShell.tsx` estilizado exclusivamente mediante `--ee-*` (con efecto `backdrop-filter: blur(12px)` en Administrador, bordes marcados y sombra dura en Chef, alto contraste oscuro en Mostrador y bloques cálidos suaves en Comensal), conservando el `<nav aria-label="Secciones de cocina">` directo en escritorio (`md:flex`) para Chef (C-08), avatar navegable a `/perfil` únicamente para `COMENSAL`, y el menú hamburguesa para todos los roles.
+5. Adaptar `WorkspaceLayout.tsx` como fachada hacia `RoleLayoutShell.tsx`, manteniendo `AdminNotificationBell`, `tenant-badge`, avatar y botón `Cerrar sesión` (y `Iniciar sesión` / `Registrarse` para invitados).
+6. Proteger las dos pantallas heredadas con riesgo de contraste sin refactorizarlas:
    - En `CounterWorkspacePage.tsx`: pasar `legacySurfaceMode="legacy-light"` a `WorkspaceLayout`.
    - En `AppRoutes.tsx`: envolver `/admin/analytics` en un wrapper `WorkspaceLayout` con `title="Métricas y Rendimiento"` y `legacySurfaceMode="legacy-dark"` para mantener `AdminAnalyticsPage.tsx` y `AdminAnalyticsPage.test.tsx` intactos.
 

@@ -102,6 +102,8 @@ export interface RoleVisualThemeContract {
 export type ThemeResolutionReason =
   | 'first-login-user-role'
   | 'first-login-fallback-admin'
+  | 'root-role-redirect'
+  | 'login-staff-deeplink'
   | 'route-mostrador'
   | 'route-chef'
   | 'route-admin'
@@ -112,6 +114,8 @@ export type ThemeResolutionReason =
 export interface ThemeResolverInput {
   readonly pathname: string;
   readonly userRole?: EasyEatUserRole | null;
+  /** Destino de redirección opcional (`location.state.from`) para deep-links de staff en `/login`. */
+  readonly fromPath?: string | null;
 }
 
 export interface ResolvedThemeScope {
@@ -120,12 +124,15 @@ export interface ResolvedThemeScope {
 }
 
 /**
- * Resolución pura y determinista del tema activo por ruta (FR-004).
+ * Resolución pura y determinista del tema activo por ruta (FR-004 y constitución L157).
  * - `/first-login-password-change`: hereda el tema del rol autenticado, con respaldo a `'admin'`.
+ * - `/` con usuario autenticado: hereda el tema del rol destino (`root-role-redirect`).
+ * - `/login` con `fromPath` hacia ruta de personal (`/mostrador*`, `/counter*`, `/cocina*`, `/kds*`, `/admin*`):
+ *   hereda el tema del rol destino (`login-staff-deeplink`).
  * - `/mostrador*` y `/counter*`: `'mostrador'`.
  * - `/cocina*` y `/kds*`: `'chef'`.
  * - `/admin*`: `'admin'`.
- * - Rutas públicas/auth, dominio Comensal, raíz `/`, comodín `*` e hidratación inicial: `'comensal'`.
+ * - Rutas públicas/auth sin deep-link de personal, dominio Comensal, `/` sin sesión, comodín `*` e hidratación inicial: `'comensal'`.
  */
 export type ResolveThemeForRoute = (input: ThemeResolverInput) => ResolvedThemeScope;
 
