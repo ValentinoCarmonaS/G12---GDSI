@@ -128,7 +128,7 @@ export const StaffManagementPage: React.FC = () => {
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center min-h-[44px] px-4 py-2 bg-ee-primary hover:opacity-95 text-white text-sm font-medium rounded-ee-sm shadow-sm transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ee-focus-ring"
           >
             + Nuevo Empleado
           </button>
