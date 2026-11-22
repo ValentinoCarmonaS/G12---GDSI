@@ -156,7 +156,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                     to="/perfil"
                     title="Mi perfil"
                     aria-label="Mi perfil"
-                    className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-ee-border-subtle bg-ee-surface-subtle text-ee-text transition-colors hover:border-ee-primary-border"
+                    className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-ee-border-subtle bg-ee-surface-subtle text-ee-text transition-colors hover:border-ee-primary-border"
                     style={{ borderWidth: 'var(--ee-border-width)' }}
                   >
                     {avatarContent}

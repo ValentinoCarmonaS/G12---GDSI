@@ -92,12 +92,58 @@ describe('RoleLayoutShell (FR-007, FR-009, FR-010, FR-018)', () => {
 
     const avatarLink = within(header).getByRole('link', { name: /mi perfil/i });
     expect(avatarLink).toHaveAttribute('href', '/perfil');
+    expect(avatarLink).toHaveClass('h-11', 'w-11');
 
     expect(within(header).getByRole('button', { name: /abrir menú de navegación/i })).toBeInTheDocument();
 
     const logoutButton = within(header).getByRole('button', { name: /cerrar sesión/i });
     await user.click(logoutButton);
     expect(onLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the COMENSAL profile link fixed at 44x44 (h-11 w-11) both with and without an uploaded avatar image', () => {
+    const comensalUser: AuthenticatedUser = {
+      id: 'comensal-avatar-1',
+      email: 'lucia@easyeat.com',
+      role: 'COMENSAL',
+      tenantId: null,
+      tokenVersion: 1,
+    };
+
+    const { rerender } = render(
+      <MemoryRouter initialEntries={['/catalogo']}>
+        <RoleLayoutShell
+          title="Catálogo"
+          user={comensalUser}
+          avatarUrl={null}
+          onLogout={vi.fn()}
+        >
+          <div>Contenido</div>
+        </RoleLayoutShell>
+      </MemoryRouter>
+    );
+
+    const linkWithoutAvatar = screen.getByRole('link', { name: /mi perfil/i });
+    expect(linkWithoutAvatar).toHaveClass('h-11', 'w-11', 'overflow-hidden', 'rounded-full');
+    expect(within(linkWithoutAvatar).queryByRole('img', { name: 'Avatar' })).not.toBeInTheDocument();
+
+    rerender(
+      <MemoryRouter initialEntries={['/catalogo']}>
+        <RoleLayoutShell
+          title="Catálogo"
+          user={comensalUser}
+          avatarUrl="/api/v1/profile/avatar/photo.jpg"
+          onLogout={vi.fn()}
+        >
+          <div>Contenido</div>
+        </RoleLayoutShell>
+      </MemoryRouter>
+    );
+
+    const linkWithAvatar = screen.getByRole('link', { name: /mi perfil/i });
+    expect(linkWithAvatar).toHaveClass('h-11', 'w-11', 'overflow-hidden', 'rounded-full');
+    const avatarImg = within(linkWithAvatar).getByRole('img', { name: 'Avatar' });
+    expect(avatarImg).toHaveClass('h-full', 'w-full', 'object-cover');
   });
 
   it('renders non-navigable avatar and tenant-badge for staff roles without any /perfil link', () => {
