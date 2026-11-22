@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getFinancialHealth } from '../../api/analyticsApi';
 import type { FinancialHealthGranularity, FinancialHealthResponse } from '../../types/analytics';
+import { GlassCard } from '../admin/GlassCard';
+import { FeedbackState, LoadingSkeleton } from '../ui';
 
 interface FinancialHealthPanelProps {
   onDataChange?: (
@@ -30,24 +32,24 @@ export function FinancialHealthPanel({ onDataChange }: FinancialHealthPanelProps
   const onDataChangeRef = useRef(onDataChange);
   onDataChangeRef.current = onDataChange;
 
-  useEffect(() => {
+  const fetchHealth = useCallback((targetGranularity: FinancialHealthGranularity) => {
     let active = true;
     setLoading(true);
     setError(null);
     setData(null);
-    onDataChangeRef.current?.(null, granularity);
+    onDataChangeRef.current?.(null, targetGranularity);
 
-    getFinancialHealth(granularity)
+    getFinancialHealth(targetGranularity)
       .then((res) => {
         if (active) {
           setData(res);
-          onDataChangeRef.current?.(res, granularity);
+          onDataChangeRef.current?.(res, targetGranularity);
         }
       })
       .catch(() => {
         if (active) {
           setError('No se pudieron cargar las métricas financieras.');
-          onDataChangeRef.current?.(null, granularity);
+          onDataChangeRef.current?.(null, targetGranularity);
         }
       })
       .finally(() => {
@@ -59,16 +61,29 @@ export function FinancialHealthPanel({ onDataChange }: FinancialHealthPanelProps
     return () => {
       active = false;
     };
-  }, [granularity]);
+  }, []);
+
+  useEffect(() => {
+    return fetchHealth(granularity);
+  }, [granularity, fetchHealth]);
 
   const revenueDisplay = currencyFormatter.format(data?.revenue ?? 0);
   const orderCountDisplay = data?.orderCount ?? 0;
 
   return (
-    <section className="rounded-xl border border-neutral-800 bg-neutral-950 p-6 text-neutral-100">
+    <GlassCard as="section" variant="elevated" padding="lg" radius="lg" aria-label="Salud financiera del local">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold">Salud financiera del local</h2>
-        <div role="tablist" aria-label="Período financiero" className="flex gap-2">
+        <div>
+          <h2 className="text-lg font-semibold text-ee-text">Salud financiera del local</h2>
+          <p className="text-xs text-ee-text-muted mt-0.5">
+            Ingresos acumulados y pedidos concretados por período
+          </p>
+        </div>
+        <div
+          role="tablist"
+          aria-label="Período financiero"
+          className="inline-flex gap-1 rounded-ee-md border border-ee-border-subtle bg-ee-surface-subtle p-1"
+        >
           {GRANULARITY_TABS.map((tab) => {
             const isSelected = granularity === tab.key;
             return (
@@ -78,10 +93,10 @@ export function FinancialHealthPanel({ onDataChange }: FinancialHealthPanelProps
                 role="tab"
                 aria-selected={isSelected}
                 onClick={() => setGranularity(tab.key)}
-                className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
+                className={`min-h-[36px] rounded-ee-sm px-3.5 py-1.5 text-sm font-medium transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring ${
                   isSelected
-                    ? 'bg-amber-500 text-neutral-950'
-                    : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800'
+                    ? 'bg-ee-primary text-white shadow-sm'
+                    : 'text-ee-text-muted hover:text-ee-text hover:bg-white/60'
                 }`}
               >
                 {tab.label}
@@ -92,25 +107,48 @@ export function FinancialHealthPanel({ onDataChange }: FinancialHealthPanelProps
       </div>
 
       {error && (
-        <p role="alert" className="mb-4 rounded-lg bg-red-950/50 p-3 text-sm text-red-300">
-          {error}
-        </p>
+        <div className="mb-4">
+          <FeedbackState
+            variant="danger"
+            title="Error al cargar métricas"
+            description={error}
+            actionLabel="Reintentar"
+            onAction={() => fetchHealth(granularity)}
+          />
+        </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
-          <p className="text-xs uppercase tracking-wider text-neutral-400">Ingresos totales</p>
-          <p className="mt-2 text-2xl font-bold text-amber-400">
-            {loading && !data ? '...' : revenueDisplay}
-          </p>
+      {loading && !data ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <LoadingSkeleton variant="card" count={2} />
         </div>
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
-          <p className="text-xs uppercase tracking-wider text-neutral-400">Pedidos concretados</p>
-          <p className="mt-2 text-2xl font-bold text-neutral-100">
-            {loading && !data ? '...' : orderCountDisplay}
-          </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <GlassCard variant="subtle" padding="md" radius="md">
+            <p className="text-xs font-medium uppercase tracking-wider text-ee-text-muted">
+              Ingresos totales
+            </p>
+            <p
+              data-testid="financial-kpi-revenue"
+              className="mt-2 font-ee-mono tabular-nums text-2xl font-bold text-ee-text"
+            >
+              {revenueDisplay}
+            </p>
+          </GlassCard>
+
+          <GlassCard variant="subtle" padding="md" radius="md">
+            <p className="text-xs font-medium uppercase tracking-wider text-ee-text-muted">
+              Pedidos concretados
+            </p>
+            <p
+              data-testid="financial-kpi-orders"
+              className="mt-2 font-ee-mono tabular-nums text-2xl font-bold text-ee-text"
+            >
+              {orderCountDisplay}
+            </p>
+          </GlassCard>
         </div>
-      </div>
-    </section>
+      )}
+    </GlassCard>
   );
 }
