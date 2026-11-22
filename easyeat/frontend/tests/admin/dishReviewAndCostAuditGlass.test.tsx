@@ -164,7 +164,7 @@ describe('Spec 026 US3 — Bandeja de Revisión y Auditoría de Costos Glassmorp
     const user = userEvent.setup();
     renderReviewPageWithContext();
 
-    const row = await screen.findByTestId('inbox-row');
+    await screen.findByTestId('inbox-row');
     const splitGrid = screen.getByTestId('dish-review-split-pane');
     expect(splitGrid.className).toContain('lg:grid-cols-[380px_minmax(0,1fr)]');
     expect(splitGrid.innerHTML).not.toContain('text-purple-');

@@ -59,14 +59,14 @@ export function FinancialHealthChart({ data }: FinancialHealthChartProps) {
               <YAxis stroke={dataViz.axisStroke} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: dataViz.tooltipBg,
-                  borderColor: dataViz.tooltipBorder,
-                  color: dataViz.tooltipText,
+                  backgroundColor: dataViz.tooltip.bg,
+                  borderColor: dataViz.tooltip.border,
+                  color: dataViz.tooltip.fg,
                   borderRadius: '8px',
                 }}
               />
-              <Bar dataKey="Ingresos" fill={dataViz.seriesPrimary} radius={[6, 6, 0, 0]} />
-              <Bar dataKey="Pedidos" fill={dataViz.seriesSecondary} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="Ingresos" fill={dataViz.series[0]} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="Pedidos" fill={dataViz.series[1]} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

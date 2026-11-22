@@ -45,7 +45,7 @@ export const ReviewInboxList: React.FC<ReviewInboxListProps> = ({
         data-testid="inbox-loading-skeleton"
         aria-busy="true"
         aria-live="polite"
-        className="space-y-3 p-3"
+        className="p-3"
       >
         <span className="sr-only">Cargando la bandeja de revisión…</span>
         <LoadingSkeleton variant="block" announce={false} />
