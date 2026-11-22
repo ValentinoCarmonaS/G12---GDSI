@@ -28,6 +28,7 @@ import { OrderConfirmationTrackingPage } from '../pages/OrderConfirmationTrackin
 import { PaymentReturnPage } from '../pages/PaymentReturnPage';
 import { AdminBrandingPage } from '../pages/AdminBrandingPage';
 import { AdminAnalyticsPage } from '../pages/AdminAnalyticsPage';
+import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -210,7 +211,9 @@ export const AppRoutes: React.FC = () => {
         path="/admin/analytics"
         element={
           <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
-            <AdminAnalyticsPage />
+            <WorkspaceLayout title="Métricas y Rendimiento" legacySurfaceMode="legacy-dark">
+              <AdminAnalyticsPage />
+            </WorkspaceLayout>
           </RoleRouteGuard>
         }
       />

@@ -1,4 +1,4 @@
-# Tasks: Arquitectura de temas visuales por rol y primitivos base accesibles
+﻿# Tasks: Arquitectura de temas visuales por rol y primitivos base accesibles
 
 **Input**: Documentos de diseño en `specs/024-ui-theme-architecture/` (`plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md`) y auditoría base `.impeccable/critique/2026-11-21T21-37-04Z__src-components-common-workspacelayout-tsx-f8bdeeeb.md`.
 
@@ -99,7 +99,7 @@
 - [X] T025 [US2] [TDD-GREEN] Implementar `RoleLayoutShell` gobernado exclusivamente por tokens `--ee-*` (incluyendo skip link, cabecera minimalista, navegación directa escritorio C-08 para Chef, `RoleHamburgerMenu`, `AdminNotificationBell` para Admin, `Cerrar sesión` accesible y contenedor `data-legacy-surface`) en `easyeat/frontend/src/components/layout/RoleLayoutShell.tsx` (depende de T017, T021, T023)
 - [X] T026 [US2] [TDD-GREEN] Refactorizar `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` como fachada compatible hacia `RoleLayoutShell` preservando props `{ title, subtitle?, children, legacySurfaceMode? }`, carga de avatar y notificaciones de Admin (depende de T025)
 - [X] T027 [P] [US2] [TDD-GREEN] Aplicar `legacySurfaceMode="legacy-light"` al `WorkspaceLayout` de `easyeat/frontend/src/pages/CounterWorkspacePage.tsx` sin modificar su contenido ni lógica interna (depende de T026)
-- [ ] T028 [P] [US2] [TDD-GREEN] Envolver la ruta `/admin/analytics` en un wrapper `WorkspaceLayout` (`title="Métricas y Rendimiento"`, `legacySurfaceMode="legacy-dark"`) dentro de `easyeat/frontend/src/router/AppRoutes.tsx` sin modificar `AdminAnalyticsPage.tsx` ni `AdminAnalyticsPage.test.tsx` (depende de T026)
+- [X] T028 [P] [US2] [TDD-GREEN] Envolver la ruta `/admin/analytics` en un wrapper `WorkspaceLayout` (`title="Métricas y Rendimiento"`, `legacySurfaceMode="legacy-dark"`) dentro de `easyeat/frontend/src/router/AppRoutes.tsx` sin modificar `AdminAnalyticsPage.tsx` ni `AdminAnalyticsPage.test.tsx` (depende de T026)
 - [ ] T029 [US2] [TDD-GREEN] Ejecutar `npx vitest run tests/components/RoleLayoutShell.test.tsx tests/components/WorkspaceLayout.test.tsx tests/session/LogoutFlow.test.tsx tests/pages/AdminAnalyticsPage.test.tsx tests/pages/KitchenWorkspacePage.test.tsx tests/pages/CounterWorkspacePage.test.tsx` y confirmar verde total
 
 **Checkpoint**: US1 y US2 completas, accesibles y compatibles con todas las pantallas heredadas.
