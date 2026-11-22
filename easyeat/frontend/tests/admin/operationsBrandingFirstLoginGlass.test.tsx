@@ -49,29 +49,33 @@ describe('US5: Operaciones, Mi Local y Primer Ingreso Glassmorphism (FR-009, FR-
 
     vi.mocked(operationsApi.getSchedules).mockResolvedValue([
       {
+        id: 'sched-1',
         dayOfWeek: 'MONDAY',
-        isOpen: true,
-        openTime: '09:00',
-        closeTime: '22:00',
-        slotDurationMinutes: 30,
+        isClosed: false,
+        openingTime: '09:00',
+        closingTime: '22:00',
+        version: 1,
       },
     ]);
     vi.mocked(operationsApi.getSlotCapacities).mockResolvedValue([
       {
-        slotStart: '12:00',
-        slotEnd: '12:30',
+        id: 'slot-1',
+        slotDate: '2026-10-01',
+        startTime: '12:00',
+        endTime: '12:30',
         maxCapacity: 20,
-        reservedCount: 5,
-        availableCapacity: 15,
+        approvedOrdersCount: 5,
+        isSoldOut: false,
+        version: 1,
       },
     ]);
     vi.mocked(operationsApi.getAdminPaymentMethods).mockResolvedValue([
       {
-        method: 'MERCADOPAGO',
+        id: 'pm-1',
+        paymentMethod: 'MERCADO_PAGO',
         displayName: 'Mercado Pago',
         isEnabled: true,
         version: 1,
-        updatedAt: '2026-10-01T10:00:00Z',
       },
     ]);
 
@@ -152,8 +156,8 @@ describe('US5: Operaciones, Mi Local y Primer Ingreso Glassmorphism (FR-009, FR-
         </MemoryRouter>
       );
 
-      // AuthCardShell usa data-auth-card-shell o estructura --ee-*
-      expect(container.querySelector('[data-auth-card-shell]')).not.toBeNull();
+      // AuthCardShell usa data-testid="auth-card-shell" y estructura --ee-*
+      expect(container.querySelector('[data-testid="auth-card-shell"]')).not.toBeNull();
 
       // Checklist de complejidad en tiempo real
       const newPasswordInput = screen.getByLabelText(/^nueva contraseña/i);
