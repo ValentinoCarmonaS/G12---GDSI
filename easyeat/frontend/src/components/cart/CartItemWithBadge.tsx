@@ -1,4 +1,5 @@
 import React from 'react';
+import { PauseCircle, AlertTriangle, Minus, Plus } from 'lucide-react';
 import { CartItem } from '../../types/cart';
 import { AllergenWarningBadge } from '../catalog/AllergenWarningBadge';
 import { formatCurrency, calculateLineTotal } from '../../utils/currencyUtils';
@@ -9,16 +10,6 @@ export interface CartItemWithBadgeProps {
   onRemove: (dishId: string) => void;
 }
 
-/**
- * CartItemWithBadge Component (T038, US3, COM-6.1.3, INV-3, INV-9, FR-011..FR-015)
- *
- * Displays an individual cart line item with:
- * - Line subtotal calculated in integer cents (INV-2)
- * - Allergen dietary compliance warning badge (FR-022)
- * - Insufficient kitchen stock warning badge (FR-014a, INV-3)
- * - Numeric quantity +/- controls with kitchen stock ceiling guardrail (INV-3, FR-014)
- * - Complete item removal when decrementing quantity 1 (AC-3.3, FR-015)
- */
 export const CartItemWithBadge: React.FC<CartItemWithBadgeProps> = ({
   item,
   onUpdateQuantity,
@@ -56,44 +47,44 @@ export const CartItemWithBadge: React.FC<CartItemWithBadgeProps> = ({
   return (
     <div
       data-testid={`cart-item-${item.dishId}`}
-      className={`p-3.5 rounded-xl border transition-colors ${
+      className={`p-3.5 rounded-[var(--ee-radius-md)] border transition-colors ${
         isInsufficientStock
-          ? 'bg-amber-50/50 border-amber-300'
+          ? 'bg-[var(--ee-warning-bg)] border-[var(--ee-warning-border)]'
           : hasConflicts
-          ? 'bg-red-50/30 border-red-200'
-          : 'bg-white border-gray-200'
+          ? 'bg-[var(--ee-surface-elevated)] border-[var(--ee-danger-border)]'
+          : 'bg-[var(--ee-surface-elevated)] border-[var(--ee-border-subtle)]'
       }`}
     >
-      <div className="flex items-start justify-between gap-2 mb-1.5">
+      <div className="flex items-start justify-between gap-2 mb-2">
         <div>
-          <h5 className="text-sm font-semibold text-gray-900 leading-snug">{item.name}</h5>
-          <span className="text-xs text-gray-500 font-medium">
+          <h5 className="text-sm font-semibold text-[var(--ee-text)] leading-snug">{item.name}</h5>
+          <span className="text-xs font-ee-mono tabular-nums text-[var(--ee-text-secondary)] font-medium">
             {formatCurrency(item.price)} c/u
           </span>
         </div>
-        <span className="text-sm font-bold text-gray-900 whitespace-nowrap">
+        <span className="text-sm font-bold font-ee-mono tabular-nums text-[var(--ee-text)] whitespace-nowrap">
           {formatCurrency(lineSubtotal)}
         </span>
       </div>
 
-      {/* Warning badge on paused by chef (FR-019, EC-023) */}
+      {/* Warning badge on paused by chef */}
       {isPaused && (
         <div
           data-testid={`paused-by-chef-badge-${item.dishId}`}
-          className="mb-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-2xs font-bold bg-amber-100 text-amber-900 border border-amber-300"
+          className="mb-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--ee-warning-bg)] text-[var(--ee-warning-fg)] border border-[var(--ee-warning-border)]"
         >
-          <span>⏸️</span>
+          <PauseCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           <span>Pausado por cocina</span>
         </div>
       )}
 
-      {/* Warning badge on insufficient kitchen stock (FR-014a, INV-3) */}
+      {/* Warning badge on insufficient kitchen stock */}
       {isInsufficientStock && !isPaused && (
         <div
           data-testid={`insufficient-stock-badge-${item.dishId}`}
-          className="mb-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-2xs font-bold bg-amber-100 text-amber-900 border border-amber-300"
+          className="mb-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[var(--ee-danger-bg)] text-[var(--ee-danger-fg)] border border-[var(--ee-danger-border)]"
         >
-          <span>⚠️</span>
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           <span>Stock insuficiente (disponibles: {item.availableStock})</span>
         </div>
       )}
@@ -105,20 +96,20 @@ export const CartItemWithBadge: React.FC<CartItemWithBadgeProps> = ({
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-        <div className="flex items-center space-x-2">
+      <div className="flex items-center justify-between pt-2 border-t border-[var(--ee-border-subtle)]">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleDecrement}
             data-testid={`decrement-qty-${item.dishId}`}
             aria-label={`Disminuir cantidad de ${item.name}`}
-            className="w-6 h-6 rounded border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100 font-bold text-xs cursor-pointer active:scale-95 transition-all"
+            className="min-w-[44px] min-h-[44px] rounded-[var(--ee-radius-sm)] border border-[var(--ee-border-strong)] bg-[var(--ee-surface-elevated)] flex items-center justify-center text-[var(--ee-text)] hover:bg-[var(--ee-surface-subtle)] cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
           >
-            -
+            <Minus className="w-4 h-4" aria-hidden="true" />
           </button>
           <span
             data-testid={`item-qty-${item.dishId}`}
-            className="text-xs font-semibold text-gray-800 min-w-4 text-center"
+            className="text-sm font-bold font-ee-mono tabular-nums text-[var(--ee-text)] min-w-6 text-center"
           >
             {item.quantity}
           </span>
@@ -128,13 +119,13 @@ export const CartItemWithBadge: React.FC<CartItemWithBadgeProps> = ({
             disabled={isMaxStockReached || isPaused}
             data-testid={`increment-qty-${item.dishId}`}
             aria-label={`Aumentar cantidad de ${item.name}`}
-            className={`w-6 h-6 rounded border flex items-center justify-center font-bold text-xs transition-all ${
+            className={`min-w-[44px] min-h-[44px] rounded-[var(--ee-radius-sm)] border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)] ${
               isMaxStockReached || isPaused
-                ? 'border-gray-200 text-gray-300 bg-gray-50 cursor-not-allowed opacity-40'
-                : 'border-gray-300 text-gray-600 hover:bg-gray-100 cursor-pointer active:scale-95'
+                ? 'border-[var(--ee-border-subtle)] text-[var(--ee-text-secondary)] bg-[var(--ee-surface-subtle)] cursor-not-allowed opacity-50'
+                : 'border-[var(--ee-border-strong)] bg-[var(--ee-surface-elevated)] text-[var(--ee-text)] hover:bg-[var(--ee-surface-subtle)] cursor-pointer'
             }`}
           >
-            +
+            <Plus className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -142,7 +133,7 @@ export const CartItemWithBadge: React.FC<CartItemWithBadgeProps> = ({
           type="button"
           onClick={() => onRemove(item.dishId)}
           data-testid={`remove-item-${item.dishId}`}
-          className="text-xs text-red-600 hover:text-red-700 font-medium cursor-pointer"
+          className="min-h-[44px] px-2 text-xs text-[var(--ee-danger-fg)] hover:underline font-semibold cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
         >
           Eliminar
         </button>
