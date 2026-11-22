@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { WorkspaceLayout } from '@/components/common/WorkspaceLayout';
 import * as AuthModule from '@/hooks/useAuth';
@@ -11,7 +12,8 @@ describe('WorkspaceLayout (T026, FR-026, COM-1.4.1)', () => {
     vi.clearAllMocks();
   });
 
-  it('renders diner navigation links and logout button when user is COMENSAL', () => {
+  it('renders diner navigation links and logout button when user is COMENSAL', async () => {
+    const user = userEvent.setup();
     vi.spyOn(AuthModule, 'useAuth').mockReturnValue({
       isAuthenticated: true,
       user: {
@@ -35,26 +37,26 @@ describe('WorkspaceLayout (T026, FR-026, COM-1.4.1)', () => {
       </MemoryRouter>
     );
 
-    const catalogoLink = screen.getByRole('link', { name: /catálogo/i });
-    expect(catalogoLink).toBeInTheDocument();
-    expect(catalogoLink).toHaveAttribute('href', '/catalogo');
-
-    const myOrdersLink = screen.getByRole('link', { name: /mis pedidos/i });
-    expect(myOrdersLink).toBeInTheDocument();
-    expect(myOrdersLink).toHaveAttribute('href', '/perfil#pedidos');
-
-    const perfilLink = screen.getByRole('link', { name: /mi perfil/i });
-    expect(perfilLink).toBeInTheDocument();
-    expect(perfilLink).toHaveAttribute('href', '/perfil');
-
-    const dinerNav = myOrdersLink.closest('nav');
-    expect(dinerNav).not.toBeNull();
-    expect(dinerNav).not.toHaveClass('hidden');
-    expect(dinerNav).toHaveClass('overflow-x-auto');
-    expect(dinerNav).toHaveClass('min-w-0');
-
     expect(screen.getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /iniciar sesión/i })).not.toBeInTheDocument();
+
+    const menuTrigger = screen.getByRole('button', { name: /abrir menú de navegación/i });
+    await user.click(menuTrigger);
+
+    const dinerNav = screen.getByRole('navigation', { name: /navegación de comensal/i });
+    expect(dinerNav).toBeInTheDocument();
+
+    const discoveryLink = within(dinerNav).getByRole('link', { name: /descubrimiento/i });
+    expect(discoveryLink).toHaveAttribute('href', '/descubrimiento');
+
+    const catalogoLink = within(dinerNav).getByRole('link', { name: /catálogo/i });
+    expect(catalogoLink).toHaveAttribute('href', '/catalogo');
+
+    const myOrdersLink = within(dinerNav).getByRole('link', { name: /mis pedidos/i });
+    expect(myOrdersLink).toHaveAttribute('href', '/perfil#pedidos');
+
+    const perfilLink = within(dinerNav).getByRole('link', { name: /mi perfil/i });
+    expect(perfilLink).toHaveAttribute('href', '/perfil');
   });
 
   it('renders guest login and register actions and hides logout when user is null (FR-026)', () => {
@@ -174,12 +176,11 @@ describe('WorkspaceLayout chef header navigation (C-08, FR-027/FR-030/FR-031)', 
     );
   });
 
-  it('keeps the chef navigation visible and horizontally scrollable instead of hidden below sm (FR-031)', () => {
+  it('keeps the chef direct navigation on desktop (md:flex) alongside the accessible hamburger menu (FR-009, C-08)', () => {
     renderChefLayout('/cocina');
 
     const nav = screen.getByRole('navigation', { name: /secciones de cocina/i });
-    expect(nav).not.toHaveClass('hidden');
-    expect(nav).toHaveClass('overflow-x-auto');
-    expect(nav).toHaveClass('min-w-0');
+    expect(nav).toHaveClass('md:flex');
+    expect(screen.getByRole('button', { name: /abrir menú de navegación/i })).toBeInTheDocument();
   });
 });
