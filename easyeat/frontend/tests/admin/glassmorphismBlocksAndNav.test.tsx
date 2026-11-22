@@ -267,6 +267,7 @@ describe('Phase 3 US1 — Bimodal Executive Navigation & AdminSidebar', () => {
               email: 'admin@easyeat.com',
               role: 'ADMINISTRADOR',
               tenantId: 'tenant-123',
+              tokenVersion: 1,
             }}
             onLogout={vi.fn()}
           >
@@ -295,6 +296,7 @@ describe('Phase 3 US1 — Bimodal Executive Navigation & AdminSidebar', () => {
             email: 'chef@easyeat.com',
             role: 'CHEF',
             tenantId: 'tenant-123',
+            tokenVersion: 1,
           }}
           onLogout={vi.fn()}
         >
