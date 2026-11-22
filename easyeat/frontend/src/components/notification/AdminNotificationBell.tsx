@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import type { AdminNotificationResponse } from '@/types/notification';
 
 export interface AdminNotificationBellProps {
@@ -6,16 +7,33 @@ export interface AdminNotificationBellProps {
   unreadCount: number;
   onMarkAsRead: (id: string) => void | Promise<void>;
   onRefresh?: () => void | Promise<void>;
+  error?: string | null;
+  isLoading?: boolean;
   className?: string;
 }
 
 const NOTIFICATIONS_PANEL_ID = 'ee-admin-notifications-panel';
+
+function formatNotificationDate(createdAt: string): string {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return 'Fecha no disponible';
+  }
+  return date.toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export const AdminNotificationBell: React.FC<AdminNotificationBellProps> = ({
   notifications,
   unreadCount,
   onMarkAsRead,
   onRefresh,
+  error = null,
+  isLoading = false,
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -67,8 +85,23 @@ export const AdminNotificationBell: React.FC<AdminNotificationBellProps> = ({
     }
   };
 
+  const handleContainerBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    if (
+      isOpen &&
+      dropdownRef.current &&
+      event.relatedTarget instanceof Node &&
+      !dropdownRef.current.contains(event.relatedTarget)
+    ) {
+      close();
+    }
+  };
+
   return (
-    <div className={`relative inline-block text-left ${className}`} ref={dropdownRef}>
+    <div
+      className={`relative inline-block text-left ${className}`}
+      ref={dropdownRef}
+      onBlur={handleContainerBlur}
+    >
       <button
         ref={triggerRef}
         type="button"
@@ -104,7 +137,7 @@ export const AdminNotificationBell: React.FC<AdminNotificationBellProps> = ({
             aria-hidden="true"
             className="absolute right-1 top-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-ee-danger-solid px-1 text-[11px] font-bold leading-none text-ee-on-danger"
           >
-            {unreadCount}
+            {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
@@ -122,20 +155,60 @@ export const AdminNotificationBell: React.FC<AdminNotificationBellProps> = ({
             borderWidth: 'var(--ee-border-width)',
           }}
         >
-          <div className="flex items-center justify-between p-4">
-            <h3 className="text-sm font-bold text-ee-text">Notificaciones</h3>
-            {unreadCount > 0 && (
-              <span className="rounded-ee-sm border border-ee-info-border bg-ee-info-bg px-2 py-0.5 font-ee-mono text-xs font-semibold text-ee-info-fg">
-                {unreadCount} pendientes
-              </span>
-            )}
+          <div className="flex items-center justify-between gap-2 p-4">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-ee-text">Notificaciones</h3>
+              {unreadCount > 0 && (
+                <span className="rounded-ee-sm border border-ee-info-border bg-ee-info-bg px-2 py-0.5 font-ee-mono text-xs font-semibold text-ee-info-fg">
+                  {unreadCount} pendientes
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => close({ restoreFocus: true })}
+              aria-label="Cerrar notificaciones"
+              className="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-ee-sm border border-ee-border-subtle bg-ee-surface-elevated text-ee-text transition-colors hover:bg-ee-surface-subtle"
+              style={{ borderWidth: 'var(--ee-border-width)' }}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
 
           <div className="max-h-80 divide-y divide-ee-border-subtle overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="p-6 text-center text-xs text-ee-text-secondary">
-                No hay notificaciones disponibles.
+            {error && (
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="m-3 rounded-ee-sm border border-ee-danger-border bg-ee-danger-bg p-3 text-xs text-ee-danger-fg"
+              >
+                <p className="font-semibold">{error}</p>
+                {onRefresh && (
+                  <button
+                    type="button"
+                    onClick={() => onRefresh()}
+                    className="mt-2 inline-flex min-h-[36px] items-center rounded-ee-sm border border-ee-danger-border bg-ee-surface-elevated px-3 py-1 text-xs font-semibold text-ee-danger-fg transition-colors hover:bg-ee-danger-solid hover:text-ee-on-danger"
+                  >
+                    Reintentar
+                  </button>
+                )}
               </div>
+            )}
+
+            {isLoading && notifications.length === 0 ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="p-6 text-center text-xs text-ee-text-secondary"
+              >
+                Cargando notificaciones…
+              </div>
+            ) : notifications.length === 0 ? (
+              !error && (
+                <div className="p-6 text-center text-xs text-ee-text-secondary">
+                  No hay notificaciones disponibles.
+                </div>
+              )
             ) : (
               notifications.map((item) => (
                 <div
@@ -162,18 +235,13 @@ export const AdminNotificationBell: React.FC<AdminNotificationBellProps> = ({
                       data-testid="notification-timestamp"
                       className="font-ee-mono text-ee-text-secondary"
                     >
-                      {new Date(item.createdAt).toLocaleDateString('es-AR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatNotificationDate(item.createdAt)}
                     </span>
                     {!item.isRead && (
                       <button
                         type="button"
                         onClick={() => onMarkAsRead(item.id)}
-                        className="min-h-[28px] rounded-ee-sm px-2 py-1 font-semibold text-ee-info-fg underline-offset-2 transition-colors hover:underline"
+                        className="min-h-[36px] rounded-ee-sm px-2 py-1 font-semibold text-ee-info-fg underline-offset-2 transition-colors hover:underline"
                       >
                         Marcar como leída
                       </button>

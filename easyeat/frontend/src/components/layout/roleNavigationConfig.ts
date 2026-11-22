@@ -6,6 +6,7 @@ export interface RoleNavItem {
   readonly to: string;
   readonly matchStrategy: 'exact' | 'prefix' | 'hash';
   readonly hash?: string;
+  readonly group?: string;
 }
 
 export interface RoleNavigationConfig {
@@ -121,42 +122,49 @@ export const ROLE_NAVIGATION_CONFIG: Readonly<Record<EasyEatUserRole, RoleNaviga
         label: 'Panel',
         to: '/admin',
         matchStrategy: 'exact',
-      },
-      {
-        id: 'admin-auditoria',
-        label: 'Auditoría',
-        to: '/admin/dishes',
-        matchStrategy: 'prefix',
-      },
-      {
-        id: 'admin-personal',
-        label: 'Personal',
-        to: '/admin/staff',
-        matchStrategy: 'prefix',
-      },
-      {
-        id: 'admin-inventario',
-        label: 'Inventario',
-        to: '/admin/inventory',
-        matchStrategy: 'prefix',
+        group: 'Operación',
       },
       {
         id: 'admin-operaciones',
         label: 'Operaciones',
         to: '/admin/operations',
         matchStrategy: 'prefix',
+        group: 'Operación',
+      },
+      {
+        id: 'admin-inventario',
+        label: 'Inventario',
+        to: '/admin/inventory',
+        matchStrategy: 'prefix',
+        group: 'Operación',
+      },
+      {
+        id: 'admin-auditoria',
+        label: 'Auditoría',
+        to: '/admin/dishes',
+        matchStrategy: 'prefix',
+        group: 'Catálogo y equipo',
+      },
+      {
+        id: 'admin-personal',
+        label: 'Personal',
+        to: '/admin/staff',
+        matchStrategy: 'prefix',
+        group: 'Catálogo y equipo',
       },
       {
         id: 'admin-mi-local',
         label: 'Mi local',
         to: '/admin/mi-local',
         matchStrategy: 'prefix',
+        group: 'Negocio',
       },
       {
         id: 'admin-metricas',
         label: 'Métricas',
         to: '/admin/analytics',
         matchStrategy: 'prefix',
+        group: 'Negocio',
       },
     ],
   },
