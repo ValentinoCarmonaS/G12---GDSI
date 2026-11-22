@@ -1,15 +1,12 @@
 <!--
 Sync Impact Report
-- Version change: 2.0.0 -> 2.1.0
+- Version change: 2.1.0 -> 2.1.1
 - Modified principles: none
-- Added sections:
-  - Fundamental Principle XI: Role-Scoped Visual Governance and Non-Regressive UI Refactoring
-  - Frontend & Visual Governance Constraints (EasyEat) under Additional Constraints
-  - UI critique and regression verification gates under Development Workflow and Quality Gates
+- Added sections: none
 - Removed sections: none
 - Templates requiring updates: none
-- Deferred items:
-  - TODO(DESIGN_CONTRACTS_REMEDIATION): Remediate comensal.DESIGN.md (uses prohibited Inter typography) and mostrador.DESIGN.md (uses #111827 text on #111111 surface, failing WCAG 2.2 AA contrast) before UI implementation for those roles.
+- Resolved items:
+  - Closed design-contract remediation (Spec 024): remediated comensal.DESIGN.md (DM Sans replacing Inter), mostrador.DESIGN.md (#F8FAFC on #111111, Archivo + Archivo Black, #0A0A0A on #009866), chef.DESIGN.md (WCAG 2.2 AA pairs & Darker Grotesque 500–800), and admin.DESIGN.md (frosted glass on #F4F7FC & WCAG 2.2 AA triads), plus DataVizThemeTokens across all four contracts.
 -->
 
 # SDD Project Constitution
@@ -156,7 +153,7 @@ This section contains the mechanisms and decisions declared by the project. They
   - **Role-Scoped Design Contracts**: Every EasyEat role UI (`Comensal`, `Mostrador`, `Chef`, `Admin`) MUST strictly implement the typography, semantic color palette, spacing, and WCAG 2.2 AA contrast rules defined in `.specify/memory/designs/<role>.DESIGN.md` (`comensal.DESIGN.md`, `mostrador.DESIGN.md`, `chef.DESIGN.md`, `admin.DESIGN.md`).
   - **Shared & Authentication Views**: Public and diner authentication/recovery routes MUST inherit `comensal.DESIGN.md`; staff authentication and role-redirect routes MUST inherit `admin.DESIGN.md` or their target role's `.DESIGN.md`.
   - **Zero AI-Slop Policy**: Default `Inter` typography, generic purple-to-blue gradients, nested cards-in-cards, and low-contrast gray text on colored surfaces are prohibited. All UI work MUST be audited via Impeccable `/critique`.
-  - **Conflict Precedence**: WCAG 2.2 AA contrast and Zero AI-Slop rules supersede conflicting tokens in `.specify/memory/designs/<role>.DESIGN.md`. Known defects (`Inter` in `comensal.DESIGN.md`; `#111827` text on `#111111` surface in `mostrador.DESIGN.md`) MUST be remediated before implementing UI for those roles.
+  - **Conflict Precedence**: WCAG 2.2 AA contrast and Zero AI-Slop rules supersede conflicting tokens in `.specify/memory/designs/<role>.DESIGN.md`. The previously tracked defects (`Inter` in `comensal.DESIGN.md`; `#111827` text on `#111111` surface in `mostrador.DESIGN.md`) were remediated in Spec `024`, and any future conflicting token MUST be remediated before implementing UI for that role.
   - **Business Logic & Test Invariant**: UI refactoring MUST NOT alter Axios API contracts, state business logic, or break any existing Vitest + React Testing Library test suites from specs `001`–`023`.
 
 ## Development Workflow and Quality Gates
@@ -188,4 +185,4 @@ Atomic, traceable, and reversible delivery:
 - **Periodic compliance review**: MUST be performed in each feature planning cycle via the plan's Constitution Check, and at least once per quarter across the entire project, verifying that plans and reviews comply with the principles.
 - **Mandatory principles vs. project decisions**: a mandatory principle applies regardless of technology and domain, and resides in Fundamental Principles. Any decision depending on a specific technology, tool, or context resides in Additional Constraints or in the specification and plan artifacts.
 
-**Version**: 2.1.0 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-11-21
+**Version**: 2.1.1 | **Ratified**: 2026-10-06 | **Last Amended**: 2026-11-21
