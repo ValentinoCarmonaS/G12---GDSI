@@ -80,12 +80,14 @@ describe('Phase 4 US2 — Executive Dashboard Glassmorphism & Analytics', () => 
     } as never);
     vi.mocked(getFinancialHealth).mockResolvedValue({
       granularity: 'day',
+      periodStart: '2026-11-22T00:00:00Z',
+      periodEnd: '2026-11-22T23:59:59Z',
       revenue: 125400.5,
       orderCount: 48,
     });
     vi.mocked(getDishRanking).mockResolvedValue([
-      { dishId: 1, dishName: 'Milanesa Napolitana', unitsSold: 32 },
-      { dishId: 2, dishName: 'Risotto de Hongos', unitsSold: 19 },
+      { dishId: '1', dishName: 'Milanesa Napolitana', unitsSold: 32 },
+      { dishId: '2', dishName: 'Risotto de Hongos', unitsSold: 19 },
     ]);
   });
 
@@ -125,7 +127,13 @@ describe('Phase 4 US2 — Executive Dashboard Glassmorphism & Analytics', () => 
   it('toggles FinancialHealthChart between chart and accessible semantic table using dataViz tokens', () => {
     renderWithProviders(
       <FinancialHealthChart
-        data={{ granularity: 'day', revenue: 125400.5, orderCount: 48 }}
+        data={{
+          granularity: 'day',
+          periodStart: '2026-11-22T00:00:00Z',
+          periodEnd: '2026-11-22T23:59:59Z',
+          revenue: 125400.5,
+          orderCount: 48,
+        }}
       />
     );
 

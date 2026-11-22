@@ -28,8 +28,6 @@ import { CheckoutPage } from '../pages/CheckoutPage';
 import { OrderConfirmationTrackingPage } from '../pages/OrderConfirmationTrackingPage';
 import { PaymentReturnPage } from '../pages/PaymentReturnPage';
 import { AdminBrandingPage } from '../pages/AdminBrandingPage';
-import { AdminAnalyticsPage } from '../pages/AdminAnalyticsPage';
-import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated, user } = useAuth();

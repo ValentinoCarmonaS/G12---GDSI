@@ -111,7 +111,7 @@ export function FinancialHealthPanel({ onDataChange }: FinancialHealthPanelProps
           <FeedbackState
             variant="danger"
             title="Error al cargar métricas"
-            description={error}
+            message={error}
             actionLabel="Reintentar"
             onAction={() => fetchHealth(granularity)}
           />
@@ -120,7 +120,8 @@ export function FinancialHealthPanel({ onDataChange }: FinancialHealthPanelProps
 
       {loading && !data ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <LoadingSkeleton variant="card" count={2} />
+          <LoadingSkeleton variant="block" />
+          <LoadingSkeleton variant="block" announce={false} />
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

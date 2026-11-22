@@ -84,7 +84,7 @@ export function DishRankingTable() {
           <FeedbackState
             variant="danger"
             title="Error al cargar el ranking"
-            description={error}
+            message={error}
             actionLabel="Reintentar"
             onAction={() => fetchRanking(granularity)}
           />
@@ -92,7 +92,11 @@ export function DishRankingTable() {
       )}
 
       {loading && items.length === 0 ? (
-        <LoadingSkeleton variant="card" count={3} />
+        <div className="space-y-2.5">
+          <LoadingSkeleton variant="block" />
+          <LoadingSkeleton variant="block" announce={false} />
+          <LoadingSkeleton variant="block" announce={false} />
+        </div>
       ) : items.length === 0 && !error ? (
         <EmptyState
           title="Sin ventas registradas"
