@@ -261,9 +261,13 @@ describe('Phase 3 US1 — Bimodal Executive Navigation & AdminSidebar', () => {
       <MemoryRouter initialEntries={['/admin']}>
         <AdminPendingDishesProvider>
           <RoleLayoutShell
-            role="ADMINISTRADOR"
-            userEmail="admin@easyeat.com"
-            tenantId="tenant-123"
+            title="Panel"
+            user={{
+              id: 'admin-1',
+              email: 'admin@easyeat.com',
+              role: 'ADMINISTRADOR',
+              tenantId: 'tenant-123',
+            }}
             onLogout={vi.fn()}
           >
             <div>Admin Content</div>
@@ -273,7 +277,7 @@ describe('Phase 3 US1 — Bimodal Executive Navigation & AdminSidebar', () => {
     );
 
     const hamburger = screen.getByRole('button', { name: /Abrir menú/i });
-    expect(hamburger.className).toContain('lg:hidden');
+    expect(hamburger.closest('.lg\\:hidden')).not.toBeNull();
 
     const bell = screen.getByRole('button', { name: /Notificaciones/i });
     expect(bell.className).toContain('focus-visible:ring');
@@ -285,9 +289,13 @@ describe('Phase 3 US1 — Bimodal Executive Navigation & AdminSidebar', () => {
     rerender(
       <MemoryRouter initialEntries={['/cocina']}>
         <RoleLayoutShell
-          role="CHEF"
-          userEmail="chef@easyeat.com"
-          tenantId="tenant-123"
+          title="Cocina"
+          user={{
+            id: 'chef-1',
+            email: 'chef@easyeat.com',
+            role: 'CHEF',
+            tenantId: 'tenant-123',
+          }}
           onLogout={vi.fn()}
         >
           <div>Chef Content</div>
@@ -296,24 +304,23 @@ describe('Phase 3 US1 — Bimodal Executive Navigation & AdminSidebar', () => {
     );
 
     const chefHamburger = screen.getByRole('button', { name: /Abrir menú/i });
-    expect(chefHamburger.className).not.toContain('lg:hidden');
+    expect(chefHamburger.closest('.lg\\:hidden')).toBeNull();
   });
 
-  it('shows pendingCount badge next to Auditoría in RoleHamburgerMenu with >= 44px touch targets', () => {
+  it('shows pendingCount badge next to Auditoría in RoleHamburgerMenu with >= 44px touch targets', async () => {
+    const user = userEvent.setup();
     render(
       <MemoryRouter initialEntries={['/admin']}>
         <RoleHamburgerMenu
-          isOpen={true}
-          onClose={vi.fn()}
-          config={ROLE_NAVIGATION_CONFIG.ADMINISTRADOR}
+          role="ADMINISTRADOR"
           userEmail="admin@easyeat.com"
-          tenantId="tenant-123"
           pendingDishesCount={7}
           onLogout={vi.fn()}
         />
       </MemoryRouter>
     );
 
+    await user.click(screen.getByRole('button', { name: /Abrir menú/i }));
     const auditItem = screen.getByRole('link', { name: /Auditoría/i });
     expect(auditItem).toHaveTextContent('7');
     expect(auditItem.className).toContain('min-h-[44px]');

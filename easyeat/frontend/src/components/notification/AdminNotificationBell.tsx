@@ -112,7 +112,7 @@ export const AdminNotificationBell: React.FC<AdminNotificationBellProps> = ({
         aria-haspopup="dialog"
         aria-controls={NOTIFICATIONS_PANEL_ID}
         onClick={handleToggle}
-        className="relative inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-ee-sm border border-ee-border-subtle bg-ee-surface-elevated text-ee-text transition-colors hover:bg-ee-surface-subtle"
+        className="relative inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-ee-sm border border-ee-border-subtle bg-ee-surface-elevated text-ee-text transition-colors duration-150 motion-reduce:transition-none hover:bg-ee-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring"
         style={{ borderWidth: 'var(--ee-border-width)' }}
       >
         <svg
