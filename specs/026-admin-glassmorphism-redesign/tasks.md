@@ -103,7 +103,7 @@
 - [x] T018 [P] [US3] [TDD-GREEN] Rediseñar la bandeja de entrada (`ReviewInboxTabs.tsx`, `ReviewInboxList.tsx`, `ReviewInboxRow.tsx`, `InboxPagination.tsx`) en `easyeat/frontend/src/components/dishreview/` usando `GlassCard`, `StatusBadge`, `LoadingSkeleton`, `EmptyState` y `Button`
 - [x] T019 [P] [US3] [TDD-GREEN] Rediseñar el panel de auditoría y modales (`DishAuditPanel.tsx`, `FoodCostBreakdown.tsx`, `UnpricedIngredientsWarning.tsx`, `MarginPriceCalculator.tsx`, `DishDecisionActions.tsx`, `PublicationConfirmModal.tsx` y `RejectionDialog.tsx` reutilizando `AccessibleModal`) en `easyeat/frontend/src/components/dishreview/`
 - [x] T020 [US3] [TDD-GREEN] Reestructurar `easyeat/frontend/src/pages/AdminDishReviewPage.tsx` (split-pane `lg:grid-cols-[380px_minmax(0,1fr)]` + flujo maestro-detalle móvil con `Volver a la bandeja` + sincronización en memoria de `pendingCount` vía `useAdminPendingDishes`) y rediseñar `easyeat/frontend/src/pages/DishCostAuditPage.tsx` en tarjetas `GlassCard` (depende de T018, T019)
-- [ ] T021 [US3] [TDD-GREEN] Ejecutar `npx vitest run tests/admin/dishReviewAndCostAuditGlass.test.tsx` junto a las pruebas heredadas de revisión de platos y auditoría de costos confirmando verde total (depende de T020)
+- [x] T021 [US3] [TDD-GREEN] Ejecutar `npx vitest run tests/admin/dishReviewAndCostAuditGlass.test.tsx` junto a las pruebas heredadas de revisión de platos y auditoría de costos confirmando verde total (depende de T020)
 
 **Checkpoint**: US3 completa y verificable de forma independiente (lista para commit atómico).
 

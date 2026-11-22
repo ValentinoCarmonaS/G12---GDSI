@@ -61,13 +61,14 @@ export const DishCostAuditPage: React.FC = () => {
           <span className="sr-only">
             Calculando costos y consultando catálogo de materias primas...
           </span>
-          <LoadingSkeleton variant="card" count={3} />
+          <LoadingSkeleton variant="block" announce={false} />
+          <LoadingSkeleton variant="block" announce={false} />
         </div>
       ) : errorMessage ? (
         <FeedbackState
           variant="danger"
           title="No se pudo realizar la auditoría"
-          description={errorMessage}
+          message={errorMessage}
           actionLabel="Reintentar"
           onAction={fetchAudit}
         />

@@ -177,7 +177,8 @@ describe('Spec 026 US3 — Bandeja de Revisión y Auditoría de Costos Glassmorp
       )
     );
 
-    await user.click(row);
+    const pageTwoRow = await screen.findByTestId('inbox-row');
+    await user.click(pageTwoRow);
     await screen.findByTestId('dietary-labels');
 
     const backButton = screen.getByRole('button', { name: /volver a la bandeja/i });

@@ -45,10 +45,12 @@ export const ReviewInboxList: React.FC<ReviewInboxListProps> = ({
         data-testid="inbox-loading-skeleton"
         aria-busy="true"
         aria-live="polite"
-        className="p-3"
+        className="space-y-3 p-3"
       >
         <span className="sr-only">Cargando la bandeja de revisión…</span>
-        <LoadingSkeleton variant="card" count={3} />
+        <LoadingSkeleton variant="block" announce={false} />
+        <LoadingSkeleton variant="block" announce={false} />
+        <LoadingSkeleton variant="block" announce={false} />
       </div>
     );
   }
@@ -59,7 +61,7 @@ export const ReviewInboxList: React.FC<ReviewInboxListProps> = ({
         <FeedbackState
           variant="danger"
           title="No se pudo cargar la bandeja"
-          description={error.message}
+          message={error.message}
           actionLabel={error.retryable ? 'Reintentar' : undefined}
           onAction={error.retryable ? onRetry : undefined}
         />

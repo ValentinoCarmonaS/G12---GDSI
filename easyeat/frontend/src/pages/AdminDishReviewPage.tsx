@@ -167,7 +167,8 @@ export const AdminDishReviewPage: React.FC = () => {
           {isDetailLoading && (
             <div data-testid="detail-loading" aria-busy="true" className="space-y-3">
               <span className="sr-only">Cargando la ficha del plato…</span>
-              <LoadingSkeleton variant="card" count={3} />
+              <LoadingSkeleton variant="block" announce={false} />
+              <LoadingSkeleton variant="text" lines={3} announce={false} />
             </div>
           )}
 
@@ -176,7 +177,7 @@ export const AdminDishReviewPage: React.FC = () => {
               <FeedbackState
                 variant="danger"
                 title="No se pudo cargar la ficha"
-                description={detailError}
+                message={detailError}
               />
             </div>
           )}
