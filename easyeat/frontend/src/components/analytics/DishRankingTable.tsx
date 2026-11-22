@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getDishRanking } from '../../api/analyticsApi';
 import type { DishRankingGranularity, DishRankingItemResponse } from '../../types/analytics';
 import { GlassCard } from '../admin/GlassCard';
-import { EmptyState, FeedbackState, LoadingSkeleton } from '../ui';
+import { EmptyState, FeedbackState, LoadingSkeleton } from '../primitives';
 
 const GRANULARITY_TABS: { key: DishRankingGranularity; label: string }[] = [
   { key: 'all', label: 'Histórico global' },

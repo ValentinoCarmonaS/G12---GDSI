@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getFinancialHealth } from '../../api/analyticsApi';
 import type { FinancialHealthGranularity, FinancialHealthResponse } from '../../types/analytics';
 import { GlassCard } from '../admin/GlassCard';
-import { FeedbackState, LoadingSkeleton } from '../ui';
+import { FeedbackState, LoadingSkeleton } from '../primitives';
 
 interface FinancialHealthPanelProps {
   onDataChange?: (

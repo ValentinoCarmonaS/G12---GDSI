@@ -11,7 +11,7 @@ import {
 import type { FinancialHealthResponse } from '../../types/analytics';
 import { useRoleTheme } from '../../theme/useRoleTheme';
 import { GlassCard } from '../admin/GlassCard';
-import { Button, EmptyState } from '../ui';
+import { Button, EmptyState } from '../primitives';
 
 interface FinancialHealthChartProps {
   data: FinancialHealthResponse;
