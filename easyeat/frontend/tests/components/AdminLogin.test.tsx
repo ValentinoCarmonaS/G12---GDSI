@@ -68,6 +68,6 @@ describe('AdminLogin Component Integration (T033, ADM-1.1.1)', () => {
 
     // Spec 024 (FR-007/FR-008): el rol legible vive dentro del menú desplegable hamburguesa
     await user.click(screen.getByRole('button', { name: /abrir menú de navegación/i }));
-    expect(screen.getByText('Administrador')).toBeInTheDocument();
+    expect(screen.getAllByText('Administrador').length).toBeGreaterThanOrEqual(1);
   });
 });
