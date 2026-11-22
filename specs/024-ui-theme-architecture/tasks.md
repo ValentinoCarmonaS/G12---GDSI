@@ -86,7 +86,7 @@
 
 - [X] T019 [US2] [TDD-RED] Escribir pruebas de `RoleHamburgerMenu` en `easyeat/frontend/tests/components/RoleHamburgerMenu.test.tsx` verificando botón disparador (`>= 44×44 px`, `aria-expanded`, `aria-controls`), apertura/cierre por clic, cierre al seleccionar enlace, cierre por `Escape` con retorno de foco al disparador, cierre por clic exterior, `aria-current="page"` dinámico, metadatos de cuenta dentro del panel (rol legible y correo), cobertura completa de enlaces por rol (4 Comensal, 1 Mostrador, 3 Chef, 7 Admin) y ausencia total de enlaces a `/perfil` para `ENCARGADO`, `CHEF` y `ADMINISTRADOR`; ejecutar y confirmar fallo inicial
 - [X] T020 [P] [US2] [TDD-GREEN] Definir configuración tipada `ROLE_NAVIGATION_CONFIG` y función de coincidencia activa (`exact`, `prefix`, `hash`) en `easyeat/frontend/src/components/layout/roleNavigationConfig.ts` conforme a `specs/024-ui-theme-architecture/contracts/navigation-shells.contract.ts`
-- [ ] T021 [US2] [TDD-GREEN] Implementar `RoleHamburgerMenu` en `easyeat/frontend/src/components/layout/RoleHamburgerMenu.tsx` (depende de T020) y ejecutar `npx vitest run tests/components/RoleHamburgerMenu.test.tsx` confirmando verde
+- [X] T021 [US2] [TDD-GREEN] Implementar `RoleHamburgerMenu` en `easyeat/frontend/src/components/layout/RoleHamburgerMenu.tsx` (depende de T020) y ejecutar `npx vitest run tests/components/RoleHamburgerMenu.test.tsx` confirmando verde
 
 ### Slice TDD 2B — Seam de endurecimiento WCAG 2.2 AA de `AdminNotificationBell` (`FR-007`, `FR-010`)
 
