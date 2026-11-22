@@ -216,4 +216,46 @@ describe('RoleHamburgerMenu (FR-008, FR-010, SC-003, SC-004)', () => {
     expect(screen.getByRole('link', { name: 'Panel' })).not.toHaveAttribute('aria-current');
     expect(links.some((link) => link.getAttribute('href')?.includes('/perfil'))).toBe(false);
   });
+
+  it('groups ADMINISTRADOR navigation items into 3 semantic groups of <= 3 items to reduce cognitive load (T046 P1-3)', async () => {
+    const user = userEvent.setup();
+    renderMenu({ role: 'ADMINISTRADOR', initialEntry: '/admin' });
+
+    await user.click(screen.getByRole('button', { name: /abrir menú de navegación/i }));
+
+    expect(screen.getByText('Operación')).toBeInTheDocument();
+    expect(screen.getByText('Catálogo y equipo')).toBeInTheDocument();
+    expect(screen.getByText('Negocio')).toBeInTheDocument();
+  });
+
+  it('closes the dropdown when keyboard focus leaves the menu container (T046 P1-2)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/catalogo']}>
+        <div>
+          <RoleHamburgerMenu role="COMENSAL" userEmail="lucia@easyeat.com" onLogout={vi.fn()} />
+          <button type="button">Botón externo</button>
+        </div>
+      </MemoryRouter>
+    );
+
+    const trigger = screen.getByRole('button', { name: /abrir menú de navegación/i });
+    await user.click(trigger);
+    const nav = screen.getByRole('navigation');
+    expect(nav).toBeInTheDocument();
+
+    const outsideButton = screen.getByRole('button', { name: 'Botón externo' });
+    fireEvent.blur(nav, { relatedTarget: outsideButton });
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  });
+
+  it('applies bounded viewport height with vertical scroll so items never clip at 200% zoom or landscape mobile (T046 P1-2)', async () => {
+    const user = userEvent.setup();
+    renderMenu({ role: 'ADMINISTRADOR', initialEntry: '/admin' });
+
+    await user.click(screen.getByRole('button', { name: /abrir menú de navegación/i }));
+    const nav = screen.getByRole('navigation');
+    expect(nav.className).toContain('overflow-y-auto');
+    expect(nav.className).toMatch(/max-h-/);
+  });
 });

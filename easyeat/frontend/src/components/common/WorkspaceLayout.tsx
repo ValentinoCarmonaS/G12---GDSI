@@ -22,6 +22,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   const [notifications, setNotifications] = useState<AdminNotificationResponse[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [notificationError, setNotificationError] = useState<string | null>(null);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState<boolean>(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const fetchAvatar = useCallback(async () => {
@@ -50,12 +52,16 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
   const fetchNotifications = useCallback(async () => {
     if (user?.role !== 'ADMINISTRADOR') return;
+    setIsLoadingNotifications(true);
     try {
       const data = await adminNotificationApi.listNotifications({ page: 0, size: 20 });
       setNotifications(data.content || []);
       setUnreadCount(data.unreadCount || 0);
+      setNotificationError(null);
     } catch {
-      // Ignored for non-admin or unauthenticated
+      setNotificationError('No pudimos cargar las notificaciones. Intente nuevamente.');
+    } finally {
+      setIsLoadingNotifications(false);
     }
   }, [user?.role]);
 
@@ -66,9 +72,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       await adminNotificationApi.markAsRead(notificationId);
+      setNotificationError(null);
       await fetchNotifications();
     } catch {
-      // Ignore
+      setNotificationError('No pudimos marcar la notificación como leída. Intente nuevamente.');
     }
   };
 
@@ -84,6 +91,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       avatarUrl={avatarUrl}
       notifications={notifications}
       unreadCount={unreadCount}
+      notificationError={notificationError}
+      isLoadingNotifications={isLoadingNotifications}
       legacySurfaceMode={legacySurfaceMode}
       onLogout={handleLogout}
       onMarkAsRead={handleMarkAsRead}

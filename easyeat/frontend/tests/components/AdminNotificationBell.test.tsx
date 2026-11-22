@@ -133,4 +133,82 @@ describe('AdminNotificationBell WCAG 2.2 AA (FR-007, FR-010)', () => {
     expect(screen.queryByTestId('notifications-dropdown')).not.toBeInTheDocument();
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
+
+  it('displays an assertive error alert with retry action instead of empty state when error is present (T046 P1-1)', async () => {
+    const user = userEvent.setup();
+    const onRetry = vi.fn();
+
+    render(
+      <AdminNotificationBell
+        notifications={[]}
+        unreadCount={0}
+        error="No pudimos cargar las notificaciones."
+        onMarkAsRead={vi.fn()}
+        onRefresh={onRetry}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /notificaciones/i }));
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('No pudimos cargar las notificaciones.');
+    expect(screen.queryByText('No hay notificaciones disponibles.')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /reintentar/i }));
+    expect(onRetry).toHaveBeenCalledTimes(2); // 1 on open + 1 on retry
+  });
+
+  it('provides an explicit close button that restores focus and closes when focus leaves the panel via Tab (T046 P1-2)', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <div>
+        <AdminNotificationBell
+          notifications={sampleNotifications}
+          unreadCount={1}
+          onMarkAsRead={vi.fn()}
+        />
+        <button type="button">Siguiente control</button>
+      </div>
+    );
+
+    const trigger = screen.getByRole('button', { name: /notificaciones/i });
+    await user.click(trigger);
+
+    const closeBtn = screen.getByRole('button', { name: /cerrar notificaciones/i });
+    await user.click(closeBtn);
+    expect(screen.queryByTestId('notifications-dropdown')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+
+    // Reopen and move focus outside via blur
+    await user.click(trigger);
+    const panel = screen.getByTestId('notifications-dropdown');
+    expect(panel).toBeInTheDocument();
+
+    const outsideButton = screen.getByRole('button', { name: 'Siguiente control' });
+    fireEvent.blur(panel, { relatedTarget: outsideButton });
+    expect(screen.queryByTestId('notifications-dropdown')).not.toBeInTheDocument();
+  });
+
+  it('keeps existing notifications visible when an inline error banner is displayed (T046 P1-3)', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <AdminNotificationBell
+        notifications={sampleNotifications}
+        unreadCount={1}
+        error="No pudimos marcar la notificación como leída. Intente nuevamente."
+        onMarkAsRead={vi.fn()}
+        onRefresh={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /notificaciones/i }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'No pudimos marcar la notificación como leída. Intente nuevamente.'
+    );
+    expect(screen.getByText('Nuevo plato en revisión')).toBeInTheDocument();
+    expect(screen.getByText('Stock actualizado')).toBeInTheDocument();
+  });
 });

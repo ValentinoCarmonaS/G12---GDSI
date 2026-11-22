@@ -18,6 +18,8 @@ export interface RoleLayoutShellProps {
   readonly avatarUrl?: string | null;
   readonly notifications?: AdminNotificationResponse[];
   readonly unreadCount?: number;
+  readonly notificationError?: string | null;
+  readonly isLoadingNotifications?: boolean;
   readonly legacySurfaceMode?: LegacySurfaceMode;
   readonly onLogout: () => void | Promise<void>;
   readonly onMarkAsRead?: (notificationId: string) => void | Promise<void>;
@@ -34,6 +36,8 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
   avatarUrl = null,
   notifications = [],
   unreadCount = 0,
+  notificationError = null,
+  isLoadingNotifications = false,
   legacySurfaceMode = 'none',
   onLogout,
   onMarkAsRead = noopMarkAsRead,
@@ -76,8 +80,8 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
           borderBottomWidth: 'var(--ee-border-width)',
         }}
       >
-        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+        <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-2 px-3 py-2 sm:flex-nowrap sm:gap-3 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             {user && config && (
               <RoleHamburgerMenu
                 role={user.role}
@@ -86,7 +90,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
               />
             )}
 
-            <span className="shrink-0 font-ee-display text-lg font-bold tracking-tight text-ee-text sm:text-xl">
+            <span className="shrink-0 font-ee-display text-base font-bold tracking-tight text-ee-text sm:text-xl">
               EasyEat
             </span>
             <span aria-hidden="true" className="text-ee-border-strong">
@@ -140,6 +144,8 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                   <AdminNotificationBell
                     notifications={notifications}
                     unreadCount={unreadCount}
+                    error={notificationError}
+                    isLoading={isLoadingNotifications}
                     onMarkAsRead={onMarkAsRead}
                     onRefresh={onRefreshNotifications}
                   />
@@ -157,6 +163,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                   </Link>
                 ) : (
                   <div
+                    role="img"
                     data-testid="staff-avatar-indicator"
                     aria-label={`Cuenta de ${config.displayRoleLabel}`}
                     title={config.displayRoleLabel}
@@ -170,7 +177,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="inline-flex min-h-[44px] items-center rounded-ee-sm border border-ee-border-subtle bg-ee-surface-elevated px-3 text-sm font-semibold text-ee-text transition-colors hover:border-ee-danger-border hover:bg-ee-danger-bg hover:text-ee-danger-fg"
+                  className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-ee-sm border border-ee-border-subtle bg-ee-surface-elevated px-2.5 text-xs font-semibold text-ee-text transition-colors hover:border-ee-danger-border hover:bg-ee-danger-bg hover:text-ee-danger-fg sm:px-3 sm:text-sm"
                   style={{ borderWidth: 'var(--ee-border-width)' }}
                 >
                   Cerrar sesión
@@ -200,7 +207,8 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
 
       <main
         id="main-content"
-        className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 outline-none sm:px-6 sm:py-8 lg:px-8"
       >
         {subtitle && (
           <div className="mb-6">

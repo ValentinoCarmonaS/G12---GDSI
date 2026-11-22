@@ -77,8 +77,36 @@ export const RoleHamburgerMenu: React.FC<RoleHamburgerMenuProps> = ({
     await onLogout();
   };
 
+  const handleContainerBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    if (
+      isOpen &&
+      containerRef.current &&
+      event.relatedTarget instanceof Node &&
+      !containerRef.current.contains(event.relatedTarget)
+    ) {
+      close();
+    }
+  };
+
+  const hasGroups = config.items.some((item) => Boolean(item.group));
+  const groupedSections = hasGroups
+    ? config.items.reduce<Array<{ group: string; items: typeof config.items[number][] }>>(
+        (acc, item) => {
+          const groupName = item.group ?? 'Secciones';
+          const existing = acc.find((entry) => entry.group === groupName);
+          if (existing) {
+            existing.items.push(item);
+          } else {
+            acc.push({ group: groupName, items: [item] });
+          }
+          return acc;
+        },
+        []
+      )
+    : null;
+
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div ref={containerRef} onBlur={handleContainerBlur} className={`relative ${className}`}>
       <button
         ref={triggerRef}
         type="button"
@@ -100,7 +128,7 @@ export const RoleHamburgerMenu: React.FC<RoleHamburgerMenuProps> = ({
         <nav
           id={panelId}
           aria-label={config.ariaLabel}
-          className="absolute left-0 z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-ee-md border border-ee-border-strong p-3 shadow-ee-elevated"
+          className="absolute left-0 z-50 mt-2 max-h-[calc(100dvh-5rem)] w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-ee-md border border-ee-border-strong p-3 shadow-ee-elevated"
           style={{
             backgroundColor: 'var(--ee-surface-elevated-glass, var(--ee-surface-elevated))',
             backdropFilter: 'var(--ee-backdrop-blur)',
@@ -118,35 +146,76 @@ export const RoleHamburgerMenu: React.FC<RoleHamburgerMenuProps> = ({
             )}
           </div>
 
-          <ul className="space-y-1">
-            {config.items.map((item) => {
-              const active = isRoleNavItemActive(item, pathname, hash);
-              return (
-                <li key={item.id}>
-                  <Link
-                    to={item.to}
-                    aria-current={active ? 'page' : undefined}
-                    onClick={() => close()}
-                    className={`flex min-h-[44px] items-center justify-between rounded-ee-sm border-l-4 px-3 py-2 text-sm transition-colors ${
-                      active
-                        ? 'border-ee-primary-border bg-ee-primary font-semibold text-ee-on-primary'
-                        : 'border-transparent font-medium text-ee-text hover:bg-ee-surface-subtle'
-                    }`}
-                  >
-                    <span>{item.label}</span>
-                    {active && (
-                      <span
-                        aria-hidden="true"
-                        className="ml-2 font-ee-mono text-[11px] font-semibold uppercase tracking-wider"
-                      >
-                        Actual
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          {groupedSections ? (
+            <div className="space-y-3">
+              {groupedSections.map((section) => (
+                <div key={section.group}>
+                  <p className="mb-1 px-2 font-ee-mono text-[11px] font-semibold uppercase tracking-wider text-ee-text-secondary">
+                    {section.group}
+                  </p>
+                  <ul className="space-y-1">
+                    {section.items.map((item) => {
+                      const active = isRoleNavItemActive(item, pathname, hash);
+                      return (
+                        <li key={item.id}>
+                          <Link
+                            to={item.to}
+                            aria-current={active ? 'page' : undefined}
+                            onClick={() => close()}
+                            className={`flex min-h-[44px] items-center justify-between rounded-ee-sm border-l-4 px-3 py-2 text-sm transition-colors ${
+                              active
+                                ? 'border-ee-primary-border bg-ee-primary font-semibold text-ee-on-primary'
+                                : 'border-transparent font-medium text-ee-text hover:bg-ee-surface-subtle'
+                            }`}
+                          >
+                            <span>{item.label}</span>
+                            {active && (
+                              <span
+                                aria-hidden="true"
+                                className="ml-2 font-ee-mono text-[11px] font-semibold uppercase tracking-wider"
+                              >
+                                Actual
+                              </span>
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ul className="space-y-1">
+              {config.items.map((item) => {
+                const active = isRoleNavItemActive(item, pathname, hash);
+                return (
+                  <li key={item.id}>
+                    <Link
+                      to={item.to}
+                      aria-current={active ? 'page' : undefined}
+                      onClick={() => close()}
+                      className={`flex min-h-[44px] items-center justify-between rounded-ee-sm border-l-4 px-3 py-2 text-sm transition-colors ${
+                        active
+                          ? 'border-ee-primary-border bg-ee-primary font-semibold text-ee-on-primary'
+                          : 'border-transparent font-medium text-ee-text hover:bg-ee-surface-subtle'
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                      {active && (
+                        <span
+                          aria-hidden="true"
+                          className="ml-2 font-ee-mono text-[11px] font-semibold uppercase tracking-wider"
+                        >
+                          Actual
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
 
           <div className="mt-3 border-t border-ee-border-subtle pt-2.5">
             <button
