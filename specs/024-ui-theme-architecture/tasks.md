@@ -91,7 +91,7 @@
 ### Slice TDD 2B — Seam de endurecimiento WCAG 2.2 AA de `AdminNotificationBell` (`FR-007`, `FR-010`)
 
 - [X] T022 [US2] [TDD-RED] Escribir pruebas de accesibilidad en `easyeat/frontend/tests/components/AdminNotificationBell.test.tsx` verificando `aria-expanded`, `aria-haspopup`, cierre por `Escape` con retorno de foco al botón, objetivo táctil `>= 44×44 px`, texto `sr-only` para notificaciones no leídas y contraste WCAG 2.2 AA en marcas de tiempo; ejecutar y confirmar fallo inicial
-- [ ] T023 [US2] [TDD-GREEN] Endurecer `easyeat/frontend/src/components/notification/AdminNotificationBell.tsx` aplicando tokens `--ee-*`, `aria-expanded`, `aria-haspopup`, manejador `Escape` con retorno de foco, texto accesible para estado no leído y texto de fecha con contraste `>= 4.5:1`; ejecutar `npx vitest run tests/components/AdminNotificationBell.test.tsx` confirmando verde
+- [X] T023 [US2] [TDD-GREEN] Endurecer `easyeat/frontend/src/components/notification/AdminNotificationBell.tsx` aplicando tokens `--ee-*`, `aria-expanded`, `aria-haspopup`, manejador `Escape` con retorno de foco, texto accesible para estado no leído y texto de fecha con contraste `>= 4.5:1`; ejecutar `npx vitest run tests/components/AdminNotificationBell.test.tsx` confirmando verde
 
 ### Slice TDD 2C — Seam de `RoleLayoutShell`, fachada `WorkspaceLayout` y compatibilidad transitoria (`FR-007`, `FR-009`, `FR-018`)
 
