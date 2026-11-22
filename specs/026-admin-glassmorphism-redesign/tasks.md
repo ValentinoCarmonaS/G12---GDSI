@@ -144,7 +144,7 @@
 - [x] T027 [P] [US5] [TDD-GREEN] Rediseñar `WeeklyScheduleMatrix.tsx` (tarjetas por día), `SlotCapacityGrid.tsx` (superficie Glassmorphism preservando `role="row"`), `PaymentMethodToggle.tsx` (en `easyeat/frontend/src/components/operations/`) y `easyeat/frontend/src/pages/AdminOperationsPage.tsx`
 - [x] T028 [P] [US5] [TDD-GREEN] Rediseñar `ColorPickerInput.tsx` (hex en `JetBrains Mono`), `LogoUploader.tsx` (en `easyeat/frontend/src/components/admin/`) y `easyeat/frontend/src/pages/AdminBrandingPage.tsx` en 2 columnas con aislamiento estricto de marca (Spec `016`/`024`)
 - [x] T029 [P] [US5] [TDD-GREEN] Migrar `easyeat/frontend/src/pages/FirstLoginPasswordPage.tsx` a `AuthCardShell` (reutilizado de `src/components/diner/`) y primitivos base (`--ee-*`) con checklist de requisitos de complejidad WCAG 2.2 AA
-- [ ] T030 [US5] [TDD-GREEN] Ejecutar `npx vitest run tests/admin/operationsBrandingFirstLoginGlass.test.tsx` junto a las pruebas heredadas de operaciones, branding y primer login confirmando verde total (depende de T027, T028, T029)
+- [x] T030 [US5] [TDD-GREEN] Ejecutar `npx vitest run tests/admin/operationsBrandingFirstLoginGlass.test.tsx` junto a las pruebas heredadas de operaciones, branding y primer login confirmando verde total (depende de T027, T028, T029)
 
 **Checkpoint**: US5 completa y verificable de forma independiente (100 % del ecosistema Administrador migrado a Glassmorphism).
 

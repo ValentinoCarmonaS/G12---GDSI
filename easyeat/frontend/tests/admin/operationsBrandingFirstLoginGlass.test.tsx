@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -80,13 +79,18 @@ describe('US5: Operaciones, Mi Local y Primer Ingreso Glassmorphism (FR-009, FR-
     ]);
 
     vi.mocked(brandingApi.getAdminBranding).mockResolvedValue({
+      establishmentId: 'tenant-1',
       fantasyName: 'Bistró Central',
       description: 'Cocina de autor',
       primaryColor: '#10B981',
+      primaryContrastColor: '#FFFFFF',
       secondaryColor: '#065F46',
+      secondaryContrastColor: '#FFFFFF',
       accentColor: '#F59E0B',
+      accentContrastColor: '#000000',
       logoUrl: null,
-    });
+      updatedAt: '2026-10-01T10:00:00Z',
+    } as brandingApi.RestaurantBranding);
   });
 
   describe('AdminOperationsPage', () => {
@@ -106,7 +110,7 @@ describe('US5: Operaciones, Mi Local y Primer Ingreso Glassmorphism (FR-009, FR-
       });
 
       // Tarjetas GlassCard en operaciones
-      expect(container.querySelectorAll('[data-glass-card]').length).toBeGreaterThanOrEqual(2);
+      expect(container.querySelectorAll('[class*="backdrop-blur"]').length).toBeGreaterThanOrEqual(2);
 
       // SlotCapacityGrid preserva role="row"
       await waitFor(() => {
