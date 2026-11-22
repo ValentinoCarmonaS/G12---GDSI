@@ -68,12 +68,12 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium text-stone-700 dark:text-stone-300">
+      <label className="block text-sm font-medium text-[var(--ee-text)]">
         Logotipo del Establecimiento
       </label>
 
       <div className="flex items-center gap-4">
-        <div className="w-20 h-20 rounded-xl border-2 border-dashed border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-inner">
+        <div className="w-20 h-20 rounded-[var(--ee-radius-md)] border-2 border-dashed border-[var(--ee-border)] bg-[var(--ee-surface)] flex items-center justify-center overflow-hidden flex-shrink-0 shadow-inner">
           {displayLogoUrl && !imageError ? (
             <img
               src={resolveApiMediaUrl(displayLogoUrl)}
@@ -82,7 +82,7 @@ export const LogoUploader: React.FC<LogoUploaderProps> = ({
               className="w-full h-full object-contain p-1"
             />
           ) : (
-            <ImageIcon className="w-8 h-8 text-stone-400" />
+            <ImageIcon className="w-8 h-8 text-[var(--ee-text-muted)]" />
           )}
         </div>
 
