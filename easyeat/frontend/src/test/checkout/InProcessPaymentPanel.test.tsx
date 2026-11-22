@@ -89,10 +89,10 @@ describe('T022: InProcessPaymentPanel Component Tests (AS-5, FR-010, Q3)', () =>
 
     const region = screen.getByRole('region', { name: /panel de pago en curso/i });
     expect(region.className).not.toMatch(/bg-amber-950|text-white/);
-    expect(region.className).toMatch(/bg-amber-50|bg-white/);
+    expect(region.className).toMatch(/bg-amber-50|bg-white|bg-ee-warning-bg/);
 
     const heading = screen.getByText(/pago en curso/i);
     expect(heading.className).not.toMatch(/text-amber-200|text-white/);
-    expect(heading.className).toMatch(/text-amber-9|text-gray-9/);
+    expect(heading.className).toMatch(/text-amber-9|text-gray-9|text-ee-warning-fg/);
   });
 });

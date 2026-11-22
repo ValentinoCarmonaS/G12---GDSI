@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle, ShoppingBag } from 'lucide-react';
 import { CartItem } from '../../types/cart';
 import { FulfillmentMode, TimeSlotAvailability } from '../../types/order';
+import { BentoCard } from '../diner/BentoCard';
 
 interface CheckoutSummaryProps {
   items: CartItem[];
@@ -9,6 +10,7 @@ interface CheckoutSummaryProps {
   selectedDate?: string | null;
   selectedSlot?: TimeSlotAvailability | null;
   totalAmount?: number;
+  action?: React.ReactNode;
 }
 
 export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
@@ -17,6 +19,7 @@ export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
   selectedDate,
   selectedSlot,
   totalAmount,
+  action,
 }) => {
   const calculatedTotal =
     totalAmount !== undefined
@@ -50,30 +53,30 @@ export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
       (selectedSlot.occupancyPercentage >= 80 && selectedSlot.occupancyPercentage < 100));
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
-      <div className="flex items-center gap-2 border-b border-gray-100 pb-4">
-        <ShoppingBag className="w-5 h-5 text-emerald-600" />
-        <h2 className="text-lg font-bold text-gray-900">Resumen del pedido</h2>
+    <BentoCard variant="elevated" padding="md" radius="lg" as="aside" className="space-y-6">
+      <div className="flex items-center gap-2 border-b border-ee-border-subtle pb-4">
+        <ShoppingBag className="w-5 h-5 text-ee-primary-border" aria-hidden="true" />
+        <h2 className="font-ee-display text-lg font-bold text-ee-text">Resumen del pedido</h2>
       </div>
 
       {/* Items list */}
       <div className="space-y-3">
         {items.length === 0 ? (
-          <p className="text-sm text-gray-500 italic">No hay ítems en el carrito.</p>
+          <p className="text-sm text-ee-text-secondary italic">No hay ítems en el carrito.</p>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-ee-border-subtle">
             {items.map((item) => (
               <li
                 key={item.dishId}
-                className="py-2.5 flex items-center justify-between text-sm"
+                className="py-2.5 flex items-center justify-between gap-3 text-sm"
               >
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-gray-800">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-ee-mono tabular-nums font-semibold text-ee-text shrink-0">
                     {item.quantity}x
                   </span>
-                  <span className="text-gray-700">{item.name}</span>
+                  <span className="text-ee-text truncate">{item.name}</span>
                 </div>
-                <span className="font-medium text-gray-900">
+                <span className="font-ee-mono tabular-nums font-semibold text-ee-text shrink-0">
                   {formatPrice(item.price * item.quantity)}
                 </span>
               </li>
@@ -83,10 +86,10 @@ export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
       </div>
 
       {/* Fulfillment details */}
-      <div className="bg-gray-50 rounded-xl p-4 space-y-2 border border-gray-100 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-gray-500 font-medium">Modalidad:</span>
-          <span className="font-semibold text-gray-800">
+      <div className="bg-ee-surface-subtle rounded-ee-md p-4 space-y-2 border border-ee-border-subtle text-sm">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-ee-text-secondary font-medium">Modalidad:</span>
+          <span className="font-semibold text-ee-text text-right">
             {fulfillmentMode === 'IMMEDIATE'
               ? 'Lo antes posible (Inmediato)'
               : fulfillmentMode === 'SCHEDULED'
@@ -97,16 +100,16 @@ export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
 
         {fulfillmentMode === 'SCHEDULED' && (
           <>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500 font-medium">Fecha de retiro:</span>
-              <span className="font-semibold text-gray-800">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-ee-text-secondary font-medium">Fecha de retiro:</span>
+              <span className="font-ee-mono tabular-nums font-semibold text-ee-text">
                 {selectedDate ? formatDate(selectedDate) : 'Pendiente de selección'}
               </span>
             </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500 font-medium">Horario de retiro:</span>
-              <span className="font-semibold text-gray-800">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-ee-text-secondary font-medium">Horario de retiro:</span>
+              <span className="font-ee-mono tabular-nums font-semibold text-ee-text">
                 {selectedSlot
                   ? `${formatTime(selectedSlot.startTime)} - ${formatTime(selectedSlot.endTime)} hs`
                   : 'Pendiente de selección'}
@@ -120,12 +123,12 @@ export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
       {isHighDemand && (
         <div
           role="alert"
-          className="flex items-start gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-sm"
+          className="flex items-start gap-3 p-3.5 bg-ee-warning-bg border border-ee-warning-border rounded-ee-md text-ee-warning-fg text-sm"
         >
-          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
           <div className="space-y-0.5">
-            <p className="font-semibold text-amber-900">Franja de Alta Demanda</p>
-            <p className="text-amber-800 text-xs sm:text-sm">
+            <p className="font-semibold">Franja de Alta Demanda</p>
+            <p className="text-xs sm:text-sm leading-relaxed">
               Esta franja registra un alto volumen de cocina. Podrían producirse leves demoras en mostrador.
             </p>
           </div>
@@ -133,12 +136,17 @@ export const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({
       )}
 
       {/* Total Amount */}
-      <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
-        <span className="text-base font-semibold text-gray-800">Total a abonar</span>
-        <span className="text-2xl font-bold text-gray-900">
+      <div className="border-t border-ee-border-subtle pt-4 flex items-center justify-between gap-3">
+        <span className="text-base font-semibold text-ee-text">Total a abonar</span>
+        <span
+          data-testid="checkout-summary-total"
+          className="font-ee-mono tabular-nums text-2xl font-bold text-ee-text"
+        >
           {formatPrice(calculatedTotal)}
         </span>
       </div>
-    </div>
+
+      {action && <div className="pt-1">{action}</div>}
+    </BentoCard>
   );
 };
