@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { DishCostAuditPage } from '@/pages/DishCostAuditPage';
 import { AdminWorkspacePage } from '@/pages/AdminWorkspacePage';
@@ -235,12 +235,12 @@ describe('User Story ADM-5.1.2 Integration Test - Auditoría de Receta y Food Co
       </MemoryRouter>
     );
 
+    const bellButton = await screen.findByRole('button', { name: /notificaciones/i });
+    fireEvent.click(bellButton);
+
     await waitFor(() => {
       expect(screen.getByText('Plato enviado a revisión')).toBeInTheDocument();
     });
-
-    const auditBtn = screen.getByTestId(`audit-dish-btn-${dishId}`);
-    expect(auditBtn).toBeInTheDocument();
-    expect(auditBtn).toHaveAttribute('href', `/admin/dishes/${dishId}/cost-audit`);
+    expect(screen.getByText('Chef envió Risotto de Hongos a revisión')).toBeInTheDocument();
   });
 });
