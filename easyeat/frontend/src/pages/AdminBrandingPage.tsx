@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { GlassCard } from '../components/admin/GlassCard';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/primitives/Button';
 import { useAuth } from '../hooks/useAuth';
 import {
   getAdminBranding,

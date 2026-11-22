@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { GlassCard } from '../admin/GlassCard';
-import { Button } from '../ui/Button';
+import { Button } from '../primitives/Button';
 import type { DayOfWeek, OperatingSchedule, UpdateScheduleRequest } from '../../types/operations';
 
 export interface WeeklyScheduleManagerProps {

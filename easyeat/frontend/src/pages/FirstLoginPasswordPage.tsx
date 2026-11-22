@@ -4,7 +4,7 @@ import { authApi } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { getRoleDefaultRoute } from '../router/postAuthRouting';
 import { AuthCardShell } from '../components/diner/AuthCardShell';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/primitives/Button';
 
 export const FirstLoginPasswordPage: React.FC = () => {
   const navigate = useNavigate();
