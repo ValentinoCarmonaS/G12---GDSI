@@ -17,6 +17,7 @@
 ---
 
 ## Phase 1: Setup (Shared Infrastructure)
+> **GitHub Issue**: [#480](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/480)
 
 **Purpose**: Verificar la línea base de la rama `feat/026-admin-glassmorphism-redesign` y preparar el directorio de pruebas trazables de Spec `026` sin modificar dependencias ni backend.
 
@@ -26,6 +27,7 @@
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
+> **GitHub Issue**: [#481](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/481)
 
 **Purpose**: Crear únicamente los bloques nuevos necesarios para Glassmorphism (`GlassCard`) y el estado ultraligero de platos pendientes sin polling (`AdminPendingDishesContext`), reutilizando `AccessibleModal`, `useAccessibleOverlay`, `AuthCardShell` (desde `src/components/diner/`) y los cinco primitivos base de `024`.
 
@@ -45,6 +47,7 @@
 ---
 
 ## Phase 3: User Story 1 — Navegación ejecutiva Glassmorphism y arquitectura visual del Administrador (Priority: P1) 🎯 MVP
+> **GitHub Issue**: [#482](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/482)
 
 **Goal**: Extender el contenedor de navegación exclusivamente para `ADMINISTRADOR` incorporando la barra lateral ejecutiva Glassmorphism fija en escritorio (ocultando el botón hamburguesa en `lg:`), las 6 secciones agrupadas (`Operación`, `Catálogo y equipo`, `Negocio`) y el indicador accesible `pendingCount` junto a `Auditoría` en PC y móvil, sin alterar `COMENSAL`, `ENCARGADO` ni `CHEF`.
 
@@ -65,6 +68,7 @@
 ---
 
 ## Phase 4: User Story 2 — Panel ejecutivo de Salud Financiera y Ranking de Platos en `/admin` (Priority: P1)
+> **GitHub Issue**: [#483](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/483)
 
 **Goal**: Convertir `/admin` en el Panel Ejecutivo consolidado (banda superior de KPIs + grilla asimétrica 2 columnas con `FinancialHealthChart` estilizado en `dataViz` / `"Ver tabla"` a la izquierda y `DishRankingTable` en tarjetas `GlassCard` a la derecha), eliminar el hub placeholder y el modo oscuro heredado, redirigir `/admin/analytics` → `/admin` y resolver todos los hallazgos P0/P1/P2 del `/impeccable critique` base (`14/40`).
 
@@ -85,6 +89,7 @@
 ---
 
 ## Phase 5: User Story 3 — Bandeja de Revisión de Platos y Auditoría Financiera de Costos (Priority: P1)
+> **GitHub Issue**: [#484](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/484)
 
 **Goal**: Rediseñar `/admin/dishes` como split-pane Glassmorphism en escritorio y flujo maestro → detalle con `Volver a la bandeja` en móvil, sincronizar `pendingCount` en memoria al aprobar/rechazar/cancelar platos sin requests extra, y migrar `/admin/dishes/:id/cost-audit` a tarjetas `GlassCard`.
 
@@ -105,6 +110,7 @@
 ---
 
 ## Phase 6: User Story 4 — Gestión de Personal e Inventario de Materias Primas en tarjetas Glassmorphism (Priority: P2)
+> **GitHub Issue**: [#485](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/485)
 
 **Goal**: Migrar `/admin/staff` y `/admin/inventory` desde tablas tradicionales hacia grillas responsivas de tarjetas `GlassCard` con objetivos táctiles `>= 44×44 px`, señalización redundante de stock crítico y sus 6 modales operativos reutilizando `AccessibleModal`.
 
@@ -124,6 +130,7 @@
 ---
 
 ## Phase 7: User Story 5 — Operación del Restaurante, Mi Local y Cambio Obligatorio de Contraseña (Priority: P2)
+> **GitHub Issue**: [#486](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/486)
 
 **Goal**: Completar el rediseño Glassmorphism en `/admin/operations` (horarios en tarjetas, cupos preservando `role="row"`, pagos con manejo de 409) y `/admin/mi-local` (2 columnas con aislamiento estricto de marca), y migrar `/first-login-password-change` a `AuthCardShell` polimórfico (`--ee-*`).
 
@@ -144,6 +151,7 @@
 ---
 
 ## Phase 8: Polish & Cross-Cutting Concerns
+> **GitHub Issue**: [#487](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/487)
 
 **Purpose**: Verificación integral de regresión (`001`–`026`), auditoría estática Zero AI-Slop y de exclusiones constitucionales, validación en navegador real (`360/768/1440 px`) y auditoría post-implementación `/impeccable critique` en modo **Operate**.
 
