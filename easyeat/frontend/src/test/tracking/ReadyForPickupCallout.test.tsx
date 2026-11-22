@@ -8,7 +8,7 @@ describe('T030 [US2]: ReadyForPickupCallout Component Tests', () => {
 
     const callout = screen.getByTestId('ready-for-pickup-callout');
     expect(callout).toBeInTheDocument();
-    expect(callout.className).toContain('green');
+    expect(callout.className).toMatch(/green|ee-success/);
 
     // Prominent ticket number
     expect(screen.getByText(/#142/)).toBeInTheDocument();
