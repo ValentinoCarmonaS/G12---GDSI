@@ -84,4 +84,23 @@ describe('Phase 1 Setup — Theme architecture shared infrastructure (Spec 024)'
       ).toBe(false);
     });
   });
+
+  describe('T003 — Clean entry HTML for --ee-* inheritance (FR-002, FR-005)', () => {
+    it('sets Spanish <title>EasyEat</title>, omits external font CDN links, and removes hardcoded bg-gray-50/text-gray-900 from <body>', () => {
+      const indexHtmlPath = path.join(FRONTEND_ROOT, 'index.html');
+      const html = fs.readFileSync(indexHtmlPath, 'utf-8');
+
+      expect(html).toMatch(/<html\s+lang="es"\s*>/i);
+      expect(html).toMatch(/<title>EasyEat<\/title>/);
+      expect(html).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com/i);
+
+      const bodyMatch = html.match(/<body([^>]*)>/i);
+      expect(bodyMatch, 'Expected <body> tag in index.html').not.toBeNull();
+      const bodyAttrs = bodyMatch?.[1] ?? '';
+      expect(bodyAttrs).not.toMatch(/\bbg-gray-50\b/);
+      expect(bodyAttrs).not.toMatch(/\btext-gray-900\b/);
+      expect(bodyAttrs).toMatch(/\bantialiased\b/);
+      expect(bodyAttrs).toMatch(/\bmin-h-screen\b/);
+    });
+  });
 });
