@@ -16,6 +16,7 @@ export interface RoleNavigationConfig {
   readonly ariaLabel: string;
   readonly items: readonly RoleNavItem[];
   readonly exposeDirectDesktopNav: boolean;
+  readonly useDesktopSidebar?: boolean;
   readonly showNotificationBell: boolean;
   readonly showTenantBadge: boolean;
   readonly allowProfileLink: boolean;
@@ -113,6 +114,7 @@ export const ROLE_NAVIGATION_CONFIG: Readonly<Record<EasyEatUserRole, RoleNaviga
     displayRoleLabel: 'Administrador',
     ariaLabel: 'Navegación de administración',
     exposeDirectDesktopNav: false,
+    useDesktopSidebar: true,
     showNotificationBell: true,
     showTenantBadge: true,
     allowProfileLink: false,
@@ -156,13 +158,6 @@ export const ROLE_NAVIGATION_CONFIG: Readonly<Record<EasyEatUserRole, RoleNaviga
         id: 'admin-mi-local',
         label: 'Mi local',
         to: '/admin/mi-local',
-        matchStrategy: 'prefix',
-        group: 'Negocio',
-      },
-      {
-        id: 'admin-metricas',
-        label: 'Métricas',
-        to: '/admin/analytics',
         matchStrategy: 'prefix',
         group: 'Negocio',
       },
