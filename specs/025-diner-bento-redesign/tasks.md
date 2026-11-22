@@ -42,7 +42,7 @@
 - [X] T005 [P] [TDD-GREEN] Implementar `BentoCard` (variantes `elevated`/`subtle`/`interactive`/`hero`, escala `4/8/12/16/24/32` px, radios `--ee-radius-md|lg`, sombra `--ee-shadow-elevated` sin tarjetas anidadas) en `easyeat/frontend/src/components/diner/BentoCard.tsx`
 - [X] T006 [P] [TDD-GREEN] Implementar `AuthCardShell` (tarjeta centrada responsiva 100 % gobernada por tokens `--ee-*` sin colores fijos de Bento para polimorfismo cross-role) en `easyeat/frontend/src/components/diner/AuthCardShell.tsx`
 - [X] T007 [P] [TDD-GREEN] Implementar hook `useAccessibleOverlay` (cierre por `Escape`, scroll lock con contador seguro, gestión de foco inicial y retorno al elemento activador) en `easyeat/frontend/src/components/diner/useAccessibleOverlay.ts`
-- [ ] T008 [P] [TDD-GREEN] Implementar `AccessibleModal` en `easyeat/frontend/src/components/diner/AccessibleModal.tsx` (depende de T007)
+- [X] T008 [P] [TDD-GREEN] Implementar `AccessibleModal` en `easyeat/frontend/src/components/diner/AccessibleModal.tsx` (depende de T007)
 - [ ] T009 [P] [TDD-GREEN] Implementar `AccessibleDrawer` (`side="left"|"right"`, objetivos táctiles `>= 44×44 px`, `aria-modal="true"`) en `easyeat/frontend/src/components/diner/AccessibleDrawer.tsx` (depende de T007)
 - [ ] T010 [TDD-GREEN] Exportar `BentoCard`, `AuthCardShell`, `useAccessibleOverlay`, `AccessibleModal` y `AccessibleDrawer` en `easyeat/frontend/src/components/diner/index.ts` (depende de T005, T006, T008, T009)
 - [ ] T011 [P] [TDD-GREEN] Actualizar `DEFAULT_NEUTRAL_BRANDING` a los pares Bento WCAG 2.2 AA (`#FAD4C0`/`#111827`, `#80A1C1`/`#111827`, `#9A4A24`/`#FFFFFF`) en `easyeat/frontend/src/hooks/useRestaurantBranding.ts` conforme a `contracts/brand-accent-slots.contract.ts`
