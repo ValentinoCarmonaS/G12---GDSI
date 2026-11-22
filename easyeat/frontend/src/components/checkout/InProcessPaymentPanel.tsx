@@ -1,4 +1,7 @@
 import React from 'react';
+import { Clock } from 'lucide-react';
+import { Button } from '../primitives/Button';
+import { StatusBadge } from '../primitives/StatusBadge';
 
 interface InProcessPaymentPanelProps {
   redirectUrl?: string | null;
@@ -32,59 +35,41 @@ export const InProcessPaymentPanel: React.FC<InProcessPaymentPanelProps> = ({
       role="region"
       aria-label="Panel de pago en curso"
       data-testid="in-process-payment-panel"
-      className="p-6 bg-amber-50 border border-amber-200 rounded-xl shadow-sm my-4 text-gray-900"
+      className="p-6 bg-ee-warning-bg border border-ee-warning-border rounded-ee-lg shadow-ee-elevated text-ee-warning-fg"
     >
       <div className="flex items-start gap-4">
-        <div className="p-3 bg-amber-100 text-amber-700 rounded-lg flex-shrink-0">
-          <svg
-            className="w-6 h-6 animate-pulse"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+        <div className="p-2.5 bg-ee-surface-elevated border border-ee-warning-border text-ee-warning-fg rounded-ee-sm shrink-0">
+          <Clock className="w-5 h-5" aria-hidden="true" />
         </div>
 
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-amber-950">Pago en curso</h3>
-          <p className="text-sm text-gray-700 mt-1">
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-ee-display text-lg font-bold">Pago en curso</h3>
+            <StatusBadge variant="warning">Pendiente</StatusBadge>
+          </div>
+          <p className="text-sm leading-relaxed">
             {hasActivePreference
               ? 'Tenés un pago pendiente de confirmación con Mercado Pago. Podés retomar el pago en la pasarela o cancelar el intento para re-habilitar el checkout.'
               : 'Tenés un pago pendiente de confirmación, pero no existe preferencia de pago activa para retomar este intento. Cancelá el intento para liberar tu reserva y habilitar nuevamente el checkout.'}
           </p>
 
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="pt-2 flex flex-wrap gap-3">
             {hasActivePreference && (
-              <button
-                type="button"
-                onClick={handleResume}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors text-sm shadow-sm"
-              >
+              <Button variant="primary" size="md" onClick={handleResume}>
                 Retomar pago
-              </button>
+              </Button>
             )}
 
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="md"
               onClick={onCancelAttempt}
               disabled={isCancelling}
-              className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 font-medium rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              loading={isCancelling}
+              loadingText="Cancelando..."
             >
-              {isCancelling ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
-                  Cancelando...
-                </>
-              ) : (
-                'Cancelar intento'
-              )}
-            </button>
+              Cancelar intento
+            </Button>
           </div>
         </div>
       </div>
