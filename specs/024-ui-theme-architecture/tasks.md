@@ -22,7 +22,7 @@
 **Purpose**: Instalar activos tipográficos autoalojados, limpiar estilos base de entrada y extender Tailwind CSS 3.4 con utilidades semánticas sin alterar tokens heredados de `001`–`023`.
 
 - [X] T001 Instalar paquetes de fuentes autoalojadas `@fontsource/dm-sans`, `@fontsource/archivo-black`, `@fontsource/archivo`, `@fontsource/darker-grotesque`, `@fontsource/plus-jakarta-sans` y `@fontsource/jetbrains-mono` en `easyeat/frontend/package.json`
-- [ ] T002 Importar estrictamente los 19 archivos CSS de pesos requeridos (`DM Sans` 400/500/600/700; `Archivo Black` 400; `Archivo` 400/500/600/700; `Darker Grotesque` 500/600/700/800; `Plus Jakarta Sans` 400/500/600/700; `JetBrains Mono` 400/500/600) en `easyeat/frontend/src/main.tsx`
+- [X] T002 Importar estrictamente los 20 archivos CSS de pesos requeridos (`DM Sans` 400/500/600/700; `Archivo Black` 400; `Archivo` 400/500/600/700; `Darker Grotesque` 500/600/700/800; `Plus Jakarta Sans` 400/500/600/700; `JetBrains Mono` 400/500/600) en `easyeat/frontend/src/main.tsx`
 - [ ] T003 [P] Actualizar `<title>` a español (`EasyEat`) y retirar clases fijas `bg-gray-50 text-gray-900` del `<body>` para permitir herencia limpia de `--ee-surface` y `--ee-text` en `easyeat/frontend/index.html`
 - [ ] T004 [P] Extender `easyeat/frontend/tailwind.config.js` con utilidades semánticas `ee-*` (colores, fuentes `ee-display`/`ee-sans`/`ee-mono`, radios `ee-sm`/`ee-md`/`ee-lg` y sombras) preservando intactos `colors.primary` y `colors.brand` heredados
 

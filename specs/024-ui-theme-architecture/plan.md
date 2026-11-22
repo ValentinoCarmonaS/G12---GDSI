@@ -159,7 +159,7 @@ easyeat/frontend/
 ### Módulo A — Remediación de contratos `.DESIGN.md` y fuentes autoalojadas (`FR-001`, `FR-002`, `FR-003`)
 
 1. Actualizar los cuatro archivos en `.specify/memory/designs/` con los tokens exactos y ratios verificados de `data-model.md` (incluyendo frontmatter ampliado con `on-primary`, `on-secondary`, tríadas semánticas, subconjunto estricto de pesos y sub-contrato `dataViz`), eliminando toda referencia a `Inter` y cerrando el `TODO(DESIGN_CONTRACTS_REMEDIATION)` en `.specify/memory/constitution.md`.
-2. Instalar los seis paquetes `@fontsource/*` en `easyeat/frontend/package.json` e importar únicamente los CSS de los pesos requeridos en `easyeat/frontend/src/main.tsx` (19 archivos de peso en total).
+2. Instalar los seis paquetes `@fontsource/*` en `easyeat/frontend/package.json` e importar únicamente los CSS de los pesos requeridos en `easyeat/frontend/src/main.tsx` (20 archivos de peso en total).
 3. Verificar que `easyeat/frontend/index.html` no incluya `<link>` a fuentes externas ni clases rígidas `bg-gray-50 text-gray-900` que impidan la herencia limpia de `--ee-surface` y `--ee-text`.
 
 ### Módulo B — Registro único de temas, aislamiento CSS y enrutamiento determinista (`FR-004`, `FR-005`, `FR-006`, `FR-019`)

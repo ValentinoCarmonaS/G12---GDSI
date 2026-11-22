@@ -65,4 +65,23 @@ describe('Phase 1 Setup — Theme architecture shared infrastructure (Spec 024)'
       }
     });
   });
+
+  describe('T002 — Strict 20 weight CSS imports in main.tsx (FR-002)', () => {
+    it('imports strictly the 20 required @fontsource weight CSS files and no other fontsource weights', () => {
+      const mainTsxPath = path.join(FRONTEND_ROOT, 'src', 'main.tsx');
+      const source = fs.readFileSync(mainTsxPath, 'utf-8');
+
+      const importedFontsource = Array.from(
+        source.matchAll(/import\s+['"](@fontsource[^'"]+)['"]\s*;/g),
+        (match) => match[1],
+      );
+
+      expect(importedFontsource).toHaveLength(20);
+      expect([...importedFontsource].sort()).toEqual([...REQUIRED_FONT_WEIGHT_IMPORTS].sort());
+      expect(
+        importedFontsource.some((entry) => entry.toLowerCase().includes('inter')),
+        'Inter font imports are prohibited',
+      ).toBe(false);
+    });
+  });
 });
