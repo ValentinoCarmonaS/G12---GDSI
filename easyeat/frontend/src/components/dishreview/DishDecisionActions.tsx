@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { dishReviewApi } from '@/api/dishReviewApi';
+import { AccessibleModal } from '@/components/diner';
+import { Button } from '@/components/primitives';
 import { MarginPriceCalculator } from './MarginPriceCalculator';
 import { PublicationConfirmModal } from './PublicationConfirmModal';
 import { RejectionDialog, type RejectionIngredientOption } from './RejectionDialog';
@@ -9,9 +11,6 @@ import type {
   DishProposedChanges,
   DishReviewDetail,
 } from '@/types/dishReview';
-
-// Import Dialogs or create a simple modal for cancellation
-// Assuming a structure similar to RejectionDialog might exist or can be created
 
 export interface DishDecisionActionsProps {
   detail: DishReviewDetail;
@@ -57,17 +56,19 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({
   const canSetPrice = detail.status === 'PENDING_PRICE' || detail.status === 'PUBLISHED';
   const canDecide = detail.status === 'PENDING_PRICE';
 
-  /** The proposal dialog opens on the dish's current culinary file, ready to be edited (FR-042). */
-  const initialProposal = useMemo<DishProposedChanges>(() => ({
-    title: detail.name,
-    description: detail.description,
-    allergenCodes: [],
-    dietaryLifestyleCodes: [],
-    ingredients: (detail.foodCostAudit?.items ?? []).map((item) => ({
-      ingredientId: item.ingredientId,
-      quantity: readAuditQuantity(item),
-    })),
-  }), [detail.name, detail.description, detail.foodCostAudit]);
+  const initialProposal = useMemo<DishProposedChanges>(
+    () => ({
+      title: detail.name,
+      description: detail.description,
+      allergenCodes: [],
+      dietaryLifestyleCodes: [],
+      ingredients: (detail.foodCostAudit?.items ?? []).map((item) => ({
+        ingredientId: item.ingredientId,
+        quantity: readAuditQuantity(item),
+      })),
+    }),
+    [detail.name, detail.description, detail.foodCostAudit]
+  );
 
   const knownIngredients = useMemo<RejectionIngredientOption[]>(
     () =>
@@ -191,10 +192,10 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({
   }
 
   return (
-    <div className="space-y-4 border-t border-gray-200 pt-4">
+    <div className="space-y-5 border-t border-ee-border-subtle pt-5">
       {canSetPrice && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-900">
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-ee-text">
             {detail.status === 'PUBLISHED' ? 'Repreciar' : 'Fijar precio de venta'}
           </h3>
           <MarginPriceCalculator
@@ -203,12 +204,12 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({
             onConfirm={handlePriceConfirm}
           />
           {isSavingPrice && (
-            <p className="text-xs text-gray-500" aria-live="polite">
+            <p className="text-xs text-ee-text-secondary" aria-live="polite">
               Guardando…
             </p>
           )}
           {priceError && (
-            <p data-testid="price-error" role="alert" className="text-sm text-red-700">
+            <p data-testid="price-error" role="alert" className="text-sm text-ee-danger-fg">
               {priceError}
             </p>
           )}
@@ -216,50 +217,65 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({
       )}
 
       {canDecide && (
-        <div className="flex flex-wrap items-start gap-4">
+        <div className="flex flex-wrap items-start gap-3">
           <div>
-            <button
+            <Button
               type="button"
-              className="rounded bg-emerald-700 px-3 py-1.5 text-sm text-white disabled:bg-gray-300"
+              variant="primary"
+              size="md"
               disabled={!detail.publicationGate.satisfied || isApproving}
               onClick={handleApproveClick}
             >
               Aprobar y Publicar
-            </button>
+            </Button>
             {approvalError && (
-              <p data-testid="approval-error" role="alert" className="mt-1 text-sm text-red-700">
+              <p
+                data-testid="approval-error"
+                role="alert"
+                className="mt-1.5 text-sm text-ee-danger-fg"
+              >
                 {approvalError}
               </p>
             )}
           </div>
 
           <div>
-            <button
+            <Button
               type="button"
-              className="rounded border border-red-700 px-3 py-1.5 text-sm text-red-700 disabled:border-gray-300 disabled:text-gray-400"
+              variant="secondary"
+              size="md"
               disabled={isRejecting}
               onClick={() => setShowRejectDialog(true)}
             >
               Rechazar / Devolver a cocina
-            </button>
+            </Button>
             {rejectionError && (
-              <p data-testid="rejection-error" role="alert" className="mt-1 text-sm text-red-700">
+              <p
+                data-testid="rejection-error"
+                role="alert"
+                className="mt-1.5 text-sm text-ee-danger-fg"
+              >
                 {rejectionError}
               </p>
             )}
           </div>
 
           <div>
-            <button
+            <Button
               type="button"
-              className="rounded border border-red-700 px-3 py-1.5 text-sm text-red-700 disabled:border-gray-300 disabled:text-gray-400"
+              variant="danger"
+              size="md"
               disabled={isCancelling}
               onClick={() => setShowCancelModal(true)}
             >
               Borrar
-            </button>
+            </Button>
             {cancellationError && (
-              <p data-testid="cancellation-error" role="alert" className="mt-1 text-sm text-red-700">
+              <p
+                data-testid="cancellation-error"
+                role="alert"
+                className="mt-1.5 text-sm text-ee-danger-fg"
+              >
                 {cancellationError}
               </p>
             )}
@@ -281,41 +297,39 @@ export const DishDecisionActions: React.FC<DishDecisionActionsProps> = ({
         onConfirm={handleRejectConfirm}
         onCancel={() => setShowRejectDialog(false)}
       />
-      {/* Simple confirmation modal for cancellation */}
-      {showCancelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cancel-dish-title"
-            aria-describedby="cancel-dish-description"
-            className="bg-white p-6 rounded shadow-lg max-w-sm w-full space-y-4"
-          >
-            <h3 id="cancel-dish-title" className="text-lg font-bold">¿Confirmar borrado?</h3>
-            <p id="cancel-dish-description" className="text-sm text-gray-600">
-              Esta acción cancelará el menú y no se podrá deshacer.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className="px-4 py-2 border rounded"
-                disabled={isCancelling}
-                onClick={() => setShowCancelModal(false)}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="px-4 py-2 bg-red-700 text-white rounded disabled:opacity-50"
-                disabled={isCancelling}
-                onClick={handleCancelConfirm}
-              >
-                {isCancelling ? 'Cancelando…' : 'Confirmar'}
-              </button>
-            </div>
+      <AccessibleModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title="¿Confirmar borrado?"
+        subtitle="Acción irreversible"
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="md"
+              disabled={isCancelling}
+              onClick={() => setShowCancelModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="md"
+              disabled={isCancelling}
+              onClick={handleCancelConfirm}
+            >
+              {isCancelling ? 'Cancelando…' : 'Confirmar'}
+            </Button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <p className="text-sm text-ee-text-secondary">
+          Esta acción cancelará el menú y no se podrá deshacer.
+        </p>
+      </AccessibleModal>
     </div>
   );
 };
