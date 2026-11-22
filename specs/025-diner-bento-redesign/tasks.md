@@ -115,7 +115,7 @@
 - [X] T030 [P] [US3] [TDD-GREEN] Rediseñar selectores y resumen de checkout (`FulfillmentModeSelector.tsx`, `OperatingDatePicker.tsx`, `TimeSlotGrid.tsx` con targets `>= 44×44 px`, `CheckoutSummary.tsx` con `BentoCard`, `font-ee-mono tabular-nums` y `data-brand-slot="cta"`) en `easyeat/frontend/src/components/checkout/`
 - [X] T031 [P] [US3] [TDD-GREEN] Rediseñar estados de contingencia y modales de checkout (`PendingOrderCountdown.tsx` con `font-ee-mono tabular-nums`, `PendingAccreditationBanner.tsx`, `InProcessPaymentPanel.tsx`, `PaymentAlertBanner.tsx`, `ConflictNotificationModal.tsx` y `ConcurrencyAlertModal.tsx` usando `AccessibleModal`, `FeedbackState`, `StatusBadge` y `Button`) en `easyeat/frontend/src/components/checkout/`
 - [X] T032 [US3] [TDD-GREEN] Reestructurar `easyeat/frontend/src/pages/CheckoutPage.tsx` con `BrandThemeProvider` (usando `establishmentId` resuelto) y grilla Bento de 2 columnas en escritorio / 1 columna en móvil (depende de T030, T031)
-- [ ] T033 [P] [US3] [TDD-GREEN] Rediseñar `easyeat/frontend/src/pages/PaymentReturnPage.tsx` en tarjeta `BentoCard` centrada usando `StatusBadge`, `FeedbackState`, `LoadingSkeleton`, `PendingAccreditationBanner` y `Button` (depende de T031)
+- [X] T033 [P] [US3] [TDD-GREEN] Rediseñar `easyeat/frontend/src/pages/PaymentReturnPage.tsx` en tarjeta `BentoCard` centrada usando `StatusBadge`, `FeedbackState`, `LoadingSkeleton`, `PendingAccreditationBanner` y `Button` (depende de T031)
 - [ ] T034 [US3] [TDD-GREEN] Ejecutar `npx vitest run tests/diner/checkoutAndReturnBento.test.tsx src/test/checkout/` confirmando verde total (depende de T032, T033)
 
 **Checkpoint**: US3 completa y verificable de forma independiente (lista para commit atómico).
