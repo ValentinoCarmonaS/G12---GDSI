@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import colors from 'tailwindcss/colors';
 import { describe, expect, it } from 'vitest';
+// @ts-expect-error tailwind.config.js is untyped JS module
+import tailwindConfig from '../../tailwind.config.js';
 
 const FRONTEND_ROOT = path.resolve(__dirname, '../..');
 
@@ -101,6 +104,75 @@ describe('Phase 1 Setup — Theme architecture shared infrastructure (Spec 024)'
       expect(bodyAttrs).not.toMatch(/\btext-gray-900\b/);
       expect(bodyAttrs).toMatch(/\bantialiased\b/);
       expect(bodyAttrs).toMatch(/\bmin-h-screen\b/);
+    });
+  });
+
+  describe('T004 — Tailwind semantic ee-* utilities preserving legacy tokens (FR-003, FR-006, FR-018)', () => {
+    it('extends tailwind.config.js with ee-* colors, fonts, radii, and shadows while preserving colors.primary and colors.brand intact', () => {
+      const extend = (
+        tailwindConfig as {
+          theme?: {
+            extend?: {
+              colors?: Record<string, unknown>;
+              fontFamily?: Record<string, unknown>;
+              borderRadius?: Record<string, unknown>;
+              boxShadow?: Record<string, unknown>;
+            };
+          };
+        }
+      ).theme?.extend;
+      expect(extend).toBeDefined();
+
+      // Legacy tokens from specs 001–023 MUST remain intact
+      expect(extend?.colors?.primary).toEqual(colors.emerald);
+      expect(extend?.colors?.brand).toEqual({
+        dark: '#0b0b0d',
+        accent: '#c9a96e',
+        text: '#f0ede8',
+      });
+
+      // Semantic ee-* color tokens
+      const eeColors = extend?.colors?.ee as Record<string, unknown> | undefined;
+      expect(eeColors).toBeDefined();
+      expect(eeColors?.surface).toBe('var(--ee-surface)');
+      expect(eeColors?.['surface-elevated']).toBe('var(--ee-surface-elevated)');
+      expect(eeColors?.['surface-subtle']).toBe('var(--ee-surface-subtle)');
+      expect(eeColors?.text).toBe('var(--ee-text)');
+      expect(eeColors?.['text-secondary']).toBe('var(--ee-text-secondary)');
+      expect(eeColors?.['border-subtle']).toBe('var(--ee-border-subtle)');
+      expect(eeColors?.['border-strong']).toBe('var(--ee-border-strong)');
+      expect(eeColors?.primary).toBe('var(--ee-primary)');
+      expect(eeColors?.['on-primary']).toBe('var(--ee-on-primary)');
+      expect(eeColors?.['primary-hover']).toBe('var(--ee-primary-hover)');
+      expect(eeColors?.['primary-border']).toBe('var(--ee-primary-border)');
+      expect(eeColors?.secondary).toBe('var(--ee-secondary)');
+      expect(eeColors?.['on-secondary']).toBe('var(--ee-on-secondary)');
+      expect(eeColors?.['secondary-hover']).toBe('var(--ee-secondary-hover)');
+      expect(eeColors?.['secondary-border']).toBe('var(--ee-secondary-border)');
+      expect(eeColors?.['danger-solid']).toBe('var(--ee-danger-solid)');
+      expect(eeColors?.['on-danger']).toBe('var(--ee-on-danger)');
+      expect(eeColors?.['danger-hover']).toBe('var(--ee-danger-hover)');
+      expect(eeColors?.['focus-ring']).toBe('var(--ee-focus-ring)');
+
+      for (const variant of ['neutral', 'info', 'success', 'warning', 'danger'] as const) {
+        expect(eeColors?.[variant]).toEqual({
+          bg: `var(--ee-${variant}-bg)`,
+          fg: `var(--ee-${variant}-fg)`,
+          border: `var(--ee-${variant}-border)`,
+        });
+      }
+
+      // Semantic ee-* typography, radii, and shadows
+      expect(extend?.fontFamily?.['ee-display']).toEqual(['var(--ee-font-display)']);
+      expect(extend?.fontFamily?.['ee-sans']).toEqual(['var(--ee-font-sans)']);
+      expect(extend?.fontFamily?.['ee-mono']).toEqual(['var(--ee-font-mono)']);
+      expect(extend?.borderRadius?.['ee-sm']).toBe('var(--ee-radius-sm)');
+      expect(extend?.borderRadius?.['ee-md']).toBe('var(--ee-radius-md)');
+      expect(extend?.borderRadius?.['ee-lg']).toBe('var(--ee-radius-lg)');
+      expect(extend?.boxShadow?.['ee-elevated']).toBe('var(--ee-shadow-elevated)');
+
+      // Strict layer isolation: ee-* tokens MUST NOT reference --brand-* (Spec 016)
+      expect(JSON.stringify(eeColors)).not.toContain('--brand-');
     });
   });
 });
