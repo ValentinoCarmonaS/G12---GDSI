@@ -52,6 +52,7 @@ export const CounterWorkspacePage: React.FC = () => {
     <WorkspaceLayout
       title="Mostrador y Despacho"
       subtitle="Punto de atención para gestión y entrega de pedidos en salón"
+      legacySurfaceMode="legacy-light"
     >
       {/* Header status bar with non-blocking connection banner (RF-018) */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
