@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { TenantProvider } from './context/TenantContext';
 import { CartProvider } from './context/CartContext';
+import { ThemeScopeProvider } from './theme/ThemeScopeProvider';
 import { AppRoutes } from './router/AppRoutes';
 
 export const App: React.FC = () => {
@@ -11,7 +12,9 @@ export const App: React.FC = () => {
       <AuthProvider>
         <TenantProvider>
           <CartProvider>
-            <AppRoutes />
+            <ThemeScopeProvider>
+              <AppRoutes />
+            </ThemeScopeProvider>
           </CartProvider>
         </TenantProvider>
       </AuthProvider>
