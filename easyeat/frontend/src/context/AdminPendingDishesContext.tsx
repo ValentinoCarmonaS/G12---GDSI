@@ -63,3 +63,7 @@ export function useAdminPendingDishes(): AdminPendingDishesContextValue {
   }
   return ctx;
 }
+
+export function useOptionalAdminPendingDishes(): AdminPendingDishesContextValue | undefined {
+  return useContext(AdminPendingDishesContext);
+}

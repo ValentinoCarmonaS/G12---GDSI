@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { dishApi } from '@/api/dishApi';
 import { CostAuditPanel } from '@/components/dish/CostAuditPanel';
 import { WorkspaceLayout } from '@/components/common/WorkspaceLayout';
+import { FeedbackState, LoadingSkeleton } from '@/components/primitives';
 import type { FoodCostAuditResponse } from '@/types/dish';
 
 export const DishCostAuditPage: React.FC = () => {
@@ -11,7 +13,7 @@ export const DishCostAuditPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchAudit = async () => {
+  const fetchAudit = useCallback(async () => {
     if (!id) return;
     setIsLoading(true);
     setErrorMessage(null);
@@ -20,7 +22,9 @@ export const DishCostAuditPage: React.FC = () => {
       setAuditData(data);
     } catch (err: any) {
       if (err.response?.status === 409) {
-        setErrorMessage('El plato debe estar en estado PENDING_PRICE (enviado a revisión) para auditar sus costos.');
+        setErrorMessage(
+          'El plato debe estar en estado PENDING_PRICE (enviado a revisión) para auditar sus costos.'
+        );
       } else if (err.response?.status === 400) {
         setErrorMessage('El plato no tiene ingredientes asignados en su receta técnica.');
       } else if (err.response?.status === 403) {
@@ -31,11 +35,11 @@ export const DishCostAuditPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    fetchAudit();
-  }, [id]);
+    void fetchAudit();
+  }, [fetchAudit]);
 
   return (
     <WorkspaceLayout
@@ -45,21 +49,28 @@ export const DishCostAuditPage: React.FC = () => {
       <div className="mb-4">
         <Link
           to="/admin"
-          className="text-sm font-medium text-purple-600 hover:text-purple-700 transition"
+          className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-ee-primary hover:text-ee-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring rounded-ee-sm transition-colors duration-150 motion-reduce:transition-none"
         >
-          ← Volver al Panel de Administración
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          <span>Volver al Panel de Administración</span>
         </Link>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-16 text-gray-500">
-          Calculando costos y consultando catálogo de materias primas...
+        <div aria-busy="true" className="space-y-4">
+          <span className="sr-only">
+            Calculando costos y consultando catálogo de materias primas...
+          </span>
+          <LoadingSkeleton variant="card" count={3} />
         </div>
       ) : errorMessage ? (
-        <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-          <p className="font-semibold mb-1">No se pudo realizar la auditoría</p>
-          <p>{errorMessage}</p>
-        </div>
+        <FeedbackState
+          variant="danger"
+          title="No se pudo realizar la auditoría"
+          description={errorMessage}
+          actionLabel="Reintentar"
+          onAction={fetchAudit}
+        />
       ) : auditData ? (
         <CostAuditPanel auditData={auditData} onRefresh={fetchAudit} />
       ) : null}
@@ -68,4 +79,3 @@ export const DishCostAuditPage: React.FC = () => {
 };
 
 export default DishCostAuditPage;
-

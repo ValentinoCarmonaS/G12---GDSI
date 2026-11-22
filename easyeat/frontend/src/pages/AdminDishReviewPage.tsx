@@ -1,16 +1,19 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { WorkspaceLayout } from '@/components/common/WorkspaceLayout';
+import { GlassCard } from '@/components/admin/GlassCard';
+import { Button, EmptyState, FeedbackState, LoadingSkeleton } from '@/components/primitives';
 import { ReviewInboxTabs } from '@/components/dishreview/ReviewInboxTabs';
 import { ReviewInboxList } from '@/components/dishreview/ReviewInboxList';
 import { InboxPagination } from '@/components/dishreview/InboxPagination';
 import { DishAuditPanel } from '@/components/dishreview/DishAuditPanel';
 import { DishDecisionActions } from '@/components/dishreview/DishDecisionActions';
 import { useDishReviewInbox } from '@/hooks/useDishReviewInbox';
+import { useOptionalAdminPendingDishes } from '@/context/AdminPendingDishesContext';
 import { dishReviewApi } from '@/api/dishReviewApi';
 import type { DishReviewDetail, InboxTab } from '@/types/dishReview';
 
-/** FR-032: a detail failure is described by what the Administrator can do about it. */
 function describeDetailError(err: unknown): string {
   const status = (err as { response?: { status?: number } })?.response?.status;
   if (status === 404) {
@@ -22,26 +25,25 @@ function describeDetailError(err: unknown): string {
   return 'No se pudo cargar la ficha del plato. Probá abrirla de nuevo.';
 }
 
-/**
- * `/admin/dishes` — the review inbox beside the culinary file (FR-002, FR-006).
- *
- * The inbox stays on screen while a dish is open, so the Administrator keeps sight of the queue
- * they are working through. Two rules keep the two halves honest about each other: switching tabs
- * closes the open dish, because it belonged to the previous view; and a failed detail load clears
- * the panel rather than leaving the previous dish visible beside an error, which would otherwise
- * have the Administrator reading one file while the application talks about another.
- */
 export const AdminDishReviewPage: React.FC = () => {
   const inbox = useDishReviewInbox();
+  const pendingCtx = useOptionalAdminPendingDishes();
 
+  const [selectedDishId, setSelectedDishId] = useState<string | null>(null);
   const [detail, setDetail] = useState<DishReviewDetail | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
+  // Keep global navigation pendingCount synchronized in memory with inbox data (no extra requests).
+  useEffect(() => {
+    if (pendingCtx && !inbox.isLoading && !inbox.error) {
+      pendingCtx.setPendingCount(inbox.pendingCount);
+    }
+  }, [pendingCtx, inbox.isLoading, inbox.error, inbox.pendingCount]);
+
   const openDish = useCallback(async (dishId: string) => {
+    setSelectedDishId(dishId);
     setIsDetailLoading(true);
-    // Cleared before the request, not after it resolves: the panel must never show one dish
-    // while the page is loading another.
     setDetail(null);
     setDetailError(null);
     try {
@@ -53,11 +55,18 @@ export const AdminDishReviewPage: React.FC = () => {
     }
   }, []);
 
+  const closeDetailOnMobile = useCallback(() => {
+    setSelectedDishId(null);
+    setDetail(null);
+    setDetailError(null);
+    setIsDetailLoading(false);
+  }, []);
+
   const changeTab = useCallback(
     (tab: InboxTab) => {
       if (inbox.tab !== tab) {
         inbox.setTab(tab);
-        // The open dish belonged to the view being left behind.
+        setSelectedDishId(null);
         setDetail(null);
         setDetailError(null);
       }
@@ -65,13 +74,6 @@ export const AdminDishReviewPage: React.FC = () => {
     [inbox]
   );
 
-  /**
-   * Re-fetches the open dish's detail and the inbox after a decision changed either one:
-   * a price save can flip `publicationGate`, an approval publishes the dish, a rejection returns
-   * it to `DRAFT` and moves it out of the Pending tab. Re-running `openDish` keeps this on the
-   * same path as every other detail load, including the loading state and FR-032's error
-   * handling if the refetch itself fails.
-   */
   const handleDecided = useCallback(() => {
     if (detail) {
       void openDish(detail.dishId);
@@ -80,11 +82,15 @@ export const AdminDishReviewPage: React.FC = () => {
   }, [detail, openDish, inbox]);
 
   const handleCancelled = useCallback(() => {
+    pendingCtx?.decrementPendingCount();
+    setSelectedDishId(null);
     setDetail(null);
     setDetailError(null);
     setIsDetailLoading(false);
     inbox.refresh();
-  }, [inbox]);
+  }, [inbox, pendingCtx]);
+
+  const isDetailActive = Boolean(selectedDishId || detail || isDetailLoading || detailError);
 
   return (
     <WorkspaceLayout
@@ -94,14 +100,25 @@ export const AdminDishReviewPage: React.FC = () => {
       <div className="mb-4">
         <Link
           to="/admin"
-          className="text-sm font-medium text-purple-600 hover:text-purple-700 transition"
+          className="inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-ee-primary hover:text-ee-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring rounded-ee-sm transition-colors duration-150 motion-reduce:transition-none"
         >
-          ← Volver al Panel de Administración
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          <span>Volver al Panel de Administración</span>
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div
+        data-testid="dish-review-split-pane"
+        className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-6 items-start"
+      >
+        <GlassCard
+          as="section"
+          variant="elevated"
+          padding="none"
+          radius="lg"
+          aria-label="Bandeja de platos"
+          className={`overflow-hidden ${isDetailActive ? 'hidden lg:block' : 'block'}`}
+        >
           <ReviewInboxTabs
             activeTab={inbox.tab}
             pendingCount={inbox.pendingCount}
@@ -112,6 +129,7 @@ export const AdminDishReviewPage: React.FC = () => {
             tab={inbox.tab}
             isLoading={inbox.isLoading}
             error={inbox.error}
+            selectedDishId={selectedDishId}
             onSelect={openDish}
             onRetry={inbox.refresh}
           />
@@ -121,25 +139,45 @@ export const AdminDishReviewPage: React.FC = () => {
             hasNext={inbox.hasNext}
             onPageChange={inbox.setPage}
           />
-        </div>
+        </GlassCard>
 
-        <div className="lg:col-span-3 bg-white rounded-lg border border-gray-200 p-6">
+        <GlassCard
+          as="section"
+          variant="elevated"
+          padding="lg"
+          radius="lg"
+          aria-label="Detalle del plato seleccionado"
+          className={isDetailActive ? 'block' : 'hidden lg:block'}
+        >
+          {isDetailActive && (
+            <div className="mb-4 lg:hidden">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={closeDetailOnMobile}
+                className="min-h-[44px] min-w-[44px] gap-1.5 border border-ee-border-subtle"
+              >
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                <span>Volver a la bandeja</span>
+              </Button>
+            </div>
+          )}
+
           {isDetailLoading && (
-            <div data-testid="detail-loading" aria-busy="true" className="space-y-3 animate-pulse">
+            <div data-testid="detail-loading" aria-busy="true" className="space-y-3">
               <span className="sr-only">Cargando la ficha del plato…</span>
-              <div className="h-6 w-1/2 bg-gray-200 rounded" />
-              <div className="h-4 w-1/3 bg-gray-100 rounded" />
-              <div className="h-32 bg-gray-100 rounded" />
+              <LoadingSkeleton variant="card" count={3} />
             </div>
           )}
 
           {!isDetailLoading && detailError && (
-            <div
-              data-testid="detail-error"
-              role="alert"
-              className="px-4 py-8 text-center border border-red-200 bg-red-50 rounded"
-            >
-              <p className="text-sm text-red-800">{detailError}</p>
+            <div data-testid="detail-error">
+              <FeedbackState
+                variant="danger"
+                title="No se pudo cargar la ficha"
+                description={detailError}
+              />
             </div>
           )}
 
@@ -155,15 +193,14 @@ export const AdminDishReviewPage: React.FC = () => {
           )}
 
           {!isDetailLoading && !detailError && !detail && (
-            <div data-testid="detail-placeholder" className="px-4 py-16 text-center">
-              <p className="font-medium text-gray-900">Elegí un plato de la bandeja</p>
-              <p className="mt-1 text-sm text-gray-500 max-w-sm mx-auto">
-                Acá vas a ver su ficha técnica, el desglose del Food Cost y las condiciones que le
-                faltan para publicarse.
-              </p>
+            <div data-testid="detail-placeholder" className="py-10">
+              <EmptyState
+                title="Elegí un plato de la bandeja"
+                description="Acá vas a ver su ficha técnica, el desglose del Food Cost y las condiciones que le faltan para publicarse."
+              />
             </div>
           )}
-        </div>
+        </GlassCard>
       </div>
     </WorkspaceLayout>
   );
