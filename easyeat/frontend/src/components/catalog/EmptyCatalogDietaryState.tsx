@@ -1,7 +1,7 @@
 import React from 'react';
 import { SearchX } from 'lucide-react';
 import { BentoCard } from '@/components/diner/BentoCard';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/primitives/Button';
 
 export interface EmptyCatalogDietaryStateProps {
   onViewFullMenu: () => void;

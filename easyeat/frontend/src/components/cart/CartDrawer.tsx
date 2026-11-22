@@ -4,8 +4,8 @@ import { useCart } from '../../hooks/useCart';
 import { CartItemWithBadge } from './CartItemWithBadge';
 import { formatCurrency } from '../../utils/currencyUtils';
 import { AccessibleDrawer } from '@/components/diner/AccessibleDrawer';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { Button } from '@/components/ui/Button';
+import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { Button } from '@/components/primitives/Button';
 
 export interface CartDrawerProps {
   isOpen: boolean;
@@ -43,10 +43,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       title="Tu Carrito"
       ariaLabel="Carrito de compras"
       headerBadge={
-        <StatusBadge
-          tone="neutral"
-          label={`${totalCount} ${totalCount === 1 ? 'ítem' : 'ítems'}`}
-        />
+        <StatusBadge variant="neutral">
+          {totalCount} {totalCount === 1 ? 'ítem' : 'ítems'}
+        </StatusBadge>
       }
       testId="cart-drawer"
       backdropTestId="cart-drawer-backdrop"

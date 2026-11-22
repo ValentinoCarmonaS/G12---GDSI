@@ -2,8 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Store, AlertOctagon, ArrowLeft } from 'lucide-react';
 import { BentoCard } from '@/components/diner/BentoCard';
-import { Button } from '@/components/ui/Button';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Button } from '@/components/primitives/Button';
+import { StatusBadge } from '@/components/primitives/StatusBadge';
 
 export interface EstablishmentBlockingNoticeProps {
   establishmentName?: string;
@@ -57,7 +57,7 @@ export const EstablishmentBlockingNotice: React.FC<EstablishmentBlockingNoticePr
 
         {status && (
           <div className="mb-6 flex justify-center">
-            <StatusBadge tone="danger" label={`Estado: ${status}`} />
+            <StatusBadge variant="danger">Estado: {status}</StatusBadge>
           </div>
         )}
 

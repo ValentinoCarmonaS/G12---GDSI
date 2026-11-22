@@ -33,9 +33,9 @@ import { BrandThemeProvider, useBrandTheme } from '../components/common/BrandThe
 import { resolveApiMediaUrl } from '../utils/mediaUtils';
 import { BentoCard } from '../components/diner/BentoCard';
 import { AccessibleDrawer } from '../components/diner/AccessibleDrawer';
-import { LoadingSkeleton } from '../components/ui/LoadingSkeleton';
-import { FeedbackState } from '../components/ui/FeedbackState';
-import { Button } from '../components/ui/Button';
+import { LoadingSkeleton } from '../components/primitives/LoadingSkeleton';
+import { FeedbackState } from '../components/primitives/FeedbackState';
+import { Button } from '../components/primitives/Button';
 
 const CatalogContent: React.FC = () => {
   const { branding } = useBrandTheme();
@@ -351,7 +351,7 @@ const CatalogContent: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout>
+    <WorkspaceLayout title={pageTitle}>
       {/* Live region for screen readers when adding items to cart */}
       <div className="sr-only" aria-live="polite" data-testid="catalog-cart-announcement">
         {cartAnnouncement}
@@ -494,49 +494,49 @@ const CatalogContent: React.FC = () => {
 
         {/* Error State with Retry Button */}
         {!isLoading && !catalogHook.isLoading && (error || catalogHook.error) && !catalogData && (
-          <div data-testid="catalog-error">
+          <div data-testid="catalog-error" className="space-y-3">
             <FeedbackState
-              tone="danger"
+              variant="danger"
               title="No pudimos cargar el catálogo"
               message={error || catalogHook.error || 'Error al cargar el catálogo.'}
-              action={
-                <Button
-                  type="button"
-                  variant="danger"
-                  onClick={() => {
-                    loadCatalog();
-                    catalogHook.refetch();
-                  }}
-                  data-testid="catalog-retry-button"
-                  className="min-h-[44px]"
-                >
-                  Reintentar
-                </Button>
-              }
             />
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => {
+                  loadCatalog();
+                  catalogHook.refetch();
+                }}
+                data-testid="catalog-retry-button"
+                className="min-h-[44px]"
+              >
+                Reintentar
+              </Button>
+            </div>
           </div>
         )}
         {!isLoading && error && catalogData && (
-          <div data-testid="catalog-error-state">
+          <div data-testid="catalog-error-state" className="space-y-3">
             <FeedbackState
-              tone="danger"
+              variant="danger"
               title="No pudimos actualizar el catálogo"
               message={error}
-              action={
-                <Button
-                  type="button"
-                  variant="danger"
-                  onClick={() => {
-                    loadCatalog();
-                    catalogHook.refetch();
-                  }}
-                  data-testid="catalog-retry-button"
-                  className="min-h-[44px]"
-                >
-                  Reintentar
-                </Button>
-              }
             />
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => {
+                  loadCatalog();
+                  catalogHook.refetch();
+                }}
+                data-testid="catalog-retry-button"
+                className="min-h-[44px]"
+              >
+                Reintentar
+              </Button>
+            </div>
           </div>
         )}
 

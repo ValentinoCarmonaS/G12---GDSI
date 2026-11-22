@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock } from 'lucide-react';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { StatusBadge } from '@/components/primitives/StatusBadge';
 
 export interface OperatingHoursBannerProps {
   isOpen?: boolean;
@@ -38,7 +38,7 @@ export const OperatingHoursBanner: React.FC<OperatingHoursBannerProps> = ({
         </div>
       </div>
       <div className="self-end sm:self-center shrink-0">
-        <StatusBadge tone="warning" label="Modo Lectura" />
+        <StatusBadge variant="warning">Modo Lectura</StatusBadge>
       </div>
     </div>
   );

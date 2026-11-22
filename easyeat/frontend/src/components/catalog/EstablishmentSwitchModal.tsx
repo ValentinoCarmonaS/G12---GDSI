@@ -2,7 +2,7 @@ import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { EstablishmentSummary } from '@/types/dinerCatalog';
 import { AccessibleModal } from '@/components/diner/AccessibleModal';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/primitives/Button';
 
 export interface EstablishmentSwitchModalProps {
   isOpen: boolean;

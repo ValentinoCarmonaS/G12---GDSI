@@ -3,7 +3,7 @@ import { Clock, PauseCircle, AlertTriangle, ShoppingCart, Minus, Plus } from 'lu
 import type { DishCatalogItem } from '@/types/dinerCatalog';
 import { AllergenNeutralPill } from './AllergenNeutralPill';
 import { AccessibleModal } from '@/components/diner/AccessibleModal';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/primitives/Button';
 import { CartContext } from '@/context/CartContext';
 import { formatCurrency, calculateLineTotal } from '@/utils/currencyUtils';
 import { resolveApiMediaUrl } from '@/utils/mediaUtils';
@@ -129,7 +129,8 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
       title={dish.name}
       subtitle={dish.category}
       size="md"
-      testId="dish-detail-modal"
+      testId="dish-detail-dialog"
+      backdropTestId="dish-detail-modal"
       closeButtonTestId="modal-close-btn"
       closeButtonLabel="Cerrar modal"
       footer={
@@ -159,7 +160,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
         </div>
       }
     >
-      <div data-testid="dish-detail-scrollable-content" className="space-y-4">
+      <div data-testid="dish-detail-scrollable-content" className="space-y-4 overflow-y-auto max-h-[65vh]">
         {/* Modal Header Image - Completely omitted if no photoUrl or error */}
         {dish.photoUrl && !imageError && (
           <div

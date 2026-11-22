@@ -66,14 +66,16 @@ vi.mock('../../src/hooks/useRealtimeAvailability', () => ({
 const sampleDish: DishCatalogItem = {
   id: 'dish-1',
   name: 'Milanesa Napolitana',
+  category: 'Principales',
   description: 'Con papas fritas caseras',
   price: 12500,
-  imageUrl: null,
+  photoUrl: null,
   isAvailable: true,
   isCompliant: true,
+  conflictingRestrictions: [],
   allergens: ['Gluten', 'Lácteos'],
   lifestyles: ['Sin azúcar'],
-  ingredients: [{ name: 'Carne vacuna', isAllergen: false }],
+  recipeIngredients: ['Carne vacuna'],
   availableStock: 5,
 };
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { AllergenWarningBadge } from '../catalog/AllergenWarningBadge';
 import { AccessibleModal } from '@/components/diner/AccessibleModal';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/primitives/Button';
 
 export interface AddToCartRiskModalProps {
   isOpen: boolean;
