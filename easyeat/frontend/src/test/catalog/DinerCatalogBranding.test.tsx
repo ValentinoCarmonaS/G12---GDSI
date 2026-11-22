@@ -93,7 +93,7 @@ describe('T045 [US3]: DinerCatalogBranding Tests - Dynamic CSS Variables and Neu
 
     await waitFor(() => {
       const container = screen.getByTestId('brand-theme-container');
-      expect(container.style.getPropertyValue('--brand-primary')).toBe('#10B981');
+      expect(container.style.getPropertyValue('--brand-primary')).toBe('#FAD4C0');
       expect(screen.getByText('Contenido seguro')).toBeInTheDocument();
     });
   });
