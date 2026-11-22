@@ -228,4 +228,23 @@ describe('Phase 2 Foundational — Theme types and multi-theme CSS (Spec 024)', 
       expect(css).toMatch(/\[data-legacy-surface="dark"\]\s*\{[\s\S]*color:\s*#F5F5F5/i);
     });
   });
+
+  describe('T007 — Global entry CSS binding in src/index.css (FR-002, FR-003, FR-005)', () => {
+    it('imports ./styles/themes.css, preserves Tailwind directives, and binds html, body to --ee-surface, --ee-text, and --ee-font-sans', () => {
+      const indexCssPath = path.join(FRONTEND_ROOT, 'src', 'index.css');
+      const css = fs.readFileSync(indexCssPath, 'utf-8');
+
+      expect(css).toMatch(/@import\s+['"]\.\/styles\/themes\.css['"]\s*;/);
+      expect(css).toContain('@tailwind base;');
+      expect(css).toContain('@tailwind components;');
+      expect(css).toContain('@tailwind utilities;');
+
+      const htmlBodyBlock = extractSelectorBlock(css, /html\s*,\s*body\s*\{([\s\S]*?)\}/);
+      expect(htmlBodyBlock).toMatch(/background-color:\s*var\(--ee-surface\)\s*;/);
+      expect(htmlBodyBlock).toMatch(/color:\s*var\(--ee-text\)\s*;/);
+      expect(htmlBodyBlock).toMatch(/font-family:\s*var\(--ee-font-sans\)\s*;/);
+
+      expect(css).not.toMatch(/\bInter\b/);
+    });
+  });
 });
