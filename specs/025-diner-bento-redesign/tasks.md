@@ -23,7 +23,7 @@
 
 - [X] T001 Verificar estado limpio de compilación y suite base (`npx tsc --noEmit` y `npx vitest run`) en `easyeat/frontend/` antes de iniciar cambios de Spec `025`
 - [X] T002 [P] Crear estructura base y barrel export vacío en `easyeat/frontend/src/components/diner/index.ts` conforme a `specs/025-diner-bento-redesign/contracts/bento-ui-blocks.contract.ts`
-- [ ] T003 [P] Crear directorio de pruebas trazables `easyeat/frontend/tests/diner/` para las suites TDD de Spec `025`
+- [X] T003 [P] Crear directorio de pruebas trazables `easyeat/frontend/tests/diner/` para las suites TDD de Spec `025`
 
 ---
 
