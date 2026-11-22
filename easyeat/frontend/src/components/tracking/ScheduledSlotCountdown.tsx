@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import { BentoCard } from '../diner';
-import { StatusBadge } from '../ui';
+import { StatusBadge } from '../primitives';
 
 export interface ScheduledSlotCountdownProps {
   isCountdownActive: boolean;
