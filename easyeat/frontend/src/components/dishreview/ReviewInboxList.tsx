@@ -1,5 +1,6 @@
 import React from 'react';
 import { ReviewInboxRow } from './ReviewInboxRow';
+import { EmptyState, FeedbackState, LoadingSkeleton } from '@/components/primitives';
 import type { DishReviewInboxItem, InboxTab } from '@/types/dishReview';
 
 export interface ReviewInboxListError {
@@ -13,15 +14,11 @@ export interface ReviewInboxListProps {
   tab: InboxTab;
   isLoading: boolean;
   error: ReviewInboxListError | null;
+  selectedDishId?: string | null;
   onSelect: (dishId: string) => void;
   onRetry: () => void;
 }
 
-/**
- * Per-view empty wording (FR-005, FR-028). The three views answer different questions, so an
- * empty one means something different each time and a shared "no hay nada" would be vaguer than
- * the truth.
- */
 const EMPTY_COPY: Record<InboxTab, { title: string; body: string }> = {
   PENDING: {
     title: 'No hay platos esperando decisión',
@@ -33,54 +30,39 @@ const EMPTY_COPY: Record<InboxTab, { title: string; body: string }> = {
   },
 };
 
-/**
- * The FIFO list, with its three mutually exclusive states.
- *
- * The order of the branches is the point. Loading wins over empty, because a skeleton and an
- * empty state make opposite claims about whether anything awaits review. An error wins over the
- * rows, because rows left on screen beside an error still look like the server's answer when they
- * are not. Items are rendered in the order received and never re-sorted here: FR-003's FIFO is
- * established by the query, and a second ordering in the view could only disagree with it.
- */
 export const ReviewInboxList: React.FC<ReviewInboxListProps> = ({
   items,
   tab,
   isLoading,
   error,
+  selectedDishId = null,
   onSelect,
   onRetry,
 }) => {
   if (isLoading) {
     return (
-      <div data-testid="inbox-loading-skeleton" aria-busy="true" aria-live="polite" className="divide-y divide-gray-100">
+      <div
+        data-testid="inbox-loading-skeleton"
+        aria-busy="true"
+        aria-live="polite"
+        className="p-3"
+      >
         <span className="sr-only">Cargando la bandeja de revisión…</span>
-        {[0, 1, 2, 3].map((row) => (
-          <div key={row} className="px-4 py-3 animate-pulse">
-            <div className="h-4 w-1/3 bg-gray-200 rounded" />
-            <div className="mt-2 h-3 w-1/5 bg-gray-100 rounded" />
-          </div>
-        ))}
+        <LoadingSkeleton variant="card" count={3} />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div
-        data-testid="inbox-error-state"
-        role="alert"
-        className="px-4 py-8 text-center border border-red-200 bg-red-50 rounded"
-      >
-        <p className="text-sm text-red-800">{error.message}</p>
-        {error.retryable && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className="mt-3 px-3 py-1.5 text-sm rounded border border-red-300 text-red-800 hover:bg-red-100"
-          >
-            Reintentar
-          </button>
-        )}
+      <div data-testid="inbox-error-state" className="p-3">
+        <FeedbackState
+          variant="danger"
+          title="No se pudo cargar la bandeja"
+          description={error.message}
+          actionLabel={error.retryable ? 'Reintentar' : undefined}
+          onAction={error.retryable ? onRetry : undefined}
+        />
       </div>
     );
   }
@@ -88,18 +70,21 @@ export const ReviewInboxList: React.FC<ReviewInboxListProps> = ({
   if (items.length === 0) {
     const copy = EMPTY_COPY[tab];
     return (
-      <div data-testid="inbox-empty-state" className="px-4 py-12 text-center">
-        <p className="font-medium text-gray-900">{copy.title}</p>
-        <p className="mt-1 text-sm text-gray-500 max-w-md mx-auto">{copy.body}</p>
+      <div data-testid="inbox-empty-state" className="p-4">
+        <EmptyState title={copy.title} description={copy.body} />
       </div>
     );
   }
 
   return (
-    <ul className="divide-y divide-gray-100">
+    <ul className="space-y-2.5 p-3" aria-label="Listado de platos en revisión">
       {items.map((item) => (
         <li key={item.dishId}>
-          <ReviewInboxRow item={item} onSelect={onSelect} />
+          <ReviewInboxRow
+            item={item}
+            isSelected={selectedDishId === item.dishId}
+            onSelect={onSelect}
+          />
         </li>
       ))}
     </ul>
