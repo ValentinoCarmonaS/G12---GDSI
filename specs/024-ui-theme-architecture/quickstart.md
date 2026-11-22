@@ -159,3 +159,17 @@ npm run build
    - Todas las fuentes se sirven desde el origen propio `/assets/*.woff2` (`0` solicitudes a CDN externos).
    - Cada rol descarga únicamente las familias de su tema activo.
 3. Ejecutar la auditoría visual de diseño y accesibilidad mediante Impeccable (`/critique`) contra los cuatro `.DESIGN.md` remediados, confirmando ausencia de defectos críticos de contraste, jerarquía y patrones Zero AI-Slop.
+
+---
+
+## 9. Registro de verificación de cierre (Phase 7 — 22/11/2026)
+
+| Escenario | Criterios | Resultado | Evidencia |
+|---|---|---|---|
+| Escenario 1 | `SC-001`, `SC-009` | PASA | `themeContractsContrast.test.ts` en verde (148 pares WCAG 2.2 AA, `DataVizThemeTokens`, `0` usos de `Inter`). |
+| Escenario 2 | `SC-002` | PASA | `routeThemeScope.test.tsx` en verde (100% rutas `AppRoutes.tsx`, `/` autenticado, deep-links `/login`, transiciones sin residuos). |
+| Escenario 3 | `SC-006` | PASA | `brandLayerIsolation.test.tsx` en verde (aislamiento estricto `--ee-*` vs `--brand-*`). |
+| Escenario 4 | `SC-003`, `SC-004` | PASA | `WorkspaceLayout.test.tsx`, `RoleLayoutShell.test.tsx`, `RoleHamburgerMenu.test.tsx`, `AdminNotificationBell.test.tsx` y `LogoutFlow.test.tsx` en verde (34/34 tests). |
+| Escenario 5 | `SC-004`, `SC-005` | PASA | `tests/components/primitives/` y `PrimitivesMatrix.test.tsx` en verde (20 combinaciones `5 × 4`, polimorfismo puro sin referencias a roles). |
+| Escenario 6 | `SC-007`, `SC-009` | PASA | `npm run lint` (`tsc --noEmit`: 0), `npm test` (194/194 suites, 1209/1209 tests en verde), `npm run build` (`0` referencias a `fonts.googleapis.com`/`fonts.gstatic.com`/`Inter`, archivos `.woff2` locales verificados en `dist/assets/`), `git diff` vacío en `easyeat/backend` y `easyeat/frontend/src/api`. |
+| Escenario 7 | `SC-008` | PARCIAL (aprobado) | Re-auditoría dual-agent `/impeccable critique` superó la línea base `17/40` → **`30/40` (Good)** con **`0` P0 y `0` P1** (`impeccable detect --json`: `0` hallazgos en 10 archivos). La inspección interactiva en Chrome (`360×800`, `1280×800` y pestaña Network → Font) queda pendiente de verificación manual local porque la estación no tenía habilitado `DevToolsActivePort` (`chrome://inspect/#remote-debugging`). |

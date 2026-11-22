@@ -159,7 +159,7 @@
 - [X] T044 Ejecutar verificación completa de tipado, regresión integral y build de producción (`npm run lint`, `npm test` y `npm run build` en `easyeat/frontend/`) confirmando 100% de la suite `001`–`023` + `024` en verde y presencia exclusiva de archivos `.woff2` locales con `0` referencias a `fonts.googleapis.com` o `Inter` en `easyeat/frontend/dist/`
 - [X] T045 Verificar invariante de alcance exclusivo frontend (`git diff -- easyeat/backend easyeat/frontend/src/api` vacío y ausencia de rutas artificiales de demostración en `easyeat/frontend/src/router/AppRoutes.tsx`)
 - [X] T046 Ejecutar re-auditoría visual mediante `/impeccable critique` sobre `easyeat/frontend/src/components/layout/RoleLayoutShell.tsx` y `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` confirmando superación del puntaje base `17/40`, `0` defectos P0/P1 críticos y conformidad con los cuatro `.DESIGN.md` (`SC-008`)
-- [ ] T047 Validar el checklist completo de escenarios `SC-001` a `SC-009` descrito en `specs/024-ui-theme-architecture/quickstart.md` (incluyendo inspección en navegador real en viewports `360×800` y `1280×800` y pestaña Network → Font)
+- [X] T047 Validar el checklist completo de escenarios `SC-001` a `SC-009` descrito en `specs/024-ui-theme-architecture/quickstart.md` (incluyendo inspección en navegador real en viewports `360×800` y `1280×800` y pestaña Network → Font)
 
 ---
 
