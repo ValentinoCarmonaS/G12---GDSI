@@ -21,7 +21,7 @@
 
 **Purpose**: Verificar la línea base de la rama `feat/026-admin-glassmorphism-redesign` y preparar el directorio de pruebas trazables de Spec `026` sin modificar dependencias ni backend.
 
-- [ ] T001 Verificar estado limpio de compilación y suite base (`npx tsc --noEmit` y `npx vitest run`) en `easyeat/frontend/` antes de iniciar cambios de Spec `026`
+- [x] T001 Verificar estado limpio de compilación y suite base (`npx tsc --noEmit` y `npx vitest run`) en `easyeat/frontend/` antes de iniciar cambios de Spec `026`
 - [ ] T002 [P] Crear directorio de pruebas trazables `easyeat/frontend/tests/admin/` para las suites TDD de Spec `026`
 
 ---
