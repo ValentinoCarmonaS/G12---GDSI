@@ -116,7 +116,7 @@
 ### Slice TDD 3A — Seam de convivencia de capas `--ee-*` y `--brand-*` (`FR-006`, `SC-006`)
 
 - [X] T030 [US3] [TDD-RED] Escribir suite de aislamiento por capas en `easyeat/frontend/tests/theme/brandLayerIsolation.test.tsx` verificando: (1) establecimiento con colores personalizados aplica solo `--brand-*` en `brand-theme-container` sin modificar `--ee-*` de `[data-theme="comensal"]`; (2) cambio a establecimiento neutro o ruta fuera del catálogo limpia `--brand-*` preservando la paleta Bento; (3) `BrandThemeProvider` no altera el tema de `/admin/mi-local`, `/mostrador` ni `/cocina`; (4) colores extremos mantienen contraste protegido mediante `colorContrastUtils`; ejecutar y verificar estado inicial
-- [ ] T031 [US3] [TDD-GREEN] Auditar y blindar `easyeat/frontend/src/components/common/BrandThemeProvider.tsx` (asegurando atributo `data-brand-layer="establishment"`, ausencia de mutaciones sobre `--ee-*` y limpieza limpia al desmontar o cambiar de `establishmentId` sin modificar contratos de `brandingApi.ts`) y ejecutar `npx vitest run tests/theme/brandLayerIsolation.test.tsx` confirmando verde
+- [X] T031 [US3] [TDD-GREEN] Auditar y blindar `easyeat/frontend/src/components/common/BrandThemeProvider.tsx` (asegurando atributo `data-brand-layer="establishment"`, ausencia de mutaciones sobre `--ee-*` y limpieza limpia al desmontar o cambiar de `establishmentId` sin modificar contratos de `brandingApi.ts`) y ejecutar `npx vitest run tests/theme/brandLayerIsolation.test.tsx` confirmando verde
 
 **Checkpoint**: US3 verificada con aislamiento probado frente a Spec 016.
 
