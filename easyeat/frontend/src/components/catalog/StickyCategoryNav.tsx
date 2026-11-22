@@ -41,27 +41,30 @@ export const StickyCategoryNav: React.FC<StickyCategoryNavProps> = ({
 
   return (
     <nav
+      aria-label="Categorías del menú"
       data-testid="sticky-category-nav"
-      className="sticky top-0 z-20 bg-white/95 backdrop-blur-xs border-b border-gray-200 shadow-2xs py-2 px-4"
+      className="sticky top-0 z-20 bg-[var(--ee-surface-elevated)] border border-[var(--ee-border-subtle)] rounded-[var(--ee-radius-md)] py-2 px-3 shadow-[var(--ee-shadow-elevated)]"
     >
-      <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
         {showAllOption && (
           <button
             type="button"
             data-testid="nav-category-all"
+            data-brand-slot={isAllActive ? 'category' : undefined}
+            aria-pressed={isAllActive}
             onClick={handleAllClick}
             style={
               isAllActive
                 ? {
-                    backgroundColor: 'var(--brand-secondary, #065F46)',
-                    color: 'var(--brand-secondary-contrast, #FFFFFF)',
+                    backgroundColor: 'var(--brand-primary, var(--ee-primary))',
+                    color: 'var(--brand-primary-contrast, var(--ee-on-primary))',
                   }
                 : undefined
             }
-            className={`px-4 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+            className={`min-h-[44px] px-4 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)] ${
               isAllActive
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
+                ? 'border border-[var(--ee-border-strong)]'
+                : 'bg-[var(--ee-surface-subtle)] text-[var(--ee-text)] hover:bg-[var(--ee-neutral-bg)] border border-transparent'
             }`}
           >
             Todas
@@ -74,19 +77,21 @@ export const StickyCategoryNav: React.FC<StickyCategoryNavProps> = ({
               key={category}
               type="button"
               data-testid={`nav-category-${category}`}
+              data-brand-slot={isActive ? 'category' : undefined}
+              aria-pressed={isActive}
               onClick={() => handleCategoryClick(category)}
               style={
                 isActive
                   ? {
-                      backgroundColor: 'var(--brand-secondary, #065F46)',
-                      color: 'var(--brand-secondary-contrast, #FFFFFF)',
+                      backgroundColor: 'var(--brand-primary, var(--ee-primary))',
+                      color: 'var(--brand-primary-contrast, var(--ee-on-primary))',
                     }
                   : undefined
               }
-              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+              className={`min-h-[44px] px-4 py-2 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)] ${
                 isActive
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
+                  ? 'border border-[var(--ee-border-strong)]'
+                  : 'bg-[var(--ee-surface-subtle)] text-[var(--ee-text)] hover:bg-[var(--ee-neutral-bg)] border border-transparent'
               }`}
             >
               {category}
