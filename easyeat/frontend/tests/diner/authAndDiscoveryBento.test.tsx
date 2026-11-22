@@ -1,10 +1,10 @@
-import React from 'react';
+import type { ComponentProps } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeScopeProvider } from '@/theme/ThemeScopeProvider';
-import { AuthContext, AuthContextType } from '@/context/AuthContext';
+import { AuthContext } from '@/context/AuthContext';
 import { TenantContext, TenantContextType } from '@/context/TenantContext';
 import { CartContext, CartContextType } from '@/context/CartContext';
 import { LoginPage } from '@/pages/LoginPage';
@@ -17,27 +17,30 @@ import { dinerCatalogApi } from '@/api/dinerCatalogApi';
 import { profileApi } from '@/api/profileApi';
 import { mockEstablishmentSummaryActive } from '@/test/mocks/dinerCatalogHandlers';
 
-const defaultAuthContext: AuthContextType = {
+type AuthContextValue = ComponentProps<typeof AuthContext.Provider>['value'];
+
+const defaultAuthContext: AuthContextValue = {
   token: null,
   user: null,
   isAuthenticated: false,
-  isLoading: false,
   setToken: vi.fn(),
+  clearAuth: vi.fn(),
   logout: vi.fn(),
 };
 
-const authenticatedDinerContext: AuthContextType = {
+const authenticatedDinerContext: AuthContextValue = {
   token: 'mock-token',
   user: {
     id: 'user-1',
     email: 'comensal@easyeat.com',
     role: 'COMENSAL',
     tenantId: null,
+    tokenVersion: 1,
     mustChangePassword: false,
   },
   isAuthenticated: true,
-  isLoading: false,
   setToken: vi.fn(),
+  clearAuth: vi.fn(),
   logout: vi.fn(),
 };
 
@@ -242,6 +245,10 @@ describe('Spec 025 US1 — Public Auth Polymorphic Bento & Establishment Discove
 
       // Loading skeleton while searching
       expect(await screen.findByTestId('loading-skeleton')).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(searchSpy).toHaveBeenCalledTimes(1);
+      });
 
       // Resolve with empty array -> EmptyState
       resolveSearch([]);
