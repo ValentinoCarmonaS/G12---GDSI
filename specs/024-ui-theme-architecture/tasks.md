@@ -139,7 +139,7 @@
 - [X] T037 [P] [US4] [TDD-GREEN] Implementar `Button` gobernado únicamente por tokens `--ee-*` en `easyeat/frontend/src/components/primitives/Button.tsx` (depende de T032) y ejecutar `npx vitest run tests/components/primitives/Button.test.tsx`
 - [X] T038 [P] [US4] [TDD-GREEN] Implementar `StatusBadge` gobernado únicamente por tríadas semánticas `--ee-*` en `easyeat/frontend/src/components/primitives/StatusBadge.tsx` (depende de T033) y ejecutar `npx vitest run tests/components/primitives/StatusBadge.test.tsx`
 - [X] T039 [P] [US4] [TDD-GREEN] Implementar `FeedbackState` gobernado únicamente por tríadas semánticas `--ee-*` en `easyeat/frontend/src/components/primitives/FeedbackState.tsx` (depende de T034) y ejecutar `npx vitest run tests/components/primitives/FeedbackState.test.tsx`
-- [ ] T040 [P] [US4] [TDD-GREEN] Implementar `LoadingSkeleton` gobernado únicamente por tokens `--ee-*` en `easyeat/frontend/src/components/primitives/LoadingSkeleton.tsx` (depende de T035) y ejecutar `npx vitest run tests/components/primitives/LoadingSkeleton.test.tsx`
+- [X] T040 [P] [US4] [TDD-GREEN] Implementar `LoadingSkeleton` gobernado únicamente por tokens `--ee-*` en `easyeat/frontend/src/components/primitives/LoadingSkeleton.tsx` (depende de T035) y ejecutar `npx vitest run tests/components/primitives/LoadingSkeleton.test.tsx`
 - [ ] T041 [P] [US4] [TDD-GREEN] Implementar `EmptyState` reutilizando `Button` y tokens `--ee-*` en `easyeat/frontend/src/components/primitives/EmptyState.tsx` (depende de T036, T037) y ejecutar `npx vitest run tests/components/primitives/EmptyState.test.tsx`
 
 ### Consolidación de catálogo y matriz de 20 combinaciones (`FR-016`, `FR-017`, `SC-005`)
