@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { DietaryRestrictionItem } from '../../types/profile';
 import { AlertCircle, AlertTriangle, Check, Loader2, Utensils } from 'lucide-react';
+import { BentoCard } from '../diner/BentoCard';
+import { FeedbackState } from '../primitives/FeedbackState';
 
 export interface DietaryRestrictionsSelectorProps {
   availableTaxonomy: DietaryRestrictionItem[];
@@ -57,37 +59,30 @@ export const DietaryRestrictionsSelector: React.FC<DietaryRestrictionsSelectorPr
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200/80 shadow-sm p-6 sm:p-8">
-      <div className="flex items-center gap-3 pb-6 border-b border-neutral-100">
-        <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-700">
-          <Utensils className="w-5 h-5" />
+    <BentoCard variant="elevated" padding="md">
+      <div className="flex items-center gap-3 border-b border-ee-border-subtle pb-5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-ee-sm border border-ee-border-subtle bg-ee-surface-subtle text-ee-text">
+          <Utensils className="h-5 w-5" aria-hidden="true" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-neutral-900 tracking-tight">
+          <h2 className="font-ee-display text-lg font-bold tracking-tight text-ee-text">
             Restricciones alimentarias y preferencias
           </h2>
-          <p className="text-sm text-neutral-600">
+          <p className="text-sm text-ee-text-secondary">
             Marcá tus necesidades dietéticas para filtrar automáticamente los platos del catálogo y proteger tu salud.
           </p>
         </div>
       </div>
 
       {errorMessage && (
-        <div
-          role="alert"
-          className="mt-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-start gap-3 animate-fade-in"
-        >
-          <AlertCircle className="w-5 h-5 shrink-0 text-red-600 mt-0.5" />
-          <div>
-            <p className="font-semibold">Error al guardar</p>
-            <p>{errorMessage}</p>
-          </div>
+        <div className="mt-5">
+          <FeedbackState variant="danger" role="alert" title="Error al guardar" message={errorMessage} />
         </div>
       )}
 
       {/* Advisory Notification for in-flight kitchen orders (FR-016) */}
-      <div className="mt-6 p-4 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-900 text-xs sm:text-sm flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 shrink-0 text-amber-700 mt-0.5" />
+      <div className="mt-5 flex items-start gap-3 rounded-ee-md border border-ee-warning-border bg-ee-warning-bg p-4 text-xs text-ee-warning-text sm:text-sm">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
         <p className="leading-relaxed">
           <strong className="font-semibold">Aviso sobre pedidos:</strong> Los cambios se aplican de forma inmediata al carrito activo y pedidos futuros. Si tenés pedidos en preparación en la cocina del restaurante, la comanda no se modifica automáticamente; contactá al restaurante directamente.
         </p>
@@ -109,10 +104,10 @@ export const DietaryRestrictionsSelector: React.FC<DietaryRestrictionsSelectorPr
                 <label
                   key={item.code}
                   htmlFor={`dietary-${item.code}`}
-                  className={`relative flex items-start p-4 rounded-xl border cursor-pointer transition-all ${
+                  className={`relative flex min-h-[44px] cursor-pointer items-start rounded-ee-md border p-4 transition-colors ${
                     isChecked
-                      ? 'border-emerald-600 bg-emerald-50/40 shadow-xs'
-                      : 'border-neutral-200 hover:border-neutral-300 bg-neutral-50/40'
+                      ? 'border-ee-success-border bg-ee-success-bg'
+                      : 'border-ee-border-subtle bg-ee-surface-subtle hover:border-ee-border-strong'
                   }`}
                 >
                   <div className="flex items-center h-5">
@@ -164,7 +159,7 @@ export const DietaryRestrictionsSelector: React.FC<DietaryRestrictionsSelectorPr
                 <label
                   key={item.code}
                   htmlFor={`dietary-${item.code}`}
-                  className={`relative flex items-start p-4 rounded-xl border cursor-pointer transition-all ${
+                  className={`relative flex min-h-[44px] items-start p-4 rounded-xl border cursor-pointer transition-all ${
                     isChecked
                       ? 'border-rose-600 bg-rose-50/40 shadow-xs'
                       : 'border-neutral-200 hover:border-neutral-300 bg-neutral-50/40'
@@ -221,7 +216,7 @@ export const DietaryRestrictionsSelector: React.FC<DietaryRestrictionsSelectorPr
           </button>
         </div>
       </form>
-    </div>
+    </BentoCard>
   );
 };
 
