@@ -100,7 +100,7 @@
 - [X] T026 [US2] [TDD-GREEN] Refactorizar `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` como fachada compatible hacia `RoleLayoutShell` preservando props `{ title, subtitle?, children, legacySurfaceMode? }`, carga de avatar y notificaciones de Admin (depende de T025)
 - [X] T027 [P] [US2] [TDD-GREEN] Aplicar `legacySurfaceMode="legacy-light"` al `WorkspaceLayout` de `easyeat/frontend/src/pages/CounterWorkspacePage.tsx` sin modificar su contenido ni lógica interna (depende de T026)
 - [X] T028 [P] [US2] [TDD-GREEN] Envolver la ruta `/admin/analytics` en un wrapper `WorkspaceLayout` (`title="Métricas y Rendimiento"`, `legacySurfaceMode="legacy-dark"`) dentro de `easyeat/frontend/src/router/AppRoutes.tsx` sin modificar `AdminAnalyticsPage.tsx` ni `AdminAnalyticsPage.test.tsx` (depende de T026)
-- [ ] T029 [US2] [TDD-GREEN] Ejecutar `npx vitest run tests/components/RoleLayoutShell.test.tsx tests/components/WorkspaceLayout.test.tsx tests/session/LogoutFlow.test.tsx tests/pages/AdminAnalyticsPage.test.tsx tests/pages/KitchenWorkspacePage.test.tsx tests/pages/CounterWorkspacePage.test.tsx` y confirmar verde total
+- [X] T029 [US2] [TDD-GREEN] Ejecutar `npx vitest run tests/components/RoleLayoutShell.test.tsx tests/components/WorkspaceLayout.test.tsx tests/session/LogoutFlow.test.tsx tests/pages/AdminAnalyticsPage.test.tsx tests/pages/KitchenWorkspacePage.test.tsx tests/pages/CounterWorkspacePage.test.tsx` y confirmar verde total
 
 **Checkpoint**: US1 y US2 completas, accesibles y compatibles con todas las pantallas heredadas.
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { User as UserIcon } from 'lucide-react';
-import type { User } from '../../types/auth';
+import type { AuthenticatedUser } from '../../types/auth';
 import type { AdminNotificationResponse } from '../../types/notification';
 import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
 import { AdminNotificationBell } from '../notification/AdminNotificationBell';
@@ -14,7 +14,7 @@ export interface RoleLayoutShellProps {
   readonly title: string;
   readonly subtitle?: string;
   readonly children: React.ReactNode;
-  readonly user: User | null;
+  readonly user: AuthenticatedUser | null;
   readonly avatarUrl?: string | null;
   readonly notifications?: AdminNotificationResponse[];
   readonly unreadCount?: number;

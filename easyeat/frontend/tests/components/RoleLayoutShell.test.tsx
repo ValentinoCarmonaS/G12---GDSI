@@ -3,13 +3,13 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { RoleLayoutShell } from '@/components/layout/RoleLayoutShell';
-import type { User } from '@/types/auth';
+import type { AuthenticatedUser } from '@/types/auth';
 import type { AdminNotificationResponse } from '@/types/notification';
 
 interface RenderShellOptions {
   title?: string;
   subtitle?: string;
-  user?: User | null;
+  user?: AuthenticatedUser | null;
   initialEntry?: string;
   avatarUrl?: string | null;
   notifications?: AdminNotificationResponse[];
