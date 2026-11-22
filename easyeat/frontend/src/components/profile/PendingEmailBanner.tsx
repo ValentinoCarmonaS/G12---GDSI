@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Mail } from 'lucide-react';
+import { BentoCard } from '../diner/BentoCard';
+import { Button } from '../primitives/Button';
+import { StatusBadge } from '../primitives/StatusBadge';
 
 export interface PendingEmailBannerProps {
   pendingEmail: string;
@@ -52,48 +55,59 @@ export const PendingEmailBanner: React.FC<PendingEmailBannerProps> = ({
   };
 
   return (
-    <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-5 mb-6 shadow-sm">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <BentoCard
+      variant="subtle"
+      padding="md"
+      className="border-ee-warning-border bg-ee-warning-bg"
+      role="region"
+      aria-label="Verificación de correo pendiente"
+    >
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-start gap-3.5">
-          <div className="p-2 bg-amber-100 rounded-lg text-amber-700 mt-0.5">
-            <Mail className="w-5 h-5" />
+          <div className="mt-0.5 rounded-ee-sm border border-ee-warning-border bg-ee-surface-elevated p-2 text-ee-warning-text">
+            <Mail className="h-5 w-5" aria-hidden="true" />
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-200/80 text-amber-900">
-                Verificación pendiente
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge tone="warning" label="Verificación pendiente" />
+              <span className="text-xs font-medium text-ee-warning-text">
+                Enlace válido por 24 horas
               </span>
-              <span className="text-xs text-amber-700">Enlace válido por 24 horas</span>
             </div>
-            <p className="text-sm font-medium text-amber-950 mt-1">
-              Hemos enviado un enlace de confirmación a: <span className="font-semibold underline">{pendingEmail}</span>
+            <p className="text-sm font-medium text-ee-text">
+              Hemos enviado un enlace de confirmación a:{' '}
+              <span className="font-semibold underline">{pendingEmail}</span>
             </p>
-            <p className="text-xs text-amber-800 mt-0.5">
+            <p className="text-xs text-ee-text-secondary">
               Tu correo actual seguirá activo para iniciar sesión hasta que confirmes la nueva dirección.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:self-center shrink-0">
-          <button
+        <div className="flex shrink-0 flex-wrap items-center gap-2.5 sm:self-center">
+          <Button
             type="button"
+            variant="primary"
+            size="sm"
             onClick={handleResend}
             disabled={cooldown > 0 || isResending}
-            className="px-3.5 py-2 text-xs font-semibold rounded-lg text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:bg-amber-400 disabled:cursor-not-allowed transition-colors shadow-sm"
+            className="min-h-[44px]"
           >
             {cooldown > 0 ? `Reenviar en ${cooldown}s` : isResending ? 'Enviando...' : 'Reenviar enlace'}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={handleCancel}
             disabled={isCanceling}
-            className="px-3.5 py-2 text-xs font-medium rounded-lg text-neutral-700 bg-white border border-neutral-300 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+            className="min-h-[44px]"
           >
             {isCanceling ? 'Cancelando...' : 'Cancelar solicitud'}
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </BentoCard>
   );
 };
 
