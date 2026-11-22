@@ -155,10 +155,10 @@
 
 **Purpose**: Verificación integral de regresión (`001`–`026`), auditoría estática Zero AI-Slop y de exclusiones constitucionales, validación en navegador real (`360/768/1440 px`) y auditoría post-implementación `/impeccable critique` en modo **Operate**.
 
-- [ ] T031 Ejecutar regresión completa de frontend (`npx vitest run`), chequeo de tipos (`npx tsc --noEmit`) y compilación de producción (`npm run build`) en `easyeat/frontend/` verificando 0 errores y 0 regresiones en `001`–`026`
-- [ ] T032 [P] Verificar cero uso de `Inter`, cero `text-purple-*`/`bg-purple-*` en rutas de Administrador, cero `legacy-dark` activo en `/admin/*`, cero emojis literales en alertas administrativas y cero modificaciones bajo `easyeat/backend/`, `easyeat/frontend/src/api/` y `easyeat/frontend/src/components/diner/` mediante auditoría estática y `git diff --stat`
-- [ ] T033 Ejecutar validación visual en navegador real a `360px`, `768px` y `1440px` sobre las pantallas definidas en `specs/026-admin-glassmorphism-redesign/contracts/admin-screens-audit.contract.ts` siguiendo `specs/026-admin-glassmorphism-redesign/quickstart.md`
-- [ ] T034 Ejecutar auditoría crítica post-implementación `/impeccable critique` sobre `AdminWorkspacePage.tsx` (línea base `14/40`) y las vistas clave de `US3`–`US5` contra `.specify/memory/designs/admin.DESIGN.md` en modo **Operate**, verificando mejora sustancial y cero hallazgos bloqueantes P0/P1 (aplicando `/impeccable polish` solo si surgiera algún ajuste menor y re-verificando tests)
+- [x] T031 Ejecutar regresión completa de frontend (`npx vitest run`), chequeo de tipos (`npx tsc --noEmit`) y compilación de producción (`npm run build`) en `easyeat/frontend/` verificando 0 errores y 0 regresiones en `001`–`026`
+- [x] T032 [P] Verificar cero uso de `Inter`, cero `text-purple-*`/`bg-purple-*` en rutas de Administrador, cero `legacy-dark` activo en `/admin/*`, cero emojis literales en alertas administrativas y cero modificaciones bajo `easyeat/backend/`, `easyeat/frontend/src/api/` y `easyeat/frontend/src/components/diner/` mediante auditoría estática y `git diff --stat`
+- [x] T033 Ejecutar validación visual en navegador real a `360px`, `768px` y `1440px` sobre las pantallas definidas en `specs/026-admin-glassmorphism-redesign/contracts/admin-screens-audit.contract.ts` siguiendo `specs/026-admin-glassmorphism-redesign/quickstart.md`
+- [x] T034 Ejecutar auditoría crítica post-implementación `/impeccable critique` sobre `AdminWorkspacePage.tsx` (línea base `14/40`) y las vistas clave de `US3`–`US5` contra `.specify/memory/designs/admin.DESIGN.md` en modo **Operate**, verificando mejora sustancial y cero hallazgos bloqueantes P0/P1 (aplicando `/impeccable polish` solo si surgiera algún ajuste menor y re-verificando tests)
 
 ---
 

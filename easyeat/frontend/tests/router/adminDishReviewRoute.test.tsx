@@ -53,7 +53,7 @@ vi.mock('@/api/dishApi', () => ({
 }));
 
 /** The hub's subtitle: what tells AdminWorkspacePage apart from a page that links to it. */
-const HUB_SUBTITLE = 'Configuración global del establecimiento, usuarios y auditoría';
+const HUB_SUBTITLE = 'Panel Ejecutivo';
 
 function authenticateAs(role: Role) {
   vi.spyOn(AuthModule, 'useAuth').mockReturnValue({

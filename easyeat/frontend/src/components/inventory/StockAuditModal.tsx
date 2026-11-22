@@ -76,12 +76,12 @@ export const StockAuditModal: React.FC<StockAuditModalProps> = ({
             </GlassCard>
           ) : (
             auditEntries.map((entry) => {
-              const isPositive = entry.delta > 0;
+              const isPositive = entry.netDelta > 0;
               return (
                 <GlassCard key={entry.id} variant="subtle" padding="sm" as="article" className="space-y-2 text-xs">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-semibold text-ee-text">
-                      {entry.performedBy || 'Sistema'}
+                      {entry.adminName || 'Sistema'}
                     </span>
                     <span className="font-ee-mono tabular-nums text-ee-text-muted">
                       {new Date(entry.createdAt).toLocaleString()}
@@ -95,7 +95,7 @@ export const StockAuditModal: React.FC<StockAuditModalProps> = ({
                           : 'bg-rose-50 text-rose-800 border-rose-200'
                       }`}
                     >
-                      {isPositive ? `+${entry.delta}` : entry.delta} {unit}
+                      {isPositive ? `+${entry.netDelta}` : entry.netDelta} {unit}
                     </span>
                     <span className="font-ee-mono tabular-nums text-ee-text-muted">
                       {entry.previousStock} → <strong className="text-ee-text">{entry.newStock} {unit}</strong>
@@ -106,8 +106,8 @@ export const StockAuditModal: React.FC<StockAuditModalProps> = ({
                       </span>
                     )}
                   </div>
-                  {entry.reason && (
-                    <p className="text-ee-text-muted">{entry.reason}</p>
+                  {entry.justification && (
+                    <p className="text-ee-text-muted">{entry.justification}</p>
                   )}
                 </GlassCard>
               );

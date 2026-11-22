@@ -180,10 +180,10 @@ describe('Spec 026 US4 — Staff & Inventory Glassmorphism', () => {
           id: 'audit-1',
           previousStock: 5,
           newStock: 2,
-          delta: -3,
-          reason: 'Consumo cocina',
+          netDelta: -3,
+          justification: 'Consumo cocina',
           createdAt: '2026-10-05T10:00:00Z',
-          performedBy: 'María Gómez',
+          adminName: 'María Gómez',
         },
       ] as any);
 

@@ -118,7 +118,7 @@ export const AdminOperationsPage: React.FC = () => {
         <GlassCard variant="elevated" padding="lg" className="space-y-4">
           <h2 className="text-lg font-semibold text-[var(--ee-text)]">Horarios comerciales</h2>
           {loadError && (
-            <FeedbackState variant="error" title="Error al cargar horarios" description={loadError} onRetry={fetchSchedules} />
+            <FeedbackState variant="danger" title="Error al cargar horarios" message={loadError} actionLabel="Reintentar" onAction={fetchSchedules} />
           )}
           {isLoading ? (
             <LoadingSkeleton lines={3} />
@@ -132,7 +132,7 @@ export const AdminOperationsPage: React.FC = () => {
         <GlassCard variant="elevated" padding="lg" className="space-y-4">
           <h2 className="text-lg font-semibold text-[var(--ee-text)]">Capacidad por franja</h2>
           {capacityLoadError && (
-            <FeedbackState variant="error" title="Error al cargar capacidad" description={capacityLoadError} onRetry={fetchCapacities} />
+            <FeedbackState variant="danger" title="Error al cargar capacidad" message={capacityLoadError} actionLabel="Reintentar" onAction={fetchCapacities} />
           )}
           {isLoadingCapacities ? (
             <LoadingSkeleton lines={3} />
@@ -153,7 +153,7 @@ export const AdminOperationsPage: React.FC = () => {
         <GlassCard variant="elevated" padding="lg" className="space-y-4">
           <h2 className="text-lg font-semibold text-[var(--ee-text)]">Métodos de pago online</h2>
           {paymentLoadError && (
-            <FeedbackState variant="error" title="Error al cargar métodos de pago" description={paymentLoadError} onRetry={fetchPaymentMethods} />
+            <FeedbackState variant="danger" title="Error al cargar métodos de pago" message={paymentLoadError} actionLabel="Reintentar" onAction={fetchPaymentMethods} />
           )}
           {isLoadingPayments ? (
             <LoadingSkeleton lines={2} />
