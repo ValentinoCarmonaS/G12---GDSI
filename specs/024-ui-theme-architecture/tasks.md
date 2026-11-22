@@ -60,7 +60,7 @@
 - [X] T011 [P] [US1] [TDD-GREEN] Remediar contrato Brutalism (`Darker Grotesque` 500–800, `on-primary: #111827`, `primary-hover: #E67966`, bordes `#111827`, tríadas y `dataViz`) en `.specify/memory/designs/chef.DESIGN.md`
 - [X] T012 [P] [US1] [TDD-GREEN] Remediar contrato Glassmorphism (`Plus Jakarta Sans` 400–700, lienzo `#F4F7FC` + capas glass sin degradados púrpura-azul, tríadas WCAG 2.2 AA y `dataViz`) en `.specify/memory/designs/admin.DESIGN.md`
 - [X] T013 [US1] [TDD-GREEN] Implementar fuente única de verdad `ROLE_THEME_REGISTRY`, `getThemeContract` y proyección `DataVizThemeTokens` en `easyeat/frontend/src/theme/themeRegistry.ts` (depende de T005)
-- [ ] T014 [US1] [TDD-GREEN] Cerrar el registro pendiente `TODO(DESIGN_CONTRACTS_REMEDIATION)` en `.specify/memory/constitution.md` (depende de T009, T010, T011, T012) y ejecutar `npx vitest run tests/theme/themeContractsContrast.test.ts` confirmando verde
+- [X] T014 [US1] [TDD-GREEN] Cerrar el registro pendiente `TODO(DESIGN_CONTRACTS_REMEDIATION)` en `.specify/memory/constitution.md` (depende de T009, T010, T011, T012) y ejecutar `npx vitest run tests/theme/themeContractsContrast.test.ts` confirmando verde
 
 ### Slice TDD 1B — Seam de resolución determinista por ruta y `ThemeScopeProvider` (`FR-004`, `FR-005`, `FR-019`)
 
