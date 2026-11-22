@@ -137,7 +137,7 @@
 - [X] T036 [P] [US4] [TDD-GREEN] Rediseñar `OrderSuccessGreenBanner.tsx` (cabecera Bento con `data-brand-slot="confirmation"`, sin `animate-pulse` continuo ni blur decorativo, preservando `data-testid="order-success-green-banner"`) y `ScheduledSlotCountdown.tsx` (`font-ee-mono tabular-nums`) en `easyeat/frontend/src/components/tracking/`
 - [X] T037 [P] [US4] [TDD-GREEN] Rediseñar `ReadyForPickupCallout.tsx` (Tarjeta Héroe Bento de PIN de alto contraste consumiendo `SecurityPinDisplay.tsx` sin modificar su interfaz compartida con Mostrador) y `DeliveredOrderCallout.tsx` (bloque Bento de cierre) en `easyeat/frontend/src/components/tracking/`
 - [X] T038 [US4] [TDD-GREEN] Rediseñar `easyeat/frontend/src/components/tracking/LiveTrackingWidget.tsx` (progreso por etapas Bento, `ConnectionStatusBadge` polimórfico y bloque accesible de demoras) y `easyeat/frontend/src/pages/OrderConfirmationTrackingPage.tsx` (integración de `BrandThemeProvider`, `LoadingSkeleton` y `FeedbackState` con reintento) (depende de T036, T037)
-- [ ] T039 [US4] [TDD-GREEN] Ejecutar `npx vitest run tests/diner/trackingPinHeroBento.test.tsx src/test/tracking/ tests/pages/CounterWorkspacePage.test.tsx` confirmando verde total y cero impacto en Mostrador (depende de T038)
+- [X] T039 [US4] [TDD-GREEN] Ejecutar `npx vitest run tests/diner/trackingPinHeroBento.test.tsx src/test/tracking/ tests/pages/CounterWorkspacePage.test.tsx` confirmando verde total y cero impacto en Mostrador (depende de T038)
 
 **Checkpoint**: US4 completa y verificable de forma independiente (lista para commit atómico).
 

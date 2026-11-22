@@ -42,19 +42,17 @@ vi.mock('../../src/api/adminNotificationApi', () => ({
 }));
 
 vi.mock('../../src/api/brandingApi', () => ({
-  brandingApi: {
-    getPublicBranding: vi.fn().mockResolvedValue({
-      establishmentId: 'est-123',
-      primaryColor: '#1D4ED8',
-      primaryContrastColor: '#FFFFFF',
-      secondaryColor: '#0F172A',
-      secondaryContrastColor: '#FFFFFF',
-      accentColor: '#9A4A24',
-      accentContrastColor: '#FFFFFF',
-      logoUrl: null,
-      isDefaultFallback: false,
-    }),
-  },
+  getDinerBranding: vi.fn().mockResolvedValue({
+    establishmentId: 'est-123',
+    primaryColor: '#1D4ED8',
+    primaryContrastColor: '#FFFFFF',
+    secondaryColor: '#0F172A',
+    secondaryContrastColor: '#FFFFFF',
+    accentColor: '#9A4A24',
+    accentContrastColor: '#FFFFFF',
+    logoUrl: null,
+    isDefaultFallback: false,
+  }),
 }));
 
 const mockOrder: OrderConfirmationTrackingResponse = {
