@@ -45,7 +45,7 @@ export const VerifyEmailPage: React.FC = () => {
 
   return (
     <AuthCardShell
-      title="Verificación de correo"
+      title="Verificación de correo electrónico"
       subtitle="Confirmación de dirección de correo electrónico"
     >
       {loading ? (

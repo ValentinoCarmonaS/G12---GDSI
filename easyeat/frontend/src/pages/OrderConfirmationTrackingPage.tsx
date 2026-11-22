@@ -36,7 +36,7 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
       console.error('Error fetching confirmation tracking details:', err);
       setErrorMessage(
         err?.response?.data?.detail ||
-          'No pudimos cargar la información del pedido. Por favor, verificá el enlace o intentá más tarde.'
+        'No pudimos cargar la información del pedido. Por favor, verificá el enlace o intentá más tarde.'
       );
     } finally {
       setIsLoading(false);
@@ -96,8 +96,8 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
           {/* Loading State */}
           {isLoading && (
             <BentoCard variant="elevated" padding="lg" radius="lg" className="space-y-4">
-              <LoadingSkeleton variant="block" className="h-28" />
-              <LoadingSkeleton variant="block" className="h-28" />
+              <LoadingSkeleton variant="block" />
+              <LoadingSkeleton variant="block" />
               <p className="text-ee-text-secondary font-medium text-sm text-center">
                 Cargando confirmación del pedido...
               </p>
@@ -228,9 +228,8 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
                       {isPendingApproval ? 'Total del Pedido' : 'Total Abonado'}
                     </span>
                     <span
-                      className={`text-xs font-medium ${
-                        isPendingApproval ? 'text-ee-warning-fg' : 'text-ee-success-fg'
-                      }`}
+                      className={`text-xs font-medium ${isPendingApproval ? 'text-ee-warning-fg' : 'text-ee-success-fg'
+                        }`}
                     >
                       {isPendingApproval
                         ? 'Acreditación pendiente'

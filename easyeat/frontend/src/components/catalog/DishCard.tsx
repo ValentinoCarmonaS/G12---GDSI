@@ -173,12 +173,12 @@ export const DishCard: React.FC<DishCardProps> = ({
             {dish.isCompliant ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 text-[var(--ee-success-fg)] shrink-0" aria-hidden="true" />
-                <span className="truncate">Apto según tu perfil</span>
+                <span className="truncate">✓ Apto según tu perfil</span>
               </>
             ) : hasConflicts ? (
               <>
                 <AlertTriangle className="w-3.5 h-3.5 text-[var(--ee-warning-fg)] shrink-0" aria-hidden="true" />
-                <span className="truncate">Requiere confirmación</span>
+                <span className="truncate">⚠️ Requiere confirmación</span>
               </>
             ) : null}
           </span>

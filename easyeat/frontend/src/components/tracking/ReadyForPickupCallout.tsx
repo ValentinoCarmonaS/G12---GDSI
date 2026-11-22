@@ -2,6 +2,7 @@ import React from 'react';
 import { CheckCircle, ShieldCheck, Utensils } from 'lucide-react';
 import { SecurityPinDisplay } from '../common/SecurityPinDisplay';
 import { BentoCard } from '../diner';
+import { StatusBadge } from '../primitives';
 
 export interface ReadyForPickupItem {
   dishName: string;
@@ -32,12 +33,10 @@ export const ReadyForPickupCallout: React.FC<ReadyForPickupCalloutProps> = ({
       className="border-ee-success-border text-center space-y-6"
     >
       <div className="flex justify-center">
-        <div
-          className="inline-flex p-3 bg-ee-success-bg text-ee-success-fg border border-ee-success-border rounded-ee-md"
-          aria-hidden="true"
-        >
-          <CheckCircle className="w-10 h-10" />
-        </div>
+        <StatusBadge variant="success" className="gap-1.5 px-3 py-1 text-xs">
+          <CheckCircle className="w-4 h-4" aria-hidden="true" />
+          Pedido listo
+        </StatusBadge>
       </div>
 
       <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-ee-text">
