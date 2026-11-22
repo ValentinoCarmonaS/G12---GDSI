@@ -47,7 +47,7 @@
 - [X] T010 [TDD-GREEN] Exportar `BentoCard`, `AuthCardShell`, `useAccessibleOverlay`, `AccessibleModal` y `AccessibleDrawer` en `easyeat/frontend/src/components/diner/index.ts` (depende de T005, T006, T008, T009)
 - [X] T011 [P] [TDD-GREEN] Actualizar `DEFAULT_NEUTRAL_BRANDING` a los pares Bento WCAG 2.2 AA (`#FAD4C0`/`#111827`, `#80A1C1`/`#111827`, `#9A4A24`/`#FFFFFF`) en `easyeat/frontend/src/hooks/useRestaurantBranding.ts` conforme a `contracts/brand-accent-slots.contract.ts`
 - [X] T012 [P] [TDD-GREEN] Migrar `ConnectionStatusBadge` a tokens polimórficos `--ee-warning-bg`/`--ee-warning-fg`/`--ee-warning-border` respetando `prefers-reduced-motion` en `easyeat/frontend/src/components/common/ConnectionStatusBadge.tsx`
-- [ ] T013 [TDD-GREEN] Ejecutar `npx vitest run tests/diner/bentoBlocksAndOverlays.test.tsx tests/theme/brandLayerIsolation.test.tsx` y confirmar verde total (depende de T010, T011, T012)
+- [X] T013 [TDD-GREEN] Ejecutar `npx vitest run tests/diner/bentoBlocksAndOverlays.test.tsx tests/theme/brandLayerIsolation.test.tsx` y confirmar verde total (depende de T010, T011, T012)
 
 **Checkpoint**: Fundaciones Bento, overlays accesibles y fallback neutro de marca listos; las 5 User Stories ya pueden avanzar.
 
