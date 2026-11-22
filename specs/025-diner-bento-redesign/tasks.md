@@ -158,7 +158,7 @@
 - [X] T041 [P] [US5] [TDD-GREEN] Rediseñar `PersonalDataForm.tsx`, `PendingEmailBanner.tsx` y `PhotoDeleteConfirmModal.tsx` (migrado a `AccessibleModal`) en `easyeat/frontend/src/components/profile/` usando `BentoCard`, `Button`, `FeedbackState` y tokens `--ee-*`
 - [X] T042 [P] [US5] [TDD-GREEN] Rediseñar `DietaryRestrictionsSelector.tsx` (opciones con indicador visual redundante más allá del color y targets `>= 44px`) y `MyOrdersSection.tsx` (grilla Bento de tarjetas con `StatusBadge`, `font-ee-mono tabular-nums`, `LoadingSkeleton`, `EmptyState` y `FeedbackState`) en `easyeat/frontend/src/components/profile/`
 - [X] T043 [US5] [TDD-GREEN] Reestructurar `easyeat/frontend/src/pages/ProfilePage.tsx` con pestañas segmentadas Bento (`role="tablist"` sincronizado con `#pedidos`), grilla `lg:grid-cols-2` en `Mi perfil`, `LoadingSkeleton` y `FeedbackState` (depende de T041, T042)
-- [ ] T044 [US5] [TDD-GREEN] Ejecutar `npx vitest run tests/diner/profileBentoTabs.test.tsx tests/router/AppRoutesProfileCatalog.test.tsx tests/pages/ProfilePage.test.tsx tests/components/MyOrdersSection.test.tsx` confirmando verde total (depende de T043)
+- [X] T044 [US5] [TDD-GREEN] Ejecutar `npx vitest run tests/diner/profileBentoTabs.test.tsx tests/router/AppRoutesProfileCatalog.test.tsx tests/pages/ProfilePage.test.tsx tests/components/MyOrdersSection.test.tsx` confirmando verde total (depende de T043)
 
 **Checkpoint**: US5 completa y verificable de forma independiente (las 5 historias y las 11 pantallas están migradas a Bento).
 

@@ -69,7 +69,7 @@ export const PendingEmailBanner: React.FC<PendingEmailBannerProps> = ({
           </div>
           <div className="space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge tone="warning" label="Verificación pendiente" />
+              <StatusBadge variant="warning">Verificación pendiente</StatusBadge>
               <span className="text-xs font-medium text-ee-warning-text">
                 Enlace válido por 24 horas
               </span>

@@ -157,10 +157,10 @@ export const ProfilePage: React.FC = () => {
           </div>
         ) : (
           <div role="tabpanel" id="panel-perfil" aria-labelledby="tab-perfil" className="space-y-6">
-            {error && <FeedbackState tone="danger" title="Error en el perfil" description={error} />}
+            {error && <FeedbackState variant="danger" role="alert" title="Error en el perfil" message={error} />}
 
             {successBanner && (
-              <FeedbackState tone="success" title="Cambios guardados" description={successBanner} />
+              <FeedbackState variant="success" title="Cambios guardados" message={successBanner} />
             )}
 
             {loading ? (

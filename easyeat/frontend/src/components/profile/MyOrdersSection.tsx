@@ -158,26 +158,25 @@ export const MyOrdersSection: React.FC<MyOrdersSectionProps> = ({ onResumePaymen
   if (error) {
     return (
       <FeedbackState
-        tone="danger"
+        variant="danger"
+        role="alert"
         title="No pudimos cargar tus pedidos"
-        description={error}
-        action={
-          <Button type="button" variant="secondary" size="sm" onClick={() => void loadOrders()}>
-            <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            Reintentar
-          </Button>
-        }
+        message={error}
+        actionLabel="Reintentar"
+        onAction={() => void loadOrders()}
       />
     );
   }
 
   if (orders.length === 0) {
     return (
-      <EmptyState
-        icon={<ShoppingBag className="h-6 w-6" aria-hidden="true" />}
-        title="Todavía no realizaste pedidos"
-        description="Cuando confirmes un pedido vas a poder seguir su estado y acceder al comprobante desde acá."
-        action={
+      <div className="space-y-4">
+        <EmptyState
+          icon={<ShoppingBag className="h-6 w-6" aria-hidden="true" />}
+          title="Todavía no realizaste pedidos"
+          description="Cuando confirmes un pedido vas a poder seguir su estado y acceder al comprobante desde acá."
+        />
+        <div className="flex justify-center">
           <Link
             to="/catalogo"
             className="inline-flex min-h-[44px] items-center gap-2 rounded-ee-sm border border-ee-primary-border bg-ee-primary px-5 py-2.5 text-sm font-semibold text-ee-on-primary transition-colors hover:bg-ee-primary-hover"
@@ -185,14 +184,14 @@ export const MyOrdersSection: React.FC<MyOrdersSectionProps> = ({ onResumePaymen
             Explorar catálogo
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
-        }
-      />
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {actionError && <FeedbackState tone="danger" title="Error en la acción" description={actionError} />}
+      {actionError && <FeedbackState variant="danger" role="alert" title="Error en la acción" message={actionError} />}
 
       <div data-testid="my-orders-bento-grid" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {orders.map((order) => {
@@ -247,7 +246,10 @@ export const MyOrdersSection: React.FC<MyOrdersSectionProps> = ({ onResumePaymen
 
               <div className="sm:text-right">
                 <p className="text-xs text-neutral-500">Total</p>
-                <p className="text-lg font-bold text-neutral-900">
+                <p
+                  data-testid={`order-total-${order.orderId}`}
+                  className="font-ee-mono text-lg font-bold tabular-nums text-ee-text"
+                >
                   {formatCurrency(order.totalAmount)}
                 </p>
               </div>

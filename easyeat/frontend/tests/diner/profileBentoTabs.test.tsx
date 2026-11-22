@@ -125,9 +125,9 @@ describe('ProfilePage & MyOrdersSection Bento (US5, FR-013)', () => {
     });
 
     // DietaryRestrictionsSelector has redundant active/inactive indicator beyond color
-    const celiacBtn = screen.getByRole('button', { name: /sin tacc/i });
-    expect(celiacBtn).toHaveAttribute('aria-pressed', 'true');
-    expect(celiacBtn.className).toMatch(/min-h-\[44px\]/);
+    const celiacCheckbox = screen.getByRole('checkbox', { name: /sin tacc/i });
+    expect(celiacCheckbox).toBeChecked();
+    expect(celiacCheckbox.closest('label')?.className).toMatch(/min-h-\[44px\]/);
   });
 
   it('renders MyOrdersSection in Bento card grid with StatusBadge, mono tabular total, LoadingSkeleton, EmptyState and FeedbackState retry', async () => {
@@ -159,7 +159,7 @@ describe('ProfilePage & MyOrdersSection Bento (US5, FR-013)', () => {
         <MyOrdersSection />
       </MemoryRouter>
     );
-    expect(await screen.findByText(/todavía no tenés pedidos/i)).toBeInTheDocument();
+    expect(await screen.findByText(/todavía no realizaste pedidos/i)).toBeInTheDocument();
     unmount();
 
     vi.mocked(orderApi.getMyOrders).mockResolvedValueOnce(sampleOrders);
