@@ -1,6 +1,9 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { AlertTriangle } from 'lucide-react';
 import { LoginForm } from '../components/auth/LoginForm';
+import { AuthCardShell } from '../components/diner';
+import { FeedbackState } from '../components/primitives/FeedbackState';
 import { authApi } from '../api/authApi';
 import { useAuth } from '../hooks/useAuth';
 import { resolvePostAuthRedirect } from '../router/postAuthRouting';
@@ -53,28 +56,24 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">EasyEat</h2>
+    <AuthCardShell
+      brandLabel="Acceso"
+      title="EasyEat"
+      subtitle="Iniciá sesión en tu cuenta para continuar"
+    >
+      {stateReason && (
+        <div className="mb-5">
+          <FeedbackState
+            variant="warning"
+            role="alert"
+            icon={<AlertTriangle className="h-4 w-4" />}
+            message={stateReason}
+          />
         </div>
-      </div>
+      )}
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
-          {stateReason && (
-            <div
-              role="alert"
-              className="mb-6 p-3 text-sm rounded-md bg-amber-50 border border-amber-200 text-amber-800"
-            >
-              {stateReason}
-            </div>
-          )}
-
-          <LoginForm onSubmit={handleLogin} />
-        </div>
-      </div>
-    </div>
+      <LoginForm onSubmit={handleLogin} />
+    </AuthCardShell>
   );
 };
 

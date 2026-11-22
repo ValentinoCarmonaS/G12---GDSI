@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { CheckCircle2, AlertTriangle, ArrowRight, RefreshCw, Clock } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ArrowRight, Clock } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
+import { BentoCard } from '../components/diner/BentoCard';
+import { Button } from '../components/primitives/Button';
+import { FeedbackState } from '../components/primitives/FeedbackState';
+import { LoadingSkeleton } from '../components/primitives/LoadingSkeleton';
+import { StatusBadge } from '../components/primitives/StatusBadge';
 import { PendingAccreditationBanner } from '../components/checkout/PendingAccreditationBanner';
 import { useCart } from '../context/CartContext';
 import { getOrderPaymentStatus } from '../api/paymentApi';
@@ -152,106 +157,145 @@ export const PaymentReturnPage: React.FC = () => {
 
   return (
     <WorkspaceLayout title="Confirmación de Pago" subtitle="Verificación fehaciente con Mercado Pago">
-      <div className="max-w-2xl mx-auto px-4 py-12">
+      <div className="max-w-2xl mx-auto px-4 py-10">
         {isLoading ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm space-y-4">
-            <RefreshCw className="w-10 h-10 animate-spin text-sky-600 mx-auto" />
-            <h3 className="text-lg font-bold text-gray-900">Verificando transacción...</h3>
-            <p className="text-sm text-gray-500">
-              Estamos confirmando fehacientemente tu pago con Mercado Pago.
-            </p>
-          </div>
+          <BentoCard
+            variant="elevated"
+            padding="lg"
+            radius="lg"
+            data-testid="payment-return-card"
+            className="text-center space-y-5"
+          >
+            <div className="flex justify-center">
+              <StatusBadge variant="info">Verificando</StatusBadge>
+            </div>
+            <div className="space-y-2">
+              <h2 className="font-ee-display text-xl font-bold text-ee-text">
+                Verificando transacción...
+              </h2>
+              <p className="text-sm text-ee-text-secondary">
+                Estamos confirmando fehacientemente tu pago con Mercado Pago.
+              </p>
+            </div>
+            <LoadingSkeleton variant="text" lines={3} label="Verificando estado del pago" />
+          </BentoCard>
         ) : error ? (
-          <div className="bg-white rounded-2xl border border-rose-200 p-8 text-center shadow-sm space-y-4">
-            <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-6 h-6" />
+          <BentoCard
+            variant="elevated"
+            padding="lg"
+            radius="lg"
+            data-testid="payment-return-card"
+            className="space-y-6"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-ee-display text-xl font-bold text-ee-text">Atención</h2>
+              <StatusBadge variant="danger">Error</StatusBadge>
             </div>
-            <h3 className="text-lg font-bold text-gray-900">Atención</h3>
-            <p className="text-sm text-gray-600">{error}</p>
-            <div className="pt-4">
-              <button
-                type="button"
-                onClick={() => navigate('/checkout')}
-                className="px-6 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white font-medium rounded-xl text-sm transition-colors shadow-sm"
-              >
+            <FeedbackState
+              variant="danger"
+              icon={<AlertTriangle className="w-5 h-5" />}
+              message={error}
+            />
+            <div className="flex justify-center pt-2">
+              <Button variant="primary" size="md" onClick={() => navigate('/checkout')}>
                 Volver al checkout
-              </button>
+              </Button>
             </div>
-          </div>
+          </BentoCard>
         ) : isPending ? (
           <div className="space-y-6">
             <PendingAccreditationBanner orderId={orderId || ''} />
-            <div className="bg-white rounded-2xl border border-amber-200 p-8 text-center shadow-sm space-y-6">
-              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
-                <Clock className="w-8 h-8" />
+            <BentoCard
+              variant="elevated"
+              padding="lg"
+              radius="lg"
+              data-testid="payment-return-card"
+              className="text-center space-y-6"
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-14 h-14 bg-ee-warning-bg text-ee-warning-fg border border-ee-warning-border rounded-ee-md flex items-center justify-center">
+                  <Clock className="w-7 h-7" aria-hidden="true" />
+                </div>
+                <StatusBadge variant="warning">Pendiente de acreditación</StatusBadge>
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-extrabold text-gray-900">Acreditación en curso</h2>
-                <p className="text-sm text-gray-600 max-w-md mx-auto">
+                <h2 className="font-ee-display text-2xl font-bold text-ee-text">
+                  Acreditación en curso
+                </h2>
+                <p className="text-sm text-ee-text-secondary max-w-md mx-auto leading-relaxed">
                   Tu orden ya se encuentra registrada. En cuanto Mercado Pago notifique la aprobación definitiva, tu pedido pasará automáticamente a cocina.
                 </p>
               </div>
               <div className="pt-2 flex flex-col sm:flex-row justify-center gap-3">
                 <Link
                   to={`/pedidos/${orderId}/seguimiento`}
-                  className="px-6 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition-colors shadow-md flex items-center justify-center gap-2"
+                  className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-ee-sm border border-ee-primary-border bg-ee-primary text-ee-on-primary hover:bg-ee-primary-hover font-ee-sans font-semibold text-sm shadow-ee-elevated transition-colors duration-150 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ee-focus-ring"
                 >
                   <span>Seguir pedido</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </Link>
                 <Link
                   to="/perfil#pedidos"
-                  className="px-6 py-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-semibold rounded-xl text-sm transition-colors shadow-sm flex items-center justify-center"
+                  className="inline-flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-ee-sm border border-ee-border-strong bg-ee-surface-elevated text-ee-text hover:bg-ee-surface-subtle font-ee-sans font-semibold text-sm transition-colors duration-150 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ee-focus-ring"
                 >
                   Mis pedidos
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => navigate('/catalogo')}
-                  className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-md flex items-center justify-center gap-2"
-                >
-                  <span>Volver al catálogo</span>
-                </button>
+                <Button variant="secondary" size="md" onClick={() => navigate('/catalogo')}>
+                  Volver al catálogo
+                </Button>
               </div>
-            </div>
+            </BentoCard>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-emerald-200 p-8 text-center shadow-sm space-y-6">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8" />
+          <BentoCard
+            variant="elevated"
+            padding="lg"
+            radius="lg"
+            data-testid="payment-return-card"
+            className="text-center space-y-6"
+          >
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-14 h-14 bg-ee-success-bg text-ee-success-fg border border-ee-success-border rounded-ee-md flex items-center justify-center">
+                <CheckCircle2 className="w-7 h-7" aria-hidden="true" />
+              </div>
+              <StatusBadge variant="success">Aprobado</StatusBadge>
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-2xl font-extrabold text-gray-900">¡Pago confirmado!</h2>
-              <p className="text-sm text-gray-600 max-w-md mx-auto">
+              <h2 className="font-ee-display text-2xl font-bold text-ee-text">
+                ¡Pago confirmado!
+              </h2>
+              <p className="text-sm text-ee-text-secondary max-w-md mx-auto leading-relaxed">
                 Tu pedido fue procesado exitosamente. Ya enviamos la comanda a cocina y tu franja horaria se encuentra garantizada.
               </p>
             </div>
 
-            <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-200 text-left space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Número de pedido:</span>
-                <span className="font-mono font-semibold text-neutral-800">{orderId}</span>
+            <div className="bg-ee-surface-subtle rounded-ee-md p-4 border border-ee-border-subtle text-left space-y-2 text-sm">
+              <div className="flex justify-between gap-2">
+                <span className="text-ee-text-secondary">Número de pedido:</span>
+                <span className="font-ee-mono tabular-nums font-semibold text-ee-text">
+                  {orderId}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Total abonado:</span>
-                <span className="font-semibold text-emerald-700">
+              <div className="flex justify-between gap-2">
+                <span className="text-ee-text-secondary">Total abonado:</span>
+                <span className="font-ee-mono tabular-nums font-bold text-ee-text">
                   ${paymentStatus?.totalAmount ? paymentStatus.totalAmount.toFixed(2) : '0.00'}
                 </span>
               </div>
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row justify-center gap-3">
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                size="md"
+                rightIcon={<ArrowRight className="w-4 h-4" />}
                 onClick={() => navigate('/catalogo')}
-                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-md flex items-center justify-center gap-2"
               >
-                <span>Seguir explorando</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+                Seguir explorando
+              </Button>
             </div>
-          </div>
+          </BentoCard>
         )}
       </div>
     </WorkspaceLayout>

@@ -35,7 +35,7 @@ A diferencia de plataformas genéricas de pedidos enfocadas únicamente en la vi
 - **Entornos de uso**: comensales en movilidad (pantallas de 360 px en adelante) y escritorio; personal de cocina y mostrador en terminales o tabletas durante servicio activo de hora pico; administradores en escritorio y móvil revisando inventario, aprobaciones y métricas BI.
 - **Arquitectura de ejecución**: SPA en React 18.3, TypeScript 5.6, Vite 5.4, React Router DOM 6.27, Tailwind CSS 3.4, `lucide-react`, Recharts 3.11 y Axios 1.7; backend en Java 21 / Spring Boot con PostgreSQL; despliegue contenedorizado en Docker y Render con servidor estático Nginx (`easyeat/frontend/nginx.conf`).
 - **Aislamiento multi-tenant**: cada establecimiento gestiona de forma aislada su personal, inventario, fichas de platos, franjas de retiro, pagos, métricas y marca.
-- **Flujo de ingeniería**: Spec-Driven Development (SDD) gobernado por `.specify/memory/constitution.md` (v2.1.0), con contratos funcionales verificados en `specs/001-*` a `specs/024-*`.
+- **Flujo de ingeniería**: Spec-Driven Development (SDD) gobernado por `.specify/memory/constitution.md` (v2.1.1), con contratos funcionales verificados en `specs/001-*` a `specs/024-*` y planificación activa de `specs/025-diner-bento-redesign/`.
 
 ## Capabilities and Constraints
 

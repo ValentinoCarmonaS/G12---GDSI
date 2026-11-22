@@ -156,7 +156,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                     to="/perfil"
                     title="Mi perfil"
                     aria-label="Mi perfil"
-                    className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-ee-border-subtle bg-ee-surface-subtle text-ee-text transition-colors hover:border-ee-primary-border"
+                    className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-ee-border-subtle bg-ee-surface-subtle text-ee-text transition-colors hover:border-ee-primary-border"
                     style={{ borderWidth: 'var(--ee-border-width)' }}
                   >
                     {avatarContent}
@@ -173,15 +173,6 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                     {avatarContent}
                   </div>
                 )}
-
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-ee-sm border border-ee-border-subtle bg-ee-surface-elevated px-2.5 text-xs font-semibold text-ee-text transition-colors hover:border-ee-danger-border hover:bg-ee-danger-bg hover:text-ee-danger-fg sm:px-3 sm:text-sm"
-                  style={{ borderWidth: 'var(--ee-border-width)' }}
-                >
-                  Cerrar sesión
-                </button>
               </>
             ) : (
               <div className="flex items-center gap-2">

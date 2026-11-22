@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, AlertCircle, Utensils } from 'lucide-react';
+import { ArrowLeft, Mail, Utensils } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
+import { BrandThemeProvider } from '../components/common/BrandThemeProvider';
 import { PendingAccreditationBanner } from '../components/checkout/PendingAccreditationBanner';
 import { OrderSuccessGreenBanner } from '../components/tracking/OrderSuccessGreenBanner';
 import { LiveTrackingWidget } from '../components/tracking/LiveTrackingWidget';
+import { BentoCard } from '../components/diner';
+import { Button, FeedbackState, LoadingSkeleton, StatusBadge } from '../components/primitives';
 import { orderTrackingApi } from '../api/orderTrackingApi';
 import type { OrderConfirmationTrackingResponse } from '../types/orderTracking';
 
@@ -33,7 +36,7 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
       console.error('Error fetching confirmation tracking details:', err);
       setErrorMessage(
         err?.response?.data?.detail ||
-          'No pudimos cargar la información del pedido. Por favor, verificá el enlace o intentá más tarde.'
+        'No pudimos cargar la información del pedido. Por favor, verificá el enlace o intentá más tarde.'
       );
     } finally {
       setIsLoading(false);
@@ -76,169 +79,185 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
       title="Confirmación de Pedido"
       subtitle="Detalle de compra, respaldo por correo y seguimiento en vivo"
     >
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8 animate-fade-in">
-        {/* Navigation back */}
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => navigate('/catalogo')}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-emerald-700 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Volver a la carta
-          </button>
-        </div>
-
-        {/* Loading State */}
-        {isLoading && (
-          <div className="bg-white rounded-3xl border border-gray-100 p-16 text-center shadow-sm space-y-4">
-            <RefreshCw className="w-10 h-10 animate-spin text-emerald-600 mx-auto" />
-            <p className="text-gray-600 font-medium text-sm">
-              Cargando confirmación del pedido...
-            </p>
+      <BrandThemeProvider establishmentId={order?.establishmentId}>
+        <div className="max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+          {/* Navigation back */}
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => navigate('/catalogo')}
+              className="inline-flex items-center gap-2 min-h-[44px] px-3 py-2 rounded-ee-sm text-sm font-semibold text-ee-text-secondary hover:text-ee-text hover:bg-ee-surface-subtle transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring"
+            >
+              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+              Volver a la carta
+            </button>
           </div>
-        )}
 
-        {/* Error State */}
-        {!isLoading && errorMessage && (
-          <div className="bg-red-50 border border-red-200 rounded-3xl p-8 text-center space-y-4 shadow-sm">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-            <h3 className="text-lg font-bold text-red-900">
-              No pudimos cargar la información del pedido
-            </h3>
-            <p className="text-sm text-red-700 max-w-md mx-auto">{errorMessage}</p>
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={fetchOrderDetails}
-                className="px-6 py-2.5 rounded-xl font-semibold text-sm text-white bg-red-600 hover:bg-red-700 transition-colors shadow-sm"
-              >
-                Reintentar
-              </button>
-            </div>
-          </div>
-        )}
+          {/* Loading State */}
+          {isLoading && (
+            <BentoCard variant="elevated" padding="lg" radius="lg" className="space-y-4">
+              <LoadingSkeleton variant="block" />
+              <LoadingSkeleton variant="block" />
+              <p className="text-ee-text-secondary font-medium text-sm text-center">
+                Cargando confirmación del pedido...
+              </p>
+            </BentoCard>
+          )}
 
-        {/* Provisional / Confirmation View */}
-        {!isLoading && order && (
-          <div className="space-y-8">
-            {isPendingApproval ? (
-              <div className="space-y-6">
-                <PendingAccreditationBanner orderId={order.orderId} />
-                <div className="bg-white rounded-3xl border border-amber-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="space-y-1">
-                    <h2 className="text-lg font-bold text-gray-900">
-                      Esperando acreditación de pago
-                    </h2>
-                    <p className="text-sm text-gray-600">
-                      Actualizamos el estado automáticamente cada 5 segundos. Cuando Mercado Pago acredite el pago, tu pedido pasará a cocina y verás el comprobante completo.
-                    </p>
-                  </div>
-                  <Link
-                    to="/perfil#pedidos"
-                    className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl font-semibold text-sm bg-neutral-900 text-white hover:bg-neutral-800 transition-colors shrink-0"
+          {/* Error State */}
+          {!isLoading && errorMessage && (
+            <FeedbackState
+              variant="danger"
+              title="No pudimos cargar la información del pedido"
+              message={errorMessage}
+              actionLabel="Reintentar"
+              onAction={fetchOrderDetails}
+            />
+          )}
+
+          {/* Provisional / Confirmation View */}
+          {!isLoading && order && (
+            <div className="space-y-6">
+              {isPendingApproval ? (
+                <div className="space-y-6">
+                  <PendingAccreditationBanner orderId={order.orderId} />
+                  <BentoCard
+                    variant="elevated"
+                    padding="md"
+                    radius="lg"
+                    className="border-ee-warning-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
                   >
-                    Mis pedidos
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Green Success Banner (AS-1, AS-3, INV-004) */}
-                <OrderSuccessGreenBanner
-                  ticketNumber={order.ticketNumber}
-                  pickupDate={order.pickupDate}
-                  timeSlotStart={order.timeSlotStart}
-                  timeSlotEnd={order.timeSlotEnd}
-                  establishmentName={order.establishmentName}
-                  fulfillmentMode={order.fulfillmentMode}
-                />
-
-                {/* Live Tracking Widget (FR-006, FR-007, FR-008, FR-009, AS-5, AS-6, AS-7, AS-8) */}
-                <LiveTrackingWidget
-                  orderId={order.orderId}
-                  ticketNumber={order.ticketNumber}
-                  fulfillmentMode={order.fulfillmentMode}
-                  timeSlotStart={order.timeSlotStart}
-                  timeSlotEnd={order.timeSlotEnd}
-                />
-
-                {/* Email Guarantee Notice (AS-2, FR-002) */}
-                <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200/60 text-emerald-900 text-sm flex items-start gap-3">
-                  <span className="text-lg">📧</span>
-                  <div>
-                    <p className="font-bold">Comprobante emitido con respaldo por correo</p>
-                    <p className="text-xs text-emerald-700 mt-0.5">
-                      Te enviamos el comprobante formal con los datos de retiro y el enlace directo de seguimiento a tu casilla registrada.
-                    </p>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Order Items Breakdown & Summary (AS-3) */}
-            <div className="bg-white rounded-3xl border border-gray-200/80 p-6 sm:p-8 shadow-sm space-y-6">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                <div className="flex items-center gap-2 text-gray-900 font-bold text-lg">
-                  <Utensils className="w-5 h-5 text-emerald-600" />
-                  <h2>Detalle del Pedido</h2>
-                </div>
-                <span className="text-xs font-semibold px-3 py-1 bg-gray-100 text-gray-700 rounded-full">
-                  {order.items.length} {order.items.length === 1 ? 'producto' : 'productos'}
-                </span>
-              </div>
-
-              {/* Items List */}
-              <div className="divide-y divide-gray-100">
-                {order.items.map((item, index) => (
-                  <div key={item.dishId || index} className="py-3 flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3">
-                      <span className="w-7 h-7 rounded-lg bg-emerald-100/70 text-emerald-800 font-bold flex items-center justify-center text-xs">
-                        {item.quantity}x
-                      </span>
-                      <span className="font-semibold text-gray-800">{item.dishName}</span>
+                    <div className="space-y-1">
+                      <h2 className="text-lg font-bold text-ee-text">
+                        Esperando acreditación de pago
+                      </h2>
+                      <p className="text-sm text-ee-text-secondary">
+                        Actualizamos el estado automáticamente cada 5 segundos. Cuando Mercado Pago acredite el pago, tu pedido pasará a cocina y verás el comprobante completo.
+                      </p>
                     </div>
-                    <div className="text-right">
-                      <span className="font-bold text-gray-900">${item.subtotal.toFixed(2)}</span>
-                      {item.quantity > 1 && (
-                        <span className="block text-[11px] text-gray-400">
-                          ${item.unitPrice.toFixed(2)} c/u
+                    <Link
+                      to="/perfil#pedidos"
+                      className="inline-flex items-center justify-center min-h-[44px] px-5 py-2.5 rounded-ee-sm font-semibold text-sm bg-ee-primary text-ee-on-primary border border-ee-primary-border hover:bg-ee-primary-hover transition-colors duration-150 motion-reduce:transition-none shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring"
+                    >
+                      Mis pedidos
+                    </Link>
+                  </BentoCard>
+                </div>
+              ) : (
+                <>
+                  {/* Confirmation Banner (AS-1, AS-3, INV-004, FR-008) */}
+                  <OrderSuccessGreenBanner
+                    ticketNumber={order.ticketNumber}
+                    pickupDate={order.pickupDate}
+                    timeSlotStart={order.timeSlotStart}
+                    timeSlotEnd={order.timeSlotEnd}
+                    establishmentName={order.establishmentName}
+                    fulfillmentMode={order.fulfillmentMode}
+                  />
+
+                  {/* Live Tracking Widget (FR-006..FR-012) */}
+                  <LiveTrackingWidget
+                    orderId={order.orderId}
+                    ticketNumber={order.ticketNumber}
+                    fulfillmentMode={order.fulfillmentMode}
+                    timeSlotStart={order.timeSlotStart}
+                    timeSlotEnd={order.timeSlotEnd}
+                  />
+
+                  {/* Email Guarantee Notice (AS-2, FR-002) */}
+                  <BentoCard
+                    variant="subtle"
+                    padding="sm"
+                    radius="md"
+                    className="flex items-start gap-3 border-ee-success-border bg-ee-success-bg text-ee-success-fg"
+                  >
+                    <Mail className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
+                    <div className="text-sm">
+                      <p className="font-bold">Comprobante emitido con respaldo por correo</p>
+                      <p className="text-xs mt-0.5">
+                        Te enviamos el comprobante formal con los datos de retiro y el enlace directo de seguimiento a tu casilla registrada.
+                      </p>
+                    </div>
+                  </BentoCard>
+                </>
+              )}
+
+              {/* Order Items Breakdown & Summary (AS-3) */}
+              <BentoCard variant="elevated" padding="md" radius="lg" className="space-y-5">
+                <div className="flex items-center justify-between gap-3 border-b border-ee-border-subtle pb-4">
+                  <div className="flex items-center gap-2 text-ee-text font-bold text-lg">
+                    <Utensils className="w-5 h-5 text-ee-text-secondary" aria-hidden="true" />
+                    <h2>Detalle del Pedido</h2>
+                  </div>
+                  <StatusBadge variant="neutral">
+                    {order.items.length} {order.items.length === 1 ? 'producto' : 'productos'}
+                  </StatusBadge>
+                </div>
+
+                {/* Items List */}
+                <div className="divide-y divide-ee-border-subtle">
+                  {order.items.map((item, index) => (
+                    <div
+                      key={item.dishId || index}
+                      className="py-3 flex items-center justify-between gap-3 text-sm"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-8 h-8 rounded-ee-sm bg-ee-surface-subtle border border-ee-border-subtle text-ee-text font-ee-mono tabular-nums font-bold flex items-center justify-center text-xs shrink-0">
+                          {item.quantity}x
                         </span>
-                      )}
+                        <span className="font-semibold text-ee-text truncate">{item.dishName}</span>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-ee-mono tabular-nums font-bold text-ee-text">
+                          ${item.subtotal.toFixed(2)}
+                        </span>
+                        {item.quantity > 1 && (
+                          <span className="block text-[11px] font-ee-mono tabular-nums text-ee-text-secondary">
+                            ${item.unitPrice.toFixed(2)} c/u
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              {/* Total Summary */}
-              <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">
-                    {isPendingApproval ? 'Total del Pedido' : 'Total Abonado'}
-                  </span>
-                  <span className={`text-xs font-medium ${isPendingApproval ? 'text-amber-700' : 'text-emerald-600'}`}>
-                    {isPendingApproval ? 'Acreditación pendiente' : 'Abonado mediante pasarela segura'}
+                {/* Total Summary */}
+                <div className="border-t border-ee-border-subtle pt-4 flex items-center justify-between gap-4">
+                  <div>
+                    <span className="text-xs font-ee-mono font-semibold text-ee-text-secondary uppercase tracking-wider block">
+                      {isPendingApproval ? 'Total del Pedido' : 'Total Abonado'}
+                    </span>
+                    <span
+                      className={`text-xs font-medium ${isPendingApproval ? 'text-ee-warning-fg' : 'text-ee-success-fg'
+                        }`}
+                    >
+                      {isPendingApproval
+                        ? 'Acreditación pendiente'
+                        : 'Abonado mediante pasarela segura'}
+                    </span>
+                  </div>
+                  <span className="text-2xl sm:text-3xl font-ee-mono tabular-nums font-bold text-ee-text">
+                    ${order.totalAmount.toFixed(2)}
                   </span>
                 </div>
-                <span className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-                  ${order.totalAmount.toFixed(2)}
-                </span>
+              </BentoCard>
+
+              {/* Action Bar (AS-3, FR-003) */}
+              <div className="flex justify-center pt-2">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate('/catalogo')}
+                  className="w-full sm:w-auto"
+                >
+                  Explorar carta
+                </Button>
               </div>
             </div>
-
-            {/* Action Bar (AS-3, FR-003) */}
-            <div className="flex justify-center pt-2">
-              <button
-                type="button"
-                onClick={() => navigate('/catalogo')}
-                className="w-full sm:w-auto py-4 px-8 rounded-2xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-all text-center shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-              >
-                Explorar carta
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </BrandThemeProvider>
     </WorkspaceLayout>
   );
 };

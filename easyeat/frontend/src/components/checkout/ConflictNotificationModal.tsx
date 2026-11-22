@@ -1,5 +1,7 @@
 import React from 'react';
-import { AlertCircle, Clock, RefreshCw, X } from 'lucide-react';
+import { AlertCircle, Clock, RefreshCw } from 'lucide-react';
+import { AccessibleModal } from '../diner/AccessibleModal';
+import { Button } from '../primitives/Button';
 
 export interface ConflictNotificationModalProps {
   isOpen: boolean;
@@ -18,10 +20,6 @@ export const ConflictNotificationModal: React.FC<ConflictNotificationModalProps>
   onRefreshSlots,
   onViewExistingOrder,
 }) => {
-  if (!isOpen) {
-    return null;
-  }
-
   const isSoldOut = errorCode === 'SLOT_SOLD_OUT';
   const isActiveReservation = errorCode === 'ACTIVE_RESERVATION_EXISTS';
 
@@ -40,79 +38,64 @@ export const ConflictNotificationModal: React.FC<ConflictNotificationModalProps>
   const detail = errorMessage || defaultDetail;
 
   return (
-    <div
-      data-testid="conflict-notification-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all p-6 space-y-6">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
-          aria-label="Cerrar modal"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="flex items-start gap-4">
-          <div
-            className={`p-3 rounded-full flex-shrink-0 ${
-              isSoldOut
-                ? 'bg-amber-100 text-amber-600'
-                : 'bg-orange-100 text-orange-600'
-            }`}
-          >
-            {isSoldOut ? (
-              <Clock className="w-6 h-6" />
-            ) : (
-              <AlertCircle className="w-6 h-6" />
-            )}
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">{detail}</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      size="sm"
+      testId="conflict-notification-modal"
+      closeButtonLabel="Cerrar modal"
+      footer={
+        <div className="flex flex-col sm:flex-row gap-3">
           {isSoldOut && (
-            <button
+            <Button
+              variant="primary"
+              size="md"
+              fullWidth
+              leftIcon={<RefreshCw className="w-4 h-4" />}
               onClick={() => {
                 if (onRefreshSlots) {
                   onRefreshSlots();
                 }
                 onClose();
               }}
-              className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-sm"
             >
-              <RefreshCw className="w-4 h-4" />
               Elegir otra franja
-            </button>
+            </Button>
           )}
 
           {isActiveReservation && (
-            <button
+            <Button
+              variant="primary"
+              size="md"
+              fullWidth
               onClick={() => {
                 if (onViewExistingOrder) {
                   onViewExistingOrder();
                 }
                 onClose();
               }}
-              className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-sm"
             >
               Ver mi reserva
-            </button>
+            </Button>
           )}
 
-          <button
-            onClick={onClose}
-            className="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-          >
+          <Button variant="outline" size="md" fullWidth onClick={onClose}>
             Cerrar
-          </button>
+          </Button>
         </div>
+      }
+    >
+      <div className="flex items-start gap-4">
+        <div className="p-3 rounded-ee-md bg-ee-warning-bg text-ee-warning-fg border border-ee-warning-border shrink-0">
+          {isSoldOut ? (
+            <Clock className="w-6 h-6" aria-hidden="true" />
+          ) : (
+            <AlertCircle className="w-6 h-6" aria-hidden="true" />
+          )}
+        </div>
+        <p className="text-sm text-ee-text-secondary leading-relaxed">{detail}</p>
       </div>
-    </div>
+    </AccessibleModal>
   );
 };

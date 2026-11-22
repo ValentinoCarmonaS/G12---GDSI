@@ -19,7 +19,7 @@ export const ConnectionStatusBadge: React.FC<ConnectionStatusBadgeProps> = ({
       role="status"
       aria-live="polite"
       data-testid="connection-status-badge"
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/70 dark:text-amber-300 dark:border-amber-800 animate-pulse transition-opacity duration-200 ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-ee-warning-bg text-ee-warning-fg border border-ee-warning-border transition-opacity duration-150 motion-reduce:transition-none ${className}`}
     >
       <WifiOff className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
       <span>Sin conexión — Reintentando...</span>

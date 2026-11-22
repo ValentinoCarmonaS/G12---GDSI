@@ -1,10 +1,15 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { EstablishmentSummary } from '@/types/dinerCatalog';
+import { AccessibleModal } from '@/components/diner/AccessibleModal';
+import { Button } from '@/components/primitives/Button';
 
 export interface EstablishmentSwitchModalProps {
   isOpen: boolean;
-  targetEstablishment: EstablishmentSummary | null;
+  targetEstablishment?: EstablishmentSummary | null;
+  currentEstablishmentName?: string;
+  newEstablishmentName?: string;
+  cartItemsCount?: number;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -12,59 +17,53 @@ export interface EstablishmentSwitchModalProps {
 export const EstablishmentSwitchModal: React.FC<EstablishmentSwitchModalProps> = ({
   isOpen,
   targetEstablishment,
+  newEstablishmentName,
   onConfirm,
   onCancel,
 }) => {
-  if (!isOpen || !targetEstablishment) {
+  const targetName = targetEstablishment?.name || newEstablishmentName;
+
+  if (!isOpen || !targetName) {
     return null;
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="switch-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
-    >
-      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 dark:border-gray-700">
-        <div className="flex items-center gap-3 mb-4 text-amber-600 dark:text-amber-400">
-          <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 rounded-xl">
-            <AlertTriangle className="w-6 h-6" />
-          </div>
-          <h3
-            id="switch-modal-title"
-            className="text-lg font-bold text-gray-900 dark:text-gray-100"
-          >
-            ¿Cambiar de restaurante?
-          </h3>
-        </div>
-
-        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
-          Tenés productos de otro local en tu carrito. Si cambiás a{' '}
-          <span className="font-semibold text-gray-900 dark:text-white">
-            {targetEstablishment.name}
-          </span>
-          , se vaciará tu carrito para evitar mezclar pedidos de distintos restaurantes.
-        </p>
-
-        <div className="flex items-center justify-end gap-3">
-          <button
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title="¿Cambiar de restaurante?"
+      size="sm"
+      footer={
+        <div className="flex items-center justify-end gap-3 w-full">
+          <Button
             type="button"
+            variant="secondary"
             onClick={onCancel}
-            className="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors cursor-pointer"
+            className="min-h-[44px]"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="primary"
             onClick={onConfirm}
-            className="px-4 py-2.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md transition-colors cursor-pointer"
+            className="min-h-[44px]"
           >
             Cambiar de local
-          </button>
+          </Button>
         </div>
+      }
+    >
+      <div className="flex items-start gap-3">
+        <div className="p-2.5 bg-[var(--ee-warning-bg)] border border-[var(--ee-warning-border)] text-[var(--ee-warning-fg)] rounded-[var(--ee-radius-sm)] shrink-0">
+          <AlertTriangle className="w-5 h-5" aria-hidden="true" />
+        </div>
+        <p className="text-sm text-[var(--ee-text-secondary)] leading-relaxed">
+          Tenés productos de otro local en tu carrito. Si cambiás a{' '}
+          <span className="font-semibold text-[var(--ee-text)]">{targetName}</span>, se
+          vaciará tu carrito para evitar mezclar pedidos de distintos restaurantes.
+        </p>
       </div>
-    </div>
+    </AccessibleModal>
   );
 };
-
