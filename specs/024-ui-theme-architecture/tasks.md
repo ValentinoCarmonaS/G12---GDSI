@@ -144,7 +144,7 @@
 
 ### Consolidación de catálogo y matriz de 20 combinaciones (`FR-016`, `FR-017`, `SC-005`)
 
-- [ ] T042 [US4] Exportar el catálogo unificado de los 5 primitivos en `easyeat/frontend/src/components/primitives/index.ts` (depende de T037, T038, T039, T040, T041)
+- [X] T042 [US4] Exportar el catálogo unificado de los 5 primitivos en `easyeat/frontend/src/components/primitives/index.ts` (depende de T037, T038, T039, T040, T041)
 - [ ] T043 [US4] Escribir y ejecutar prueba integradora de matriz en `easyeat/frontend/tests/components/primitives/PrimitivesMatrix.test.tsx` verificando las 20 combinaciones (`5 primitivos × 4 temas`) bajo `ThemeScopeProvider` más aserción estática de `0` referencias a nombres de rol o tema (`comensal`, `mostrador`, `chef`, `admin`, `COMENSAL`, `ENCARGADO`, `CHEF`, `ADMINISTRADOR`) en `easyeat/frontend/src/components/primitives/*.tsx` (depende de T042)
 
 **Checkpoint**: Los 5 primitivos base están verificados en los 4 temas con polimorfismo puro.
