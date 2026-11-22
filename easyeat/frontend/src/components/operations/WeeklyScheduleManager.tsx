@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { GlassCard } from '../admin/GlassCard';
+import { Button } from '../ui/Button';
 import type { DayOfWeek, OperatingSchedule, UpdateScheduleRequest } from '../../types/operations';
 
 export interface WeeklyScheduleManagerProps {
@@ -114,75 +116,73 @@ export const WeeklyScheduleManager: React.FC<WeeklyScheduleManagerProps> = ({ sc
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" aria-label="Horarios comerciales semanales">
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="text-left text-gray-500">
-              <th className="py-2 pr-4 font-medium">Día</th>
-              <th className="py-2 pr-4 font-medium">Apertura</th>
-              <th className="py-2 pr-4 font-medium">Cierre</th>
-              <th className="py-2 font-medium">Cerrado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {WEEK.map(({ day, label }) => {
-              const draft = drafts[day];
-              return (
-                <tr key={day} className="border-t border-gray-100">
-                  <td className="py-2 pr-4 font-medium text-gray-800">{label}</td>
-                  <td className="py-2 pr-4">
-                    <input
-                      type="time"
-                      aria-label={`Apertura ${label}`}
-                      value={draft.opening}
-                      disabled={draft.isClosed}
-                      onChange={(event) => update(day, { opening: event.target.value })}
-                      className="px-2 py-1 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:text-gray-400"
-                    />
-                  </td>
-                  <td className="py-2 pr-4">
-                    <input
-                      type="time"
-                      aria-label={`Cierre ${label}`}
-                      value={draft.closing}
-                      disabled={draft.isClosed}
-                      onChange={(event) => update(day, { closing: event.target.value })}
-                      className="px-2 py-1 border border-gray-300 rounded-md disabled:bg-gray-100 disabled:text-gray-400"
-                    />
-                  </td>
-                  <td className="py-2">
-                    <input
-                      type="checkbox"
-                      aria-label={`Cerrado ${label}`}
-                      checked={draft.isClosed}
-                      onChange={(event) => update(day, { isClosed: event.target.checked })}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {WEEK.map(({ day, label }) => {
+          const draft = drafts[day];
+          return (
+            <GlassCard key={day} variant="subtle" padding="sm" className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-[var(--ee-text)]">{label}</span>
+                <label className="inline-flex items-center gap-2 min-h-[44px] cursor-pointer text-xs font-medium text-[var(--ee-text-muted)]">
+                  <input
+                    type="checkbox"
+                    aria-label={`Cerrado ${label}`}
+                    checked={draft.isClosed}
+                    onChange={(event) => update(day, { isClosed: event.target.checked })}
+                    className="h-4 w-4 rounded border-[var(--ee-border)] text-[var(--ee-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
+                  />
+                  Cerrado
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs text-[var(--ee-text-muted)]">
+                  <span>Apertura</span>
+                  <input
+                    type="time"
+                    aria-label={`Apertura ${label}`}
+                    value={draft.opening}
+                    disabled={draft.isClosed}
+                    onChange={(event) => update(day, { opening: event.target.value })}
+                    className="min-h-[44px] px-2.5 py-1.5 rounded-[var(--ee-radius-sm)] border border-[var(--ee-border)] bg-[var(--ee-surface)] text-[var(--ee-text)] font-ee-mono tabular-nums text-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-[var(--ee-text-muted)]">
+                  <span>Cierre</span>
+                  <input
+                    type="time"
+                    aria-label={`Cierre ${label}`}
+                    value={draft.closing}
+                    disabled={draft.isClosed}
+                    onChange={(event) => update(day, { closing: event.target.value })}
+                    className="min-h-[44px] px-2.5 py-1.5 rounded-[var(--ee-radius-sm)] border border-[var(--ee-border)] bg-[var(--ee-surface)] text-[var(--ee-text)] font-ee-mono tabular-nums text-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
+                  />
+                </label>
+              </div>
+            </GlassCard>
+          );
+        })}
       </div>
 
       {error && (
-        <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <div role="alert" className="rounded-[var(--ee-radius-md)] border border-[var(--ee-danger-border)] bg-[var(--ee-danger-bg)] px-3 py-2 text-sm text-[var(--ee-danger-text)]">
           {error}
           {conflict && onReload && (
-            <button type="button" onClick={onReload} className="ml-3 underline font-medium">
+            <button type="button" onClick={onReload} className="ml-3 underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]">
               Recargar
             </button>
           )}
         </div>
       )}
 
-      <button
+      <Button
         type="submit"
+        variant="primary"
         disabled={isSaving || changedDays.length === 0}
-        className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium disabled:opacity-50"
+        loading={isSaving}
+        className="min-h-[44px]"
       >
         {isSaving ? 'Guardando...' : 'Guardar horarios'}
-      </button>
+      </Button>
     </form>
   );
 };

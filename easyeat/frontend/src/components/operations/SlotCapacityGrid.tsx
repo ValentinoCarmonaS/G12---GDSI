@@ -187,25 +187,25 @@ export const SlotCapacityGrid: React.FC<SlotCapacityGridProps> = ({
       </div>
 
       {slots.length === 0 ? (
-        <p className="text-sm text-gray-500">Este día no tiene franjas para configurar.</p>
+        <p className="text-sm text-[var(--ee-text-muted)]">Este día no tiene franjas para configurar.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-[var(--ee-radius-md)] border border-[var(--ee-border)] bg-[var(--ee-surface)]/70">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="text-left text-gray-500">
-                <th className="py-2 pr-4 font-medium">Franja</th>
-                <th className="py-2 pr-4 font-medium">Capacidad</th>
-                <th className="py-2 pr-4 font-medium">Aprobados / máx.</th>
-                <th className="py-2 font-medium">Estado</th>
+              <tr className="text-left text-[var(--ee-text-muted)] border-b border-[var(--ee-border)]">
+                <th className="py-2.5 px-4 font-medium">Franja</th>
+                <th className="py-2.5 px-4 font-medium">Capacidad</th>
+                <th className="py-2.5 px-4 font-medium">Aprobados / máx.</th>
+                <th className="py-2.5 px-4 font-medium">Estado</th>
               </tr>
             </thead>
             <tbody>
               {slots.map((slot) => (
-                <tr key={slot.startTime} className="border-t border-gray-100">
-                  <td className="py-2 pr-4 font-medium text-gray-800">
+                <tr key={slot.startTime} className="border-t border-[var(--ee-border)]/60">
+                  <td className="py-2.5 px-4 font-medium text-[var(--ee-text)] font-ee-mono tabular-nums">
                     {hhmm(slot.startTime)} - {hhmm(slot.endTime)}
                   </td>
-                  <td className="py-2 pr-4">
+                  <td className="py-2.5 px-4">
                     <input
                       type="number"
                       min={0}
@@ -213,15 +213,15 @@ export const SlotCapacityGrid: React.FC<SlotCapacityGridProps> = ({
                       aria-label={`Capacidad ${hhmm(slot.startTime)}`}
                       value={drafts[slot.startTime] ?? ''}
                       onChange={(event) => setDrafts((current) => ({ ...current, [slot.startTime]: event.target.value }))}
-                      className="w-24 px-2 py-1 border border-gray-300 rounded-md"
+                      className="w-24 min-h-[44px] px-2.5 py-1 border border-[var(--ee-border)] rounded-[var(--ee-radius-sm)] bg-[var(--ee-surface)] text-[var(--ee-text)] font-ee-mono tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
                     />
                   </td>
-                  <td className="py-2 pr-4 text-gray-700">
+                  <td className="py-2.5 px-4 text-[var(--ee-text-muted)] font-ee-mono tabular-nums">
                     {slot.approvedOrdersCount} / {slot.maxCapacity}
                   </td>
-                  <td className="py-2">
+                  <td className="py-2.5 px-4">
                     {slot.isSoldOut && (
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-800 border border-red-200">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--ee-danger-bg)] text-[var(--ee-danger-text)] border border-[var(--ee-danger-border)]">
                         Agotada
                       </span>
                     )}
@@ -234,10 +234,10 @@ export const SlotCapacityGrid: React.FC<SlotCapacityGridProps> = ({
       )}
 
       {error && (
-        <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <div role="alert" className="rounded-[var(--ee-radius-md)] border border-[var(--ee-danger-border)] bg-[var(--ee-danger-bg)] px-3 py-2 text-sm text-[var(--ee-danger-text)]">
           {error}
           {conflict && onReload && (
-            <button type="button" onClick={onReload} className="ml-3 underline font-medium">
+            <button type="button" onClick={onReload} className="ml-3 underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]">
               Recargar
             </button>
           )}
@@ -247,7 +247,7 @@ export const SlotCapacityGrid: React.FC<SlotCapacityGridProps> = ({
       <button
         type="submit"
         disabled={isBusy || !hasChanges}
-        className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium disabled:opacity-50"
+        className="min-h-[44px] px-4 py-2 rounded-[var(--ee-radius-md)] bg-[var(--ee-primary)] text-[var(--ee-primary-contrast)] text-sm font-medium disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
       >
         {isBusy ? 'Guardando...' : 'Guardar capacidad'}
       </button>
