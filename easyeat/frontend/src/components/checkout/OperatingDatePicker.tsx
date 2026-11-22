@@ -21,12 +21,12 @@ export const OperatingDatePicker: React.FC<OperatingDatePickerProps> = ({
 }) => {
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-        <Calendar className="w-4 h-4 text-emerald-600" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-ee-text">
+        <Calendar className="w-4 h-4 text-ee-primary-border" aria-hidden="true" />
         <span>Seleccioná el día de retiro</span>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+      <div className="flex gap-2 overflow-x-auto pb-2">
         {operatingDays.map((item) => {
           const isSelected = item.date === selectedDate;
           const isDisabled = !item.isOperating;
@@ -38,18 +38,18 @@ export const OperatingDatePicker: React.FC<OperatingDatePickerProps> = ({
               disabled={isDisabled}
               onClick={() => onSelectDate(item.date)}
               aria-selected={isSelected}
-              className={`flex-1 min-w-[70px] py-3 px-2 rounded-xl border flex flex-col items-center justify-center transition-all ${
+              className={`flex-1 min-w-[70px] min-h-[44px] py-3 px-2 rounded-ee-md border flex flex-col items-center justify-center transition-colors duration-150 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ee-focus-ring ${
                 isDisabled
-                  ? 'border-gray-200 bg-gray-50 opacity-40 cursor-not-allowed text-gray-400'
+                  ? 'border-ee-border-subtle bg-ee-surface-subtle opacity-50 cursor-not-allowed text-ee-text-secondary'
                   : isSelected
-                  ? 'border-emerald-600 bg-emerald-50 text-emerald-900 font-semibold shadow-sm ring-2 ring-emerald-500/20'
-                  : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
+                  ? 'border-ee-primary-border bg-ee-primary text-ee-on-primary font-semibold shadow-ee-elevated'
+                  : 'border-ee-border-subtle bg-ee-surface-elevated hover:border-ee-border-strong hover:bg-ee-surface-subtle text-ee-text'
               }`}
             >
-              <span className="text-xs uppercase tracking-wider">{item.dayName}</span>
-              <span className="text-lg font-bold mt-0.5">{item.dayNumber}</span>
+              <span className="font-ee-mono text-xs uppercase tracking-wider">{item.dayName}</span>
+              <span className="font-ee-mono tabular-nums text-lg font-bold mt-0.5">{item.dayNumber}</span>
               {isDisabled && (
-                <span className="text-[10px] text-gray-400 mt-0.5">Cerrado</span>
+                <span className="text-[11px] text-ee-text-secondary mt-0.5">Cerrado</span>
               )}
             </button>
           );
