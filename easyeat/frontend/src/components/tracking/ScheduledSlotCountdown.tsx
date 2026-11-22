@@ -1,5 +1,7 @@
 import React from 'react';
 import { Calendar, Clock } from 'lucide-react';
+import { BentoCard } from '../diner';
+import { StatusBadge } from '../ui';
 
 export interface ScheduledSlotCountdownProps {
   isCountdownActive: boolean;
@@ -26,52 +28,66 @@ export const ScheduledSlotCountdown: React.FC<ScheduledSlotCountdownProps> = ({
 
   if (!isCountdownActive) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center shadow-sm">
-        <div className="inline-flex p-3 bg-blue-100 rounded-full mb-3 text-blue-600">
-          <Calendar className="w-8 h-8" />
+      <BentoCard variant="elevated" padding="md" radius="lg" className="text-center space-y-3">
+        <div className="flex justify-center">
+          <StatusBadge variant="info" className="gap-1.5">
+            <Calendar className="w-4 h-4" aria-hidden="true" />
+            Reserva programada
+          </StatusBadge>
         </div>
-        <h3 className="text-lg font-semibold text-gray-900">Horario de retiro programado</h3>
-        <p className="text-2xl font-bold text-blue-700 mt-2">
+        <h3 className="text-lg font-bold text-ee-text">Horario de retiro programado</h3>
+        <p className="text-2xl sm:text-3xl font-ee-mono tabular-nums font-bold text-ee-info-fg">
           {startFormatted} - {endFormatted} hs
         </p>
-        <p className="text-xs text-gray-500 mt-3">
+        <p className="text-xs text-ee-text-secondary max-w-md mx-auto">
           El contador dinámico en vivo se activará 15 minutos antes de tu turno pactado.
         </p>
-      </div>
+      </BentoCard>
     );
   }
 
   const isInSlot = estimatedMinutesRemaining != null && estimatedMinutesRemaining <= 0;
 
   return (
-    <div
+    <BentoCard
+      variant="elevated"
+      padding="md"
+      radius="lg"
       data-testid="active-proximity-countdown"
-      className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center shadow-sm"
+      className="text-center space-y-4 border-ee-warning-border"
     >
-      <div className="inline-flex p-3 bg-amber-100 rounded-full mb-3 text-amber-600">
-        <Clock className="w-8 h-8 animate-pulse" />
+      <div className="flex justify-center">
+        <StatusBadge variant="warning" className="gap-1.5">
+          <Clock className="w-4 h-4" aria-hidden="true" />
+          Cuenta regresiva activa
+        </StatusBadge>
       </div>
-      <h3 className="text-xl font-bold text-gray-900">
-        {isInSlot ? '¡Tu turno ha comenzado!' : '¡Tu turno se acerca!'}
-      </h3>
-      <p className="text-sm text-gray-600 mt-1">
-        {message ||
-          (isInSlot
-            ? 'La cocina está dando los últimos toques a tu pedido.'
-            : 'La cocina está comenzando la preparación de tu orden.')}
-      </p>
-      <div className="mt-4 inline-block bg-white border border-amber-300 rounded-xl px-6 py-3 shadow-sm">
+      <div className="space-y-1">
+        <h3 className="text-xl font-bold text-ee-text">
+          {isInSlot ? '¡Tu turno ha comenzado!' : '¡Tu turno se acerca!'}
+        </h3>
+        <p className="text-sm text-ee-text-secondary">
+          {message ||
+            (isInSlot
+              ? 'La cocina está dando los últimos toques a tu pedido.'
+              : 'La cocina está comenzando la preparación de tu orden.')}
+        </p>
+      </div>
+      <div className="inline-block bg-ee-warning-bg border border-ee-warning-border rounded-ee-md px-6 py-3">
         <span
           className={`${
             isInSlot ? 'text-2xl sm:text-3xl' : 'text-4xl'
-          } font-extrabold text-amber-600 tracking-tight`}
+          } font-ee-mono tabular-nums font-bold text-ee-warning-fg tracking-tight`}
         >
           {isInSlot ? 'Unos instantes' : `${estimatedMinutesRemaining ?? 15} min`}
         </span>
       </div>
-      <p className="text-xs text-gray-500 mt-3">
-        Franja de retiro acordada: {startFormatted} - {endFormatted} hs
+      <p className="text-xs text-ee-text-secondary">
+        Franja de retiro acordada:{' '}
+        <span className="font-ee-mono tabular-nums font-medium text-ee-text">
+          {startFormatted} - {endFormatted} hs
+        </span>
       </p>
-    </div>
+    </BentoCard>
   );
 };
