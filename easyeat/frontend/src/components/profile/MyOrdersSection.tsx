@@ -12,6 +12,12 @@ import {
   XCircle,
 } from 'lucide-react';
 import { getMyOrders } from '../../api/orderApi';
+import { BentoCard } from '../diner/BentoCard';
+import { Button } from '../primitives/Button';
+import { EmptyState } from '../primitives/EmptyState';
+import { FeedbackState } from '../primitives/FeedbackState';
+import { LoadingSkeleton } from '../primitives/LoadingSkeleton';
+import { StatusBadge } from '../primitives/StatusBadge';
 import { cancelPayment } from '../../api/paymentApi';
 import type { DinerOrderSummaryResponse, OrderStatus } from '../../types/order';
 
@@ -142,90 +148,76 @@ export const MyOrdersSection: React.FC<MyOrdersSectionProps> = ({ onResumePaymen
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-14 space-y-3 bg-white rounded-xl border border-neutral-200">
-        <Loader2 className="w-7 h-7 text-amber-600 animate-spin" />
-        <p className="text-sm text-neutral-600 font-medium">Cargando tus pedidos...</p>
+      <div data-testid="orders-loading-skeleton" className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <LoadingSkeleton variant="card" />
+        <LoadingSkeleton variant="card" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div
-        role="alert"
-        className="p-5 rounded-xl bg-red-50 border border-red-200 text-red-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-      >
-        <div className="flex items-center gap-3 text-sm">
-          <AlertCircle className="w-5 h-5 shrink-0 text-red-600" />
-          <span>{error}</span>
-        </div>
-        <button
-          type="button"
-          onClick={() => void loadOrders()}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-white border border-red-300 text-red-800 hover:bg-red-100 transition-colors self-start sm:self-auto"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Reintentar
-        </button>
-      </div>
+      <FeedbackState
+        tone="danger"
+        title="No pudimos cargar tus pedidos"
+        description={error}
+        action={
+          <Button type="button" variant="secondary" size="sm" onClick={() => void loadOrders()}>
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Reintentar
+          </Button>
+        }
+      />
     );
   }
 
   if (orders.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-neutral-200 p-10 text-center space-y-4">
-        <div className="w-12 h-12 mx-auto rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500">
-          <ShoppingBag className="w-6 h-6" />
-        </div>
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-neutral-900">Todavía no realizaste pedidos</h2>
-          <p className="text-sm text-neutral-600">
-            Cuando confirmes un pedido vas a poder seguir su estado y acceder al comprobante desde acá.
-          </p>
-        </div>
-        <Link
-          to="/catalogo"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-medium transition-colors"
-        >
-          Explorar catálogo
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </div>
+      <EmptyState
+        icon={<ShoppingBag className="h-6 w-6" aria-hidden="true" />}
+        title="Todavía no realizaste pedidos"
+        description="Cuando confirmes un pedido vas a poder seguir su estado y acceder al comprobante desde acá."
+        action={
+          <Link
+            to="/catalogo"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-ee-sm border border-ee-primary-border bg-ee-primary px-5 py-2.5 text-sm font-semibold text-ee-on-primary transition-colors hover:bg-ee-primary-hover"
+          >
+            Explorar catálogo
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        }
+      />
     );
   }
 
   return (
     <div className="space-y-4">
-      {actionError && (
-        <div
-          role="alert"
-          className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-center gap-3"
-        >
-          <AlertCircle className="w-5 h-5 shrink-0 text-red-600" />
-          <span>{actionError}</span>
-        </div>
-      )}
+      {actionError && <FeedbackState tone="danger" title="Error en la acción" description={actionError} />}
 
-      {orders.map((order) => {
-        const statusMeta = ORDER_STATUS_META[order.status] || {
-          label: order.status,
-          badgeClass: 'bg-neutral-100 text-neutral-800 border-neutral-200',
-        };
-        const isTrackable = TRACKABLE_STATUSES.has(order.status);
-        const isPendingPayment = order.status === 'PENDING_PAYMENT';
-        const validRedirectUrl =
-          order.redirectUrl && order.redirectUrl.trim().length > 0
-            ? order.redirectUrl.trim()
-            : null;
-        const isCancelling = cancellingOrderId === order.orderId;
-        const trackingHref = order.trackingUrl || `/pedidos/${order.orderId}/seguimiento`;
+      <div data-testid="my-orders-bento-grid" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {orders.map((order) => {
+          const statusMeta = ORDER_STATUS_META[order.status] || {
+            label: order.status,
+            badgeClass: 'bg-neutral-100 text-neutral-800 border-neutral-200',
+          };
+          const isTrackable = TRACKABLE_STATUSES.has(order.status);
+          const isPendingPayment = order.status === 'PENDING_PAYMENT';
+          const validRedirectUrl =
+            order.redirectUrl && order.redirectUrl.trim().length > 0
+              ? order.redirectUrl.trim()
+              : null;
+          const isCancelling = cancellingOrderId === order.orderId;
+          const trackingHref = order.trackingUrl || `/pedidos/${order.orderId}/seguimiento`;
 
-        return (
-          <article
-            key={order.orderId}
-            data-testid={`order-card-${order.orderId}`}
-            className="bg-white rounded-xl border border-neutral-200 shadow-xs p-5 space-y-4"
-          >
+          return (
+            <BentoCard
+              as="article"
+              variant="elevated"
+              padding="md"
+              key={order.orderId}
+              data-testid={`order-card-${order.orderId}`}
+              className="space-y-4"
+            >
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -335,9 +327,10 @@ export const MyOrdersSection: React.FC<MyOrdersSectionProps> = ({ onResumePaymen
                 )}
               </div>
             )}
-          </article>
-        );
-      })}
+            </BentoCard>
+          );
+        })}
+      </div>
     </div>
   );
 };
