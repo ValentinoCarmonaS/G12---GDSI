@@ -136,11 +136,10 @@ export const FirstLoginPasswordPage: React.FC = () => {
             }}
             disabled={isLoading}
             placeholder="••••••••••••"
-            className={`w-full min-h-[44px] px-3 py-2 border rounded-[var(--ee-radius-sm)] bg-[var(--ee-surface)] text-[var(--ee-text)] shadow-sm placeholder:text-[var(--ee-text-muted)] focus-visible:outline-none focus-visible:ring-2 transition-colors ${
-              fieldErrors.currentPassword
-                ? 'border-[var(--ee-danger-border)] focus-visible:ring-[var(--ee-danger-text)]'
-                : 'border-[var(--ee-border)] focus-visible:ring-[var(--ee-focus-ring)]'
-            }`}
+            className={`w-full min-h-[44px] px-3 py-2 border rounded-[var(--ee-radius-sm)] bg-[var(--ee-surface)] text-[var(--ee-text)] shadow-sm placeholder:text-[var(--ee-text-muted)] focus-visible:outline-none focus-visible:ring-2 transition-colors ${fieldErrors.currentPassword
+              ? 'border-[var(--ee-danger-border)] focus-visible:ring-[var(--ee-danger-text)]'
+              : 'border-[var(--ee-border)] focus-visible:ring-[var(--ee-focus-ring)]'
+              }`}
           />
           {fieldErrors.currentPassword && (
             <p className="mt-1 text-xs text-[var(--ee-danger-text)]">{fieldErrors.currentPassword}</p>
@@ -165,11 +164,10 @@ export const FirstLoginPasswordPage: React.FC = () => {
             }}
             disabled={isLoading}
             placeholder="••••••••"
-            className={`w-full min-h-[44px] px-3 py-2 border rounded-[var(--ee-radius-sm)] bg-[var(--ee-surface)] text-[var(--ee-text)] shadow-sm placeholder:text-[var(--ee-text-muted)] focus-visible:outline-none focus-visible:ring-2 transition-colors ${
-              fieldErrors.newPassword
-                ? 'border-[var(--ee-danger-border)] focus-visible:ring-[var(--ee-danger-text)]'
-                : 'border-[var(--ee-border)] focus-visible:ring-[var(--ee-focus-ring)]'
-            }`}
+            className={`w-full min-h-[44px] px-3 py-2 border rounded-[var(--ee-radius-sm)] bg-[var(--ee-surface)] text-[var(--ee-text)] shadow-sm placeholder:text-[var(--ee-text-muted)] focus-visible:outline-none focus-visible:ring-2 transition-colors ${fieldErrors.newPassword
+              ? 'border-[var(--ee-danger-border)] focus-visible:ring-[var(--ee-danger-text)]'
+              : 'border-[var(--ee-border)] focus-visible:ring-[var(--ee-focus-ring)]'
+              }`}
           />
           {fieldErrors.newPassword && (
             <p className="mt-1 text-xs text-[var(--ee-danger-text)]">{fieldErrors.newPassword}</p>
@@ -210,11 +208,10 @@ export const FirstLoginPasswordPage: React.FC = () => {
             }}
             disabled={isLoading}
             placeholder="••••••••"
-            className={`w-full min-h-[44px] px-3 py-2 border rounded-[var(--ee-radius-sm)] bg-[var(--ee-surface)] text-[var(--ee-text)] shadow-sm placeholder:text-[var(--ee-text-muted)] focus-visible:outline-none focus-visible:ring-2 transition-colors ${
-              fieldErrors.confirmNewPassword
-                ? 'border-[var(--ee-danger-border)] focus-visible:ring-[var(--ee-danger-text)]'
-                : 'border-[var(--ee-border)] focus-visible:ring-[var(--ee-focus-ring)]'
-            }`}
+            className={`w-full min-h-[44px] px-3 py-2 border rounded-[var(--ee-radius-sm)] bg-[var(--ee-surface)] text-[var(--ee-text)] shadow-sm placeholder:text-[var(--ee-text-muted)] focus-visible:outline-none focus-visible:ring-2 transition-colors ${fieldErrors.confirmNewPassword
+              ? 'border-[var(--ee-danger-border)] focus-visible:ring-[var(--ee-danger-text)]'
+              : 'border-[var(--ee-border)] focus-visible:ring-[var(--ee-focus-ring)]'
+              }`}
           />
           {fieldErrors.confirmNewPassword && (
             <p className="mt-1 text-xs text-[var(--ee-danger-text)]">{fieldErrors.confirmNewPassword}</p>
