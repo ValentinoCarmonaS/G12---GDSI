@@ -1,23 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AlertCircle,
   ArrowRight,
   Clock,
   ExternalLink,
   Loader2,
   Receipt,
-  RefreshCw,
   ShoppingBag,
   XCircle,
 } from 'lucide-react';
 import { getMyOrders } from '../../api/orderApi';
 import { BentoCard } from '../diner/BentoCard';
-import { Button } from '../primitives/Button';
 import { EmptyState } from '../primitives/EmptyState';
 import { FeedbackState } from '../primitives/FeedbackState';
 import { LoadingSkeleton } from '../primitives/LoadingSkeleton';
-import { StatusBadge } from '../primitives/StatusBadge';
 import { cancelPayment } from '../../api/paymentApi';
 import type { DinerOrderSummaryResponse, OrderStatus } from '../../types/order';
 
@@ -149,8 +145,8 @@ export const MyOrdersSection: React.FC<MyOrdersSectionProps> = ({ onResumePaymen
   if (loading) {
     return (
       <div data-testid="orders-loading-skeleton" className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <LoadingSkeleton variant="card" />
-        <LoadingSkeleton variant="card" />
+        <LoadingSkeleton variant="block" />
+        <LoadingSkeleton variant="block" />
       </div>
     );
   }

@@ -165,8 +165,8 @@ export const ProfilePage: React.FC = () => {
 
             {loading ? (
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <LoadingSkeleton variant="card" />
-                <LoadingSkeleton variant="card" />
+                <LoadingSkeleton variant="block" />
+                <LoadingSkeleton variant="block" />
               </div>
             ) : (
               <div className="space-y-6">

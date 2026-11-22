@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { DietaryRestrictionItem } from '../../types/profile';
-import { AlertCircle, AlertTriangle, Check, Loader2, Utensils } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, Utensils } from 'lucide-react';
 import { BentoCard } from '../diner/BentoCard';
 import { FeedbackState } from '../primitives/FeedbackState';
 
@@ -161,7 +161,7 @@ export const DietaryRestrictionsSelector: React.FC<DietaryRestrictionsSelectorPr
                   htmlFor={`dietary-${item.code}`}
                   className={`relative flex min-h-[44px] items-start p-4 rounded-xl border cursor-pointer transition-all ${
                     isChecked
-                      ? 'border-rose-600 bg-rose-50/40 shadow-xs'
+                      ? 'border-rose-600 bg-rose-50/40 shadow-sm'
                       : 'border-neutral-200 hover:border-neutral-300 bg-neutral-50/40'
                   }`}
                 >

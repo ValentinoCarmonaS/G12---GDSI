@@ -25,7 +25,7 @@ export const ResetPasswordPage: React.FC = () => {
 
   return (
     <AuthCardShell
-      title="Restablecer contraseña"
+      title="Restablecé tu contraseña"
       subtitle="Definí una nueva contraseña segura para tu cuenta"
     >
       {!token ? (

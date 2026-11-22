@@ -65,6 +65,7 @@ export const LoginPage: React.FC = () => {
         <div className="mb-5">
           <FeedbackState
             variant="warning"
+            role="alert"
             icon={<AlertTriangle className="h-4 w-4" />}
             message={stateReason}
           />
