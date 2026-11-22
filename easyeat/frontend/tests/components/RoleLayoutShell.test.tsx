@@ -71,7 +71,7 @@ describe('RoleLayoutShell (FR-007, FR-009, FR-010, FR-018)', () => {
     expect(main).toHaveAttribute('id', 'main-content');
   });
 
-  it('renders minimalist COMENSAL header without raw enum or email, with navigable avatar to /perfil and direct logout', async () => {
+  it('renders minimalist COMENSAL header without raw enum or email, with navigable avatar to /perfil and logout inside hamburger menu', async () => {
     const user = userEvent.setup();
     const { onLogout } = renderShell({
       title: 'Catálogo',
@@ -89,12 +89,14 @@ describe('RoleLayoutShell (FR-007, FR-009, FR-010, FR-018)', () => {
     expect(within(header).queryByText('COMENSAL')).not.toBeInTheDocument();
     expect(within(header).queryByText('lucia@easyeat.com')).not.toBeInTheDocument();
     expect(within(header).queryByTestId('tenant-badge')).not.toBeInTheDocument();
+    expect(within(header).queryByRole('button', { name: /cerrar sesión/i })).not.toBeInTheDocument();
 
     const avatarLink = within(header).getByRole('link', { name: /mi perfil/i });
     expect(avatarLink).toHaveAttribute('href', '/perfil');
     expect(avatarLink).toHaveClass('h-11', 'w-11');
 
-    expect(within(header).getByRole('button', { name: /abrir menú de navegación/i })).toBeInTheDocument();
+    const menuTrigger = within(header).getByRole('button', { name: /abrir menú de navegación/i });
+    await user.click(menuTrigger);
 
     const logoutButton = within(header).getByRole('button', { name: /cerrar sesión/i });
     await user.click(logoutButton);

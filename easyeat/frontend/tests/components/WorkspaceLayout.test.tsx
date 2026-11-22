@@ -37,7 +37,7 @@ describe('WorkspaceLayout (T026, FR-026, COM-1.4.1)', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /cerrar sesión/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /iniciar sesión/i })).not.toBeInTheDocument();
 
     const menuTrigger = screen.getByRole('button', { name: /abrir menú de navegación/i });
@@ -45,6 +45,7 @@ describe('WorkspaceLayout (T026, FR-026, COM-1.4.1)', () => {
 
     const dinerNav = screen.getByRole('navigation', { name: /navegación de comensal/i });
     expect(dinerNav).toBeInTheDocument();
+    expect(within(dinerNav).getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument();
 
     const discoveryLink = within(dinerNav).getByRole('link', { name: /descubrimiento/i });
     expect(discoveryLink).toHaveAttribute('href', '/descubrimiento');
