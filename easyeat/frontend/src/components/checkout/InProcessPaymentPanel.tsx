@@ -44,7 +44,7 @@ export const InProcessPaymentPanel: React.FC<InProcessPaymentPanelProps> = ({
 
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-ee-display text-lg font-bold">Pago en curso</h3>
+            <h3 className="font-ee-display text-lg font-bold text-ee-warning-fg">Pago en curso</h3>
             <StatusBadge variant="warning">Pendiente</StatusBadge>
           </div>
           <p className="text-sm leading-relaxed">

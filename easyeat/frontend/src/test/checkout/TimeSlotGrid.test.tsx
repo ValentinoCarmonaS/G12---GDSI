@@ -109,7 +109,7 @@ describe('TimeSlotGrid Component', () => {
 
     const highDemandButton = screen.getByText('12:45 - 13:00').closest('button');
     expect(highDemandButton).not.toBeDisabled();
-    expect(highDemandButton?.className).toContain('border-amber-300');
+    expect(highDemandButton?.className).toMatch(/border-amber-300|border-ee-warning-border/);
   });
 
   it('displays informative empty state when all slots are sold out or unavailable (C-12 / FR-035)', () => {
