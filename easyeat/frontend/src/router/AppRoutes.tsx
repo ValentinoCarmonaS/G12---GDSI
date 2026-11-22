@@ -13,6 +13,7 @@ import { ChefIngredientsPage } from '../pages/ChefIngredientsPage';
 import { ChefDishesPage } from '../pages/ChefDishesPage';
 import { ChefDishEditorPage } from '../pages/ChefDishEditorPage';
 import { AdminWorkspacePage } from '../pages/AdminWorkspacePage';
+import { AdminPendingDishesProvider } from '../context/AdminPendingDishesContext';
 import { StaffManagementPage } from '../pages/StaffManagementPage';
 import { InventoryManagementPage } from '../pages/InventoryManagementPage';
 import { CatalogPage } from '../pages/CatalogPage';
@@ -209,19 +210,15 @@ export const AppRoutes: React.FC = () => {
       />
       <Route
         path="/admin/analytics"
-        element={
-          <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
-            <WorkspaceLayout title="Métricas y Rendimiento" legacySurfaceMode="legacy-dark">
-              <AdminAnalyticsPage />
-            </WorkspaceLayout>
-          </RoleRouteGuard>
-        }
+        element={<Navigate to="/admin" replace />}
       />
       <Route
         path="/admin/*"
         element={
           <RoleRouteGuard allowedRoles={['ADMINISTRADOR']}>
-            <AdminWorkspacePage />
+            <AdminPendingDishesProvider>
+              <AdminWorkspacePage />
+            </AdminPendingDishesProvider>
           </RoleRouteGuard>
         }
       />

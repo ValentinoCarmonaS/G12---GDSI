@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AdminPendingDishesProvider } from '../../src/context/AdminPendingDishesContext';
+import { ThemeScopeProvider } from '../../src/theme/ThemeScopeProvider';
 import { AdminWorkspacePage } from '../../src/pages/AdminWorkspacePage';
 import { FinancialHealthChart } from '../../src/components/analytics/FinancialHealthChart';
 import { DishRankingTable } from '../../src/components/analytics/DishRankingTable';
@@ -41,7 +42,7 @@ vi.mock('../../src/hooks/useAuth', () => ({
       email: 'admin@easyeat.com',
       fullName: 'Admin Ejecutivo',
       role: 'ADMINISTRADOR',
-      tenantId: 42,
+      tenantId: '42',
       tenantName: 'Bistró Central',
     },
     isAuthenticated: true,
@@ -53,7 +54,9 @@ vi.mock('../../src/hooks/useAuth', () => ({
 const renderWithProviders = (ui: React.ReactElement, initialEntries = ['/admin']) =>
   render(
     <MemoryRouter initialEntries={initialEntries}>
-      <AdminPendingDishesProvider>{ui}</AdminPendingDishesProvider>
+      <ThemeScopeProvider>
+        <AdminPendingDishesProvider>{ui}</AdminPendingDishesProvider>
+      </ThemeScopeProvider>
     </MemoryRouter>
   );
 
@@ -65,7 +68,7 @@ describe('Phase 4 US2 — Executive Dashboard Glassmorphism & Analytics', () => 
       email: 'admin@easyeat.com',
       fullName: 'Admin Ejecutivo',
       role: 'ADMINISTRADOR',
-      tenantId: 42,
+      tenantId: '42',
     } as never);
     vi.mocked(dishReviewApi.getInbox).mockResolvedValue({
       content: [],
