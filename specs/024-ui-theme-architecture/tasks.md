@@ -1,4 +1,4 @@
-﻿# Tasks: Arquitectura de temas visuales por rol y primitivos base accesibles
+# Tasks: Arquitectura de temas visuales por rol y primitivos base accesibles
 
 **Input**: Documentos de diseño en `specs/024-ui-theme-architecture/` (`plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md`) y auditoría base `.impeccable/critique/2026-11-21T21-37-04Z__src-components-common-workspacelayout-tsx-f8bdeeeb.md`.
 
@@ -131,21 +131,21 @@
 
 ### 5 pares atómicos TDD en paralelo `[P]` (`FR-011` a `FR-015`)
 
-- [ ] T032 [P] [US4] [TDD-RED] Escribir pruebas unitarias de `Button` en `easyeat/frontend/tests/components/primitives/Button.test.tsx` (variantes `primary`, `secondary`, `ghost`, `outline`, `danger`; tamaños `sm`/`md`/`lg` con áreas táctiles `>= 44px` y compactas `>= 24px`; `disabled`; `loading` con `aria-busy="true"` y bloqueo anti-doble clic; `motion-reduce:animate-none`)
-- [ ] T033 [P] [US4] [TDD-RED] Escribir pruebas unitarias de `StatusBadge` en `easyeat/frontend/tests/components/primitives/StatusBadge.test.tsx` (variantes `neutral`, `info`, `success`, `warning`, `danger`; etiqueta textual obligatoria; soporte de `icon` con `aria-hidden="true"` y `prefix`)
-- [ ] T034 [P] [US4] [TDD-RED] Escribir pruebas unitarias de `FeedbackState` en `easyeat/frontend/tests/components/primitives/FeedbackState.test.tsx` (variantes `info`, `success`, `warning`, `danger`; `role="alert"` + `aria-live="assertive"` en `danger` y `role="status"` + `aria-live="polite"` en las demás; `title`, `message`, acción de reintento y cierre operables por teclado)
-- [ ] T035 [P] [US4] [TDD-RED] Escribir pruebas unitarias de `LoadingSkeleton` en `easyeat/frontend/tests/components/primitives/LoadingSkeleton.test.tsx` (variantes `text` con múltiples líneas, `block` y `circle`; figuras `aria-hidden="true"`; contenedor `role="status"` con texto `sr-only`; `motion-reduce:animate-none`)
-- [ ] T036 [P] [US4] [TDD-RED] Escribir pruebas unitarias de `EmptyState` en `easyeat/frontend/tests/components/primitives/EmptyState.test.tsx` (ícono decorativo opcional, título, descripción y acción principal renderizada con `Button` del tema activo operable por teclado)
-- [ ] T037 [P] [US4] [TDD-GREEN] Implementar `Button` gobernado únicamente por tokens `--ee-*` en `easyeat/frontend/src/components/primitives/Button.tsx` (depende de T032) y ejecutar `npx vitest run tests/components/primitives/Button.test.tsx`
-- [ ] T038 [P] [US4] [TDD-GREEN] Implementar `StatusBadge` gobernado únicamente por tríadas semánticas `--ee-*` en `easyeat/frontend/src/components/primitives/StatusBadge.tsx` (depende de T033) y ejecutar `npx vitest run tests/components/primitives/StatusBadge.test.tsx`
-- [ ] T039 [P] [US4] [TDD-GREEN] Implementar `FeedbackState` gobernado únicamente por tríadas semánticas `--ee-*` en `easyeat/frontend/src/components/primitives/FeedbackState.tsx` (depende de T034) y ejecutar `npx vitest run tests/components/primitives/FeedbackState.test.tsx`
-- [ ] T040 [P] [US4] [TDD-GREEN] Implementar `LoadingSkeleton` gobernado únicamente por tokens `--ee-*` en `easyeat/frontend/src/components/primitives/LoadingSkeleton.tsx` (depende de T035) y ejecutar `npx vitest run tests/components/primitives/LoadingSkeleton.test.tsx`
-- [ ] T041 [P] [US4] [TDD-GREEN] Implementar `EmptyState` reutilizando `Button` y tokens `--ee-*` en `easyeat/frontend/src/components/primitives/EmptyState.tsx` (depende de T036, T037) y ejecutar `npx vitest run tests/components/primitives/EmptyState.test.tsx`
+- [X] T032 [P] [US4] [TDD-RED] Escribir pruebas unitarias de `Button` en `easyeat/frontend/tests/components/primitives/Button.test.tsx` (variantes `primary`, `secondary`, `ghost`, `outline`, `danger`; tamaños `sm`/`md`/`lg` con áreas táctiles `>= 44px` y compactas `>= 24px`; `disabled`; `loading` con `aria-busy="true"` y bloqueo anti-doble clic; `motion-reduce:animate-none`)
+- [X] T033 [P] [US4] [TDD-RED] Escribir pruebas unitarias de `StatusBadge` en `easyeat/frontend/tests/components/primitives/StatusBadge.test.tsx` (variantes `neutral`, `info`, `success`, `warning`, `danger`; etiqueta textual obligatoria; soporte de `icon` con `aria-hidden="true"` y `prefix`)
+- [X] T034 [P] [US4] [TDD-RED] Escribir pruebas unitarias de `FeedbackState` en `easyeat/frontend/tests/components/primitives/FeedbackState.test.tsx` (variantes `info`, `success`, `warning`, `danger`; `role="alert"` + `aria-live="assertive"` en `danger` y `role="status"` + `aria-live="polite"` en las demás; `title`, `message`, acción de reintento y cierre operables por teclado)
+- [X] T035 [P] [US4] [TDD-RED] Escribir pruebas unitarias de `LoadingSkeleton` en `easyeat/frontend/tests/components/primitives/LoadingSkeleton.test.tsx` (variantes `text` con múltiples líneas, `block` y `circle`; figuras `aria-hidden="true"`; contenedor `role="status"` con texto `sr-only`; `motion-reduce:animate-none`)
+- [X] T036 [P] [US4] [TDD-RED] Escribir pruebas unitarias de `EmptyState` en `easyeat/frontend/tests/components/primitives/EmptyState.test.tsx` (ícono decorativo opcional, título, descripción y acción principal renderizada con `Button` del tema activo operable por teclado)
+- [X] T037 [P] [US4] [TDD-GREEN] Implementar `Button` gobernado únicamente por tokens `--ee-*` en `easyeat/frontend/src/components/primitives/Button.tsx` (depende de T032) y ejecutar `npx vitest run tests/components/primitives/Button.test.tsx`
+- [X] T038 [P] [US4] [TDD-GREEN] Implementar `StatusBadge` gobernado únicamente por tríadas semánticas `--ee-*` en `easyeat/frontend/src/components/primitives/StatusBadge.tsx` (depende de T033) y ejecutar `npx vitest run tests/components/primitives/StatusBadge.test.tsx`
+- [X] T039 [P] [US4] [TDD-GREEN] Implementar `FeedbackState` gobernado únicamente por tríadas semánticas `--ee-*` en `easyeat/frontend/src/components/primitives/FeedbackState.tsx` (depende de T034) y ejecutar `npx vitest run tests/components/primitives/FeedbackState.test.tsx`
+- [X] T040 [P] [US4] [TDD-GREEN] Implementar `LoadingSkeleton` gobernado únicamente por tokens `--ee-*` en `easyeat/frontend/src/components/primitives/LoadingSkeleton.tsx` (depende de T035) y ejecutar `npx vitest run tests/components/primitives/LoadingSkeleton.test.tsx`
+- [X] T041 [P] [US4] [TDD-GREEN] Implementar `EmptyState` reutilizando `Button` y tokens `--ee-*` en `easyeat/frontend/src/components/primitives/EmptyState.tsx` (depende de T036, T037) y ejecutar `npx vitest run tests/components/primitives/EmptyState.test.tsx`
 
 ### Consolidación de catálogo y matriz de 20 combinaciones (`FR-016`, `FR-017`, `SC-005`)
 
-- [ ] T042 [US4] Exportar el catálogo unificado de los 5 primitivos en `easyeat/frontend/src/components/primitives/index.ts` (depende de T037, T038, T039, T040, T041)
-- [ ] T043 [US4] Escribir y ejecutar prueba integradora de matriz en `easyeat/frontend/tests/components/primitives/PrimitivesMatrix.test.tsx` verificando las 20 combinaciones (`5 primitivos × 4 temas`) bajo `ThemeScopeProvider` más aserción estática de `0` referencias a nombres de rol o tema (`comensal`, `mostrador`, `chef`, `admin`, `COMENSAL`, `ENCARGADO`, `CHEF`, `ADMINISTRADOR`) en `easyeat/frontend/src/components/primitives/*.tsx` (depende de T042)
+- [X] T042 [US4] Exportar el catálogo unificado de los 5 primitivos en `easyeat/frontend/src/components/primitives/index.ts` (depende de T037, T038, T039, T040, T041)
+- [X] T043 [US4] Escribir y ejecutar prueba integradora de matriz en `easyeat/frontend/tests/components/primitives/PrimitivesMatrix.test.tsx` verificando las 20 combinaciones (`5 primitivos × 4 temas`) bajo `ThemeScopeProvider` más aserción estática de `0` referencias a nombres de rol o tema (`comensal`, `mostrador`, `chef`, `admin`, `COMENSAL`, `ENCARGADO`, `CHEF`, `ADMINISTRADOR`) en `easyeat/frontend/src/components/primitives/*.tsx` (depende de T042)
 
 **Checkpoint**: Los 5 primitivos base están verificados en los 4 temas con polimorfismo puro.
 
