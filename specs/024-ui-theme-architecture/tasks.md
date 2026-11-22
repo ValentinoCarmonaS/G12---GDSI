@@ -36,7 +36,7 @@
 **⚠️ CRITICAL**: Ninguna User Story puede comenzar hasta completar Phase 2.
 
 - [X] T005 [P] Crear tipos ejecutables del contrato de temas (`RoleThemeId`, `EasyEatUserRole`, `SemanticVariant`, `SemanticTriad`, `DataVizThemeTokens`, `RoleVisualThemeContract`, `ResolvedThemeScope`, `RoleThemeContextValue`) en `easyeat/frontend/src/theme/types.ts` conforme a `specs/024-ui-theme-architecture/contracts/theme-tokens.contract.ts`
-- [ ] T006 [P] Crear hoja de variables CSS aisladas `--ee-*` para los cuatro ámbitos `[data-theme="comensal"]`, `[data-theme="mostrador"]`, `[data-theme="chef"]` y `[data-theme="admin"]`, reglas `:focus-visible`, `@media (prefers-reduced-motion: reduce)` y contenedores transitorios `[data-legacy-surface="light"]` / `[data-legacy-surface="dark"]` en `easyeat/frontend/src/styles/themes.css`
+- [X] T006 [P] Crear hoja de variables CSS aisladas `--ee-*` para los cuatro ámbitos `[data-theme="comensal"]`, `[data-theme="mostrador"]`, `[data-theme="chef"]` y `[data-theme="admin"]`, reglas `:focus-visible`, `@media (prefers-reduced-motion: reduce)` y contenedores transitorios `[data-legacy-surface="light"]` / `[data-legacy-surface="dark"]` en `easyeat/frontend/src/styles/themes.css`
 - [ ] T007 Importar `./styles/themes.css` y vincular `html, body` a `var(--ee-surface)`, `var(--ee-text)` y `var(--ee-font-sans)` en `easyeat/frontend/src/index.css` (depende de T006)
 
 **Checkpoint**: Base de fuentes autoalojadas, Tailwind `ee-*`, tipos y variables `--ee-*` lista; las User Stories ya pueden avanzar.
