@@ -162,10 +162,10 @@
 
 **Purpose**: Verificación integral de regresión (`001`–`027`), auditoría estática Zero AI-Slop / Brutalism y de exclusiones constitucionales, validación en navegador real (`360/768/1024/1440 px`) y re-ejecución de `/impeccable critique` en modo **Operate** confirmando la superación del puntaje base (`12/40`).
 
-- [ ] T038 Ejecutar regresión completa de frontend (`npm test -- --run`), chequeo de tipos (`npx tsc --noEmit`) y compilación de producción (`npm run build`) en `easyeat/frontend/` verificando 0 errores y 0 regresiones en `001`–`027`
-- [ ] T039 [P] Ejecutar auditoría estática y verificación de exclusiones (`git diff --stat` confirmando 0 modificaciones bajo `easyeat/backend/`, `easyeat/frontend/src/api/`, `easyeat/frontend/src/components/diner/` y `easyeat/frontend/src/components/admin/`; y búsqueda estática confirmando 0 `border-l-4`, 0 `slate-900`/`gray-900`/`zinc-900`, 0 `<table>`, 0 `window.confirm`/`window.alert` y 0 `Inter` en vistas del Chef)
-- [ ] T040 Ejecutar validación visual en navegador real a `360px`, `768px`, `1024px` y `1440px` sobre las 5 rutas de `specs/027-chef-brutalism-redesign/contracts/chef-screens-audit.contract.ts` siguiendo `specs/027-chef-brutalism-redesign/quickstart.md`
-- [ ] T041 Ejecutar auditoría post-implementación `/impeccable critique` (modo **Operate**) sobre `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` y superficies del Chef confirmando 0 hallazgos `side-tab` del detector, 0 problemas P0/P1 y mejora verificada respecto de la línea base (`12/40`)
+- [x] T038 Ejecutar regresión completa de frontend (`npm test -- --run`), chequeo de tipos (`npx tsc --noEmit`) y compilación de producción (`npm run build`) en `easyeat/frontend/` verificando 0 errores y 0 regresiones en `001`–`027`
+- [x] T039 [P] Ejecutar auditoría estática y verificación de exclusiones (`git diff --stat` confirmando 0 modificaciones bajo `easyeat/backend/`, `easyeat/frontend/src/api/`, `easyeat/frontend/src/components/diner/` y `easyeat/frontend/src/components/admin/`; y búsqueda estática confirmando 0 `border-l-4`, 0 `slate-900`/`gray-900`/`zinc-900`, 0 `<table>`, 0 `window.confirm`/`window.alert` y 0 `Inter` en vistas del Chef)
+- [ ] T040 [No ejecutar - Out of Scope] Ejecutar validación visual en navegador real a `360px`, `768px`, `1024px` y `1440px` sobre las 5 rutas de `specs/027-chef-brutalism-redesign/contracts/chef-screens-audit.contract.ts` siguiendo `specs/027-chef-brutalism-redesign/quickstart.md`
+- [x] T041 Ejecutar auditoría post-implementación `/impeccable critique` (modo **Operate**) sobre `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx` y superficies del Chef confirmando 0 hallazgos `side-tab` del detector, 0 problemas P0/P1 y mejora verificada respecto de la línea base (`12/40`)
 
 ---
 

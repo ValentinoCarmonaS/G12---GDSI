@@ -126,7 +126,7 @@ export const IngredientSelectorModal: React.FC<IngredientSelectorModalProps> = (
         )}
 
         {!loading && !error && catalog && (() => {
-          const items = (catalog as { items?: ChefIngredientItemResponse[]; content?: ChefIngredientItemResponse[] }).items ?? catalog.content ?? [];
+          const items = (catalog as { items?: ChefIngredientItemResponse[]; content?: ChefIngredientItemResponse[] }).items ?? (catalog as { content?: ChefIngredientItemResponse[] }).content ?? [];
           return (
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
               {items.length === 0 ? (

@@ -68,10 +68,11 @@ export const ChefDishEditorPage: React.FC = () => {
         if (!isMounted) return;
         setLoadedDish(dishData);
         setFeedback(feedbackData);
-        const proposal = feedbackData?.proposedChanges ?? feedbackData?.entries?.[0]?.proposedChanges;
+        const fb = feedbackData as { proposedChanges?: { ingredients?: Array<{ ingredientId: string; quantity: number }>; title?: string; name?: string; description?: string }; entries?: Array<{ proposedChanges?: { ingredients?: Array<{ ingredientId: string; quantity: number }>; title?: string; name?: string; description?: string } }> } | null;
+        const proposal = fb?.proposedChanges ?? fb?.entries?.[0]?.proposedChanges;
         const proposedIngredients = proposal?.ingredients ?? [];
         const mergedRecipe = (dishData.recipe ?? []).map((item) => {
-          const match = proposedIngredients.find((p) => p.ingredientId === item.ingredientId);
+          const match = proposedIngredients.find((p: { ingredientId: string; quantity: number }) => p.ingredientId === item.ingredientId);
           return match ? { ...item, quantity: match.quantity } : item;
         });
         setDraft({
@@ -146,7 +147,7 @@ export const ChefDishEditorPage: React.FC = () => {
       id: draft.persistedDishId || 'draft',
       name: draft.name,
       category: draft.category,
-      description: draft.description || undefined,
+      description: draft.description || null,
       status: draft.status,
       photoUrl: draft.existingPhotoUrl,
       recipe: [...draft.recipe],
@@ -212,7 +213,7 @@ export const ChefDishEditorPage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout role="chef" fullWidth>
+    <WorkspaceLayout fullWidth>
       <div className="max-w-5xl mx-auto px-4 py-6 pb-40 md:pb-6 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-[#0A0A0A] pb-4">
           <div className="flex items-center gap-3">

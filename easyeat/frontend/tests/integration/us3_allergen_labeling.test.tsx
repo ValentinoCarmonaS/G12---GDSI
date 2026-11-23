@@ -92,7 +92,7 @@ describe('User Story 3 User Journey Integration Test (T051, CHF-2.2.3)', () => {
     await user.click(step3Tab);
 
     // Verify AllergenStep renders
-    expect(await screen.findByText(/Estilos y preferencias/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Estilos de vida dietarios/i)).toBeInTheDocument();
     expect(screen.getByText(/Alérgenos Comunes/i)).toBeInTheDocument();
 
     // Select VEGAN and DAIRY

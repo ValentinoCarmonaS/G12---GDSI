@@ -21,7 +21,7 @@ describe('AllergenStep Component (T050, CHF-2.2.3, FR-013, FR-014, FR-015)', () 
     );
 
     // Group headings
-    expect(screen.getByText(/Estilos y preferencias/i)).toBeInTheDocument();
+    expect(screen.getByText(/Estilos de vida dietarios/i)).toBeInTheDocument();
     expect(screen.getByText(/Alérgenos Comunes/i)).toBeInTheDocument();
 
     // Dietary lifestyle items (C-11: only positive compliance lifestyles)

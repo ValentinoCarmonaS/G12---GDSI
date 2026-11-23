@@ -134,11 +134,10 @@ export const ChefDishesPage: React.FC = () => {
                   type="button"
                   aria-pressed={isSelected}
                   onClick={() => handleStatusSelect(chip.value)}
-                  className={`inline-flex min-h-[48px] items-center justify-center px-4 py-2 text-sm font-bold rounded-ee-sm border-2 border-ee-border-strong transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring ${
-                    isSelected
-                      ? 'bg-ee-text text-ee-surface shadow-ee-elevated'
-                      : 'bg-ee-surface text-ee-text hover:bg-ee-surface-subtle'
-                  }`}
+                  className={`inline-flex min-h-[48px] items-center justify-center px-4 py-2 text-sm font-bold rounded-ee-sm border-2 border-ee-border-strong transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring ${isSelected
+                    ? 'bg-ee-text text-ee-surface shadow-ee-elevated'
+                    : 'bg-ee-surface text-ee-text hover:bg-ee-surface-subtle'
+                    }`}
                 >
                   {chip.label}
                 </button>
@@ -154,7 +153,7 @@ export const ChefDishesPage: React.FC = () => {
         {errorMessage && (
           <div role="alert">
             <FeedbackState
-              variant="error"
+              variant="danger"
               title="Ocurrió un problema"
               message={errorMessage}
               actionLabel="Reintentar"
@@ -165,14 +164,14 @@ export const ChefDishesPage: React.FC = () => {
 
         {isLoading ? (
           <div data-testid="chef-dishes-loading">
-            <LoadingSkeleton variant="card" count={6} />
+            <LoadingSkeleton variant="cards" count={6} />
           </div>
         ) : mergedDishes.length === 0 ? (
           <EmptyState
             title="No hay platos registrados en este establecimiento."
             description="Creá un nuevo plato para comenzar a armar la carta de cocina."
             actionLabel="Nuevo Plato"
-            actionHref="/cocina/platos/nuevo"
+            onAction={() => navigate('/cocina/platos/nuevo')}
           />
         ) : (
           <div className="space-y-6">

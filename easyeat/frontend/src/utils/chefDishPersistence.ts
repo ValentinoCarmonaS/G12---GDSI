@@ -94,7 +94,7 @@ export async function persistUnifiedDishDraft(
 
   try {
     await dishApi.updateRecipe(dishId, {
-      items: draft.recipe.map((item) => ({
+      ingredients: draft.recipe.map((item) => ({
         ingredientId: item.ingredientId,
         quantity: item.quantity,
       })),

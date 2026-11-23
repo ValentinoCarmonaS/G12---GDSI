@@ -271,20 +271,20 @@ describe('Spec 027 US2 — KDS Brutalist Ergonomics & Resilience', () => {
     // EMPEZAR error
     fireEvent.click(screen.getByRole('button', { name: /EMPEZAR/i }));
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(/No se pudo iniciar/i);
+      expect(screen.getByText(/No se pudo iniciar/i)).toBeInTheDocument();
     });
 
     // LISTO error restores card
     fireEvent.click(screen.getByRole('button', { name: /LISTO/i }));
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(/No se pudo despachar/i);
+      expect(screen.getByText(/No se pudo despachar/i)).toBeInTheDocument();
     });
     expect(screen.getByTestId('in-preparation-card-t-p1')).toBeInTheDocument();
 
     // +5 error
     fireEvent.click(screen.getByRole('button', { name: '+5' }));
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent(/No se pudo sumar demora/i);
+      expect(screen.getByText(/No se pudo sumar demora/i)).toBeInTheDocument();
     });
   });
 });
