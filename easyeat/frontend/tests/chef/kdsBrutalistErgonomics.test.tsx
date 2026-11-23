@@ -4,7 +4,6 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import { KitchenWorkspacePage } from '../../src/pages/KitchenWorkspacePage';
 import { KitchenKanbanBoard } from '../../src/components/kds/KitchenKanbanBoard';
-import { authApi } from '../../src/api/authApi';
 import { fetchDashboardSummary, startTicketPreparation, addTicketDelay } from '../../src/api/kitchenKdsApi';
 import { orderTrackingApi } from '../../src/api/orderTrackingApi';
 import { useKdsQueuePolling } from '../../src/hooks/useKdsQueuePolling';

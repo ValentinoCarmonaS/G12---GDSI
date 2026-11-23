@@ -7,7 +7,7 @@ import { fetchDashboardSummary, startTicketPreparation } from '../api/kitchenKds
 import { orderTrackingApi } from '../api/orderTrackingApi';
 import { DishRejectionFeedbackBanner } from '../components/chef/DishRejectionFeedbackBanner';
 import { KitchenKanbanBoard } from '../components/kds/KitchenKanbanBoard';
-import { FeedbackState } from '../components/ui/FeedbackState';
+import { FeedbackState } from '../components/primitives/FeedbackState';
 import { useKdsQueuePolling } from '../hooks/useKdsQueuePolling';
 import type { ChefReviewFeedbackEntry } from '../types/dishReview';
 import type { KdsDashboardSummaryResponse } from '../types/kds';
@@ -139,7 +139,7 @@ export const KitchenWorkspacePage: React.FC = () => {
       {pollingError && (
         <div className="mb-4">
           <FeedbackState
-            variant="error"
+            variant="danger"
             title="Error de conexión con cocina"
             description="No se pudo actualizar el tablero KDS. Las comandas visibles se mantienen en pantalla."
             actionLabel="Reintentar"
