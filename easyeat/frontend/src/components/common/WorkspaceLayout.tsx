@@ -11,6 +11,7 @@ export interface WorkspaceLayoutProps {
   subtitle?: string;
   children: React.ReactNode;
   legacySurfaceMode?: LegacySurfaceMode;
+  fullWidth?: boolean;
 }
 
 export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
@@ -18,6 +19,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   subtitle,
   children,
   legacySurfaceMode = 'none',
+  fullWidth = false,
 }) => {
   const { user, logout } = useAuth();
 
@@ -122,6 +124,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       notificationError={notificationError}
       isLoadingNotifications={isLoadingNotifications}
       legacySurfaceMode={legacySurfaceMode}
+      fullWidth={fullWidth}
       onLogout={handleLogout}
       onMarkAsRead={handleMarkAsRead}
       onRefreshNotifications={fetchNotifications}
