@@ -1,7 +1,7 @@
 import React from 'react';
 import type { KdsTicket } from '../../types/kds';
 import { formatDishItem } from '../../utils/kdsFormatters';
-import { StatusBadge } from '../ui/StatusBadge';
+import { StatusBadge } from '../primitives/StatusBadge';
 
 export interface KdsQueuedCardProps {
   ticket: KdsTicket;
