@@ -21,8 +21,8 @@
 
 **Purpose**: Verificar la línea base limpia de la rama `feat/027-chef-brutalism-redesign` y preparar el directorio de pruebas trazables de Spec `027` sin modificar dependencias ni backend.
 
-- [ ] T001 Verificar estado limpio de compilación y suite base (`npx tsc --noEmit` y `npx vitest run`) en `easyeat/frontend/` antes de iniciar cambios de Spec `027`
-- [ ] T002 [P] Crear directorio de pruebas trazables `easyeat/frontend/tests/chef/` para las suites TDD de Spec `027`
+- [x] T001 Verificar estado limpio de compilación y suite base (`npx tsc --noEmit` y `npx vitest run`) en `easyeat/frontend/` antes de iniciar cambios de Spec `027`
+- [x] T002 [P] Crear directorio de pruebas trazables `easyeat/frontend/tests/chef/` para las suites TDD de Spec `027`
 
 ---
 
