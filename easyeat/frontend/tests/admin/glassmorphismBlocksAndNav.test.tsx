@@ -221,13 +221,14 @@ describe('Phase 3 US1 — Bimodal Executive Navigation & AdminSidebar', () => {
       <MemoryRouter initialEntries={['/admin/dishes']}>
         <AdminSidebar
           userEmail="admin@easyeat.com"
-          tenantId="tenant-123"
+          tenantName="La Parrilla del Sur"
           pendingDishesCount={3}
           onLogout={onLogout}
         />
       </MemoryRouter>
     );
 
+    expect(screen.getByText('Local: La Parrilla del Sur')).toBeInTheDocument();
     expect(screen.getByText('Operación')).toBeInTheDocument();
     expect(screen.getByText('Catálogo y equipo')).toBeInTheDocument();
     expect(screen.getByText('Negocio')).toBeInTheDocument();
@@ -242,13 +243,14 @@ describe('Phase 3 US1 — Bimodal Executive Navigation & AdminSidebar', () => {
       <MemoryRouter initialEntries={['/admin']}>
         <AdminSidebar
           userEmail="admin@easyeat.com"
-          tenantId="tenant-123"
+          tenantName={null}
           pendingDishesCount={0}
           onLogout={onLogout}
         />
       </MemoryRouter>
     );
 
+    expect(screen.queryByText(/^Local:/)).not.toBeInTheDocument();
     const auditLinkZero = screen.getByRole('link', { name: /Auditoría/i });
     expect(auditLinkZero).not.toHaveTextContent('0');
 

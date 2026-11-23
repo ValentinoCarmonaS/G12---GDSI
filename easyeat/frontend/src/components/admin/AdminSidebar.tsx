@@ -9,7 +9,7 @@ import {
 
 export interface AdminSidebarProps {
   readonly userEmail: string;
-  readonly tenantId?: string | null;
+  readonly tenantName?: string | null;
   readonly pendingDishesCount: number | null;
   readonly onLogout: () => void | Promise<void>;
 }
@@ -21,7 +21,7 @@ export interface AdminSidebarProps {
  */
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   userEmail,
-  tenantId = null,
+  tenantName = null,
   pendingDishesCount,
   onLogout,
 }) => {
@@ -62,12 +62,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           <p className="mt-0.5 truncate text-sm font-medium text-ee-text" title={userEmail}>
             {userEmail}
           </p>
-          {tenantId && (
+          {tenantName && (
             <p
-              className="mt-1 font-ee-mono text-xs text-ee-text-secondary"
-              title={`Local: ${tenantId}`}
+              className="mt-1 truncate font-ee-mono text-xs text-ee-text-secondary"
+              title={`Local: ${tenantName}`}
             >
-              Local: {tenantId.slice(0, 8)}
+              Local: {tenantName}
             </p>
           )}
         </div>

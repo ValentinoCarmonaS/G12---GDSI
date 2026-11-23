@@ -90,6 +90,7 @@ export const AdminBrandingPage: React.FC = () => {
       setPrimaryColor(updated.primaryColor);
       setSecondaryColor(updated.secondaryColor);
       setAccentColor(updated.accentColor);
+      window.dispatchEvent(new CustomEvent('easyeat:branding-changed'));
       setSuccessMessage('Branding actualizado exitosamente.');
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Error al guardar la configuración de branding.');

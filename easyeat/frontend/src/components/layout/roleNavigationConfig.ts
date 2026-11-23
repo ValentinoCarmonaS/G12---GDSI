@@ -116,7 +116,7 @@ export const ROLE_NAVIGATION_CONFIG: Readonly<Record<EasyEatUserRole, RoleNaviga
     exposeDirectDesktopNav: false,
     useDesktopSidebar: true,
     showNotificationBell: true,
-    showTenantBadge: true,
+    showTenantBadge: false,
     allowProfileLink: false,
     items: [
       {
