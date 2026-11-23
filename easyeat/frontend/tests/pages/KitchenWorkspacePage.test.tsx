@@ -52,8 +52,6 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
 
     // T025: Verify KitchenKanbanBoard is embedded into KitchenWorkspacePage
     expect(screen.getByTestId('kds-kanban-section')).toBeInTheDocument();
-    expect(screen.getByTestId('queued-column')).toBeInTheDocument();
-    expect(screen.getByTestId('in-preparation-column')).toBeInTheDocument();
   });
 
   it('invokes authApi.me on mount to validate token version and session liveness', () => {
@@ -83,12 +81,8 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
       '/cocina/platos'
     );
 
-    // ...and the ingredients card plus the four order-statistics cards are preserved.
-    expect(screen.getByText(/catálogo de ingredientes y materias primas/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ver ingredientes →/i })).toHaveAttribute(
-      'href',
-      '/cocina/ingredientes'
-    );
+    // ...el bloque redundante de ingredientes fue retirado (FR-006 / FR-015(b)) mientras los 4 KPIs se preservan.
+    expect(screen.queryByText(/catálogo de ingredientes y materias primas/i)).not.toBeInTheDocument();
     expect(screen.getByText('En Cola')).toBeInTheDocument();
     expect(screen.getByText('En Preparación')).toBeInTheDocument();
     expect(screen.getByText('Para Retirar')).toBeInTheDocument();
@@ -96,8 +90,6 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
 
     // T025: Verify KitchenKanbanBoard is embedded into KitchenWorkspacePage
     expect(screen.getByTestId('kds-kanban-section')).toBeInTheDocument();
-    expect(screen.getByTestId('queued-column')).toBeInTheDocument();
-    expect(screen.getByTestId('in-preparation-column')).toBeInTheDocument();
   });
 
   describe('a draft returned by rejection (FR-020, FR-023)', () => {
