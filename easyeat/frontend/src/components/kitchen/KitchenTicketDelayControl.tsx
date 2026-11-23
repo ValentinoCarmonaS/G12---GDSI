@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { addTicketDelay } from '../../api/kitchenKdsApi';
-import { StatusBadge } from '../ui/StatusBadge';
+import { StatusBadge } from '../primitives/StatusBadge';
 
 export interface KitchenTicketDelayControlProps {
   ticketId: string;

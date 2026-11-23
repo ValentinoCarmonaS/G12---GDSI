@@ -5,7 +5,7 @@ import { formatDishItem } from '../../utils/kdsFormatters';
 import { useKdsCountUp } from '../../hooks/useKdsCountUp';
 import { isTicketDelayed } from '../../utils/kdsAlertThreshold';
 import { KitchenTicketDelayControl } from '../kitchen/KitchenTicketDelayControl';
-import { StatusBadge } from '../ui/StatusBadge';
+import { StatusBadge } from '../primitives/StatusBadge';
 
 export interface KdsInPreparationCardProps {
   ticket: KdsTicket;
