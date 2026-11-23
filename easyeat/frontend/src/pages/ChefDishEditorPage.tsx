@@ -179,8 +179,8 @@ export const ChefDishEditorPage: React.FC = () => {
       setDraft((prev) => ({
         ...prev,
         persistedDishId: result.dishId,
-        status: result.dish.status,
-        existingPhotoUrl: result.dish.photoUrl || prev.existingPhotoUrl,
+        status: result.dish?.status ?? prev.status,
+        existingPhotoUrl: result.dish?.photoUrl || prev.existingPhotoUrl,
         pendingPhotoFile: null,
         photoMarkedForDeletion: false,
         isDirty: false,
@@ -224,7 +224,11 @@ export const ChefDishEditorPage: React.FC = () => {
               ← Volver a Platos
             </Link>
             <h1 className="text-xl font-extrabold uppercase tracking-tight text-[#0A0A0A]">
-              {draft.persistedDishId ? 'Editar ficha técnica' : 'Nuevo plato'}
+              {draft.persistedDishId
+                ? draft.name
+                  ? `Ficha Técnica: ${draft.name}`
+                  : 'Editar ficha técnica'
+                : 'Nuevo plato'}
             </h1>
           </div>
 

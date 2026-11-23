@@ -104,9 +104,9 @@ export async function persistUnifiedDishDraft(
   }
 
   try {
-    await dishApi.updateAllergens(dishId, {
+    await dishApi.updateDishAllergens(dishId, {
       restrictionCodes: [...draft.restrictionCodes],
-      allergensConfirmed: draft.allergensConfirmed,
+      confirmed: draft.allergensConfirmed,
     });
   } catch (err) {
     throw buildFailure(dishId, 'allergens', err);

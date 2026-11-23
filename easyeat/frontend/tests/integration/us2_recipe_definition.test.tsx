@@ -113,7 +113,7 @@ describe('User Story 2 User Journey Integration Test (T040, CHF-2.2.2)', () => {
     });
 
     // 2. Chef switches to Recipe BOM step tab
-    const recipeTab = await screen.findByRole('button', { name: /receta.*escandallo|paso 2/i });
+    const recipeTab = await screen.findByRole('button', { name: /02.*Receta \(BOM\)/i });
     await user.click(recipeTab);
 
     // 3. Chef opens ingredient modal and selects Arroz Carnaroli
@@ -128,16 +128,18 @@ describe('User Story 2 User Journey Integration Test (T040, CHF-2.2.2)', () => {
     await user.clear(qtyInput);
     await user.type(qtyInput, '200');
 
-    // 5. Chef clicks "Guardar Receta"
-    const saveRecipeBtn = screen.getByRole('button', { name: /guardar receta/i });
-    await user.click(saveRecipeBtn);
+    // 5. Navigate to Step 4 and save draft
+    const reviewTab = screen.getByRole('button', { name: /04.*Revisión y Envío/i });
+    await user.click(reviewTab);
+    const saveButtons = await screen.findAllByRole('button', { name: /Guardar borrador/i });
+    await user.click(saveButtons[0]);
 
     // 6. Verify API was called with correct payload
     await waitFor(() => {
       expect(dishApi.updateRecipe).toHaveBeenCalledWith(
         mockDishDetail.id,
         expect.objectContaining({
-          ingredients: expect.arrayContaining([
+          items: expect.arrayContaining([
             expect.objectContaining({
               ingredientId: 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
               quantity: 200,

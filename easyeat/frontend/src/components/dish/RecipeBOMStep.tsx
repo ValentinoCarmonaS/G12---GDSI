@@ -3,7 +3,6 @@ import { IngredientSelectorModal } from './IngredientSelectorModal';
 import type { RecipeIngredientItem } from '@/types/dish';
 import type { ChefIngredientItemResponse } from '@/types/inventory';
 import { BrutalistCard } from '@/components/chef/BrutalistCard';
-import { FeedbackState } from '@/components/chef/FeedbackState';
 
 export interface RecipeBOMStepProps {
   dishId?: string;
@@ -57,7 +56,7 @@ export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
       return;
     }
 
-    const defaultQty = ing.unit === 'u' ? 1 : 0.1;
+    const defaultQty = 1;
     const next = [
       ...ingredients,
       {
@@ -126,9 +125,10 @@ export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
     ingredients.forEach((item) => {
       const raw = rawQuantities[item.ingredientId] ?? item.quantity.toString();
       const parsed = Number(raw);
+      const unit = (item as { unit?: string; unitOfMeasure?: string }).unitOfMeasure ?? item.unit ?? '';
       if (!raw.trim() || Number.isNaN(parsed) || parsed <= 0) {
         errors[item.ingredientId] = 'La cantidad debe ser mayor a 0.';
-      } else if (item.unit === 'u' && !Number.isInteger(parsed)) {
+      } else if (unit === 'u' && !Number.isInteger(parsed)) {
         errors[item.ingredientId] = 'Para unidad "u", ingresá un número entero.';
       }
     });
@@ -171,7 +171,12 @@ export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
       </div>
 
       {duplicateWarning && (
-        <FeedbackState variant="warning" title="Ingrediente duplicado" message={duplicateWarning} />
+        <div
+          role="alert"
+          className="border-2 border-[#0A0A0A] bg-[#FEF3C7] text-[#0A0A0A] p-3 text-sm font-bold"
+        >
+          {duplicateWarning}
+        </div>
       )}
 
       {ingredients.length === 0 ? (
@@ -184,12 +189,13 @@ export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {ingredients.map((item) => {
             const error = validationErrors[item.ingredientId];
+            const unit = (item as { unit?: string; unitOfMeasure?: string }).unitOfMeasure ?? item.unit ?? '';
             return (
               <BrutalistCard key={item.ingredientId} className="p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-bold text-sm text-[#0A0A0A]">{item.ingredientName}</p>
-                    <p className="font-mono text-xs text-[#52525B]">Unidad: {item.unit}</p>
+                    <p className="font-mono text-xs text-[#52525B]">{unit}</p>
                   </div>
                   {!isReadOnly && (
                     <button
@@ -214,11 +220,11 @@ export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
                   <input
                     id={`qty-${item.ingredientId}`}
                     type="number"
-                    step={item.unit === 'u' ? '1' : '0.01'}
+                    step={unit === 'u' ? '1' : '0.01'}
                     min="0"
                     value={rawQuantities[item.ingredientId] ?? item.quantity.toString()}
                     onChange={(e) =>
-                      handleQuantityChange(item.ingredientId, e.target.value, item.unit)
+                      handleQuantityChange(item.ingredientId, e.target.value, unit)
                     }
                     disabled={isReadOnly || isSaving}
                     className="w-full px-3 py-2 border-2 border-[#0A0A0A] bg-[#FFFFFF] text-[#0A0A0A] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#0A0A0A] disabled:bg-[#F5F5F4]"
