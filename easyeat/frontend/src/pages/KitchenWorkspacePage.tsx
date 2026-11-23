@@ -141,7 +141,7 @@ export const KitchenWorkspacePage: React.FC = () => {
           <FeedbackState
             variant="danger"
             title="Error de conexión con cocina"
-            description="No se pudo actualizar el tablero KDS. Las comandas visibles se mantienen en pantalla."
+            message="No se pudo actualizar el tablero KDS. Las comandas visibles se mantienen en pantalla."
             actionLabel="Reintentar"
             onAction={() => refetchQueue()}
           />
