@@ -3,6 +3,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -17,15 +18,59 @@ interface FinancialHealthChartProps {
   data: FinancialHealthResponse;
 }
 
+const fullCurrencyFormatter = new Intl.NumberFormat('es-AR', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatFullCurrency(value: number): string {
+  return `$ ${fullCurrencyFormatter.format(value)}`;
+}
+
+export function formatCompactCurrency(value: number): string {
+  if (!Number.isFinite(value)) return '$ 0';
+  const sign = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+
+  const formatScaled = (scaled: number, suffix: string) => {
+    const decimals = scaled >= 100 || Number.isInteger(scaled) ? 0 : 1;
+    const formatted = scaled.toLocaleString('es-AR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: decimals,
+    });
+    return `${sign}$ ${formatted}${suffix}`;
+  };
+
+  if (abs >= 1_000_000_000_000) {
+    return formatScaled(abs / 1_000_000_000_000, 'T');
+  }
+  if (abs >= 1_000_000_000) {
+    return formatScaled(abs / 1_000_000_000, 'B');
+  }
+  if (abs >= 1_000_000) {
+    return formatScaled(abs / 1_000_000, 'M');
+  }
+  if (abs >= 1_000) {
+    return formatScaled(abs / 1_000, 'k');
+  }
+
+  return `${sign}$ ${abs.toLocaleString('es-AR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
+}
+
 export function FinancialHealthChart({ data }: FinancialHealthChartProps) {
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   const { dataViz } = useRoleTheme();
 
   const isEmpty = data.revenue === 0 && data.orderCount === 0;
+  const periodLabel =
+    data.granularity === 'day' ? 'Hoy' : data.granularity === 'week' ? 'Semana' : 'Mes';
 
   const chartData = [
     {
-      name: data.granularity === 'day' ? 'Hoy' : data.granularity === 'week' ? 'Semana' : 'Mes',
+      name: periodLabel,
       Ingresos: data.revenue,
       Pedidos: data.orderCount,
     },
@@ -53,11 +98,30 @@ export function FinancialHealthChart({ data }: FinancialHealthChartProps) {
       ) : viewMode === 'chart' ? (
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
+            <BarChart data={chartData} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={dataViz.gridStroke} />
               <XAxis dataKey="name" stroke={dataViz.axisStroke} />
-              <YAxis stroke={dataViz.axisStroke} />
+              <YAxis
+                yAxisId="revenue"
+                stroke={dataViz.axisStroke}
+                tickFormatter={formatCompactCurrency}
+                width={76}
+              />
+              <YAxis
+                yAxisId="orders"
+                orientation="right"
+                stroke={dataViz.axisStroke}
+                allowDecimals={false}
+                width={44}
+              />
               <Tooltip
+                formatter={(value, name) => {
+                  const numericValue = Number(value);
+                  if (name === 'Ingresos') {
+                    return [formatFullCurrency(numericValue), 'Ingresos'];
+                  }
+                  return [`${numericValue} pedidos`, 'Pedidos'];
+                }}
                 contentStyle={{
                   backgroundColor: dataViz.tooltip.bg,
                   borderColor: dataViz.tooltip.border,
@@ -65,8 +129,21 @@ export function FinancialHealthChart({ data }: FinancialHealthChartProps) {
                   borderRadius: '8px',
                 }}
               />
-              <Bar dataKey="Ingresos" fill={dataViz.series[0]} radius={[6, 6, 0, 0]} />
-              <Bar dataKey="Pedidos" fill={dataViz.series[1]} radius={[6, 6, 0, 0]} />
+              <Legend />
+              <Bar
+                yAxisId="revenue"
+                dataKey="Ingresos"
+                fill={dataViz.series[0]}
+                radius={[6, 6, 0, 0]}
+                maxBarSize={72}
+              />
+              <Bar
+                yAxisId="orders"
+                dataKey="Pedidos"
+                fill={dataViz.series[1]}
+                radius={[6, 6, 0, 0]}
+                maxBarSize={72}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -82,9 +159,9 @@ export function FinancialHealthChart({ data }: FinancialHealthChartProps) {
             </thead>
             <tbody>
               <tr className="border-b border-ee-border-subtle/60">
-                <td className="py-3 pr-4 capitalize">{data.granularity}</td>
+                <td className="py-3 pr-4">{periodLabel}</td>
                 <td className="py-3 pr-4 text-right font-ee-mono tabular-nums">
-                  {data.revenue.toFixed(2)}
+                  {formatFullCurrency(data.revenue)}
                 </td>
                 <td className="py-3 text-right font-ee-mono tabular-nums">
                   {data.orderCount}
