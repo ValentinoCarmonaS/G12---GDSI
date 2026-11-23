@@ -2,11 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { IngredientSelectorModal } from './IngredientSelectorModal';
 import type { RecipeIngredientItem } from '@/types/dish';
 import type { ChefIngredientItemResponse } from '@/types/inventory';
+import { BrutalistCard } from '@/components/chef/BrutalistCard';
+import { FeedbackState } from '@/components/chef/FeedbackState';
 
 export interface RecipeBOMStepProps {
   dishId?: string;
   initialRecipe?: RecipeIngredientItem[];
   onSaveRecipe?: (recipe: RecipeIngredientItem[]) => void | Promise<void>;
+  onPrev?: () => void;
+  onNext?: (recipe: RecipeIngredientItem[]) => void;
+  onDraftChange?: (recipe: RecipeIngredientItem[]) => void;
   onRemoveIngredient?: (ingredientId: string) => void | Promise<void>;
   isReadOnly?: boolean;
   isSaving?: boolean;
@@ -15,6 +20,9 @@ export interface RecipeBOMStepProps {
 export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
   initialRecipe = [],
   onSaveRecipe,
+  onPrev,
+  onNext,
+  onDraftChange,
   onRemoveIngredient,
   isReadOnly = false,
   isSaving = false,
@@ -41,253 +49,223 @@ export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
     setIsModalOpen(true);
   };
 
-  const handleSelectIngredient = (selected: ChefIngredientItemResponse) => {
-    const exists = ingredients.some((i) => i.ingredientId === selected.id);
-
+  const handleSelectIngredient = (ing: ChefIngredientItemResponse) => {
+    const exists = ingredients.some((item) => item.ingredientId === ing.id);
     if (exists) {
-      setDuplicateWarning(
-        `El ingrediente ya se encuentra en la receta ("${selected.name}"). Podés ajustar su cantidad directamente en la tabla.`
-      );
+      setDuplicateWarning(`El ingrediente "${ing.name}" ya está en la receta.`);
+      setIsModalOpen(false);
       return;
     }
 
+    const defaultQty = ing.unit === 'u' ? 1 : 0.1;
+    const next = [
+      ...ingredients,
+      {
+        ingredientId: ing.id,
+        ingredientName: ing.name,
+        quantity: defaultQty,
+        unit: ing.unit,
+      },
+    ];
+    setIngredients(next);
+    setRawQuantities((prev) => ({ ...prev, [ing.id]: defaultQty.toString() }));
+    setIsModalOpen(false);
     setDuplicateWarning(null);
-    const defaultQty = 1;
-    const newItem: RecipeIngredientItem = {
-      ingredientId: selected.id,
-      ingredientName: selected.name,
-      quantity: defaultQty,
-      unitOfMeasure: selected.unitOfMeasure,
-    };
-
-    setIngredients((prev) => [...prev, newItem]);
-    setRawQuantities((prev) => ({
-      ...prev,
-      [selected.id]: defaultQty.toString(),
-    }));
+    onDraftChange?.(next);
   };
 
-  const handleQuantityChange = (ingredientId: string, value: string) => {
+  const handleQuantityChange = (ingredientId: string, value: string, unit: string) => {
     setRawQuantities((prev) => ({ ...prev, [ingredientId]: value }));
 
-    // Clear validation error on change
-    if (validationErrors[ingredientId]) {
-      setValidationErrors((prev) => {
-        const next = { ...prev };
-        delete next[ingredientId];
-        return next;
-      });
+    const parsed = Number(value);
+    if (!value.trim() || Number.isNaN(parsed) || parsed <= 0) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [ingredientId]: 'La cantidad debe ser mayor a 0.',
+      }));
+      return;
     }
 
-    const numValue = parseFloat(value);
-    setIngredients((prev) =>
-      prev.map((item) =>
-        item.ingredientId === ingredientId
-          ? { ...item, quantity: isNaN(numValue) ? 0 : numValue }
-          : item
-      )
-    );
-  };
+    if (unit === 'u' && !Number.isInteger(parsed)) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [ingredientId]: 'Para unidad "u", ingresá un número entero.',
+      }));
+      return;
+    }
 
-  const handleRemove = (ingredientId: string) => {
-    setIngredients((prev) => prev.filter((i) => i.ingredientId !== ingredientId));
-    setRawQuantities((prev) => {
-      const next = { ...prev };
-      delete next[ingredientId];
-      return next;
-    });
     setValidationErrors((prev) => {
-      const next = { ...prev };
-      delete next[ingredientId];
-      return next;
+      const copy = { ...prev };
+      delete copy[ingredientId];
+      return copy;
     });
-    setDuplicateWarning(null);
 
+    const next = ingredients.map((item) =>
+      item.ingredientId === ingredientId ? { ...item, quantity: parsed } : item
+    );
+    setIngredients(next);
+    onDraftChange?.(next);
+  };
+
+  const handleRemove = async (ingredientId: string) => {
+    const next = ingredients.filter((item) => item.ingredientId !== ingredientId);
+    setIngredients(next);
+    setValidationErrors((prev) => {
+      const copy = { ...prev };
+      delete copy[ingredientId];
+      return copy;
+    });
+    onDraftChange?.(next);
     if (onRemoveIngredient) {
-      onRemoveIngredient(ingredientId);
+      await onRemoveIngredient(ingredientId);
     }
   };
 
-  const validate = (): boolean => {
+  const validateAll = (): boolean => {
     const errors: Record<string, string> = {};
-
-    for (const item of ingredients) {
-      const rawVal = rawQuantities[item.ingredientId] ?? item.quantity.toString();
-      const num = parseFloat(rawVal);
-
-      if (isNaN(num) || num <= 0) {
+    ingredients.forEach((item) => {
+      const raw = rawQuantities[item.ingredientId] ?? item.quantity.toString();
+      const parsed = Number(raw);
+      if (!raw.trim() || Number.isNaN(parsed) || parsed <= 0) {
         errors[item.ingredientId] = 'La cantidad debe ser mayor a 0.';
-        continue;
+      } else if (item.unit === 'u' && !Number.isInteger(parsed)) {
+        errors[item.ingredientId] = 'Para unidad "u", ingresá un número entero.';
       }
-
-      if (item.unitOfMeasure === 'u') {
-        if (!Number.isInteger(num)) {
-          errors[item.ingredientId] =
-            'Las unidades discretas (\'u\') solo aceptan números enteros.';
-        }
-      }
-    }
-
+    });
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSave = () => {
-    if (!validate()) {
+  const handleContinue = async () => {
+    if (!validateAll()) return;
+    if (onNext) {
+      onNext(ingredients);
       return;
     }
-
     if (onSaveRecipe) {
-      // Sync ingredients with parsed quantities
-      const finalItems = ingredients.map((item) => ({
-        ...item,
-        quantity: parseFloat(rawQuantities[item.ingredientId] ?? item.quantity.toString()),
-      }));
-      onSaveRecipe(finalItems);
+      await onSaveRecipe(ingredients);
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Step Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-800">
+    <BrutalistCard className="p-6 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-wide">
-            Receta y Escandallo (BOM)
+          <h2 className="text-lg font-extrabold uppercase tracking-wide text-[#0A0A0A]">
+            Ingredientes de la receta
           </h2>
-          <p className="text-sm text-gray-400 mt-1">
-            Componé la lista de ingredientes activos y definí las cantidades exactas requeridas para preparar este plato.
+          <p className="text-xs font-mono text-[#52525B]">
+            Definí los insumos y cantidades exactas por porción.
           </p>
         </div>
-
         {!isReadOnly && (
           <button
             type="button"
             onClick={handleOpenModal}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-semibold text-sm rounded-lg transition-colors shadow-sm"
+            disabled={isSaving}
+            className="min-h-[44px] px-4 py-2 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#FFFFFF] text-xs font-bold uppercase tracking-wide hover:bg-[#27272A]"
           >
             + Agregar ingrediente
           </button>
         )}
       </div>
 
-      {/* Duplicate Warning Banner */}
       {duplicateWarning && (
-        <div
-          role="alert"
-          className="p-4 bg-amber-950/70 border border-amber-800 text-amber-200 rounded-lg flex items-center justify-between gap-3 text-sm animate-fadeIn"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-amber-400 text-base">⚠️</span>
-            <span>{duplicateWarning}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setDuplicateWarning(null)}
-            className="text-amber-400 hover:text-white text-xs px-2 py-1 rounded bg-amber-900/40 hover:bg-amber-900/80 transition-colors"
-          >
-            Entendido
-          </button>
-        </div>
+        <FeedbackState variant="warning" title="Ingrediente duplicado" message={duplicateWarning} />
       )}
 
-      {/* Ingredients Table */}
       {ingredients.length === 0 ? (
-        <div className="text-center py-12 px-4 bg-gray-900/50 border border-dashed border-gray-800 rounded-xl">
-          <p className="text-gray-400 text-sm font-medium">No hay ingredientes agregados</p>
-          <p className="text-gray-500 text-xs mt-1">
-            Hacé clic en &quot;Agregar ingrediente&quot; para seleccionar del catálogo activo del establecimiento.
+        <div className="border-2 border-dashed border-[#0A0A0A] bg-[#F5F5F4] p-8 text-center">
+          <p className="text-sm font-bold text-[#0A0A0A]">
+            Todavía no agregaste ingredientes a esta receta.
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto bg-gray-900/60 border border-gray-800 rounded-xl">
-          <table className="w-full text-left border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-gray-800 text-gray-400 text-xs uppercase tracking-wider bg-gray-900/80">
-                <th className="py-3 px-4">Ingrediente</th>
-                <th className="py-3 px-4 w-40">Cantidad</th>
-                <th className="py-3 px-4 w-28 text-center">Unidad</th>
-                {!isReadOnly && <th className="py-3 px-4 w-24 text-center">Acciones</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
-              {ingredients.map((item) => {
-                const currentVal = rawQuantities[item.ingredientId] ?? item.quantity.toString();
-                const itemError = validationErrors[item.ingredientId];
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {ingredients.map((item) => {
+            const error = validationErrors[item.ingredientId];
+            return (
+              <BrutalistCard key={item.ingredientId} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-bold text-sm text-[#0A0A0A]">{item.ingredientName}</p>
+                    <p className="font-mono text-xs text-[#52525B]">Unidad: {item.unit}</p>
+                  </div>
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(item.ingredientId)}
+                      disabled={isSaving}
+                      aria-label={`Quitar ${item.ingredientName}`}
+                      className="px-2.5 py-1 border-2 border-[#0A0A0A] bg-[#FFFFFF] text-[#DC2626] text-xs font-bold uppercase hover:bg-[#FEE2E2]"
+                    >
+                      Quitar
+                    </button>
+                  )}
+                </div>
 
-                return (
-                  <tr key={item.ingredientId} className="hover:bg-gray-800/40 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-medium text-white">{item.ingredientName}</div>
-                      {itemError && (
-                        <p className="text-xs text-red-400 mt-1 font-normal">{itemError}</p>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {isReadOnly ? (
-                        <span className="font-mono text-gray-200">{currentVal}</span>
-                      ) : (
-                        <div>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={currentVal}
-                            onChange={(e) => handleQuantityChange(item.ingredientId, e.target.value)}
-                            className={`w-full bg-gray-800 border rounded-lg px-3 py-1.5 text-sm text-white font-mono focus:outline-none focus:ring-2 ${
-                              itemError
-                                ? 'border-red-500 focus:ring-red-500'
-                                : 'border-gray-700 focus:ring-amber-500'
-                            }`}
-                          />
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span className="inline-block px-2 py-0.5 text-xs font-mono bg-gray-800 text-gray-300 rounded border border-gray-700">
-                        {item.unitOfMeasure}
-                      </span>
-                    </td>
-                    {!isReadOnly && (
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleRemove(item.ingredientId)}
-                          className="px-2.5 py-1 text-xs text-red-400 hover:text-red-300 hover:bg-red-950/40 rounded transition-colors"
-                          aria-label={`Eliminar ${item.ingredientName}`}
-                        >
-                          Eliminar
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                <div>
+                  <label
+                    htmlFor={`qty-${item.ingredientId}`}
+                    className="block text-xs font-bold uppercase text-[#0A0A0A] mb-1"
+                  >
+                    Cantidad ({item.unit})
+                  </label>
+                  <input
+                    id={`qty-${item.ingredientId}`}
+                    type="number"
+                    step={item.unit === 'u' ? '1' : '0.01'}
+                    min="0"
+                    value={rawQuantities[item.ingredientId] ?? item.quantity.toString()}
+                    onChange={(e) =>
+                      handleQuantityChange(item.ingredientId, e.target.value, item.unit)
+                    }
+                    disabled={isReadOnly || isSaving}
+                    className="w-full px-3 py-2 border-2 border-[#0A0A0A] bg-[#FFFFFF] text-[#0A0A0A] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#0A0A0A] disabled:bg-[#F5F5F4]"
+                  />
+                  {error && (
+                    <p role="alert" className="mt-1 text-xs font-bold text-[#DC2626]">
+                      {error}
+                    </p>
+                  )}
+                </div>
+              </BrutalistCard>
+            );
+          })}
         </div>
       )}
 
-      {/* Save Action */}
-      {!isReadOnly && (
-        <div className="flex justify-end pt-4 border-t border-gray-800">
+      <div className="flex items-center justify-between pt-4 border-t-2 border-[#0A0A0A]">
+        {onPrev ? (
           <button
             type="button"
+            onClick={onPrev}
             disabled={isSaving}
-            onClick={handleSave}
-            className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold text-sm rounded-lg transition-colors shadow-sm"
+            className="min-h-[48px] px-5 py-2.5 border-2 border-[#0A0A0A] bg-[#FFFFFF] text-[#0A0A0A] text-sm font-bold uppercase tracking-wide hover:bg-[#F5F5F4]"
           >
-            {isSaving ? 'Guardando receta...' : 'Guardar receta'}
+            Anterior
           </button>
-        </div>
-      )}
+        ) : (
+          <span />
+        )}
+        <button
+          type="button"
+          onClick={handleContinue}
+          disabled={isSaving}
+          className="min-h-[48px] px-6 py-2.5 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#FFFFFF] text-sm font-bold uppercase tracking-wide hover:bg-[#27272A] disabled:opacity-50"
+        >
+          {onNext ? 'Siguiente' : isSaving ? 'Guardando...' : 'Guardar receta'}
+        </button>
+      </div>
 
-      {/* Ingredient Selector Modal */}
       <IngredientSelectorModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSelectIngredient={handleSelectIngredient}
         selectedIngredientIds={ingredients.map((i) => i.ingredientId)}
       />
-    </div>
+    </BrutalistCard>
   );
 };
+
+export default RecipeBOMStep;
