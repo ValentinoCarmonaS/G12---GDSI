@@ -1,9 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { BrutalistCard } from '../../src/components/chef/BrutalistCard';
 import { BrutalistModal } from '../../src/components/chef/BrutalistModal';
 import { DishStatusBadge } from '../../src/components/dish/DishStatusBadge';
 import { DishRejectionFeedbackBanner } from '../../src/components/chef/DishRejectionFeedbackBanner';
+import { ChefMobileBottomBar } from '../../src/components/chef/ChefMobileBottomBar';
+import { RoleLayoutShell } from '../../src/components/layout/RoleLayoutShell';
+import { ROLE_NAVIGATION_CONFIG } from '../../src/components/layout/roleNavigationConfig';
+import type { AuthenticatedUser } from '../../src/types/auth';
 import type { ChefReviewFeedbackEntry } from '../../src/types/dishReview';
 
 describe('Phase 2 — Fundaciones Brutalism y componentes transversales', () => {
@@ -148,6 +153,108 @@ describe('Phase 2 — Fundaciones Brutalism y componentes transversales', () => 
       expect(banner.innerHTML).not.toMatch(/\$|ARS|USD|costo|margen|precio/i);
       expect(screen.getByTestId('proposed-changes')).toBeInTheDocument();
       expect(screen.getByText(/Milanesa de merluza/)).toBeInTheDocument();
+    });
+  });
+});
+
+const chefUser: AuthenticatedUser = {
+  id: 'chef-1',
+  email: 'chef@easyeat.com',
+  fullName: 'Chef Prueba',
+  role: 'CHEF',
+  tenantId: 'tenant-1',
+};
+
+describe('Phase 3 — US1: Arquitectura visual Brutalism y navegación táctil de un toque', () => {
+  describe('ROLE_NAVIGATION_CONFIG', () => {
+    it('habilita useMobileBottomBar exclusivamente para CHEF y mantiene sus 3 destinos', () => {
+      expect(ROLE_NAVIGATION_CONFIG.CHEF.useMobileBottomBar).toBe(true);
+      expect(ROLE_NAVIGATION_CONFIG.CHEF.items.map((i) => i.label)).toEqual([
+        'Comandas KDS',
+        'Gestionar Platos',
+        'Ingredientes',
+      ]);
+      expect(ROLE_NAVIGATION_CONFIG.COMENSAL.useMobileBottomBar).toBeFalsy();
+      expect(ROLE_NAVIGATION_CONFIG.ENCARGADO.useMobileBottomBar).toBeFalsy();
+      expect(ROLE_NAVIGATION_CONFIG.ADMINISTRADOR.useMobileBottomBar).toBeFalsy();
+    });
+  });
+
+  describe('ChefMobileBottomBar', () => {
+    it('renderiza los 3 accesos con min-h-[56px], aria-current="page" y estilo Brutalism activo', () => {
+      render(
+        <MemoryRouter initialEntries={['/cocina/platos']}>
+          <ChefMobileBottomBar />
+        </MemoryRouter>
+      );
+
+      const nav = screen.getByRole('navigation', { name: 'Navegación rápida móvil de cocina' });
+      expect(nav.className).toContain('md:hidden');
+
+      const kdsLink = screen.getByRole('link', { name: 'Comandas KDS' });
+      const platosLink = screen.getByRole('link', { name: 'Platos' });
+      const ingLink = screen.getByRole('link', { name: 'Ingredientes' });
+
+      expect(kdsLink.className).toContain('min-h-[56px]');
+      expect(platosLink.className).toContain('min-h-[56px]');
+      expect(ingLink.className).toContain('min-h-[56px]');
+
+      expect(platosLink).toHaveAttribute('aria-current', 'page');
+      expect(kdsLink).not.toHaveAttribute('aria-current', 'page');
+    });
+  });
+
+  describe('RoleLayoutShell para CHEF', () => {
+    it('aplica min-h-[48px] en cabecera, reserva pb-24 md:pb-6 en main y elimina max-w-7xl con fullWidth', () => {
+      const { rerender } = render(
+        <MemoryRouter initialEntries={['/cocina']}>
+          <RoleLayoutShell title="Cocina" user={chefUser} onLogout={vi.fn()}>
+            <div>Contenido</div>
+          </RoleLayoutShell>
+        </MemoryRouter>
+      );
+
+      const desktopNav = screen.getByRole('navigation', { name: 'Secciones de cocina' });
+      const desktopLinks = desktopNav.querySelectorAll('a');
+      expect(desktopLinks.length).toBe(3);
+      desktopLinks.forEach((link) => {
+        expect(link.className).toContain('min-h-[48px]');
+      });
+
+      const main = screen.getByRole('main');
+      expect(main.className).toContain('pb-24');
+      expect(main.className).toContain('md:pb-6');
+      expect(main.className).toContain('max-w-7xl');
+
+      expect(
+        screen.getByRole('navigation', { name: 'Navegación rápida móvil de cocina' })
+      ).toBeInTheDocument();
+
+      rerender(
+        <MemoryRouter initialEntries={['/cocina']}>
+          <RoleLayoutShell title="Cocina" user={chefUser} fullWidth onLogout={vi.fn()}>
+            <div>Contenido</div>
+          </RoleLayoutShell>
+        </MemoryRouter>
+      );
+      expect(screen.getByRole('main').className).not.toContain('max-w-7xl');
+    });
+
+    it('conserva metadatos de cuenta y Cerrar sesión en el menú hamburguesa sin enlace a /perfil', () => {
+      render(
+        <MemoryRouter initialEntries={['/cocina']}>
+          <RoleLayoutShell title="Cocina" user={chefUser} onLogout={vi.fn()}>
+            <div>Contenido</div>
+          </RoleLayoutShell>
+        </MemoryRouter>
+      );
+
+      const menuBtn = screen.getByRole('button', { name: /menú/i });
+      fireEvent.click(menuBtn);
+
+      expect(screen.getByText('Chef Prueba')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /mi perfil/i })).not.toBeInTheDocument();
     });
   });
 });
