@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -10,7 +10,8 @@ import {
   YAxis,
 } from 'recharts';
 import type { FinancialHealthResponse } from '../../types/analytics';
-import { useRoleTheme } from '../../theme/useRoleTheme';
+import { RoleThemeContext } from '../../theme/ThemeScopeProvider';
+import { ROLE_THEME_REGISTRY } from '../../theme/themeRegistry';
 import { GlassCard } from '../admin/GlassCard';
 import { Button, EmptyState } from '../primitives';
 
@@ -62,7 +63,8 @@ export function formatCompactCurrency(value: number): string {
 
 export function FinancialHealthChart({ data }: FinancialHealthChartProps) {
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
-  const { dataViz } = useRoleTheme();
+  const roleTheme = useContext(RoleThemeContext);
+  const dataViz = roleTheme?.dataViz ?? ROLE_THEME_REGISTRY.admin.dataViz;
 
   const isEmpty = data.revenue === 0 && data.orderCount === 0;
   const periodLabel =

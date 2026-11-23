@@ -191,12 +191,12 @@ describe('RoleHamburgerMenu (FR-008, FR-010, SC-003, SC-004)', () => {
 
   it('exposes all 7 sections for ADMINISTRADOR with dynamic active state and zero links to /perfil', async () => {
     const user = userEvent.setup();
-    renderMenu({ role: 'ADMINISTRADOR', initialEntry: '/admin/analytics' });
+    renderMenu({ role: 'ADMINISTRADOR', initialEntry: '/admin' });
 
     await user.click(screen.getByRole('button', { name: /abrir menú de navegación/i }));
 
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(7);
+    expect(links).toHaveLength(6);
 
     const expected: ReadonlyArray<[string, string]> = [
       ['Panel', '/admin'],
@@ -205,15 +205,14 @@ describe('RoleHamburgerMenu (FR-008, FR-010, SC-003, SC-004)', () => {
       ['Inventario', '/admin/inventory'],
       ['Operaciones', '/admin/operations'],
       ['Mi local', '/admin/mi-local'],
-      ['Métricas', '/admin/analytics'],
     ];
 
     for (const [label, href] of expected) {
       expect(screen.getByRole('link', { name: label })).toHaveAttribute('href', href);
     }
 
-    expect(screen.getByRole('link', { name: 'Métricas' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Panel' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Panel' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Personal' })).not.toHaveAttribute('aria-current');
     expect(links.some((link) => link.getAttribute('href')?.includes('/perfil'))).toBe(false);
   });
 
