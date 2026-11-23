@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import type { KdsTicket } from '../../types/kds';
 import { KdsQueuedCard } from './KdsQueuedCard';
 import { KdsInPreparationCard } from './KdsInPreparationCard';
-import { LoadingSkeleton } from '../ui/LoadingSkeleton';
-import { EmptyState } from '../ui/EmptyState';
+import { LoadingSkeleton } from '../primitives/LoadingSkeleton';
+import { EmptyState } from '../primitives/EmptyState';
 
 export interface KitchenKanbanBoardProps {
   tickets: KdsTicket[];
@@ -120,7 +120,7 @@ export const KitchenKanbanBoard: React.FC<KitchenKanbanBoardProps> = ({
             </h2>
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 overflow-y-auto">
             {queuedTickets.length === 0 ? (
               <EmptyState
                 title="Sin pedidos pendientes"
@@ -160,7 +160,7 @@ export const KitchenKanbanBoard: React.FC<KitchenKanbanBoardProps> = ({
               </h2>
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 overflow-y-auto">
               {inPreparationTickets.length === 0 ? (
                 <EmptyState
                   title="Sin pedidos en preparación"

@@ -118,7 +118,7 @@ describe('Spec 027 US2 — KDS Brutalist Ergonomics & Resilience', () => {
   });
 
   it('1) /cocina uses fullWidth, removes redundant ingredients block, renders top compact 4 KPI strip in JetBrains Mono without border-l-4 or slate-900, and shows LoadingSkeleton during initial load', () => {
-    (useKdsQueuePolling as any).mockReturnValueOnce({
+    (useKdsQueuePolling as any).mockReturnValue({
       tickets: [],
       isLoading: true,
       error: null,
