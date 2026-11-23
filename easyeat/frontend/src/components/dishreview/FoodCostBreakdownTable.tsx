@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatAuditQuantity } from '@/utils/foodCostAudit';
 import { UnpricedIngredientBadge } from './UnpricedIngredientBadge';
+import { GlassCard } from '@/components/admin/GlassCard';
 import type { FoodCostAudit } from '@/types/dishReview';
 
 export interface FoodCostBreakdownTableProps {
@@ -13,59 +14,62 @@ const money = new Intl.NumberFormat('es-AR', {
 });
 
 /**
- * The itemized Food Cost audit of FR-006: one line per recipe entry, with the aggregate per
- * portion.
- *
- * Every figure comes from spec 006 and none is recomputed here. The totals in particular are
- * displayed, not summed in the browser: spec 006 rounds each line subtotal to two decimals and
- * sums the rounded values, so a client-side sum of the displayed lines could legitimately differ
- * from the authoritative total by a fraction of a cent and would look like a bug in one of them.
+ * Itemized Food Cost audit of FR-006 rendered in responsive GlassCard rows.
+ * Figures come verbatim from spec 006 without client-side recomputation.
  */
 export const FoodCostBreakdownTable: React.FC<FoodCostBreakdownTableProps> = ({ audit }) => (
-  <div className="overflow-x-auto">
-    <table className="min-w-full text-sm">
-      <caption className="sr-only">Desglose del Food Cost por insumo</caption>
-      <thead>
-        <tr className="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-gray-200">
-          <th scope="col" className="py-2 pr-4">Insumo</th>
-          <th scope="col" className="py-2 pr-4">Cantidad</th>
-          <th scope="col" className="py-2 pr-4">Unidad</th>
-          <th scope="col" className="py-2 pr-4 text-right">Costo unitario</th>
-          <th scope="col" className="py-2 text-right">Subtotal</th>
-        </tr>
-      </thead>
-      <tbody>
-        {audit.items.map((line) => (
-          <tr key={line.ingredientId} data-testid="cost-line" className="border-b border-gray-100">
-            <td className="py-2 pr-4">
-              <span className="text-gray-900">{line.ingredientName}</span>
-              {line.unpricedWarning && <UnpricedIngredientBadge className="ml-2" />}
-            </td>
-            <td className="py-2 pr-4 text-gray-700">{formatAuditQuantity(line)}</td>
-            <td className="py-2 pr-4 text-gray-500">{line.unitOfMeasure ?? '—'}</td>
-            <td className="py-2 pr-4 text-right text-gray-700">
-              ${money.format(line.unitPurchaseCost)}
-            </td>
-            <td className="py-2 text-right text-gray-900">${money.format(line.lineSubtotal)}</td>
-          </tr>
-        ))}
-      </tbody>
-      <tfoot>
-        <tr>
-          <th scope="row" colSpan={4} className="py-3 pr-4 text-right font-medium text-gray-700">
-            Food Cost por porción
-          </th>
-          {/*
-            Rendered as a figure even at zero. 0,00 is a real cost - a recipe whose every
-            ingredient is unpriced - and a dash would make it indistinguishable from "not
-            computed", which is a different thing to tell someone pricing a dish.
-          */}
-          <td data-testid="food-cost-total" className="py-3 text-right font-semibold text-gray-900">
-            ${money.format(audit.totalFoodCost)}
-          </td>
-        </tr>
-      </tfoot>
-    </table>
+  <div className="space-y-3" aria-label="Desglose del Food Cost por insumo">
+    <ul className="space-y-2">
+      {audit.items.map((line) => (
+        <li key={line.ingredientId}>
+          <GlassCard
+            data-testid="cost-line"
+            variant="subtle"
+            padding="sm"
+            radius="md"
+            className={`px-4 py-3 ${
+              line.unpricedWarning ? 'border-ee-warning-border bg-ee-warning-bg/40' : ''
+            }`}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-ee-text">{line.ingredientName}</span>
+                  {line.unpricedWarning && <UnpricedIngredientBadge />}
+                </div>
+                <p className="mt-1 font-ee-mono tabular-nums text-xs text-ee-text-secondary">
+                  {formatAuditQuantity(line)} {line.unitOfMeasure ?? '—'} · Costo unit.: $
+                  {money.format(line.unitPurchaseCost)}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <span className="block font-ee-mono text-[11px] uppercase tracking-wider text-ee-text-secondary">
+                  Subtotal
+                </span>
+                <span className="font-ee-mono tabular-nums text-sm font-bold text-ee-text">
+                  ${money.format(line.lineSubtotal)}
+                </span>
+              </div>
+            </div>
+          </GlassCard>
+        </li>
+      ))}
+    </ul>
+
+    <GlassCard
+      variant="accent"
+      padding="sm"
+      radius="md"
+      className="flex items-center justify-between gap-4 px-4 py-3"
+    >
+      <span className="text-sm font-semibold text-ee-text">Food Cost por porción</span>
+      <span
+        data-testid="food-cost-total"
+        className="font-ee-mono tabular-nums text-lg font-bold text-ee-primary"
+      >
+        ${money.format(audit.totalFoodCost)}
+      </span>
+    </GlassCard>
   </div>
 );
 

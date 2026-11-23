@@ -7,6 +7,7 @@ import { ROLE_NAVIGATION_CONFIG, isRoleNavItemActive } from './roleNavigationCon
 export interface RoleHamburgerMenuProps {
   role: EasyEatUserRole;
   userEmail?: string | null;
+  pendingDishesCount?: number | null;
   onLogout: () => void | Promise<void>;
   panelId?: string;
   className?: string;
@@ -15,6 +16,7 @@ export interface RoleHamburgerMenuProps {
 export const RoleHamburgerMenu: React.FC<RoleHamburgerMenuProps> = ({
   role,
   userEmail,
+  pendingDishesCount = null,
   onLogout,
   panelId = 'ee-role-menu-panel',
   className = '',
@@ -114,7 +116,7 @@ export const RoleHamburgerMenu: React.FC<RoleHamburgerMenuProps> = ({
         aria-expanded={isOpen}
         aria-controls={panelId}
         aria-label={isOpen ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'}
-        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-ee-sm border border-ee-border-subtle bg-ee-surface-elevated text-ee-text transition-colors hover:bg-ee-surface-subtle"
+        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-ee-sm border border-ee-border-subtle bg-ee-surface-elevated text-ee-text transition-colors duration-150 motion-reduce:transition-none hover:bg-ee-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring"
         style={{ borderWidth: 'var(--ee-border-width)' }}
       >
         {isOpen ? (
@@ -156,27 +158,45 @@ export const RoleHamburgerMenu: React.FC<RoleHamburgerMenuProps> = ({
                   <ul className="space-y-1">
                     {section.items.map((item) => {
                       const active = isRoleNavItemActive(item, pathname, hash);
+                      const showBadge =
+                        item.id === 'admin-auditoria' &&
+                        typeof pendingDishesCount === 'number' &&
+                        pendingDishesCount > 0;
                       return (
                         <li key={item.id}>
                           <Link
                             to={item.to}
                             aria-current={active ? 'page' : undefined}
                             onClick={() => close()}
-                            className={`flex min-h-[44px] items-center justify-between rounded-ee-sm border-l-4 px-3 py-2 text-sm transition-colors ${
+                            className={`flex min-h-[44px] items-center justify-between rounded-ee-sm border-l-4 px-3 py-2 text-sm transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring ${
                               active
                                 ? 'border-ee-primary-border bg-ee-primary font-semibold text-ee-on-primary'
                                 : 'border-transparent font-medium text-ee-text hover:bg-ee-surface-subtle'
                             }`}
                           >
                             <span>{item.label}</span>
-                            {active && (
-                              <span
-                                aria-hidden="true"
-                                className="ml-2 font-ee-mono text-[11px] font-semibold uppercase tracking-wider"
-                              >
-                                Actual
-                              </span>
-                            )}
+                            <span className="ml-2 flex items-center gap-1.5">
+                              {showBadge && (
+                                <span
+                                  aria-label={`${pendingDishesCount} platos pendientes`}
+                                  className={`inline-flex min-w-[22px] items-center justify-center rounded-full px-1.5 py-0.5 font-ee-mono text-xs font-bold tabular-nums ${
+                                    active
+                                      ? 'bg-ee-on-primary text-ee-primary'
+                                      : 'bg-ee-primary text-ee-on-primary'
+                                  }`}
+                                >
+                                  {pendingDishesCount}
+                                </span>
+                              )}
+                              {active && (
+                                <span
+                                  aria-hidden="true"
+                                  className="font-ee-mono text-[11px] font-semibold uppercase tracking-wider"
+                                >
+                                  Actual
+                                </span>
+                              )}
+                            </span>
                           </Link>
                         </li>
                       );

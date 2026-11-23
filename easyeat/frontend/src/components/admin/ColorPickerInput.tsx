@@ -36,12 +36,12 @@ export const ColorPickerInput: React.FC<ColorPickerInputProps> = ({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-stone-700 dark:text-stone-300">
+        <label className="block text-sm font-medium text-[var(--ee-text)]">
           {label}
         </label>
         {isValid && (
           <span
-            className="text-xs px-2 py-0.5 rounded font-mono font-semibold transition-colors shadow-sm"
+            className="text-xs px-2 py-0.5 rounded font-ee-mono tabular-nums font-semibold transition-colors shadow-sm"
             style={{ backgroundColor: value, color: contrastColor }}
           >
             Contraste {contrastColor === '#FFFFFF' ? 'Claro' : 'Oscuro'}
@@ -50,13 +50,13 @@ export const ColorPickerInput: React.FC<ColorPickerInputProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-stone-300 dark:border-stone-700 shadow-sm flex-shrink-0 cursor-pointer">
+        <div className="relative w-11 h-11 rounded-[var(--ee-radius-sm)] overflow-hidden border border-[var(--ee-border)] shadow-sm flex-shrink-0 cursor-pointer">
           <input
             type="color"
             value={isValid ? value : '#10B981'}
             onChange={handleColorPickerChange}
             disabled={disabled}
-            className="absolute -top-2 -left-2 w-14 h-14 cursor-pointer border-0 p-0"
+            className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer border-0 p-0"
             aria-label={`Selector cromático para ${label}`}
           />
         </div>
@@ -69,19 +69,19 @@ export const ColorPickerInput: React.FC<ColorPickerInputProps> = ({
           placeholder="#RRGGBB"
           maxLength={7}
           disabled={disabled}
-          className={`flex-1 px-3 py-2 border rounded-lg font-mono text-sm uppercase bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+          className={`flex-1 min-h-[44px] px-3 py-2 border rounded-[var(--ee-radius-sm)] font-ee-mono tabular-nums text-sm uppercase bg-[var(--ee-surface)] text-[var(--ee-text)] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)] ${
             !isValid && value.length > 0
-              ? 'border-red-500 focus:ring-red-500'
-              : 'border-stone-300 dark:border-stone-700'
+              ? 'border-[var(--ee-danger-border)] focus-visible:ring-[var(--ee-danger-text)]'
+              : 'border-[var(--ee-border)]'
           }`}
         />
       </div>
 
       {helperText && (
-        <p className="text-xs text-stone-500 dark:text-stone-400">{helperText}</p>
+        <p className="text-xs text-[var(--ee-text-muted)]">{helperText}</p>
       )}
       {!isValid && value.length > 0 && (
-        <p className="text-xs text-red-500">Debe cumplir con el formato hexadecimal #RRGGBB (ej: #10B981)</p>
+        <p className="text-xs text-[var(--ee-danger-text)]">Debe cumplir con el formato hexadecimal #RRGGBB (ej: #10B981)</p>
       )}
     </div>
   );

@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import {
   AdminIngredientDetailResponse,
   IngredientStatus,
 } from '../../types/inventory';
+import { GlassCard } from '../admin/GlassCard';
 
 export interface IngredientCatalogTableProps {
   ingredients: AdminIngredientDetailResponse[];
@@ -22,8 +24,8 @@ const STATUS_LABELS: Record<IngredientStatus, string> = {
 };
 
 const STATUS_BADGE_CLASSES: Record<IngredientStatus, string> = {
-  ACTIVE: 'bg-green-100 text-green-800 border-green-200',
-  DISCONTINUED: 'bg-orange-100 text-orange-800 border-orange-200',
+  ACTIVE: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  DISCONTINUED: 'bg-amber-50 text-amber-800 border-amber-200',
 };
 
 export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
@@ -42,7 +44,6 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [transitioningId, setTransitioningId] = useState<string | null>(null);
 
-  // Local state for criticalOnly if not externally controlled
   const [localCriticalOnly, setLocalCriticalOnly] = useState<boolean>(criticalOnly);
 
   const isCriticalFilterActive = onToggleCriticalOnly !== undefined ? criticalOnly : localCriticalOnly;
@@ -79,40 +80,44 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Search and Filters Bar */}
-      <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
-        <div className="w-full md:w-72">
+      <GlassCard
+        variant="subtle"
+        padding="md"
+        className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between"
+      >
+        <div className="w-full lg:w-72">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar por nombre..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            aria-label="Buscar por nombre"
+            className="w-full min-h-[44px] px-3 py-2 border border-ee-border-subtle rounded-ee-sm text-sm text-ee-text placeholder-ee-text-muted focus:outline-none focus:ring-2 focus:ring-ee-focus-ring bg-white/90"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {/* Quick Critical Stock Filter Toggle (FR-020, INV-4, D-003) */}
-          <label className="flex items-center gap-2 cursor-pointer bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-md text-xs font-medium text-amber-900 transition-colors">
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <label className="flex items-center gap-2 min-h-[44px] cursor-pointer bg-amber-50 hover:bg-amber-100 border border-amber-300 px-3 py-2 rounded-ee-sm text-xs font-semibold text-amber-900 transition-colors">
             <input
               type="checkbox"
               checked={isCriticalFilterActive}
               onChange={(e) => handleCriticalFilterChange(e.target.checked)}
               aria-label="Solo insumos en stock crítico"
-              className="rounded border-amber-300 text-amber-600 focus:ring-amber-500 h-4 w-4"
+              className="rounded border-amber-400 text-amber-700 focus:ring-ee-focus-ring h-4 w-4"
             />
+            <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" aria-hidden="true" />
             <span>Solo insumos en stock crítico</span>
           </label>
 
           <div className="flex items-center gap-1.5">
-            <label htmlFor="filterCategorySelect" className="text-xs text-gray-500 font-medium whitespace-nowrap">
+            <label htmlFor="filterCategorySelect" className="text-xs text-ee-text-muted font-medium whitespace-nowrap">
               Categoría:
             </label>
             <select
               id="filterCategorySelect"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-2.5 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-h-[44px] px-2.5 py-2 border border-ee-border-subtle rounded-ee-sm text-xs text-ee-text bg-white/90 focus:outline-none focus:ring-2 focus:ring-ee-focus-ring"
             >
               <option value="ALL">Todas</option>
               <option value="Produce">Produce</option>
@@ -124,14 +129,14 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <label htmlFor="filterStatusSelect" className="text-xs text-gray-500 font-medium whitespace-nowrap">
+            <label htmlFor="filterStatusSelect" className="text-xs text-ee-text-muted font-medium whitespace-nowrap">
               Estado:
             </label>
             <select
               id="filterStatusSelect"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-2.5 py-1.5 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-h-[44px] px-2.5 py-2 border border-ee-border-subtle rounded-ee-sm text-xs text-ee-text bg-white/90 focus:outline-none focus:ring-2 focus:ring-ee-focus-ring"
             >
               <option value="ALL">Todos</option>
               <option value="ACTIVE">Activo</option>
@@ -139,140 +144,123 @@ export const IngredientCatalogTable: React.FC<IngredientCatalogTableProps> = ({
             </select>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
-      {/* Catalog Table */}
-      <div className="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-            <thead className="bg-gray-50 text-gray-500 font-medium text-xs uppercase tracking-wider">
-              <tr>
-                <th scope="col" className="px-6 py-3">Ingrediente</th>
-                <th scope="col" className="px-6 py-3">Categoría</th>
-                <th scope="col" className="px-6 py-3">Unidad</th>
-                <th scope="col" className="px-6 py-3">Stock Actual</th>
-                <th scope="col" className="px-6 py-3">Estado</th>
-                <th scope="col" className="px-6 py-3 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                    Cargando catálogo maestro...
-                  </td>
-                </tr>
-              ) : filteredIngredients.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                    No se encontraron materias primas en el catálogo.
-                  </td>
-                </tr>
-              ) : (
-                filteredIngredients.map((item) => {
-                  const isTransitioning = transitioningId === item.id;
+      {isLoading ? (
+        <GlassCard variant="elevated" padding="lg" className="text-center text-sm text-ee-text-muted">
+          Cargando catálogo de insumos...
+        </GlassCard>
+      ) : filteredIngredients.length === 0 ? (
+        <GlassCard variant="elevated" padding="lg" className="text-center text-sm text-ee-text-muted">
+          No se encontraron insumos registrados.
+        </GlassCard>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredIngredients.map((item) => {
+            const isDiscontinued = item.status === 'DISCONTINUED';
+            const isTransitioning = transitioningId === item.id;
 
-                  return (
-                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span>{item.name}</span>
-                          {/* Visual Alert Badge: ⚠️ Stock crítico (INV-4, FR-005, FR-006, INV-17) */}
-                          {item.isCritical === true && item.status === 'ACTIVE' && (
-                            <span
-                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 shadow-sm"
-                              title="Stock disponible por debajo del umbral crítico"
-                            >
-                              ⚠️ Stock crítico
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-600 whitespace-nowrap text-xs">
-                        {item.category}
-                      </td>
-                      <td className="px-6 py-4 font-mono text-gray-600 whitespace-nowrap text-xs">
-                        {item.unitOfMeasure}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`font-mono text-sm font-semibold ${
-                            item.currentStock === 0 ? 'text-red-600' : 'text-gray-900'
-                          }`}
-                        >
-                          {item.currentStock} {item.unitOfMeasure}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-                            STATUS_BADGE_CLASSES[item.status] || 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {STATUS_LABELS[item.status] || item.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right whitespace-nowrap space-x-1.5">
-                        <button
-                          type="button"
-                          onClick={() => onEdit(item)}
-                          disabled={isTransitioning}
-                          className="text-blue-600 hover:text-blue-900 font-medium text-xs px-2 py-1 rounded border border-blue-200 hover:bg-blue-50 transition-colors"
-                        >
-                          Editar
-                        </button>
+            return (
+              <GlassCard
+                key={item.id}
+                variant="interactive"
+                padding="md"
+                as="article"
+                className="flex flex-col justify-between gap-4"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="text-base font-semibold text-ee-text truncate">
+                        {item.name}
+                      </h3>
+                      <p className="text-xs text-ee-text-muted">{item.category}</p>
+                    </div>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border shrink-0 ${
+                        STATUS_BADGE_CLASSES[item.status] || 'bg-slate-100 text-slate-800 border-slate-200'
+                      }`}
+                    >
+                      {STATUS_LABELS[item.status] || item.status}
+                    </span>
+                  </div>
 
-                        {onAdjustStock && (
-                          <button
-                            type="button"
-                            onClick={() => onAdjustStock(item)}
-                            disabled={isTransitioning}
-                            className="text-amber-600 hover:text-amber-900 font-medium text-xs px-2 py-1 rounded border border-amber-200 hover:bg-amber-50 transition-colors"
-                          >
-                            Ajustar Stock
-                          </button>
-                        )}
+                  {item.isCritical && (
+                    <div
+                      role="status"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-ee-sm bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0" aria-hidden="true" />
+                      <span>⚠️ Stock Crítico</span>
+                    </div>
+                  )}
 
-                        {onViewAudit && (
-                          <button
-                            type="button"
-                            onClick={() => onViewAudit(item)}
-                            disabled={isTransitioning}
-                            className="text-purple-600 hover:text-purple-900 font-medium text-xs px-2 py-1 rounded border border-purple-200 hover:bg-purple-50 transition-colors"
-                          >
-                            Auditoría
-                          </button>
-                        )}
+                  <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
+                    <div className="p-2 rounded-ee-sm bg-white/60 border border-ee-border-subtle">
+                      <span className="block text-ee-text-muted">Stock actual</span>
+                      <span className="font-ee-mono tabular-nums font-bold text-sm text-ee-text">
+                        {item.currentStock} {item.unitOfMeasure}
+                      </span>
+                    </div>
+                    <div className="p-2 rounded-ee-sm bg-white/60 border border-ee-border-subtle">
+                      <span className="block text-ee-text-muted">Costo unitario</span>
+                      <span className="font-ee-mono tabular-nums font-bold text-sm text-ee-text">
+                        {item.unitPurchaseCost !== null && item.unitPurchaseCost !== undefined
+                          ? `$${item.unitPurchaseCost.toFixed(2)}`
+                          : '—'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                        {/* Lifecycle Transition Actions (FR-014: Active <-> Discontinued) */}
-                        {item.status === 'ACTIVE' ? (
-                          <button
-                            type="button"
-                            onClick={() => handleStatusTransition(item.id, 'DISCONTINUED')}
-                            disabled={isTransitioning}
-                            className="text-orange-600 hover:text-orange-900 font-medium text-xs px-2 py-1 rounded border border-orange-200 hover:bg-orange-50 transition-colors"
-                          >
-                            Desactivar
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleStatusTransition(item.id, 'ACTIVE')}
-                            disabled={isTransitioning}
-                            className="text-green-600 hover:text-green-900 font-medium text-xs px-2 py-1 rounded border border-green-200 hover:bg-green-50 transition-colors"
-                          >
-                            Reactivar
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                <div className="flex flex-wrap items-center justify-end gap-2 pt-3 border-t border-ee-border-subtle">
+                  {onAdjustStock && (
+                    <button
+                      type="button"
+                      onClick={() => onAdjustStock(item)}
+                      className="min-h-[44px] px-3 py-2 text-xs font-semibold text-ee-primary bg-ee-primary/5 hover:bg-ee-primary/10 rounded-ee-sm border border-ee-primary/25 transition-colors focus:outline-none focus:ring-2 focus:ring-ee-focus-ring"
+                    >
+                      Ajustar Stock
+                    </button>
+                  )}
+                  {onViewAudit && (
+                    <button
+                      type="button"
+                      onClick={() => onViewAudit(item)}
+                      className="min-h-[44px] px-3 py-2 text-xs font-semibold text-ee-text bg-white/80 hover:bg-white rounded-ee-sm border border-ee-border-subtle transition-colors focus:outline-none focus:ring-2 focus:ring-ee-focus-ring"
+                    >
+                      Auditoría
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onEdit(item)}
+                    className="min-h-[44px] px-3 py-2 text-xs font-semibold text-ee-text bg-white/80 hover:bg-white rounded-ee-sm border border-ee-border-subtle transition-colors focus:outline-none focus:ring-2 focus:ring-ee-focus-ring"
+                  >
+                    Editar
+                  </button>
+                  {(onStatusTransition || onStatusChange) && (
+                    <button
+                      type="button"
+                      disabled={isTransitioning}
+                      onClick={() =>
+                        handleStatusTransition(item.id, isDiscontinued ? 'ACTIVE' : 'DISCONTINUED')
+                      }
+                      className={`min-h-[44px] px-3 py-2 text-xs font-semibold rounded-ee-sm border transition-colors focus:outline-none focus:ring-2 focus:ring-ee-focus-ring disabled:opacity-50 ${
+                        isDiscontinued
+                          ? 'text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+                          : 'text-amber-900 bg-amber-50 hover:bg-amber-100 border-amber-200'
+                      }`}
+                    >
+                      {isDiscontinued ? 'Reactivar' : 'Desactivar'}
+                    </button>
+                  )}
+                </div>
+              </GlassCard>
+            );
+          })}
         </div>
-      </div>
+      )}
     </div>
   );
 };

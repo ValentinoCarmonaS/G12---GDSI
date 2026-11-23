@@ -6,6 +6,7 @@ import {
   UnitOfMeasure,
   UpdateIngredientRequest,
 } from '../../types/inventory';
+import { AccessibleModal } from '../diner/AccessibleModal';
 
 export interface IngredientFormModalProps {
   isOpen: boolean;
@@ -143,25 +144,13 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="ingredient-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? 'Editar Ingrediente' : 'Nuevo Ingrediente'}
+      size="md"
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-5 border border-gray-100">
-        <div className="flex items-center justify-between border-b pb-3">
-          <h3 id="ingredient-modal-title" className="text-lg font-bold text-gray-900">
-            {isEdit ? 'Editar Ingrediente' : 'Nuevo Ingrediente'}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-lg font-bold"
-          >
-            ✕
-          </button>
-        </div>
+      <div className="space-y-4">
 
         {generalError && (
           <div
@@ -303,7 +292,7 @@ export const IngredientFormModal: React.FC<IngredientFormModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </AccessibleModal>
   );
 };
 

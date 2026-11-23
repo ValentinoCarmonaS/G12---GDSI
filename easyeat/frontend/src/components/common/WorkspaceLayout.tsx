@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { profileApi } from '../../api/profileApi';
+import { getAdminBranding } from '../../api/brandingApi';
 import { adminNotificationApi } from '../../api/adminNotificationApi';
 import type { AdminNotificationResponse } from '../../types/notification';
 import { RoleLayoutShell, type LegacySurfaceMode } from '../layout/RoleLayoutShell';
@@ -25,6 +26,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const [notificationError, setNotificationError] = useState<string | null>(null);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState<boolean>(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [tenantName, setTenantName] = useState<string | null>(null);
 
   const fetchAvatar = useCallback(async () => {
     if (!user) {
@@ -49,6 +51,31 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       window.removeEventListener('easyeat:avatar-changed', handleAvatarUpdate);
     };
   }, [fetchAvatar]);
+
+  const fetchTenantName = useCallback(async () => {
+    if (user?.role !== 'ADMINISTRADOR' || !user.tenantId) {
+      setTenantName(null);
+      return;
+    }
+    try {
+      const branding = await getAdminBranding(user.tenantId);
+      const normalized = branding?.fantasyName?.trim() || null;
+      setTenantName(normalized);
+    } catch {
+      setTenantName(null);
+    }
+  }, [user?.role, user?.tenantId]);
+
+  useEffect(() => {
+    fetchTenantName();
+    const handleBrandingUpdate = () => {
+      fetchTenantName();
+    };
+    window.addEventListener('easyeat:branding-changed', handleBrandingUpdate);
+    return () => {
+      window.removeEventListener('easyeat:branding-changed', handleBrandingUpdate);
+    };
+  }, [fetchTenantName]);
 
   const fetchNotifications = useCallback(async () => {
     if (user?.role !== 'ADMINISTRADOR') return;
@@ -89,6 +116,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       subtitle={subtitle}
       user={user}
       avatarUrl={avatarUrl}
+      tenantName={tenantName}
       notifications={notifications}
       unreadCount={unreadCount}
       notificationError={notificationError}

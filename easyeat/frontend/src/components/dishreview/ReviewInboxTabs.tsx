@@ -8,12 +8,6 @@ export interface ReviewInboxTabsProps {
   onTabChange: (tab: InboxTab) => void;
 }
 
-/**
- * The three views of FR-002.
- *
- * The labels avoid suggesting a partition, because the views are not one: a dish rejected once
- * and later published belongs to "Publicados" and to "Historial" at the same time.
- */
 const TABS: ReadonlyArray<{ id: InboxTab; label: string; hint: string }> = [
   {
     id: 'PENDING',
@@ -32,7 +26,11 @@ export const ReviewInboxTabs: React.FC<ReviewInboxTabsProps> = ({
   pendingCount,
   onTabChange,
 }) => (
-  <div role="tablist" aria-label="Vistas de la bandeja de revisión" className="flex gap-1 border-b border-gray-200">
+  <div
+    role="tablist"
+    aria-label="Vistas de la bandeja de revisión"
+    className="flex gap-1 border-b border-ee-border-subtle bg-ee-surface-subtle/60 p-2"
+  >
     {TABS.map((tab) => {
       const isActive = tab.id === activeTab;
       return (
@@ -43,22 +41,22 @@ export const ReviewInboxTabs: React.FC<ReviewInboxTabsProps> = ({
           aria-selected={isActive}
           title={tab.hint}
           onClick={() => onTabChange(tab.id)}
-          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+          className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-ee-sm px-3 py-2 text-sm font-semibold transition-colors duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring ${
             isActive
-              ? 'border-blue-600 text-blue-700'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'bg-ee-primary text-ee-on-primary shadow-sm'
+              : 'text-ee-text-secondary hover:bg-ee-surface-elevated hover:text-ee-text'
           }`}
         >
-          {tab.label}
-          {/*
-            Rendered only above zero. A badge showing "0" reads as a problem to investigate,
-            while an absent badge reads as an empty queue — which is what it is.
-          */}
+          <span>{tab.label}</span>
           {tab.id === 'PENDING' && pendingCount > 0 && (
             <span
               data-testid="pending-count-badge"
               aria-label={`${pendingCount} platos pendientes de decisión`}
-              className="ml-2 inline-flex items-center justify-center min-w-5 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold border border-amber-300"
+              className={`inline-flex min-w-[22px] items-center justify-center rounded-full px-1.5 py-0.5 font-ee-mono tabular-nums text-xs font-semibold border ${
+                isActive
+                  ? 'bg-ee-on-primary/15 text-ee-on-primary border-ee-on-primary/40'
+                  : 'bg-ee-warning-bg text-ee-warning-fg border-ee-warning-border'
+              }`}
             >
               {pendingCount}
             </span>

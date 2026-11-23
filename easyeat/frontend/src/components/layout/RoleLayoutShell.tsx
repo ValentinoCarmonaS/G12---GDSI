@@ -5,6 +5,7 @@ import type { AuthenticatedUser } from '../../types/auth';
 import type { AdminNotificationResponse } from '../../types/notification';
 import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
 import { AdminNotificationBell } from '../notification/AdminNotificationBell';
+import { AdminSidebar } from '../admin/AdminSidebar';
 import { RoleHamburgerMenu } from './RoleHamburgerMenu';
 import { ROLE_NAVIGATION_CONFIG, isRoleNavItemActive } from './roleNavigationConfig';
 
@@ -16,6 +17,7 @@ export interface RoleLayoutShellProps {
   readonly children: React.ReactNode;
   readonly user: AuthenticatedUser | null;
   readonly avatarUrl?: string | null;
+  readonly tenantName?: string | null;
   readonly notifications?: AdminNotificationResponse[];
   readonly unreadCount?: number;
   readonly notificationError?: string | null;
@@ -34,6 +36,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
   children,
   user,
   avatarUrl = null,
+  tenantName = null,
   notifications = [],
   unreadCount = 0,
   notificationError = null,
@@ -87,6 +90,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                 role={user.role}
                 userEmail={user.email}
                 onLogout={onLogout}
+                className={config.useDesktopSidebar ? 'lg:hidden' : ''}
               />
             )}
 
@@ -151,7 +155,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                   />
                 )}
 
-                {config.allowProfileLink ? (
+                {config.allowProfileLink && (
                   <Link
                     to="/perfil"
                     title="Mi perfil"
@@ -161,17 +165,6 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                   >
                     {avatarContent}
                   </Link>
-                ) : (
-                  <div
-                    role="img"
-                    data-testid="staff-avatar-indicator"
-                    aria-label={`Cuenta de ${config.displayRoleLabel}`}
-                    title={config.displayRoleLabel}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-ee-border-subtle bg-ee-surface-subtle text-ee-text"
-                    style={{ borderWidth: 'var(--ee-border-width)' }}
-                  >
-                    {avatarContent}
-                  </div>
                 )}
               </>
             ) : (
@@ -196,11 +189,21 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
         </div>
       </header>
 
-      <main
-        id="main-content"
-        tabIndex={-1}
-        className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 outline-none sm:px-6 sm:py-8 lg:px-8"
-      >
+      <div className="flex flex-1">
+        {user && config?.useDesktopSidebar && (
+          <AdminSidebar
+            userEmail={user.email}
+            tenantName={tenantName}
+            pendingDishesCount={null}
+            onLogout={onLogout}
+          />
+        )}
+
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 outline-none sm:px-6 sm:py-8 lg:px-8"
+        >
         {subtitle && (
           <div className="mb-6">
             <p className="text-sm text-ee-text-secondary">{subtitle}</p>
@@ -217,7 +220,8 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
         ) : (
           children
         )}
-      </main>
+        </main>
+      </div>
     </div>
   );
 };

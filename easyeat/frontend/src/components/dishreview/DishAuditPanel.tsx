@@ -1,5 +1,7 @@
 import React from 'react';
+import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { DishStatusBadge } from '@/components/dish/DishStatusBadge';
+import { StatusBadge } from '@/components/primitives';
 import { FoodCostBreakdownTable } from './FoodCostBreakdownTable';
 import type {
   AcknowledgementKind,
@@ -11,10 +13,6 @@ export interface DishAuditPanelProps {
   detail: DishReviewDetail;
 }
 
-/**
- * One actionable line per unmet condition (FR-032). The condition names are short; what the
- * Administrator needs is the next step, so each maps to a sentence rather than a label.
- */
 const GATE_CONDITION_COPY: Record<PublicationGateCondition, string> = {
   RETAIL_PRICE_MISSING: 'Falta fijar el precio de venta: tiene que ser mayor que cero.',
   EMPTY_RECIPE:
@@ -30,30 +28,25 @@ const ACKNOWLEDGEMENT_COPY: Record<AcknowledgementKind, string> = {
     'El precio queda por debajo del Food Cost, así que el margen es negativo. Vas a tener que confirmarlo al publicar.',
 };
 
-/**
- * The culinary file as the Administrator reads it before deciding (FR-006).
- *
- * Composes identity, declared labels and the itemized cost. The gate is shown as **status**, never
- * as enforcement: FR-015 re-evaluates all three conditions when the approval action arrives, so
- * what is drawn here is what the Administrator was told and nothing the transition relies on.
- */
 export const DishAuditPanel: React.FC<DishAuditPanelProps> = ({ detail }) => {
   const restrictions = detail.foodCostAudit?.requiredDietaryRestrictions ?? [];
   const gate = detail.publicationGate;
 
   return (
     <section aria-label="Ficha técnica y auditoría de costos" className="space-y-6">
-      <header className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="text-xl font-semibold text-gray-900">{detail.name}</h2>
-          <p className="text-sm text-gray-500">{detail.category ?? 'Sin categoría'}</p>
+      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-ee-border-subtle pb-4">
+        <div className="min-w-0 flex-1">
+          <h2 className="font-ee-display text-xl font-bold text-ee-text">{detail.name}</h2>
+          <p className="mt-0.5 text-sm text-ee-text-secondary">
+            {detail.category ?? 'Sin categoría'}
+          </p>
           {detail.description && (
-            <p className="mt-2 text-sm text-gray-700">{detail.description}</p>
+            <p className="mt-2 text-sm text-ee-text leading-relaxed">{detail.description}</p>
           )}
-          <p data-testid="audit-author" className="mt-2 text-sm text-gray-600">
-            {detail.authorName ?? 'Autor no registrado'}
+          <p data-testid="audit-author" className="mt-2 text-xs text-ee-text-secondary">
+            Chef: <span className="font-medium text-ee-text">{detail.authorName ?? 'Autor no registrado'}</span>
             {detail.authorDeactivated && (
-              <span className="ml-2 text-xs text-zinc-600">(cuenta suspendida)</span>
+              <span className="ml-2 text-xs text-ee-text-secondary">(cuenta suspendida)</span>
             )}
           </p>
         </div>
@@ -61,32 +54,35 @@ export const DishAuditPanel: React.FC<DishAuditPanelProps> = ({ detail }) => {
       </header>
 
       <div data-testid="dietary-labels" className="flex flex-wrap items-center gap-2">
-        <span className="text-xs uppercase tracking-wide text-gray-500">Restricciones</span>
+        <span className="font-ee-mono text-xs uppercase tracking-wider text-ee-text-secondary">
+          Restricciones
+        </span>
         {restrictions.length === 0 ? (
-          <span className="text-sm text-gray-500">Sin restricciones declaradas</span>
+          <span className="text-sm text-ee-text-secondary">Sin restricciones declaradas</span>
         ) : (
           restrictions.map((code) => (
-            <span
-              key={code}
-              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-sky-100 text-sky-800 border border-sky-300"
-            >
+            <StatusBadge key={code} variant="info">
               {code}
-            </span>
+            </StatusBadge>
           ))
         )}
       </div>
 
-      {/* FR-037: the absence of a recipe is reported as a state of the dish, not as a failure. */}
       {detail.recipeAbsent || !detail.foodCostAudit ? (
         <div
           data-testid="recipe-absent-state"
-          className="px-4 py-6 border border-amber-200 bg-amber-50 rounded"
+          className="rounded-ee-md border border-ee-warning-border bg-ee-warning-bg px-4 py-5 text-ee-warning-fg"
         >
-          <p className="font-medium text-amber-900">Este plato todavía no tiene receta</p>
-          <p className="mt-1 text-sm text-amber-800">
-            Sin insumos cargados no se puede calcular el Food Cost ni el margen, y el plato{' '}
-            <strong>no se puede publicar</strong> hasta que la receta exista.
-          </p>
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <div>
+              <p className="font-semibold text-sm">Este plato todavía no tiene receta</p>
+              <p className="mt-1 text-sm">
+                Sin insumos cargados no se puede calcular el Food Cost ni el margen, y el plato{' '}
+                <strong>no se puede publicar</strong> hasta que la receta exista.
+              </p>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">
@@ -94,71 +90,74 @@ export const DishAuditPanel: React.FC<DishAuditPanelProps> = ({ detail }) => {
             <div
               data-testid="unpriced-warning-summary"
               role="status"
-              className="px-3 py-2 border border-amber-200 bg-amber-50 rounded text-sm text-amber-900"
+              className="rounded-ee-md border border-ee-warning-border bg-ee-warning-bg px-4 py-3 text-sm text-ee-warning-fg"
             >
-              {/*
-                "Incompleto", not "incorrecto". The figure is not wrong - every priced line is
-                counted correctly - it is missing the lines that have no cost. Telling an
-                Administrator their cost is wrong when it is understated would send them to
-                check the wrong thing.
-              */}
-              <p className="font-medium">El Food Cost mostrado es incompleto</p>
-              <ul className="mt-1 list-disc list-inside">
-                {detail.foodCostAudit.warningNotes.map((note) => (
-                  <li key={note}>{note}</li>
-                ))}
-              </ul>
-              <p className="mt-1">
-                No incluye los insumos sin costo cargado, así que el margen real es menor que el
-                mostrado.
-              </p>
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <div>
+                  <p className="font-semibold">El Food Cost mostrado es incompleto</p>
+                  {detail.foodCostAudit.warningNotes.length > 0 && (
+                    <ul className="mt-1 list-disc list-inside space-y-0.5">
+                      {detail.foodCostAudit.warningNotes.map((note) => (
+                        <li key={note}>{note}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="mt-1">
+                    No incluye los insumos sin costo cargado, así que el margen real es menor que el
+                    mostrado.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
           <FoodCostBreakdownTable audit={detail.foodCostAudit} />
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-2.5 rounded-ee-md border border-ee-border-subtle bg-ee-surface-subtle/50 p-4">
         <p
           data-testid="gate-status"
-          className={`text-sm font-medium ${
-            gate.satisfied ? 'text-emerald-800' : 'text-gray-900'
+          className={`flex items-center gap-2 text-sm font-semibold ${
+            gate.satisfied ? 'text-ee-success-fg' : 'text-ee-text'
           }`}
         >
-          {gate.satisfied
-            ? 'Cumple las condiciones de publicación: está lista para publicar.'
-            : 'No cumple las condiciones de publicación todavía.'}
+          {gate.satisfied ? (
+            <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          ) : (
+            <XCircle className="h-4 w-4 shrink-0 text-ee-danger-fg" aria-hidden="true" />
+          )}
+          <span>
+            {gate.satisfied
+              ? 'Cumple las condiciones de publicación: está lista para publicar.'
+              : 'No cumple las condiciones de publicación todavía.'}
+          </span>
         </p>
 
         {gate.unmetConditions.length > 0 && (
-          <ul className="space-y-1">
+          <ul className="space-y-1.5 pl-1">
             {gate.unmetConditions.map((condition) => (
               <li
                 key={condition}
                 data-testid="gate-condition"
-                className="text-sm text-red-800 flex gap-2"
+                className="flex items-start gap-2 rounded-ee-sm border border-ee-danger-border bg-ee-danger-bg px-3 py-2 text-sm text-ee-danger-fg"
               >
-                <span aria-hidden="true">•</span>
+                <XCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 <span>{GATE_CONDITION_COPY[condition]}</span>
               </li>
             ))}
           </ul>
         )}
 
-        {/*
-          Acknowledgements are rendered apart from the conditions and never among them. FR-017
-          makes them an additional precondition and never a gate failure, so listing one as unmet
-          would tell the Administrator a publishable dish is blocked.
-        */}
         {gate.requiredAcknowledgements.length > 0 && (
-          <ul className="space-y-1">
+          <ul className="space-y-1.5 pl-1">
             {gate.requiredAcknowledgements.map((kind) => (
               <li
                 key={kind}
                 data-testid="gate-acknowledgement"
-                className="text-sm text-amber-800 flex gap-2"
+                className="flex items-start gap-2 rounded-ee-sm border border-ee-warning-border bg-ee-warning-bg px-3 py-2 text-sm text-ee-warning-fg"
               >
-                <span aria-hidden="true">⚠</span>
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 <span>{ACKNOWLEDGEMENT_COPY[kind]}</span>
               </li>
             ))}

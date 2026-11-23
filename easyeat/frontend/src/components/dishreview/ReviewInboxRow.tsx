@@ -1,13 +1,14 @@
 import React from 'react';
 import { DishStatusBadge } from '@/components/dish/DishStatusBadge';
+import { StatusBadge } from '@/components/primitives';
 import type { DishReviewInboxItem } from '@/types/dishReview';
 
 export interface ReviewInboxRowProps {
   item: DishReviewInboxItem;
+  isSelected?: boolean;
   onSelect: (dishId: string) => void;
 }
 
-/** FR-004's fields: the submission instant in the reader's locale, or nothing to show. */
 function formatInstant(value: string | null): string {
   if (!value) {
     return 'Sin fecha de envío';
@@ -21,49 +22,54 @@ function formatInstant(value: string | null): string {
   });
 }
 
-/**
- * One inbox row: every field FR-004 names, and the two degraded cases spelled out.
- *
- * An unattributed dish reads "Autor no registrado" rather than leaving the column blank, because
- * a blank cell is indistinguishable from a rendering fault (FR-027). A suspended author is marked
- * and the row stays fully interactive, because FR-026 is explicit that the flag is informational
- * and never blocks an administrative action.
- */
-export const ReviewInboxRow: React.FC<ReviewInboxRowProps> = ({ item, onSelect }) => (
+export const ReviewInboxRow: React.FC<ReviewInboxRowProps> = ({
+  item,
+  isSelected = false,
+  onSelect,
+}) => (
   <button
     type="button"
     data-testid="inbox-row"
+    aria-pressed={isSelected}
     onClick={() => onSelect(item.dishId)}
-    className="w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+    className={`w-full min-h-[44px] text-left rounded-ee-md border p-3.5 backdrop-blur-[12px] [@media(prefers-reduced-transparency:reduce)]:bg-ee-surface-elevated [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none transition-[border-color,box-shadow,background-color] duration-150 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring ${
+      isSelected
+        ? 'bg-[rgba(255,255,255,0.92)] border-ee-primary shadow-ee-elevated ring-1 ring-ee-primary/30'
+        : 'bg-[rgba(255,255,255,0.82)] border-ee-border-subtle hover:border-ee-border-strong hover:shadow-ee-elevated'
+    }`}
   >
-    <div className="flex items-start justify-between gap-4">
-      <div className="min-w-0">
-        <p className="font-medium text-gray-900 truncate">{item.name}</p>
-        <p className="text-sm text-gray-500">{item.category ?? 'Sin categoría'}</p>
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold text-sm text-ee-text truncate">{item.name}</p>
+        <p className="mt-0.5 text-xs text-ee-text-secondary truncate">
+          {item.category ?? 'Sin categoría'}
+        </p>
 
-        <p className="mt-1 text-sm text-gray-600 flex items-center gap-2 flex-wrap">
-          <span>{item.authorName ?? 'Autor no registrado'}</span>
+        <div className="mt-2 flex items-center gap-2 flex-wrap text-xs text-ee-text-secondary">
+          <span className="truncate">{item.authorName ?? 'Autor no registrado'}</span>
           {item.authorDeactivated && (
             <span
               data-testid="author-deactivated-badge"
               title="La cuenta del Chef está suspendida. No impide ninguna acción sobre el plato."
-              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-zinc-100 text-zinc-600 border border-zinc-300"
             >
-              Cuenta suspendida
+              <StatusBadge variant="neutral">Cuenta suspendida</StatusBadge>
             </span>
           )}
-        </p>
+        </div>
       </div>
 
-      <div className="flex flex-col items-end gap-1 shrink-0">
+      <div className="flex flex-col items-end gap-1.5 shrink-0">
         <DishStatusBadge status={item.status} />
-        <span data-testid="inbox-row-submitted-at" className="text-xs text-gray-500">
+        <span
+          data-testid="inbox-row-submitted-at"
+          className="font-ee-mono tabular-nums text-[11px] text-ee-text-secondary"
+        >
           {formatInstant(item.submittedAt)}
         </span>
         <span
           data-testid="resubmission-indicator"
           className={`text-xs font-medium ${
-            item.isResubmission ? 'text-orange-700' : 'text-gray-500'
+            item.isResubmission ? 'text-ee-warning-fg' : 'text-ee-text-secondary'
           }`}
         >
           {item.isResubmission

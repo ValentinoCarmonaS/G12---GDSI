@@ -83,7 +83,7 @@ describe('StockAdjustmentModal Component (FR-015, FR-015a, FR-015b, FR-027)', ()
 
     expect(screen.getByRole('tab', { name: /agregar stock/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /restar stock/i })).toBeInTheDocument();
-    expect(screen.getByText('Harina de Trigo 000')).toBeInTheDocument();
+    expect(screen.getByText(/Harina de Trigo 000/i)).toBeInTheDocument();
   });
 
   it('submits valid ADD stock payload with unit purchase cost', async () => {

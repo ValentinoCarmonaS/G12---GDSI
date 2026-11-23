@@ -5,6 +5,7 @@ import {
   StaffRole,
   StaffUpdateRequest,
 } from '../../types/staff';
+import { AccessibleModal } from '../diner/AccessibleModal';
 
 export interface StaffFormModalProps {
   isOpen: boolean;
@@ -49,8 +50,6 @@ export const StaffFormModal: React.FC<StaffFormModalProps> = ({
     setFieldErrors({});
     setGeneralError(null);
   }, [initialData, isOpen]);
-
-  if (!isOpen) return null;
 
   const validate = (): boolean => {
     const errors: { fullName?: string; email?: string; role?: string } = {};
@@ -106,30 +105,17 @@ export const StaffFormModal: React.FC<StaffFormModalProps> = ({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="staff-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? 'Editar Miembro del Personal' : 'Registrar Nuevo Empleado'}
+      size="md"
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-5 border border-gray-100">
-        <div className="flex items-center justify-between border-b pb-3">
-          <h3 id="staff-modal-title" className="text-lg font-bold text-gray-900">
-            {isEdit ? 'Editar Miembro del Personal' : 'Registrar Nuevo Empleado'}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-lg font-bold"
-          >
-            ✕
-          </button>
-        </div>
-
+      <div className="space-y-4">
         {generalError && (
           <div
             role="alert"
-            className="p-3 text-sm rounded-md bg-red-50 border border-red-200 text-red-700 animate-fade-in"
+            className="p-3 text-sm rounded-ee-sm bg-rose-50 border border-rose-200 text-rose-800"
           >
             {generalError}
           </div>
@@ -137,7 +123,7 @@ export const StaffFormModal: React.FC<StaffFormModalProps> = ({
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
-            <label htmlFor="staff-fullName" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="staff-fullName" className="block text-sm font-medium text-ee-text mb-1">
               Nombre completo
             </label>
             <input
@@ -150,21 +136,18 @@ export const StaffFormModal: React.FC<StaffFormModalProps> = ({
                   setFieldErrors((prev) => ({ ...prev, fullName: undefined }));
                 }
               }}
-              placeholder="Ej. Juan Pérez"
-              disabled={submitting || isLoading}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
-                fieldErrors.fullName
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+              placeholder="Ej: Laura Martínez"
+              className={`w-full min-h-[44px] px-3 py-2 border rounded-ee-sm text-sm text-ee-text bg-white focus:outline-none focus:ring-2 focus:ring-ee-focus-ring ${
+                fieldErrors.fullName ? 'border-rose-500' : 'border-ee-border-subtle'
               }`}
             />
             {fieldErrors.fullName && (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.fullName}</p>
+              <p className="mt-1 text-xs text-rose-700">{fieldErrors.fullName}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="staff-email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="staff-email" className="block text-sm font-medium text-ee-text mb-1">
               Correo electrónico
             </label>
             <input
@@ -177,22 +160,19 @@ export const StaffFormModal: React.FC<StaffFormModalProps> = ({
                   setFieldErrors((prev) => ({ ...prev, email: undefined }));
                 }
               }}
-              placeholder="empleado@restaurante.com"
-              disabled={submitting || isLoading}
-              className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
-                fieldErrors.email
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+              placeholder="laura@restaurante.com"
+              className={`w-full min-h-[44px] px-3 py-2 border rounded-ee-sm text-sm text-ee-text bg-white focus:outline-none focus:ring-2 focus:ring-ee-focus-ring ${
+                fieldErrors.email ? 'border-rose-500' : 'border-ee-border-subtle'
               }`}
             />
             {fieldErrors.email && (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>
+              <p className="mt-1 text-xs text-rose-700">{fieldErrors.email}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="staff-role" className="block text-sm font-medium text-gray-700 mb-1">
-              Rol
+            <label htmlFor="staff-role" className="block text-sm font-medium text-ee-text mb-1">
+              Rol asignado
             </label>
             <select
               id="staff-role"
@@ -203,31 +183,32 @@ export const StaffFormModal: React.FC<StaffFormModalProps> = ({
                   setFieldErrors((prev) => ({ ...prev, role: undefined }));
                 }
               }}
-              disabled={submitting || isLoading}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              className={`w-full min-h-[44px] px-3 py-2 border rounded-ee-sm text-sm text-ee-text bg-white focus:outline-none focus:ring-2 focus:ring-ee-focus-ring ${
+                fieldErrors.role ? 'border-rose-500' : 'border-ee-border-subtle'
+              }`}
             >
-              <option value="ADMINISTRADOR">Administrador</option>
-              <option value="CHEF">Chef</option>
               <option value="ENCARGADO">Encargado de Mostrador</option>
+              <option value="CHEF">Chef</option>
+              <option value="ADMINISTRADOR">Administrador</option>
             </select>
             {fieldErrors.role && (
-              <p className="mt-1 text-xs text-red-600">{fieldErrors.role}</p>
+              <p className="mt-1 text-xs text-rose-700">{fieldErrors.role}</p>
             )}
           </div>
 
-          <div className="flex items-center justify-end space-x-3 pt-3 border-t">
+          <div className="flex justify-end gap-3 pt-4 border-t border-ee-border-subtle">
             <button
               type="button"
               onClick={onClose}
               disabled={submitting || isLoading}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              className="min-h-[44px] px-4 py-2 text-sm font-medium text-ee-text bg-white border border-ee-border-subtle rounded-ee-sm hover:bg-slate-50 transition-colors disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={submitting || isLoading}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+              className="min-h-[44px] px-4 py-2 text-sm font-medium text-white bg-ee-primary hover:opacity-95 rounded-ee-sm shadow-sm transition-opacity disabled:opacity-50"
             >
               {submitting || isLoading
                 ? 'Guardando...'
@@ -238,9 +219,8 @@ export const StaffFormModal: React.FC<StaffFormModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </AccessibleModal>
   );
 };
 
 export default StaffFormModal;
-
