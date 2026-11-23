@@ -160,7 +160,6 @@ describe('Phase 2 — Fundaciones Brutalism y componentes transversales', () => 
 const chefUser: AuthenticatedUser = {
   id: 'chef-1',
   email: 'chef@easyeat.com',
-  fullName: 'Chef Prueba',
   role: 'CHEF',
   tenantId: 'tenant-1',
 };
@@ -252,7 +251,7 @@ describe('Phase 3 — US1: Arquitectura visual Brutalism y navegación táctil d
       const menuBtn = screen.getByRole('button', { name: /menú/i });
       fireEvent.click(menuBtn);
 
-      expect(screen.getByText('Chef Prueba')).toBeInTheDocument();
+      expect(screen.getByText('chef@easyeat.com')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /cerrar sesión/i })).toBeInTheDocument();
       expect(screen.queryByRole('link', { name: /mi perfil/i })).not.toBeInTheDocument();
     });

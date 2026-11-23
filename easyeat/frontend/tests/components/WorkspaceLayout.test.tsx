@@ -123,9 +123,10 @@ describe('WorkspaceLayout chef header navigation (C-08, FR-027/FR-030/FR-031)', 
   it('exposes the three chef sections with their canonical routes (FR-027)', () => {
     renderChefLayout('/cocina');
 
-    const kds = screen.getByRole('link', { name: 'Comandas KDS' });
-    const dishes = screen.getByRole('link', { name: 'Gestionar Platos' });
-    const ingredients = screen.getByRole('link', { name: 'Ingredientes' });
+    const chefNav = screen.getByRole('navigation', { name: /secciones de cocina/i });
+    const kds = within(chefNav).getByRole('link', { name: 'Comandas KDS' });
+    const dishes = within(chefNav).getByRole('link', { name: 'Gestionar Platos' });
+    const ingredients = within(chefNav).getByRole('link', { name: 'Ingredientes' });
 
     expect(kds).toHaveAttribute('href', '/cocina');
     expect(dishes).toHaveAttribute('href', '/cocina/platos');
@@ -135,14 +136,15 @@ describe('WorkspaceLayout chef header navigation (C-08, FR-027/FR-030/FR-031)', 
   it('derives the active section from the route with aria-current="page" (FR-030)', () => {
     renderChefLayout('/cocina');
 
-    expect(screen.getByRole('link', { name: 'Comandas KDS' })).toHaveAttribute(
+    const chefNav = screen.getByRole('navigation', { name: /secciones de cocina/i });
+    expect(within(chefNav).getByRole('link', { name: 'Comandas KDS' })).toHaveAttribute(
       'aria-current',
       'page'
     );
-    expect(screen.getByRole('link', { name: 'Gestionar Platos' })).not.toHaveAttribute(
+    expect(within(chefNav).getByRole('link', { name: 'Gestionar Platos' })).not.toHaveAttribute(
       'aria-current'
     );
-    expect(screen.getByRole('link', { name: 'Ingredientes' })).not.toHaveAttribute(
+    expect(within(chefNav).getByRole('link', { name: 'Ingredientes' })).not.toHaveAttribute(
       'aria-current'
     );
   });
@@ -150,14 +152,15 @@ describe('WorkspaceLayout chef header navigation (C-08, FR-027/FR-030/FR-031)', 
   it('lights up "Gestionar Platos" — never "Comandas KDS" — on nested dish routes (FR-030)', () => {
     renderChefLayout('/cocina/platos/nuevo');
 
-    expect(screen.getByRole('link', { name: 'Gestionar Platos' })).toHaveAttribute(
+    const chefNav = screen.getByRole('navigation', { name: /secciones de cocina/i });
+    expect(within(chefNav).getByRole('link', { name: 'Gestionar Platos' })).toHaveAttribute(
       'aria-current',
       'page'
     );
-    expect(screen.getByRole('link', { name: 'Comandas KDS' })).not.toHaveAttribute(
+    expect(within(chefNav).getByRole('link', { name: 'Comandas KDS' })).not.toHaveAttribute(
       'aria-current'
     );
-    expect(screen.getByRole('link', { name: 'Ingredientes' })).not.toHaveAttribute(
+    expect(within(chefNav).getByRole('link', { name: 'Ingredientes' })).not.toHaveAttribute(
       'aria-current'
     );
   });
@@ -165,14 +168,15 @@ describe('WorkspaceLayout chef header navigation (C-08, FR-027/FR-030/FR-031)', 
   it('lights up "Ingredientes" on the ingredients route (FR-030)', () => {
     renderChefLayout('/cocina/ingredientes');
 
-    expect(screen.getByRole('link', { name: 'Ingredientes' })).toHaveAttribute(
+    const chefNav = screen.getByRole('navigation', { name: /secciones de cocina/i });
+    expect(within(chefNav).getByRole('link', { name: 'Ingredientes' })).toHaveAttribute(
       'aria-current',
       'page'
     );
-    expect(screen.getByRole('link', { name: 'Comandas KDS' })).not.toHaveAttribute(
+    expect(within(chefNav).getByRole('link', { name: 'Comandas KDS' })).not.toHaveAttribute(
       'aria-current'
     );
-    expect(screen.getByRole('link', { name: 'Gestionar Platos' })).not.toHaveAttribute(
+    expect(within(chefNav).getByRole('link', { name: 'Gestionar Platos' })).not.toHaveAttribute(
       'aria-current'
     );
   });

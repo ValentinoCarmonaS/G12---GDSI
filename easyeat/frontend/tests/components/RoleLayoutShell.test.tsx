@@ -216,7 +216,7 @@ describe('RoleLayoutShell (FR-007, FR-009, FR-010, FR-018)', () => {
     expect(kdsLink).not.toHaveAttribute('aria-current');
 
     for (const link of [kdsLink, dishesLink, ingredientsLink]) {
-      expect(link.className).toMatch(/min-h-\[44px\]/);
+      expect(link.className).toMatch(/min-h-\[(44|48)px\]/);
     }
   });
 

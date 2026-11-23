@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChefHat, ClipboardList, Package } from 'lucide-react';
+import { ChefHat, ClipboardList, Package, type LucideIcon } from 'lucide-react';
 import { isRoleNavItemActive, type RoleNavItem } from '../layout/roleNavigationConfig';
 
 export interface ChefMobileBottomBarProps {
@@ -10,7 +10,7 @@ export interface ChefMobileBottomBarProps {
 interface ChefMobileNavEntry {
   readonly item: RoleNavItem;
   readonly mobileLabel: string;
-  readonly Icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
+  readonly Icon: LucideIcon;
 }
 
 const CHEF_MOBILE_DESTINATIONS: readonly ChefMobileNavEntry[] = [
