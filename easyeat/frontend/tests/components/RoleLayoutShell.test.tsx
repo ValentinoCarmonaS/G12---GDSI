@@ -148,7 +148,7 @@ describe('RoleLayoutShell (FR-007, FR-009, FR-010, FR-018)', () => {
     expect(avatarImg).toHaveClass('h-full', 'w-full', 'object-cover');
   });
 
-  it('renders non-navigable avatar and tenant-badge for staff roles without any /perfil link', () => {
+  it('omits profile avatar indicator for staff roles, hides header tenant-badge for ADMINISTRADOR, and keeps it for CHEF/ENCARGADO', () => {
     const staffRoles: ReadonlyArray<{ role: 'ENCARGADO' | 'CHEF' | 'ADMINISTRADOR'; path: string }> = [
       { role: 'ENCARGADO', path: '/mostrador' },
       { role: 'CHEF', path: '/cocina' },
@@ -171,15 +171,16 @@ describe('RoleLayoutShell (FR-007, FR-009, FR-010, FR-018)', () => {
       const header = screen.getByRole('banner');
       expect(within(header).queryByText(role)).not.toBeInTheDocument();
       expect(within(header).queryByText(`${role.toLowerCase()}@easyeat.com`)).not.toBeInTheDocument();
-      expect(within(header).getByTestId('tenant-badge')).toBeInTheDocument();
-      expect(within(header).getByTestId('staff-avatar-indicator')).toBeInTheDocument();
+      expect(within(header).queryByTestId('staff-avatar-indicator')).not.toBeInTheDocument();
 
       const headerLinks = within(header).queryAllByRole('link');
       expect(headerLinks.some((link) => link.getAttribute('href')?.includes('/perfil'))).toBe(false);
 
       if (role === 'ADMINISTRADOR') {
+        expect(within(header).queryByTestId('tenant-badge')).not.toBeInTheDocument();
         expect(within(header).getByRole('button', { name: /notificaciones/i })).toBeInTheDocument();
       } else {
+        expect(within(header).getByTestId('tenant-badge')).toBeInTheDocument();
         expect(within(header).queryByRole('button', { name: /notificaciones/i })).not.toBeInTheDocument();
       }
 

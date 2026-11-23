@@ -17,6 +17,7 @@ export interface RoleLayoutShellProps {
   readonly children: React.ReactNode;
   readonly user: AuthenticatedUser | null;
   readonly avatarUrl?: string | null;
+  readonly tenantName?: string | null;
   readonly notifications?: AdminNotificationResponse[];
   readonly unreadCount?: number;
   readonly notificationError?: string | null;
@@ -35,6 +36,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
   children,
   user,
   avatarUrl = null,
+  tenantName = null,
   notifications = [],
   unreadCount = 0,
   notificationError = null,
@@ -153,7 +155,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                   />
                 )}
 
-                {config.allowProfileLink ? (
+                {config.allowProfileLink && (
                   <Link
                     to="/perfil"
                     title="Mi perfil"
@@ -163,17 +165,6 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                   >
                     {avatarContent}
                   </Link>
-                ) : (
-                  <div
-                    role="img"
-                    data-testid="staff-avatar-indicator"
-                    aria-label={`Cuenta de ${config.displayRoleLabel}`}
-                    title={config.displayRoleLabel}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-ee-border-subtle bg-ee-surface-subtle text-ee-text"
-                    style={{ borderWidth: 'var(--ee-border-width)' }}
-                  >
-                    {avatarContent}
-                  </div>
                 )}
               </>
             ) : (
@@ -202,7 +193,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
         {user && config?.useDesktopSidebar && (
           <AdminSidebar
             userEmail={user.email}
-            tenantId={user.tenantId ?? null}
+            tenantName={tenantName}
             pendingDishesCount={null}
             onLogout={onLogout}
           />
