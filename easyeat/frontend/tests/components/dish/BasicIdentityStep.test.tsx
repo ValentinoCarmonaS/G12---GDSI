@@ -18,7 +18,7 @@ describe('BasicIdentityStep Component (T023, CHF-2.2.1)', () => {
     expect(screen.getByLabelText(/nombre del plato/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/categoría/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/descripción/i)).toBeInTheDocument();
-    expect(screen.getByText(/0\/100/)).toBeInTheDocument();
+    expect(screen.getByText(/0\/120/)).toBeInTheDocument();
     expect(screen.getByText(/0\/500/)).toBeInTheDocument();
 
     const categorySelect = screen.getByLabelText(/categoría/i);
@@ -47,9 +47,9 @@ describe('BasicIdentityStep Component (T023, CHF-2.2.1)', () => {
     expect(screen.getByDisplayValue('Risotto de Hongos')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Platos principales')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Cremoso arroz con hongos')).toBeInTheDocument();
-    expect(screen.getByText(/17\/100/)).toBeInTheDocument();
+    expect(screen.getByText(/17\/120/)).toBeInTheDocument();
     expect(screen.getByText(/24\/500/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /eliminar foto/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /quitar fotografía/i })).toBeInTheDocument();
   });
 
   it('updates character counters reactively on user typing', async () => {
@@ -59,7 +59,7 @@ describe('BasicIdentityStep Component (T023, CHF-2.2.1)', () => {
     const nameInput = screen.getByLabelText(/nombre del plato/i);
     await user.type(nameInput, 'Ceviche Mixto');
 
-    expect(screen.getByText(/13\/100/)).toBeInTheDocument();
+    expect(screen.getByText(/13\/120/)).toBeInTheDocument();
 
     const descInput = screen.getByLabelText(/descripción/i);
     await user.type(descInput, 'Con lima y cilantro');
@@ -127,7 +127,7 @@ describe('BasicIdentityStep Component (T023, CHF-2.2.1)', () => {
       />
     );
 
-    const deletePhotoButton = screen.getByRole('button', { name: /eliminar foto/i });
+    const deletePhotoButton = screen.getByRole('button', { name: /quitar fotografía/i });
     await user.click(deletePhotoButton);
 
     expect(mockOnPhotoDelete).toHaveBeenCalledTimes(1);

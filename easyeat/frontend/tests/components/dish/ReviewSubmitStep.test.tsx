@@ -63,9 +63,9 @@ describe('ReviewSubmitStep Component (T062, CHF-2.2.4, FR-016, FR-017, FR-022)',
       />
     );
 
-    expect(screen.getByText(/Identidad Básica/i)).toBeInTheDocument();
-    expect(screen.getByText(/Receta y Escandallo/i)).toBeInTheDocument();
-    expect(screen.getByText(/Alérgenos y Preferencias/i)).toBeInTheDocument();
+    expect(screen.getByText(/Identidad del plato/i)).toBeInTheDocument();
+    expect(screen.getByText(/02\. Receta \(BOM\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/03\. Alérgenos/i)).toBeInTheDocument();
   });
 
   it('disables "Enviar a revisión" button and shows warning cues when criteria are unmet', () => {
@@ -78,7 +78,7 @@ describe('ReviewSubmitStep Component (T062, CHF-2.2.4, FR-016, FR-017, FR-022)',
 
     const submitBtn = screen.getByRole('button', { name: /Enviar a revisión/i });
     expect(submitBtn).toBeDisabled();
-    expect(screen.getByText(/Faltan requisitos para enviar a revisión/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/PENDIENTE/i).length).toBeGreaterThan(0);
   });
 
   it('enables "Enviar a revisión" button when all completeness conditions are satisfied', async () => {
@@ -111,8 +111,7 @@ describe('ReviewSubmitStep Component (T062, CHF-2.2.4, FR-016, FR-017, FR-022)',
       />
     );
 
-    expect(screen.getByText(/Ficha técnica en revisión/i)).toBeInTheDocument();
-    const submitBtn = screen.getByRole('button', { name: /Enviado a revisión/i });
-    expect(submitBtn).toBeDisabled();
+    expect(screen.getByText(/Solo lectura/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Guardar y enviar a revisión/i })).toBeNull();
   });
 });
