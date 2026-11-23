@@ -139,7 +139,7 @@ describe('User Story 2 User Journey Integration Test (T040, CHF-2.2.2)', () => {
       expect(dishApi.updateRecipe).toHaveBeenCalledWith(
         mockDishDetail.id,
         expect.objectContaining({
-          items: expect.arrayContaining([
+          ingredients: expect.arrayContaining([
             expect.objectContaining({
               ingredientId: 'c1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
               quantity: 200,

@@ -1,6 +1,5 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { persistUnifiedDishDraft } from '@/utils/chefDishPersistence';
 import { ChefDishEditorPage } from '@/pages/ChefDishEditorPage';
@@ -64,7 +63,7 @@ vi.mock('@/api/inventoryApi', () => ({
 const mockDishBase: DishDetailResponse = {
   id: 'dish-100',
   name: 'Milanesa Brutal',
-  category: 'MAIN_COURSE',
+  category: 'Platos principales',
   description: 'Con papas rotas',
   status: 'DRAFT',
   photoUrl: null,
@@ -73,7 +72,7 @@ const mockDishBase: DishDetailResponse = {
       ingredientId: 'ing-1',
       ingredientName: 'Tomate Perita',
       quantity: 0.5,
-      unit: 'kg',
+      unitOfMeasure: 'kg',
     },
   ],
   restrictionCodes: ['CELIAC'],
@@ -113,7 +112,7 @@ describe('US4 — Editor guiado unificado Brutalism (T025)', () => {
           persistedDishId: null,
           status: 'DRAFT',
           name: 'Milanesa Brutal',
-          category: 'MAIN_COURSE',
+          category: 'Platos principales',
           description: 'Con papas rotas',
           existingPhotoUrl: null,
           pendingPhotoFile: null,

@@ -63,7 +63,7 @@ export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
         ingredientId: ing.id,
         ingredientName: ing.name,
         quantity: defaultQty,
-        unit: ing.unit,
+        unitOfMeasure: ing.unitOfMeasure,
       },
     ];
     setIngredients(next);
@@ -125,7 +125,7 @@ export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
     ingredients.forEach((item) => {
       const raw = rawQuantities[item.ingredientId] ?? item.quantity.toString();
       const parsed = Number(raw);
-      const unit = (item as { unit?: string; unitOfMeasure?: string }).unitOfMeasure ?? item.unit ?? '';
+      const unit = (item as { unit?: string; unitOfMeasure?: string }).unitOfMeasure ?? (item as { unit?: string }).unit ?? '';
       if (!raw.trim() || Number.isNaN(parsed) || parsed <= 0) {
         errors[item.ingredientId] = 'La cantidad debe ser mayor a 0.';
       } else if (unit === 'u' && !Number.isInteger(parsed)) {
@@ -189,7 +189,7 @@ export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {ingredients.map((item) => {
             const error = validationErrors[item.ingredientId];
-            const unit = (item as { unit?: string; unitOfMeasure?: string }).unitOfMeasure ?? item.unit ?? '';
+            const unit = (item as { unit?: string; unitOfMeasure?: string }).unitOfMeasure ?? (item as { unit?: string }).unit ?? '';
             return (
               <BrutalistCard key={item.ingredientId} className="p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
@@ -215,7 +215,7 @@ export const RecipeBOMStep: React.FC<RecipeBOMStepProps> = ({
                     htmlFor={`qty-${item.ingredientId}`}
                     className="block text-xs font-bold uppercase text-[#0A0A0A] mb-1"
                   >
-                    Cantidad ({item.unit})
+                    Cantidad ({unit})
                   </label>
                   <input
                     id={`qty-${item.ingredientId}`}

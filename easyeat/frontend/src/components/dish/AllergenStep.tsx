@@ -108,7 +108,7 @@ export const AllergenStep: React.FC<AllergenStepProps> = ({
 
       <section className="space-y-3">
         <h3 className="text-xs font-bold uppercase tracking-wider text-[#0A0A0A]">
-          Estilos y preferencias
+          Estilos de vida dietarios
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {DIETARY_LIFESTYLES.map((item) => {

@@ -709,7 +709,7 @@ describe('AppRoutes - Feature 004 Routes & RBAC Perimeter (T074, FR-028, FR-030,
         </MemoryRouter>
       );
 
-      expect(await screen.findByText(/comandas kds/i)).toBeInTheDocument();
+      expect((await screen.findAllByText(/comandas kds/i)).length).toBeGreaterThan(0);
     });
 
     it('redirects unauthenticated visitor from /perfil to /login', async () => {
