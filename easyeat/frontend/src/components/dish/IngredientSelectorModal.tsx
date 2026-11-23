@@ -146,7 +146,7 @@ export const IngredientSelectorModal: React.FC<IngredientSelectorModalProps> = (
                           {ing.name}
                         </p>
                         <p className="font-mono text-xs text-[#52525B]">
-                          {ing.category} · Unidad: {ing.unit}
+                          {ing.category} · Unidad: {ing.unitOfMeasure}
                         </p>
                       </div>
                       <button

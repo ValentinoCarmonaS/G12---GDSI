@@ -41,14 +41,14 @@ vi.mock('@/api/inventoryApi', () => ({
           id: 'ing-1',
           name: 'Tomate Perita',
           category: 'VEGETABLES',
-          unit: 'kg',
+          unitOfMeasure: 'kg',
           active: true,
         },
         {
           id: 'ing-2',
           name: 'Huevo de Campo',
           category: 'DAIRY',
-          unit: 'u',
+          unitOfMeasure: 'u',
           active: true,
         },
       ],
@@ -62,6 +62,7 @@ vi.mock('@/api/inventoryApi', () => ({
 
 const mockDishBase: DishDetailResponse = {
   id: 'dish-100',
+  tenantId: 'tenant-1',
   name: 'Milanesa Brutal',
   category: 'Platos principales',
   description: 'Con papas rotas',
@@ -77,6 +78,9 @@ const mockDishBase: DishDetailResponse = {
   ],
   restrictionCodes: ['CELIAC'],
   allergensConfirmed: true,
+  isCompleteForReview: true,
+  missingConditions: [],
+  createdById: 'chef-1',
   createdAt: '2026-11-23T00:00:00Z',
   updatedAt: '2026-11-23T00:00:00Z',
 };
@@ -131,7 +135,7 @@ describe('US4 — Editor guiado unificado Brutalism (T025)', () => {
 
     expect(dishApi.createDishDraft).toHaveBeenCalledTimes(1);
     expect(dishApi.updateRecipe).toHaveBeenCalledWith('dish-new-1', {
-      items: [{ ingredientId: 'ing-1', quantity: 0.5 }],
+      ingredients: [{ ingredientId: 'ing-1', quantity: 0.5 }],
     });
   });
 
@@ -171,6 +175,7 @@ describe('US4 — Editor guiado unificado Brutalism (T025)', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /Agregar ingrediente/i }));
     expect(await screen.findByLabelText(/Filtrar por categoría/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Unidad: kg/i)).toBeInTheDocument();
   });
 
   it('(4) muestra badge "Cambios sin guardar", registra beforeunload y abre BrutalistModal al volver con cambios', async () => {

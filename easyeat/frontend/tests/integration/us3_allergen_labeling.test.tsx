@@ -53,21 +53,13 @@ describe('User Story 3 User Journey Integration Test (T051, CHF-2.2.3)', () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it('completes the allergen labeling journey: navigates to Step 3, selects tags, confirms section and persists state', async () => {
     const user = userEvent.setup();
 
-    vi.mocked(dishApi.getDishDetail)
-      .mockResolvedValueOnce(mockDraftDish)
-      .mockResolvedValueOnce({
-        ...mockDraftDish,
-        allergensConfirmed: true,
-        restrictionCodes: ['VEGAN', 'DAIRY'],
-        isCompleteForReview: true,
-        missingConditions: [],
-      });
+    vi.mocked(dishApi.getDishDetail).mockResolvedValueOnce(mockDraftDish);
 
     vi.mocked(dishApi.updateDishAllergens).mockResolvedValueOnce({
       dishId,

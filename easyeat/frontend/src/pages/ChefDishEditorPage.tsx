@@ -17,7 +17,7 @@ import {
   type DishPersistenceFailureState,
 } from '@/utils/chefDishPersistence';
 import type { DishDetailResponse } from '@/types/dish';
-import type { ChefReviewFeedback } from '@/types/dishReview';
+import type { ChefReviewFeedback, DishProposedChanges } from '@/types/dishReview';
 
 const INITIAL_DRAFT: UnifiedDishDraftState = {
   persistedDishId: null,
@@ -68,17 +68,17 @@ export const ChefDishEditorPage: React.FC = () => {
         if (!isMounted) return;
         setLoadedDish(dishData);
         setFeedback(feedbackData);
-        const fb = feedbackData as { proposedChanges?: { ingredients?: Array<{ ingredientId: string; quantity: number }>; title?: string; name?: string; description?: string }; entries?: Array<{ proposedChanges?: { ingredients?: Array<{ ingredientId: string; quantity: number }>; title?: string; name?: string; description?: string } }> } | null;
-        const proposal = fb?.proposedChanges ?? fb?.entries?.[0]?.proposedChanges;
+        const proposal: DishProposedChanges | null | undefined =
+          feedbackData?.entries?.[0]?.proposedChanges;
         const proposedIngredients = proposal?.ingredients ?? [];
         const mergedRecipe = (dishData.recipe ?? []).map((item) => {
-          const match = proposedIngredients.find((p: { ingredientId: string; quantity: number }) => p.ingredientId === item.ingredientId);
+          const match = proposedIngredients.find((p) => p.ingredientId === item.ingredientId);
           return match ? { ...item, quantity: match.quantity } : item;
         });
         setDraft({
           persistedDishId: dishData.id,
           status: dishData.status,
-          name: (proposal as { title?: string; name?: string } | undefined)?.title ?? proposal?.name ?? dishData.name,
+          name: proposal?.title ?? dishData.name,
           category: dishData.category,
           description: proposal?.description ?? dishData.description ?? '',
           existingPhotoUrl: dishData.photoUrl || null,
@@ -88,7 +88,7 @@ export const ChefDishEditorPage: React.FC = () => {
           restrictionCodes: Array.from(
             new Set([
               ...(proposal?.allergenCodes ?? []),
-              ...(proposal?.lifestyleCodes ?? []),
+              ...(proposal?.dietaryLifestyleCodes ?? []),
               ...(dishData.restrictionCodes ?? []),
             ])
           ),
@@ -137,26 +137,6 @@ export const ChefDishEditorPage: React.FC = () => {
     [draft.name, draft.category, draft.description, draft.existingPhotoUrl]
   );
 
-  const syntheticDishForReview: DishDetailResponse = useMemo(
-    () => ({
-      ...(loadedDish || {
-        id: draft.persistedDishId || 'draft',
-        createdAt: '',
-        updatedAt: '',
-      }),
-      id: draft.persistedDishId || 'draft',
-      name: draft.name,
-      category: draft.category,
-      description: draft.description || null,
-      status: draft.status,
-      photoUrl: draft.existingPhotoUrl,
-      recipe: [...draft.recipe],
-      restrictionCodes: [...draft.restrictionCodes],
-      allergensConfirmed: draft.allergensConfirmed,
-    }),
-    [loadedDish, draft]
-  );
-
   const completedSteps = useMemo(
     () => ({
       identity: Boolean(draft.name.trim() && draft.category),
@@ -168,6 +148,33 @@ export const ChefDishEditorPage: React.FC = () => {
     }),
     [draft]
   );
+
+  const syntheticDishForReview: DishDetailResponse = useMemo(() => {
+    const missingConditions: string[] = [];
+    if (!completedSteps.identity) missingConditions.push('IDENTITY_INCOMPLETE');
+    if (!completedSteps.recipe) missingConditions.push('EMPTY_RECIPE');
+    if (!completedSteps.allergens) missingConditions.push('ALLERGENS_UNCONFIRMED');
+
+    return {
+      id: draft.persistedDishId || 'draft',
+      tenantId: loadedDish?.tenantId ?? '',
+      name: draft.name,
+      category: draft.category,
+      description: draft.description || null,
+      status: draft.status,
+      photoUrl: draft.existingPhotoUrl,
+      recipe: [...draft.recipe],
+      restrictionCodes: [...draft.restrictionCodes],
+      allergensConfirmed: draft.allergensConfirmed,
+      isCompleteForReview:
+        completedSteps.identity && completedSteps.recipe && completedSteps.allergens,
+      missingConditions,
+      createdById: loadedDish?.createdById ?? null,
+      pausedByChef: loadedDish?.pausedByChef,
+      createdAt: loadedDish?.createdAt ?? '',
+      updatedAt: loadedDish?.updatedAt ?? '',
+    };
+  }, [loadedDish, draft, completedSteps]);
 
   const handlePersist = async (mode: 'draft' | 'submit-review') => {
     setIsSaving(true);
@@ -213,7 +220,7 @@ export const ChefDishEditorPage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout fullWidth>
+    <WorkspaceLayout title="Ficha Técnica" fullWidth>
       <div className="max-w-5xl mx-auto px-4 py-6 pb-40 md:pb-6 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-[#0A0A0A] pb-4">
           <div className="flex items-center gap-3">

@@ -1,6 +1,6 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ChefDishesPage } from '../../src/pages/ChefDishesPage';
 import { dishApi } from '@/api/dishApi';
 
@@ -261,8 +261,11 @@ describe('ChefDishesPage Brutalism (US3)', () => {
     );
 
     render(
-      <MemoryRouter>
-        <ChefDishesPage />
+      <MemoryRouter initialEntries={['/cocina/platos']}>
+        <Routes>
+          <Route path="/cocina/platos" element={<ChefDishesPage />} />
+          <Route path="/cocina/platos/nuevo" element={<div data-testid="new-dish-route">Nuevo</div>} />
+        </Routes>
       </MemoryRouter>
     );
 
@@ -279,5 +282,9 @@ describe('ChefDishesPage Brutalism (US3)', () => {
     await waitFor(() => {
       expect(screen.getByText(/no hay platos registrados/i)).toBeInTheDocument();
     });
+
+    // Regresión: el botón de acción de EmptyState navega a /cocina/platos/nuevo sin ReferenceError
+    fireEvent.click(screen.getByRole('button', { name: /nuevo plato/i }));
+    expect(await screen.findByTestId('new-dish-route')).toBeInTheDocument();
   });
 });

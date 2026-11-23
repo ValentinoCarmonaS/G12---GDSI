@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Edit3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { BrutalistCard } from '../components/chef/BrutalistCard';
@@ -22,6 +22,7 @@ const STATUS_CHIPS = [
 ] as const;
 
 export const ChefDishesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [dishes, setDishes] = useState<DishSummaryResponse[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [page, setPage] = useState<number>(0);
@@ -151,20 +152,25 @@ export const ChefDishesPage: React.FC = () => {
         </div>
 
         {errorMessage && (
-          <div role="alert">
-            <FeedbackState
-              variant="danger"
-              title="Ocurrió un problema"
-              message={errorMessage}
-              actionLabel="Reintentar"
-              onAction={() => fetchDishes(statusFilter, page)}
-            />
-          </div>
+          <FeedbackState
+            variant="danger"
+            title="Ocurrió un problema"
+            message={errorMessage}
+            actionLabel="Reintentar"
+            onAction={() => fetchDishes(statusFilter, page)}
+          />
         )}
 
         {isLoading ? (
-          <div data-testid="chef-dishes-loading">
-            <LoadingSkeleton variant="cards" count={6} />
+          <div
+            data-testid="chef-dishes-loading"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            {Array.from({ length: 6 }, (_, index) => (
+              <BrutalistCard key={index} variant="default" padding="md">
+                <LoadingSkeleton variant="text" lines={3} label="Cargando catálogo de platos..." />
+              </BrutalistCard>
+            ))}
           </div>
         ) : mergedDishes.length === 0 ? (
           <EmptyState
