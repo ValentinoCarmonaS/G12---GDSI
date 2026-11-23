@@ -77,7 +77,7 @@ describe('AdminAnalyticsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /ver tabla/i }));
 
     await waitFor(() => {
-      expect(screen.getByText('42000.00')).toBeInTheDocument();
+      expect(screen.getByTestId('financial-kpi-revenue')).toHaveTextContent(/42\.000,00/);
       expect(screen.getAllByText('30').length).toBeGreaterThanOrEqual(2);
     });
   });
