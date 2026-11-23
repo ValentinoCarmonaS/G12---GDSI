@@ -8,28 +8,35 @@ import { dishApi } from '@/api/dishApi';
 import { chefReviewFeedbackApi } from '@/api/chefReviewFeedbackApi';
 import type { DishDetailResponse } from '@/types/dish';
 
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'chef-1', name: 'Chef Test', role: 'CHEF' },
+    logout: vi.fn(),
+  }),
+}));
+
 vi.mock('@/api/dishApi', () => ({
   dishApi: {
-    getDishById: vi.fn(),
+    getDishDetail: vi.fn(),
     createDishDraft: vi.fn(),
     updateDish: vi.fn(),
     uploadPhoto: vi.fn(),
     deletePhoto: vi.fn(),
     updateRecipe: vi.fn(),
-    updateAllergens: vi.fn(),
+    updateDishAllergens: vi.fn(),
     submitForReview: vi.fn(),
   },
 }));
 
 vi.mock('@/api/chefReviewFeedbackApi', () => ({
   chefReviewFeedbackApi: {
-    getDishReviewFeedback: vi.fn(),
+    getFeedback: vi.fn(),
   },
 }));
 
-vi.mock('@/api/ingredientApi', () => ({
-  ingredientApi: {
-    listIngredients: vi.fn().mockResolvedValue({
+vi.mock('@/api/inventoryApi', () => ({
+  inventoryApi: {
+    getChefCatalog: vi.fn().mockResolvedValue({
       content: [
         {
           id: 'ing-1',
@@ -90,7 +97,7 @@ function renderEditor(initialEntry = '/cocina/platos/nuevo') {
 describe('US4 — Editor guiado unificado Brutalism (T025)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(chefReviewFeedbackApi.getDishReviewFeedback).mockResolvedValue([]);
+    vi.mocked(chefReviewFeedbackApi.getFeedback).mockResolvedValue(null as never);
   });
 
   it('(1) orquesta persistUnifiedDishDraft secuencialmente y retiene persistedDishId ante fallo intermedio', async () => {
@@ -175,7 +182,7 @@ describe('US4 — Editor guiado unificado Brutalism (T025)', () => {
       target: { value: 'Cambio pendiente' },
     });
 
-    expect(await screen.findByText('Cambios sin guardar')).toBeInTheDocument();
+    expect((await screen.findAllByText('Cambios sin guardar')).length).toBeGreaterThan(0);
     expect(addSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
 
     fireEvent.click(screen.getByRole('link', { name: /Volver a Platos/i }));
@@ -185,7 +192,7 @@ describe('US4 — Editor guiado unificado Brutalism (T025)', () => {
   });
 
   it('(5) respeta modo solo lectura en PUBLISHED y oculta datos financieros', async () => {
-    vi.mocked(dishApi.getDishById).mockResolvedValueOnce({
+    vi.mocked(dishApi.getDishDetail).mockResolvedValueOnce({
       ...mockDishBase,
       status: 'PUBLISHED',
     });

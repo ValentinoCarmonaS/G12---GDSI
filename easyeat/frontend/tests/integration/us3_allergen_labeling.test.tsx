@@ -124,7 +124,6 @@ describe('User Story 3 User Journey Integration Test (T051, CHF-2.2.3)', () => {
   it('renders read-only AllergenStep when dish status is PENDING_PRICE', async () => {
     const user = userEvent.setup();
 
-    vi.mocked(dishApi.getDishDetail).mockReset();
     vi.mocked(dishApi.getDishDetail).mockResolvedValue({
       ...mockDraftDish,
       status: 'PENDING_PRICE',

@@ -95,7 +95,11 @@ export const AllergenStep: React.FC<AllergenStepProps> = ({
                   onChange={() => toggleCode(item.code)}
                   className="h-5 w-5 accent-[#009866]"
                 />
-                <span className="text-sm font-bold">{item.label}</span>
+                <span className="text-sm font-bold">
+                  {(item as { label?: string; name?: string }).label ??
+                    (item as { name?: string }).name ??
+                    item.code}
+                </span>
               </label>
             );
           })}
@@ -123,7 +127,11 @@ export const AllergenStep: React.FC<AllergenStepProps> = ({
                   onChange={() => toggleCode(item.code)}
                   className="h-5 w-5 accent-[#009866]"
                 />
-                <span className="text-sm font-bold">{item.label}</span>
+                <span className="text-sm font-bold">
+                  {(item as { label?: string; name?: string }).label ??
+                    (item as { name?: string }).name ??
+                    item.code}
+                </span>
               </label>
             );
           })}
@@ -155,7 +163,7 @@ export const AllergenStep: React.FC<AllergenStepProps> = ({
           <button
             type="button"
             onClick={onPrev}
-            disabled={isSaving}
+            disabled={isSaving || isReadOnly}
             className="min-h-[48px] px-5 py-2.5 border-2 border-[#0A0A0A] bg-[#FFFFFF] text-[#0A0A0A] text-sm font-bold uppercase tracking-wide hover:bg-[#F5F5F4]"
           >
             Anterior
@@ -166,7 +174,7 @@ export const AllergenStep: React.FC<AllergenStepProps> = ({
         <button
           type="button"
           onClick={handleContinue}
-          disabled={isSaving}
+          disabled={isSaving || isReadOnly}
           className="min-h-[48px] px-6 py-2.5 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#FFFFFF] text-sm font-bold uppercase tracking-wide hover:bg-[#27272A] disabled:opacity-50"
         >
           {onNext ? 'Siguiente' : isSaving ? 'Guardando...' : 'Guardar alérgenos'}

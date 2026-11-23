@@ -45,7 +45,7 @@ export const IngredientSelectorModal: React.FC<IngredientSelectorModalProps> = (
     setError(null);
 
     inventoryApi
-      .getChefIngredients({
+      .getChefCatalog({
         search: search || undefined,
         category: (category || undefined) as IngredientCategory | undefined,
         page,
@@ -86,7 +86,7 @@ export const IngredientSelectorModal: React.FC<IngredientSelectorModalProps> = (
                 setSearch(e.target.value);
                 setPage(0);
               }}
-              placeholder="Buscar por nombre..."
+              placeholder="Buscar ingrediente..."
               className="w-full px-3 py-2 border-2 border-[#0A0A0A] bg-[#FFFFFF] text-[#0A0A0A] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#0A0A0A]"
             />
           </div>
@@ -125,42 +125,45 @@ export const IngredientSelectorModal: React.FC<IngredientSelectorModalProps> = (
           </p>
         )}
 
-        {!loading && !error && catalog && (
-          <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-            {catalog.content.length === 0 ? (
-              <p className="text-sm font-mono text-[#52525B] py-6 text-center">
-                No se encontraron ingredientes.
-              </p>
-            ) : (
-              catalog.content.map((ing) => {
-                const alreadySelected = selectedIngredientIds.includes(ing.id);
-                return (
-                  <BrutalistCard
-                    key={ing.id}
-                    className="p-3 flex items-center justify-between gap-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-bold text-sm text-[#0A0A0A] truncate">
-                        {ing.name}
-                      </p>
-                      <p className="font-mono text-xs text-[#52525B]">
-                        {ing.category} · Unidad: {ing.unit}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={alreadySelected}
-                      onClick={() => onSelectIngredient(ing)}
-                      className="min-h-[40px] px-3 py-1.5 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#FFFFFF] text-xs font-bold uppercase tracking-wide hover:bg-[#27272A] disabled:bg-[#F5F5F4] disabled:text-[#52525B] disabled:cursor-not-allowed shrink-0"
+        {!loading && !error && catalog && (() => {
+          const items = (catalog as { items?: ChefIngredientItemResponse[]; content?: ChefIngredientItemResponse[] }).items ?? catalog.content ?? [];
+          return (
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+              {items.length === 0 ? (
+                <p className="text-sm font-mono text-[#52525B] py-6 text-center">
+                  No se encontraron ingredientes.
+                </p>
+              ) : (
+                items.map((ing) => {
+                  const alreadySelected = selectedIngredientIds.includes(ing.id);
+                  return (
+                    <BrutalistCard
+                      key={ing.id}
+                      className="p-3 flex items-center justify-between gap-3"
                     >
-                      {alreadySelected ? 'Agregado' : 'Agregar'}
-                    </button>
-                  </BrutalistCard>
-                );
-              })
-            )}
-          </div>
-        )}
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm text-[#0A0A0A] truncate">
+                          {ing.name}
+                        </p>
+                        <p className="font-mono text-xs text-[#52525B]">
+                          {ing.category} · Unidad: {ing.unit}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={alreadySelected}
+                        onClick={() => onSelectIngredient(ing)}
+                        className="min-h-[40px] px-3 py-1.5 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#FFFFFF] text-xs font-bold uppercase tracking-wide hover:bg-[#27272A] disabled:bg-[#F5F5F4] disabled:text-[#52525B] disabled:cursor-not-allowed shrink-0"
+                      >
+                        {alreadySelected ? 'Ya en la receta' : 'Seleccionar'}
+                      </button>
+                    </BrutalistCard>
+                  );
+                })
+              )}
+            </div>
+          );
+        })()}
 
         {catalog && catalog.totalPages > 1 && (
           <div className="flex items-center justify-between pt-3 border-t-2 border-[#0A0A0A]">
