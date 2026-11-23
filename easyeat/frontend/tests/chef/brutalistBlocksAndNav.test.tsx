@@ -162,6 +162,7 @@ const chefUser: AuthenticatedUser = {
   email: 'chef@easyeat.com',
   role: 'CHEF',
   tenantId: 'tenant-1',
+  tokenVersion: 1,
 };
 
 describe('Phase 3 — US1: Arquitectura visual Brutalism y navegación táctil de un toque', () => {
