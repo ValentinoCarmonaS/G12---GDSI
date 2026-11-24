@@ -253,10 +253,14 @@ export const AdminBrandingPage: React.FC = () => {
                       src={resolveApiMediaUrl(logoUrl)}
                       alt="Logo local"
                       onError={() => setPreviewImageError(true)}
-                      className="w-12 h-12 rounded-lg object-contain bg-white/10 p-1"
+                      className={`h-11 w-11 sm:h-12 sm:w-12 aspect-square shrink-0 rounded-lg ${
+                        logoUrl.startsWith('/assets/brand/')
+                          ? 'object-cover bg-[#0b0b0d]'
+                          : 'object-contain bg-white/10 p-1'
+                      }`}
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center font-bold text-xl">
+                    <div className="h-11 w-11 sm:h-12 sm:w-12 aspect-square shrink-0 rounded-lg bg-white/20 flex items-center justify-center font-bold text-lg sm:text-xl">
                       {(fantasyName || 'E').charAt(0).toUpperCase()}
                     </div>
                   )}

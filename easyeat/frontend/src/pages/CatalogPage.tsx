@@ -392,12 +392,16 @@ const CatalogContent: React.FC = () => {
                 alt={branding.fantasyName || 'Logo'}
                 onError={() => setLogoFailed(true)}
                 data-testid="restaurant-branding-logo"
-                className="h-16 w-16 rounded-[var(--ee-radius-md)] object-cover bg-[var(--ee-surface-elevated)] p-1 border border-[var(--ee-border-subtle)] shrink-0"
+                className={`h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 aspect-square rounded-[var(--ee-radius-md)] border border-[var(--ee-border-subtle)] shrink-0 ${
+                  branding.logoUrl.startsWith('/assets/brand/')
+                    ? 'object-cover bg-[#0b0b0d]'
+                    : 'object-contain bg-[var(--ee-surface-elevated)] p-1'
+                }`}
               />
             ) : (
               <div
                 data-testid="restaurant-branding-logo-fallback"
-                className="h-16 w-16 rounded-[var(--ee-radius-md)] bg-[var(--ee-surface-elevated)] text-[var(--ee-text)] flex items-center justify-center font-bold text-2xl border border-[var(--ee-border-subtle)] shrink-0"
+                className="h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 aspect-square rounded-[var(--ee-radius-md)] bg-[var(--ee-surface-elevated)] text-[var(--ee-text)] flex items-center justify-center font-bold text-xl sm:text-2xl border border-[var(--ee-border-subtle)] shrink-0"
               >
                 {(branding.fantasyName || pageTitle || 'E').charAt(0).toUpperCase()}
               </div>

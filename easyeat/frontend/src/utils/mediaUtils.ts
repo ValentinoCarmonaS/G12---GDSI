@@ -12,6 +12,7 @@ export function resolveApiMediaUrl(
     url.startsWith('blob:') ||
     url.startsWith('data:') ||
     url.startsWith('//') ||
+    url.startsWith('/assets/') ||
     /^https?:\/\//i.test(url)
   ) {
     return url;
