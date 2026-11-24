@@ -7,6 +7,8 @@ import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
 import { AdminNotificationBell } from '../notification/AdminNotificationBell';
 import { AdminSidebar } from '../admin/AdminSidebar';
 import { ChefMobileBottomBar } from '../chef/ChefMobileBottomBar';
+import { EasyEatBrandMark } from '../common/EasyEatBrandMark';
+import { getRoleDefaultRoute } from '../../router/postAuthRouting';
 import { RoleHamburgerMenu } from './RoleHamburgerMenu';
 import { ROLE_NAVIGATION_CONFIG, isRoleNavItemActive } from './roleNavigationConfig';
 
@@ -51,6 +53,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
 }) => {
   const { pathname, hash } = useLocation();
   const config = user?.role ? ROLE_NAVIGATION_CONFIG[user.role] : null;
+  const brandHomeRoute = getRoleDefaultRoute(user?.role);
 
   const avatarContent = avatarUrl ? (
     <img
@@ -97,9 +100,16 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
               />
             )}
 
-            <span className="shrink-0 font-ee-display text-base font-bold tracking-tight text-ee-text sm:text-xl">
-              EasyEat
-            </span>
+            <Link
+              to={brandHomeRoute}
+              aria-label="EasyEat — Ir al inicio"
+              className="inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-ee-sm px-1 text-ee-text transition-opacity duration-150 motion-reduce:transition-none hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring sm:gap-2.5"
+            >
+              <EasyEatBrandMark variant="mini" size="nav" decorative />
+              <span className="font-ee-display text-base font-bold tracking-tight text-ee-text sm:text-lg lg:text-xl">
+                EasyEat
+              </span>
+            </Link>
             <span aria-hidden="true" className="text-ee-border-strong">
               /
             </span>

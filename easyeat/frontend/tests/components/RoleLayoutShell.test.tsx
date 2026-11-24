@@ -231,6 +231,39 @@ describe('RoleLayoutShell (FR-007, FR-009, FR-010, FR-018)', () => {
     expect(within(header).getByRole('link', { name: /registrarse/i })).toHaveAttribute('href', '/register');
   });
 
+  it('renders clickable EasyEat mini brand mark linking to the default route for each role', () => {
+    const cases: ReadonlyArray<{ role: AuthenticatedUser['role'] | null; expectedHref: string }> = [
+      { role: null, expectedHref: '/descubrimiento' },
+      { role: 'COMENSAL', expectedHref: '/descubrimiento' },
+      { role: 'CHEF', expectedHref: '/cocina' },
+      { role: 'ENCARGADO', expectedHref: '/mostrador' },
+      { role: 'ADMINISTRADOR', expectedHref: '/admin' },
+    ];
+
+    for (const { role, expectedHref } of cases) {
+      const { unmount } = renderShell({
+        title: 'Vista',
+        user: role
+          ? {
+              id: `u-${role}`,
+              email: `${role.toLowerCase()}@easyeat.com`,
+              role,
+              tenantId: role === 'COMENSAL' ? null : 'tenant-1',
+              tokenVersion: 1,
+            }
+          : null,
+      });
+
+      const header = screen.getByRole('banner');
+      const brandLink = within(header).getByRole('link', { name: /easyeat/i });
+      expect(brandLink).toHaveAttribute('href', expectedHref);
+      expect(brandLink).toHaveClass('min-h-[44px]');
+      expect(within(brandLink).getByTestId('easyeat-logo-mini')).toBeInTheDocument();
+
+      unmount();
+    }
+  });
+
   it('applies transitory data-legacy-surface container for legacy-light and legacy-dark modes', () => {
     const { rerender } = render(
       <MemoryRouter>
