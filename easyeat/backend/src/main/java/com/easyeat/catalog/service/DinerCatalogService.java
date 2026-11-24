@@ -14,15 +14,19 @@ import com.easyeat.catalog.exception.EstablishmentNotFoundException;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.dish.domain.DishCategory;
-import com.easyeat.dish.domain.DishRecipeIngredient;
-import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.repository.DishPhotoRepository;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
-import com.easyeat.inventory.entity.Ingredient;
+import com.easyeat.dish.repository.RecipeLineWithIngredientProjection;
 import com.easyeat.inventory.repository.IngredientRepository;
+import com.easyeat.operations.cache.OperatingScheduleCache;
+import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
+import com.easyeat.operations.repository.OperatingScheduleRepository;
+import com.easyeat.profile.cache.DietaryTaxonomyCache;
 import com.easyeat.profile.domain.DietaryCategory;
 import com.easyeat.profile.domain.DietaryRestriction;
 import com.easyeat.profile.repository.DietaryRestrictionRepository;
+import com.easyeat.profile.repository.UserDietaryRestrictionRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +51,23 @@ public class DinerCatalogService {
             DishCategory.ENSALADAS
     );
 
+    private static final Map<String, String> FALLBACK_LIFESTYLE_NAMES = Map.of(
+            "VEGAN", "Vegano",
+            "VEGETARIAN", "Vegetariano"
+    );
+
+    private static final Map<String, String> FALLBACK_ALLERGEN_NAMES = Map.of(
+            "CELIAC", "Sin TACC / Celíaco",
+            "DAIRY", "Lácteos / Lactosa",
+            "PEANUTS", "Maní",
+            "TREE_NUTS", "Frutos secos",
+            "EGGS", "Huevos",
+            "FISH", "Pescado",
+            "SHELLFISH", "Mariscos / Crustáceos",
+            "SOY", "Soja",
+            "WHEAT", "Trigo / Gluten"
+    );
+
     private final EstablishmentRepository establishmentRepository;
     private final DishRepository dishRepository;
     private final DishPhotoRepository dishPhotoRepository;
@@ -55,7 +76,10 @@ public class DinerCatalogService {
     private final CatalogComplianceService catalogComplianceService;
     private final DishAvailabilityEngine dishAvailabilityEngine;
     private final DietaryRestrictionRepository dietaryRestrictionRepository;
-    private final com.easyeat.operations.repository.OperatingScheduleRepository operatingScheduleRepository;
+    private final OperatingScheduleRepository operatingScheduleRepository;
+    private final DietaryTaxonomyCache dietaryTaxonomyCache;
+    private final OperatingScheduleCache operatingScheduleCache;
+    private final UserDietaryRestrictionRepository userDietaryRestrictionRepository;
 
     public DinerCatalogService(
             EstablishmentRepository establishmentRepository,
@@ -64,7 +88,8 @@ public class DinerCatalogService {
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository,
             CatalogComplianceService catalogComplianceService) {
-        this(establishmentRepository, dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, catalogComplianceService, null, null, null);
+        this(establishmentRepository, dishRepository, dishPhotoRepository, dishRecipeIngredientRepository,
+                ingredientRepository, catalogComplianceService, null, null, null, null, null, null);
     }
 
     public DinerCatalogService(
@@ -75,7 +100,8 @@ public class DinerCatalogService {
             IngredientRepository ingredientRepository,
             CatalogComplianceService catalogComplianceService,
             DishAvailabilityEngine dishAvailabilityEngine) {
-        this(establishmentRepository, dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, catalogComplianceService, dishAvailabilityEngine, null, null);
+        this(establishmentRepository, dishRepository, dishPhotoRepository, dishRecipeIngredientRepository,
+                ingredientRepository, catalogComplianceService, dishAvailabilityEngine, null, null, null, null, null);
     }
 
     public DinerCatalogService(
@@ -87,10 +113,11 @@ public class DinerCatalogService {
             CatalogComplianceService catalogComplianceService,
             DishAvailabilityEngine dishAvailabilityEngine,
             DietaryRestrictionRepository dietaryRestrictionRepository) {
-        this(establishmentRepository, dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, catalogComplianceService, dishAvailabilityEngine, dietaryRestrictionRepository, null);
+        this(establishmentRepository, dishRepository, dishPhotoRepository, dishRecipeIngredientRepository,
+                ingredientRepository, catalogComplianceService, dishAvailabilityEngine, dietaryRestrictionRepository,
+                null, null, null, null);
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
     public DinerCatalogService(
             EstablishmentRepository establishmentRepository,
             DishRepository dishRepository,
@@ -98,9 +125,28 @@ public class DinerCatalogService {
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository,
             CatalogComplianceService catalogComplianceService,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) DishAvailabilityEngine dishAvailabilityEngine,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) DietaryRestrictionRepository dietaryRestrictionRepository,
-            @org.springframework.beans.factory.annotation.Autowired(required = false) com.easyeat.operations.repository.OperatingScheduleRepository operatingScheduleRepository) {
+            DishAvailabilityEngine dishAvailabilityEngine,
+            DietaryRestrictionRepository dietaryRestrictionRepository,
+            OperatingScheduleRepository operatingScheduleRepository) {
+        this(establishmentRepository, dishRepository, dishPhotoRepository, dishRecipeIngredientRepository,
+                ingredientRepository, catalogComplianceService, dishAvailabilityEngine, dietaryRestrictionRepository,
+                operatingScheduleRepository, null, null, null);
+    }
+
+    @Autowired
+    public DinerCatalogService(
+            EstablishmentRepository establishmentRepository,
+            DishRepository dishRepository,
+            DishPhotoRepository dishPhotoRepository,
+            DishRecipeIngredientRepository dishRecipeIngredientRepository,
+            IngredientRepository ingredientRepository,
+            CatalogComplianceService catalogComplianceService,
+            @Autowired(required = false) DishAvailabilityEngine dishAvailabilityEngine,
+            @Autowired(required = false) DietaryRestrictionRepository dietaryRestrictionRepository,
+            @Autowired(required = false) OperatingScheduleRepository operatingScheduleRepository,
+            @Autowired(required = false) DietaryTaxonomyCache dietaryTaxonomyCache,
+            @Autowired(required = false) OperatingScheduleCache operatingScheduleCache,
+            @Autowired(required = false) UserDietaryRestrictionRepository userDietaryRestrictionRepository) {
         this.establishmentRepository = establishmentRepository;
         this.dishRepository = dishRepository;
         this.dishPhotoRepository = dishPhotoRepository;
@@ -110,6 +156,9 @@ public class DinerCatalogService {
         this.dishAvailabilityEngine = dishAvailabilityEngine;
         this.dietaryRestrictionRepository = dietaryRestrictionRepository;
         this.operatingScheduleRepository = operatingScheduleRepository;
+        this.dietaryTaxonomyCache = dietaryTaxonomyCache;
+        this.operatingScheduleCache = operatingScheduleCache;
+        this.userDietaryRestrictionRepository = userDietaryRestrictionRepository;
     }
 
     public DinerCatalogResponse getCatalog(UUID tenantId, User user) {
@@ -117,28 +166,53 @@ public class DinerCatalogService {
                 .orElseThrow(() -> new EstablishmentNotFoundException(tenantId));
 
         if (establishment.getStatus() != EstablishmentStatus.ACTIVE) {
-            throw new EstablishmentInactiveException(tenantId, establishment.getStatus() != null ? establishment.getStatus().name() : "INACTIVE");
+            throw new EstablishmentInactiveException(
+                    tenantId,
+                    establishment.getStatus() != null ? establishment.getStatus().name() : "INACTIVE");
         }
 
         EstablishmentDetailDto establishmentDetail = buildEstablishmentDetail(establishment);
 
-        List<Dish> publishedDishes = dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED);
-        if (publishedDishes.isEmpty()) {
+        List<Dish> publishedDishes = dishRepository.findPublicCatalogDishesWithRestrictions(tenantId);
+        if (publishedDishes == null || publishedDishes.isEmpty()) {
             return new DinerCatalogResponse(establishmentDetail, Collections.emptyList());
         }
 
-        Map<UUID, EnrichedDishResponse> complianceMap = resolveComplianceMap(tenantId, user);
-        Map<String, DietaryRestriction> allergenTaxonomy = resolveAllergenTaxonomy();
-        Map<String, DietaryRestriction> lifestyleTaxonomy = resolveLifestyleTaxonomy();
+        List<UUID> dishIds = publishedDishes.stream().map(Dish::getId).filter(Objects::nonNull).toList();
+        Set<UUID> dishIdsWithPhoto = dishIds.isEmpty()
+                ? Collections.emptySet()
+                : safeSet(dishPhotoRepository.findDishIdsWithPhoto(dishIds));
+
+        List<RecipeLineWithIngredientProjection> recipeLines = dishIds.isEmpty()
+                ? Collections.emptyList()
+                : safeList(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(dishIds, tenantId));
+
+        Map<UUID, List<String>> recipeIngredientsByDishId = groupRecipeIngredientNames(recipeLines);
+        Map<UUID, DishAvailabilityEngine.DishAvailabilityResult> availabilityByDishId = dishAvailabilityEngine != null
+                ? dishAvailabilityEngine.computeBatchAvailability(publishedDishes, tenantId, recipeLines)
+                : Collections.emptyMap();
+
+        Map<String, DietaryRestriction> fullTaxonomy = resolveFullTaxonomy();
+        Map<String, DietaryRestriction> allergenTaxonomy = filterTaxonomyByCategory(fullTaxonomy, DietaryCategory.COMMON_ALLERGEN);
+        Map<String, DietaryRestriction> lifestyleTaxonomy = filterTaxonomyByCategory(fullTaxonomy, DietaryCategory.DIETARY_LIFESTYLE);
+
+        Map<UUID, EnrichedDishResponse> complianceMap = resolveComplianceMap(tenantId, user, publishedDishes, fullTaxonomy);
 
         Map<DishCategory, List<DishCatalogItemDto>> dishesByCategory = new EnumMap<>(DishCategory.class);
-
         for (Dish dish : publishedDishes) {
             if (dish.getCategory() == null) {
                 continue;
             }
 
-            DishCatalogItemDto itemDto = buildDishCatalogItem(dish, tenantId, complianceMap, allergenTaxonomy, lifestyleTaxonomy);
+            DishCatalogItemDto itemDto = buildDishCatalogItem(
+                    dish,
+                    dishIdsWithPhoto,
+                    recipeIngredientsByDishId,
+                    availabilityByDishId,
+                    complianceMap,
+                    allergenTaxonomy,
+                    lifestyleTaxonomy
+            );
             dishesByCategory.computeIfAbsent(dish.getCategory(), k -> new ArrayList<>()).add(itemDto);
         }
 
@@ -153,30 +227,55 @@ public class DinerCatalogService {
         return new DinerCatalogResponse(establishmentDetail, categoryGroups);
     }
 
-    private Map<String, DietaryRestriction> resolveAllergenTaxonomy() {
+    private <T> Set<T> safeSet(Set<T> set) {
+        return set != null ? set : Collections.emptySet();
+    }
+
+    private <T> List<T> safeList(List<T> list) {
+        return list != null ? list : Collections.emptyList();
+    }
+
+    private Map<UUID, List<String>> groupRecipeIngredientNames(List<RecipeLineWithIngredientProjection> recipeLines) {
+        Map<UUID, List<String>> grouped = new HashMap<>();
+        for (RecipeLineWithIngredientProjection line : recipeLines) {
+            if (line.getDishId() == null) {
+                continue;
+            }
+            String name = line.getIngredientName();
+            if (name != null && !name.isBlank()) {
+                grouped.computeIfAbsent(line.getDishId(), k -> new ArrayList<>()).add(name);
+            }
+        }
+        return grouped;
+    }
+
+    private Map<String, DietaryRestriction> resolveFullTaxonomy() {
+        if (dietaryTaxonomyCache != null) {
+            try {
+                return dietaryTaxonomyCache.getMapByCode();
+            } catch (Exception ignored) {
+            }
+        }
         if (dietaryRestrictionRepository == null) {
             return Collections.emptyMap();
         }
         try {
             return dietaryRestrictionRepository.findAll().stream()
-                    .filter(dr -> dr.getCategory() == DietaryCategory.COMMON_ALLERGEN)
                     .collect(Collectors.toMap(DietaryRestriction::getCode, Function.identity(), (a, b) -> a));
         } catch (Exception e) {
             return Collections.emptyMap();
         }
     }
 
-    private Map<String, DietaryRestriction> resolveLifestyleTaxonomy() {
-        if (dietaryRestrictionRepository == null) {
+    private Map<String, DietaryRestriction> filterTaxonomyByCategory(
+            Map<String, DietaryRestriction> fullTaxonomy,
+            DietaryCategory category) {
+        if (fullTaxonomy == null || fullTaxonomy.isEmpty()) {
             return Collections.emptyMap();
         }
-        try {
-            return dietaryRestrictionRepository.findAll().stream()
-                    .filter(dr -> dr.getCategory() == DietaryCategory.DIETARY_LIFESTYLE)
-                    .collect(Collectors.toMap(DietaryRestriction::getCode, Function.identity(), (a, b) -> a));
-        } catch (Exception e) {
-            return Collections.emptyMap();
-        }
+        return fullTaxonomy.values().stream()
+                .filter(dr -> dr.getCategory() == category)
+                .collect(Collectors.toMap(DietaryRestriction::getCode, Function.identity(), (a, b) -> a));
     }
 
     private EstablishmentDetailDto buildEstablishmentDetail(Establishment establishment) {
@@ -194,19 +293,27 @@ public class DinerCatalogService {
         LocalTime closing = establishment.getClosingTime() != null ? establishment.getClosingTime() : LocalTime.of(23, 0);
         boolean isClosedToday = false;
 
-        if (operatingScheduleRepository != null) {
+        Optional<EstablishmentOperatingSchedule> scheduleOpt = Optional.empty();
+        if (operatingScheduleCache != null) {
             try {
-                var scheduleOpt = operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishment.getId(), now.getDayOfWeek());
-                if (scheduleOpt.isPresent()) {
-                    var sched = scheduleOpt.get();
-                    if (sched.isClosed()) {
-                        isClosedToday = true;
-                    } else {
-                        opening = sched.getOpeningTime();
-                        closing = sched.getClosingTime();
-                    }
-                }
+                scheduleOpt = Optional.ofNullable(
+                        operatingScheduleCache.getWeekMap(establishment.getId()).get(now.getDayOfWeek()));
             } catch (Exception ignored) {
+            }
+        } else if (operatingScheduleRepository != null) {
+            try {
+                scheduleOpt = operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishment.getId(), now.getDayOfWeek());
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (scheduleOpt.isPresent()) {
+            var sched = scheduleOpt.get();
+            if (sched.isClosed()) {
+                isClosedToday = true;
+            } else {
+                opening = sched.getOpeningTime();
+                closing = sched.getClosingTime();
             }
         }
 
@@ -218,7 +325,6 @@ public class DinerCatalogService {
         } else if (opening.isBefore(closing)) {
             isOpen = !currentTime.isBefore(opening) && !currentTime.isAfter(closing);
         } else {
-            // Overnight opening
             isOpen = !currentTime.isBefore(opening) || !currentTime.isAfter(closing);
         }
 
@@ -240,7 +346,65 @@ public class DinerCatalogService {
         );
     }
 
-    private Map<UUID, EnrichedDishResponse> resolveComplianceMap(UUID tenantId, User user) {
+    private Map<UUID, EnrichedDishResponse> resolveComplianceMap(
+            UUID tenantId,
+            User user,
+            List<Dish> publishedDishes,
+            Map<String, DietaryRestriction> taxonomy) {
+        if (user == null || user.getId() == null) {
+            return Collections.emptyMap();
+        }
+
+        if (userDietaryRestrictionRepository != null) {
+            try {
+                Set<String> activeRestrictions = userDietaryRestrictionRepository.findByIdUserId(user.getId()).stream()
+                        .map(udr -> udr.getId().getRestrictionCode())
+                        .collect(Collectors.toSet());
+                if (activeRestrictions.isEmpty()) {
+                    return Collections.emptyMap();
+                }
+
+                Map<UUID, EnrichedDishResponse> map = new HashMap<>();
+                for (Dish dish : publishedDishes) {
+                    List<String> conflicts = new ArrayList<>();
+                    Set<String> dishRestrictions = dish.getRestrictionCodes() != null
+                            ? dish.getRestrictionCodes()
+                            : Collections.emptySet();
+                    for (String userCode : activeRestrictions) {
+                        DietaryRestriction meta = taxonomy.get(userCode);
+                        if (meta == null) {
+                            continue;
+                        }
+                        if (meta.getCategory() == DietaryCategory.DIETARY_LIFESTYLE) {
+                            if (!dishRestrictions.contains(userCode)) {
+                                conflicts.add(userCode);
+                            }
+                        } else if (meta.getCategory() == DietaryCategory.COMMON_ALLERGEN) {
+                            if (dishRestrictions.contains(userCode)) {
+                                conflicts.add(userCode);
+                            }
+                        }
+                    }
+                    map.put(dish.getId(), new EnrichedDishResponse(
+                            dish.getId(),
+                            dish.getTenantId(),
+                            dish.getName(),
+                            dish.getDescription(),
+                            dish.getRetailPrice(),
+                            dish.getIsActive(),
+                            conflicts.isEmpty(),
+                            conflicts
+                    ));
+                }
+                return map;
+            } catch (Exception e) {
+                return Collections.emptyMap();
+            }
+        }
+
+        if (catalogComplianceService == null) {
+            return Collections.emptyMap();
+        }
         try {
             List<EnrichedDishResponse> complianceList = catalogComplianceService.getEnrichedCatalog(tenantId, user);
             if (complianceList == null) {
@@ -255,16 +419,18 @@ public class DinerCatalogService {
 
     private DishCatalogItemDto buildDishCatalogItem(
             Dish dish,
-            UUID tenantId,
+            Set<UUID> dishIdsWithPhoto,
+            Map<UUID, List<String>> recipeIngredientsByDishId,
+            Map<UUID, DishAvailabilityEngine.DishAvailabilityResult> availabilityByDishId,
             Map<UUID, EnrichedDishResponse> complianceMap,
             Map<String, DietaryRestriction> allergenTaxonomy,
             Map<String, DietaryRestriction> lifestyleTaxonomy) {
 
-        String photoUrl = dishPhotoRepository.existsByDishId(dish.getId())
+        String photoUrl = dishIdsWithPhoto.contains(dish.getId())
                 ? "/api/v1/dishes/" + dish.getId() + "/photo"
                 : null;
 
-        List<String> recipeIngredients = resolveRecipeIngredients(dish.getId(), tenantId);
+        List<String> recipeIngredients = recipeIngredientsByDishId.getOrDefault(dish.getId(), Collections.emptyList());
 
         EnrichedDishResponse compliance = complianceMap.get(dish.getId());
         boolean isCompliant = compliance == null || Boolean.TRUE.equals(compliance.getIsCompliant());
@@ -272,16 +438,14 @@ public class DinerCatalogService {
                 ? compliance.getConflictingRestrictions()
                 : Collections.emptyList();
 
-        // Spec 007 FR-033/D2: the diner-facing price is the Administrator-assigned retail price,
-        // never the legacy `price` column. Corrected 2026-10-31 on integration into
-        // develop/sprint-2 — this service predates spec 007 and read the legacy column.
         BigDecimal price = dish.getRetailPrice() != null ? dish.getRetailPrice() : BigDecimal.ZERO;
+        DishAvailabilityEngine.DishAvailabilityResult availabilityResult = availabilityByDishId.get(dish.getId());
         boolean isAvailable = dishAvailabilityEngine != null
-                ? dishAvailabilityEngine.isDishAvailable(dish.getId(), tenantId)
+                ? (availabilityResult != null && availabilityResult.isAvailable())
                 : (dish.getIsActive() != null && dish.getIsActive());
 
         Integer availableStock = dishAvailabilityEngine != null
-                ? dishAvailabilityEngine.calculateAvailableStock(dish.getId(), tenantId)
+                ? (availabilityResult != null ? availabilityResult.availableStock() : 0)
                 : null;
 
         List<String> neutralAllergens = resolveNeutralAllergens(dish, allergenTaxonomy);
@@ -322,11 +486,6 @@ public class DinerCatalogService {
         return lifestyles;
     }
 
-    private static final Map<String, String> FALLBACK_LIFESTYLE_NAMES = Map.of(
-            "VEGAN", "Vegano",
-            "VEGETARIAN", "Vegetariano"
-    );
-
     private List<String> resolveNeutralAllergens(Dish dish, Map<String, DietaryRestriction> allergenTaxonomy) {
         Set<String> codes = dish.getRestrictionCodes();
         if (codes == null || codes.isEmpty()) {
@@ -343,33 +502,5 @@ public class DinerCatalogService {
         }
         Collections.sort(allergens);
         return allergens;
-    }
-
-    private static final Map<String, String> FALLBACK_ALLERGEN_NAMES = Map.of(
-            "CELIAC", "Sin TACC / Celíaco",
-            "DAIRY", "Lácteos / Lactosa",
-            "PEANUTS", "Maní",
-            "TREE_NUTS", "Frutos secos",
-            "EGGS", "Huevos",
-            "FISH", "Pescado",
-            "SHELLFISH", "Mariscos / Crustáceos",
-            "SOY", "Soja",
-            "WHEAT", "Trigo / Gluten"
-    );
-
-    private List<String> resolveRecipeIngredients(UUID dishId, UUID tenantId) {
-        List<DishRecipeIngredient> lines = dishRecipeIngredientRepository.findByIdDishId(dishId);
-        if (lines == null || lines.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<String> ingredientNames = new ArrayList<>();
-        for (DishRecipeIngredient line : lines) {
-            Ingredient ing = ingredientRepository.findByIdAndTenantId(line.getIngredientId(), tenantId).orElse(null);
-            if (ing != null && ing.getName() != null && !ing.getName().isBlank()) {
-                ingredientNames.add(ing.getName());
-            }
-        }
-        return ingredientNames;
     }
 }

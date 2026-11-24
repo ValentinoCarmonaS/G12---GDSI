@@ -111,12 +111,12 @@ class DinerCatalogServiceTest {
             IngredientStatus status,
             BigDecimal currentStock) {
         RecipeLineWithIngredientProjection proj = mock(RecipeLineWithIngredientProjection.class);
-        when(proj.getDishId()).thenReturn(dishId);
-        when(proj.getIngredientId()).thenReturn(ingredientId);
-        when(proj.getQuantity()).thenReturn(quantity);
-        when(proj.getIngredientName()).thenReturn(ingredientName);
-        when(proj.getIngredientStatus()).thenReturn(status);
-        when(proj.getCurrentStock()).thenReturn(currentStock);
+        org.mockito.Mockito.lenient().when(proj.getDishId()).thenReturn(dishId);
+        org.mockito.Mockito.lenient().when(proj.getIngredientId()).thenReturn(ingredientId);
+        org.mockito.Mockito.lenient().when(proj.getQuantity()).thenReturn(quantity);
+        org.mockito.Mockito.lenient().when(proj.getIngredientName()).thenReturn(ingredientName);
+        org.mockito.Mockito.lenient().when(proj.getIngredientStatus()).thenReturn(status);
+        org.mockito.Mockito.lenient().when(proj.getCurrentStock()).thenReturn(currentStock);
         return proj;
     }
 
