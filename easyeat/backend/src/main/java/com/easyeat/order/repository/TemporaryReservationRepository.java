@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,6 +45,19 @@ public interface TemporaryReservationRepository extends JpaRepository<TemporaryR
           AND r.expiresAt > :now
     """)
     int sumReservedPortionsByDishId(@Param("dishId") UUID dishId, @Param("now") Instant now);
+
+    @Query("""
+        SELECT oi.dishId AS dishId, COALESCE(SUM(oi.quantity), 0) AS reservedPortions
+        FROM TemporaryReservation r
+        JOIN r.order.items oi
+        WHERE oi.dishId IN :dishIds
+          AND r.status = com.easyeat.order.domain.ReservationStatus.ACTIVE
+          AND r.expiresAt > :now
+        GROUP BY oi.dishId
+    """)
+    List<DishReservedPortionsProjection> sumActiveReservedPortionsByDishIds(
+            @Param("dishIds") Collection<UUID> dishIds,
+            @Param("now") Instant now);
 
     @Query("""
         SELECT COUNT(r) FROM TemporaryReservation r
