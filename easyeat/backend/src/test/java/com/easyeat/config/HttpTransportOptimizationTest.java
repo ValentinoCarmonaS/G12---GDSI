@@ -38,19 +38,18 @@ class HttpTransportOptimizationTest {
 
     @TestConfiguration
     @RestController
-    @RequestMapping("/api/v1/establishments/test-transport")
+    @RequestMapping("/api/v1/establishments")
     static class TransportProbeController {
 
-        @GetMapping(value = "/dishes", produces = MediaType.APPLICATION_JSON_VALUE)
+        @GetMapping(value = "/test-gzip/dishes", produces = MediaType.APPLICATION_JSON_VALUE)
         public ResponseEntity<String> largeJson() {
             String padding = "x".repeat(1500);
             return ResponseEntity.ok()
-                    .header(HttpHeaders.ETAG, "\"etag-probe-1\"")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"payload\":\"" + padding + "\"}");
         }
 
-        @GetMapping(value = "/dishes/problem", produces = MediaType.APPLICATION_PROBLEM_JSON_VALUE)
+        @GetMapping(value = "/test-problem/dishes", produces = MediaType.APPLICATION_PROBLEM_JSON_VALUE)
         public ResponseEntity<String> largeProblemJson() {
             String padding = "y".repeat(1500);
             return ResponseEntity.badRequest()
@@ -58,9 +57,17 @@ class HttpTransportOptimizationTest {
                     .body("{\"title\":\"Bad Request\",\"detail\":\"" + padding + "\"}");
         }
 
-        @GetMapping(value = "/dishes/small", produces = MediaType.APPLICATION_JSON_VALUE)
+        @GetMapping(value = "/test-small/dishes", produces = MediaType.APPLICATION_JSON_VALUE)
         public ResponseEntity<String> smallJson() {
             return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("{\"ok\":true}");
+        }
+
+        @GetMapping(value = "/test-etag/dishes", produces = MediaType.APPLICATION_JSON_VALUE)
+        public ResponseEntity<String> etagJson() {
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.ETAG, "\"etag-probe-1\"")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body("{\"ok\":true}");
         }
@@ -70,7 +77,7 @@ class HttpTransportOptimizationTest {
     @DisplayName("compresses application/json responses >= 1024 bytes with gzip")
     void shouldCompressLargeApplicationJson() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:" + port + "/api/v1/establishments/test-transport/dishes"))
+                .uri(URI.create("http://localhost:" + port + "/api/v1/establishments/test-gzip/dishes"))
                 .header(HttpHeaders.ACCEPT_ENCODING, "gzip")
                 .GET()
                 .build();
@@ -86,7 +93,7 @@ class HttpTransportOptimizationTest {
     @DisplayName("compresses application/problem+json responses >= 1024 bytes with gzip")
     void shouldCompressLargeProblemJson() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:" + port + "/api/v1/establishments/test-transport/dishes/problem"))
+                .uri(URI.create("http://localhost:" + port + "/api/v1/establishments/test-problem/dishes"))
                 .header(HttpHeaders.ACCEPT_ENCODING, "gzip")
                 .GET()
                 .build();
@@ -102,7 +109,7 @@ class HttpTransportOptimizationTest {
     @DisplayName("does not compress application/json responses smaller than 1024 bytes")
     void shouldNotCompressSmallJson() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:" + port + "/api/v1/establishments/test-transport/dishes/small"))
+                .uri(URI.create("http://localhost:" + port + "/api/v1/establishments/test-small/dishes"))
                 .header(HttpHeaders.ACCEPT_ENCODING, "gzip")
                 .GET()
                 .build();
@@ -117,7 +124,7 @@ class HttpTransportOptimizationTest {
     @DisplayName("exposes ETag header in CORS responses for allowed origin")
     void shouldExposeEtagHeaderInCorsResponse() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:" + port + "/api/v1/establishments/test-transport/dishes"))
+                .uri(URI.create("http://localhost:" + port + "/api/v1/establishments/test-etag/dishes"))
                 .header(HttpHeaders.ORIGIN, "http://localhost:3000")
                 .GET()
                 .build();
