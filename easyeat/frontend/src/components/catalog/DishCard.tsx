@@ -80,6 +80,8 @@ export const DishCard: React.FC<DishCardProps> = ({
           <img
             src={resolveApiMediaUrl(photoUrl)}
             alt={dish.name}
+            loading="lazy"
+            decoding="async"
             onError={() => setImageError(true)}
             className="w-full h-full object-cover"
           />

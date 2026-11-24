@@ -30,6 +30,7 @@ import {
 import { ManualFiltersSidebar } from '../components/catalog/ManualFiltersSidebar';
 import { EmptyFilterResultsNotice } from '../components/catalog/EmptyFilterResultsNotice';
 import { BrandThemeProvider, useBrandTheme } from '../components/common/BrandThemeProvider';
+import { useClientCache } from '../context/ClientCacheContext';
 import { resolveApiMediaUrl } from '../utils/mediaUtils';
 import { BentoCard } from '../components/diner/BentoCard';
 import { AccessibleDrawer } from '../components/diner/AccessibleDrawer';
@@ -50,8 +51,13 @@ const CatalogContent: React.FC = () => {
   const tenant = tenantContext?.tenant;
   const isTenantLoading = tenantContext?.isLoading ?? false;
 
-  const { isAuthenticated } = useAuth();
-  const { profile } = useProfile();
+  const { isAuthenticated, user } = useAuth();
+  const cache = useClientCache();
+  const userScope = isAuthenticated && user?.id ? user.id : 'anon';
+  const catalogCacheKey = tenant?.id ? `catalog:${tenant.id}:${userScope}` : '';
+  const cachedCatalog = catalogCacheKey ? cache.get<CatalogResponse>(catalogCacheKey)?.data ?? null : null;
+
+  const { profile } = useProfile({ enabled: isAuthenticated, loadTaxonomy: false });
   const {
     isFilterActive,
     setIsFilterActive,
@@ -71,10 +77,10 @@ const CatalogContent: React.FC = () => {
     setActiveTenantId,
   } = useCatalogFilter();
   const { addItem } = useCart();
-  const catalogHook = useCatalog();
+  const catalogHook = useCatalog(undefined, { enabled: !tenant?.id });
 
-  const [catalogData, setCatalogData] = useState<CatalogResponse | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [catalogData, setCatalogData] = useState<CatalogResponse | null>(cachedCatalog);
+  const [isLoading, setIsLoading] = useState<boolean>(Boolean(tenant?.id) && !cachedCatalog);
   const [error, setError] = useState<string | null>(null);
   const [selectedDish, setSelectedDish] = useState<DishCatalogItem | null>(null);
   const [dishToConfirm, setDishToConfirm] = useState<EnrichedDish | null>(null);
@@ -90,10 +96,22 @@ const CatalogContent: React.FC = () => {
     setActiveTenantId(tenant?.id || null);
   }, [tenant?.id, setActiveTenantId]);
 
-  // Real-time stock-based dish availability polling
+  const initialAvailability = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    catalogData?.categories?.forEach((cat) => {
+      cat.dishes.forEach((dish) => {
+        map[dish.id] = dish.isAvailable;
+      });
+    });
+    return map;
+  }, [catalogData]);
+
+  // Real-time stock-based dish availability polling (deferred initial poll to avoid t=0ms duplicate)
   const { availability, isConnectionLost } = useRealtimeAvailability({
     tenantId: tenant?.id,
     enabled: Boolean(tenant?.id),
+    initialAvailability,
+    deferInitialPoll: true,
   });
 
   const activeRestrictionsCount = useMemo(() => {
@@ -113,21 +131,33 @@ const CatalogContent: React.FC = () => {
     }
   }, [tenant, isTenantLoading, isAuthenticated, catalogHook.dishes, navigate]);
 
-  const loadCatalog = async () => {
+  const loadCatalog = async (forceRefresh = false) => {
     if (!tenant?.id) {
       setIsLoading(false);
       return;
     }
-    setIsLoading(true);
+    const key = `catalog:${tenant.id}:${userScope}`;
+    if (forceRefresh) {
+      cache.invalidate(key);
+    }
+    const existing = cache.get<CatalogResponse>(key)?.data;
+    if (existing) {
+      setCatalogData(existing);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
     try {
-      const data = await dinerCatalogApi.getEstablishmentCatalog(tenant.id);
+      const data = await cache.fetchDeduped(key, () => dinerCatalogApi.getEstablishmentCatalog(tenant.id));
       setCatalogData(data);
-      if (data.categories && data.categories.length > 0) {
+      if (!existing && data.categories && data.categories.length > 0) {
         setActiveCategory(undefined);
       }
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Error al cargar el catálogo del establecimiento.');
+      if (!existing) {
+        setError(err?.response?.data?.detail || 'Error al cargar el catálogo del establecimiento.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -139,7 +169,7 @@ const CatalogContent: React.FC = () => {
     } else {
       setIsLoading(false);
     }
-  }, [tenant?.id]);
+  }, [tenant?.id, userScope]);
 
   const categories = useMemo(() => {
     if (!catalogData?.categories) return [];
@@ -388,7 +418,11 @@ const CatalogContent: React.FC = () => {
           <div className="flex items-center gap-4">
             {branding.logoUrl && !logoFailed ? (
               <img
-                src={resolveApiMediaUrl(branding.logoUrl)}
+                src={
+                  branding.updatedAt && !branding.isDefaultFallback && !branding.logoUrl.startsWith('/assets/')
+                    ? `${resolveApiMediaUrl(branding.logoUrl)}${resolveApiMediaUrl(branding.logoUrl).includes('?') ? '&' : '?'}v=${encodeURIComponent(branding.updatedAt)}`
+                    : resolveApiMediaUrl(branding.logoUrl)
+                }
                 alt={branding.fantasyName || 'Logo'}
                 onError={() => setLogoFailed(true)}
                 data-testid="restaurant-branding-logo"

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,7 +35,19 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
 
     List<Dish> findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(UUID tenantId, DishStatus status);
 
-    List<Dish> findByIdIn(List<UUID> ids);
+    @Query("SELECT DISTINCT d FROM Dish d LEFT JOIN FETCH d.restrictionCodes "
+            + "WHERE d.tenantId = :tenantId AND d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED "
+            + "AND d.isActive = true AND d.pausedByChef = false "
+            + "ORDER BY d.createdAt ASC, d.id ASC")
+    List<Dish> findPublicCatalogDishesWithRestrictions(@Param("tenantId") UUID tenantId);
+
+    @Query("SELECT DISTINCT d FROM Dish d LEFT JOIN FETCH d.restrictionCodes "
+            + "WHERE d.tenantId = :tenantId AND d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED "
+            + "AND d.isActive = true "
+            + "ORDER BY d.createdAt ASC, d.id ASC")
+    List<Dish> findPublishedActiveDishesWithRestrictions(@Param("tenantId") UUID tenantId);
+
+    List<Dish> findByIdIn(Collection<UUID> ids);
 
     Page<Dish> findByTenantId(UUID tenantId, Pageable pageable);
 
