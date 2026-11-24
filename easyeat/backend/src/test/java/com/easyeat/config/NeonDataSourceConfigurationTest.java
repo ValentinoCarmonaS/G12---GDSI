@@ -53,7 +53,7 @@ class NeonDataSourceConfigurationTest {
         assertThat(source.getProperty("spring.datasource.hikari.maximum-pool-size"))
                 .isEqualTo(5);
         assertThat(source.getProperty("spring.datasource.hikari.minimum-idle"))
-                .isEqualTo(1);
+                .isEqualTo(5);
     }
 
     @Test
@@ -112,8 +112,8 @@ class NeonDataSourceConfigurationTest {
     }
 
     @Test
-    @DisplayName("Debe configurar las ubicaciones de Flyway incluyendo db/migration y db/dev")
-    void flywayLocations_shouldIncludeMigrationAndDev() throws IOException {
+    @DisplayName("Debe configurar las ubicaciones de Flyway con db/migration")
+    void flywayLocations_shouldIncludeMigration() throws IOException {
         List<PropertySource<?>> propertySources = loader.load(
                 "application.yml",
                 new ClassPathResource("application.yml")
@@ -125,7 +125,7 @@ class NeonDataSourceConfigurationTest {
         Object loc0 = source.getProperty("spring.flyway.locations[0]");
         Object loc1 = source.getProperty("spring.flyway.locations[1]");
         assertThat(loc0).isEqualTo("classpath:db/migration");
-        assertThat(loc1).isEqualTo("classpath:db/dev");
+        assertThat(loc1).isNull();
 
         try (ConfigurableApplicationContext ctx = new SpringApplicationBuilder()
                 .sources(TestContextConfig.class)
@@ -136,7 +136,7 @@ class NeonDataSourceConfigurationTest {
             String locProp0 = ctx.getEnvironment().getProperty("spring.flyway.locations[0]");
             String locProp1 = ctx.getEnvironment().getProperty("spring.flyway.locations[1]");
             assertThat(locProp0).isEqualTo("classpath:db/migration");
-            assertThat(locProp1).isEqualTo("classpath:db/dev");
+            assertThat(locProp1).isNull();
         }
     }
 }
