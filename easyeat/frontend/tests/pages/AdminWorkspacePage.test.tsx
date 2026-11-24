@@ -70,10 +70,6 @@ describe('AdminWorkspacePage (T035, ADM-1.1.1)', () => {
       screen.getByText('Salud financiera y demanda de platos en tiempo real')
     ).toBeInTheDocument();
     expect(screen.getByTestId('executive-dashboard-grid')).toBeInTheDocument();
-    expect(screen.getByTestId('tenant-badge')).toHaveAttribute(
-      'title',
-      'Local: tenant-restaurante-alpha'
-    );
   });
 
   it('renders AdminSidebar navigation links for all admin sections (T073, FR-028, FR-031)', async () => {

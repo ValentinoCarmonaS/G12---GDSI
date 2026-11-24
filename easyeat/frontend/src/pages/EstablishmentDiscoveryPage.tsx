@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Store, Utensils, ShieldCheck, ArrowRight } from 'lucide-react';
 import { WorkspaceLayout } from '@/components/common/WorkspaceLayout';
+import { EasyEatBrandMark } from '@/components/common/EasyEatBrandMark';
 import { EstablishmentSearchBar } from '@/components/catalog/EstablishmentSearchBar';
 import { BentoCard } from '@/components/diner';
 import { useTenant } from '@/hooks/useTenant';
@@ -78,8 +79,8 @@ export const EstablishmentDiscoveryPage: React.FC = () => {
           radius="lg"
           className="text-center"
         >
-          <div className="w-14 h-14 mx-auto mb-5 bg-ee-surface-subtle border border-ee-border-subtle text-ee-primary-border rounded-ee-md flex items-center justify-center">
-            <Utensils aria-hidden="true" className="w-7 h-7" />
+          <div className="mb-4 flex justify-center sm:mb-5">
+            <EasyEatBrandMark variant="full" size="hero" alt="EasyEat" />
           </div>
 
           <h2 className="font-ee-display text-2xl sm:text-3xl font-bold text-ee-text mb-2 tracking-tight">

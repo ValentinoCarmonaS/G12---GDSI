@@ -6,6 +6,9 @@ import type { AdminNotificationResponse } from '../../types/notification';
 import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
 import { AdminNotificationBell } from '../notification/AdminNotificationBell';
 import { AdminSidebar } from '../admin/AdminSidebar';
+import { ChefMobileBottomBar } from '../chef/ChefMobileBottomBar';
+import { EasyEatBrandMark } from '../common/EasyEatBrandMark';
+import { getRoleDefaultRoute } from '../../router/postAuthRouting';
 import { RoleHamburgerMenu } from './RoleHamburgerMenu';
 import { ROLE_NAVIGATION_CONFIG, isRoleNavItemActive } from './roleNavigationConfig';
 
@@ -23,6 +26,7 @@ export interface RoleLayoutShellProps {
   readonly notificationError?: string | null;
   readonly isLoadingNotifications?: boolean;
   readonly legacySurfaceMode?: LegacySurfaceMode;
+  readonly fullWidth?: boolean;
   readonly onLogout: () => void | Promise<void>;
   readonly onMarkAsRead?: (notificationId: string) => void | Promise<void>;
   readonly onRefreshNotifications?: () => void | Promise<void>;
@@ -42,12 +46,14 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
   notificationError = null,
   isLoadingNotifications = false,
   legacySurfaceMode = 'none',
+  fullWidth = false,
   onLogout,
   onMarkAsRead = noopMarkAsRead,
   onRefreshNotifications,
 }) => {
   const { pathname, hash } = useLocation();
   const config = user?.role ? ROLE_NAVIGATION_CONFIG[user.role] : null;
+  const brandHomeRoute = getRoleDefaultRoute(user?.role);
 
   const avatarContent = avatarUrl ? (
     <img
@@ -94,9 +100,16 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
               />
             )}
 
-            <span className="shrink-0 font-ee-display text-base font-bold tracking-tight text-ee-text sm:text-xl">
-              EasyEat
-            </span>
+            <Link
+              to={brandHomeRoute}
+              aria-label="EasyEat — Ir al inicio"
+              className="inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-ee-sm px-1 text-ee-text transition-opacity duration-150 motion-reduce:transition-none hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring sm:gap-2.5"
+            >
+              <EasyEatBrandMark variant="mini" size="nav" decorative />
+              <span className="font-ee-display text-base font-bold tracking-tight text-ee-text sm:text-lg lg:text-xl">
+                EasyEat
+              </span>
+            </Link>
             <span aria-hidden="true" className="text-ee-border-strong">
               /
             </span>
@@ -116,7 +129,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
                       key={item.id}
                       to={item.to}
                       aria-current={active ? 'page' : undefined}
-                      className={`inline-flex min-h-[44px] items-center whitespace-nowrap rounded-ee-sm border px-3 text-sm transition-colors ${
+                      className={`inline-flex min-h-[48px] items-center whitespace-nowrap rounded-ee-sm border px-3 text-sm transition-colors ${
                         active
                           ? 'border-ee-primary-border bg-ee-primary font-semibold text-ee-on-primary'
                           : 'border-transparent font-medium text-ee-text hover:border-ee-border-subtle hover:bg-ee-surface-subtle'
@@ -202,7 +215,9 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
         <main
           id="main-content"
           tabIndex={-1}
-          className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 outline-none sm:px-6 sm:py-8 lg:px-8"
+          className={`mx-auto w-full flex-1 px-4 py-6 outline-none sm:px-6 sm:py-8 lg:px-8 ${
+            fullWidth ? '' : 'max-w-7xl'
+          } ${config?.useMobileBottomBar ? 'pb-24 md:pb-6' : ''}`.trim()}
         >
         {subtitle && (
           <div className="mb-6">
@@ -222,6 +237,7 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
         )}
         </main>
       </div>
+      {config?.useMobileBottomBar && <ChefMobileBottomBar />}
     </div>
   );
 };

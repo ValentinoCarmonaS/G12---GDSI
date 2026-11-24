@@ -17,6 +17,7 @@ export interface RoleNavigationConfig {
   readonly items: readonly RoleNavItem[];
   readonly exposeDirectDesktopNav: boolean;
   readonly useDesktopSidebar?: boolean;
+  readonly useMobileBottomBar?: boolean;
   readonly showNotificationBell: boolean;
   readonly showTenantBadge: boolean;
   readonly allowProfileLink: boolean;
@@ -84,6 +85,7 @@ export const ROLE_NAVIGATION_CONFIG: Readonly<Record<EasyEatUserRole, RoleNaviga
     displayRoleLabel: 'Chef',
     ariaLabel: 'Secciones de cocina',
     exposeDirectDesktopNav: true,
+    useMobileBottomBar: true,
     showNotificationBell: false,
     showTenantBadge: true,
     allowProfileLink: false,

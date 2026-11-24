@@ -12,13 +12,16 @@ describe('mediaUtils (resolveApiMediaUrl)', () => {
     expect(resolveApiMediaUrl('')).toBe('');
   });
 
-  it('preserves blob:, data:, protocol-relative, and absolute http(s) URLs', () => {
+  it('preserves blob:, data:, protocol-relative, local /assets/, and absolute http(s) URLs', () => {
     const apiBase = 'https://easyeat-backend.onrender.com/api/v1';
     expect(resolveApiMediaUrl('blob:https://easyeat-frontend.onrender.com/123', apiBase)).toBe(
       'blob:https://easyeat-frontend.onrender.com/123'
     );
     expect(resolveApiMediaUrl('data:image/png;base64,abc', apiBase)).toBe('data:image/png;base64,abc');
     expect(resolveApiMediaUrl('//cdn.example.com/a.png', apiBase)).toBe('//cdn.example.com/a.png');
+    expect(resolveApiMediaUrl('/assets/brand/easyeat-logo-neutral.png', apiBase)).toBe(
+      '/assets/brand/easyeat-logo-neutral.png'
+    );
     expect(resolveApiMediaUrl('https://cdn.example.com/a.png', apiBase)).toBe('https://cdn.example.com/a.png');
     expect(resolveApiMediaUrl('http://localhost:8080/api/v1/a.png', apiBase)).toBe(
       'http://localhost:8080/api/v1/a.png'

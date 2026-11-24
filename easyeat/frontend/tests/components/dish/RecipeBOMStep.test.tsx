@@ -93,7 +93,7 @@ describe('RecipeBOMStep Component (T039, CHF-2.2.2, FR-008, FR-009, FR-010)', ()
       />
     );
 
-    expect(screen.getByText(/no hay ingredientes agregados/i)).toBeInTheDocument();
+    expect(screen.getByText(/Todavía no agregaste ingredientes a esta receta/i)).toBeInTheDocument();
 
     const openModalBtn = screen.getByRole('button', { name: /agregar ingrediente/i });
     await user.click(openModalBtn);
@@ -121,7 +121,7 @@ describe('RecipeBOMStep Component (T039, CHF-2.2.2, FR-008, FR-009, FR-010)', ()
     const addArrozBtn = screen.getByRole('button', { name: 'Add Arroz' });
     await user.click(addArrozBtn);
 
-    expect(screen.getByText(/el ingrediente ya se encuentra en la receta/i)).toBeInTheDocument();
+    expect(screen.getByText(/ya está en la receta/i)).toBeInTheDocument();
     // Verify there is still only 1 row for Arroz Carnaroli
     const arrozOccurrences = screen.getAllByText('Arroz Carnaroli');
     expect(arrozOccurrences.length).toBe(1);
@@ -146,7 +146,7 @@ describe('RecipeBOMStep Component (T039, CHF-2.2.2, FR-008, FR-009, FR-010)', ()
     await user.click(saveBtn);
 
     expect(
-      screen.getByText(/las unidades discretas.*enteros/i)
+      screen.getByText(/ingresá un número entero/i)
     ).toBeInTheDocument();
     expect(mockOnSaveRecipe).not.toHaveBeenCalled();
   });
@@ -162,7 +162,7 @@ describe('RecipeBOMStep Component (T039, CHF-2.2.2, FR-008, FR-009, FR-010)', ()
       />
     );
 
-    const deleteButtons = screen.getAllByRole('button', { name: /eliminar/i });
+    const deleteButtons = screen.getAllByRole('button', { name: /quitar/i });
     await user.click(deleteButtons[0]);
 
     expect(mockOnRemoveIngredient).toHaveBeenCalledWith('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380a01');

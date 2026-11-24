@@ -274,7 +274,7 @@ describe('T016: KitchenKanbanBoard Component - Start Preparation (US2)', () => {
       const card = screen.getByTestId('in-preparation-card-ticket-prep-14min');
       const badge = screen.getByTestId('countup-badge-ticket-prep-14min');
 
-      expect(card).not.toHaveClass('border-amber-500');
+      expect(card).not.toHaveClass('border-ee-warning-border');
       expect(card).not.toHaveClass('ring-2');
       expect(badge).not.toHaveClass('bg-amber-100');
     });
@@ -305,14 +305,14 @@ describe('T016: KitchenKanbanBoard Component - Start Preparation (US2)', () => {
       const badge = screen.getByTestId('countup-badge-ticket-prep-15min');
 
       // Alerta visual perimetral e insignia
-      expect(card).toHaveClass('border-amber-500');
-      expect(card).toHaveClass('ring-2');
-      expect(badge).toHaveClass('bg-amber-100');
-      expect(badge).toHaveClass('text-amber-800');
+      expect(card).toHaveClass('border-ee-warning-border');
+      expect(card).toHaveClass('border-4');
+      expect(badge).toHaveClass('bg-ee-warning-bg');
+      expect(badge).toHaveClass('text-ee-warning-text');
 
       // Verificación de fondo e ítems neutros (legibilidad sin teñir textos de platos)
       const dishItem = screen.getByText('2x Bife de Chorizo');
-      expect(dishItem).toHaveClass('text-slate-100');
+      expect(dishItem).toHaveClass('text-ee-text');
       expect(dishItem).not.toHaveClass('text-amber-500');
       expect(dishItem).not.toHaveClass('text-amber-800');
     });

@@ -5,7 +5,7 @@ export const DEFAULT_NEUTRAL_BRANDING: RestaurantBranding = {
   establishmentId: '',
   fantasyName: 'Restaurante EasyEat',
   description: 'Restaurante asociado a EasyEat',
-  logoUrl: '/assets/brand/easyeat-logo-neutral.svg',
+  logoUrl: '/assets/brand/easyeat-logo-neutral.png',
   primaryColor: '#FAD4C0',
   secondaryColor: '#80A1C1',
   accentColor: '#9A4A24',

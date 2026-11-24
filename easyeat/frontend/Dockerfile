@@ -15,6 +15,7 @@ RUN npm ci
 
 # Copia del código fuente y configuraciones (tests/ requerido por tsconfig.json y re-exports en src/test/)
 COPY tsconfig*.json vite.config.ts tailwind.config.js postcss.config.js index.html ./
+COPY public/ ./public/
 COPY src/ ./src/
 COPY tests/ ./tests/
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { EasyEatBrandMark } from '../common/EasyEatBrandMark';
 
 export interface AuthCardShellProps {
   /** Main page heading rendered inside the centered card header. */
@@ -28,22 +29,38 @@ export const AuthCardShell: React.FC<AuthCardShellProps> = ({
   footer,
   maxWidth = 'sm',
 }) => {
+  const isEasyEatTitle = title.trim().toLowerCase() === 'easyeat';
+  const isDefaultBrandLabel = brandLabel.trim().toLowerCase() === 'easyeat';
+
   return (
     <div
       data-testid="auth-card-shell"
-      className="min-h-screen w-full bg-ee-surface text-ee-text flex flex-col items-center justify-center px-4 py-8 sm:px-6"
+      className="min-h-screen w-full bg-ee-surface text-ee-text flex flex-col items-center justify-center px-4 py-6 sm:px-6 sm:py-8 lg:py-10"
     >
       <div className={`w-full ${MAX_WIDTH_CLASSES[maxWidth]}`}>
-        <div className="bg-ee-surface-elevated border border-ee-border-subtle rounded-ee-lg shadow-ee-elevated p-6 sm:p-8">
-          <header className="mb-6 space-y-2">
-            <p className="font-ee-mono text-xs font-semibold uppercase tracking-widest text-ee-text-secondary">
-              {brandLabel}
-            </p>
-            <h1 className="font-ee-display text-2xl sm:text-3xl font-bold tracking-tight text-ee-text">
+        <div className="bg-ee-surface-elevated border border-ee-border-subtle rounded-ee-lg shadow-ee-elevated p-5 sm:p-7 lg:p-8">
+          <header className="mb-5 flex flex-col items-center text-center sm:mb-6">
+            <EasyEatBrandMark
+              variant="full"
+              size="auth"
+              decorative={isEasyEatTitle}
+              alt="EasyEat"
+              className="mb-3 sm:mb-4"
+            />
+            {isDefaultBrandLabel ? (
+              <span className="sr-only">{brandLabel}</span>
+            ) : (
+              <p className="mb-1 font-ee-mono text-xs font-semibold uppercase tracking-widest text-ee-text-secondary">
+                {brandLabel}
+              </p>
+            )}
+            <h1 className="font-ee-display text-2xl font-bold tracking-tight text-ee-text sm:text-3xl">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-sm text-ee-text-secondary leading-relaxed">{subtitle}</p>
+              <p className="mt-1.5 max-w-prose text-sm leading-relaxed text-ee-text-secondary">
+                {subtitle}
+              </p>
             )}
           </header>
 
