@@ -37,12 +37,14 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
 
     @Query("SELECT DISTINCT d FROM Dish d LEFT JOIN FETCH d.restrictionCodes "
             + "WHERE d.tenantId = :tenantId AND d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED "
-            + "AND d.isActive = true AND d.pausedByChef = false")
+            + "AND d.isActive = true AND d.pausedByChef = false "
+            + "ORDER BY d.createdAt ASC, d.id ASC")
     List<Dish> findPublicCatalogDishesWithRestrictions(@Param("tenantId") UUID tenantId);
 
     @Query("SELECT DISTINCT d FROM Dish d LEFT JOIN FETCH d.restrictionCodes "
             + "WHERE d.tenantId = :tenantId AND d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED "
-            + "AND d.isActive = true")
+            + "AND d.isActive = true "
+            + "ORDER BY d.createdAt ASC, d.id ASC")
     List<Dish> findPublishedActiveDishesWithRestrictions(@Param("tenantId") UUID tenantId);
 
     List<Dish> findByIdIn(Collection<UUID> ids);
