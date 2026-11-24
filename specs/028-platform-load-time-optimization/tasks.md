@@ -94,7 +94,7 @@ description: "Lista de tareas atómicas ordenadas por dependencia con enfoque TD
 
 ### Implementación Frontend para User Story 1 (TDD — GREEN)
 
-- [ ] T028 [P] [US1] Añadir atributos `loading="lazy"` y `decoding="async"` al elemento `<img>` de `DishCard` sin modificar estilos ni contrato `comensal.DESIGN.md` en `easyeat/frontend/src/components/catalog/DishCard.tsx` (`FR-009`, `D-10`)
+- [X] T028 [P] [US1] Añadir atributos `loading="lazy"` y `decoding="async"` al elemento `<img>` de `DishCard` sin modificar estilos ni contrato `comensal.DESIGN.md` en `easyeat/frontend/src/components/catalog/DishCard.tsx` (`FR-009`, `D-10`)
 - [ ] T029 [P] [US1] Extender `useProfile` con `options?: { enabled?: boolean; loadTaxonomy?: boolean }` (default `true`) integrado con `ClientSWRStore` (`profile:me`, `taxonomy:dietary`) e invalidación sincrónica de `profile:me` y prefijo `catalog:` tras mutaciones en `easyeat/frontend/src/hooks/useProfile.ts` (`FR-007`, `FR-008`, `FR-010`, `D-08`, `D-09`)
 - [ ] T030 [P] [US1] Restringir la carga de perfil en `WorkspaceLayout` exclusivamente a `user?.role === 'COMENSAL'` compartiendo `profile:me` a través de `ClientSWRStore` en `easyeat/frontend/src/components/common/WorkspaceLayout.tsx` (`FR-007`, `SC-004`, `D-08`)
 - [ ] T031 [P] [US1] Extender `useCatalog` con `options?: { enabled?: boolean }` (default `true`) en `easyeat/frontend/src/hooks/useCatalog.ts` y `useRealtimeAvailability` con `deferInitialPoll?: boolean` (default `false`) en `easyeat/frontend/src/hooks/useRealtimeAvailability.ts` (`FR-007`, `FR-010`, `D-08`)
