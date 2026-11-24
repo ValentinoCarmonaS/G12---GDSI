@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { AuthenticatedUser, JwtClaims, Role } from '../types/auth';
 import { authApi } from '../api/authApi';
+import { ClientCacheContext } from './ClientCacheContext';
 
 interface AuthContextType {
   user: AuthenticatedUser | null;
@@ -51,6 +52,8 @@ function parseUserFromToken(token: string): AuthenticatedUser | null {
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const clientCache = useContext(ClientCacheContext);
+
   const [token, setTokenState] = useState<string | null>(() => {
     return sessionStorage.getItem('access_token');
   });
@@ -60,11 +63,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return stored ? parseUserFromToken(stored) : null;
   });
 
+  const userRef = useRef<AuthenticatedUser | null>(user);
+  userRef.current = user;
+
   const clearAuth = useCallback(() => {
+    clientCache?.clearAll();
     sessionStorage.removeItem('access_token');
     setTokenState(null);
     setUser(null);
-  }, []);
+    userRef.current = null;
+  }, [clientCache]);
 
   const logout = useCallback(async () => {
     try {
@@ -80,13 +88,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setToken = useCallback((newToken: string) => {
     const parsed = parseUserFromToken(newToken);
     if (parsed) {
+      if (userRef.current && userRef.current.id !== parsed.id) {
+        clientCache?.clearAll();
+      }
       sessionStorage.setItem('access_token', newToken);
       setTokenState(newToken);
       setUser(parsed);
+      userRef.current = parsed;
     } else {
       clearAuth();
     }
-  }, [clearAuth]);
+  }, [clearAuth, clientCache]);
 
   useEffect(() => {
     const handleStorageChange = () => {
