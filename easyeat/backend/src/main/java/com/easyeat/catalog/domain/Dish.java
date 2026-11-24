@@ -77,6 +77,7 @@ public class Dish {
     private Boolean pausedByChef = false;
 
     @ElementCollection(fetch = FetchType.EAGER)
+    @org.hibernate.annotations.BatchSize(size = 100)
     @CollectionTable(name = "dish_dietary_restrictions", joinColumns = @JoinColumn(name = "dish_id"))
     @Column(name = "restriction_code")
     private Set<String> restrictionCodes = new HashSet<>();
