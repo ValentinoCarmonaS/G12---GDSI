@@ -1,5 +1,6 @@
 package com.easyeat.operations.domain;
 
+import com.easyeat.operations.cache.OperatingScheduleCache;
 import jakarta.persistence.*;
 import java.time.DayOfWeek;
 import java.time.Instant;
@@ -12,6 +13,7 @@ import java.util.UUID;
  * validation and by the {@code chk_schedule_times} database constraint.
  */
 @Entity
+@EntityListeners(OperatingScheduleCache.ScheduleEntityListener.class)
 @Table(name = "establishment_operating_schedules")
 public class EstablishmentOperatingSchedule {
 
