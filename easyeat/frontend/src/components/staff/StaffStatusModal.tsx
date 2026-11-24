@@ -1,5 +1,6 @@
 import React from 'react';
 import { StaffAccountStatus, StaffMemberResponse } from '../../types/staff';
+import { AccessibleModal } from '../diner/AccessibleModal';
 
 export interface StaffStatusModalProps {
   isOpen: boolean;
@@ -18,7 +19,7 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
   isSubmitting = false,
   error = null,
 }) => {
-  if (!isOpen || !staffMember) {
+  if (!staffMember) {
     return null;
   }
 
@@ -26,18 +27,14 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
   const targetStatus: StaffAccountStatus = isSuspending ? 'SUSPENDED' : 'ACTIVE';
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="staff-status-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isSuspending ? 'Suspender acceso' : 'Activar acceso'}
+      size="sm"
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
-        <h3 id="staff-status-modal-title" className="text-lg font-semibold text-gray-900">
-          {isSuspending ? 'Suspender acceso' : 'Activar acceso'}
-        </h3>
-
-        <p className="text-sm text-gray-600">
+      <div className="space-y-4">
+        <p className="text-sm text-ee-text-muted">
           {isSuspending
             ? `¿Está seguro de que desea suspender el acceso de ${staffMember.fullName}? El empleado no podrá iniciar sesión hasta que sea reactivado.`
             : `¿Está seguro de que desea activar el acceso de ${staffMember.fullName}? El empleado podrá volver a iniciar sesión en el sistema.`}
@@ -46,7 +43,7 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
         {error && (
           <div
             role="alert"
-            className="p-3 text-sm rounded-md bg-red-50 border border-red-200 text-red-700"
+            className="p-3 text-sm rounded-ee-sm bg-rose-50 border border-rose-200 text-rose-800"
           >
             {error}
           </div>
@@ -57,7 +54,7 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+            className="min-h-[44px] px-4 py-2 text-sm font-medium text-ee-text bg-white border border-ee-border-subtle rounded-ee-sm hover:bg-slate-50 disabled:opacity-50"
           >
             Cancelar
           </button>
@@ -65,17 +62,17 @@ export const StaffStatusModal: React.FC<StaffStatusModalProps> = ({
             type="button"
             onClick={() => onConfirm(staffMember.id, targetStatus)}
             disabled={isSubmitting}
-            className={`px-4 py-2 text-sm font-medium text-white rounded-md disabled:opacity-50 ${
+            className={`min-h-[44px] px-4 py-2 text-sm font-medium text-white rounded-ee-sm disabled:opacity-50 ${
               isSuspending
-                ? 'bg-red-600 hover:bg-red-700'
-                : 'bg-green-600 hover:bg-green-700'
+                ? 'bg-rose-700 hover:bg-rose-800'
+                : 'bg-emerald-700 hover:bg-emerald-800'
             }`}
           >
             {isSuspending ? 'Confirmar suspensión' : 'Confirmar activación'}
           </button>
         </div>
       </div>
-    </div>
+    </AccessibleModal>
   );
 };
 

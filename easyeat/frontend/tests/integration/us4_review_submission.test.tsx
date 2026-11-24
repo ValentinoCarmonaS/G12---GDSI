@@ -86,13 +86,13 @@ describe('User Story 4 User Journey Integration Test (T064, CHF-2.2.4)', () => {
     });
 
     // Navigate to Step 4: Revisión
-    const reviewTab = screen.getByRole('button', { name: /Paso 4: Revisión y Envío/i });
+    const reviewTab = screen.getByRole('button', { name: /04.*Revisión y Envío/i });
     await user.click(reviewTab);
 
     // Verify checklist items are rendered
-    expect(screen.getByText(/Identidad Básica/i)).toBeInTheDocument();
-    expect(screen.getByText(/Receta y Escandallo/i)).toBeInTheDocument();
-    expect(screen.getByText(/Alérgenos y Preferencias/i)).toBeInTheDocument();
+    expect(screen.getByText(/01\. Identidad del plato/i)).toBeInTheDocument();
+    expect(screen.getByText(/02\. Receta \(BOM\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/03\. Alérgenos/i)).toBeInTheDocument();
 
     // Click "Enviar a revisión"
     const submitBtn = screen.getByRole('button', { name: /Enviar a revisión/i });
@@ -106,7 +106,7 @@ describe('User Story 4 User Journey Integration Test (T064, CHF-2.2.4)', () => {
 
     // Verify dish status transition to PENDING_PRICE and success notification
     await waitFor(() => {
-      expect(screen.getByText(/Ficha técnica enviada a revisión exitosamente/i)).toBeInTheDocument();
+      expect(screen.getByText(/Plato guardado y enviado a revisión/i)).toBeInTheDocument();
     });
   });
 });

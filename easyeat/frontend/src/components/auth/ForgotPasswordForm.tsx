@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Button } from '../primitives/Button';
+import { FeedbackState } from '../primitives/FeedbackState';
 
 interface ForgotPasswordFormProps {
   onSubmit?: (data: { email: string }) => Promise<void>;
@@ -55,43 +58,37 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} noValidate className={`space-y-6 ${className}`}>
+    <form onSubmit={handleSubmit} noValidate className={`space-y-5 ${className}`}>
       {generalError && (
-        <div
-          role="alert"
-          className="p-3 text-sm rounded-md bg-red-50 border border-red-200 text-red-700 animate-fade-in"
-        >
-          {generalError}
-        </div>
+        <FeedbackState
+          variant="danger"
+          icon={<AlertCircle className="h-4 w-4" />}
+          message={generalError}
+        />
       )}
 
       {isSuccess ? (
-        <div
-          role="status"
-          className="p-4 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm animate-fade-in space-y-2"
-        >
-          <p className="font-semibold">Solicitud enviada</p>
-          <p>
-            Si el correo electrónico está registrado, recibirás las instrucciones para restablecer tu contraseña.
-          </p>
+        <div className="space-y-4">
+          <FeedbackState
+            variant="success"
+            icon={<CheckCircle2 className="h-5 w-5" />}
+            title="Solicitud enviada"
+            message="Si el correo electrónico está registrado, recibirás las instrucciones para restablecer tu contraseña."
+          />
           {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="mt-3 w-full py-2 px-4 border border-green-300 rounded-md text-sm font-medium text-green-700 bg-white hover:bg-green-50 transition-colors"
-            >
+            <Button type="button" variant="outline" size="md" fullWidth onClick={onCancel}>
               Volver al inicio de sesión
-            </button>
+            </Button>
           )}
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-ee-text-secondary leading-relaxed">
             Ingresá tu correo electrónico registrado y te enviaremos un enlace de recuperación válido por 15 minutos.
           </p>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-semibold text-ee-text mb-1.5">
               Correo electrónico
             </label>
             <input
@@ -99,6 +96,8 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
               type="email"
               name="email"
               autoComplete="email"
+              aria-invalid={Boolean(fieldError)}
+              aria-describedby={fieldError ? 'email-error' : undefined}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -106,39 +105,38 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
               }}
               disabled={isLoading}
               placeholder="tu@correo.com"
-              className={`w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
-                fieldError
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-amber-500 focus:border-amber-500'
-              } ${isLoading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+              className={`w-full min-h-[44px] px-3.5 py-2.5 text-sm rounded-ee-sm border text-ee-text placeholder:text-ee-text-secondary/70 transition-colors motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring ${
+                fieldError ? 'border-ee-danger-border' : 'border-ee-border-strong'
+              } ${isLoading ? 'bg-ee-surface-subtle cursor-not-allowed opacity-70' : 'bg-ee-surface-elevated'}`}
             />
             {fieldError && (
-              <p className="mt-1 text-xs text-red-600" id="email-error">
+              <p className="mt-1.5 text-xs font-medium text-ee-danger-fg" id="email-error">
                 {fieldError}
               </p>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
+          <div className="flex flex-col-reverse sm:flex-row items-center gap-3">
+            <Button
               type="button"
+              variant="outline"
+              size="md"
+              fullWidth
               onClick={onCancel}
               disabled={isLoading}
-              className="w-1/2 py-2.5 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-colors"
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={isLoading}
-              className={`w-1/2 flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-all ${
-                isLoading
-                  ? 'bg-amber-400 cursor-not-allowed opacity-75'
-                  : 'bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500'
-              }`}
+              variant="primary"
+              size="md"
+              fullWidth
+              loading={isLoading}
+              loadingText="Enviando..."
             >
-              {isLoading ? 'Enviando...' : 'Enviar instrucciones'}
-            </button>
+              Enviar instrucciones
+            </Button>
           </div>
         </>
       )}

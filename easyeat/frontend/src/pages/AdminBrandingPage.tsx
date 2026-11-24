@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
+import { GlassCard } from '../components/admin/GlassCard';
+import { Button } from '../components/primitives/Button';
 import { useAuth } from '../hooks/useAuth';
 import {
   getAdminBranding,
@@ -88,6 +90,7 @@ export const AdminBrandingPage: React.FC = () => {
       setPrimaryColor(updated.primaryColor);
       setSecondaryColor(updated.secondaryColor);
       setAccentColor(updated.accentColor);
+      window.dispatchEvent(new CustomEvent('easyeat:branding-changed'));
       setSuccessMessage('Branding actualizado exitosamente.');
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Error al guardar la configuración de branding.');
@@ -136,18 +139,18 @@ export const AdminBrandingPage: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Formulario de configuración */}
-          <div className="lg:col-span-7 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl p-6 shadow-sm">
+          <GlassCard variant="elevated" padding="lg">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                  <Store className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-lg font-semibold text-[var(--ee-text)] flex items-center gap-2">
+                  <Store className="w-5 h-5 text-[var(--ee-primary)]" />
                   Identidad Comercial
                 </h3>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
+                  <label className="block text-sm font-medium text-[var(--ee-text)] mb-1">
                     Nombre de Fantasía
                   </label>
                   <input
@@ -157,13 +160,13 @@ export const AdminBrandingPage: React.FC = () => {
                     placeholder="Ej. Café Central Palermo"
                     required
                     disabled={isLoading || isSubmitting}
-                    className="w-full px-3 py-2 border border-stone-300 dark:border-stone-700 rounded-lg text-sm bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full min-h-[44px] px-3 py-2 border border-[var(--ee-border)] rounded-[var(--ee-radius-sm)] text-sm bg-[var(--ee-surface)] text-[var(--ee-text)] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
                   />
-                  <p className="text-xs text-stone-500 mt-1">Nombre comercial visible para los comensales.</p>
+                  <p className="text-xs text-[var(--ee-text-muted)] mt-1">Nombre comercial visible para los comensales.</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
+                  <label className="block text-sm font-medium text-[var(--ee-text)] mb-1">
                     Descripción Comercial
                   </label>
                   <textarea
@@ -172,7 +175,7 @@ export const AdminBrandingPage: React.FC = () => {
                     placeholder="Ej. Cafetería de especialidad y pastelería artesanal."
                     rows={3}
                     disabled={isLoading || isSubmitting}
-                    className="w-full px-3 py-2 border border-stone-300 dark:border-stone-700 rounded-lg text-sm bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-[var(--ee-border)] rounded-[var(--ee-radius-sm)] text-sm bg-[var(--ee-surface)] text-[var(--ee-text)] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
                   />
                 </div>
 
@@ -184,8 +187,8 @@ export const AdminBrandingPage: React.FC = () => {
                 />
               </div>
 
-              <div className="pt-4 border-t border-stone-200 dark:border-stone-700 space-y-4">
-                <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100">
+              <div className="pt-4 border-t border-[var(--ee-border)] space-y-4">
+                <h3 className="text-lg font-semibold text-[var(--ee-text)]">
                   Tríada Cromática
                 </h3>
 
@@ -215,25 +218,27 @@ export const AdminBrandingPage: React.FC = () => {
               </div>
 
               <div className="pt-4 flex justify-end">
-                <button
+                <Button
                   type="submit"
+                  variant="primary"
                   disabled={isLoading || isSubmitting}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-sm shadow-sm transition-colors disabled:opacity-50"
+                  loading={isSubmitting}
+                  className="min-h-[44px]"
                 >
                   {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
+          </GlassCard>
 
-          {/* Previsualización en vivo */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl p-6 shadow-sm space-y-4 sticky top-6">
-              <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                <Eye className="w-5 h-5 text-emerald-600" />
+          {/* Previsualización en vivo (aislamiento estricto de marca) */}
+          <div className="space-y-4" data-brand-preview>
+            <GlassCard variant="elevated" padding="lg" className="space-y-4 sticky top-6">
+              <h3 className="text-lg font-semibold text-[var(--ee-text)] flex items-center gap-2">
+                <Eye className="w-5 h-5 text-[var(--ee-primary)]" />
                 Previsualización de Marca
               </h3>
-              <p className="text-xs text-stone-500">
+              <p className="text-xs text-[var(--ee-text-muted)]">
                 Así experimentarán los comensales los colores y elementos de marca en tu catálogo:
               </p>
 
@@ -248,10 +253,14 @@ export const AdminBrandingPage: React.FC = () => {
                       src={resolveApiMediaUrl(logoUrl)}
                       alt="Logo local"
                       onError={() => setPreviewImageError(true)}
-                      className="w-12 h-12 rounded-lg object-contain bg-white/10 p-1"
+                      className={`h-11 w-11 sm:h-12 sm:w-12 aspect-square shrink-0 rounded-lg ${
+                        logoUrl.startsWith('/assets/brand/')
+                          ? 'object-cover bg-[#0b0b0d]'
+                          : 'object-contain bg-white/10 p-1'
+                      }`}
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-white/20 flex items-center justify-center font-bold text-xl">
+                    <div className="h-11 w-11 sm:h-12 sm:w-12 aspect-square shrink-0 rounded-lg bg-white/20 flex items-center justify-center font-bold text-lg sm:text-xl">
                       {(fantasyName || 'E').charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -294,10 +303,10 @@ export const AdminBrandingPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="text-xs text-stone-400 text-center">
-                El contraste legible WCAG 2.1 se recalcula automáticamente en tiempo real.
+              <div className="text-xs text-[var(--ee-text-muted)] text-center">
+                El contraste legible WCAG 2.2 AA se recalcula automáticamente en tiempo real.
               </div>
-            </div>
+            </GlassCard>
           </div>
         </div>
       </div>

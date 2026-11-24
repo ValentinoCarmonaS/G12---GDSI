@@ -19,7 +19,8 @@ describe('StickyCategoryNav Component Tests (T032, US2, COM-4.1.1, FR-008)', () 
     expect(screen.getByTestId('nav-category-Postres')).toBeInTheDocument();
 
     const activeBtn = screen.getByTestId('nav-category-Platos principales');
-    expect(activeBtn.className).toContain('bg-amber-600');
+    expect(activeBtn).toHaveAttribute('data-brand-slot', 'category');
+    expect(activeBtn).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('calls onSelectCategory and scrolls into view when a category button is clicked', () => {

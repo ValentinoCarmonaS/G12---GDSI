@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../../src/router/AppRoutes';
 import * as AuthModule from '../../src/hooks/useAuth';
@@ -214,6 +215,9 @@ describe('AppRoutes - Profile & Catalog Routing Integration (T046, US3, FR-026)'
     expect(ordersTab).toHaveAttribute('aria-selected', 'true');
     expect(orderApi.getMyOrders).toHaveBeenCalledTimes(1);
 
+    // Spec 024 (FR-007/FR-008): el enlace de navegación "Mis pedidos" vive en el menú desplegable hamburguesa
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /abrir menú de navegación/i }));
     const navOrdersLink = screen.getByRole('link', { name: /mis pedidos/i });
     expect(navOrdersLink).toHaveAttribute('href', '/perfil#pedidos');
   });

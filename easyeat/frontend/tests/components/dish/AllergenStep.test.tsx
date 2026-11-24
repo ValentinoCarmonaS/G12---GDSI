@@ -21,7 +21,7 @@ describe('AllergenStep Component (T050, CHF-2.2.3, FR-013, FR-014, FR-015)', () 
     );
 
     // Group headings
-    expect(screen.getByText(/Estilos de Vida Dietarios/i)).toBeInTheDocument();
+    expect(screen.getByText(/Estilos de vida dietarios/i)).toBeInTheDocument();
     expect(screen.getByText(/Alérgenos Comunes/i)).toBeInTheDocument();
 
     // Dietary lifestyle items (C-11: only positive compliance lifestyles)
@@ -79,7 +79,7 @@ describe('AllergenStep Component (T050, CHF-2.2.3, FR-013, FR-014, FR-015)', () 
     expect(confirmToggle).toBeChecked();
 
     // Click save
-    const saveButton = screen.getByRole('button', { name: /Guardar y Confirmar Alérgenos/i });
+    const saveButton = screen.getByRole('button', { name: /Guardar alérgenos/i });
     await user.click(saveButton);
 
     expect(mockOnSaveAllergens).toHaveBeenCalledWith([], true);
@@ -103,7 +103,7 @@ describe('AllergenStep Component (T050, CHF-2.2.3, FR-013, FR-014, FR-015)', () 
     await user.click(peanutsCheckbox);
     expect(peanutsCheckbox).toBeChecked();
 
-    const saveButton = screen.getByRole('button', { name: /Guardar y Confirmar Alérgenos/i });
+    const saveButton = screen.getByRole('button', { name: /Guardar alérgenos/i });
     await user.click(saveButton);
 
     expect(mockOnSaveAllergens).toHaveBeenCalledWith(
@@ -128,7 +128,7 @@ describe('AllergenStep Component (T050, CHF-2.2.3, FR-013, FR-014, FR-015)', () 
       expect(cb).toBeDisabled();
     });
 
-    const saveButton = screen.getByRole('button', { name: /Guardar y Confirmar Alérgenos/i });
+    const saveButton = screen.getByRole('button', { name: /Guardar alérgenos/i });
     expect(saveButton).toBeDisabled();
   });
 });

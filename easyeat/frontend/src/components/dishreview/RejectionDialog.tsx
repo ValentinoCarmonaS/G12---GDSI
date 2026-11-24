@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { AccessibleModal } from '@/components/diner';
+import { Button } from '@/components/primitives';
 import { COMMON_ALLERGENS, DIETARY_LIFESTYLES } from '@/constants/allergenTaxonomy';
 import type { DishProposedChanges, DishProposedIngredient } from '@/types/dishReview';
 
-/** A known ingredient the dialog can add to the proposal, with its human label. */
 export interface RejectionIngredientOption {
   ingredientId: string;
   ingredientName: string;
@@ -11,21 +12,9 @@ export interface RejectionIngredientOption {
 
 export interface RejectionDialogProps {
   isOpen: boolean;
-  /**
-   * The dish as it stands today, preloaded into the editable proposal form (FR-042). The
-   * Administrator can change any field before rejecting.
-   */
   initialProposal?: DishProposedChanges | null;
-  /** Ingredients already known for this dish, offered for the proposal's ingredient lines. */
   knownIngredients?: RejectionIngredientOption[];
-  /**
-   * Called only once the comment satisfies FR-021 (10-1000 characters after trimming, never
-   * blank). Receives the comment exactly as typed, never pre-trimmed, plus the proposed edition
-   * or `null` when the Administrator chose not to include one.
-   */
   onConfirm: (comment: string, proposedChanges: DishProposedChanges | null) => void;
-  /** Called on abandonment. The dish's status, price and recipe stay as they were, and no audit
-   * entry is implied (FR-031). */
   onCancel: () => void;
 }
 
@@ -51,14 +40,6 @@ function toggled(codes: string[], code: string): string[] {
   return codes.includes(code) ? codes.filter((c) => c !== code) : [...codes, code];
 }
 
-/**
- * The mandatory rejection comment of FR-021 plus the Administrator's proposed edition of the dish
- * (FR-042), preloaded from the dish's current culinary file and fully editable.
- *
- * The proposal is optional: the Administrator opts in with a checkbox, and a blank/turned-off
- * proposal travels as `null`. Nothing in this form — or in `DishProposedChanges` — carries a cost,
- * Food Cost, margin or retail price, which is what keeps the Chef-facing projection blind.
- */
 export const RejectionDialog: React.FC<RejectionDialogProps> = ({
   isOpen,
   initialProposal,
@@ -78,8 +59,6 @@ export const RejectionDialog: React.FC<RejectionDialogProps> = ({
 
   const wasOpen = useRef(false);
 
-  // Reset the form each time the dialog opens, so a previous cycle's draft never leaks into the
-  // next rejection. The ref keeps in-progress typing from being reset by parent re-renders.
   useEffect(() => {
     if (isOpen && !wasOpen.current) {
       setComment('');
@@ -97,10 +76,6 @@ export const RejectionDialog: React.FC<RejectionDialogProps> = ({
     }
     wasOpen.current = isOpen;
   }, [isOpen, initialProposal]);
-
-  if (!isOpen) {
-    return null;
-  }
 
   const valid = isValid(comment);
   const addableIngredients = knownIngredients.filter(
@@ -152,59 +127,79 @@ export const RejectionDialog: React.FC<RejectionDialogProps> = ({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="rejection-dialog-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title="Rechazar y devolver a cocina"
+      subtitle="Devolución de ficha"
+      size="lg"
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" size="md" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            size="md"
+            disabled={!valid}
+            onClick={() => onConfirm(comment, buildProposal())}
+          >
+            Rechazar
+          </Button>
+        </div>
+      }
     >
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white p-5 shadow-lg space-y-3">
-        <h2 id="rejection-dialog-title" className="text-base font-semibold text-gray-900">
-          Rechazar y devolver a cocina
-        </h2>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm">
+            <span className="font-medium text-ee-text">Comentario para el Chef</span>
+            <textarea
+              aria-label="Comentario para el Chef"
+              className="mt-1 block w-full rounded-ee-sm border border-ee-border-strong bg-ee-surface-elevated px-3 py-2 text-sm text-ee-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring"
+              rows={4}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+          </label>
 
-        <label className="block text-sm">
-          <span className="text-gray-700">Comentario para el Chef</span>
-          <textarea
-            aria-label="Comentario para el Chef"
-            className="mt-1 block w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
-            rows={4}
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-        </label>
+          <p
+            className={`mt-1 font-ee-mono tabular-nums text-xs ${
+              comment.length > MAX_LENGTH ? 'text-ee-danger-fg' : 'text-ee-text-secondary'
+            }`}
+          >
+            {comment.length} / {MAX_LENGTH}
+          </p>
+        </div>
 
-        <p className={`text-xs ${comment.length > MAX_LENGTH ? 'text-red-600' : 'text-gray-500'}`}>
-          {comment.length} / {MAX_LENGTH}
-        </p>
-
-        <div className="space-y-3 border-t border-gray-200 pt-3">
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+        <div className="space-y-3 border-t border-ee-border-subtle pt-3">
+          <label className="flex items-center gap-2 text-sm font-medium text-ee-text">
             <input
               type="checkbox"
               checked={includeProposal}
               onChange={(e) => setIncludeProposal(e.target.checked)}
+              className="h-4 w-4 rounded border-ee-border-strong text-ee-primary focus:ring-ee-focus-ring"
             />
             Incluir propuesta de cambios
           </label>
 
           {includeProposal && (
-            <div className="space-y-4">
+            <div className="space-y-4 rounded-ee-md border border-ee-border-subtle bg-ee-surface-subtle/50 p-4">
               <label className="block text-sm">
-                <span className="text-gray-700">Título propuesto</span>
+                <span className="font-medium text-ee-text">Título propuesto</span>
                 <input
                   aria-label="Título propuesto"
-                  className="mt-1 block w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
+                  className="mt-1 block w-full min-h-[44px] rounded-ee-sm border border-ee-border-strong bg-ee-surface-elevated px-3 py-2 text-sm text-ee-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
               </label>
 
               <label className="block text-sm">
-                <span className="text-gray-700">Descripción propuesta</span>
+                <span className="font-medium text-ee-text">Descripción propuesta</span>
                 <textarea
                   aria-label="Descripción propuesta"
-                  className="mt-1 block w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
+                  className="mt-1 block w-full rounded-ee-sm border border-ee-border-strong bg-ee-surface-elevated px-3 py-2 text-sm text-ee-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring"
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -212,10 +207,13 @@ export const RejectionDialog: React.FC<RejectionDialogProps> = ({
               </label>
 
               <fieldset>
-                <legend className="text-sm text-gray-700">Alérgenos</legend>
-                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                <legend className="text-sm font-medium text-ee-text">Alérgenos</legend>
+                <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-2">
                   {COMMON_ALLERGENS.map((item) => (
-                    <label key={item.code} className="flex items-center gap-1.5 text-sm text-gray-700">
+                    <label
+                      key={item.code}
+                      className="flex items-center gap-1.5 text-sm text-ee-text"
+                    >
                       <input
                         type="checkbox"
                         aria-label={item.name}
@@ -229,10 +227,13 @@ export const RejectionDialog: React.FC<RejectionDialogProps> = ({
               </fieldset>
 
               <fieldset>
-                <legend className="text-sm text-gray-700">Estilos de vida</legend>
-                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                <legend className="text-sm font-medium text-ee-text">Estilos de vida</legend>
+                <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-2">
                   {DIETARY_LIFESTYLES.map((item) => (
-                    <label key={item.code} className="flex items-center gap-1.5 text-sm text-gray-700">
+                    <label
+                      key={item.code}
+                      className="flex items-center gap-1.5 text-sm text-ee-text"
+                    >
                       <input
                         type="checkbox"
                         aria-label={item.name}
@@ -246,22 +247,24 @@ export const RejectionDialog: React.FC<RejectionDialogProps> = ({
               </fieldset>
 
               <fieldset>
-                <legend className="text-sm text-gray-700">Ingredientes propuestos</legend>
+                <legend className="text-sm font-medium text-ee-text">
+                  Ingredientes propuestos
+                </legend>
                 {ingredients.length === 0 ? (
-                  <p className="mt-1 text-xs text-gray-500">Sin ingredientes propuestos.</p>
+                  <p className="mt-1 text-xs text-ee-text-secondary">Sin ingredientes propuestos.</p>
                 ) : (
-                  <ul className="mt-1 space-y-2">
+                  <ul className="mt-2 space-y-2">
                     {ingredients.map((item) => {
                       const label = ingredientLabel(item.ingredientId, knownIngredients);
                       return (
                         <li key={item.ingredientId} className="flex items-center gap-2">
-                          <span className="flex-1 text-sm text-gray-800">{label}</span>
+                          <span className="flex-1 text-sm text-ee-text">{label}</span>
                           <input
                             type="number"
                             min="0"
                             step="any"
                             aria-label={`Cantidad de ${label}`}
-                            className="w-24 rounded border border-gray-300 px-2 py-1 text-sm"
+                            className="w-24 min-h-[40px] rounded-ee-sm border border-ee-border-strong bg-ee-surface-elevated px-2 py-1 font-ee-mono tabular-nums text-sm text-ee-text"
                             value={quantities[item.ingredientId] ?? String(item.quantity)}
                             onChange={(e) =>
                               setQuantities((prev) => ({
@@ -270,14 +273,15 @@ export const RejectionDialog: React.FC<RejectionDialogProps> = ({
                               }))
                             }
                           />
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
                             aria-label={`Quitar ${label}`}
-                            className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700"
                             onClick={() => handleRemoveIngredient(item.ingredientId)}
                           >
                             Quitar
-                          </button>
+                          </Button>
                         </li>
                       );
                     })}
@@ -285,10 +289,10 @@ export const RejectionDialog: React.FC<RejectionDialogProps> = ({
                 )}
 
                 {addableIngredients.length > 0 && (
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2.5 flex items-center gap-2">
                     <select
                       aria-label="Ingrediente a agregar"
-                      className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm"
+                      className="flex-1 min-h-[44px] rounded-ee-sm border border-ee-border-strong bg-ee-surface-elevated px-2.5 py-1.5 text-sm text-ee-text"
                       value={newIngredientId}
                       onChange={(e) => setNewIngredientId(e.target.value)}
                     >
@@ -299,40 +303,23 @@ export const RejectionDialog: React.FC<RejectionDialogProps> = ({
                         </option>
                       ))}
                     </select>
-                    <button
+                    <Button
                       type="button"
-                      className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700 disabled:text-gray-400"
+                      variant="ghost"
+                      size="sm"
                       disabled={!newIngredientId}
                       onClick={handleAddIngredient}
                     >
                       Agregar
-                    </button>
+                    </Button>
                   </div>
                 )}
               </fieldset>
             </div>
           )}
         </div>
-
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700"
-            onClick={onCancel}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            className="rounded bg-red-700 px-3 py-1.5 text-sm text-white disabled:bg-gray-300"
-            disabled={!valid}
-            onClick={() => onConfirm(comment, buildProposal())}
-          >
-            Rechazar
-          </button>
-        </div>
       </div>
-    </div>
+    </AccessibleModal>
   );
 };
 

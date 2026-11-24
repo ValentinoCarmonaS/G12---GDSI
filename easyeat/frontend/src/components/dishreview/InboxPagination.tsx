@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from '@/components/primitives';
 
 export interface InboxPaginationProps {
   /** Zero-based, as the API counts. Displayed one-based, as people count. */
@@ -8,14 +9,6 @@ export interface InboxPaginationProps {
   onPageChange: (page: number) => void;
 }
 
-/**
- * Page controls for the 20-per-page inbox (FR-003).
- *
- * Hidden when everything fits on one page: controls that cannot do anything are noise. The ends
- * are disabled rather than permitted-and-corrected, so the Administrator is never taken to a page
- * that does not exist — and FR-036's accurate metadata means the position shown is always real,
- * even on a page the server returned empty.
- */
 export const InboxPagination: React.FC<InboxPaginationProps> = ({
   page,
   totalPages,
@@ -30,29 +23,33 @@ export const InboxPagination: React.FC<InboxPaginationProps> = ({
     <nav
       data-testid="inbox-pagination"
       aria-label="Paginación de la bandeja"
-      className="flex items-center justify-between px-4 py-3 border-t border-gray-200"
+      className="flex items-center justify-between gap-2 border-t border-ee-border-subtle bg-ee-surface-subtle/40 px-3 py-2.5"
     >
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 0}
-        className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+        className="min-h-[44px] min-w-[44px] border border-ee-border-subtle"
       >
         Anterior
-      </button>
+      </Button>
 
-      <span className="text-sm text-gray-600" aria-live="polite">
+      <span className="font-ee-mono tabular-nums text-xs text-ee-text-secondary" aria-live="polite">
         Página {page + 1} de {totalPages}
       </span>
 
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={() => onPageChange(page + 1)}
         disabled={!hasNext}
-        className="px-3 py-1.5 text-sm rounded border border-gray-300 text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+        className="min-h-[44px] min-w-[44px] border border-ee-border-subtle"
       >
         Siguiente
-      </button>
+      </Button>
     </nav>
   );
 };

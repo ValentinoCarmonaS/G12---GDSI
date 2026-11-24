@@ -1,4 +1,5 @@
 import React from 'react';
+import { BrutalistCard } from '@/components/chef/BrutalistCard';
 import { taxonomyLabel } from '@/constants/allergenTaxonomy';
 import type { ChefReviewFeedbackEntry, DishProposedChanges } from '@/types/dishReview';
 
@@ -34,20 +35,22 @@ export const DishRejectionFeedbackBanner: React.FC<DishRejectionFeedbackBannerPr
   }
 
   return (
-    <div className="space-y-2" data-testid="rejection-feedback-banner">
+    <div className="space-y-3" data-testid="rejection-feedback-banner">
       {entries.map((entry) => (
-        <div
+        <BrutalistCard
           key={entry.cycleNumber}
-          className="rounded border border-amber-300 bg-amber-50 p-3 text-sm"
+          variant="alert-warning"
+          padding="sm"
+          className="text-sm"
         >
-          <p className="whitespace-pre-wrap text-amber-900">{entry.comment}</p>
-          <p className="mt-1 text-xs text-amber-700">
+          <p className="whitespace-pre-wrap font-medium text-ee-warning-fg">{entry.comment}</p>
+          <p className="mt-1 font-ee-mono text-xs text-ee-warning-fg">
             {entry.reviewerName ?? 'Administración'} · {dateFormat.format(new Date(entry.createdAt))}
           </p>
           {entry.proposedChanges && (
             <ProposedChanges proposal={entry.proposedChanges} ingredientNames={ingredientNames} />
           )}
-        </div>
+        </BrutalistCard>
       ))}
     </div>
   );
@@ -64,35 +67,35 @@ const ProposedChanges: React.FC<{
   return (
     <div
       data-testid="proposed-changes"
-      className="mt-2 rounded border border-amber-200 bg-white/70 p-3 text-amber-900"
+      className="mt-3 rounded-ee-sm border-2 border-ee-border-strong bg-ee-surface p-3 text-ee-text"
     >
-      <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+      <p className="font-ee-mono text-xs font-bold uppercase tracking-wide text-ee-text">
         Propuesta de cambios
       </p>
 
       {proposal.title && (
         <p className="mt-1 text-sm">
-          <span className="font-semibold">Título:</span> {proposal.title}
+          <span className="font-bold">Título:</span> {proposal.title}
         </p>
       )}
       {proposal.description && (
         <p className="mt-1 text-sm">
-          <span className="font-semibold">Descripción:</span> {proposal.description}
+          <span className="font-bold">Descripción:</span> {proposal.description}
         </p>
       )}
       {allergens.length > 0 && (
         <p className="mt-1 text-sm">
-          <span className="font-semibold">Alérgenos:</span> {allergens.join(', ')}
+          <span className="font-bold">Alérgenos:</span> {allergens.join(', ')}
         </p>
       )}
       {lifestyles.length > 0 && (
         <p className="mt-1 text-sm">
-          <span className="font-semibold">Estilos de vida:</span> {lifestyles.join(', ')}
+          <span className="font-bold">Estilos de vida:</span> {lifestyles.join(', ')}
         </p>
       )}
       {ingredients.length > 0 && (
         <div className="mt-1 text-sm">
-          <span className="font-semibold">Ingredientes:</span>
+          <span className="font-bold">Ingredientes:</span>
           <ul className="mt-1 list-disc pl-5">
             {ingredients.map((item) => (
               <li key={item.ingredientId}>

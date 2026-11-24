@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, Clock, XCircle } from 'lucide-react';
+import { BentoCard } from '../diner/BentoCard';
+import { Button } from '../primitives/Button';
+import { FeedbackState } from '../primitives/FeedbackState';
 
 export interface PendingOrderCountdownProps {
   orderId: string;
@@ -78,36 +81,39 @@ export const PendingOrderCountdown: React.FC<PendingOrderCountdownProps> = ({
   const isUrgent = remainingSeconds > 0 && remainingSeconds < 120; // < 2 minutes
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+    <BentoCard variant="elevated" padding="md" radius="lg" className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-ee-border-subtle pb-5">
         <div className="flex items-center gap-3">
           <div
-            className={`p-3 rounded-full ${
+            className={`p-3 rounded-ee-md border ${
               isExpired
-                ? 'bg-gray-100 text-gray-500'
+                ? 'bg-ee-neutral-bg text-ee-neutral-fg border-ee-neutral-border'
                 : isUrgent
-                ? 'bg-amber-100 text-amber-600 animate-pulse'
-                : 'bg-emerald-100 text-emerald-600'
+                ? 'bg-ee-warning-bg text-ee-warning-fg border-ee-warning-border'
+                : 'bg-ee-success-bg text-ee-success-fg border-ee-success-border'
             }`}
           >
-            <Clock className="w-6 h-6" />
+            <Clock className="w-6 h-6" aria-hidden="true" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">
+            <h2 className="font-ee-display text-lg font-bold text-ee-text">
               {isExpired ? 'Reserva expirada' : 'Reserva en espera de pago'}
             </h2>
-            <p className="text-xs text-gray-500 font-mono">Orden: #{orderId.slice(0, 8)}</p>
+            <p className="text-xs text-ee-text-secondary font-ee-mono tabular-nums">
+              Orden: #{orderId.slice(0, 8)}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <div
-            className={`px-4 py-2 rounded-xl text-2xl font-mono font-bold tracking-wider ${
+            data-testid="pending-order-timer"
+            className={`px-4 py-2 rounded-ee-md text-2xl font-ee-mono tabular-nums font-bold tracking-wider border ${
               isExpired
-                ? 'bg-gray-100 text-gray-400'
+                ? 'bg-ee-neutral-bg text-ee-neutral-fg border-ee-neutral-border'
                 : isUrgent
-                ? 'bg-amber-50 text-amber-600 border border-amber-300 animate-pulse'
-                : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                ? 'bg-ee-warning-bg text-ee-warning-fg border-ee-warning-border'
+                : 'bg-ee-success-bg text-ee-success-fg border-ee-success-border'
             }`}
           >
             {formatTime(remainingSeconds)}
@@ -116,37 +122,38 @@ export const PendingOrderCountdown: React.FC<PendingOrderCountdownProps> = ({
       </div>
 
       {isUrgent && (
-        <div
+        <FeedbackState
+          variant="warning"
           data-testid="countdown-warning-banner"
-          className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm animate-fade-in"
-        >
-          <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-600" />
-          <p className="font-medium">
-            ¡Atención! Tu reserva está a punto de expirar. Completá el pago antes de que se libere tu cupo.
-          </p>
-        </div>
+          icon={<AlertTriangle className="w-5 h-5" />}
+          message="¡Atención! Tu reserva está a punto de expirar. Completá el pago antes de que se libere tu cupo."
+        />
       )}
 
       {isExpired && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 text-sm">
-          <XCircle className="w-5 h-5 flex-shrink-0 text-gray-500" />
-          <p>El tiempo de espera de 15 minutos ha finalizado. La reserva ha expirado y el cupo fue liberado.</p>
+        <div className="flex items-center gap-3 p-4 rounded-ee-md bg-ee-neutral-bg border border-ee-neutral-border text-ee-neutral-fg text-sm">
+          <XCircle className="w-5 h-5 shrink-0" aria-hidden="true" />
+          <p>
+            El tiempo de espera de 15 minutos ha finalizado. La reserva ha expirado y el cupo fue liberado.
+          </p>
         </div>
       )}
 
       {!isExpired && onCancel && (
         <div className="pt-2 flex justify-end">
-          <button
-            type="button"
+          <Button
+            variant="danger"
+            size="md"
             onClick={onCancel}
             disabled={isCancelling}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors disabled:opacity-50"
+            loading={isCancelling}
+            loadingText="Cancelando..."
+            leftIcon={<XCircle className="w-4 h-4" />}
           >
-            <XCircle className="w-4 h-4" />
-            {isCancelling ? 'Cancelando...' : 'Cancelar reserva'}
-          </button>
+            Cancelar reserva
+          </Button>
         </div>
       )}
-    </div>
+    </BentoCard>
   );
 };

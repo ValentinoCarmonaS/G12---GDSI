@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Info, AlertTriangle, SlidersHorizontal, Search, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { useAuth } from '../hooks/useAuth';
 import { useProfile } from '../hooks/useProfile';
@@ -30,6 +31,11 @@ import { ManualFiltersSidebar } from '../components/catalog/ManualFiltersSidebar
 import { EmptyFilterResultsNotice } from '../components/catalog/EmptyFilterResultsNotice';
 import { BrandThemeProvider, useBrandTheme } from '../components/common/BrandThemeProvider';
 import { resolveApiMediaUrl } from '../utils/mediaUtils';
+import { BentoCard } from '../components/diner/BentoCard';
+import { AccessibleDrawer } from '../components/diner/AccessibleDrawer';
+import { LoadingSkeleton } from '../components/primitives/LoadingSkeleton';
+import { FeedbackState } from '../components/primitives/FeedbackState';
+import { Button } from '../components/primitives/Button';
 
 const CatalogContent: React.FC = () => {
   const { branding } = useBrandTheme();
@@ -38,6 +44,7 @@ const CatalogContent: React.FC = () => {
   useEffect(() => {
     setLogoFailed(false);
   }, [branding.logoUrl]);
+
   const navigate = useNavigate();
   const tenantContext = useContext(TenantContext);
   const tenant = tenantContext?.tenant;
@@ -74,13 +81,16 @@ const CatalogContent: React.FC = () => {
   const [pendingQuantity, setPendingQuantity] = useState<number>(1);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState<boolean>(false);
+  const [isDesktopFiltersOpen, setIsDesktopFiltersOpen] = useState<boolean>(true);
+  const [cartAnnouncement, setCartAnnouncement] = useState<string>('');
 
   // Sync activeTenantId with CatalogFilterContext
   useEffect(() => {
     setActiveTenantId(tenant?.id || null);
   }, [tenant?.id, setActiveTenantId]);
 
-  // Real-time stock-based dish availability polling (COM-4.1.2, FR-016)
+  // Real-time stock-based dish availability polling
   const { availability, isConnectionLost } = useRealtimeAvailability({
     tenantId: tenant?.id,
     enabled: Boolean(tenant?.id),
@@ -91,7 +101,7 @@ const CatalogContent: React.FC = () => {
     return profile.dietaryRestrictions.length;
   }, [isAuthenticated, profile]);
 
-  // Missing tenant redirection (COM-1.5.1 / FR-004)
+  // Missing tenant redirection
   useEffect(() => {
     if (
       !isTenantLoading &&
@@ -103,7 +113,6 @@ const CatalogContent: React.FC = () => {
     }
   }, [tenant, isTenantLoading, isAuthenticated, catalogHook.dishes, navigate]);
 
-  // Load live categorized catalog from API when tenant is present
   const loadCatalog = async () => {
     if (!tenant?.id) {
       setIsLoading(false);
@@ -168,13 +177,14 @@ const CatalogContent: React.FC = () => {
   const isPriceFilterValid =
     !(minPriceNum !== null && maxPriceNum !== null && !isNaN(minPriceNum) && !isNaN(maxPriceNum) && minPriceNum > maxPriceNum);
 
-  const isAnyManualFilterActive =
-    isCategoryFilterActive ||
-    isLifestyleFilterActive ||
-    isAllergenFilterActive ||
-    minPrice.trim() !== '' ||
-    maxPrice.trim() !== '' ||
-    isQueryActive;
+  const activeManualFiltersCount =
+    selectedCategories.length +
+    selectedLifestyles.length +
+    selectedAllergens.length +
+    (minPrice.trim() !== '' ? 1 : 0) +
+    (maxPrice.trim() !== '' ? 1 : 0);
+
+  const isAnyManualFilterActive = activeManualFiltersCount > 0 || isQueryActive;
 
   const filteredCategoryGroups = useMemo(() => {
     if (!catalogData?.categories) return [];
@@ -188,7 +198,6 @@ const CatalogContent: React.FC = () => {
       })
       .map((group) => {
         const matchingDishes = group.dishes.filter((dish) => {
-          // Dietary restriction filter (profile compliance)
           if (
             isAuthenticated &&
             activeRestrictionsCount > 0 &&
@@ -198,12 +207,10 @@ const CatalogContent: React.FC = () => {
             return false;
           }
 
-          // Manual category filter: OR disjunction between selected categories
           if (isCategoryFilterActive && !selectedCategories.includes(group.category)) {
             return false;
           }
 
-          // C-13: Lifestyles filter - mandatory inclusion (AND between selected lifestyles)
           if (isLifestyleFilterActive) {
             const dishLifestyles = dish.lifestyles || [];
             const hasAllLifestyles = selectedLifestyles.every((l) => dishLifestyles.includes(l));
@@ -212,7 +219,6 @@ const CatalogContent: React.FC = () => {
             }
           }
 
-          // C-13: Allergens filter - exclusion (omit dish if it contains ANY selected allergen)
           if (isAllergenFilterActive) {
             const dishAllergens = dish.allergens || [];
             const hasAnyExcludedAllergen = selectedAllergens.some((a) => dishAllergens.includes(a));
@@ -221,7 +227,6 @@ const CatalogContent: React.FC = () => {
             }
           }
 
-          // Price range filter: closed inclusive interval [min, max]
           if (isPriceFilterValid) {
             const price = dish.price;
             if (minPriceNum !== null && !isNaN(minPriceNum) && price < minPriceNum) {
@@ -232,12 +237,10 @@ const CatalogContent: React.FC = () => {
             }
           }
 
-          // Text search filter: AND intersection
           if (isQueryActive && !matchesDishQuery(dish, searchQuery)) {
             return false;
           }
 
-          // Out-of-stock dishes (INV-17, FR-021) remain visible under filters
           return true;
         });
         return {
@@ -277,7 +280,9 @@ const CatalogContent: React.FC = () => {
   const handleAddToCart = (dish: DishCatalogItem | EnrichedDish, quantity: number = 1) => {
     const isAvailable =
       'isAvailable' in dish
-        ? (availability[dish.id] !== undefined ? availability[dish.id] : dish.isAvailable !== false)
+        ? availability[dish.id] !== undefined
+          ? availability[dish.id]
+          : dish.isAvailable !== false
         : dish.isActive !== false;
 
     if (isReadOnly || !isAvailable) return;
@@ -299,12 +304,14 @@ const CatalogContent: React.FC = () => {
       setPendingQuantity(quantity);
     } else {
       addItem(itemToAdd, quantity, false);
+      setCartAnnouncement(`${dish.name} agregado al carrito`);
     }
   };
 
   const handleConfirmRisk = () => {
     if (dishToConfirm) {
       addItem(dishToConfirm, pendingQuantity, true);
+      setCartAnnouncement(`${dishToConfirm.name} agregado al carrito`);
       setDishToConfirm(null);
       setPendingQuantity(1);
     }
@@ -326,11 +333,30 @@ const CatalogContent: React.FC = () => {
     tenant?.name ||
     'Catálogo de Productos';
 
+  const sidebarProps = {
+    categories,
+    selectedCategories,
+    onCategoryToggle: toggleCategory,
+    lifestyles: availableLifestyles,
+    selectedLifestyles,
+    onLifestyleToggle: toggleLifestyle,
+    allergens: availableAllergens,
+    selectedAllergens,
+    onAllergenToggle: toggleAllergen,
+    minPrice,
+    maxPrice,
+    onMinPriceChange: setMinPrice,
+    onMaxPriceChange: setMaxPrice,
+    onClearFilters: handleClearUnifiedFilters,
+  };
+
   return (
-    <WorkspaceLayout
-      title={pageTitle}
-      subtitle="Explorá nuestra carta y armá tu pedido en tiempo real"
-    >
+    <WorkspaceLayout title={pageTitle}>
+      {/* Live region for screen readers when adding items to cart */}
+      <div className="sr-only" aria-live="polite" data-testid="catalog-cart-announcement">
+        {cartAnnouncement}
+      </div>
+
       <div className="space-y-6">
         {/* Top Header Actions */}
         <div className="flex items-center justify-between gap-4">
@@ -339,11 +365,9 @@ const CatalogContent: React.FC = () => {
               type="button"
               onClick={() => navigate('/descubrimiento')}
               data-testid="switch-establishment-btn"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl shadow-2xs transition-colors cursor-pointer"
+              className="min-h-[44px] inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-[var(--ee-text)] bg-[var(--ee-surface-elevated)] border border-[var(--ee-border-subtle)] hover:border-[var(--ee-border-strong)] rounded-[var(--ee-radius-md)] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
             >
-              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
+              <ArrowLeft className="w-4 h-4 text-[var(--ee-text-secondary)]" aria-hidden="true" />
               <span>Cambiar local</span>
             </button>
           ) : (
@@ -351,14 +375,15 @@ const CatalogContent: React.FC = () => {
           )}
         </div>
 
-        {/* Branded Restaurant Header (Contract 08, AS-9, Q7/A7, INV-009) */}
+        {/* Branded Restaurant Header (Focused Brand Accent Slot: header) */}
         <header
           data-testid="restaurant-branding-header"
+          data-brand-slot="header"
           style={{
-            backgroundColor: branding.secondaryColor || 'var(--brand-secondary, #065F46)',
-            color: branding.secondaryContrastColor || 'var(--brand-secondary-contrast, #FFFFFF)',
+            backgroundColor: branding.secondaryColor || 'var(--brand-secondary, var(--ee-secondary))',
+            color: branding.secondaryContrastColor || 'var(--brand-secondary-contrast, var(--ee-on-secondary))',
           }}
-          className="py-6 px-6 shadow-sm rounded-2xl transition-colors"
+          className="py-6 px-6 rounded-[var(--ee-radius-lg)] border border-[var(--ee-border-subtle)] shadow-[var(--ee-shadow-elevated)] transition-colors"
         >
           <div className="flex items-center gap-4">
             {branding.logoUrl && !logoFailed ? (
@@ -367,15 +392,25 @@ const CatalogContent: React.FC = () => {
                 alt={branding.fantasyName || 'Logo'}
                 onError={() => setLogoFailed(true)}
                 data-testid="restaurant-branding-logo"
-                className="h-16 w-16 rounded-2xl object-cover bg-white/10 p-1 border-2 border-white/20 shadow-sm"
+                className={`h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 aspect-square rounded-[var(--ee-radius-md)] border border-[var(--ee-border-subtle)] shrink-0 ${
+                  branding.logoUrl.startsWith('/assets/brand/')
+                    ? 'object-cover bg-[#0b0b0d]'
+                    : 'object-contain bg-[var(--ee-surface-elevated)] p-1'
+                }`}
               />
             ) : (
-              <div className="h-16 w-16 rounded-2xl bg-white/20 flex items-center justify-center font-bold text-2xl border-2 border-white/20 shadow-sm">
+              <div
+                data-testid="restaurant-branding-logo-fallback"
+                className="h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 aspect-square rounded-[var(--ee-radius-md)] bg-[var(--ee-surface-elevated)] text-[var(--ee-text)] flex items-center justify-center font-bold text-xl sm:text-2xl border border-[var(--ee-border-subtle)] shrink-0"
+              >
                 {(branding.fantasyName || pageTitle || 'E').charAt(0).toUpperCase()}
               </div>
             )}
-            <div>
-              <h1 className="text-2xl font-black tracking-tight" data-testid="restaurant-branding-name">
+            <div className="min-w-0">
+              <h1
+                className="text-2xl font-bold tracking-tight truncate"
+                data-testid="restaurant-branding-name"
+              >
                 {branding.fantasyName || pageTitle}
               </h1>
               {branding.description && (
@@ -387,17 +422,17 @@ const CatalogContent: React.FC = () => {
           </div>
         </header>
 
-        {/* Guest Banner (FR-026, spec 003) */}
+        {/* Guest Banner */}
         {!isAuthenticated && (
           <div
             data-testid="guest-banner"
-            className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-900"
+            className="p-4 bg-[var(--ee-info-bg)] border border-[var(--ee-info-border)] rounded-[var(--ee-radius-md)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[var(--ee-info-fg)]"
           >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">ℹ️</span>
+            <div className="flex items-start sm:items-center gap-3">
+              <Info className="w-5 h-5 shrink-0 mt-0.5 sm:mt-0" aria-hidden="true" />
               <div>
-                <h4 className="text-sm font-bold">Estás navegando como invitado</h4>
-                <p className="text-xs text-amber-800 mt-0.5">
+                <h2 className="text-sm font-bold">Estás navegando como invitado</h2>
+                <p className="text-xs mt-0.5">
                   Iniciá sesión o registrate para activar el filtrado automático de platos según tus
                   requerimientos dietarios o médicos.
                 </p>
@@ -407,14 +442,14 @@ const CatalogContent: React.FC = () => {
               <Link
                 to="/login"
                 data-testid="guest-login-link"
-                className="px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-200 hover:bg-amber-300 rounded-lg transition-colors text-center shrink-0"
+                className="min-h-[44px] inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold text-[var(--ee-text)] bg-[var(--ee-surface-elevated)] border border-[var(--ee-border-strong)] rounded-[var(--ee-radius-sm)] transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
               >
                 Iniciar sesión
               </Link>
               <Link
                 to="/register"
                 data-testid="guest-register-link"
-                className="px-3 py-1.5 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg transition-colors text-center shrink-0"
+                className="min-h-[44px] inline-flex items-center justify-center px-3.5 py-2 text-xs font-semibold text-[var(--ee-on-primary)] bg-[var(--ee-primary)] border border-[var(--ee-primary-border)] rounded-[var(--ee-radius-sm)] transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
               >
                 Registrarse
               </Link>
@@ -422,7 +457,7 @@ const CatalogContent: React.FC = () => {
           </div>
         )}
 
-        {/* Operating Hours Banner (Spec 008, FR-003, FR-015) */}
+        {/* Operating Hours Banner */}
         {catalogData?.establishment && (
           <OperatingHoursBanner
             isOpen={catalogData.establishment.isOpen}
@@ -430,109 +465,152 @@ const CatalogContent: React.FC = () => {
           />
         )}
 
-        {/* Master Dietary Toggle (Spec 003) */}
+        {/* Master Dietary Toggle (single BentoCard, no nested card) */}
         {isAuthenticated && activeRestrictionsCount > 0 && (
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-xs mb-6">
-            <CatalogMasterToggle
-              activeRestrictionsCount={activeRestrictionsCount}
-              isFilterActive={isFilterActive}
-              onToggle={setIsFilterActive}
-            />
-          </div>
+          <CatalogMasterToggle
+            activeRestrictionsCount={activeRestrictionsCount}
+            isFilterActive={isFilterActive}
+            onToggle={setIsFilterActive}
+          />
         )}
 
         {/* Loading State */}
         {(isLoading || catalogHook.isLoading) && !catalogData && (
-          <div
-            data-testid="catalog-loading"
-            className="py-16 text-center text-gray-500 space-y-3"
-          >
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-amber-500 border-t-transparent" />
-            <p className="text-sm font-medium">Cargando menú del comedor...</p>
+          <div data-testid="catalog-loading" className="space-y-4 py-6">
+            <LoadingSkeleton lines={3} />
+            <p className="text-sm font-medium text-center text-[var(--ee-text-secondary)]">
+              Cargando menú del comedor...
+            </p>
           </div>
         )}
         {isLoading && catalogData && (
           <div
             data-testid="catalog-loading-skeleton"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="bg-white rounded-2xl h-72 border border-gray-100 shadow-2xs" />
+              <BentoCard key={n} variant="elevated" padding="md" radius="lg">
+                <LoadingSkeleton lines={4} />
+              </BentoCard>
             ))}
           </div>
         )}
 
-        {/* Error State with Retry Button (Spec 008, COM-1.5.1 Edge Case, FR-013) */}
+        {/* Error State with Retry Button */}
         {!isLoading && !catalogHook.isLoading && (error || catalogHook.error) && !catalogData && (
-          <div
-            data-testid="catalog-error"
-            className="p-6 bg-red-50 border border-red-200 rounded-2xl text-center space-y-3"
-          >
-            <p className="text-sm font-semibold text-red-800">{error || catalogHook.error}</p>
-            <button
-              type="button"
-              onClick={() => {
-                loadCatalog();
-                catalogHook.refetch();
-              }}
-              data-testid="catalog-retry-button"
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer"
-            >
-              Reintentar
-            </button>
+          <div data-testid="catalog-error" className="space-y-3">
+            <FeedbackState
+              variant="danger"
+              title="No pudimos cargar el catálogo"
+              message={error || catalogHook.error || 'Error al cargar el catálogo.'}
+            />
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => {
+                  loadCatalog();
+                  catalogHook.refetch();
+                }}
+                data-testid="catalog-retry-button"
+                className="min-h-[44px]"
+              >
+                Reintentar
+              </Button>
+            </div>
           </div>
         )}
         {!isLoading && error && catalogData && (
-          <div
-            data-testid="catalog-error-state"
-            className="p-6 bg-red-50 border border-red-200 rounded-2xl text-center space-y-3"
-          >
-            <p className="text-sm font-semibold text-red-800">{error}</p>
-            <button
-              type="button"
-              onClick={() => {
-                loadCatalog();
-                catalogHook.refetch();
-              }}
-              data-testid="catalog-retry-button"
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer"
-            >
-              Reintentar
-            </button>
+          <div data-testid="catalog-error-state" className="space-y-3">
+            <FeedbackState
+              variant="danger"
+              title="No pudimos actualizar el catálogo"
+              message={error}
+            />
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => {
+                  loadCatalog();
+                  catalogHook.refetch();
+                }}
+                data-testid="catalog-retry-button"
+                className="min-h-[44px]"
+              >
+                Reintentar
+              </Button>
+            </div>
           </div>
         )}
 
-        {/* Categorized Catalog Content with Sidebar Layout */}
+        {/* Categorized Catalog Content with Bento Sidebar Layout */}
         {!isLoading && !error && catalogData && (
           <>
-            {/* Kitchen Connection Lost Warning Banner (COM-4.1.2 Edge Case, FR-019) */}
+            {/* Kitchen Connection Lost Warning Banner */}
             {isConnectionLost && (
               <div
                 data-testid="kitchen-connection-warning"
-                className="bg-amber-50 border border-amber-300 text-amber-900 px-4 py-3 rounded-2xl flex items-center gap-3 text-xs sm:text-sm font-medium shadow-2xs"
+                role="status"
+                className="bg-[var(--ee-warning-bg)] border border-[var(--ee-warning-border)] text-[var(--ee-warning-fg)] px-4 py-3 rounded-[var(--ee-radius-md)] flex items-center gap-3 text-xs sm:text-sm font-medium"
               >
-                <svg className="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
+                <AlertTriangle className="w-5 h-5 shrink-0" aria-hidden="true" />
                 <span>Sin conexión con la cocina - reintentando...</span>
               </div>
             )}
 
-            {/* In-Catalog Rapid Search Filter (COM-4.2.3, FR-020) */}
-            <div className="pt-1">
-              <CatalogSearchFilter
-                value={searchQuery}
-                onChange={setSearchQuery}
-                onClear={() => setSearchQuery('')}
-                placeholder={
-                  activeCategory && activeCategory !== 'Todas'
-                    ? `Buscar en ${activeCategory} por plato o ingrediente...`
-                    : 'Buscar por plato o ingrediente en todo el menú...'
-                }
-              />
+            {/* Search + Filter Controls Toolbar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex-1">
+                <CatalogSearchFilter
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  onClear={() => setSearchQuery('')}
+                  placeholder={
+                    activeCategory && activeCategory !== 'Todas'
+                      ? `Buscar en ${activeCategory} por plato o ingrediente...`
+                      : 'Buscar por plato o ingrediente en todo el menú...'
+                  }
+                />
+              </div>
+
+              {categories.length > 0 && (
+                <>
+                  {/* Mobile Filters Drawer Trigger */}
+                  <button
+                    type="button"
+                    data-testid="mobile-filters-trigger"
+                    onClick={() => setIsMobileFiltersOpen(true)}
+                    className="lg:hidden min-h-[44px] inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-[var(--ee-surface-elevated)] text-[var(--ee-text)] border border-[var(--ee-border-strong)] rounded-[var(--ee-radius-md)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
+                  >
+                    <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+                    <span>
+                      Filtros{activeManualFiltersCount > 0 ? ` (${activeManualFiltersCount})` : ''}
+                    </span>
+                  </button>
+
+                  {/* Desktop Collapsible Sidebar Toggle */}
+                  <button
+                    type="button"
+                    data-testid="desktop-filters-toggle"
+                    onClick={() => setIsDesktopFiltersOpen((prev) => !prev)}
+                    className="hidden lg:inline-flex min-h-[44px] items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-[var(--ee-surface-elevated)] text-[var(--ee-text)] border border-[var(--ee-border-subtle)] hover:border-[var(--ee-border-strong)] rounded-[var(--ee-radius-md)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)]"
+                  >
+                    {isDesktopFiltersOpen ? (
+                      <PanelLeftClose className="w-4 h-4" aria-hidden="true" />
+                    ) : (
+                      <PanelLeftOpen className="w-4 h-4" aria-hidden="true" />
+                    )}
+                    <span>
+                      {isDesktopFiltersOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
+                      {activeManualFiltersCount > 0 ? ` (${activeManualFiltersCount})` : ''}
+                    </span>
+                  </button>
+                </>
+              )}
             </div>
 
-            {/* Sticky Category Navigation Bar (FR-008) */}
+            {/* Sticky Category Navigation Bar */}
             {categories.length > 0 && (
               <StickyCategoryNav
                 categories={categories}
@@ -541,78 +619,74 @@ const CatalogContent: React.FC = () => {
               />
             )}
 
-            {/* Layout with Sidebar + Catalog Grid */}
+            {/* Layout with Collapsible Desktop Sidebar + Catalog Grid */}
             <div className="flex flex-col lg:flex-row gap-6 items-start">
-              {/* Manual Filters Sidebar (COM-4.2.2, FR-016, FR-017, FR-022, C-13) */}
-              {categories.length > 0 && (
-                <ManualFiltersSidebar
-                  categories={categories}
-                  selectedCategories={selectedCategories}
-                  onCategoryToggle={toggleCategory}
-                  lifestyles={availableLifestyles}
-                  selectedLifestyles={selectedLifestyles}
-                  onLifestyleToggle={toggleLifestyle}
-                  allergens={availableAllergens}
-                  selectedAllergens={selectedAllergens}
-                  onAllergenToggle={toggleAllergen}
-                  minPrice={minPrice}
-                  maxPrice={maxPrice}
-                  onMinPriceChange={setMinPrice}
-                  onMaxPriceChange={setMaxPrice}
-                  onClearFilters={handleClearUnifiedFilters}
-                />
+              {categories.length > 0 && isDesktopFiltersOpen && (
+                <div className="hidden lg:block shrink-0">
+                  <ManualFiltersSidebar {...sidebarProps} />
+                </div>
               )}
 
               {/* Main Catalog View Container */}
               <div className="flex-1 w-full space-y-6">
                 {catalogData.categories.length === 0 ? (
-                  <div
+                  <BentoCard
+                    variant="elevated"
+                    padding="lg"
+                    radius="lg"
                     data-testid="catalog-empty-store"
-                    className="py-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200"
+                    className="text-center"
                   >
-                    <p className="text-base font-semibold text-gray-700">No hay platos publicados</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-base font-semibold text-[var(--ee-text)]">
+                      No hay platos publicados
+                    </p>
+                    <p className="text-xs text-[var(--ee-text-secondary)] mt-1">
                       El menú de este establecimiento se encuentra en preparación.
                     </p>
-                  </div>
+                  </BentoCard>
                 ) : filteredCategoryGroups.length === 0 ? (
-                  !isAnyManualFilterActive && isAuthenticated && activeRestrictionsCount > 0 && isFilterActive ? (
+                  !isAnyManualFilterActive &&
+                  isAuthenticated &&
+                  activeRestrictionsCount > 0 &&
+                  isFilterActive ? (
                     <EmptyCatalogDietaryState onViewFullMenu={() => setIsFilterActive(false)} />
-                  ) : (isCategoryFilterActive || isLifestyleFilterActive || isAllergenFilterActive || minPrice.trim() !== '' || maxPrice.trim() !== '') ? (
+                  ) : isCategoryFilterActive ||
+                    isLifestyleFilterActive ||
+                    isAllergenFilterActive ||
+                    minPrice.trim() !== '' ||
+                    maxPrice.trim() !== '' ? (
                     <EmptyFilterResultsNotice onClearFilters={handleClearUnifiedFilters} />
                   ) : (
-                    <div
+                    <BentoCard
+                      variant="elevated"
+                      padding="lg"
+                      radius="lg"
                       data-testid="catalog-empty-search"
-                      className="py-16 text-center text-gray-500 bg-white rounded-2xl border border-gray-200 px-6 space-y-4"
+                      className="text-center space-y-4"
                     >
-                      <div className="mx-auto w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                          />
-                        </svg>
+                      <div className="mx-auto w-12 h-12 rounded-full bg-[var(--ee-surface-subtle)] border border-[var(--ee-border-subtle)] flex items-center justify-center text-[var(--ee-text)]">
+                        <Search className="w-5 h-5" aria-hidden="true" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-base font-bold text-gray-800">No se encontraron platos</p>
-                        <p className="text-sm text-gray-500 max-w-md mx-auto">
+                        <p className="text-base font-bold text-[var(--ee-text)]">
+                          No se encontraron platos
+                        </p>
+                        <p className="text-sm text-[var(--ee-text-secondary)] max-w-md mx-auto">
                           No encontramos resultados para tu búsqueda. Verificá la ortografía o probá con otros términos o ingredientes.
                         </p>
                       </div>
-                      <button
+                      <Button
                         type="button"
+                        variant="primary"
                         data-testid="clear-empty-search-btn"
                         onClick={handleClearUnifiedFilters}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                        className="min-h-[44px]"
                       >
                         Limpiar filtros
-                      </button>
-                    </div>
+                      </Button>
+                    </BentoCard>
                   )
                 ) : (
-                  /* Categorized Sections (FR-007, FR-009, FR-020, FR-022, AC-4.6, INV-17) */
                   <div className="space-y-10">
                     {filteredCategoryGroups.map((group) => (
                       <section
@@ -620,12 +694,13 @@ const CatalogContent: React.FC = () => {
                         id={`category-section-${encodeURIComponent(group.category)}`}
                         className="space-y-4 scroll-mt-20"
                       >
-                        <div className="border-b border-gray-200 pb-2">
-                          <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">
+                        <div className="border-b border-[var(--ee-border-subtle)] pb-2 flex items-baseline justify-between gap-2">
+                          <h2 className="text-xl font-bold text-[var(--ee-text)] tracking-tight">
                             {group.category}
-                          </h3>
-                          <p className="text-xs text-gray-500">
-                            {group.dishes.length} {group.dishes.length === 1 ? 'plato disponible' : 'platos disponibles'}
+                          </h2>
+                          <p className="text-xs font-ee-mono tabular-nums text-[var(--ee-text-secondary)]">
+                            {group.dishes.length}{' '}
+                            {group.dishes.length === 1 ? 'plato disponible' : 'platos disponibles'}
                           </p>
                         </div>
 
@@ -639,12 +714,16 @@ const CatalogContent: React.FC = () => {
                               dish={{
                                 ...dish,
                                 isAvailable:
-                                  availability[dish.id] !== undefined ? availability[dish.id] : dish.isAvailable,
+                                  availability[dish.id] !== undefined
+                                    ? availability[dish.id]
+                                    : dish.isAvailable,
                               }}
                               isReadOnly={isReadOnly}
                               onSelectDish={setSelectedDish}
                               onAddToCart={handleAddToCart}
-                              showWarnings={isAuthenticated && activeRestrictionsCount > 0 && !isFilterActive}
+                              showWarnings={
+                                isAuthenticated && activeRestrictionsCount > 0 && !isFilterActive
+                              }
                             />
                           ))}
                         </div>
@@ -657,28 +736,49 @@ const CatalogContent: React.FC = () => {
           </>
         )}
 
-        {/* Fallback Flat Catalog Content (Spec 003 compatibility when useCatalog has dishes) */}
-        {!isLoading && !catalogData && !catalogHook.isLoading && !catalogHook.error && catalogHook.dishes.length > 0 && (
-          <>
-            {displayedLegacyDishes.length === 0 ? (
-              <EmptyCatalogDietaryState onViewFullMenu={() => setIsFilterActive(false)} />
-            ) : (
-              <div data-testid="dishes-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {displayedLegacyDishes.map((dish) => (
-                  <DishCard
-                    key={dish.id}
-                    dish={dish}
-                    onAddToCart={handleAddToCart}
-                    showWarnings={isAuthenticated && activeRestrictionsCount > 0 && !isFilterActive}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
+        {/* Fallback Flat Catalog Content (Spec 003 compatibility) */}
+        {!isLoading &&
+          !catalogData &&
+          !catalogHook.isLoading &&
+          !catalogHook.error &&
+          catalogHook.dishes.length > 0 && (
+            <>
+              {displayedLegacyDishes.length === 0 ? (
+                <EmptyCatalogDietaryState onViewFullMenu={() => setIsFilterActive(false)} />
+              ) : (
+                <div
+                  data-testid="dishes-grid"
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+                >
+                  {displayedLegacyDishes.map((dish) => (
+                    <DishCard
+                      key={dish.id}
+                      dish={dish}
+                      onAddToCart={handleAddToCart}
+                      showWarnings={
+                        isAuthenticated && activeRestrictionsCount > 0 && !isFilterActive
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
       </div>
 
-      {/* Informational Dish Detail Modal (FR-007, FR-012, FR-014, COM-6.1.1) */}
+      {/* Mobile Filters AccessibleDrawer */}
+      <AccessibleDrawer
+        isOpen={isMobileFiltersOpen}
+        onClose={() => setIsMobileFiltersOpen(false)}
+        side="left"
+        title="Filtros"
+        testId="mobile-filters-drawer"
+        closeButtonLabel="Cerrar filtros"
+      >
+        <ManualFiltersSidebar {...sidebarProps} embedded />
+      </AccessibleDrawer>
+
+      {/* Informational Dish Detail Modal */}
       <DishDetailModal
         dish={
           selectedDish
@@ -700,7 +800,7 @@ const CatalogContent: React.FC = () => {
         }}
       />
 
-      {/* Preventive Risk Modal (FR-021, spec 003) */}
+      {/* Preventive Risk Modal */}
       <AddToCartRiskModal
         isOpen={!!dishToConfirm}
         dishName={dishToConfirm?.name || ''}
@@ -709,7 +809,7 @@ const CatalogContent: React.FC = () => {
         onCancel={handleCancelRisk}
       />
 
-      {/* Floating Cart Button (COM-6.1.2, FR-005, FR-008, INV-6, INV-7) */}
+      {/* Floating Cart Button */}
       <FloatingCartButton onClick={() => setIsCartOpen(true)} />
 
       {/* Cart Drawer */}

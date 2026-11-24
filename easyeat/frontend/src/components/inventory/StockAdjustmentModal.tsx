@@ -6,6 +6,7 @@ import {
   StockAdjustmentRequest,
 } from '../../types/inventory';
 import { inventoryApi } from '../../api/inventoryApi';
+import { AccessibleModal } from '../diner/AccessibleModal';
 
 export interface StockAdjustmentModalProps {
   isOpen: boolean;
@@ -115,7 +116,7 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
     };
   }, [subtractQuantity, selectedBatch, currentStock]);
 
-  if (!isOpen || !ingredient) return null;
+  if (!ingredient) return null;
 
   const validateAddForm = (): boolean => {
     const errors: { quantity?: string; unitCost?: string; justification?: string } = {};
@@ -216,35 +217,14 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
-      className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4"
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Ajuste de Stock por Lotes"
+      subtitle={`${ingredient.name} — Stock global actual: ${currentStock} ${unit}`}
+      size="md"
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full overflow-hidden border border-gray-200 animate-fade-in">
-        {/* Header */}
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-          <div>
-            <h3 id="modal-title" className="text-lg font-bold text-gray-900">
-              Ajuste de Stock por Lotes
-            </h3>
-            <p className="text-sm text-gray-500">
-              <span className="font-semibold text-gray-800">{ingredient.name}</span> — Stock global actual:{' '}
-              <span className="font-mono font-bold text-blue-700">
-                {currentStock} {unit}
-              </span>
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 focus:outline-none text-xl font-bold"
-            aria-label="Cerrar modal"
-          >
-            &times;
-          </button>
-        </div>
+      <div className="space-y-4">
 
         {/* Tabs */}
         <div className="border-b border-gray-200 bg-gray-50 px-6 flex space-x-4">
@@ -525,7 +505,7 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </AccessibleModal>
   );
 };
 

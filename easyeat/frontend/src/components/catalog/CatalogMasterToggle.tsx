@@ -1,4 +1,6 @@
 import React from 'react';
+import { ShieldCheck } from 'lucide-react';
+import { BentoCard } from '@/components/diner/BentoCard';
 
 export interface CatalogMasterToggleProps {
   activeRestrictionsCount: number;
@@ -17,19 +19,27 @@ export const CatalogMasterToggle: React.FC<CatalogMasterToggleProps> = ({
   }
 
   return (
-    <div
+    <BentoCard
+      variant="elevated"
+      padding="sm"
+      radius="md"
       data-testid="catalog-master-toggle-container"
-      className="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-lg mb-6"
+      className="flex items-center justify-between gap-4"
     >
-      <div className="flex flex-col">
-        <span className="text-sm font-semibold text-gray-900">
-          Filtrar por mis restricciones de perfil ({activeRestrictionsCount})
-        </span>
-        <span className="text-xs text-gray-600">
-          {isFilterActive
-            ? 'Mostrando únicamente platos aptos para tu dieta'
-            : 'Mostrando menú completo con advertencias visuales'}
-        </span>
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded-[var(--ee-radius-sm)] bg-[var(--ee-primary)] text-[var(--ee-on-primary)] border border-[var(--ee-primary-border)] shrink-0">
+          <ShieldCheck className="w-4 h-4" aria-hidden="true" />
+        </div>
+        <div className="flex flex-col">
+          <span className="text-sm font-semibold text-[var(--ee-text)]">
+            Filtrar por mis restricciones de perfil ({activeRestrictionsCount})
+          </span>
+          <span className="text-xs text-[var(--ee-text-secondary)]">
+            {isFilterActive
+              ? 'Mostrando únicamente platos aptos para tu dieta'
+              : 'Mostrando menú completo con advertencias visuales'}
+          </span>
+        </div>
       </div>
 
       <button
@@ -38,18 +48,20 @@ export const CatalogMasterToggle: React.FC<CatalogMasterToggleProps> = ({
         aria-checked={isFilterActive}
         onClick={() => onToggle(!isFilterActive)}
         data-testid="catalog-master-toggle-button"
-        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
-          isFilterActive ? 'bg-amber-600' : 'bg-gray-300'
+        className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full border transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)] focus-visible:ring-offset-2 ${
+          isFilterActive
+            ? 'bg-[var(--ee-primary-border)] border-[var(--ee-primary-border)]'
+            : 'bg-[var(--ee-surface-subtle)] border-[var(--ee-border-strong)]'
         }`}
       >
         <span className="sr-only">Activar o desactivar filtro dietario automático</span>
         <span
-          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-            isFilterActive ? 'translate-x-5' : 'translate-x-0'
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[var(--ee-surface-elevated)] border border-[var(--ee-border-subtle)] transition-transform duration-150 ${
+            isFilterActive ? 'translate-x-5' : 'translate-x-1'
           }`}
         />
       </button>
-    </div>
+    </BentoCard>
   );
 };
 

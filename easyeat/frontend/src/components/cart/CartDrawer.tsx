@@ -1,7 +1,11 @@
 import React from 'react';
+import { AlertTriangle, ShoppingBag } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { CartItemWithBadge } from './CartItemWithBadge';
 import { formatCurrency } from '../../utils/currencyUtils';
+import { AccessibleDrawer } from '@/components/diner/AccessibleDrawer';
+import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { Button } from '@/components/primitives/Button';
 
 export interface CartDrawerProps {
   isOpen: boolean;
@@ -31,152 +35,139 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
   const isCheckoutDisabled = hasInsufficientStock || hasPausedItems;
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Cajón de carrito de compras"
-      data-testid="cart-drawer"
-      className="fixed inset-0 z-40 overflow-hidden"
-    >
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
-        data-testid="cart-drawer-backdrop"
-      />
-
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between">
-          {/* Header */}
-          <div className="p-5 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-gray-900">Tu Carrito</h3>
-              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
-                {totalCount} {totalCount === 1 ? 'ítem' : 'ítems'}
+    <AccessibleDrawer
+      isOpen={isOpen}
+      onClose={onClose}
+      side="right"
+      title="Tu Carrito"
+      ariaLabel="Carrito de compras"
+      headerBadge={
+        <StatusBadge variant="neutral">
+          {totalCount} {totalCount === 1 ? 'ítem' : 'ítems'}
+        </StatusBadge>
+      }
+      testId="cart-drawer"
+      backdropTestId="cart-drawer-backdrop"
+      closeButtonTestId="cart-drawer-close-button"
+      closeButtonLabel="Cerrar carrito"
+      footer={
+        items.length > 0 ? (
+          <div className="space-y-3 w-full">
+            <div className="flex items-center justify-between text-sm font-semibold text-[var(--ee-text)]">
+              <span>Total a pagar:</span>
+              <span
+                data-testid="cart-total-amount"
+                className="text-lg font-bold font-ee-mono tabular-nums text-[var(--ee-text)]"
+              >
+                {formatCurrency(totalAmount)}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              data-testid="cart-drawer-close-button"
-              className="p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
-            >
-              <span className="sr-only">Cerrar carrito</span>
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
 
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            {/* FR-014a: Warning banner on insufficient kitchen stock blocking checkout */}
-            {hasInsufficientStock && (
+            {hasPausedItems && (
               <div
-                data-testid="cart-insufficient-stock-banner"
-                className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-900 flex items-start gap-2"
+                role="alert"
+                className="p-3 bg-[var(--ee-warning-bg)] border border-[var(--ee-warning-border)] text-[var(--ee-warning-fg)] rounded-[var(--ee-radius-sm)] text-xs font-medium"
               >
-                <span className="text-base leading-none">⚠️</span>
-                <p>
-                  <strong>Atención:</strong> Uno o más platos en tu orden exceden el stock disponible
-                  en cocina. Ajustá las cantidades antes de continuar al checkout.
-                </p>
+                Tu orden contiene platos pausados por cocina. Debés retirarlos o aguardar su reactivación para continuar.
               </div>
             )}
 
-            {/* FR-022: Permanent visible banner without redundant blocking modal at checkout */}
-            {hasConflictingItems && (
-              <div
-                data-testid="cart-conflict-banner"
-                className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-start gap-2"
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={clearCart}
+                data-testid="cart-clear-button"
+                className="min-h-[44px]"
               >
-                <span className="text-base leading-none">⚠️</span>
-                <p>
-                  <strong>Aviso:</strong> Tu carrito contiene platos que no cumplen con tu perfil
-                  dietario. El riesgo fue previamente confirmado al agregarlos.
-                </p>
-              </div>
-            )}
-
-            {items.length === 0 ? (
-              <div data-testid="cart-empty-message" className="text-center py-16 text-gray-500">
-                <p className="text-base font-semibold text-gray-700">Tu carrito está vacío</p>
-                <p className="text-xs text-gray-500 mt-1">Explorá los platos y agregalos para ordenar.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {items.map((item) => (
-                  <CartItemWithBadge
-                    key={item.dishId}
-                    item={item}
-                    onUpdateQuantity={updateQuantity}
-                    onRemove={removeItem}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          {items.length > 0 && (
-            <div className="p-5 border-t border-gray-200 bg-gray-50 space-y-3">
-              <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
-                <span>Total a pagar:</span>
-                <span data-testid="cart-total-amount" className="text-lg font-bold text-amber-700">
-                  {formatCurrency(totalAmount)}
-                </span>
-              </div>
-
-              {hasPausedItems && (
-                <div
-                  role="alert"
-                  className="p-3 bg-amber-50 border border-amber-300 text-amber-900 rounded-lg text-xs font-medium"
-                >
-                  Tu orden contiene platos pausados por cocina. Debés retirarlos o aguardar su reactivación para continuar.
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={clearCart}
-                  data-testid="cart-clear-button"
-                  className="px-3 py-2 text-xs font-semibold text-gray-600 hover:text-red-600 border border-gray-300 rounded-lg bg-white"
-                >
-                  Vaciar
-                </button>
-                <button
-                  type="button"
-                  onClick={onCheckout}
-                  disabled={isCheckoutDisabled}
-                  data-testid="cart-checkout-button"
-                  style={
-                    !isCheckoutDisabled
-                      ? {
-                          backgroundColor: 'var(--brand-primary, #10B981)',
-                          color: 'var(--brand-primary-contrast, #FFFFFF)',
-                        }
-                      : undefined
-                  }
-                  className={`flex-1 py-2.5 px-4 text-sm font-bold rounded-lg shadow-sm transition-colors text-center ${
-                    isCheckoutDisabled
-                      ? 'bg-gray-400 cursor-not-allowed opacity-50 text-white'
-                      : 'hover:brightness-110 cursor-pointer'
-                  }`}
-                >
-                  Continuar al checkout
-                </button>
-              </div>
+                Vaciar
+              </Button>
+              <button
+                type="button"
+                onClick={onCheckout}
+                disabled={isCheckoutDisabled}
+                data-testid="cart-checkout-button"
+                data-brand-slot={!isCheckoutDisabled ? 'cta' : undefined}
+                style={
+                  !isCheckoutDisabled
+                    ? {
+                        backgroundColor: 'var(--brand-primary, var(--ee-primary))',
+                        color: 'var(--brand-primary-contrast, var(--ee-on-primary))',
+                      }
+                    : undefined
+                }
+                className={`flex-1 min-h-[44px] py-2.5 px-4 text-sm font-bold rounded-[var(--ee-radius-sm)] border transition-colors duration-150 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)] ${
+                  isCheckoutDisabled
+                    ? 'bg-[var(--ee-surface-subtle)] text-[var(--ee-text-secondary)] border-[var(--ee-border-subtle)] cursor-not-allowed opacity-60'
+                    : 'border-[var(--ee-border-strong)] hover:opacity-95 cursor-pointer'
+                }`}
+              >
+                Continuar al checkout
+              </button>
             </div>
-          )}
-        </div>
+          </div>
+        ) : undefined
+      }
+    >
+      <div className="space-y-4">
+        {/* FR-014a: Warning banner on insufficient kitchen stock blocking checkout */}
+        {hasInsufficientStock && (
+          <div
+            data-testid="cart-insufficient-stock-banner"
+            role="alert"
+            className="p-3 bg-[var(--ee-danger-bg)] border border-[var(--ee-danger-border)] rounded-[var(--ee-radius-sm)] text-xs text-[var(--ee-danger-fg)] flex items-start gap-2"
+          >
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+            <p>
+              <strong>Atención:</strong> Uno o más platos en tu orden exceden el stock disponible
+              en cocina. Ajustá las cantidades antes de continuar al checkout.
+            </p>
+          </div>
+        )}
+
+        {/* FR-022: Permanent visible banner without redundant blocking modal at checkout */}
+        {hasConflictingItems && (
+          <div
+            data-testid="cart-conflict-banner"
+            role="status"
+            className="p-3 bg-[var(--ee-warning-bg)] border border-[var(--ee-warning-border)] rounded-[var(--ee-radius-sm)] text-xs text-[var(--ee-warning-fg)] flex items-start gap-2"
+          >
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+            <p>
+              <strong>Aviso:</strong> Tu carrito contiene platos que no cumplen con tu perfil
+              dietario. El riesgo fue previamente confirmado al agregarlos.
+            </p>
+          </div>
+        )}
+
+        {items.length === 0 ? (
+          <div
+            data-testid="cart-empty-message"
+            className="text-center py-12 text-[var(--ee-text-secondary)] space-y-2"
+          >
+            <div className="w-12 h-12 mx-auto rounded-full bg-[var(--ee-surface-subtle)] border border-[var(--ee-border-subtle)] flex items-center justify-center text-[var(--ee-text)]">
+              <ShoppingBag className="w-5 h-5" aria-hidden="true" />
+            </div>
+            <p className="text-base font-semibold text-[var(--ee-text)]">Tu carrito está vacío</p>
+            <p className="text-xs text-[var(--ee-text-secondary)]">
+              Explorá los platos y agregalos para ordenar.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {items.map((item) => (
+              <CartItemWithBadge
+                key={item.dishId}
+                item={item}
+                onUpdateQuantity={updateQuantity}
+                onRemove={removeItem}
+              />
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </AccessibleDrawer>
   );
 };
 

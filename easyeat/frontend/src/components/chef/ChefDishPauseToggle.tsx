@@ -48,18 +48,18 @@ export const ChefDishPauseToggle: React.FC<ChefDishPauseToggleProps> = ({
       aria-label={isPaused ? 'Despausar plato (reincorporar al catálogo)' : 'Pausar plato (ocultar del catálogo)'}
       onClick={handleToggle}
       disabled={disabled || isLoading}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all shadow-xs cursor-pointer select-none active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+      className={`inline-flex min-h-[56px] w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 rounded-ee-sm border-2 border-ee-border-strong text-sm font-bold tracking-tight transition-transform duration-150 motion-reduce:transition-none cursor-pointer select-none shadow-ee-elevated active:translate-x-0.5 active:translate-y-0.5 motion-reduce:active:translate-x-0 motion-reduce:active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring disabled:opacity-50 disabled:cursor-not-allowed ${
         isPaused
-          ? 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200'
-          : 'bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200'
+          ? 'bg-ee-warning-bg text-ee-warning-fg'
+          : 'bg-ee-success-bg text-ee-success-fg'
       }`}
     >
       {isLoading ? (
-        <Loader2 className="w-4 h-4 animate-spin text-gray-600" />
+        <Loader2 className="w-5 h-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
       ) : isPaused ? (
-        <PauseCircle className="w-4 h-4 text-amber-700" />
+        <PauseCircle className="w-5 h-5 shrink-0" aria-hidden="true" />
       ) : (
-        <PlayCircle className="w-4 h-4 text-emerald-700" />
+        <PlayCircle className="w-5 h-5 shrink-0" aria-hidden="true" />
       )}
       <span>{isPaused ? 'Pausado por cocina' : 'Activo para comensales'}</span>
     </button>

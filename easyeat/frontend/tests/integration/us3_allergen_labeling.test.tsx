@@ -53,21 +53,13 @@ describe('User Story 3 User Journey Integration Test (T051, CHF-2.2.3)', () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it('completes the allergen labeling journey: navigates to Step 3, selects tags, confirms section and persists state', async () => {
     const user = userEvent.setup();
 
-    vi.mocked(dishApi.getDishDetail)
-      .mockResolvedValueOnce(mockDraftDish)
-      .mockResolvedValueOnce({
-        ...mockDraftDish,
-        allergensConfirmed: true,
-        restrictionCodes: ['VEGAN', 'DAIRY'],
-        isCompleteForReview: true,
-        missingConditions: [],
-      });
+    vi.mocked(dishApi.getDishDetail).mockResolvedValueOnce(mockDraftDish);
 
     vi.mocked(dishApi.updateDishAllergens).mockResolvedValueOnce({
       dishId,
@@ -88,11 +80,11 @@ describe('User Story 3 User Journey Integration Test (T051, CHF-2.2.3)', () => {
     expect(await screen.findByText('Ficha Técnica: Risotto de Hongos')).toBeInTheDocument();
 
     // Click Step 3 tab
-    const step3Tab = screen.getByRole('button', { name: /Paso 3: Alérgenos/i });
+    const step3Tab = screen.getByRole('button', { name: /03.*Alérgenos/i });
     await user.click(step3Tab);
 
     // Verify AllergenStep renders
-    expect(await screen.findByText(/Estilos de Vida Dietarios/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Estilos de vida dietarios/i)).toBeInTheDocument();
     expect(screen.getByText(/Alérgenos Comunes/i)).toBeInTheDocument();
 
     // Select VEGAN and DAIRY
@@ -105,9 +97,11 @@ describe('User Story 3 User Journey Integration Test (T051, CHF-2.2.3)', () => {
     const confirmToggle = screen.getByRole('checkbox', { name: /Confirmar sección de alérgenos/i });
     await user.click(confirmToggle);
 
-    // Click save
-    const saveButton = screen.getByRole('button', { name: /Guardar y Confirmar Alérgenos/i });
-    await user.click(saveButton);
+    // Navigate to Step 4 and save draft
+    const nextButton = screen.getByRole('button', { name: /Siguiente/i });
+    await user.click(nextButton);
+    const saveButtons = await screen.findAllByRole('button', { name: /Guardar borrador/i });
+    await user.click(saveButtons[0]);
 
     await waitFor(() => {
       expect(dishApi.updateDishAllergens).toHaveBeenCalledWith(dishId, {
@@ -116,13 +110,13 @@ describe('User Story 3 User Journey Integration Test (T051, CHF-2.2.3)', () => {
       });
     });
 
-    expect(await screen.findByText(/Alérgenos actualizados correctamente/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Borrador guardado correctamente/i)).toBeInTheDocument();
   });
 
   it('renders read-only AllergenStep when dish status is PENDING_PRICE', async () => {
     const user = userEvent.setup();
 
-    vi.mocked(dishApi.getDishDetail).mockResolvedValueOnce({
+    vi.mocked(dishApi.getDishDetail).mockResolvedValue({
       ...mockDraftDish,
       status: 'PENDING_PRICE',
       allergensConfirmed: true,
@@ -139,13 +133,12 @@ describe('User Story 3 User Journey Integration Test (T051, CHF-2.2.3)', () => {
 
     expect(await screen.findByText('Ficha Técnica: Risotto de Hongos')).toBeInTheDocument();
 
-    const step3Tab = screen.getByRole('button', { name: /Paso 3: Alérgenos/i });
+    const step3Tab = screen.getByRole('button', { name: /03.*Alérgenos/i });
     await user.click(step3Tab);
 
     const celiacCheckbox = await screen.findByRole('checkbox', { name: /Celíaco/i });
     expect(celiacCheckbox).toBeDisabled();
 
-    const saveButton = screen.getByRole('button', { name: /Guardar y Confirmar Alérgenos/i });
-    expect(saveButton).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /Guardar borrador/i })).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import type { AdminNotificationResponse } from '@/types/notification';
 
 export interface AdminNotificationBellProps {
@@ -6,7 +7,24 @@ export interface AdminNotificationBellProps {
   unreadCount: number;
   onMarkAsRead: (id: string) => void | Promise<void>;
   onRefresh?: () => void | Promise<void>;
+  error?: string | null;
+  isLoading?: boolean;
   className?: string;
+}
+
+const NOTIFICATIONS_PANEL_ID = 'ee-admin-notifications-panel';
+
+function formatNotificationDate(createdAt: string): string {
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return 'Fecha no disponible';
+  }
+  return date.toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export const AdminNotificationBell: React.FC<AdminNotificationBellProps> = ({
@@ -14,22 +32,50 @@ export const AdminNotificationBell: React.FC<AdminNotificationBellProps> = ({
   unreadCount,
   onMarkAsRead,
   onRefresh,
+  error = null,
+  isLoading = false,
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const close = useCallback((options?: { readonly restoreFocus?: boolean }) => {
+    setIsOpen(false);
+    if (options?.restoreFocus) {
+      triggerRef.current?.focus();
+    }
+  }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        dropdownRef.current &&
+        event.target instanceof Node &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        close();
       }
     };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close({ restoreFocus: true });
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [isOpen, close]);
 
   const handleToggle = () => {
     const nextState = !isOpen;
@@ -39,20 +85,43 @@ export const AdminNotificationBell: React.FC<AdminNotificationBellProps> = ({
     }
   };
 
+  const handleContainerBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    if (
+      isOpen &&
+      dropdownRef.current &&
+      event.relatedTarget instanceof Node &&
+      !dropdownRef.current.contains(event.relatedTarget)
+    ) {
+      close();
+    }
+  };
+
   return (
-    <div className={`relative inline-block text-left ${className}`} ref={dropdownRef}>
+    <div
+      className={`relative inline-block text-left ${className}`}
+      ref={dropdownRef}
+      onBlur={handleContainerBlur}
+    >
       <button
+        ref={triggerRef}
         type="button"
-        aria-label="Notificaciones"
+        aria-label={
+          unreadCount > 0 ? `Notificaciones (${unreadCount} sin leer)` : 'Notificaciones'
+        }
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        aria-controls={NOTIFICATIONS_PANEL_ID}
         onClick={handleToggle}
-        className="relative p-2 text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className="relative inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-ee-sm border border-ee-border-subtle bg-ee-surface-elevated text-ee-text transition-colors duration-150 motion-reduce:transition-none hover:bg-ee-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring"
+        style={{ borderWidth: 'var(--ee-border-width)' }}
       >
         <svg
-          className="w-5 h-5"
+          className="h-5 w-5"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
           xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
         >
           <path
             strokeLinecap="round"
@@ -65,69 +134,114 @@ export const AdminNotificationBell: React.FC<AdminNotificationBellProps> = ({
         {unreadCount > 0 && (
           <span
             data-testid="notification-badge"
-            className="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full"
+            aria-hidden="true"
+            className="absolute right-1 top-1 inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-ee-danger-solid px-1 text-[11px] font-bold leading-none text-ee-on-danger"
           >
-            {unreadCount}
+            {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
         <div
+          id={NOTIFICATIONS_PANEL_ID}
+          role="dialog"
+          aria-label="Panel de notificaciones"
           data-testid="notifications-dropdown"
-          className="origin-top-right absolute right-0 mt-2 w-80 sm:w-96 rounded-xl shadow-lg bg-white dark:bg-zinc-900 ring-1 ring-black ring-opacity-5 border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800 focus:outline-none z-50"
+          className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] origin-top-right divide-y divide-ee-border-subtle rounded-ee-md border border-ee-border-strong shadow-ee-elevated sm:w-96"
+          style={{
+            backgroundColor: 'var(--ee-surface-elevated-glass, var(--ee-surface-elevated))',
+            backdropFilter: 'var(--ee-backdrop-blur)',
+            borderWidth: 'var(--ee-border-width)',
+          }}
         >
-          <div className="p-4 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-              Notificaciones
-            </h3>
-            {unreadCount > 0 && (
-              <span className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 px-2 py-0.5 rounded-full font-medium">
-                {unreadCount} pendientes
-              </span>
-            )}
+          <div className="flex items-center justify-between gap-2 p-4">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-ee-text">Notificaciones</h3>
+              {unreadCount > 0 && (
+                <span className="rounded-ee-sm border border-ee-info-border bg-ee-info-bg px-2 py-0.5 font-ee-mono text-xs font-semibold text-ee-info-fg">
+                  {unreadCount} pendientes
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => close({ restoreFocus: true })}
+              aria-label="Cerrar notificaciones"
+              className="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-ee-sm border border-ee-border-subtle bg-ee-surface-elevated text-ee-text transition-colors hover:bg-ee-surface-subtle"
+              style={{ borderWidth: 'var(--ee-border-width)' }}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
 
-          <div className="max-h-80 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800">
-            {notifications.length === 0 ? (
-              <div className="p-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
-                No hay notificaciones disponibles.
+          <div className="max-h-80 divide-y divide-ee-border-subtle overflow-y-auto">
+            {error && (
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="m-3 rounded-ee-sm border border-ee-danger-border bg-ee-danger-bg p-3 text-xs text-ee-danger-fg"
+              >
+                <p className="font-semibold">{error}</p>
+                {onRefresh && (
+                  <button
+                    type="button"
+                    onClick={() => onRefresh()}
+                    className="mt-2 inline-flex min-h-[36px] items-center rounded-ee-sm border border-ee-danger-border bg-ee-surface-elevated px-3 py-1 text-xs font-semibold text-ee-danger-fg transition-colors hover:bg-ee-danger-solid hover:text-ee-on-danger"
+                  >
+                    Reintentar
+                  </button>
+                )}
               </div>
+            )}
+
+            {isLoading && notifications.length === 0 ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="p-6 text-center text-xs text-ee-text-secondary"
+              >
+                Cargando notificaciones…
+              </div>
+            ) : notifications.length === 0 ? (
+              !error && (
+                <div className="p-6 text-center text-xs text-ee-text-secondary">
+                  No hay notificaciones disponibles.
+                </div>
+              )
             ) : (
               notifications.map((item) => (
                 <div
                   key={item.id}
                   className={`p-4 transition-colors ${
-                    item.isRead
-                      ? 'bg-white dark:bg-zinc-900 opacity-70'
-                      : 'bg-purple-50/40 dark:bg-purple-950/20'
+                    item.isRead ? 'bg-ee-surface-elevated' : 'bg-ee-info-bg'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                    <h4 className="text-xs font-semibold text-ee-text">
+                      {!item.isRead && <span className="sr-only">No leída: </span>}
                       {item.title}
                     </h4>
                     {!item.isRead && (
-                      <span className="w-2 h-2 rounded-full bg-purple-600 flex-shrink-0 mt-1" />
+                      <span
+                        aria-hidden="true"
+                        className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-ee-primary"
+                      />
                     )}
                   </div>
-                  <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1">
-                    {item.message}
-                  </p>
-                  <div className="mt-3 flex items-center justify-between text-[11px]">
-                    <span className="text-zinc-400">
-                      {new Date(item.createdAt).toLocaleDateString('es-AR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                  <p className="mt-1 text-xs text-ee-text-secondary">{item.message}</p>
+                  <div className="mt-3 flex items-center justify-between gap-2 text-xs">
+                    <span
+                      data-testid="notification-timestamp"
+                      className="font-ee-mono text-ee-text-secondary"
+                    >
+                      {formatNotificationDate(item.createdAt)}
                     </span>
                     {!item.isRead && (
                       <button
                         type="button"
                         onClick={() => onMarkAsRead(item.id)}
-                        className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-semibold"
+                        className="min-h-[36px] rounded-ee-sm px-2 py-1 font-semibold text-ee-info-fg underline-offset-2 transition-colors hover:underline"
                       >
                         Marcar como leída
                       </button>
