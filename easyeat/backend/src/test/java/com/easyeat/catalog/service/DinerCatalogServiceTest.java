@@ -14,11 +14,11 @@ import com.easyeat.catalog.exception.EstablishmentNotFoundException;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.dish.domain.DishCategory;
-import com.easyeat.dish.domain.DishRecipeIngredient;
 import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.repository.DishPhotoRepository;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
-import com.easyeat.inventory.entity.Ingredient;
+import com.easyeat.dish.repository.RecipeLineWithIngredientProjection;
+import com.easyeat.inventory.dto.IngredientStatus;
 import com.easyeat.inventory.repository.IngredientRepository;
 import com.easyeat.profile.domain.DietaryCategory;
 import com.easyeat.profile.domain.DietaryRestriction;
@@ -38,7 +38,11 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -97,6 +101,23 @@ class DinerCatalogServiceTest {
 
         mockUser = new User();
         mockUser.setId(UUID.randomUUID());
+    }
+
+    private RecipeLineWithIngredientProjection mockRecipeLine(
+            UUID dishId,
+            UUID ingredientId,
+            BigDecimal quantity,
+            String ingredientName,
+            IngredientStatus status,
+            BigDecimal currentStock) {
+        RecipeLineWithIngredientProjection proj = mock(RecipeLineWithIngredientProjection.class);
+        when(proj.getDishId()).thenReturn(dishId);
+        when(proj.getIngredientId()).thenReturn(ingredientId);
+        when(proj.getQuantity()).thenReturn(quantity);
+        when(proj.getIngredientName()).thenReturn(ingredientName);
+        when(proj.getIngredientStatus()).thenReturn(status);
+        when(proj.getCurrentStock()).thenReturn(currentStock);
+        return proj;
     }
 
     @Nested
@@ -161,7 +182,7 @@ class DinerCatalogServiceTest {
                     .price(BigDecimal.valueOf(2200.00))
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of(mainDish, dessert));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
@@ -193,7 +214,7 @@ class DinerCatalogServiceTest {
                     .status(DishStatus.PUBLISHED)
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of(publishedDish));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
@@ -233,11 +254,11 @@ class DinerCatalogServiceTest {
                     .status(DishStatus.PUBLISHED)
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of(dishWithPhoto, dishWithoutPhoto));
 
-            when(dishPhotoRepository.existsByDishId(dishWithPhoto.getId())).thenReturn(true);
-            when(dishPhotoRepository.existsByDishId(dishWithoutPhoto.getId())).thenReturn(false);
+            when(dishPhotoRepository.findDishIdsWithPhoto(anyCollection()))
+                    .thenReturn(Set.of(dishWithPhoto.getId()));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
                     .thenReturn(List.of(
@@ -247,6 +268,7 @@ class DinerCatalogServiceTest {
 
             DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
 
+            verify(dishPhotoRepository, never()).existsByDishId(any());
             List<DishCatalogItemDto> beverages = response.getCategories().get(0).getDishes();
             DishCatalogItemDto withPhotoDto = beverages.stream()
                     .filter(d -> d.getId().equals(dishWithPhoto.getId())).findFirst().orElseThrow();
@@ -272,22 +294,14 @@ class DinerCatalogServiceTest {
             UUID ingId1 = UUID.randomUUID();
             UUID ingId2 = UUID.randomUUID();
 
-            DishRecipeIngredient line1 = CatalogTestFixtures.createRecipeIngredientLine(dish.getId(), ingId1, BigDecimal.valueOf(0.200));
-            DishRecipeIngredient line2 = CatalogTestFixtures.createRecipeIngredientLine(dish.getId(), ingId2, BigDecimal.valueOf(0.050));
+            RecipeLineWithIngredientProjection line1 = mockRecipeLine(dish.getId(), ingId1, BigDecimal.valueOf(0.200), "Lechuga Capuchina", IngredientStatus.ACTIVE, BigDecimal.TEN);
+            RecipeLineWithIngredientProjection line2 = mockRecipeLine(dish.getId(), ingId2, BigDecimal.valueOf(0.050), "Queso Parmesano", IngredientStatus.ACTIVE, BigDecimal.TEN);
 
-            Ingredient ing1 = new Ingredient();
-            ing1.setName("Lechuga Capuchina");
-            Ingredient ing2 = new Ingredient();
-            ing2.setName("Queso Parmesano");
-
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of(dish));
 
-            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
                     .thenReturn(List.of(line1, line2));
-
-            when(ingredientRepository.findByIdAndTenantId(ingId1, tenantId)).thenReturn(Optional.of(ing1));
-            when(ingredientRepository.findByIdAndTenantId(ingId2, tenantId)).thenReturn(Optional.of(ing2));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
                     .thenReturn(List.of(
@@ -296,6 +310,8 @@ class DinerCatalogServiceTest {
 
             DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
 
+            verify(dishRecipeIngredientRepository, never()).findByIdDishId(any());
+            verify(ingredientRepository, never()).findByIdAndTenantId(any(), any());
             DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
             assertThat(item.getRecipeIngredients()).containsExactlyInAnyOrder("Lechuga Capuchina", "Queso Parmesano");
         }
@@ -312,9 +328,9 @@ class DinerCatalogServiceTest {
                     .status(DishStatus.PUBLISHED)
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of(dish));
-            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
                     .thenReturn(List.of());
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
@@ -343,15 +359,10 @@ class DinerCatalogServiceTest {
             UUID ingIdInitial = UUID.randomUUID();
             UUID ingIdUpdated = UUID.randomUUID();
 
-            DishRecipeIngredient lineInitial = CatalogTestFixtures.createRecipeIngredientLine(dish.getId(), ingIdInitial, BigDecimal.valueOf(0.100));
-            DishRecipeIngredient lineUpdated = CatalogTestFixtures.createRecipeIngredientLine(dish.getId(), ingIdUpdated, BigDecimal.valueOf(0.150));
+            RecipeLineWithIngredientProjection lineInitial = mockRecipeLine(dish.getId(), ingIdInitial, BigDecimal.valueOf(0.100), "Ingrediente Original", IngredientStatus.ACTIVE, BigDecimal.TEN);
+            RecipeLineWithIngredientProjection lineUpdated = mockRecipeLine(dish.getId(), ingIdUpdated, BigDecimal.valueOf(0.150), "Ingrediente Reemplazo", IngredientStatus.ACTIVE, BigDecimal.TEN);
 
-            Ingredient ingInitial = new Ingredient();
-            ingInitial.setName("Ingrediente Original");
-            Ingredient ingUpdated = new Ingredient();
-            ingUpdated.setName("Ingrediente Reemplazo");
-
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of(dish));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
@@ -360,20 +371,16 @@ class DinerCatalogServiceTest {
                     ));
 
             // First call: Original recipe
-            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
                     .thenReturn(List.of(lineInitial));
-            when(ingredientRepository.findByIdAndTenantId(ingIdInitial, tenantId))
-                    .thenReturn(Optional.of(ingInitial));
 
             DinerCatalogResponse response1 = dinerCatalogService.getCatalog(tenantId, mockUser);
             assertThat(response1.getCategories().get(0).getDishes().get(0).getRecipeIngredients())
                     .containsExactly("Ingrediente Original");
 
             // Second call: Kitchen replaced recipe with updated ingredient
-            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId()))
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
                     .thenReturn(List.of(lineUpdated));
-            when(ingredientRepository.findByIdAndTenantId(ingIdUpdated, tenantId))
-                    .thenReturn(Optional.of(ingUpdated));
 
             DinerCatalogResponse response2 = dinerCatalogService.getCatalog(tenantId, mockUser);
             assertThat(response2.getCategories().get(0).getDishes().get(0).getRecipeIngredients())
@@ -393,7 +400,7 @@ class DinerCatalogServiceTest {
                     .build();
             dish.setRestrictionCodes(Set.of("DAIRY", "WHEAT", "VEGAN"));
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of(dish));
 
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
@@ -404,8 +411,47 @@ class DinerCatalogServiceTest {
             DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
 
             DishCatalogItemDto item = response.getCategories().get(0).getDishes().get(0);
-            assertThat(item.getAllergens()).containsExactlyInAnyOrder("Lácteos / Lactosa", "Trigo / Gluten");
+            assertThat(item.getAllergens()).containsExactly("Lácteos / Lactosa", "Trigo / Gluten");
             assertThat(item.getLifestyles()).containsExactly("Vegano");
+        }
+
+        @Test
+        @DisplayName("Should guard against empty dish collection without calling batch IN queries")
+        void shouldGuardAgainstEmptyDishCollection() {
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(activeEstablishment));
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId)).thenReturn(Collections.emptyList());
+
+            DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
+
+            assertThat(response.getCategories()).isEmpty();
+            verify(dishPhotoRepository, never()).findDishIdsWithPhoto(anyCollection());
+            verify(dishRecipeIngredientRepository, never()).findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), any());
+            verify(dishPhotoRepository, never()).existsByDishId(any());
+            verify(dishRecipeIngredientRepository, never()).findByIdDishId(any());
+            verify(ingredientRepository, never()).findByIdAndTenantId(any(), any());
+        }
+
+        @Test
+        @DisplayName("Should preserve canonical category order and alphabetical allergens/lifestyles deterministically")
+        void shouldPreserveCanonicalOrderDeterministically() {
+            when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(activeEstablishment));
+
+            Dish salad = CatalogTestFixtures.catalogDishBuilder()
+                    .tenantId(tenantId).name("Ensalada").category(DishCategory.ENSALADAS).status(DishStatus.PUBLISHED).build();
+            Dish starter = CatalogTestFixtures.catalogDishBuilder()
+                    .tenantId(tenantId).name("Bruschetta").category(DishCategory.ENTRADAS).status(DishStatus.PUBLISHED).build();
+            starter.setRestrictionCodes(Set.of("WHEAT", "DAIRY", "VEGAN", "VEGETARIAN"));
+
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId)).thenReturn(List.of(salad, starter));
+            when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser))).thenReturn(List.of());
+
+            DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
+
+            assertThat(response.getCategories()).extracting(CategoryGroupDto::getCategory)
+                    .containsExactly("Entradas", "Ensaladas");
+            DishCatalogItemDto starterDto = response.getCategories().get(0).getDishes().get(0);
+            assertThat(starterDto.getAllergens()).containsExactly("Lácteos / Lactosa", "Trigo / Gluten");
+            assertThat(starterDto.getLifestyles()).containsExactly("Vegano", "Vegetariano");
         }
 
         @Test
@@ -421,7 +467,7 @@ class DinerCatalogServiceTest {
                     .build();
             dish.setRestrictionCodes(Set.of("CELIAC", "VEGETARIAN", "PEANUTS"));
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of(dish));
 
             when(dietaryRestrictionRepository.findAll()).thenReturn(List.of(
@@ -450,7 +496,7 @@ class DinerCatalogServiceTest {
             Establishment alwaysOpen = new Establishment(tenantId, "Siempre Abierto", EstablishmentStatus.ACTIVE,
                     LocalTime.of(0, 0), LocalTime.of(23, 59, 59), "America/Argentina/Buenos_Aires");
             when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(alwaysOpen));
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of());
 
             DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
@@ -466,7 +512,7 @@ class DinerCatalogServiceTest {
             Establishment closedNow = new Establishment(tenantId, "Cerrado Casi Siempre", EstablishmentStatus.ACTIVE,
                     LocalTime.of(4, 0), LocalTime.of(4, 1), "America/Argentina/Buenos_Aires");
             when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(closedNow));
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of());
 
             DinerCatalogResponse response = dinerCatalogService.getCatalog(tenantId, mockUser);
@@ -482,7 +528,7 @@ class DinerCatalogServiceTest {
             Establishment closedStatic = new Establishment(tenantId, "Local", EstablishmentStatus.ACTIVE,
                     LocalTime.of(4, 0), LocalTime.of(4, 1), "America/Argentina/Buenos_Aires");
             when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(closedStatic));
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of());
 
             com.easyeat.operations.repository.OperatingScheduleRepository scheduleRepo = org.mockito.Mockito.mock(com.easyeat.operations.repository.OperatingScheduleRepository.class);
@@ -527,19 +573,13 @@ class DinerCatalogServiceTest {
                     .status(DishStatus.PUBLISHED)
                     .build();
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublicCatalogDishesWithRestrictions(tenantId))
                     .thenReturn(List.of(dish));
 
             UUID ingId = UUID.randomUUID();
-            DishRecipeIngredient recipeLine = CatalogTestFixtures.createRecipeIngredientLine(dish.getId(), ingId, BigDecimal.valueOf(1.000));
-            when(dishRecipeIngredientRepository.findByIdDishId(dish.getId())).thenReturn(List.of(recipeLine));
-
-            Ingredient ingredient = new Ingredient();
-            ingredient.setName("Queso Azul");
-            ingredient.setCriticalStockThreshold(2);
-            ingredient.setCurrentStock(new BigDecimal("5.0000"));
-
-            when(ingredientRepository.findByIdAndTenantId(ingId, tenantId)).thenReturn(Optional.of(ingredient));
+            RecipeLineWithIngredientProjection recipeLine = mockRecipeLine(dish.getId(), ingId, BigDecimal.valueOf(1.000), "Queso Azul", IngredientStatus.ACTIVE, new BigDecimal("5.0000"));
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
+                    .thenReturn(List.of(recipeLine));
             when(catalogComplianceService.getEnrichedCatalog(eq(tenantId), eq(mockUser)))
                     .thenReturn(List.of(
                             new EnrichedDishResponse(dish.getId(), tenantId, dish.getName(), null, dish.getPrice(), true, true, List.of())
@@ -548,9 +588,6 @@ class DinerCatalogServiceTest {
             DinerCatalogResponse responseBefore = dinerCatalogService.getCatalog(tenantId, mockUser);
             assertThat(responseBefore.getCategories().get(0).getDishes()).hasSize(1);
             assertThat(responseBefore.getCategories().get(0).getDishes().get(0).getIsAvailable()).isTrue();
-
-            // Admin changes threshold to 20 (stock 5 < 20 -> now critical)
-            ingredient.setCriticalStockThreshold(20);
 
             DinerCatalogResponse responseAfter = dinerCatalogService.getCatalog(tenantId, mockUser);
             assertThat(responseAfter.getCategories().get(0).getDishes()).hasSize(1);
