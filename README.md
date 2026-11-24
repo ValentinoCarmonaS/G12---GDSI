@@ -74,7 +74,6 @@ El entorno de desarrollo (`dev`) inicializa automáticamente los siguientes usua
 
 | Rol | Correo electrónico | Contraseña | Descripción |
 | --- | --- | --- | --- |
-| ADMINISTRADOR | `admin@easyeat.com` | `SecurePass123` | Administrador general de la plataforma |
 | ADMINISTRADOR | `laura.admin@cafeparque.com` | `Password123` | Administrador de local (Café Parque) |
 | ENCARGADO | `maria.encargada@cafeparque.com` | `Password123` | Encargado de salón y mostrador (Café Parque) |
 | CHEF | `carlos.chef@cafeparque.com` | `Password123` | Personal de cocina (Café Parque) |
