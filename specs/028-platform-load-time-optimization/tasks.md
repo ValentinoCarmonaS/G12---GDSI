@@ -27,7 +27,7 @@ description: "Lista de tareas atómicas ordenadas por dependencia con enfoque TD
 **Purpose**: Verificar la línea base limpia sin dependencias nuevas y disponer el arnés de conteo de consultas SQL basado en `SessionFactory.getStatistics()` de Hibernate (decisión Tasks Q2).
 
 - [X] T001 Verificar línea base de compilación, versión Flyway más alta en `easyeat/backend/src/main/resources/db/migration/` y ausencia de nuevas dependencias en `easyeat/backend/pom.xml` y `easyeat/frontend/package.json` (`FR-010`, `D-05`)
-- [ ] T002 [P] Crear helper de aserción de cardinalidad SQL basado en `SessionFactory.getStatistics()` (`clear()` y lectura de `getPrepareStatementCount()`) en `easyeat/backend/src/test/java/com/easyeat/common/SqlQueryCountAssertionHelper.java` (`SC-001`, `SC-002`, Tasks Q2)
+- [X] T002 [P] Crear helper de aserción de cardinalidad SQL basado en `SessionFactory.getStatistics()` (`clear()` y lectura de `getPrepareStatementCount()`) en `easyeat/backend/src/test/java/com/easyeat/common/SqlQueryCountAssertionHelper.java` (`SC-001`, `SC-002`, Tasks Q2)
 
 ---
 
