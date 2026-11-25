@@ -12,6 +12,7 @@ import com.easyeat.operations.domain.EstablishmentSlotCapacity;
 import com.easyeat.operations.domain.TimeSlot;
 import com.easyeat.operations.repository.OperatingScheduleRepository;
 import com.easyeat.operations.repository.SlotCapacityRepository;
+import com.easyeat.operations.cache.OperatingScheduleCache;
 import com.easyeat.operations.service.DinerTimeSlotService;
 import com.easyeat.operations.service.EstablishmentTimeProvider;
 import com.easyeat.operations.service.OperatingScheduleService;
@@ -74,6 +75,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         GlobalExceptionHandler.class,
         JwtAuthenticationFilter.class,
         TenantContextFilter.class,
+        OperatingScheduleCache.class,
         OperatingScheduleService.class,
         SlotCapacityService.class,
         PaymentMethodService.class,
@@ -106,9 +108,13 @@ class AdminOperationsControllerTest {
     @MockBean
     private EstablishmentRepository establishmentRepository;
 
+    @Autowired
+    private OperatingScheduleCache operatingScheduleCache;
+
     /** The write paths now check the establishment exists; these tests are about the web layer on top of that. */
     @BeforeEach
     void establishmentExists() {
+        operatingScheduleCache.evict(TENANT);
         when(establishmentRepository.existsById(TENANT)).thenReturn(true);
     }
 
@@ -265,8 +271,10 @@ class AdminOperationsControllerTest {
         void clockAndSchedule() {
             ZonedDateTime now = ZonedDateTime.of(2026, 11, 10, 15, 30, 0, 0, ZoneId.of("America/Argentina/Buenos_Aires"));
             when(timeProvider.nowAt(TENANT)).thenReturn(now);
-            when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.TUESDAY)).thenReturn(Optional.of(
-                    new EstablishmentOperatingSchedule(TENANT, DayOfWeek.TUESDAY, LocalTime.of(11, 0), LocalTime.of(16, 0), false)));
+            EstablishmentOperatingSchedule tuesday = new EstablishmentOperatingSchedule(
+                    TENANT, DayOfWeek.TUESDAY, LocalTime.of(11, 0), LocalTime.of(16, 0), false);
+            when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.TUESDAY)).thenReturn(Optional.of(tuesday));
+            when(scheduleRepository.findByEstablishmentId(TENANT)).thenReturn(List.of(tuesday));
             // US2: a slot is offered as AVAILABLE only if it has capacity (EC-007)
             LocalDate today = LocalDate.of(2026, 11, 10);
             when(capacityRepository.findByEstablishmentIdAndSlotDateBetweenOrderBySlotDateAscStartTimeAsc(TENANT, today, today))
@@ -454,8 +462,10 @@ class AdminOperationsControllerTest {
         @Test
         @DisplayName("GET returns the day matrix: unconfigured slots are capacity 0, sold out, without id or version")
         void shouldReturnDayMatrix() throws Exception {
-            when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.WEDNESDAY)).thenReturn(Optional.of(
-                    new EstablishmentOperatingSchedule(TENANT, DayOfWeek.WEDNESDAY, LocalTime.of(12, 0), LocalTime.of(13, 0), false)));
+            EstablishmentOperatingSchedule wednesday = new EstablishmentOperatingSchedule(
+                    TENANT, DayOfWeek.WEDNESDAY, LocalTime.of(12, 0), LocalTime.of(13, 0), false);
+            when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.WEDNESDAY)).thenReturn(Optional.of(wednesday));
+            when(scheduleRepository.findByEstablishmentId(TENANT)).thenReturn(List.of(wednesday));
             when(capacityRepository.findByEstablishmentIdAndSlotDateBetweenOrderBySlotDateAscStartTimeAsc(TENANT, WEDNESDAY, WEDNESDAY))
                     .thenReturn(List.of(stored(LocalTime.of(12, 15), 20, 20, 2)));
 
@@ -486,8 +496,10 @@ class AdminOperationsControllerTest {
             LocalDate today = LocalDate.of(2026, 11, 10);
             ZonedDateTime now = ZonedDateTime.of(2026, 11, 10, 15, 0, 0, 0, ZoneId.of("America/Argentina/Buenos_Aires"));
             when(timeProvider.nowAt(TENANT)).thenReturn(now);
-            when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.TUESDAY)).thenReturn(Optional.of(
-                    new EstablishmentOperatingSchedule(TENANT, DayOfWeek.TUESDAY, LocalTime.of(11, 0), LocalTime.of(16, 0), false)));
+            EstablishmentOperatingSchedule tuesday = new EstablishmentOperatingSchedule(
+                    TENANT, DayOfWeek.TUESDAY, LocalTime.of(11, 0), LocalTime.of(16, 0), false);
+            when(scheduleRepository.findByEstablishmentIdAndDayOfWeek(TENANT, DayOfWeek.TUESDAY)).thenReturn(Optional.of(tuesday));
+            when(scheduleRepository.findByEstablishmentId(TENANT)).thenReturn(List.of(tuesday));
             when(capacityRepository.findByEstablishmentIdAndSlotDateBetweenOrderBySlotDateAscStartTimeAsc(TENANT, today, today))
                     .thenReturn(List.of(
                             new EstablishmentSlotCapacity(TENANT, new TimeSlot(today, LocalTime.of(15, 0)), 10, 10),
