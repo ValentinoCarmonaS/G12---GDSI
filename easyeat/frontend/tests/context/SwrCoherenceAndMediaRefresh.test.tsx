@@ -40,7 +40,15 @@ describe('SWR Coherence, Deduplication & Media Refresh (T057, FR-006, FR-007, FR
 
   it('EstablishmentSearchBar shows cached list immediately on second mount inside ClientCacheProvider', async () => {
     const sampleEstablishments = [
-      { id: TENANT_ID, name: 'La Parrilla SWR', status: 'ACTIVE' as const, isOpen: true },
+      {
+        id: TENANT_ID,
+        name: 'La Parrilla SWR',
+        status: 'ACTIVE' as const,
+        isOpen: true,
+        openingTime: '09:00',
+        closingTime: '23:00',
+        timezone: 'America/Argentina/Buenos_Aires',
+      },
     ];
     const getAllSpy = vi
       .spyOn(dinerCatalogApi, 'getAllEstablishments')

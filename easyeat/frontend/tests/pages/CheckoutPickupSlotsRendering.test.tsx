@@ -89,9 +89,7 @@ describe('CheckoutPickupSlotsRendering (T037, FR-003, FR-007, FR-010)', () => {
     vi.mocked(orderApi.fetchPickupSlots).mockResolvedValue({
       establishmentId: TENANT_ID,
       date: todayStr,
-      serverTime: `${todayStr}T11:00:00-03:00`,
       timezone: 'America/Argentina/Buenos_Aires',
-      isEstablishmentOpen: true,
       isOperatingDay: true,
       leadTimeMinutes: 30,
       slots: [

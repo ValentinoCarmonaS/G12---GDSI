@@ -295,7 +295,7 @@ export const AdminBrandingPage: React.FC = () => {
                       alt="Logo local"
                       onError={() => setPreviewImageError(true)}
                       className={`h-11 w-11 sm:h-12 sm:w-12 aspect-square shrink-0 rounded-lg ${
-                        logoUrl.startsWith('/assets/brand/')
+                        logoUrl?.startsWith('/assets/brand/')
                           ? 'object-cover bg-[#0b0b0d]'
                           : 'object-contain bg-white/10 p-1'
                       }`}
