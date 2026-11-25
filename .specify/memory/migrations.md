@@ -45,6 +45,10 @@ Repeatable migrations carry no version and are re-applied whenever their content
 
 **Spec 023 (`023-staff-access-bi-dish-ranking`) claims `V29__add_paid_at_to_orders.sql`** (authored 2026-11-20 on `feat/023/phase-1-setup`, branched from `023-staff-access-bi-dish-ranking`, whose highest version is `V28`; rule 2). Adds nullable `orders.paid_at TIMESTAMPTZ`, backfills from `payments.approved_at`, and creates partial composite index `idx_orders_analytics`. Its test, `OrderPaidAtMigrationTest`, locates the script by description (rule 5).
 
+**Spec 028 (`028-platform-load-time-optimization`) claims `V30__add_performance_composite_indexes.sql`** (authored 2026-11-24 on `feat/028/phase-2-foundational`, branched from `028-platform-load-time-optimization`, whose highest version is `V29`; rule 2). Creates `idx_dishes_public_catalog`, `idx_order_items_dish_order`, and `idx_temp_reservations_active_expires_order`. Its test, `PerformanceCompositeIndexesMigrationTest`, locates the script by description (rule 5).
+
+**Spec 028 (`028-platform-load-time-optimization`) claims `V31__backfill_missing_orders_paid_at.sql`** (authored 2026-11-25 on `feat/028/phase-8-user-story-5`, branched from `028-platform-load-time-optimization`, whose highest version is `V30`; rule 2). Backfills `orders.paid_at` on historically accredited orders (`PAID`, `IN_PROGRESS`, `READY_FOR_PICKUP`, `COMPLETED`) where `paid_at IS NULL` using `COALESCE(payments.approved_at, completed_at, ready_at, updated_at, created_at)`. Its test, `OrderLifecycleToAdminAnalyticsIntegrationTest`, locates the script by description (rule 5).
+
 > **Registry gap (not fixed here)**: `V17`–`V27` are present on `develop/sprint-5` (specs 013–021) but have no row in this file, and `FlywayMigrationV26Test`/`FlywayMigrationV27Test` (specs 020/021) carry a version in their class name against rule 5. Recorded so the next registry update backfills those rows; it is outside the scope of spec 022.
 
 ## Operational note

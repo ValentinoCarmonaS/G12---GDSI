@@ -1,5 +1,6 @@
 package com.easyeat.catalog.domain;
 
+import com.easyeat.catalog.cache.BrandingCache;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
@@ -9,6 +10,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "restaurant_brandings")
+@EntityListeners(BrandingCache.BrandingEntityListener.class)
 public class RestaurantBranding {
 
     public static final String DEFAULT_PRIMARY_COLOR = "#10B981";

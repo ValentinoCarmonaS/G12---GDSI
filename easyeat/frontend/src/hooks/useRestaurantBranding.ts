@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getDinerBranding, RestaurantBranding } from '../api/brandingApi';
+import { useClientCache } from '../context/ClientCacheContext';
 
 export const DEFAULT_NEUTRAL_BRANDING: RestaurantBranding = {
   establishmentId: '',
@@ -19,10 +20,15 @@ export const DEFAULT_NEUTRAL_BRANDING: RestaurantBranding = {
 /**
  * Hook to retrieve restaurant branding triad and visual identity,
  * applying neutral platform fallback if absent or upon network error (INV-010, CB-011).
+ * Integrated with ClientSWRStore for in-flight deduplication and instant SWR across views (FR-007, FR-008).
  */
 export function useRestaurantBranding(establishmentId?: string) {
-  const [branding, setBranding] = useState<RestaurantBranding>(DEFAULT_NEUTRAL_BRANDING);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const cache = useClientCache();
+  const cacheKey = establishmentId ? `branding:diner:${establishmentId}` : '';
+
+  const cachedEntry = cacheKey ? cache.get<RestaurantBranding>(cacheKey)?.data : undefined;
+  const [branding, setBranding] = useState<RestaurantBranding>(cachedEntry ?? DEFAULT_NEUTRAL_BRANDING);
+  const [isLoading, setIsLoading] = useState<boolean>(Boolean(establishmentId) && !cachedEntry);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -32,10 +38,26 @@ export function useRestaurantBranding(establishmentId?: string) {
       return;
     }
 
-    let isMounted = true;
-    setIsLoading(true);
+    const key = `branding:diner:${establishmentId}`;
+    const existing = cache.get<RestaurantBranding>(key)?.data;
+    if (existing) {
+      setBranding(existing);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
 
-    getDinerBranding(establishmentId)
+    let isMounted = true;
+    const unsubscribe = cache.subscribe(key, () => {
+      if (!isMounted) return;
+      const entry = cache.get<RestaurantBranding>(key);
+      if (entry?.data) {
+        setBranding(entry.data);
+      }
+    });
+
+    cache
+      .fetchDeduped(key, () => getDinerBranding(establishmentId))
       .then((data) => {
         if (isMounted) {
           setBranding(data);
@@ -44,7 +66,9 @@ export function useRestaurantBranding(establishmentId?: string) {
       })
       .catch((err) => {
         if (isMounted) {
-          setBranding(DEFAULT_NEUTRAL_BRANDING);
+          if (!cache.get<RestaurantBranding>(key)?.data) {
+            setBranding(DEFAULT_NEUTRAL_BRANDING);
+          }
           setError(err instanceof Error ? err : new Error(String(err)));
         }
       })
@@ -56,8 +80,9 @@ export function useRestaurantBranding(establishmentId?: string) {
 
     return () => {
       isMounted = false;
+      unsubscribe();
     };
-  }, [establishmentId]);
+  }, [establishmentId, cache]);
 
   return { branding, isLoading, error };
 }

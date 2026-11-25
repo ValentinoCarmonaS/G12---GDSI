@@ -5,7 +5,12 @@ import { EnrichedDish } from '../types/catalog';
 
 export const DEFAULT_DEV_TENANT_ID = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
-export function useCatalog(overrideTenantId?: string) {
+export interface UseCatalogOptions {
+  enabled?: boolean;
+}
+
+export function useCatalog(overrideTenantId?: string, options: UseCatalogOptions = {}) {
+  const { enabled = true } = options;
   const { tenantId: routeTenantId } = useParams<{ tenantId?: string }>();
   const [searchParams] = useSearchParams();
   const queryTenantId = searchParams.get('tenantId');
@@ -18,10 +23,14 @@ export function useCatalog(overrideTenantId?: string) {
     DEFAULT_DEV_TENANT_ID;
 
   const [dishes, setDishes] = useState<EnrichedDish[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(enabled);
   const [error, setError] = useState<string | null>(null);
 
   const fetchCatalog = useCallback(async () => {
+    if (!enabled) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -33,11 +42,15 @@ export function useCatalog(overrideTenantId?: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [resolvedTenantId]);
+  }, [resolvedTenantId, enabled]);
 
   useEffect(() => {
-    fetchCatalog();
-  }, [fetchCatalog]);
+    if (enabled) {
+      fetchCatalog();
+    } else {
+      setIsLoading(false);
+    }
+  }, [enabled, fetchCatalog]);
 
   return {
     dishes,

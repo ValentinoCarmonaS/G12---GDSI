@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { User as UserIcon, Camera, Trash2 } from 'lucide-react';
 import { PhotoDeleteConfirmModal } from './PhotoDeleteConfirmModal';
 import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
@@ -58,7 +58,18 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
   const [stagedPhotoFile, setStagedPhotoFile] = useState<File | null>(null);
   const [isPhotoRemovalPending, setIsPhotoRemovalPending] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [avatarVersion, setAvatarVersion] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleAvatarChanged = () => setAvatarVersion((v) => v + 1);
+    window.addEventListener('easyeat:avatar-changed', handleAvatarChanged);
+    return () => window.removeEventListener('easyeat:avatar-changed', handleAvatarChanged);
+  }, []);
+
+  const authenticatedAvatarSrc = useMemo(() => {
+    return avatarPreview && !avatarLoadError ? getAuthenticatedAvatarUrl(avatarPreview) : null;
+  }, [avatarPreview, avatarLoadError, avatarVersion]);
 
   // Email state
   const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -253,9 +264,9 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
       <div className="mb-6 flex flex-col items-center gap-6 border-b border-ee-border-subtle pb-6 sm:flex-row">
         <div className="relative">
           <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-ee-border-subtle bg-ee-surface-subtle text-ee-text-muted">
-            {avatarPreview && !avatarLoadError ? (
+            {authenticatedAvatarSrc ? (
               <img
-                src={getAuthenticatedAvatarUrl(avatarPreview)}
+                src={authenticatedAvatarSrc}
                 alt="Avatar comensal"
                 onError={() => setAvatarLoadError(true)}
                 className="h-full w-full object-cover"

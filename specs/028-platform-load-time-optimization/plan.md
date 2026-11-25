@@ -120,9 +120,10 @@ Artefactos de diseño generados:
 | **FR-007** (Dedupe en vuelo, fin duplicados y diferimiento `t=0`) | US1 | D-08 | §4 `ClientSWRStore` | `01-catalogo-y-disponibilidad.md`, `05-estado-cliente-swr-y-deduplicacion.md` | §3.2, §4 US1 |
 | **FR-008** (SWR < 100 ms, esqueletos/errores y purga en cliente) | US1, US4 | D-08, D-09 | §4 `ClientSWRStore` | `05-estado-cliente-swr-y-deduplicacion.md §2` | §3.2, §4 US1, §4 US4 |
 | **FR-009** (`loading="lazy"`, GZIP ≥ 1024 B, pool `5`, índices) | US1, US4 | D-10 | §6 Migración Flyway índices | `04-medios-binarios-y-transporte.md §4` | §3.1, §3.2, §4 US4 |
-| **FR-010** (Invariante de contratos, roles y gobernanza de tests) | US1–US4 | D-02, D-04, D-07, D-08, D-10, D-11 | Todas las secciones | Notas FR-010 en `01`–`05` | §3.1, §3.2, §4 |
+| **FR-010** (Invariante de contratos, roles y gobernanza de tests) | US1–US5 | D-02, D-04, D-07, D-08, D-10, D-11, D-12 | Todas las secciones | Notas FR-010 en `01`–`05` | §3.1, §3.2, §4 |
+| **FR-011** (`paidAt` determinista, backfill `V31`, coherencia en vivo Admin/KDS/Comensal) | US5 | D-12 | §4, §5.2, §7 | `03-operacion-mostrador-kds-chef.md §2`, `05-estado-cliente-swr-y-deduplicacion.md §1E–§1F` | §3.1, §3.2, §4 US5 |
 
-### 2. Mapa de criterios de éxito (SC-001 a SC-006 → metas de diseño)
+### 2. Mapa de criterios de éxito (SC-001 a SC-007 → metas de diseño)
 
 | Criterio | Meta medible | Garantía estructural del diseño |
 |---|---|---|
@@ -132,6 +133,7 @@ Artefactos de diseño generados:
 | **SC-004** | En montaje de `/catalogo`: 1 `/profile/me`, 1 `/branding`, 1 `/catalog`, 0 `/dishes`, 0 sondeo en `t = 0 ms` | Deduplicación `ClientSWRStore`, `WorkspaceLayout` limitado a `COMENSAL`, `useProfile({ enabled: isAuthenticated, loadTaxonomy: false })`, `useCatalog` con `enabled: !tenant?.id` y `useRealtimeAvailability` con `initialAvailability` + `deferInitialPoll: true` |
 | **SC-005** | 100 % coherencia inmediata en stock, pausas, turnos, sesiones, branding y horarios | Cero caché de stock/reservas/turnos en servidor; invalidación sincrónica + `@EntityListeners` en `User`, `RestaurantBranding` y `EstablishmentOperatingSchedule`; purga sincrónica cliente en mutaciones, logout y `401` |
 | **SC-006** | Contenedor ≤ 512 MB RAM y 100 % suites backend/frontend en verde | Presupuesto total Caffeine `< 2,5 MB` + 5 conexiones JDBC `< 5 MB` + cero lectura `BYTEA` en `304` + aislamiento de `ClientCacheProvider` en Vitest + preservación de firmas y contratos |
+| **SC-007** | 100 % ventas acreditadas con `paid_at` no nulo visibles al instante en Admin; KDS y Comensal sincronizados con BD | Asignación atómica de `paidAt` en `CheckoutConfirmationServiceImpl` y `OrderConfirmationTrackingService` + migración `V31` de backfill + `Clock` `America/Argentina/Buenos_Aires` en `KitchenKdsController` + sincronización de 4 KPIs KDS en cada acción/ciclo + revalidación silenciosa en `FinancialHealthPanel`, `DishRankingTable` y `MyOrdersSection` |
 
 ### 3. Mapa de Edge Cases → decisión de diseño
 

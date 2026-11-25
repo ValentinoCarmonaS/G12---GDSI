@@ -1,10 +1,11 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { UtensilsCrossed, CheckCircle2, AlertTriangle, ShoppingBag } from 'lucide-react';
 import type { DishCatalogItem } from '@/types/dinerCatalog';
 import type { EnrichedDish } from '@/types/catalog';
 import { AllergenWarningBadge } from './AllergenWarningBadge';
 import { AllergenNeutralPill } from './AllergenNeutralPill';
 import { CartContext } from '@/context/CartContext';
+import { ClientCacheContext } from '@/context/ClientCacheContext';
 import { formatCurrency } from '@/utils/currencyUtils';
 import { resolveApiMediaUrl } from '@/utils/mediaUtils';
 
@@ -24,7 +25,16 @@ export const DishCard: React.FC<DishCardProps> = ({
   isReadOnly = false,
 }) => {
   const [imageError, setImageError] = useState(false);
+  const [, setMediaVersionTick] = useState(0);
   const cartContext = useContext(CartContext);
+  const cacheContext = useContext(ClientCacheContext);
+
+  useEffect(() => {
+    if (!cacheContext) return;
+    return cacheContext.subscribe(`dish:${dish.id}`, () => {
+      setMediaVersionTick((v) => v + 1);
+    });
+  }, [cacheContext, dish.id]);
 
   const existingCartItem = cartContext?.items.find(
     (item) => item.dishId === dish.id || (item as any).dish?.id === dish.id
@@ -34,7 +44,12 @@ export const DishCard: React.FC<DishCardProps> = ({
   const isMaxStockReached =
     availableStock !== undefined && quantityInCart >= availableStock;
 
-  const photoUrl = 'photoUrl' in dish ? dish.photoUrl : null;
+  const mediaVersion = cacheContext?.getMediaVersion(`dish:${dish.id}`);
+  const rawPhotoUrl = 'photoUrl' in dish ? dish.photoUrl : null;
+  const photoUrl =
+    rawPhotoUrl && mediaVersion !== undefined
+      ? `${rawPhotoUrl}${rawPhotoUrl.includes('?') ? '&' : '?'}v=${mediaVersion}`
+      : rawPhotoUrl;
   const isPaused = Boolean((dish as any).pausedByChef);
   if (isPaused) {
     return null;
@@ -80,6 +95,8 @@ export const DishCard: React.FC<DishCardProps> = ({
           <img
             src={resolveApiMediaUrl(photoUrl)}
             alt={dish.name}
+            loading="lazy"
+            decoding="async"
             onError={() => setImageError(true)}
             className="w-full h-full object-cover"
           />

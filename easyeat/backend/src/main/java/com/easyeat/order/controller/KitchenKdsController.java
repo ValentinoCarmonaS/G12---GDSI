@@ -15,6 +15,7 @@ import com.easyeat.order.dto.KdsStartPreparationResponse;
 import com.easyeat.order.repository.KdsTicketRepository;
 import com.easyeat.order.repository.OrderRepository;
 import com.easyeat.order.service.KdsQueueService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -23,25 +24,41 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 
 @RestController
 @RequestMapping("/api/v1/kitchen")
 public class KitchenKdsController {
 
+    private static final ZoneId BUENOS_AIRES_ZONE = ZoneId.of("America/Argentina/Buenos_Aires");
+
     private final KdsTicketRepository kdsTicketRepository;
     private final OrderRepository orderRepository;
     private final KdsQueueService kdsQueueService;
+    private final Clock clock;
 
     public KitchenKdsController(
             KdsTicketRepository kdsTicketRepository,
             OrderRepository orderRepository,
             KdsQueueService kdsQueueService
     ) {
+        this(kdsTicketRepository, orderRepository, kdsQueueService, Clock.system(BUENOS_AIRES_ZONE));
+    }
+
+    @Autowired
+    public KitchenKdsController(
+            KdsTicketRepository kdsTicketRepository,
+            OrderRepository orderRepository,
+            KdsQueueService kdsQueueService,
+            @Autowired(required = false) Clock clock
+    ) {
         this.kdsTicketRepository = kdsTicketRepository;
         this.orderRepository = orderRepository;
         this.kdsQueueService = kdsQueueService;
+        this.clock = clock != null ? clock : Clock.system(BUENOS_AIRES_ZONE);
     }
 
     @GetMapping("/orders")
@@ -57,7 +74,7 @@ public class KitchenKdsController {
         UUID effectiveEstablishmentId = resolveEstablishmentId(user, authentication, establishmentId);
 
         if (activeQueue) {
-            LocalDate today = LocalDate.now();
+            LocalDate today = LocalDate.now(clock.withZone(BUENOS_AIRES_ZONE));
             List<KdsTicket> activeTickets = kdsTicketRepository.findActiveQueueTickets(effectiveEstablishmentId, today);
             
             // Batch loading de órdenes para evitar N+1
@@ -122,12 +139,15 @@ public class KitchenKdsController {
             org.springframework.security.core.Authentication authentication
     ) {
         UUID effectiveEstablishmentId = resolveEstablishmentId(user, authentication, establishmentId);
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock.withZone(BUENOS_AIRES_ZONE));
 
-        long queued = kdsTicketRepository.countByEstablishmentIdAndStatus(effectiveEstablishmentId, KdsTicketStatus.QUEUED);
-        long inPrep = kdsTicketRepository.countByEstablishmentIdAndStatus(effectiveEstablishmentId, KdsTicketStatus.IN_PREPARATION);
-        long ready = kdsTicketRepository.countByEstablishmentIdAndStatus(effectiveEstablishmentId, KdsTicketStatus.READY_FOR_PICKUP);
-        long completed = kdsTicketRepository.countByEstablishmentIdAndStatusAndPickupDate(effectiveEstablishmentId, KdsTicketStatus.COMPLETED, today);
+        KdsTicketRepository.KdsDashboardSummaryProjection counts =
+                kdsTicketRepository.findDashboardSummaryCounts(effectiveEstablishmentId, today);
+
+        long queued = counts != null ? counts.getQueuedOrdersCount() : 0L;
+        long inPrep = counts != null ? counts.getInPreparationOrdersCount() : 0L;
+        long ready = counts != null ? counts.getReadyForPickupOrdersCount() : 0L;
+        long completed = counts != null ? counts.getCompletedTodayCount() : 0L;
 
         return ResponseEntity.ok(new KdsDashboardSummaryResponse(queued, inPrep, ready, completed));
     }

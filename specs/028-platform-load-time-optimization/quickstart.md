@@ -155,6 +155,21 @@ npm run dev
 
 ---
 
+### US5 + SC-007 — Coherencia end-to-end en tiempo real de ventas, KDS y seguimiento de pedidos
+
+1. **Acreditación de pago (`paid_at`) e impacto inmediato en gráficos del Administrador**:
+   - Como `COMENSAL`, pagar el carrito y confirmar el pago (`POST /api/v1/checkout/confirm-payment`, webhook o pedido bonificado).
+   - Como `CHEF` en `/cocina`, iniciar preparación (`POST /api/v1/kitchen/tickets/{ticketId}/start-preparation`) y luego marcar listo para retirar (`POST /api/v1/kitchen/tickets/{ticketId}/ready-for-pickup`).
+   - Como `ENCARGADO` en `/mostrador`, entregar la orden (`POST /api/v1/counter/orders/{orderId}/complete-delivery`).
+   - **Resultado esperado**:
+     - En base de datos, la orden registra `paid_at IS NOT NULL`, `ready_at IS NOT NULL`, `completed_at IS NOT NULL` y `status = 'COMPLETED'` (y toda orden acreditada previa con `paid_at` nulo queda reparada por `V31__backfill_missing_orders_paid_at.sql`).
+     - En `/admin` y `/admin/analytics`, los KPIs (`Ingresos totales`, `Pedidos concretados`), el gráfico de barras (`FinancialHealthChart`) y el ranking de platos (`DishRankingTable`) muestran de inmediato la nueva venta y el importe ganado tanto en `Día`, `Semana` y `Mes` como en `Histórico global` (actualizándose automáticamente cada 10 s o al volver a la pestaña si ya estaba abierta, sin parpadear ni vaciarse a `$ 0,00`).
+2. **Sincronización en vivo del KDS del Chef (`/cocina`) y del pedido del Comensal**:
+   - **Resultado esperado en KDS**: los 4 contadores superiores (`En Cola`, `En Preparación`, `Para Retirar`, `Completadas hoy`) se actualizan inmediatamente tras cada acción del Chef y en cada ciclo de 4 s (incluyendo entregas realizadas en Mostrador), usando la fecha local `America/Argentina/Buenos_Aires` incluso después de las 21:00 hs de Argentina (00:00 UTC) y ejecutando exactamente `1` consulta SQL agregada.
+   - **Resultado esperado en Comensal**: tanto la vista `/pedidos/:orderId/seguimiento` como la sección `/perfil#pedidos` (`MyOrdersSection`) reflejan automáticamente el avance `En preparación` → `Listo para retirar` → `Completado` desde PostgreSQL sin requerir recarga manual del navegador.
+
+---
+
 ## 5. Referencias a artefactos de diseño
 
 - Plan técnico y matriz de trazabilidad: [plan.md](./plan.md)

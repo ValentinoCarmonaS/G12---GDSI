@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getFinancialHealth } from '../../api/analyticsApi';
+import { useClientCache } from '../../context/ClientCacheContext';
 import type { FinancialHealthGranularity, FinancialHealthResponse } from '../../types/analytics';
 import { GlassCard } from '../admin/GlassCard';
 import { FeedbackState, LoadingSkeleton } from '../primitives';
@@ -25,46 +26,85 @@ const currencyFormatter = new Intl.NumberFormat('es-AR', {
 });
 
 export function FinancialHealthPanel({ onDataChange }: FinancialHealthPanelProps = {}) {
+  const cache = useClientCache();
   const [granularity, setGranularity] = useState<FinancialHealthGranularity>('day');
-  const [data, setData] = useState<FinancialHealthResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const initialCached = cache.get<FinancialHealthResponse>('analytics:financial-health:day')?.data ?? null;
+  const [data, setData] = useState<FinancialHealthResponse | null>(initialCached);
+  const [loading, setLoading] = useState<boolean>(initialCached === null);
   const [error, setError] = useState<string | null>(null);
   const onDataChangeRef = useRef(onDataChange);
   onDataChangeRef.current = onDataChange;
 
-  const fetchHealth = useCallback((targetGranularity: FinancialHealthGranularity) => {
-    let active = true;
-    setLoading(true);
-    setError(null);
-    setData(null);
-    onDataChangeRef.current?.(null, targetGranularity);
+  const fetchHealth = useCallback(
+    (targetGranularity: FinancialHealthGranularity, options?: { silent?: boolean }) => {
+      const silent = options?.silent ?? false;
+      const cacheKey = `analytics:financial-health:${targetGranularity}`;
+      const cached = cache.get<FinancialHealthResponse>(cacheKey)?.data ?? null;
+      let active = true;
 
-    getFinancialHealth(targetGranularity)
-      .then((res) => {
-        if (active) {
-          setData(res);
-          onDataChangeRef.current?.(res, targetGranularity);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setError('No se pudieron cargar las métricas financieras.');
+      if (!silent) {
+        setError(null);
+        if (cached) {
+          setData(cached);
+          setLoading(false);
+          onDataChangeRef.current?.(cached, targetGranularity);
+        } else {
+          setLoading(true);
+          setData(null);
           onDataChangeRef.current?.(null, targetGranularity);
         }
-      })
-      .finally(() => {
-        if (active) {
-          setLoading(false);
-        }
-      });
+      }
 
-    return () => {
-      active = false;
-    };
-  }, []);
+      cache
+        .fetchDeduped(cacheKey, () => getFinancialHealth(targetGranularity))
+        .then((res) => {
+          if (active) {
+            setData(res);
+            setError(null);
+            onDataChangeRef.current?.(res, targetGranularity);
+          }
+        })
+        .catch(() => {
+          if (active && !silent && !cached) {
+            setError('No se pudieron cargar las métricas financieras.');
+            onDataChangeRef.current?.(null, targetGranularity);
+          }
+        })
+        .finally(() => {
+          if (active && !silent) {
+            setLoading(false);
+          }
+        });
+
+      return () => {
+        active = false;
+      };
+    },
+    [cache]
+  );
 
   useEffect(() => {
-    return fetchHealth(granularity);
+    return fetchHealth(granularity, { silent: false });
+  }, [granularity, fetchHealth]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchHealth(granularity, { silent: true });
+      }
+    }, 10000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchHealth(granularity, { silent: true });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [granularity, fetchHealth]);
 
   const revenueDisplay = currencyFormatter.format(data?.revenue ?? 0);

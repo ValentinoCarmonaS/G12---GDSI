@@ -128,6 +128,12 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
         // Idempotency check across all post-confirmation statuses (INV-07, CB-12)
         if (ALREADY_CONFIRMED_STATUSES.contains(order.getStatus())) {
             log.info("Order {} is already in status {}. Returning idempotent response.", order.getId(), order.getStatus());
+            if (order.getPaidAt() == null) {
+                Instant now = Instant.now();
+                order.setPaidAt(now);
+                order.setUpdatedAt(now);
+                orderRepository.save(order);
+            }
             KdsTicket kdsTicket = kdsQueueService.dispatchOrderToKitchen(order);
             return new PaymentConfirmationResponse(
                     order.getId(),
@@ -148,8 +154,12 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
         if (order.getSecurityCode() == null || order.getSecurityCode().isBlank()) {
             order.assignSecurityCodeIfAbsent(OrderService.generateSecurityCode());
         }
+        Instant now = Instant.now();
+        if (order.getPaidAt() == null) {
+            order.setPaidAt(now);
+        }
         order.setStatus(OrderStatus.IN_PROGRESS);
-        order.setUpdatedAt(Instant.now());
+        order.setUpdatedAt(now);
         orderRepository.save(order);
 
         // Confirm temporary reservation
@@ -226,6 +236,12 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
 
         if (ALREADY_CONFIRMED_STATUSES.contains(order.getStatus())) {
             log.info("Zero-amount order {} is already in status {}. Returning idempotent response.", order.getId(), order.getStatus());
+            if (order.getPaidAt() == null) {
+                Instant now = Instant.now();
+                order.setPaidAt(now);
+                order.setUpdatedAt(now);
+                orderRepository.save(order);
+            }
             KdsTicket existingTicket = kdsQueueService.dispatchOrderToKitchen(order);
             return new ZeroAmountOrderResponse(
                     order.getId(),
@@ -249,8 +265,12 @@ public class CheckoutConfirmationServiceImpl implements CheckoutConfirmationServ
         if (order.getSecurityCode() == null || order.getSecurityCode().isBlank()) {
             order.assignSecurityCodeIfAbsent(OrderService.generateSecurityCode());
         }
+        Instant now = Instant.now();
+        if (order.getPaidAt() == null) {
+            order.setPaidAt(now);
+        }
         order.setStatus(OrderStatus.IN_PROGRESS);
-        order.setUpdatedAt(Instant.now());
+        order.setUpdatedAt(now);
         orderRepository.save(order);
 
         // Confirm temporary reservation

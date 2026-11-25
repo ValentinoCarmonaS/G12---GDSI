@@ -34,9 +34,9 @@ class FlywayAndCorsConfigurationYamlTest {
             if (locations instanceof List) {
                 @SuppressWarnings("unchecked")
                 List<String> locList = (List<String>) locations;
-                assertThat(locList).contains("classpath:db/migration", "classpath:db/dev");
+                assertThat(locList).containsExactly("classpath:db/migration");
             } else {
-                assertThat(locations.toString()).contains("classpath:db/migration").contains("classpath:db/dev");
+                assertThat(locations.toString()).contains("classpath:db/migration");
             }
 
             assertThat(data).containsKey("app");

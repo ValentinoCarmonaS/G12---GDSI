@@ -1,6 +1,7 @@
 package com.easyeat.catalog.service;
 
 import com.easyeat.auth.domain.User;
+import com.easyeat.catalog.cache.BrandingCache;
 import com.easyeat.catalog.domain.RestaurantBranding;
 import com.easyeat.catalog.dto.RestaurantBrandingResponse;
 import com.easyeat.catalog.dto.RestaurantBrandingUpdateRequest;
@@ -32,6 +33,9 @@ public class RestaurantBrandingService {
     private final BrandingColorContrastCalculator contrastCalculator;
     private final EstablishmentRepository establishmentRepository;
 
+    @Autowired(required = false)
+    private BrandingCache brandingCache;
+
     public RestaurantBrandingService(
             RestaurantBrandingRepository brandingRepository,
             BrandingColorContrastCalculator contrastCalculator
@@ -54,6 +58,17 @@ public class RestaurantBrandingService {
     public RestaurantBrandingResponse getAdminBranding(UUID establishmentId, User adminUser) {
         validateTenantAccess(establishmentId, adminUser);
 
+        if (brandingCache != null) {
+            return brandingCache.getOrLoad(
+                    BrandingCache.BrandingViewType.ADMIN,
+                    establishmentId,
+                    () -> loadAdminBranding(establishmentId)
+            );
+        }
+        return loadAdminBranding(establishmentId);
+    }
+
+    private RestaurantBrandingResponse loadAdminBranding(UUID establishmentId) {
         return brandingRepository.findById(establishmentId)
                 .map(branding -> toResponse(branding, false))
                 .orElseGet(() -> createDefaultAdminResponse(establishmentId));
@@ -94,11 +109,26 @@ public class RestaurantBrandingService {
             });
         }
 
+        if (brandingCache != null) {
+            brandingCache.evict(establishmentId);
+        }
+
         return toResponse(saved, false);
     }
 
     @Transactional(readOnly = true)
     public RestaurantBrandingResponse getDinerBranding(UUID establishmentId) {
+        if (brandingCache != null) {
+            return brandingCache.getOrLoad(
+                    BrandingCache.BrandingViewType.DINER,
+                    establishmentId,
+                    () -> loadDinerBranding(establishmentId)
+            );
+        }
+        return loadDinerBranding(establishmentId);
+    }
+
+    private RestaurantBrandingResponse loadDinerBranding(UUID establishmentId) {
         return brandingRepository.findById(establishmentId)
                 .map(branding -> toResponse(branding, false))
                 .orElseGet(() -> createNeutralFallbackResponse(establishmentId));

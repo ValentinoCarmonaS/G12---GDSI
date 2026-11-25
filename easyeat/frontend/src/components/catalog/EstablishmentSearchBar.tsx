@@ -5,6 +5,7 @@ import { EstablishmentSummary } from '@/types/dinerCatalog';
 import { dinerCatalogApi } from '@/api/dinerCatalogApi';
 import { useTenant } from '@/hooks/useTenant';
 import { useCart } from '@/hooks/useCart';
+import { useClientCache } from '@/context/ClientCacheContext';
 import { EstablishmentSwitchModal } from './EstablishmentSwitchModal';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { LoadingSkeleton } from '@/components/primitives/LoadingSkeleton';
@@ -25,6 +26,7 @@ export const EstablishmentSearchBar: React.FC<EstablishmentSearchBarProps> = ({
   const navigate = useNavigate();
   const { tenant, setTenant } = useTenant();
   const { items: cartItems, clearCart } = useCart();
+  const cache = useClientCache();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<EstablishmentSummary[]>([]);
@@ -43,20 +45,34 @@ export const EstablishmentSearchBar: React.FC<EstablishmentSearchBarProps> = ({
 
     if (trimmed.length === 0) {
       let cancelled = false;
-      setIsLoading(true);
-      setSearchError(null);
-      dinerCatalogApi
-        .getAllEstablishments()
+      const cacheKey = 'establishments:all';
+      const cached = cache.get<EstablishmentSummary[]>(cacheKey);
+
+      if (cached?.data) {
+        setResults(Array.isArray(cached.data) ? cached.data : []);
+        setSearchError(null);
+        setIsLoading(false);
+        setIsDropdownOpen(true);
+      } else {
+        setIsLoading(true);
+        setSearchError(null);
+      }
+
+      cache
+        .fetchDeduped(cacheKey, () => dinerCatalogApi.getAllEstablishments())
         .then((data) => {
           if (cancelled) return;
           setResults(Array.isArray(data) ? data : []);
+          setSearchError(null);
           setIsDropdownOpen(true);
         })
         .catch(() => {
           if (cancelled) return;
-          setResults([]);
-          setSearchError('No pudimos cargar los establecimientos. Intentá nuevamente.');
-          setIsDropdownOpen(true);
+          if (!cached?.data) {
+            setResults([]);
+            setSearchError('No pudimos cargar los establecimientos. Intentá nuevamente.');
+            setIsDropdownOpen(true);
+          }
         })
         .finally(() => {
           if (!cancelled) setIsLoading(false);

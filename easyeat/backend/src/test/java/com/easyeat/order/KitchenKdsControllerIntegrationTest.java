@@ -33,9 +33,11 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -44,6 +46,9 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -251,5 +256,61 @@ class KitchenKdsControllerIntegrationTest {
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.properties.code").value("INVALID_ORDER_STATE"))
                 .andExpect(jsonPath("$.detail").value("La comanda ya ha finalizado su etapa de preparación activa."));
+    }
+
+    @Test
+    @DisplayName("Spec 028 US5 (T075): evalúa today en America/Argentina/Buenos_Aires a las 22:30 AR (01:30Z UTC del día siguiente) en cola activa y resumen KDS")
+    void shouldUseBuenosAiresOperationalDateAfter2100ArTime() throws Exception {
+        // 2026-11-25T01:30:00Z (UTC) == 2026-11-24T22:30:00-03:00 (America/Argentina/Buenos_Aires)
+        Clock lateNightUtcClock = Clock.fixed(Instant.parse("2026-11-25T01:30:00Z"), ZoneOffset.UTC);
+        LocalDate expectedBuenosAiresDate = LocalDate.of(2026, 11, 24);
+
+        KitchenKdsController controllerWithClock = new KitchenKdsController(
+                kdsTicketRepository,
+                orderRepository,
+                kdsQueueService,
+                lateNightUtcClock
+        );
+
+        MockMvc clockMockMvc = MockMvcBuilders.standaloneSetup(controllerWithClock)
+                .setCustomArgumentResolvers(new org.springframework.data.web.PageableHandlerMethodArgumentResolver())
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+
+        when(kdsTicketRepository.findActiveQueueTickets(eq(establishmentId), eq(expectedBuenosAiresDate)))
+                .thenReturn(Collections.emptyList());
+
+        KdsTicketRepository.KdsDashboardSummaryProjection projection =
+                mock(KdsTicketRepository.KdsDashboardSummaryProjection.class);
+        when(projection.getQueuedOrdersCount()).thenReturn(2L);
+        when(projection.getInPreparationOrdersCount()).thenReturn(1L);
+        when(projection.getReadyForPickupOrdersCount()).thenReturn(1L);
+        when(projection.getCompletedTodayCount()).thenReturn(1L);
+        when(kdsTicketRepository.findDashboardSummaryCounts(eq(establishmentId), eq(expectedBuenosAiresDate)))
+                .thenReturn(projection);
+
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                chefUser,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_CHEF"))
+        );
+
+        clockMockMvc.perform(get("/api/v1/kitchen/orders")
+                        .param("activeQueue", "true")
+                        .principal(auth))
+                .andExpect(status().isOk());
+
+        clockMockMvc.perform(get("/api/v1/kitchen/dashboard/summary")
+                        .principal(auth))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.queuedOrdersCount").value(2))
+                .andExpect(jsonPath("$.inPreparationOrdersCount").value(1))
+                .andExpect(jsonPath("$.readyForPickupOrdersCount").value(1))
+                .andExpect(jsonPath("$.completedTodayCount").value(1));
+
+        verify(kdsTicketRepository, times(1))
+                .findActiveQueueTickets(eq(establishmentId), eq(expectedBuenosAiresDate));
+        verify(kdsTicketRepository, times(1))
+                .findDashboardSummaryCounts(eq(establishmentId), eq(expectedBuenosAiresDate));
     }
 }

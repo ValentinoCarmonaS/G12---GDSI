@@ -43,6 +43,29 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     );
 
     @Query("""
+        SELECT o.timeSlotStart AS timeSlotStart, COUNT(o) AS bookedCount
+        FROM Order o
+        WHERE o.establishmentId = :establishmentId
+          AND o.pickupDate = :pickupDate
+          AND (
+            o.status IN (
+              com.easyeat.order.domain.OrderStatus.CONFIRMED,
+              com.easyeat.order.domain.OrderStatus.PAID,
+              com.easyeat.order.domain.OrderStatus.IN_PROGRESS,
+              com.easyeat.order.domain.OrderStatus.PENDING_ACCREDITATION,
+              com.easyeat.order.domain.OrderStatus.READY_FOR_PICKUP
+            )
+            OR (o.status = com.easyeat.order.domain.OrderStatus.PENDING_PAYMENT AND (o.expiresAt IS NULL OR o.expiresAt > :now))
+          )
+        GROUP BY o.timeSlotStart
+    """)
+    List<TimeSlotOccupancyProjection> countActiveOrdersGroupedBySlot(
+        @Param("establishmentId") UUID establishmentId,
+        @Param("pickupDate") LocalDate pickupDate,
+        @Param("now") Instant now
+    );
+
+    @Query("""
         SELECT COUNT(o) > 0 FROM Order o
         WHERE o.userId = :userId
           AND o.status = com.easyeat.order.domain.OrderStatus.PENDING_PAYMENT
