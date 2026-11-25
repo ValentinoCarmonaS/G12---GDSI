@@ -149,6 +149,13 @@ export const AdminBrandingPage: React.FC = () => {
     }
   };
 
+  const versionedLogoUrl =
+    logoUrl && updatedAt
+      ? `${logoUrl}${logoUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(
+          String(Number.isFinite(Date.parse(updatedAt)) ? Date.parse(updatedAt) : updatedAt)
+        )}`
+      : logoUrl;
+
   const primaryContrast = isValidHexColor(primaryColor) ? getOptimalContrastColor(primaryColor) : '#FFFFFF';
   const secondaryContrast = isValidHexColor(secondaryColor) ? getOptimalContrastColor(secondaryColor) : '#FFFFFF';
   const accentContrast = isValidHexColor(accentColor) ? getOptimalContrastColor(accentColor) : '#000000';
@@ -214,7 +221,7 @@ export const AdminBrandingPage: React.FC = () => {
                 </div>
 
                 <LogoUploader
-                  currentLogoUrl={logoUrl}
+                  currentLogoUrl={versionedLogoUrl}
                   onUpload={handleLogoUpload}
                   isUploading={isUploadingLogo}
                   disabled={isLoading || isSubmitting}
@@ -282,15 +289,9 @@ export const AdminBrandingPage: React.FC = () => {
                 style={{ backgroundColor: secondaryColor, color: secondaryContrast }}
               >
                 <div className="flex items-center gap-3">
-                  {logoUrl && !previewImageError ? (
+                  {versionedLogoUrl && !previewImageError ? (
                     <img
-                      src={resolveApiMediaUrl(
-                        updatedAt
-                          ? `${logoUrl}${logoUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(
-                              String(Number.isFinite(Date.parse(updatedAt)) ? Date.parse(updatedAt) : updatedAt)
-                            )}`
-                          : logoUrl
-                      )}
+                      src={resolveApiMediaUrl(versionedLogoUrl)}
                       alt="Logo local"
                       onError={() => setPreviewImageError(true)}
                       className={`h-11 w-11 sm:h-12 sm:w-12 aspect-square shrink-0 rounded-lg ${

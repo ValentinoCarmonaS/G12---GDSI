@@ -173,7 +173,6 @@ class SessionAndMetadataCacheCoherenceIntegrationTest {
         Establishment est = new Establishment();
         est.setName("Cache Bistro");
         est.setStatus(EstablishmentStatus.ACTIVE);
-        est.setCreatedByAdminId(UUID.randomUUID());
         est = establishmentRepository.save(est);
         UUID estId = est.getId();
 
@@ -210,19 +209,20 @@ class SessionAndMetadataCacheCoherenceIntegrationTest {
                 .andExpect(jsonPath("$.fantasyName").value("Nombre Actualizado"));
 
         // OperatingScheduleCache warm & evict via direct repository save (@EntityListeners)
-        EstablishmentOperatingSchedule monday = new EstablishmentOperatingSchedule();
-        monday.setEstablishmentId(estId);
-        monday.setDayOfWeek(DayOfWeek.MONDAY);
-        monday.setOpen(true);
-        monday.setOpeningTime(LocalTime.of(9, 0));
-        monday.setClosingTime(LocalTime.of(22, 0));
+        EstablishmentOperatingSchedule monday = new EstablishmentOperatingSchedule(
+                estId,
+                DayOfWeek.MONDAY,
+                LocalTime.of(9, 0),
+                LocalTime.of(22, 0),
+                false
+        );
         operatingScheduleRepository.saveAndFlush(monday);
 
         List<EstablishmentOperatingSchedule> loaded = operatingScheduleService.getWeek(estId);
         assertThat(loaded).hasSize(1);
         sqlHelper.assertExactQueries(0, () -> operatingScheduleService.getWeek(estId));
 
-        monday.setClosingTime(LocalTime.of(23, 0));
+        monday.update(LocalTime.of(9, 0), LocalTime.of(23, 0), false);
         operatingScheduleRepository.saveAndFlush(monday);
 
         List<EstablishmentOperatingSchedule> reloaded = operatingScheduleService.getWeek(estId);
