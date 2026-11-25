@@ -1,5 +1,6 @@
 package com.easyeat.auth.controller;
 
+import com.easyeat.auth.cache.UserSessionCache;
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.domain.UserStatus;
 import com.easyeat.auth.dto.FirstLoginPasswordChangeRequest;
@@ -26,6 +27,9 @@ public class FirstLoginPasswordController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private UserSessionCache userSessionCache;
 
     public FirstLoginPasswordController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -54,6 +58,9 @@ public class FirstLoginPasswordController {
         user.setStatus(UserStatus.ACTIVE);
         user.incrementTokenVersion();
         userRepository.save(user);
+        if (userSessionCache != null) {
+            userSessionCache.evict(user.getId());
+        }
 
         return ResponseEntity.ok(Map.of("message", "Password updated successfully. Account is now active."));
     }

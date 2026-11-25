@@ -6,6 +6,7 @@ export interface UseRealtimeAvailabilityOptions {
   enabled?: boolean;
   intervalMs?: number;
   initialAvailability?: Record<string, boolean>;
+  deferInitialPoll?: boolean;
   onErrorThreshold?: () => void;
   onRecovery?: () => void;
 }
@@ -23,6 +24,7 @@ export function useRealtimeAvailability({
   enabled = true,
   intervalMs = 2500,
   initialAvailability = {},
+  deferInitialPoll = false,
   onErrorThreshold,
   onRecovery,
 }: UseRealtimeAvailabilityOptions): UseRealtimeAvailabilityResult {
@@ -96,8 +98,10 @@ export function useRealtimeAvailability({
       return;
     }
 
-    // Immediate initial poll
-    poll();
+    // Immediate initial poll unless deferred (FR-007)
+    if (!deferInitialPoll) {
+      poll();
+    }
 
     // Start polling timer
     let timerId: ReturnType<typeof setInterval> | null = setInterval(poll, intervalMs);
@@ -126,7 +130,7 @@ export function useRealtimeAvailability({
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [tenantId, enabled, intervalMs, poll]);
+  }, [tenantId, enabled, intervalMs, deferInitialPoll, poll]);
 
   const refresh = useCallback(async () => {
     etagRef.current = null;

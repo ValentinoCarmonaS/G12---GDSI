@@ -1,5 +1,6 @@
 package com.easyeat.profile.service;
 
+import com.easyeat.common.http.BinaryMediaMetadataProjection;
 import com.easyeat.dish.exception.PhotoStorageException;
 import com.easyeat.profile.domain.UserPhoto;
 import com.easyeat.profile.dto.AvatarUploadResponse;
@@ -66,6 +67,7 @@ public class UserPhotoService {
         photo.setContentType(normalizedContentType);
         photo.setFileSize(file.getSize());
         photo.setData(bytes);
+        photo.setUpdatedAt(java.time.Instant.now());
 
         userPhotoRepository.save(photo);
 
@@ -81,6 +83,11 @@ public class UserPhotoService {
     @Transactional(readOnly = true)
     public Optional<UserPhoto> getPhoto(UUID userId) {
         return userPhotoRepository.findByUserId(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<BinaryMediaMetadataProjection> getPhotoMetadata(UUID userId) {
+        return userPhotoRepository.findMetadataByUserId(userId);
     }
 
     @Transactional

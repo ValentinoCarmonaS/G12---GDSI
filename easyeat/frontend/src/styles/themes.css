@@ -1,0 +1,308 @@
+/*
+ * EasyEat Role-Scoped Multi-Theme Design Tokens (Spec 024)
+ *
+ * Layer isolation invariant:
+ * - Role themes use exclusively the `--ee-*` namespace.
+ * - Establishment branding (Spec 016, BrandThemeProvider) stays completely isolated in its own layer.
+ * - `:root` shares the Comensal (Bento) fallback so initial pre-hydration paint has zero FOUC.
+ */
+
+:root,
+[data-theme="comensal"] {
+  /* Structural colors, accents, and focus (Bento — WCAG 2.2 AA verified) */
+  --ee-surface: #FFF5E6;
+  --ee-surface-elevated: #FFFFFF;
+  --ee-surface-elevated-glass: #FFFFFF;
+  --ee-surface-subtle: #F5E6D0;
+  --ee-text: #111827;
+  --ee-text-secondary: #475569;
+  --ee-border-subtle: #D6C2A8;
+  --ee-border-strong: #7A6855;
+  --ee-primary: #FAD4C0;
+  --ee-on-primary: #111827;
+  --ee-primary-hover: #F3BEA2;
+  --ee-primary-border: #9A4A24;
+  --ee-secondary: #80A1C1;
+  --ee-on-secondary: #111827;
+  --ee-secondary-hover: #6B90B4;
+  --ee-secondary-border: #3B5E82;
+  --ee-danger-solid: #B91C1C;
+  --ee-on-danger: #FFFFFF;
+  --ee-danger-hover: #991B1B;
+  --ee-focus-ring: #1E40AF;
+
+  /* Semantic triads (bg / fg / border) */
+  --ee-neutral-bg: #EFE3D0;
+  --ee-neutral-fg: #1F2937;
+  --ee-neutral-border: #7A6855;
+  --ee-info-bg: #E0F2FE;
+  --ee-info-fg: #0C4A6E;
+  --ee-info-border: #0369A1;
+  --ee-success-bg: #DCFCE7;
+  --ee-success-fg: #14532D;
+  --ee-success-border: #15803D;
+  --ee-warning-bg: #FEF3C7;
+  --ee-warning-fg: #78350F;
+  --ee-warning-border: #B45309;
+  --ee-danger-bg: #FEE2E2;
+  --ee-danger-fg: #7F1D1D;
+  --ee-danger-border: #B91C1C;
+
+  /* Typography, geometry, and elevation */
+  --ee-font-display: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --ee-font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --ee-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ee-radius-sm: 8px;
+  --ee-radius-md: 14px;
+  --ee-radius-lg: 20px;
+  --ee-border-width: 1px;
+  --ee-shadow-elevated: 0 2px 10px rgba(17, 24, 39, 0.06);
+  --ee-backdrop-blur: none;
+
+  /* DataViz sub-contract (FR-019) */
+  --ee-dataviz-series-1: #9A4A24;
+  --ee-dataviz-series-2: #2B5B84;
+  --ee-dataviz-series-3: #15803D;
+  --ee-dataviz-series-4: #B45309;
+  --ee-dataviz-series-5: #B91C1C;
+  --ee-dataviz-grid-stroke: #D6C2A8;
+  --ee-dataviz-axis-stroke: #7A6855;
+  --ee-dataviz-axis-label-fg: #374151;
+  --ee-dataviz-tooltip-bg: #111827;
+  --ee-dataviz-tooltip-fg: #FFF5E6;
+  --ee-dataviz-tooltip-border: #9A4A24;
+  --ee-dataviz-cursor-fill: rgba(154, 74, 36, 0.10);
+}
+
+[data-theme="mostrador"] {
+  /* Structural colors, accents, and focus (Bold — WCAG 2.2 AA verified) */
+  --ee-surface: #111111;
+  --ee-surface-elevated: #1C1C1F;
+  --ee-surface-elevated-glass: #1C1C1F;
+  --ee-surface-subtle: #26262B;
+  --ee-text: #F8FAFC;
+  --ee-text-secondary: #CBD5E1;
+  --ee-border-subtle: #3F3F46;
+  --ee-border-strong: #71717A;
+  --ee-primary: #0077BC;
+  --ee-on-primary: #FFFFFF;
+  --ee-primary-hover: #00639E;
+  --ee-primary-border: #38BDF8;
+  --ee-secondary: #009866;
+  --ee-on-secondary: #0A0A0A;
+  --ee-secondary-hover: #00B377;
+  --ee-secondary-border: #34D399;
+  --ee-danger-solid: #DC2626;
+  --ee-on-danger: #FFFFFF;
+  --ee-danger-hover: #B91C1C;
+  --ee-focus-ring: #38BDF8;
+
+  /* Semantic triads (bg / fg / border) */
+  --ee-neutral-bg: #27272A;
+  --ee-neutral-fg: #F4F4F5;
+  --ee-neutral-border: #71717A;
+  --ee-info-bg: #082F49;
+  --ee-info-fg: #BAE6FD;
+  --ee-info-border: #38BDF8;
+  --ee-success-bg: #052E16;
+  --ee-success-fg: #BBF7D0;
+  --ee-success-border: #22C55E;
+  --ee-warning-bg: #451A03;
+  --ee-warning-fg: #FDE68A;
+  --ee-warning-border: #F59E0B;
+  --ee-danger-bg: #450A0A;
+  --ee-danger-fg: #FECACA;
+  --ee-danger-border: #F87171;
+
+  /* Typography, geometry, and elevation */
+  --ee-font-display: 'Archivo Black', 'Arial Black', sans-serif;
+  --ee-font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --ee-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ee-radius-sm: 4px;
+  --ee-radius-md: 8px;
+  --ee-radius-lg: 12px;
+  --ee-border-width: 2px;
+  --ee-shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --ee-backdrop-blur: none;
+
+  /* DataViz sub-contract (FR-019) */
+  --ee-dataviz-series-1: #38BDF8;
+  --ee-dataviz-series-2: #34D399;
+  --ee-dataviz-series-3: #FBBF24;
+  --ee-dataviz-series-4: #F87171;
+  --ee-dataviz-series-5: #C084FC;
+  --ee-dataviz-grid-stroke: #2E2E34;
+  --ee-dataviz-axis-stroke: #71717A;
+  --ee-dataviz-axis-label-fg: #CBD5E1;
+  --ee-dataviz-tooltip-bg: #1C1C1F;
+  --ee-dataviz-tooltip-fg: #F8FAFC;
+  --ee-dataviz-tooltip-border: #71717A;
+  --ee-dataviz-cursor-fill: rgba(56, 189, 248, 0.14);
+}
+
+[data-theme="chef"] {
+  /* Structural colors, accents, and focus (Brutalism — WCAG 2.2 AA verified) */
+  --ee-surface: #FFFFFF;
+  --ee-surface-elevated: #F4F4F0;
+  --ee-surface-elevated-glass: #F4F4F0;
+  --ee-surface-subtle: #E7E7E0;
+  --ee-text: #111827;
+  --ee-text-secondary: #374151;
+  --ee-border-subtle: #737373;
+  --ee-border-strong: #111827;
+  --ee-primary: #DD614C;
+  --ee-on-primary: #111827;
+  --ee-primary-hover: #E67966;
+  --ee-primary-border: #111827;
+  --ee-secondary: #DAA144;
+  --ee-on-secondary: #111827;
+  --ee-secondary-hover: #C68D32;
+  --ee-secondary-border: #111827;
+  --ee-danger-solid: #B91C1C;
+  --ee-on-danger: #FFFFFF;
+  --ee-danger-hover: #991B1B;
+  --ee-focus-ring: #111827;
+
+  /* Semantic triads (bg / fg / border) */
+  --ee-neutral-bg: #F3F4F6;
+  --ee-neutral-fg: #111827;
+  --ee-neutral-border: #111827;
+  --ee-info-bg: #E0F2FE;
+  --ee-info-fg: #0C4A6E;
+  --ee-info-border: #0369A1;
+  --ee-success-bg: #DCFCE7;
+  --ee-success-fg: #14532D;
+  --ee-success-border: #15803D;
+  --ee-warning-bg: #FEF3C7;
+  --ee-warning-fg: #78350F;
+  --ee-warning-border: #B45309;
+  --ee-danger-bg: #FEE2E2;
+  --ee-danger-fg: #7F1D1D;
+  --ee-danger-border: #B91C1C;
+
+  /* Typography, geometry, and elevation */
+  --ee-font-display: 'Darker Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --ee-font-sans: 'Darker Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --ee-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ee-radius-sm: 0px;
+  --ee-radius-md: 2px;
+  --ee-radius-lg: 4px;
+  --ee-border-width: 2px;
+  --ee-shadow-elevated: 4px 4px 0px #111827;
+  --ee-backdrop-blur: none;
+
+  /* DataViz sub-contract (FR-019) */
+  --ee-dataviz-series-1: #B83B28;
+  --ee-dataviz-series-2: #8F6210;
+  --ee-dataviz-series-3: #15803D;
+  --ee-dataviz-series-4: #1D4ED8;
+  --ee-dataviz-series-5: #374151;
+  --ee-dataviz-grid-stroke: #D4D4CE;
+  --ee-dataviz-axis-stroke: #111827;
+  --ee-dataviz-axis-label-fg: #111827;
+  --ee-dataviz-tooltip-bg: #111827;
+  --ee-dataviz-tooltip-fg: #FFFFFF;
+  --ee-dataviz-tooltip-border: #111827;
+  --ee-dataviz-cursor-fill: rgba(17, 24, 39, 0.08);
+}
+
+[data-theme="admin"] {
+  /* Structural colors, accents, and focus (Glassmorphism — WCAG 2.2 AA verified) */
+  --ee-surface: #F4F7FC;
+  --ee-surface-elevated: #FFFFFF;
+  --ee-surface-elevated-glass: rgba(255, 255, 255, 0.82);
+  --ee-surface-subtle: #E8EEF8;
+  --ee-text: #141414;
+  --ee-text-secondary: #475569;
+  --ee-border-subtle: #CBD5E1;
+  --ee-border-strong: #64748B;
+  --ee-primary: #1856FF;
+  --ee-on-primary: #FFFFFF;
+  --ee-primary-hover: #0F45DB;
+  --ee-primary-border: #1856FF;
+  --ee-secondary: #3A344E;
+  --ee-on-secondary: #FFFFFF;
+  --ee-secondary-hover: #2B263B;
+  --ee-secondary-border: #3A344E;
+  --ee-danger-solid: #C81433;
+  --ee-on-danger: #FFFFFF;
+  --ee-danger-hover: #A60F29;
+  --ee-focus-ring: #1856FF;
+
+  /* Semantic triads (bg / fg / border) */
+  --ee-neutral-bg: #EEF2F6;
+  --ee-neutral-fg: #1E293B;
+  --ee-neutral-border: #64748B;
+  --ee-info-bg: #E8F0FF;
+  --ee-info-fg: #0F369E;
+  --ee-info-border: #1856FF;
+  --ee-success-bg: #E6FBF0;
+  --ee-success-fg: #045D33;
+  --ee-success-border: #059652;
+  --ee-warning-bg: #FEF2E8;
+  --ee-warning-fg: #8A3E0A;
+  --ee-warning-border: #C25E18;
+  --ee-danger-bg: #FDECEF;
+  --ee-danger-fg: #9E0E27;
+  --ee-danger-border: #C81433;
+
+  /* Typography, geometry, and elevation */
+  --ee-font-display: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --ee-font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --ee-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --ee-radius-sm: 6px;
+  --ee-radius-md: 12px;
+  --ee-radius-lg: 16px;
+  --ee-border-width: 1px;
+  --ee-shadow-elevated: 0 8px 28px rgba(24, 86, 255, 0.08);
+  --ee-backdrop-blur: blur(12px);
+
+  /* DataViz sub-contract (FR-019) */
+  --ee-dataviz-series-1: #1856FF;
+  --ee-dataviz-series-2: #3A344E;
+  --ee-dataviz-series-3: #047843;
+  --ee-dataviz-series-4: #B85410;
+  --ee-dataviz-series-5: #C81433;
+  --ee-dataviz-grid-stroke: #CBD5E1;
+  --ee-dataviz-axis-stroke: #64748B;
+  --ee-dataviz-axis-label-fg: #334155;
+  --ee-dataviz-tooltip-bg: #141414;
+  --ee-dataviz-tooltip-fg: #FFFFFF;
+  --ee-dataviz-tooltip-border: #64748B;
+  --ee-dataviz-cursor-fill: rgba(24, 86, 255, 0.10);
+}
+
+/* Keyboard focus visibility (WCAG 2.2 AA — FR-017) */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ee-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Reduced motion preference (FR-014, FR-017) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Transitory contrast isolation containers for unmigrated screens (FR-018, Specs 026 & 028) */
+[data-legacy-surface="light"] {
+  background-color: #FFFFFF;
+  color: #111827;
+  border: 1px solid #E5E7EB;
+  border-radius: var(--ee-radius-lg);
+  padding: 1.5rem;
+}
+
+[data-legacy-surface="dark"] {
+  background-color: #0A0A0A;
+  color: #F5F5F5;
+  border: 1px solid #262626;
+  border-radius: var(--ee-radius-lg);
+  padding: 1.5rem;
+}

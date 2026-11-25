@@ -140,10 +140,21 @@ export const dishApi = {
     }
     const response = await apiClient.get<ChefDishesOperationalStatusResponse>(
       '/dishes/operational-status',
-      { headers }
+      {
+        headers,
+        validateStatus: (status) => (status >= 200 && status < 300) || status === 304,
+      }
     );
+    const resolvedEtag = (response.headers as any)?.etag || (response.headers as any)?.ETag;
+    if (response.status === 304) {
+      return {
+        etag: resolvedEtag ?? ifNoneMatch,
+        items: [],
+        notModified: true,
+      };
+    }
     return {
-      etag: (response.headers as any)?.etag || (response.headers as any)?.ETag,
+      etag: resolvedEtag,
       items: response.data?.items || [],
     };
   },

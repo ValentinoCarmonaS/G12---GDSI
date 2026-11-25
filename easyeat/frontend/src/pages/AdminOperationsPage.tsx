@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
+import { GlassCard } from '../components/admin/GlassCard';
+import { LoadingSkeleton } from '../components/primitives/LoadingSkeleton';
+import { FeedbackState } from '../components/primitives/FeedbackState';
 import { WeeklyScheduleManager } from '../components/operations/WeeklyScheduleManager';
 import { SlotCapacityGrid } from '../components/operations/SlotCapacityGrid';
 import { PaymentMethodToggles } from '../components/operations/PaymentMethodToggles';
@@ -108,35 +111,31 @@ export const AdminOperationsPage: React.FC = () => {
       subtitle="Horarios comerciales, capacidad por franja y medios de pago"
     >
       <div className="space-y-6">
-        <Link to="/admin" className="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800">
+        <Link to="/admin" className="inline-flex items-center min-h-[44px] text-xs font-semibold text-[var(--ee-primary)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ee-focus-ring)] rounded-[var(--ee-radius-sm)]">
           ← Volver al Panel de Administración
         </Link>
 
-        <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Horarios comerciales</h2>
+        <GlassCard variant="elevated" padding="lg" className="space-y-4">
+          <h2 className="text-lg font-semibold text-[var(--ee-text)]">Horarios comerciales</h2>
           {loadError && (
-            <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-              {loadError}
-            </div>
+            <FeedbackState variant="danger" title="Error al cargar horarios" message={loadError} actionLabel="Reintentar" onAction={fetchSchedules} />
           )}
           {isLoading ? (
-            <p className="text-sm text-gray-500">Cargando horarios...</p>
+            <LoadingSkeleton lines={3} />
           ) : (
             !loadError && (
               <WeeklyScheduleManager schedules={schedules} onSave={handleSaveSchedules} onReload={fetchSchedules} />
             )
           )}
-        </section>
+        </GlassCard>
 
-        <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Capacidad por franja</h2>
+        <GlassCard variant="elevated" padding="lg" className="space-y-4">
+          <h2 className="text-lg font-semibold text-[var(--ee-text)]">Capacidad por franja</h2>
           {capacityLoadError && (
-            <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-              {capacityLoadError}
-            </div>
+            <FeedbackState variant="danger" title="Error al cargar capacidad" message={capacityLoadError} actionLabel="Reintentar" onAction={fetchCapacities} />
           )}
           {isLoadingCapacities ? (
-            <p className="text-sm text-gray-500">Cargando capacidad...</p>
+            <LoadingSkeleton lines={3} />
           ) : (
             !capacityLoadError && (
               <SlotCapacityGrid
@@ -149,17 +148,15 @@ export const AdminOperationsPage: React.FC = () => {
               />
             )
           )}
-        </section>
+        </GlassCard>
 
-        <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Métodos de pago online</h2>
+        <GlassCard variant="elevated" padding="lg" className="space-y-4">
+          <h2 className="text-lg font-semibold text-[var(--ee-text)]">Métodos de pago online</h2>
           {paymentLoadError && (
-            <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-              {paymentLoadError}
-            </div>
+            <FeedbackState variant="danger" title="Error al cargar métodos de pago" message={paymentLoadError} actionLabel="Reintentar" onAction={fetchPaymentMethods} />
           )}
           {isLoadingPayments ? (
-            <p className="text-sm text-gray-500">Cargando métodos de pago...</p>
+            <LoadingSkeleton lines={2} />
           ) : (
             !paymentLoadError && (
               <PaymentMethodToggles
@@ -169,7 +166,7 @@ export const AdminOperationsPage: React.FC = () => {
               />
             )
           )}
-        </section>
+        </GlassCard>
       </div>
     </WorkspaceLayout>
   );

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Clock } from 'lucide-react';
 
 interface PendingAccreditationBannerProps {
   orderId: string;
@@ -14,37 +15,18 @@ export const PendingAccreditationBanner: React.FC<PendingAccreditationBannerProp
   return (
     <div
       role="alert"
-      className={`bg-amber-50 border border-amber-300 text-amber-950 rounded-xl p-4 flex items-start space-x-3 shadow-sm ${className}`}
+      className={`bg-ee-warning-bg border border-ee-warning-border text-ee-warning-fg rounded-ee-md p-4 flex items-start gap-3 shadow-ee-elevated ${className}`}
     >
-      <div className="flex-shrink-0 mt-0.5">
-        <svg
-          className="w-5 h-5 text-amber-700 animate-spin"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          ></circle>
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          ></path>
-        </svg>
+      <div className="shrink-0 mt-0.5">
+        <Clock className="w-5 h-5" aria-hidden="true" />
       </div>
-      <div className="flex-1">
-        <h4 className="font-semibold text-amber-900">Pago pendiente de confirmación</h4>
-        <p className="text-sm mt-1 text-amber-800">
+      <div className="flex-1 min-w-0">
+        <h4 className="font-ee-display font-bold text-sm">Pago pendiente de confirmación</h4>
+        <p className="text-sm mt-1 leading-relaxed">
           {message ||
             'Tu pago está siendo procesado por Mercado Pago. Tu reserva se encuentra congelada y el pedido pasará a preparación de inmediato al acreditarse.'}
         </p>
-        <div className="text-xs text-amber-700 mt-2 font-mono">
+        <div className="text-xs mt-2 font-ee-mono tabular-nums font-semibold">
           Referencia de pedido: {orderId}
         </div>
       </div>

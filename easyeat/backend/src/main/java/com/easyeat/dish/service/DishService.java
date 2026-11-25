@@ -14,6 +14,7 @@ import com.easyeat.dish.exception.DishLockedException;
 import com.easyeat.dish.exception.DishNotFoundException;
 import com.easyeat.dish.exception.DuplicateDishNameException;
 import com.easyeat.dish.repository.DishPhotoRepository;
+import com.easyeat.dish.repository.RecipeLineWithIngredientProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,12 +30,15 @@ import com.easyeat.dish.repository.DishRecipeIngredientRepository;
 import com.easyeat.inventory.repository.IngredientRepository;
 import com.easyeat.dish.dto.AllergenResponse;
 import com.easyeat.dish.dto.AllergenUpdateRequest;
+import com.easyeat.profile.cache.DietaryTaxonomyCache;
 import com.easyeat.profile.domain.DietaryRestriction;
 import com.easyeat.profile.exception.DietaryTaxonomyException;
 import com.easyeat.profile.repository.DietaryRestrictionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -56,6 +60,7 @@ public class DishService {
     private final DietaryRestrictionRepository dietaryRestrictionRepository;
 
     private final AdminNotificationRepository adminNotificationRepository;
+    private final DietaryTaxonomyCache dietaryTaxonomyCache;
 
     @Autowired
     public DishService(
@@ -64,13 +69,25 @@ public class DishService {
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository,
             DietaryRestrictionRepository dietaryRestrictionRepository,
-            AdminNotificationRepository adminNotificationRepository) {
+            AdminNotificationRepository adminNotificationRepository,
+            @Autowired(required = false) DietaryTaxonomyCache dietaryTaxonomyCache) {
         this.dishRepository = dishRepository;
         this.dishPhotoRepository = dishPhotoRepository;
         this.dishRecipeIngredientRepository = dishRecipeIngredientRepository;
         this.ingredientRepository = ingredientRepository;
         this.dietaryRestrictionRepository = dietaryRestrictionRepository;
         this.adminNotificationRepository = adminNotificationRepository;
+        this.dietaryTaxonomyCache = dietaryTaxonomyCache;
+    }
+
+    public DishService(
+            DishRepository dishRepository,
+            DishPhotoRepository dishPhotoRepository,
+            DishRecipeIngredientRepository dishRecipeIngredientRepository,
+            IngredientRepository ingredientRepository,
+            DietaryRestrictionRepository dietaryRestrictionRepository,
+            AdminNotificationRepository adminNotificationRepository) {
+        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, dietaryRestrictionRepository, adminNotificationRepository, null);
     }
 
     public DishService(
@@ -79,7 +96,7 @@ public class DishService {
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository,
             DietaryRestrictionRepository dietaryRestrictionRepository) {
-        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, dietaryRestrictionRepository, null);
+        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, dietaryRestrictionRepository, null, null);
     }
 
     public DishService(
@@ -87,7 +104,7 @@ public class DishService {
             DishPhotoRepository dishPhotoRepository,
             DishRecipeIngredientRepository dishRecipeIngredientRepository,
             IngredientRepository ingredientRepository) {
-        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, null, null);
+        this(dishRepository, dishPhotoRepository, dishRecipeIngredientRepository, ingredientRepository, null, null, null);
     }
 
     @Transactional
@@ -139,12 +156,20 @@ public class DishService {
 
         List<String> codes = request.restrictionCodes() != null ? request.restrictionCodes() : Collections.emptyList();
 
-        if (!codes.isEmpty() && dietaryRestrictionRepository != null) {
-            List<DietaryRestriction> found = dietaryRestrictionRepository.findAllById(codes);
-            Set<String> foundCodes = found.stream().map(DietaryRestriction::getCode).collect(Collectors.toSet());
-            for (String code : codes) {
-                if (!foundCodes.contains(code)) {
-                    throw DietaryTaxonomyException.forInvalidCode(code);
+        if (!codes.isEmpty()) {
+            Set<String> foundCodes = null;
+            if (dietaryTaxonomyCache != null) {
+                foundCodes = dietaryTaxonomyCache.getMapByCode().keySet();
+            } else if (dietaryRestrictionRepository != null) {
+                foundCodes = dietaryRestrictionRepository.findAllById(codes).stream()
+                        .map(DietaryRestriction::getCode)
+                        .collect(Collectors.toSet());
+            }
+            if (foundCodes != null) {
+                for (String code : codes) {
+                    if (!foundCodes.contains(code)) {
+                        throw DietaryTaxonomyException.forInvalidCode(code);
+                    }
                 }
             }
         }
@@ -329,16 +354,43 @@ public class DishService {
     @Transactional(readOnly = true)
     public DishPageResponse listDishes(String statusFilter, Pageable pageable) {
         UUID tenantId = TenantContextHolder.getTenantId();
-        Page<Dish> page;
+        Page<DishRepository.DishSummaryProjection> page;
         if (statusFilter == null || statusFilter.equalsIgnoreCase("ALL") || statusFilter.isBlank()) {
-            page = dishRepository.findByTenantId(tenantId, pageable);
+            page = dishRepository.findSummaryProjectionsByTenantId(tenantId, pageable);
         } else {
             DishStatus status = DishStatus.valueOf(statusFilter.toUpperCase());
-            page = dishRepository.findByTenantIdAndStatus(tenantId, status, pageable);
+            page = dishRepository.findSummaryProjectionsByTenantIdAndStatus(tenantId, status, pageable);
         }
 
-        List<DishSummaryResponse> content = page.getContent().stream()
-                .map(this::mapToSummaryResponse)
+        List<DishRepository.DishSummaryProjection> projections = page.getContent();
+        if (projections.isEmpty()) {
+            return new DishPageResponse(
+                    List.of(),
+                    page.getNumber(),
+                    page.getSize(),
+                    page.getTotalElements(),
+                    page.getTotalPages(),
+                    page.isLast()
+            );
+        }
+
+        List<UUID> dishIds = projections.stream()
+                .map(DishRepository.DishSummaryProjection::getId)
+                .toList();
+
+        Map<UUID, List<RecipeLineWithIngredientProjection>> recipesByDishId =
+                dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(dishIds, tenantId)
+                        .stream()
+                        .collect(Collectors.groupingBy(RecipeLineWithIngredientProjection::getDishId));
+
+        Set<UUID> dishIdsWithPhoto = dishPhotoRepository.findDishIdsWithPhoto(dishIds);
+
+        List<DishSummaryResponse> content = projections.stream()
+                .map(proj -> mapProjectionToSummaryResponse(
+                        proj,
+                        recipesByDishId.getOrDefault(proj.getId(), List.of()),
+                        dishIdsWithPhoto.contains(proj.getId())
+                ))
                 .toList();
 
         return new DishPageResponse(
@@ -426,30 +478,63 @@ public class DishService {
         );
     }
 
-    private DishSummaryResponse mapToSummaryResponse(Dish dish) {
-        List<String> missingConditions = computeMissingConditions(dish);
-        boolean isCompleteForReview = missingConditions.isEmpty();
-
-        String photoUrl = dishPhotoRepository.existsByDishId(dish.getId())
-                ? "/api/v1/dishes/" + dish.getId() + "/photo"
-                : null;
-
-        int recipeCount = (int) dishRecipeIngredientRepository.countByIdDishId(dish.getId());
+    private DishSummaryResponse mapProjectionToSummaryResponse(
+            DishRepository.DishSummaryProjection proj,
+            List<RecipeLineWithIngredientProjection> recipeLines,
+            boolean hasPhoto) {
+        boolean isCompleteForReview = computeMissingConditionsFromProjection(proj, recipeLines).isEmpty();
+        String photoUrl = hasPhoto ? "/api/v1/dishes/" + proj.getId() + "/photo" : null;
 
         return new DishSummaryResponse(
-                dish.getId(),
-                dish.getTenantId(),
-                dish.getName(),
-                dish.getCategory(),
-                dish.getDescription(),
+                proj.getId(),
+                proj.getTenantId(),
+                proj.getName(),
+                proj.getCategory(),
+                proj.getDescription(),
                 photoUrl,
-                dish.getStatus(),
-                Boolean.TRUE.equals(dish.getAllergensConfirmed()),
-                recipeCount,
+                proj.getStatus(),
+                Boolean.TRUE.equals(proj.getAllergensConfirmed()),
+                recipeLines.size(),
                 isCompleteForReview,
-                dish.getUpdatedAt(),
-                dish.getCreatedAt()
+                proj.getUpdatedAt(),
+                proj.getCreatedAt()
         );
+    }
+
+    private List<String> computeMissingConditionsFromProjection(
+            DishRepository.DishSummaryProjection proj,
+            List<RecipeLineWithIngredientProjection> recipeLines) {
+        List<String> conditions = new ArrayList<>();
+        if (proj.getName() == null || proj.getName().trim().isEmpty()) {
+            conditions.add("El nombre del plato es obligatorio");
+        }
+        if (proj.getCategory() == null) {
+            conditions.add("La categoría del plato es obligatoria");
+        }
+        if (recipeLines.isEmpty()) {
+            conditions.add("La receta debe contener al menos un ingrediente");
+        } else {
+            boolean hasNonPositive = false;
+            boolean hasInactive = false;
+            for (RecipeLineWithIngredientProjection line : recipeLines) {
+                if (line.getQuantity() == null || line.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                    hasNonPositive = true;
+                }
+                if (line.getIngredientStatus() != IngredientStatus.ACTIVE) {
+                    hasInactive = true;
+                }
+            }
+            if (hasNonPositive) {
+                conditions.add("Todos los ingredientes de la receta deben tener una cantidad estrictamente mayor a cero");
+            }
+            if (hasInactive) {
+                conditions.add("Todos los ingredientes de la receta deben estar en estado Activo en el inventario (sin ingredientes discontinuados)");
+            }
+        }
+        if (!Boolean.TRUE.equals(proj.getAllergensConfirmed())) {
+            conditions.add("Se debe confirmar la sección de alérgenos");
+        }
+        return conditions;
     }
 
     @Transactional
@@ -476,17 +561,34 @@ public class DishService {
         if (tenantId == null) {
             throw new IllegalArgumentException("tenantId es obligatorio");
         }
-        List<Dish> dishes = dishRepository.findByTenantId(tenantId, Pageable.unpaged()).getContent();
-        List<com.easyeat.dish.dto.ChefDishesOperationalStatusResponse.ChefDishOperationalStatusItem> items = new ArrayList<>();
+        List<DishRepository.DishOperationalProjection> dishes =
+                dishRepository.findOperationalProjectionsByTenantId(tenantId);
+        if (dishes.isEmpty()) {
+            return new com.easyeat.dish.dto.ChefDishesOperationalStatusResponse(List.of());
+        }
 
-        for (Dish dish : dishes) {
-            boolean hasStock = true; // Por defecto o consultable
+        List<UUID> publishedDishIds = dishes.stream()
+                .filter(d -> d.getStatus() == DishStatus.PUBLISHED)
+                .map(DishRepository.DishOperationalProjection::getId)
+                .toList();
+
+        Map<UUID, List<RecipeLineWithIngredientProjection>> recipesByDishId = new HashMap<>();
+        if (!publishedDishIds.isEmpty()) {
+            recipesByDishId = dishRecipeIngredientRepository
+                    .findRecipeLinesWithIngredientsByDishIdsAndTenantId(publishedDishIds, tenantId)
+                    .stream()
+                    .collect(Collectors.groupingBy(RecipeLineWithIngredientProjection::getDishId));
+        }
+
+        List<com.easyeat.dish.dto.ChefDishesOperationalStatusResponse.ChefDishOperationalStatusItem> items = new ArrayList<>(dishes.size());
+        for (DishRepository.DishOperationalProjection dish : dishes) {
+            boolean hasStock = true;
             if (dish.getStatus() == DishStatus.PUBLISHED) {
-                // Si la receta tiene insumos sin stock
-                List<com.easyeat.dish.domain.DishRecipeIngredient> lines = dishRecipeIngredientRepository.findByIdDishId(dish.getId());
-                for (com.easyeat.dish.domain.DishRecipeIngredient line : lines) {
-                    var ing = ingredientRepository.findByIdAndTenantId(line.getIngredientId(), tenantId);
-                    if (ing.isEmpty() || ing.get().getStatus() != IngredientStatus.ACTIVE || ing.get().getCurrentStock() == null || ing.get().getCurrentStock().compareTo(line.getQuantity()) < 0) {
+                List<RecipeLineWithIngredientProjection> lines = recipesByDishId.getOrDefault(dish.getId(), List.of());
+                for (RecipeLineWithIngredientProjection line : lines) {
+                    if (line.getIngredientStatus() != IngredientStatus.ACTIVE
+                            || line.getCurrentStock() == null
+                            || line.getCurrentStock().compareTo(line.getQuantity()) < 0) {
                         hasStock = false;
                         break;
                     }

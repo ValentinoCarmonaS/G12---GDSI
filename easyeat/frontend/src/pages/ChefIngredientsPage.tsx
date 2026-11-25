@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { ChefIngredientTable } from '../components/chef/ChefIngredientTable';
+import { FeedbackState } from '../components/primitives/FeedbackState';
 import { inventoryApi } from '../api/inventoryApi';
 import {
   ChefIngredientItemResponse,
@@ -53,20 +54,20 @@ export const ChefIngredientsPage: React.FC = () => {
     >
       <div className="space-y-6">
         {/* Navigation & Filters Bar */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
+        <div className="flex flex-col items-start justify-between gap-4 border-b-2 border-ee-border-strong pb-5 md:flex-row md:items-end">
+          <div className="space-y-3">
             <Link
               to="/cocina"
-              className="inline-flex items-center text-xs font-semibold text-orange-600 hover:text-orange-800 mb-2"
+              className="inline-flex min-h-[48px] items-center rounded-ee-sm border-2 border-ee-border-strong bg-ee-surface px-4 py-2 text-sm font-semibold text-ee-text shadow-ee-elevated transition-colors hover:bg-ee-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring"
             >
               ← Volver al Panel KDS de Cocina
             </Link>
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+            <h2 className="font-ee-display text-2xl font-bold tracking-tight text-ee-text">
               Materias Primas Disponibles
             </h2>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-center md:w-auto">
             <div className="w-full sm:w-64">
               <input
                 type="text"
@@ -76,12 +77,15 @@ export const ChefIngredientsPage: React.FC = () => {
                   setPage(0);
                 }}
                 placeholder="Buscar materia prima..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+                className="min-h-[48px] w-full rounded-ee-sm border-2 border-ee-border-strong bg-ee-surface px-3.5 py-2 text-sm text-ee-text placeholder-ee-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring"
               />
             </div>
 
-            <div className="flex items-center gap-1.5 w-full sm:w-auto">
-              <label htmlFor="chefCategoryFilter" className="text-xs text-gray-500 font-medium whitespace-nowrap">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <label
+                htmlFor="chefCategoryFilter"
+                className="whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-ee-text-secondary"
+              >
                 Categoría:
               </label>
               <select
@@ -91,7 +95,7 @@ export const ChefIngredientsPage: React.FC = () => {
                   setSelectedCategory(e.target.value);
                   setPage(0);
                 }}
-                className="px-2.5 py-2 border border-gray-300 rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="min-h-[48px] flex-1 rounded-ee-sm border-2 border-ee-border-strong bg-ee-surface px-3 py-2 text-sm font-medium text-ee-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring sm:flex-none"
               >
                 <option value="ALL">Todas</option>
                 <option value="Produce">Produce</option>
@@ -105,29 +109,29 @@ export const ChefIngredientsPage: React.FC = () => {
         </div>
 
         {error && (
-          <div
-            role="alert"
-            className="p-3 text-sm rounded-md bg-red-50 border border-red-200 text-red-700 animate-fade-in"
-          >
-            {error}
-          </div>
+          <FeedbackState
+            variant="danger"
+            message={error}
+            actionLabel="Reintentar"
+            onAction={fetchCatalog}
+          />
         )}
 
-        {/* Table */}
+        {/* Brutalist Card Grid */}
         <ChefIngredientTable items={items} isLoading={isLoading} />
 
-        {/* Pagination Controls */}
-        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 rounded-lg shadow-xs sm:px-6">
-          <div className="text-xs text-gray-600">
+        {/* Brutalist Pagination Controls */}
+        <div className="flex flex-col items-center justify-between gap-3 rounded-ee-sm border-2 border-ee-border-strong bg-ee-surface px-4 py-3 shadow-ee-elevated sm:flex-row sm:px-6">
+          <div className="font-ee-mono text-xs font-semibold text-ee-text-secondary">
             {`Página ${page + 1} de ${totalPages} (${totalElements} materias primas)`}
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setPage((prev) => Math.max(0, prev - 1))}
               disabled={page === 0 || isLoading}
-              className="px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="min-h-[48px] rounded-ee-sm border-2 border-ee-border-strong bg-ee-surface px-4 py-2 text-xs font-bold uppercase tracking-wider text-ee-text transition-colors hover:bg-ee-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring disabled:cursor-not-allowed disabled:opacity-40"
             >
               Anterior
             </button>
@@ -135,7 +139,7 @@ export const ChefIngredientsPage: React.FC = () => {
               type="button"
               onClick={() => setPage((prev) => prev + 1)}
               disabled={!hasNext || isLoading}
-              className="px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="min-h-[48px] rounded-ee-sm border-2 border-ee-border-strong bg-ee-surface px-4 py-2 text-xs font-bold uppercase tracking-wider text-ee-text transition-colors hover:bg-ee-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ee-focus-ring disabled:cursor-not-allowed disabled:opacity-40"
             >
               Siguiente
             </button>

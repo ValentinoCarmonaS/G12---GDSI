@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { profileApi } from '../api/profileApi';
+import { useClientCache } from '../context/ClientCacheContext';
 import type {
   ProfileResponse,
   PersonalDataRequest,
@@ -9,44 +10,94 @@ import type {
   DietaryRestrictionItem,
 } from '../types/profile';
 
-export function useProfile() {
-  const [profile, setProfile] = useState<ProfileResponse | null>(null);
-  const [taxonomy, setTaxonomy] = useState<DietaryRestrictionItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [taxonomyLoading, setTaxonomyLoading] = useState<boolean>(true);
+export interface UseProfileOptions {
+  enabled?: boolean;
+  loadTaxonomy?: boolean;
+}
+
+const PROFILE_CACHE_KEY = 'profile:me';
+const TAXONOMY_CACHE_KEY = 'taxonomy:dietary';
+
+export function useProfile(options: UseProfileOptions = {}) {
+  const { enabled = true, loadTaxonomy = true } = options;
+  const cache = useClientCache();
+
+  const cachedProfile = enabled ? cache.get<ProfileResponse>(PROFILE_CACHE_KEY)?.data ?? null : null;
+  const cachedTaxonomy =
+    enabled && loadTaxonomy ? cache.get<DietaryRestrictionItem[]>(TAXONOMY_CACHE_KEY)?.data ?? [] : [];
+
+  const [profile, setProfile] = useState<ProfileResponse | null>(cachedProfile);
+  const [taxonomy, setTaxonomy] = useState<DietaryRestrictionItem[]>(cachedTaxonomy);
+  const [loading, setLoading] = useState<boolean>(enabled && !cachedProfile);
+  const [taxonomyLoading, setTaxonomyLoading] = useState<boolean>(enabled && loadTaxonomy && cachedTaxonomy.length === 0);
   const [error, setError] = useState<string | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState<number>(0);
 
-  const fetchProfile = useCallback(async () => {
-    setLoading(true);
+  useEffect(() => {
+    const unsubProfile = cache.subscribe(PROFILE_CACHE_KEY, () => {
+      const entry = cache.get<ProfileResponse>(PROFILE_CACHE_KEY);
+      setProfile(entry?.data ?? null);
+    });
+    const unsubTaxonomy = cache.subscribe(TAXONOMY_CACHE_KEY, () => {
+      const entry = cache.get<DietaryRestrictionItem[]>(TAXONOMY_CACHE_KEY);
+      setTaxonomy(entry?.data ?? []);
+    });
+    return () => {
+      unsubProfile();
+      unsubTaxonomy();
+    };
+  }, [cache]);
+
+  const fetchProfile = useCallback(async (forceRefresh = false) => {
+    const existing = cache.get<ProfileResponse>(PROFILE_CACHE_KEY)?.data;
+    if (!existing) {
+      setLoading(true);
+    }
     setError(null);
+    if (forceRefresh) {
+      cache.invalidate(PROFILE_CACHE_KEY);
+    }
     try {
-      const data = await profileApi.getProfile();
+      const data = await cache.fetchDeduped(PROFILE_CACHE_KEY, () => profileApi.getProfile());
       setProfile(data);
     } catch (err: any) {
-      const msg = err.response?.data?.detail || err.message || 'Error al cargar perfil';
-      setError(msg);
+      if (!cache.get<ProfileResponse>(PROFILE_CACHE_KEY)?.data) {
+        const msg = err.response?.data?.detail || err.message || 'Error al cargar perfil';
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [cache]);
 
   const fetchTaxonomy = useCallback(async () => {
-    setTaxonomyLoading(true);
+    const existing = cache.get<DietaryRestrictionItem[]>(TAXONOMY_CACHE_KEY)?.data;
+    if (!existing) {
+      setTaxonomyLoading(true);
+    }
     try {
-      const data = await profileApi.getDietaryTaxonomy();
+      const data = await cache.fetchDeduped(TAXONOMY_CACHE_KEY, () => profileApi.getDietaryTaxonomy());
       setTaxonomy(data);
     } catch (err: any) {
       console.error('Error al cargar taxonomía dietaria', err);
     } finally {
       setTaxonomyLoading(false);
     }
-  }, []);
+  }, [cache]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      setTaxonomyLoading(false);
+      return;
+    }
     fetchProfile();
-    fetchTaxonomy();
-  }, [fetchProfile, fetchTaxonomy]);
+    if (loadTaxonomy) {
+      fetchTaxonomy();
+    } else {
+      setTaxonomyLoading(false);
+    }
+  }, [enabled, loadTaxonomy, fetchProfile, fetchTaxonomy]);
 
   useEffect(() => {
     if (cooldownSeconds <= 0) return;
@@ -60,7 +111,11 @@ export function useProfile() {
     setError(null);
     try {
       const updated = await profileApi.updatePersonalData(data);
-      setProfile((prev) => (prev ? { ...prev, ...updated } : updated));
+      setProfile((prev) => {
+        const merged = prev ? { ...prev, ...updated } : updated;
+        cache.set(PROFILE_CACHE_KEY, merged);
+        return merged;
+      });
       return updated;
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Error al actualizar datos personales';
@@ -73,7 +128,11 @@ export function useProfile() {
     setError(null);
     try {
       const updated = await profileApi.updateDemographics(data);
-      setProfile((prev) => (prev ? { ...prev, ...updated } : updated));
+      setProfile((prev) => {
+        const merged = prev ? { ...prev, ...updated } : updated;
+        cache.set(PROFILE_CACHE_KEY, merged);
+        return merged;
+      });
       return updated;
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Error al actualizar datos demográficos';
@@ -86,8 +145,12 @@ export function useProfile() {
     setError(null);
     try {
       const response = await profileApi.uploadAvatar(file);
-      setProfile((prev) => (prev ? { ...prev, avatarUrl: response.avatarUrl } : null));
-      await fetchProfile();
+      setProfile((prev) => {
+        const merged = prev ? { ...prev, avatarUrl: response.avatarUrl } : null;
+        if (merged) cache.set(PROFILE_CACHE_KEY, merged);
+        return merged;
+      });
+      await fetchProfile(true);
       return response;
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Error al subir foto de perfil';
@@ -100,8 +163,12 @@ export function useProfile() {
     setError(null);
     try {
       await profileApi.removeAvatar();
-      setProfile((prev) => (prev ? { ...prev, avatarUrl: null } : null));
-      await fetchProfile();
+      setProfile((prev) => {
+        const merged = prev ? { ...prev, avatarUrl: null } : null;
+        if (merged) cache.set(PROFILE_CACHE_KEY, merged);
+        return merged;
+      });
+      await fetchProfile(true);
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Error al eliminar foto de perfil';
       setError(msg);
@@ -113,7 +180,12 @@ export function useProfile() {
     setError(null);
     try {
       const updated = await profileApi.updateDietaryRestrictions(restrictionCodes);
-      setProfile((prev) => (prev ? { ...prev, dietaryRestrictions: updated } : null));
+      setProfile((prev) => {
+        const merged = prev ? { ...prev, dietaryRestrictions: updated } : null;
+        if (merged) cache.set(PROFILE_CACHE_KEY, merged);
+        return merged;
+      });
+      cache.invalidate('catalog:', { prefix: true });
       return updated;
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Error al actualizar preferencias dietarias';
@@ -127,7 +199,7 @@ export function useProfile() {
     try {
       const response = await profileApi.requestEmailChange({ newEmail });
       setCooldownSeconds(60);
-      await fetchProfile();
+      await fetchProfile(true);
       return response;
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Error al solicitar cambio de email';
@@ -158,7 +230,7 @@ export function useProfile() {
     try {
       await profileApi.cancelPendingEmailChange();
       setCooldownSeconds(0);
-      await fetchProfile();
+      await fetchProfile(true);
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || 'Error al cancelar solicitud';
       setError(msg);
@@ -174,7 +246,7 @@ export function useProfile() {
     error,
     cooldownSeconds,
     setCooldownSeconds,
-    refreshProfile: fetchProfile,
+    refreshProfile: () => fetchProfile(true),
     refreshTaxonomy: fetchTaxonomy,
     updatePersonalData,
     updateDemographics,

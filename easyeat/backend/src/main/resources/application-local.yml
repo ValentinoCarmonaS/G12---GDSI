@@ -24,7 +24,6 @@ spring:
     enabled: true
     locations:
       - classpath:db/migration
-      - classpath:db/dev
   mail:
     host: ${SPRING_MAIL_HOST:localhost}
     port: ${SPRING_MAIL_PORT:1025}

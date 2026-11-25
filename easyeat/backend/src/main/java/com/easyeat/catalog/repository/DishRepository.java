@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,11 +35,61 @@ public interface DishRepository extends JpaRepository<Dish, UUID> {
 
     List<Dish> findByTenantIdAndStatusAndIsActiveTrueAndPausedByChefFalse(UUID tenantId, DishStatus status);
 
-    List<Dish> findByIdIn(List<UUID> ids);
+    @Query("SELECT DISTINCT d FROM Dish d LEFT JOIN FETCH d.restrictionCodes "
+            + "WHERE d.tenantId = :tenantId AND d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED "
+            + "AND d.isActive = true AND d.pausedByChef = false "
+            + "ORDER BY d.createdAt ASC, d.id ASC")
+    List<Dish> findPublicCatalogDishesWithRestrictions(@Param("tenantId") UUID tenantId);
+
+    @Query("SELECT DISTINCT d FROM Dish d LEFT JOIN FETCH d.restrictionCodes "
+            + "WHERE d.tenantId = :tenantId AND d.status = com.easyeat.dish.domain.DishStatus.PUBLISHED "
+            + "AND d.isActive = true "
+            + "ORDER BY d.createdAt ASC, d.id ASC")
+    List<Dish> findPublishedActiveDishesWithRestrictions(@Param("tenantId") UUID tenantId);
+
+    List<Dish> findByIdIn(Collection<UUID> ids);
 
     Page<Dish> findByTenantId(UUID tenantId, Pageable pageable);
 
     Page<Dish> findByTenantIdAndStatus(UUID tenantId, DishStatus status, Pageable pageable);
+
+    @Query("SELECT d.id AS id, d.tenantId AS tenantId, d.name AS name, d.category AS category, "
+            + "d.description AS description, d.status AS status, d.allergensConfirmed AS allergensConfirmed, "
+            + "d.updatedAt AS updatedAt, d.createdAt AS createdAt "
+            + "FROM Dish d WHERE d.tenantId = :tenantId")
+    Page<DishSummaryProjection> findSummaryProjectionsByTenantId(@Param("tenantId") UUID tenantId, Pageable pageable);
+
+    @Query("SELECT d.id AS id, d.tenantId AS tenantId, d.name AS name, d.category AS category, "
+            + "d.description AS description, d.status AS status, d.allergensConfirmed AS allergensConfirmed, "
+            + "d.updatedAt AS updatedAt, d.createdAt AS createdAt "
+            + "FROM Dish d WHERE d.tenantId = :tenantId AND d.status = :status")
+    Page<DishSummaryProjection> findSummaryProjectionsByTenantIdAndStatus(
+            @Param("tenantId") UUID tenantId,
+            @Param("status") DishStatus status,
+            Pageable pageable);
+
+    @Query("SELECT d.id AS id, d.pausedByChef AS pausedByChef, d.isActive AS isActive, d.status AS status "
+            + "FROM Dish d WHERE d.tenantId = :tenantId")
+    List<DishOperationalProjection> findOperationalProjectionsByTenantId(@Param("tenantId") UUID tenantId);
+
+    interface DishSummaryProjection {
+        UUID getId();
+        UUID getTenantId();
+        String getName();
+        com.easyeat.dish.domain.DishCategory getCategory();
+        String getDescription();
+        DishStatus getStatus();
+        Boolean getAllergensConfirmed();
+        Instant getUpdatedAt();
+        Instant getCreatedAt();
+    }
+
+    interface DishOperationalProjection {
+        UUID getId();
+        Boolean getPausedByChef();
+        Boolean getIsActive();
+        DishStatus getStatus();
+    }
 
     Optional<Dish> findByIdAndTenantId(UUID id, UUID tenantId);
 

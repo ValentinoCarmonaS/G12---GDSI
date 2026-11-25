@@ -7,7 +7,8 @@ import { PersonalDataForm } from '../components/profile/PersonalDataForm';
 import { PendingEmailBanner } from '../components/profile/PendingEmailBanner';
 import { DietaryRestrictionsSelector } from '../components/profile/DietaryRestrictionsSelector';
 import { MyOrdersSection } from '../components/profile/MyOrdersSection';
-import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { FeedbackState } from '../components/primitives/FeedbackState';
+import { LoadingSkeleton } from '../components/primitives/LoadingSkeleton';
 
 type ProfileTab = 'perfil' | 'pedidos';
 
@@ -102,10 +103,12 @@ export const ProfilePage: React.FC = () => {
 
   return (
     <WorkspaceLayout title="Mi perfil">
-      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">Mi perfil</h1>
-          <p className="text-sm text-neutral-600 mt-1">
+          <h1 className="font-ee-display text-2xl font-bold tracking-tight text-ee-text sm:text-3xl">
+            Mi perfil
+          </h1>
+          <p className="mt-1 text-sm text-ee-text-secondary">
             Administrá tu información personal, preferencias de cuenta y el seguimiento de tus pedidos.
           </p>
         </div>
@@ -113,7 +116,8 @@ export const ProfilePage: React.FC = () => {
         <div
           role="tablist"
           aria-label="Secciones de perfil"
-          className="mb-6 flex items-center gap-2 border-b border-neutral-200"
+          data-bento-tablist="true"
+          className="mb-6 inline-flex flex-wrap items-center gap-1.5 rounded-ee-md border border-ee-border-subtle bg-ee-surface-subtle p-1.5"
         >
           <button
             type="button"
@@ -122,10 +126,10 @@ export const ProfilePage: React.FC = () => {
             aria-selected={activeTab === 'perfil'}
             aria-controls="panel-perfil"
             onClick={() => handleTabChange('perfil')}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            className={`min-h-[44px] rounded-ee-sm px-4 py-2 text-sm font-semibold transition-colors ${
               activeTab === 'perfil'
-                ? 'border-neutral-900 text-neutral-900'
-                : 'border-transparent text-neutral-600 hover:text-neutral-900'
+                ? 'bg-ee-surface-elevated text-ee-text shadow-ee-elevated'
+                : 'text-ee-text-secondary hover:text-ee-text'
             }`}
           >
             Datos y preferencias
@@ -137,10 +141,10 @@ export const ProfilePage: React.FC = () => {
             aria-selected={activeTab === 'pedidos'}
             aria-controls="panel-pedidos"
             onClick={() => handleTabChange('pedidos')}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            className={`min-h-[44px] rounded-ee-sm px-4 py-2 text-sm font-semibold transition-colors ${
               activeTab === 'pedidos'
-                ? 'border-neutral-900 text-neutral-900'
-                : 'border-transparent text-neutral-600 hover:text-neutral-900'
+                ? 'bg-ee-surface-elevated text-ee-text shadow-ee-elevated'
+                : 'text-ee-text-secondary hover:text-ee-text'
             }`}
           >
             Mis pedidos
@@ -152,34 +156,20 @@ export const ProfilePage: React.FC = () => {
             <MyOrdersSection />
           </div>
         ) : (
-          <div role="tabpanel" id="panel-perfil" aria-labelledby="tab-perfil">
-            {error && (
-              <div
-                role="alert"
-                className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-center gap-3"
-              >
-                <AlertCircle className="w-5 h-5 shrink-0 text-red-600" />
-                <span>{error}</span>
-              </div>
-            )}
+          <div role="tabpanel" id="panel-perfil" aria-labelledby="tab-perfil" className="space-y-6">
+            {error && <FeedbackState variant="danger" role="alert" title="Error en el perfil" message={error} />}
 
             {successBanner && (
-              <div
-                role="status"
-                className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-3 animate-fade-in"
-              >
-                <CheckCircle className="w-5 h-5 shrink-0 text-emerald-600" />
-                <span>{successBanner}</span>
-              </div>
+              <FeedbackState variant="success" title="Cambios guardados" message={successBanner} />
             )}
 
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-16 space-y-3 bg-white rounded-xl border border-neutral-200">
-                <Loader2 className="w-8 h-8 text-amber-600 animate-spin" />
-                <p className="text-sm text-neutral-500 font-medium">Cargando perfil...</p>
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <LoadingSkeleton variant="block" />
+                <LoadingSkeleton variant="block" />
               </div>
             ) : (
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {profile?.pendingEmail && (
                   <PendingEmailBanner
                     pendingEmail={profile.pendingEmail}
@@ -191,22 +181,24 @@ export const ProfilePage: React.FC = () => {
                   />
                 )}
 
-                <PersonalDataForm
-                  initialData={profile || undefined}
-                  onSubmit={handlePersonalDataSubmit}
-                  onRequestEmailChange={handleRequestEmailChange}
-                  onUploadAvatar={async (file) => {
-                    await uploadAvatar(file);
-                  }}
-                  onRemoveAvatar={removeAvatar}
-                />
+                <div data-testid="profile-bento-grid" className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <PersonalDataForm
+                    initialData={profile || undefined}
+                    onSubmit={handlePersonalDataSubmit}
+                    onRequestEmailChange={handleRequestEmailChange}
+                    onUploadAvatar={async (file) => {
+                      await uploadAvatar(file);
+                    }}
+                    onRemoveAvatar={removeAvatar}
+                  />
 
-                <DietaryRestrictionsSelector
-                  availableTaxonomy={taxonomy}
-                  selectedCodes={(profile?.dietaryRestrictions || []).map((r) => r.code)}
-                  onSave={handleDietarySubmit}
-                  loading={taxonomyLoading}
-                />
+                  <DietaryRestrictionsSelector
+                    availableTaxonomy={taxonomy}
+                    selectedCodes={(profile?.dietaryRestrictions || []).map((r) => r.code)}
+                    onSave={handleDietarySubmit}
+                    loading={taxonomyLoading}
+                  />
+                </div>
               </div>
             )}
           </div>

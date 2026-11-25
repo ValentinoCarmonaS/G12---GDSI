@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { User as UserIcon, Camera, Trash2 } from 'lucide-react';
 import { PhotoDeleteConfirmModal } from './PhotoDeleteConfirmModal';
 import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
+import { BentoCard } from '../diner/BentoCard';
+import { Button } from '../primitives/Button';
 
 export interface PersonalDataFormProps {
   initialData?: {
@@ -52,10 +54,22 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
 
   // Avatar state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(initialData?.avatarUrl || null);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
   const [stagedPhotoFile, setStagedPhotoFile] = useState<File | null>(null);
   const [isPhotoRemovalPending, setIsPhotoRemovalPending] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [avatarVersion, setAvatarVersion] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleAvatarChanged = () => setAvatarVersion((v) => v + 1);
+    window.addEventListener('easyeat:avatar-changed', handleAvatarChanged);
+    return () => window.removeEventListener('easyeat:avatar-changed', handleAvatarChanged);
+  }, []);
+
+  const authenticatedAvatarSrc = useMemo(() => {
+    return avatarPreview && !avatarLoadError ? getAuthenticatedAvatarUrl(avatarPreview) : null;
+  }, [avatarPreview, avatarLoadError, avatarVersion]);
 
   // Email state
   const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -81,6 +95,7 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
     setGender(initialData?.gender || '');
     setAddress(initialData?.address || '');
     setAvatarPreview(initialData?.avatarUrl || null);
+    setAvatarLoadError(false);
     setStagedPhotoFile(null);
     setIsPhotoRemovalPending(false);
     setErrors({});
@@ -116,6 +131,7 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
 
     setStagedPhotoFile(file);
     setIsPhotoRemovalPending(false);
+    setAvatarLoadError(false);
     const previewUrl = URL.createObjectURL(file);
     setAvatarPreview(previewUrl);
   };
@@ -211,6 +227,7 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
     setGender(initialData?.gender || '');
     setAddress(initialData?.address || '');
     setAvatarPreview(initialData?.avatarUrl || null);
+    setAvatarLoadError(false);
     setStagedPhotoFile(null);
     setIsPhotoRemovalPending(false);
     setErrors({});
@@ -240,21 +257,22 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
-      <h2 className="text-xl font-semibold text-neutral-900 mb-6">Datos personales</h2>
+    <BentoCard variant="elevated" padding="md">
+      <h2 className="mb-6 font-ee-display text-xl font-bold text-ee-text">Datos personales</h2>
 
       {/* Avatar Management Section */}
-      <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 mb-6 border-b border-neutral-100">
+      <div className="mb-6 flex flex-col items-center gap-6 border-b border-ee-border-subtle pb-6 sm:flex-row">
         <div className="relative">
-          <div className="w-24 h-24 rounded-full overflow-hidden bg-neutral-100 border-2 border-neutral-200 flex items-center justify-center text-neutral-400">
-            {avatarPreview ? (
+          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-ee-border-subtle bg-ee-surface-subtle text-ee-text-muted">
+            {authenticatedAvatarSrc ? (
               <img
-                src={getAuthenticatedAvatarUrl(avatarPreview)}
+                src={authenticatedAvatarSrc}
                 alt="Avatar comensal"
-                className="w-full h-full object-cover"
+                onError={() => setAvatarLoadError(true)}
+                className="h-full w-full object-cover"
               />
             ) : (
-              <UserIcon className="w-12 h-12 text-neutral-400" />
+              <UserIcon className="h-12 w-12 text-ee-text-muted" aria-hidden="true" />
             )}
           </div>
         </div>
@@ -263,9 +281,9 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
           <div className="flex flex-wrap items-center gap-3">
             <label
               htmlFor="avatar-file-input"
-              className="px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-2"
+              className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-ee-sm border border-ee-border-subtle bg-ee-surface-subtle px-4 py-2 text-sm font-medium text-ee-text transition-colors hover:border-ee-border-strong hover:bg-ee-surface-elevated"
             >
-              <Camera className="w-4 h-4" />
+              <Camera className="h-4 w-4" aria-hidden="true" />
               {avatarPreview ? 'Cambiar foto' : 'Subir foto'}
             </label>
             <input
@@ -278,20 +296,22 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
             />
 
             {avatarPreview && (
-              <button
+              <Button
                 type="button"
+                variant="danger"
+                size="sm"
                 onClick={() => setIsDeleteModalOpen(true)}
-                className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors inline-flex items-center gap-2"
+                className="min-h-[44px]"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
                 Eliminar foto
-              </button>
+              </Button>
             )}
           </div>
-          <span className="text-xs text-neutral-500">
+          <span className="text-xs text-ee-text-muted">
             Formatos admitidos: JPEG, PNG, WebP. Tamaño máximo: 5 MB.
           </span>
-          {errors.photo && <p className="text-xs text-red-600">{errors.photo}</p>}
+          {errors.photo && <p className="text-xs text-ee-danger-text">{errors.photo}</p>}
         </div>
       </div>
 
@@ -490,7 +510,7 @@ export const PersonalDataForm: React.FC<PersonalDataFormProps> = ({
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmPhotoRemoval}
       />
-    </div>
+    </BentoCard>
   );
 };
 

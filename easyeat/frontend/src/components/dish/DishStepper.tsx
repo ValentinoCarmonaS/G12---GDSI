@@ -5,47 +5,72 @@ export type DishEditorTab = 'identity' | 'recipe' | 'allergens' | 'review';
 export interface DishStepperProps {
   activeTab: DishEditorTab;
   onTabChange: (tab: DishEditorTab) => void;
-  hasDishId: boolean;
+  hasDishId?: boolean;
   status?: string;
   isLocked?: boolean;
+  completedSteps?: Partial<Record<DishEditorTab, boolean>>;
 }
+
+const STEPS: { id: DishEditorTab; number: string; label: string }[] = [
+  { id: 'identity', number: '01', label: 'Identidad del plato' },
+  { id: 'recipe', number: '02', label: 'Receta (BOM)' },
+  { id: 'allergens', number: '03', label: 'Alérgenos' },
+  { id: 'review', number: '04', label: 'Revisión y Envío' },
+];
 
 export const DishStepper: React.FC<DishStepperProps> = ({
   activeTab,
   onTabChange,
-  hasDishId,
+  completedSteps,
 }) => {
-  const steps: { id: DishEditorTab; label: string; requiresDish: boolean }[] = [
-    { id: 'identity', label: 'Paso 1: Identidad del plato', requiresDish: false },
-    { id: 'recipe', label: 'Paso 2: Receta (BOM)', requiresDish: true },
-    { id: 'allergens', label: 'Paso 3: Alérgenos', requiresDish: true },
-    { id: 'review', label: 'Paso 4: Revisión y Envío', requiresDish: true },
-  ];
-
   return (
-    <div className="flex border-b border-gray-800 mb-6 gap-2 overflow-x-auto">
-      {steps.map((step) => {
-        const isActive = activeTab === step.id;
-        const isDisabled = step.requiresDish && !hasDishId;
+    <nav aria-label="Pasos de edición del plato" className="mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        {STEPS.map((step) => {
+          const isActive = activeTab === step.id;
+          const isCompleted = Boolean(completedSteps?.[step.id]);
 
-        return (
-          <button
-            key={step.id}
-            type="button"
-            disabled={isDisabled}
-            onClick={() => onTabChange(step.id)}
-            className={`py-2.5 px-4 text-sm font-semibold border-b-2 whitespace-nowrap transition-colors ${
-              isActive
-                ? 'border-amber-500 text-amber-400'
-                : 'border-transparent text-gray-400 hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed'
-            }`}
-            title={isDisabled ? 'Creá el borrador básico primero' : undefined}
-          >
-            {step.label}
-          </button>
-        );
-      })}
-    </div>
+          return (
+            <button
+              key={step.id}
+              type="button"
+              onClick={() => onTabChange(step.id)}
+              aria-current={isActive ? 'step' : undefined}
+              className={`min-h-[48px] px-4 py-3 border-2 border-[#0A0A0A] text-left flex items-center justify-between gap-2 transition-colors ${
+                isActive
+                  ? 'bg-[#0A0A0A] text-[#FFFFFF]'
+                  : 'bg-[#FFFFFF] text-[#0A0A0A] hover:bg-[#F5F5F4]'
+              }`}
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <span
+                  className={`font-mono text-xs font-bold px-1.5 py-0.5 border ${
+                    isActive
+                      ? 'border-[#FFFFFF] text-[#FFFFFF]'
+                      : 'border-[#0A0A0A] bg-[#F5F5F4] text-[#0A0A0A]'
+                  }`}
+                >
+                  {step.number}
+                </span>
+                <span className="text-sm font-bold uppercase tracking-wide truncate">
+                  {step.label}
+                </span>
+              </span>
+              {isCompleted && (
+                <span
+                  aria-label="Completado"
+                  className={`font-mono text-xs font-bold shrink-0 ${
+                    isActive ? 'text-[#009866]' : 'text-[#007A52]'
+                  }`}
+                >
+                  OK
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 };
 

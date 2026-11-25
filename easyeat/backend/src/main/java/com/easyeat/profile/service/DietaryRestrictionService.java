@@ -1,6 +1,7 @@
 package com.easyeat.profile.service;
 
 import com.easyeat.auth.domain.User;
+import com.easyeat.profile.cache.DietaryTaxonomyCache;
 import com.easyeat.profile.domain.DietaryRestriction;
 import com.easyeat.profile.domain.UserDietaryRestriction;
 import com.easyeat.profile.dto.DietaryPreferencesRequest;
@@ -10,6 +11,7 @@ import com.easyeat.profile.repository.DietaryRestrictionRepository;
 import com.easyeat.profile.repository.UserDietaryRestrictionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,13 +25,24 @@ public class DietaryRestrictionService {
 
     private final DietaryRestrictionRepository dietaryRestrictionRepository;
     private final UserDietaryRestrictionRepository userDietaryRestrictionRepository;
+    private final DietaryTaxonomyCache dietaryTaxonomyCache;
 
     public DietaryRestrictionService(
             DietaryRestrictionRepository dietaryRestrictionRepository,
             UserDietaryRestrictionRepository userDietaryRestrictionRepository
     ) {
+        this(dietaryRestrictionRepository, userDietaryRestrictionRepository, null);
+    }
+
+    @Autowired
+    public DietaryRestrictionService(
+            DietaryRestrictionRepository dietaryRestrictionRepository,
+            UserDietaryRestrictionRepository userDietaryRestrictionRepository,
+            DietaryTaxonomyCache dietaryTaxonomyCache
+    ) {
         this.dietaryRestrictionRepository = dietaryRestrictionRepository;
         this.userDietaryRestrictionRepository = userDietaryRestrictionRepository;
+        this.dietaryTaxonomyCache = dietaryTaxonomyCache;
     }
 
     /**
@@ -37,8 +50,10 @@ public class DietaryRestrictionService {
      */
     @Transactional(readOnly = true)
     public List<DietaryRestrictionItemDto> getDietaryTaxonomy() {
-        return dietaryRestrictionRepository.findAllByOrderByCategoryAscNameAsc()
-                .stream()
+        List<DietaryRestriction> restrictions = dietaryTaxonomyCache != null
+                ? dietaryTaxonomyCache.getAll()
+                : dietaryRestrictionRepository.findAllByOrderByCategoryAscNameAsc();
+        return restrictions.stream()
                 .map(DietaryRestrictionItemDto::fromEntity)
                 .toList();
     }

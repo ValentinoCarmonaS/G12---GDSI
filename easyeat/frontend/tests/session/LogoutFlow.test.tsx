@@ -46,6 +46,10 @@ describe('Logout Flow (FR-016, SC-006)', () => {
       </MemoryRouter>
     );
 
+    expect(screen.queryByRole('button', { name: /cerrar sesión/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /abrir menú de navegación/i }));
+
     const logoutBtn = screen.getByRole('button', { name: /cerrar sesión/i });
     expect(logoutBtn).toBeInTheDocument();
 

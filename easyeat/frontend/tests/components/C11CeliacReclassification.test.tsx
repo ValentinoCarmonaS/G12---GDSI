@@ -31,14 +31,14 @@ describe('C-11: Reclasificación de Celíaco de estilo de vida a alérgeno (Chef
 
     // Group 1: Estilos de Vida Dietarios
     const lifestylesHeader = screen.getByText(/Estilos de Vida Dietarios/i);
-    const lifestylesSection = lifestylesHeader.closest('.rounded-xl') as HTMLElement;
+    const lifestylesSection = lifestylesHeader.closest('section') as HTMLElement;
     expect(within(lifestylesSection).queryByText('Celíaco')).not.toBeInTheDocument();
     expect(within(lifestylesSection).getByText('Vegano')).toBeInTheDocument();
     expect(within(lifestylesSection).getByText('Vegetariano')).toBeInTheDocument();
 
     // Group 2: Alérgenos Comunes
     const allergensHeader = screen.getByText(/Alérgenos Comunes/i);
-    const allergensSection = allergensHeader.closest('.rounded-xl') as HTMLElement;
+    const allergensSection = allergensHeader.closest('section') as HTMLElement;
     expect(within(allergensSection).getByText('Celíaco')).toBeInTheDocument();
     expect(within(allergensSection).getByText('Lácteos')).toBeInTheDocument();
   });

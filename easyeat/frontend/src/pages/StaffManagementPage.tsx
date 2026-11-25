@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { StaffRosterTable } from '../components/staff/StaffRosterTable';
 import { StaffFormModal } from '../components/staff/StaffFormModal';
+import { StaffStatusModal } from '../components/staff/StaffStatusModal';
 import { TemporaryCredentialsModal } from '../components/staff/TemporaryCredentialsModal';
 import { staffApi } from '../api/staffApi';
 import {
+  StaffAccountStatus,
   StaffMemberResponse,
   StaffRegistrationRequest,
   StaffUpdateRequest,
@@ -19,6 +21,11 @@ export const StaffManagementPage: React.FC = () => {
   // Form modal state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffMemberResponse | null>(null);
+
+  // Status modal state
+  const [statusTargetStaff, setStatusTargetStaff] = useState<StaffMemberResponse | null>(null);
+  const [isStatusSubmitting, setIsStatusSubmitting] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   // Temporary credentials modal state
   const [credentialModalData, setCredentialModalData] = useState<{
@@ -52,6 +59,33 @@ export const StaffManagementPage: React.FC = () => {
   const handleOpenEdit = (staff: StaffMemberResponse) => {
     setSelectedStaff(staff);
     setIsFormOpen(true);
+  };
+
+  const handleOpenStatusModal = (staff: StaffMemberResponse) => {
+    setStatusError(null);
+    setStatusTargetStaff(staff);
+  };
+
+  const handleConfirmStatusChange = async (id: string, status: StaffAccountStatus) => {
+    setIsStatusSubmitting(true);
+    setStatusError(null);
+    try {
+      await staffApi.updateStaffStatus(id, status);
+      setStatusTargetStaff(null);
+      await fetchStaff();
+    } catch (err: unknown) {
+      const maybeAxios = err as { response?: { status?: number; data?: { detail?: string } } };
+      if (maybeAxios.response?.status === 409) {
+        setStatusError(
+          maybeAxios.response.data?.detail ||
+            'No se puede suspender al único administrador activo del establecimiento.'
+        );
+      } else {
+        setStatusError('No se pudo actualizar el estado del empleado. Intente nuevamente.');
+      }
+    } finally {
+      setIsStatusSubmitting(false);
+    }
   };
 
   const handleFormSubmit = async (data: StaffRegistrationRequest | StaffUpdateRequest) => {
@@ -94,7 +128,7 @@ export const StaffManagementPage: React.FC = () => {
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center min-h-[44px] px-4 py-2 bg-ee-primary hover:opacity-95 text-white text-sm font-medium rounded-ee-sm shadow-sm transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ee-focus-ring"
           >
             + Nuevo Empleado
           </button>
@@ -113,7 +147,18 @@ export const StaffManagementPage: React.FC = () => {
         <StaffRosterTable
           staffMembers={staffMembers}
           onEdit={handleOpenEdit}
+          onToggleStatus={handleOpenStatusModal}
           isLoading={isLoading}
+        />
+
+        {/* Staff Status Confirmation Modal */}
+        <StaffStatusModal
+          isOpen={Boolean(statusTargetStaff)}
+          staffMember={statusTargetStaff}
+          onClose={() => setStatusTargetStaff(null)}
+          onConfirm={handleConfirmStatusChange}
+          isSubmitting={isStatusSubmitting}
+          error={statusError}
         />
 
         {/* Staff Form Modal */}

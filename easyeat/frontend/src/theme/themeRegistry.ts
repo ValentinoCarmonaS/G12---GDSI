@@ -1,0 +1,317 @@
+import type {
+  GetThemeContract,
+  RoleThemeId,
+  RoleVisualThemeContract,
+} from './types';
+
+const MONO_FONT_STACK = "'JetBrains Mono', ui-monospace, monospace";
+const MONO_ALLOWED_WEIGHTS: readonly number[] = [400, 500, 600];
+
+const COMENSAL_SANS = "'DM Sans', ui-sans-serif, system-ui, sans-serif";
+const COMENSAL_COLORS = {
+  surface: '#FFF5E6',
+  surfaceElevated: '#FFFFFF',
+  surfaceSubtle: '#F5E6D0',
+  text: '#111827',
+  textSecondary: '#475569',
+  borderSubtle: '#D6C2A8',
+  borderStrong: '#7A6855',
+  primary: '#FAD4C0',
+  onPrimary: '#111827',
+  primaryHover: '#F3BEA2',
+  primaryBorder: '#9A4A24',
+  secondary: '#80A1C1',
+  onSecondary: '#111827',
+  secondaryHover: '#6B90B4',
+  secondaryBorder: '#3B5E82',
+  dangerSolid: '#B91C1C',
+  onDanger: '#FFFFFF',
+  dangerHover: '#991B1B',
+  focusRing: '#1E40AF',
+} as const;
+
+const MOSTRADOR_DISPLAY = "'Archivo Black', 'Arial Black', sans-serif";
+const MOSTRADOR_SANS = "'Archivo', ui-sans-serif, system-ui, sans-serif";
+const MOSTRADOR_COLORS = {
+  surface: '#111111',
+  surfaceElevated: '#1C1C1F',
+  surfaceSubtle: '#26262B',
+  text: '#F8FAFC',
+  textSecondary: '#CBD5E1',
+  borderSubtle: '#3F3F46',
+  borderStrong: '#71717A',
+  primary: '#0077BC',
+  onPrimary: '#FFFFFF',
+  primaryHover: '#00639E',
+  primaryBorder: '#38BDF8',
+  secondary: '#009866',
+  onSecondary: '#0A0A0A',
+  secondaryHover: '#00B377',
+  secondaryBorder: '#34D399',
+  dangerSolid: '#DC2626',
+  onDanger: '#FFFFFF',
+  dangerHover: '#B91C1C',
+  focusRing: '#38BDF8',
+} as const;
+
+const CHEF_SANS = "'Darker Grotesque', ui-sans-serif, system-ui, sans-serif";
+const CHEF_COLORS = {
+  surface: '#FFFFFF',
+  surfaceElevated: '#F4F4F0',
+  surfaceSubtle: '#E7E7E0',
+  text: '#111827',
+  textSecondary: '#374151',
+  borderSubtle: '#737373',
+  borderStrong: '#111827',
+  primary: '#DD614C',
+  onPrimary: '#111827',
+  primaryHover: '#E67966',
+  primaryBorder: '#111827',
+  secondary: '#DAA144',
+  onSecondary: '#111827',
+  secondaryHover: '#C68D32',
+  secondaryBorder: '#111827',
+  dangerSolid: '#B91C1C',
+  onDanger: '#FFFFFF',
+  dangerHover: '#991B1B',
+  focusRing: '#111827',
+} as const;
+
+const ADMIN_SANS = "'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif";
+const ADMIN_COLORS = {
+  surface: '#F4F7FC',
+  surfaceElevated: '#FFFFFF',
+  surfaceSubtle: '#E8EEF8',
+  text: '#141414',
+  textSecondary: '#475569',
+  borderSubtle: '#CBD5E1',
+  borderStrong: '#64748B',
+  primary: '#1856FF',
+  onPrimary: '#FFFFFF',
+  primaryHover: '#0F45DB',
+  primaryBorder: '#1856FF',
+  secondary: '#3A344E',
+  onSecondary: '#FFFFFF',
+  secondaryHover: '#2B263B',
+  secondaryBorder: '#3A344E',
+  dangerSolid: '#C81433',
+  onDanger: '#FFFFFF',
+  dangerHover: '#A60F29',
+  focusRing: '#1856FF',
+} as const;
+
+export const ROLE_THEME_REGISTRY: Readonly<Record<RoleThemeId, RoleVisualThemeContract>> = {
+  comensal: {
+    id: 'comensal',
+    designName: 'Bento',
+    sourceContractPath: '.specify/memory/designs/comensal.DESIGN.md',
+    colors: COMENSAL_COLORS,
+    typography: {
+      displayFamily: COMENSAL_SANS,
+      sansFamily: COMENSAL_SANS,
+      monoFamily: MONO_FONT_STACK,
+      allowedWeights: {
+        display: [400, 500, 600, 700],
+        sans: [400, 500, 600, 700],
+        mono: MONO_ALLOWED_WEIGHTS,
+      },
+    },
+    geometry: {
+      radiusSm: '8px',
+      radiusMd: '14px',
+      radiusLg: '20px',
+      borderWidth: '1px',
+      spacingScalePx: [4, 8, 12, 16, 24, 32],
+    },
+    elevation: {
+      shadowElevated: '0 2px 10px rgba(17, 24, 39, 0.06)',
+      backdropBlur: 'none',
+    },
+    semantics: {
+      neutral: { bg: '#EFE3D0', fg: '#1F2937', border: COMENSAL_COLORS.borderStrong },
+      info: { bg: '#E0F2FE', fg: '#0C4A6E', border: '#0369A1' },
+      success: { bg: '#DCFCE7', fg: '#14532D', border: '#15803D' },
+      warning: { bg: '#FEF3C7', fg: '#78350F', border: '#B45309' },
+      danger: { bg: '#FEE2E2', fg: '#7F1D1D', border: COMENSAL_COLORS.dangerSolid },
+    },
+    dataViz: {
+      series: [
+        COMENSAL_COLORS.primaryBorder,
+        '#2B5B84',
+        '#15803D',
+        '#B45309',
+        COMENSAL_COLORS.dangerSolid,
+      ],
+      gridStroke: COMENSAL_COLORS.borderSubtle,
+      axisStroke: COMENSAL_COLORS.borderStrong,
+      axisLabelFg: '#374151',
+      tooltip: {
+        bg: COMENSAL_COLORS.text,
+        fg: COMENSAL_COLORS.surface,
+        border: COMENSAL_COLORS.primaryBorder,
+      },
+      cursorFill: 'rgba(154, 74, 36, 0.10)',
+      fontFamilySans: COMENSAL_SANS,
+      fontFamilyMono: MONO_FONT_STACK,
+    },
+  },
+  mostrador: {
+    id: 'mostrador',
+    designName: 'Bold',
+    sourceContractPath: '.specify/memory/designs/mostrador.DESIGN.md',
+    colors: MOSTRADOR_COLORS,
+    typography: {
+      displayFamily: MOSTRADOR_DISPLAY,
+      sansFamily: MOSTRADOR_SANS,
+      monoFamily: MONO_FONT_STACK,
+      allowedWeights: {
+        display: [400],
+        sans: [400, 500, 600, 700],
+        mono: MONO_ALLOWED_WEIGHTS,
+      },
+    },
+    geometry: {
+      radiusSm: '4px',
+      radiusMd: '8px',
+      radiusLg: '12px',
+      borderWidth: '2px',
+      spacingScalePx: [4, 8, 12, 16, 24, 32],
+    },
+    elevation: {
+      shadowElevated: '0 8px 24px rgba(0, 0, 0, 0.45)',
+      backdropBlur: 'none',
+    },
+    semantics: {
+      neutral: { bg: '#27272A', fg: '#F4F4F5', border: MOSTRADOR_COLORS.borderStrong },
+      info: { bg: '#082F49', fg: '#BAE6FD', border: MOSTRADOR_COLORS.primaryBorder },
+      success: { bg: '#052E16', fg: '#BBF7D0', border: '#22C55E' },
+      warning: { bg: '#451A03', fg: '#FDE68A', border: '#F59E0B' },
+      danger: { bg: '#450A0A', fg: '#FECACA', border: '#F87171' },
+    },
+    dataViz: {
+      series: [
+        MOSTRADOR_COLORS.primaryBorder,
+        MOSTRADOR_COLORS.secondaryBorder,
+        '#FBBF24',
+        '#F87171',
+        '#C084FC',
+      ],
+      gridStroke: '#2E2E34',
+      axisStroke: MOSTRADOR_COLORS.borderStrong,
+      axisLabelFg: MOSTRADOR_COLORS.textSecondary,
+      tooltip: {
+        bg: MOSTRADOR_COLORS.surfaceElevated,
+        fg: MOSTRADOR_COLORS.text,
+        border: MOSTRADOR_COLORS.borderStrong,
+      },
+      cursorFill: 'rgba(56, 189, 248, 0.14)',
+      fontFamilySans: MOSTRADOR_SANS,
+      fontFamilyMono: MONO_FONT_STACK,
+    },
+  },
+  chef: {
+    id: 'chef',
+    designName: 'Brutalism',
+    sourceContractPath: '.specify/memory/designs/chef.DESIGN.md',
+    colors: CHEF_COLORS,
+    typography: {
+      displayFamily: CHEF_SANS,
+      sansFamily: CHEF_SANS,
+      monoFamily: MONO_FONT_STACK,
+      allowedWeights: {
+        display: [500, 600, 700, 800],
+        sans: [500, 600, 700, 800],
+        mono: MONO_ALLOWED_WEIGHTS,
+      },
+    },
+    geometry: {
+      radiusSm: '0px',
+      radiusMd: '2px',
+      radiusLg: '4px',
+      borderWidth: '2px',
+      spacingScalePx: [4, 8, 12, 16, 24, 32],
+    },
+    elevation: {
+      shadowElevated: '4px 4px 0px #111827',
+      backdropBlur: 'none',
+    },
+    semantics: {
+      neutral: { bg: '#F3F4F6', fg: CHEF_COLORS.text, border: CHEF_COLORS.borderStrong },
+      info: { bg: '#E0F2FE', fg: '#0C4A6E', border: '#0369A1' },
+      success: { bg: '#DCFCE7', fg: '#14532D', border: '#15803D' },
+      warning: { bg: '#FEF3C7', fg: '#78350F', border: '#B45309' },
+      danger: { bg: '#FEE2E2', fg: '#7F1D1D', border: CHEF_COLORS.dangerSolid },
+    },
+    dataViz: {
+      series: ['#B83B28', '#8F6210', '#15803D', '#1D4ED8', CHEF_COLORS.textSecondary],
+      gridStroke: '#D4D4CE',
+      axisStroke: CHEF_COLORS.borderStrong,
+      axisLabelFg: CHEF_COLORS.text,
+      tooltip: {
+        bg: CHEF_COLORS.text,
+        fg: CHEF_COLORS.surface,
+        border: CHEF_COLORS.borderStrong,
+      },
+      cursorFill: 'rgba(17, 24, 39, 0.08)',
+      fontFamilySans: CHEF_SANS,
+      fontFamilyMono: MONO_FONT_STACK,
+    },
+  },
+  admin: {
+    id: 'admin',
+    designName: 'Glassmorphism',
+    sourceContractPath: '.specify/memory/designs/admin.DESIGN.md',
+    colors: ADMIN_COLORS,
+    typography: {
+      displayFamily: ADMIN_SANS,
+      sansFamily: ADMIN_SANS,
+      monoFamily: MONO_FONT_STACK,
+      allowedWeights: {
+        display: [400, 500, 600, 700],
+        sans: [400, 500, 600, 700],
+        mono: MONO_ALLOWED_WEIGHTS,
+      },
+    },
+    geometry: {
+      radiusSm: '6px',
+      radiusMd: '12px',
+      radiusLg: '16px',
+      borderWidth: '1px',
+      spacingScalePx: [8, 12, 16, 24, 32],
+    },
+    elevation: {
+      shadowElevated: '0 8px 28px rgba(24, 86, 255, 0.08)',
+      surfaceElevatedGlass: 'rgba(255, 255, 255, 0.82)',
+      backdropBlur: 'blur(12px)',
+    },
+    semantics: {
+      neutral: { bg: '#EEF2F6', fg: '#1E293B', border: ADMIN_COLORS.borderStrong },
+      info: { bg: '#E8F0FF', fg: '#0F369E', border: ADMIN_COLORS.primary },
+      success: { bg: '#E6FBF0', fg: '#045D33', border: '#059652' },
+      warning: { bg: '#FEF2E8', fg: '#8A3E0A', border: '#C25E18' },
+      danger: { bg: '#FDECEF', fg: '#9E0E27', border: ADMIN_COLORS.dangerSolid },
+    },
+    dataViz: {
+      series: [
+        ADMIN_COLORS.primary,
+        ADMIN_COLORS.secondary,
+        '#047843',
+        '#B85410',
+        ADMIN_COLORS.dangerSolid,
+      ],
+      gridStroke: ADMIN_COLORS.borderSubtle,
+      axisStroke: ADMIN_COLORS.borderStrong,
+      axisLabelFg: '#334155',
+      tooltip: {
+        bg: ADMIN_COLORS.text,
+        fg: ADMIN_COLORS.surfaceElevated,
+        border: ADMIN_COLORS.borderStrong,
+      },
+      cursorFill: 'rgba(24, 86, 255, 0.10)',
+      fontFamilySans: ADMIN_SANS,
+      fontFamilyMono: MONO_FONT_STACK,
+    },
+  },
+};
+
+export const getThemeContract: GetThemeContract = (themeId) => ROLE_THEME_REGISTRY[themeId];

@@ -3,11 +3,13 @@ package com.easyeat.operations.service;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.exception.EstablishmentNotFoundException;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.operations.cache.OperatingScheduleCache;
 import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
 import com.easyeat.operations.domain.ScheduleChange;
 import com.easyeat.operations.exception.InvalidScheduleException;
 import com.easyeat.operations.exception.OperatingConfigConflictException;
 import com.easyeat.operations.repository.OperatingScheduleRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -30,15 +32,27 @@ public class OperatingScheduleService {
 
     private final OperatingScheduleRepository scheduleRepository;
     private final EstablishmentRepository establishmentRepository;
+    private final OperatingScheduleCache operatingScheduleCache;
 
     public OperatingScheduleService(OperatingScheduleRepository scheduleRepository,
                                     EstablishmentRepository establishmentRepository) {
+        this(scheduleRepository, establishmentRepository, null);
+    }
+
+    @Autowired
+    public OperatingScheduleService(OperatingScheduleRepository scheduleRepository,
+                                    EstablishmentRepository establishmentRepository,
+                                    OperatingScheduleCache operatingScheduleCache) {
         this.scheduleRepository = scheduleRepository;
         this.establishmentRepository = establishmentRepository;
+        this.operatingScheduleCache = operatingScheduleCache;
     }
 
     @Transactional(readOnly = true)
     public List<EstablishmentOperatingSchedule> getWeek(UUID establishmentId) {
+        if (operatingScheduleCache != null) {
+            return operatingScheduleCache.getWeekList(establishmentId);
+        }
         return scheduleRepository.findByEstablishmentId(establishmentId).stream()
                 .sorted(java.util.Comparator.comparing(EstablishmentOperatingSchedule::getDayOfWeek))
                 .toList();
@@ -97,7 +111,11 @@ public class OperatingScheduleService {
         });
 
         try {
-            return scheduleRepository.saveAllAndFlush(toSave);
+            List<EstablishmentOperatingSchedule> saved = scheduleRepository.saveAllAndFlush(toSave);
+            if (operatingScheduleCache != null) {
+                operatingScheduleCache.evict(establishmentId);
+            }
+            return saved;
         } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException e) {
             throw new OperatingConfigConflictException();
         }

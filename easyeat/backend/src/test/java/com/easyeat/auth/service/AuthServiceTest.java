@@ -147,8 +147,8 @@ class AuthServiceTest {
         when(passwordEncoder.matches(password, "hashedChefPassword")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.login(new LoginRequest(email, password), "192.168.1.50"))
-                .isInstanceOf(AccountSuspendedException.class)
-                .hasMessageContaining("suspended");
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("incorrect");
 
         verify(securityAuditLogger).logLoginFailure(eq(email), eq("192.168.1.50"), eq("ACCOUNT_SUSPENDED"));
     }

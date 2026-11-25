@@ -273,7 +273,7 @@ describe('AppRoutes - Admin Workspace Routing (T036, ADM-1.1.1)', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText(/panel de administración/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/panel ejecutivo/i)).length).toBeGreaterThan(0);
   });
 
   it('instantly redirects authenticated ADMINISTRADOR from /login to /admin', async () => {
@@ -298,7 +298,7 @@ describe('AppRoutes - Admin Workspace Routing (T036, ADM-1.1.1)', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText(/panel de administración/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/panel ejecutivo/i)).length).toBeGreaterThan(0);
   });
 
   it('redirects authenticated ADMINISTRADOR from root / to /admin', async () => {
@@ -323,7 +323,7 @@ describe('AppRoutes - Admin Workspace Routing (T036, ADM-1.1.1)', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText(/panel de administración/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/panel ejecutivo/i)).length).toBeGreaterThan(0);
   });
 
   it('renders ResetPasswordPage when navigating to /reset-password with token', async () => {
@@ -450,7 +450,7 @@ describe('AppRoutes - Feature 004 Routes & RBAC Perimeter (T074, FR-028, FR-030,
         </MemoryRouter>
       );
 
-      expect(await screen.findByText(/panel de administración/i)).toBeInTheDocument();
+      expect((await screen.findAllByText(/panel ejecutivo/i)).length).toBeGreaterThan(0);
     });
   });
 
@@ -709,7 +709,7 @@ describe('AppRoutes - Feature 004 Routes & RBAC Perimeter (T074, FR-028, FR-030,
         </MemoryRouter>
       );
 
-      expect(await screen.findByText(/comandas kds/i)).toBeInTheDocument();
+      expect((await screen.findAllByText(/comandas kds/i)).length).toBeGreaterThan(0);
     });
 
     it('redirects unauthenticated visitor from /perfil to /login', async () => {

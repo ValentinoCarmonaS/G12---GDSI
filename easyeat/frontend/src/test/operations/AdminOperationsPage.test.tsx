@@ -230,7 +230,7 @@ describe('AdminOperationsPage (US1)', () => {
       </MemoryRouter>
     );
 
-    const link = await screen.findByRole('link', { name: /operación del restaurante/i });
+    const link = await screen.findByRole('link', { name: /^operaciones$/i });
     expect(link).toHaveAttribute('href', '/admin/operations');
   });
 });

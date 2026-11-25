@@ -1,5 +1,6 @@
 package com.easyeat.staff.service;
 
+import com.easyeat.auth.cache.UserSessionCache;
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.domain.UserRole;
 import com.easyeat.auth.domain.UserStatus;
@@ -28,6 +29,9 @@ public class StaffService {
 
     private final StaffUserRepository staffUserRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private UserSessionCache userSessionCache;
 
     public StaffService(StaffUserRepository staffUserRepository, PasswordEncoder passwordEncoder) {
         this.staffUserRepository = staffUserRepository;
@@ -62,6 +66,9 @@ public class StaffService {
         user.setStatus(UserStatus.PENDING_FIRST_LOGIN);
 
         User savedUser = staffUserRepository.save(user);
+        if (userSessionCache != null) {
+            userSessionCache.evict(savedUser.getId());
+        }
 
         return new StaffRegistrationResponse(
                 savedUser.getId(),
@@ -130,6 +137,44 @@ public class StaffService {
         user.setRole(targetRole);
 
         User savedUser = staffUserRepository.save(user);
+        if (userSessionCache != null) {
+            userSessionCache.evict(savedUser.getId());
+        }
+        return toStaffMemberResponse(savedUser);
+    }
+
+    @Transactional
+    public StaffMemberResponse updateStaffStatus(UUID id, com.easyeat.staff.dto.StaffStatusUpdateRequest request) {
+        UUID tenantId = TenantContextHolder.getTenantId();
+        if (tenantId == null) {
+            throw new TenantViolationException("Active tenant context is required to update staff status");
+        }
+
+        User user = staffUserRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new NoSuchElementException("Staff member not found with ID: " + id));
+
+        UserStatus targetStatus = switch (request.status()) {
+            case ACTIVE -> UserStatus.ACTIVE;
+            case SUSPENDED -> UserStatus.SUSPENDED;
+            case PENDING_FIRST_LOGIN -> UserStatus.PENDING_FIRST_LOGIN;
+        };
+
+        if (user.getRole() == UserRole.ADMINISTRADOR
+                && user.getStatus() == UserStatus.ACTIVE
+                && targetStatus == UserStatus.SUSPENDED) {
+            List<User> activeAdmins = staffUserRepository.findActiveAdminsForUpdate(
+                    tenantId, UserRole.ADMINISTRADOR, UserStatus.ACTIVE);
+            if (activeAdmins.size() <= 1) {
+                throw new OrphanedAdminException(tenantId,
+                        "Cannot suspend the last active administrator for tenant " + tenantId);
+            }
+        }
+
+        user.setStatus(targetStatus);
+        User savedUser = staffUserRepository.save(user);
+        if (userSessionCache != null) {
+            userSessionCache.evict(savedUser.getId());
+        }
         return toStaffMemberResponse(savedUser);
     }
 

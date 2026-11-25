@@ -53,6 +53,7 @@ describe('T044 [US3]: AdminBrandingPage Component Tests (AS-9, INV-009, CB-009)'
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(brandingApi.getAdminBranding).mockResolvedValue(mockInitialBranding);
   });
 
   const renderComponent = () => {

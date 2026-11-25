@@ -1,21 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DISH_CATEGORIES, type DishCategory, type CreateDishRequest } from '@/types/dish';
 import { resolveApiMediaUrl } from '@/utils/mediaUtils';
+import { BrutalistCard } from '@/components/chef/BrutalistCard';
 
 export interface BasicIdentityStepProps {
   initialData?: Partial<CreateDishRequest & { photoUrl?: string | null }>;
   onSave?: (data: CreateDishRequest, photoFile?: File) => void | Promise<void>;
+  onNext?: (data: CreateDishRequest, photoFile?: File | null) => void;
+  onDraftChange?: (data: CreateDishRequest, photoFile?: File | null) => void;
   onPhotoDelete?: () => void | Promise<void>;
   isReadOnly?: boolean;
   isSaving?: boolean;
 }
 
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export const BasicIdentityStep: React.FC<BasicIdentityStepProps> = ({
   initialData,
   onSave,
+  onNext,
+  onDraftChange,
   onPhotoDelete,
   isReadOnly = false,
   isSaving = false,
@@ -39,15 +44,43 @@ export const BasicIdentityStep: React.FC<BasicIdentityStepProps> = ({
     if (initialData?.photoUrl !== undefined) setPreviewUrl(initialData.photoUrl);
   }, [initialData]);
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setName(e.target.value);
-    if (nameError && e.target.value.trim()) {
-      setNameError(null);
+  const emitDraftChange = (
+    nextName: string,
+    nextCategory: DishCategory,
+    nextDescription: string,
+    nextFile: File | null
+  ) => {
+    if (onDraftChange) {
+      onDraftChange(
+        {
+          name: nextName,
+          category: nextCategory,
+          description: nextDescription,
+        },
+        nextFile
+      );
     }
   };
 
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setName(val);
+    if (nameError && val.trim()) {
+      setNameError(null);
+    }
+    emitDraftChange(val, category, description, selectedFile);
+  };
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value as DishCategory;
+    setCategory(val);
+    emitDraftChange(name, val, description, selectedFile);
+  };
+
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setDescription(e.target.value);
+    const val = e.target.value;
+    setDescription(val);
+    emitDraftChange(name, category, val, selectedFile);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,11 +102,11 @@ export const BasicIdentityStep: React.FC<BasicIdentityStepProps> = ({
 
     setSelectedFile(file);
     if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewUrl(objectUrl);
+      setPreviewUrl(URL.createObjectURL(file));
     } else {
       setPreviewUrl('preview-' + file.name);
     }
+    emitDraftChange(name, category, description, file);
   };
 
   const handleRemovePhoto = async () => {
@@ -81,6 +114,7 @@ export const BasicIdentityStep: React.FC<BasicIdentityStepProps> = ({
     setPreviewUrl(null);
     setPhotoError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    emitDraftChange(name, category, description, null);
 
     if (onPhotoDelete) {
       await onPhotoDelete();
@@ -96,156 +130,166 @@ export const BasicIdentityStep: React.FC<BasicIdentityStepProps> = ({
       return;
     }
 
+    const payload: CreateDishRequest = {
+      name: trimmedName,
+      category,
+      description: description.trim() || undefined,
+    };
+
+    if (onNext) {
+      onNext(payload, selectedFile);
+      return;
+    }
+
     if (onSave) {
-      await onSave(
-        {
-          name: trimmedName,
-          category,
-          description: description ? description.trim() : undefined,
-        },
-        selectedFile || undefined
-      );
+      await onSave(payload, selectedFile || undefined);
     }
   };
 
+  const resolvedPreview = previewUrl ? resolveApiMediaUrl(previewUrl) || previewUrl : null;
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-      {/* Dish Name */}
-      <div>
-        <div className="flex justify-between items-center mb-1.5">
-          <label htmlFor="dish-name" className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Nombre del plato <span className="text-red-500">*</span>
-          </label>
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            {name.length}/100
-          </span>
-        </div>
-        <input
-          id="dish-name"
-          type="text"
-          maxLength={100}
-          value={name}
-          onChange={handleNameChange}
-          disabled={isReadOnly || isSaving}
-          placeholder="Ej: Risotto de Hongos Portobello"
-          className={`w-full px-3.5 py-2 text-sm rounded-lg border bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 transition focus:outline-none focus:ring-2 ${
-            nameError
-              ? 'border-red-500 focus:ring-red-400/20'
-              : 'border-zinc-300 dark:border-zinc-700 focus:border-amber-500 focus:ring-amber-400/20'
-          }`}
-        />
-        {nameError && (
-          <p className="mt-1.5 text-xs text-red-600 dark:text-red-400 font-medium">
-            {nameError}
-          </p>
-        )}
-      </div>
-
-      {/* Dish Category */}
-      <div>
-        <label htmlFor="dish-category" className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1.5">
-          Categoría <span className="text-red-500">*</span>
-        </label>
-        <select
-          id="dish-category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value as DishCategory)}
-          disabled={isReadOnly || isSaving}
-          className="w-full px-3.5 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-400/20"
-        >
-          {DISH_CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Dish Description */}
-      <div>
-        <div className="flex justify-between items-center mb-1.5">
-          <label htmlFor="dish-description" className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Descripción
-          </label>
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
-            {description.length}/500
-          </span>
-        </div>
-        <textarea
-          id="dish-description"
-          rows={3}
-          maxLength={500}
-          value={description}
-          onChange={handleDescriptionChange}
-          disabled={isReadOnly || isSaving}
-          placeholder="Describe la preparación, texturas o notas culinarias para el personal de servicio..."
-          className="w-full px-3.5 py-2 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:border-amber-500 focus:ring-amber-400/20"
-        />
-      </div>
-
-      {/* Dish Photo */}
-      <div>
-        <label htmlFor="dish-photo" className="block text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1.5">
-          Fotografía
-        </label>
-        <input
-          id="dish-photo"
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={handleFileChange}
-          disabled={isReadOnly || isSaving}
-          className="block w-full text-xs text-zinc-600 dark:text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 dark:file:bg-amber-950/60 dark:file:text-amber-300 cursor-pointer"
-        />
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          Tamaño máximo 5 MB. Solo imágenes.
-        </p>
-
-        {photoError && (
-          <p className="mt-1.5 text-xs text-red-600 dark:text-red-400 font-medium">
-            {photoError}
-          </p>
-        )}
-
-        {previewUrl && (
-          <div className="mt-4 flex items-center space-x-4 p-3 bg-zinc-50 dark:bg-zinc-800/60 rounded-lg border border-zinc-200 dark:border-zinc-700">
-            <img
-              src={resolveApiMediaUrl(previewUrl)}
-              alt="Vista previa del plato"
-              className="w-20 h-20 object-cover rounded-md border border-zinc-200 dark:border-zinc-700"
-            />
-            <div className="flex-1">
-              <p className="text-xs text-zinc-600 dark:text-zinc-300">
-                {selectedFile ? selectedFile.name : 'Foto actual del plato'}
-              </p>
-              {!isReadOnly && (
-                <button
-                  type="button"
-                  onClick={handleRemovePhoto}
-                  disabled={isSaving}
-                  className="mt-2 text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 focus:outline-none"
+    <BrutalistCard className="p-6">
+      <form onSubmit={handleSubmit} noValidate className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label
+                  htmlFor="dish-name"
+                  className="block text-sm font-bold uppercase tracking-wide text-[#0A0A0A]"
                 >
-                  Eliminar foto
-                </button>
+                  Nombre del plato *
+                </label>
+                <span className="font-mono text-xs text-[#52525B]">{name.length}/120</span>
+              </div>
+              <input
+                id="dish-name"
+                type="text"
+                maxLength={120}
+                value={name}
+                onChange={handleNameChange}
+                disabled={isReadOnly || isSaving}
+                placeholder="Ej: Milanesa a la napolitana"
+                className="w-full px-3 py-2.5 border-2 border-[#0A0A0A] bg-[#FFFFFF] text-[#0A0A0A] font-medium focus:outline-none focus:ring-2 focus:ring-[#0A0A0A] disabled:bg-[#F5F5F4] disabled:text-[#52525B]"
+              />
+              {nameError && (
+                <p role="alert" className="mt-1.5 text-xs font-bold text-[#DC2626]">
+                  {nameError}
+                </p>
               )}
             </div>
-          </div>
-        )}
-      </div>
 
-      {/* Actions */}
-      {!isReadOnly && (
-        <div className="pt-4 flex justify-end">
+            <div>
+              <label
+                htmlFor="dish-category"
+                className="block text-sm font-bold uppercase tracking-wide text-[#0A0A0A] mb-1.5"
+              >
+                Categoría *
+              </label>
+              <select
+                id="dish-category"
+                value={category}
+                onChange={handleCategoryChange}
+                disabled={isReadOnly || isSaving}
+                className="w-full px-3 py-2.5 border-2 border-[#0A0A0A] bg-[#FFFFFF] text-[#0A0A0A] font-medium focus:outline-none focus:ring-2 focus:ring-[#0A0A0A] disabled:bg-[#F5F5F4] disabled:text-[#52525B]"
+              >
+                {DISH_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label
+                  htmlFor="dish-description"
+                  className="block text-sm font-bold uppercase tracking-wide text-[#0A0A0A]"
+                >
+                  Descripción
+                </label>
+                <span className="font-mono text-xs text-[#52525B]">
+                  {description.length}/500
+                </span>
+              </div>
+              <textarea
+                id="dish-description"
+                rows={4}
+                maxLength={500}
+                value={description}
+                onChange={handleDescriptionChange}
+                disabled={isReadOnly || isSaving}
+                placeholder="Breve descripción culinaria del plato..."
+                className="w-full px-3 py-2.5 border-2 border-[#0A0A0A] bg-[#FFFFFF] text-[#0A0A0A] font-medium focus:outline-none focus:ring-2 focus:ring-[#0A0A0A] disabled:bg-[#F5F5F4] disabled:text-[#52525B]"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <label
+              htmlFor="dish-photo"
+              className="block text-sm font-bold uppercase tracking-wide text-[#0A0A0A]"
+            >
+              Fotografía del plato
+            </label>
+            <div className="border-2 border-dashed border-[#0A0A0A] bg-[#F5F5F4] p-4 min-h-[220px] flex flex-col items-center justify-center gap-3">
+              {resolvedPreview ? (
+                <div className="w-full space-y-3">
+                  <img
+                    src={resolvedPreview}
+                    alt="Vista previa del plato"
+                    className="w-full h-48 object-cover border-2 border-[#0A0A0A]"
+                  />
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      onClick={handleRemovePhoto}
+                      disabled={isSaving}
+                      className="px-3 py-1.5 border-2 border-[#0A0A0A] bg-[#FFFFFF] text-[#DC2626] text-xs font-bold uppercase hover:bg-[#FEE2E2]"
+                    >
+                      Quitar fotografía
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs font-mono text-[#52525B] text-center">
+                  JPEG, PNG o WebP — Máximo 5 MB
+                </p>
+              )}
+
+              {!isReadOnly && (
+                <input
+                  ref={fileInputRef}
+                  id="dish-photo"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileChange}
+                  disabled={isSaving}
+                  className="text-xs font-mono text-[#0A0A0A] file:mr-3 file:py-2 file:px-3 file:border-2 file:border-[#0A0A0A] file:bg-[#FFFFFF] file:text-[#0A0A0A] file:font-bold file:uppercase hover:file:bg-[#0A0A0A] hover:file:text-[#FFFFFF]"
+                />
+              )}
+            </div>
+            {photoError && (
+              <p role="alert" className="text-xs font-bold text-[#DC2626]">
+                {photoError}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-4 border-t-2 border-[#0A0A0A]">
           <button
             type="submit"
             disabled={isSaving}
-            className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-zinc-950 font-semibold text-sm rounded-lg shadow-sm transition focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 disabled:opacity-50"
+            className="min-h-[48px] px-6 py-2.5 border-2 border-[#0A0A0A] bg-[#0A0A0A] text-[#FFFFFF] text-sm font-bold uppercase tracking-wide hover:bg-[#27272A] disabled:opacity-50"
           >
-            {isSaving ? 'Guardando...' : 'Guardar'}
+            {onNext ? 'Siguiente' : isSaving ? 'Guardando...' : 'Guardar y continuar'}
           </button>
         </div>
-      )}
-    </form>
+      </form>
+    </BrutalistCard>
   );
 };
 

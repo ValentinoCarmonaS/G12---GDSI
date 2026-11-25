@@ -8,14 +8,10 @@ import com.easyeat.catalog.exception.EstablishmentNotFoundException;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.dish.domain.DishCategory;
-import com.easyeat.dish.domain.DishRecipeIngredient;
-import com.easyeat.dish.domain.DishRecipeIngredientId;
 import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
-import com.easyeat.inventory.dto.IngredientCategory;
+import com.easyeat.dish.repository.RecipeLineWithIngredientProjection;
 import com.easyeat.inventory.dto.IngredientStatus;
-import com.easyeat.inventory.dto.UnitOfMeasure;
-import com.easyeat.inventory.entity.Ingredient;
 import com.easyeat.inventory.repository.IngredientRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,11 +22,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,12 +70,33 @@ class DishAvailabilityEngineTest {
         establishment = new Establishment(tenantId, "Café Central Palermo", EstablishmentStatus.ACTIVE, null, null, "America/Argentina/Buenos_Aires");
     }
 
-    private Ingredient createIngredient(UUID id, UUID tId, String name, BigDecimal stock, IngredientStatus status) {
-        Ingredient ing = new Ingredient(tId, name, IngredientCategory.MEAT, UnitOfMeasure.KG, BigDecimal.valueOf(100));
-        ing.setId(id);
-        ing.setCurrentStock(stock);
-        ing.setStatus(status);
-        return ing;
+    private RecipeLineWithIngredientProjection mockRecipeLine(
+            UUID dishId,
+            UUID ingredientId,
+            BigDecimal quantity,
+            String name,
+            IngredientStatus status,
+            BigDecimal currentStock) {
+        RecipeLineWithIngredientProjection proj = mock(RecipeLineWithIngredientProjection.class);
+        org.mockito.Mockito.lenient().when(proj.getDishId()).thenReturn(dishId);
+        org.mockito.Mockito.lenient().when(proj.getIngredientId()).thenReturn(ingredientId);
+        org.mockito.Mockito.lenient().when(proj.getQuantity()).thenReturn(quantity);
+        org.mockito.Mockito.lenient().when(proj.getIngredientName()).thenReturn(name);
+        org.mockito.Mockito.lenient().when(proj.getIngredientStatus()).thenReturn(status);
+        org.mockito.Mockito.lenient().when(proj.getCurrentStock()).thenReturn(currentStock);
+        return proj;
+    }
+
+    private String expectedSha256(String input) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hashBytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) hexString.append('0');
+            hexString.append(hex);
+        }
+        return hexString.toString();
     }
 
     private Dish createDish(UUID id, UUID tId, String name) {
@@ -98,15 +122,15 @@ class DishAvailabilityEngineTest {
             BigDecimal recipeQuantity = new BigDecimal("0.2500");
             BigDecimal currentStock = new BigDecimal("0.2500");
 
-            DishRecipeIngredient line = new DishRecipeIngredient(new DishRecipeIngredientId(dishId, ingredientId), recipeQuantity);
-            Ingredient ing = createIngredient(ingredientId, tenantId, "Carne Molida", currentStock, IngredientStatus.ACTIVE);
-
-            when(dishRecipeIngredientRepository.findByIdDishId(dishId)).thenReturn(List.of(line));
-            when(ingredientRepository.findByIdAndTenantId(ingredientId, tenantId)).thenReturn(Optional.of(ing));
+            RecipeLineWithIngredientProjection line = mockRecipeLine(dishId, ingredientId, recipeQuantity, "Carne Molida", IngredientStatus.ACTIVE, currentStock);
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
+                    .thenReturn(List.of(line));
 
             boolean available = availabilityEngine.isDishAvailable(dishId, tenantId);
 
             assertThat(available).isTrue();
+            verify(dishRecipeIngredientRepository, never()).findByIdDishId(any());
+            verify(ingredientRepository, never()).findByIdAndTenantId(any(), any());
         }
 
         @Test
@@ -117,15 +141,15 @@ class DishAvailabilityEngineTest {
             BigDecimal recipeQuantity = new BigDecimal("0.2500");
             BigDecimal currentStock = new BigDecimal("0.2499"); // 0.0001 shortfall
 
-            DishRecipeIngredient line = new DishRecipeIngredient(new DishRecipeIngredientId(dishId, ingredientId), recipeQuantity);
-            Ingredient ing = createIngredient(ingredientId, tenantId, "Carne Molida", currentStock, IngredientStatus.ACTIVE);
-
-            when(dishRecipeIngredientRepository.findByIdDishId(dishId)).thenReturn(List.of(line));
-            when(ingredientRepository.findByIdAndTenantId(ingredientId, tenantId)).thenReturn(Optional.of(ing));
+            RecipeLineWithIngredientProjection line = mockRecipeLine(dishId, ingredientId, recipeQuantity, "Carne Molida", IngredientStatus.ACTIVE, currentStock);
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
+                    .thenReturn(List.of(line));
 
             boolean available = availabilityEngine.isDishAvailable(dishId, tenantId);
 
             assertThat(available).isFalse();
+            verify(dishRecipeIngredientRepository, never()).findByIdDishId(any());
+            verify(ingredientRepository, never()).findByIdAndTenantId(any(), any());
         }
 
         @Test
@@ -136,11 +160,9 @@ class DishAvailabilityEngineTest {
             BigDecimal recipeQuantity = new BigDecimal("1.0000");
             BigDecimal currentStock = new BigDecimal("-1.5000"); // Operational discrepancy
 
-            DishRecipeIngredient line = new DishRecipeIngredient(new DishRecipeIngredientId(dishId, ingredientId), recipeQuantity);
-            Ingredient ing = createIngredient(ingredientId, tenantId, "Aceite", currentStock, IngredientStatus.ACTIVE);
-
-            when(dishRecipeIngredientRepository.findByIdDishId(dishId)).thenReturn(List.of(line));
-            when(ingredientRepository.findByIdAndTenantId(ingredientId, tenantId)).thenReturn(Optional.of(ing));
+            RecipeLineWithIngredientProjection line = mockRecipeLine(dishId, ingredientId, recipeQuantity, "Aceite", IngredientStatus.ACTIVE, currentStock);
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
+                    .thenReturn(List.of(line));
 
             boolean available = availabilityEngine.isDishAvailable(dishId, tenantId);
 
@@ -152,7 +174,8 @@ class DishAvailabilityEngineTest {
         void shouldTreatEmptyRecipeAsUnavailable() {
             UUID dishId = UUID.randomUUID();
 
-            when(dishRecipeIngredientRepository.findByIdDishId(dishId)).thenReturn(Collections.emptyList());
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
+                    .thenReturn(Collections.emptyList());
 
             boolean available = availabilityEngine.isDishAvailable(dishId, tenantId);
 
@@ -167,11 +190,9 @@ class DishAvailabilityEngineTest {
             BigDecimal recipeQuantity = new BigDecimal("1.0000");
             BigDecimal currentStock = new BigDecimal("10.0000");
 
-            DishRecipeIngredient line = new DishRecipeIngredient(new DishRecipeIngredientId(dishId, ingredientId), recipeQuantity);
-            Ingredient ing = createIngredient(ingredientId, tenantId, "Sal", currentStock, IngredientStatus.DISCONTINUED);
-
-            when(dishRecipeIngredientRepository.findByIdDishId(dishId)).thenReturn(List.of(line));
-            when(ingredientRepository.findByIdAndTenantId(ingredientId, tenantId)).thenReturn(Optional.of(ing));
+            RecipeLineWithIngredientProjection line = mockRecipeLine(dishId, ingredientId, recipeQuantity, "Sal", IngredientStatus.DISCONTINUED, currentStock);
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
+                    .thenReturn(List.of(line));
 
             boolean available = availabilityEngine.isDishAvailable(dishId, tenantId);
 
@@ -185,10 +206,9 @@ class DishAvailabilityEngineTest {
             UUID ingredientId = UUID.randomUUID();
             BigDecimal recipeQuantity = new BigDecimal("1.0000");
 
-            DishRecipeIngredient line = new DishRecipeIngredient(new DishRecipeIngredientId(dishId, ingredientId), recipeQuantity);
-
-            when(dishRecipeIngredientRepository.findByIdDishId(dishId)).thenReturn(List.of(line));
-            when(ingredientRepository.findByIdAndTenantId(ingredientId, tenantId)).thenReturn(Optional.empty());
+            RecipeLineWithIngredientProjection line = mockRecipeLine(dishId, ingredientId, recipeQuantity, null, null, null);
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
+                    .thenReturn(List.of(line));
 
             boolean available = availabilityEngine.isDishAvailable(dishId, tenantId);
 
@@ -207,15 +227,13 @@ class DishAvailabilityEngineTest {
             UUID dishBId = UUID.randomUUID();
             UUID sharedIngId = UUID.randomUUID();
 
-            // Dish A requires 1 unit; Dish B requires 2 units
-            DishRecipeIngredient lineA = new DishRecipeIngredient(new DishRecipeIngredientId(dishAId, sharedIngId), new BigDecimal("1.0000"));
-            DishRecipeIngredient lineB = new DishRecipeIngredient(new DishRecipeIngredientId(dishBId, sharedIngId), new BigDecimal("2.0000"));
+            RecipeLineWithIngredientProjection lineA = mockRecipeLine(dishAId, sharedIngId, new BigDecimal("1.0000"), "Queso Cheddar", IngredientStatus.ACTIVE, new BigDecimal("1.0000"));
+            RecipeLineWithIngredientProjection lineB = mockRecipeLine(dishBId, sharedIngId, new BigDecimal("2.0000"), "Queso Cheddar", IngredientStatus.ACTIVE, new BigDecimal("1.0000"));
 
-            Ingredient sharedIng = createIngredient(sharedIngId, tenantId, "Queso Cheddar", new BigDecimal("1.0000"), IngredientStatus.ACTIVE);
-
-            when(dishRecipeIngredientRepository.findByIdDishId(dishAId)).thenReturn(List.of(lineA));
-            when(dishRecipeIngredientRepository.findByIdDishId(dishBId)).thenReturn(List.of(lineB));
-            when(ingredientRepository.findByIdAndTenantId(sharedIngId, tenantId)).thenReturn(Optional.of(sharedIng));
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(eq(List.of(dishAId)), eq(tenantId)))
+                    .thenReturn(List.of(lineA));
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(eq(List.of(dishBId)), eq(tenantId)))
+                    .thenReturn(List.of(lineB));
 
             assertThat(availabilityEngine.isDishAvailable(dishAId, tenantId)).isTrue();
             assertThat(availabilityEngine.isDishAvailable(dishBId, tenantId)).isFalse();
@@ -228,14 +246,13 @@ class DishAvailabilityEngineTest {
             UUID dishBId = UUID.randomUUID();
             UUID sharedIngId = UUID.randomUUID();
 
-            DishRecipeIngredient lineA = new DishRecipeIngredient(new DishRecipeIngredientId(dishAId, sharedIngId), new BigDecimal("1.0000"));
-            DishRecipeIngredient lineB = new DishRecipeIngredient(new DishRecipeIngredientId(dishBId, sharedIngId), new BigDecimal("1.0000"));
+            RecipeLineWithIngredientProjection lineA = mockRecipeLine(dishAId, sharedIngId, new BigDecimal("1.0000"), "Carne Picada", IngredientStatus.ACTIVE, BigDecimal.ZERO);
+            RecipeLineWithIngredientProjection lineB = mockRecipeLine(dishBId, sharedIngId, new BigDecimal("1.0000"), "Carne Picada", IngredientStatus.ACTIVE, BigDecimal.ZERO);
 
-            Ingredient depletedIng = createIngredient(sharedIngId, tenantId, "Carne Picada", BigDecimal.ZERO, IngredientStatus.ACTIVE);
-
-            when(dishRecipeIngredientRepository.findByIdDishId(dishAId)).thenReturn(List.of(lineA));
-            when(dishRecipeIngredientRepository.findByIdDishId(dishBId)).thenReturn(List.of(lineB));
-            when(ingredientRepository.findByIdAndTenantId(sharedIngId, tenantId)).thenReturn(Optional.of(depletedIng));
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(eq(List.of(dishAId)), eq(tenantId)))
+                    .thenReturn(List.of(lineA));
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(eq(List.of(dishBId)), eq(tenantId)))
+                    .thenReturn(List.of(lineB));
 
             assertThat(availabilityEngine.isDishAvailable(dishAId, tenantId)).isFalse();
             assertThat(availabilityEngine.isDishAvailable(dishBId, tenantId)).isFalse();
@@ -244,33 +261,12 @@ class DishAvailabilityEngineTest {
         @Test
         @DisplayName("INV-6, FR-009, SC-011, EC-008: testCriticalStockDoesNotBlockSale - Critical stock status of ingredient does not block dish availability when currentStock > 0")
         void testCriticalStockDoesNotBlockSale() {
-            // T025: In strict TDD Red phase, asserts criticalOnly parameter support in IngredientService
-            // and verifies that an ingredient in critical state (currentStock < threshold) but with currentStock > 0
-            // leaves dependent dishes available for sale.
-            boolean hasCriticalOnlySupport = Arrays.stream(com.easyeat.inventory.service.IngredientService.class.getMethods())
-                    .filter(m -> "listIngredients".equals(m.getName()))
-                    .anyMatch(m -> m.getParameterCount() >= 3);
-
-            if (!hasCriticalOnlySupport) {
-                org.junit.jupiter.api.Assertions.fail("IngredientService.listIngredients must accept Boolean criticalOnly parameter (TDD Red: T029 pending)");
-            }
-
             UUID dishId = UUID.randomUUID();
             UUID ingredientId = UUID.randomUUID();
 
-            DishRecipeIngredient recipeLine = new DishRecipeIngredient(
-                    new DishRecipeIngredientId(dishId, ingredientId),
-                    new BigDecimal("2.0000")
-            );
-
-            // Insumo en estado crítico: stock = 5, umbral = 10 (5 < 10 -> isCritical = true), pero stock 5 >= receta 2
-            Ingredient criticalIngredient = createIngredient(ingredientId, tenantId, "Harina Especial", new BigDecimal("5.0000"), IngredientStatus.ACTIVE);
-            criticalIngredient.setCriticalStockThreshold(10);
-
-            assertThat(criticalIngredient.isCritical()).isTrue();
-
-            when(dishRecipeIngredientRepository.findByIdDishId(dishId)).thenReturn(List.of(recipeLine));
-            when(ingredientRepository.findByIdAndTenantId(ingredientId, tenantId)).thenReturn(Optional.of(criticalIngredient));
+            RecipeLineWithIngredientProjection recipeLine = mockRecipeLine(dishId, ingredientId, new BigDecimal("2.0000"), "Harina Especial", IngredientStatus.ACTIVE, new BigDecimal("5.0000"));
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
+                    .thenReturn(List.of(recipeLine));
 
             boolean available = availabilityEngine.isDishAvailable(dishId, tenantId);
 
@@ -304,31 +300,29 @@ class DishAvailabilityEngineTest {
         }
 
         @Test
-        @DisplayName("Should return availability map for published active dishes")
+        @DisplayName("Should return availability map for published active dishes in single batch without N+1")
         void shouldReturnAvailabilityMapForPublishedDishes() {
             when(establishmentRepository.findById(tenantId)).thenReturn(Optional.of(establishment));
 
             Dish dish1 = createDish(UUID.randomUUID(), tenantId, "Plato 1");
             Dish dish2 = createDish(UUID.randomUUID(), tenantId, "Plato 2");
 
-            when(dishRepository.findByTenantIdAndStatusAndIsActiveTrue(tenantId, DishStatus.PUBLISHED))
+            when(dishRepository.findPublishedActiveDishesWithRestrictions(tenantId))
                     .thenReturn(List.of(dish1, dish2));
 
             UUID ing1Id = UUID.randomUUID();
-            DishRecipeIngredient line1 = new DishRecipeIngredient(new DishRecipeIngredientId(dish1.getId(), ing1Id), new BigDecimal("1.0000"));
-            Ingredient ing1 = createIngredient(ing1Id, tenantId, "Ing 1", new BigDecimal("5.0000"), IngredientStatus.ACTIVE);
+            RecipeLineWithIngredientProjection line1 = mockRecipeLine(dish1.getId(), ing1Id, new BigDecimal("1.0000"), "Ing 1", IngredientStatus.ACTIVE, new BigDecimal("5.0000"));
 
-            when(dishRecipeIngredientRepository.findByIdDishId(dish1.getId())).thenReturn(List.of(line1));
-            when(ingredientRepository.findByIdAndTenantId(ing1Id, tenantId)).thenReturn(Optional.of(ing1));
-
-            // dish2 has empty recipe lines
-            when(dishRecipeIngredientRepository.findByIdDishId(dish2.getId())).thenReturn(Collections.emptyList());
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(anyCollection(), eq(tenantId)))
+                    .thenReturn(List.of(line1));
 
             Map<UUID, Boolean> map = availabilityEngine.computeAvailabilityMap(tenantId);
 
             assertThat(map).hasSize(2);
             assertThat(map.get(dish1.getId())).isTrue();
             assertThat(map.get(dish2.getId())).isFalse();
+            verify(dishRecipeIngredientRepository, never()).findByIdDishId(any());
+            verify(ingredientRepository, never()).findByIdAndTenantId(any(), any());
         }
     }
 
@@ -374,10 +368,29 @@ class DishAvailabilityEngineTest {
 
         @Test
         @DisplayName("Should generate stable hash for empty map")
-        void shouldGenerateStableHashForEmptyMap() {
+        void shouldGenerateStableHashForEmptyMap() throws Exception {
             String etag = availabilityEngine.computeETag(Collections.emptyMap());
-            assertThat(etag).isNotNull();
-            assertThat(etag).matches("^[a-f0-9]{64}$");
+            assertThat(etag).isEqualTo(expectedSha256("empty"));
+        }
+
+        @Test
+        @DisplayName("Should compute ETag bit-for-bit deterministically including pausedByChef without findById in loop")
+        void shouldComputeETagDeterministicallyWithoutFindByIdInLoop() throws Exception {
+            UUID id1 = UUID.fromString("00000000-0000-0000-0000-000000000001");
+            Dish d1 = createDish(id1, tenantId, "Plato Agotado");
+            d1.setPausedByChef(true);
+
+            when(dishRepository.findByIdIn(anyCollection())).thenReturn(List.of(d1));
+
+            String etagPaused = availabilityEngine.computeETag(Map.of(id1, false));
+            assertThat(etagPaused).isEqualTo(expectedSha256(id1 + "=false:paused=true;"));
+
+            d1.setPausedByChef(false);
+            String etagUnpaused = availabilityEngine.computeETag(Map.of(id1, false));
+            assertThat(etagUnpaused).isEqualTo(expectedSha256(id1 + "=false:paused=false;"));
+            assertThat(etagPaused).isNotEqualTo(etagUnpaused);
+
+            verify(dishRepository, never()).findById(any());
         }
     }
 }

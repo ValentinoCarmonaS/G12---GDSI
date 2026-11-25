@@ -57,8 +57,16 @@ public class DinerCatalogController {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
         }
 
-        Map<UUID, Boolean> map = dishAvailabilityEngine.computeAvailabilityMap(tenantId);
-        String etag = dishAvailabilityEngine.computeETag(map);
+        DishAvailabilityEngine.AvailabilitySnapshot snapshot = dishAvailabilityEngine.computeAvailabilitySnapshot(tenantId);
+        Map<UUID, Boolean> map;
+        String etag;
+        if (snapshot != null) {
+            map = snapshot.availabilityMap();
+            etag = snapshot.etag();
+        } else {
+            map = dishAvailabilityEngine.computeAvailabilityMap(tenantId);
+            etag = dishAvailabilityEngine.computeETag(map);
+        }
         String quotedEtag = "\"" + etag + "\"";
 
         if (ifNoneMatch != null && (ifNoneMatch.equals(quotedEtag) || ifNoneMatch.equals(etag))) {

@@ -9,11 +9,13 @@ import com.easyeat.catalog.dto.EnrichedDishResponse;
 import com.easyeat.catalog.exception.DishNotFoundException;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.dish.domain.DishStatus;
+import com.easyeat.profile.cache.DietaryTaxonomyCache;
 import com.easyeat.profile.domain.DietaryCategory;
 import com.easyeat.profile.domain.DietaryRestriction;
 import com.easyeat.profile.domain.UserDietaryRestriction;
 import com.easyeat.profile.repository.DietaryRestrictionRepository;
 import com.easyeat.profile.repository.UserDietaryRestrictionRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,13 +30,23 @@ public class CatalogComplianceService {
     private final DishRepository dishRepository;
     private final UserDietaryRestrictionRepository userDietaryRestrictionRepository;
     private final DietaryRestrictionRepository dietaryRestrictionRepository;
+    private final DietaryTaxonomyCache dietaryTaxonomyCache;
 
     public CatalogComplianceService(DishRepository dishRepository,
                                   UserDietaryRestrictionRepository userDietaryRestrictionRepository,
                                   DietaryRestrictionRepository dietaryRestrictionRepository) {
+        this(dishRepository, userDietaryRestrictionRepository, dietaryRestrictionRepository, null);
+    }
+
+    @Autowired
+    public CatalogComplianceService(DishRepository dishRepository,
+                                  UserDietaryRestrictionRepository userDietaryRestrictionRepository,
+                                  DietaryRestrictionRepository dietaryRestrictionRepository,
+                                  DietaryTaxonomyCache dietaryTaxonomyCache) {
         this.dishRepository = dishRepository;
         this.userDietaryRestrictionRepository = userDietaryRestrictionRepository;
         this.dietaryRestrictionRepository = dietaryRestrictionRepository;
+        this.dietaryTaxonomyCache = dietaryTaxonomyCache;
     }
 
     public List<EnrichedDishResponse> getEnrichedCatalog(UUID tenantId, User user) {
@@ -135,6 +147,9 @@ public class CatalogComplianceService {
     }
 
     private Map<String, DietaryRestriction> resolveTaxonomy() {
+        if (dietaryTaxonomyCache != null) {
+            return dietaryTaxonomyCache.getMapByCode();
+        }
         return dietaryRestrictionRepository.findAll().stream()
                 .collect(Collectors.toMap(DietaryRestriction::getCode, Function.identity(), (a, b) -> a));
     }

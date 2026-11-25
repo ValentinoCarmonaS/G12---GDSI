@@ -2,6 +2,9 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
+import { BrandThemeProvider } from '../components/common/BrandThemeProvider';
+import { BentoCard } from '../components/diner/BentoCard';
+import { EmptyState } from '../components/primitives/EmptyState';
 import { FulfillmentModeSelector } from '../components/checkout/FulfillmentModeSelector';
 import { OperatingDatePicker, OperatingDayItem } from '../components/checkout/OperatingDatePicker';
 import { TimeSlotGrid } from '../components/checkout/TimeSlotGrid';
@@ -400,253 +403,287 @@ export const CheckoutPage: React.FC = () => {
     // Keep order in expired state so user sees PendingOrderCountdown expiry notification
   };
 
+  const isCtaDisabled = !isFormValid || isSubmitting || Boolean(inProcessPayment);
+
   return (
     <WorkspaceLayout title="Checkout" subtitle="Configuración de retiro y pago con Mercado Pago">
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        <button
-          type="button"
-          onClick={() => navigate('/catalogo')}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-emerald-700 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver a la carta
-        </button>
+      <BrandThemeProvider establishmentId={establishmentId || undefined}>
+        <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+          <button
+            type="button"
+            onClick={() => navigate('/catalogo')}
+            className="inline-flex items-center gap-2 min-h-[44px] px-2 -ml-2 rounded-ee-sm text-sm font-semibold text-ee-text-secondary hover:text-ee-text hover:bg-ee-surface-subtle transition-colors duration-150 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ee-focus-ring"
+          >
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            Volver a la carta
+          </button>
 
-        {infoMessage && (
-          <PaymentAlertBanner
-            type="info"
-            message={infoMessage}
-            onClose={() => setInfoMessage(null)}
-          />
-        )}
-
-        {submissionError && (
-          <PaymentAlertBanner
-            type="error"
-            message={submissionError}
-            onClose={() => setSubmissionError(null)}
-          />
-        )}
-
-        {/* Panel de pago en curso (AS-5, FR-010, Q3, US3) */}
-        {inProcessPayment && (
-          <div ref={inProcessPanelRef} tabIndex={-1} className="outline-none">
-            <InProcessPaymentPanel
-              redirectUrl={inProcessPayment.payment?.redirectUrl}
-              onCancelAttempt={handleCancelPaymentAttempt}
-              isCancelling={isCancelling}
+          {infoMessage && (
+            <PaymentAlertBanner
+              type="info"
+              message={infoMessage}
+              onClose={() => setInfoMessage(null)}
             />
-          </div>
-        )}
+          )}
 
-        {/* View 1: Active Pending Order (Countdown & Post-Checkout State) */}
-        {pendingOrder ? (
-          <div className="space-y-6">
-            <PendingOrderCountdown
-              orderId={pendingOrder.orderId}
-              expiresAt={pendingOrder.expiresAt}
-              serverTime={pendingOrder.serverTime}
-              onCancel={handleCancelOrder}
-              onExpire={handleOrderExpire}
-              isCancelling={isCancelling}
+          {submissionError && (
+            <PaymentAlertBanner
+              type="error"
+              message={submissionError}
+              onClose={() => setSubmissionError(null)}
             />
+          )}
 
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
-              <h3 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">
-                Detalle de la reserva
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500 block text-xs">Modalidad:</span>
-                  <span className="font-semibold text-gray-900">
-                    {pendingOrder.fulfillmentMode === 'IMMEDIATE'
-                      ? 'Lo antes posible'
-                      : 'Turno programado'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500 block text-xs">Día y Franja:</span>
-                  <span className="font-semibold text-gray-900">
-                    {pendingOrder.pickupDate} ({pendingOrder.timeSlotStart.slice(0, 5)} - {pendingOrder.timeSlotEnd.slice(0, 5)})
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500 block text-xs">Importe Total:</span>
-                  <span className="font-semibold text-emerald-700 text-base">
-                    ${pendingOrder.totalAmount.toFixed(2)}
-                  </span>
-                </div>
-              </div>
+          {/* Panel de pago en curso (AS-5, FR-010, Q3, US3) */}
+          {inProcessPayment && (
+            <div ref={inProcessPanelRef} tabIndex={-1} className="outline-none">
+              <InProcessPaymentPanel
+                redirectUrl={inProcessPayment.payment?.redirectUrl}
+                onCancelAttempt={handleCancelPaymentAttempt}
+                isCancelling={isCancelling}
+              />
             </div>
-          </div>
-        ) : items.length === 0 && !inProcessPayment ? (
-          /* Empty Cart State */
-          <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm space-y-4">
-            <div className="inline-flex p-4 rounded-full bg-gray-100 text-gray-400">
-              <ShoppingBag className="w-10 h-10" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900">Tu carrito está vacío</h3>
-            <p className="text-sm text-gray-500 max-w-sm mx-auto">
-              No tenés platos seleccionados para continuar con la compra.
-            </p>
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => navigate('/catalogo')}
-                className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm"
-              >
-                Explorar carta
-              </button>
-            </div>
-          </div>
-        ) : items.length > 0 ? (
-          /* View 2: Checkout Selection & Configuration */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              {/* Step 1: Fulfillment Mode Selection */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                <FulfillmentModeSelector
-                  selectedMode={fulfillmentMode}
-                  onSelectMode={setFulfillmentMode}
-                />
-              </div>
+          )}
 
-              {/* Step 2: Scheduled Time Slots (only when SCHEDULED) */}
-              {fulfillmentMode === 'SCHEDULED' && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6 animate-fade-in">
-                  <OperatingDatePicker
-                    operatingDays={operatingDays}
-                    selectedDate={selectedDate || ''}
-                    onSelectDate={(date) => {
-                      setSelectedDate(date);
-                      setSelectedSlot(null);
-                    }}
-                  />
-
-                  {selectedDate && (
-                    <TimeSlotGrid
-                      slots={slots}
-                      selectedSlot={selectedSlot}
-                      onSelectSlot={setSelectedSlot}
-                      isLoading={isLoadingSlots}
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* Step 3: Payment Method Selection */}
-              {!isZeroAmount && (
-                <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
-                  <div>
-                    <h3 className="text-base font-semibold text-gray-900">
-                      Método de pago
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Seleccioná la plataforma para realizar el pago online seguro
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-label="Método de pago">
-                    <div
-                      onClick={() => setSelectedPaymentMethod('MERCADO_PAGO')}
-                      className={`relative flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                        selectedPaymentMethod === 'MERCADO_PAGO'
-                          ? 'border-sky-500 bg-sky-50/50 shadow-sm'
-                          : 'border-gray-200 hover:border-gray-300 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-sky-100 flex items-center justify-center font-bold text-sky-600 text-xs shrink-0">
-                          MP
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900 text-sm">Mercado Pago</div>
-                          <div className="text-xs text-gray-500">Checkout Pro / Sandbox</div>
-                        </div>
-                      </div>
-                      {selectedPaymentMethod === 'MERCADO_PAGO' && (
-                        <CheckCircle2 className="w-5 h-5 text-sky-600 shrink-0" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right Column: Checkout Summary & Payment Action */}
+          {/* View 1: Active Pending Order (Countdown & Post-Checkout State) */}
+          {pendingOrder ? (
             <div className="space-y-6">
-              <CheckoutSummary
-                items={items}
-                fulfillmentMode={fulfillmentMode}
-                selectedDate={selectedDate}
-                selectedSlot={selectedSlot}
-                totalAmount={totalAmount}
+              <PendingOrderCountdown
+                orderId={pendingOrder.orderId}
+                expiresAt={pendingOrder.expiresAt}
+                serverTime={pendingOrder.serverTime}
+                onCancel={handleCancelOrder}
+                onExpire={handleOrderExpire}
+                isCancelling={isCancelling}
               />
 
-              <button
-                type="button"
-                onClick={handleConfirmOrder}
-                disabled={!isFormValid || isSubmitting || Boolean(inProcessPayment)}
-                aria-busy={isSubmitting}
-                className={`w-full py-3.5 px-6 rounded-xl font-bold text-white text-base shadow-md transition-all flex items-center justify-center gap-2 ${
-                  !isFormValid || isSubmitting || Boolean(inProcessPayment)
-                    ? 'bg-gray-300 opacity-60 cursor-not-allowed pointer-events-none shadow-none'
-                    : isZeroAmount
-                    ? 'bg-[#c9a96e] text-[#0b0b0d] hover:bg-[#d8ba7f] cursor-pointer hover:shadow-lg'
-                    : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 cursor-pointer hover:shadow-lg'
-                }`}
-              >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span>{isZeroAmount ? 'Confirmando...' : 'Iniciando pago...'}</span>
-                  </>
-                ) : (
-                  <span>{isZeroAmount ? 'Confirmar pedido bonificado ($0)' : 'Confirmar pedido'}</span>
-                )}
-              </button>
+              <BentoCard variant="elevated" padding="md" radius="lg" className="space-y-4">
+                <h3 className="font-ee-display text-base font-bold text-ee-text border-b border-ee-border-subtle pb-3">
+                  Detalle de la reserva
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-ee-text-secondary block text-xs">Modalidad:</span>
+                    <span className="font-semibold text-ee-text">
+                      {pendingOrder.fulfillmentMode === 'IMMEDIATE'
+                        ? 'Lo antes posible'
+                        : 'Turno programado'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-ee-text-secondary block text-xs">Día y Franja:</span>
+                    <span className="font-ee-mono tabular-nums font-semibold text-ee-text">
+                      {pendingOrder.pickupDate} ({pendingOrder.timeSlotStart.slice(0, 5)} -{' '}
+                      {pendingOrder.timeSlotEnd.slice(0, 5)})
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-ee-text-secondary block text-xs">Importe Total:</span>
+                    <span className="font-ee-mono tabular-nums font-bold text-ee-text text-base">
+                      ${pendingOrder.totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </BentoCard>
             </div>
-          </div>
-        ) : null}
+          ) : items.length === 0 && !inProcessPayment ? (
+            /* Empty Cart State */
+            <EmptyState
+              icon={<ShoppingBag className="w-6 h-6" />}
+              title="Tu carrito está vacío"
+              description="No tenés platos seleccionados para continuar con la compra."
+              actionLabel="Explorar carta"
+              onAction={() => navigate('/catalogo')}
+            />
+          ) : items.length > 0 ? (
+            /* View 2: Checkout Selection & Configuration */
+            <div
+              data-testid="checkout-bento-grid"
+              className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start"
+            >
+              <div className="space-y-6">
+                {/* Step 1: Fulfillment Mode Selection */}
+                <BentoCard variant="elevated" padding="md" radius="lg" as="section">
+                  <FulfillmentModeSelector
+                    selectedMode={fulfillmentMode}
+                    onSelectMode={setFulfillmentMode}
+                  />
+                </BentoCard>
 
-        {/* 409 Conflict Recovery Modal */}
-        <ConflictNotificationModal
-          isOpen={conflictModal.isOpen}
-          errorCode={conflictModal.errorCode}
-          errorMessage={conflictModal.errorMessage}
-          onClose={() => setConflictModal((prev) => ({ ...prev, isOpen: false }))}
-          onRefreshSlots={() => {
-            refreshSlots();
-            setSelectedSlot(null);
-          }}
-          onViewExistingOrder={() => {
-            setConflictModal((prev) => ({ ...prev, isOpen: false }));
-            const panelContainer = inProcessPanelRef.current;
-            if (panelContainer) {
-              panelContainer.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-              panelContainer.focus();
-            }
-          }}
-        />
+                {/* Step 2: Scheduled Time Slots (only when SCHEDULED) */}
+                {fulfillmentMode === 'SCHEDULED' && (
+                  <BentoCard
+                    variant="elevated"
+                    padding="md"
+                    radius="lg"
+                    as="section"
+                    className="space-y-6"
+                  >
+                    <OperatingDatePicker
+                      operatingDays={operatingDays}
+                      selectedDate={selectedDate || ''}
+                      onSelectDate={(date) => {
+                        setSelectedDate(date);
+                        setSelectedSlot(null);
+                      }}
+                    />
 
-        {/* Modal de Concurrencia (Agotamiento de Insumos y Saturación de Franjas) */}
-        <ConcurrencyAlertModal
-          isOpen={concurrencyModal.isOpen}
-          type={concurrencyModal.type}
-          message={concurrencyModal.message}
-          unavailableDishes={concurrencyModal.unavailableDishes}
-          onClose={() => setConcurrencyModal((prev) => ({ ...prev, isOpen: false }))}
-          onAction={() => {
-            setConcurrencyModal((prev) => ({ ...prev, isOpen: false }));
-            if (concurrencyModal.type === 'INSUFFICIENT_STOCK') {
-              // Mantener carrito y permitir modificar
-            } else {
+                    {selectedDate && (
+                      <TimeSlotGrid
+                        slots={slots}
+                        selectedSlot={selectedSlot}
+                        onSelectSlot={setSelectedSlot}
+                        isLoading={isLoadingSlots}
+                      />
+                    )}
+                  </BentoCard>
+                )}
+
+                {/* Step 3: Payment Method Selection */}
+                {!isZeroAmount && (
+                  <BentoCard
+                    variant="elevated"
+                    padding="md"
+                    radius="lg"
+                    as="section"
+                    className="space-y-4"
+                  >
+                    <div>
+                      <h3 className="font-ee-display text-base font-bold text-ee-text">
+                        Método de pago
+                      </h3>
+                      <p className="text-xs text-ee-text-secondary mt-0.5">
+                        Seleccioná la plataforma para realizar el pago online seguro
+                      </p>
+                    </div>
+
+                    <div
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                      role="radiogroup"
+                      aria-label="Método de pago"
+                    >
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={selectedPaymentMethod === 'MERCADO_PAGO'}
+                        onClick={() => setSelectedPaymentMethod('MERCADO_PAGO')}
+                        className={`relative min-h-[44px] flex items-center justify-between p-4 rounded-ee-md border text-left transition-colors duration-150 motion-reduce:transition-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ee-focus-ring ${
+                          selectedPaymentMethod === 'MERCADO_PAGO'
+                            ? 'border-ee-primary-border bg-ee-primary/30 shadow-ee-elevated'
+                            : 'border-ee-border-subtle hover:border-ee-border-strong bg-ee-surface-elevated'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-ee-sm bg-ee-secondary text-ee-on-secondary border border-ee-secondary-border/30 flex items-center justify-center font-ee-mono font-bold text-xs shrink-0">
+                            MP
+                          </div>
+                          <div>
+                            <div className="font-semibold text-ee-text text-sm">Mercado Pago</div>
+                            <div className="text-xs text-ee-text-secondary">
+                              Checkout Pro / Sandbox
+                            </div>
+                          </div>
+                        </div>
+                        {selectedPaymentMethod === 'MERCADO_PAGO' && (
+                          <CheckCircle2
+                            className="w-5 h-5 text-ee-primary-border shrink-0"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </button>
+                    </div>
+                  </BentoCard>
+                )}
+              </div>
+
+              {/* Right Column: Sticky Checkout Summary & Branded Payment Action */}
+              <div data-testid="checkout-summary-column" className="lg:sticky lg:top-6 space-y-4">
+                <CheckoutSummary
+                  items={items}
+                  fulfillmentMode={fulfillmentMode}
+                  selectedDate={selectedDate}
+                  selectedSlot={selectedSlot}
+                  totalAmount={totalAmount}
+                  action={
+                    <button
+                      type="button"
+                      data-brand-slot="cta"
+                      onClick={handleConfirmOrder}
+                      disabled={isCtaDisabled}
+                      aria-busy={isSubmitting}
+                      style={
+                        !isCtaDisabled
+                          ? {
+                              backgroundColor: 'var(--brand-primary)',
+                              color: 'var(--brand-primary-contrast)',
+                              borderColor: 'var(--brand-primary-contrast)',
+                            }
+                          : undefined
+                      }
+                      className={`w-full min-h-[44px] py-3 px-6 rounded-ee-sm border font-ee-sans font-bold text-base shadow-ee-elevated transition-opacity duration-150 motion-reduce:transition-none flex items-center justify-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ee-focus-ring ${
+                        isCtaDisabled
+                          ? 'bg-ee-surface-subtle text-ee-text-secondary border-ee-border-subtle opacity-60 cursor-not-allowed pointer-events-none shadow-none'
+                          : 'cursor-pointer hover:opacity-90'
+                      }`}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <RefreshCw className="w-5 h-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                          <span>{isZeroAmount ? 'Confirmando...' : 'Iniciando pago...'}</span>
+                        </>
+                      ) : (
+                        <span>
+                          {isZeroAmount
+                            ? 'Confirmar pedido bonificado ($0)'
+                            : 'Confirmar pedido'}
+                        </span>
+                      )}
+                    </button>
+                  }
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {/* 409 Conflict Recovery Modal */}
+          <ConflictNotificationModal
+            isOpen={conflictModal.isOpen}
+            errorCode={conflictModal.errorCode}
+            errorMessage={conflictModal.errorMessage}
+            onClose={() => setConflictModal((prev) => ({ ...prev, isOpen: false }))}
+            onRefreshSlots={() => {
               refreshSlots();
               setSelectedSlot(null);
-            }
-          }}
-        />
-      </div>
+            }}
+            onViewExistingOrder={() => {
+              setConflictModal((prev) => ({ ...prev, isOpen: false }));
+              const panelContainer = inProcessPanelRef.current;
+              if (panelContainer) {
+                panelContainer.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+                panelContainer.focus();
+              }
+            }}
+          />
+
+          {/* Modal de Concurrencia (Agotamiento de Insumos y Saturación de Franjas) */}
+          <ConcurrencyAlertModal
+            isOpen={concurrencyModal.isOpen}
+            type={concurrencyModal.type}
+            message={concurrencyModal.message}
+            unavailableDishes={concurrencyModal.unavailableDishes}
+            onClose={() => setConcurrencyModal((prev) => ({ ...prev, isOpen: false }))}
+            onAction={() => {
+              setConcurrencyModal((prev) => ({ ...prev, isOpen: false }));
+              if (concurrencyModal.type === 'INSUFFICIENT_STOCK') {
+                // Mantener carrito y permitir modificar
+              } else {
+                refreshSlots();
+                setSelectedSlot(null);
+              }
+            }}
+          />
+        </div>
+      </BrandThemeProvider>
     </WorkspaceLayout>
   );
 };

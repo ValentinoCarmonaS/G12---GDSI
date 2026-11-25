@@ -1,74 +1,71 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { User as UserIcon } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { profileApi } from '../../api/profileApi';
+import { getAdminBranding } from '../../api/brandingApi';
 import { adminNotificationApi } from '../../api/adminNotificationApi';
-import { AdminNotificationBell } from '../notification/AdminNotificationBell';
-import { getAuthenticatedAvatarUrl } from '../../utils/avatarUtils';
+import { useClientCache } from '../../context/ClientCacheContext';
 import type { AdminNotificationResponse } from '../../types/notification';
+import type { ProfileResponse } from '../../types/profile';
+import { RoleLayoutShell, type LegacySurfaceMode } from '../layout/RoleLayoutShell';
 
-interface WorkspaceLayoutProps {
+export interface WorkspaceLayoutProps {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  legacySurfaceMode?: LegacySurfaceMode;
+  fullWidth?: boolean;
 }
-
-const ROLE_BADGE_COLORS: Record<string, string> = {
-  ENCARGADO: 'bg-blue-100 text-blue-800 border-blue-200',
-  CHEF: 'bg-orange-100 text-orange-800 border-orange-200',
-  ADMINISTRADOR: 'bg-purple-100 text-purple-800 border-purple-200',
-  COMENSAL: 'bg-green-100 text-green-800 border-green-200',
-};
-
-/**
- * C-08 (spec 005 FR-027): the Chef's operational header exposes three first-class
- * sections. "Gestionar Platos" lives here, no longer nested inside the KDS view.
- */
-const CHEF_SECTIONS: ReadonlyArray<{ to: string; label: string }> = [
-  { to: '/cocina', label: 'Comandas KDS' },
-  { to: '/cocina/platos', label: 'Gestionar Platos' },
-  { to: '/cocina/ingredientes', label: 'Ingredientes' },
-];
-
-/**
- * C-08 (spec 005 FR-030): active section derives from the current route. The KDS
- * section matches exactly so nested dish routes (`/cocina/platos/nuevo`, `/cocina/platos/:id`)
- * light up "Gestionar Platos" instead of "Comandas KDS".
- */
-const isChefSectionActive = (pathname: string, to: string): boolean =>
-  to === '/cocina' ? pathname === to : pathname === to || pathname.startsWith(`${to}/`);
 
 export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   title,
   subtitle,
   children,
+  legacySurfaceMode = 'none',
+  fullWidth = false,
 }) => {
   const { user, logout } = useAuth();
-  const { pathname, hash } = useLocation();
-  const roleColor = user?.role ? ROLE_BADGE_COLORS[user.role] || 'bg-gray-100 text-gray-800' : 'bg-gray-100 text-gray-800';
+  const cache = useClientCache();
 
   const [notifications, setNotifications] = useState<AdminNotificationResponse[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [notificationError, setNotificationError] = useState<string | null>(null);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState<boolean>(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
+    if (user?.role !== 'COMENSAL') return null;
+    return cache.get<ProfileResponse>('profile:me')?.data?.avatarUrl || null;
+  });
+  const [tenantName, setTenantName] = useState<string | null>(null);
 
-  const fetchAvatar = useCallback(async () => {
-    if (!user) {
+  useEffect(() => {
+    if (user?.role !== 'COMENSAL') return;
+    return cache.subscribe('profile:me', () => {
+      const entry = cache.get<ProfileResponse>('profile:me');
+      setAvatarUrl(entry?.data?.avatarUrl || null);
+    });
+  }, [cache, user?.role]);
+
+  const fetchAvatar = useCallback(async (forceRefresh = false) => {
+    if (!user || user.role !== 'COMENSAL') {
       setAvatarUrl(null);
       return;
     }
+    if (forceRefresh) {
+      cache.invalidate('profile:me');
+    }
     try {
-      const data = await profileApi.getProfile();
+      const data = await cache.fetchDeduped('profile:me', () => profileApi.getProfile());
       setAvatarUrl(data?.avatarUrl || null);
     } catch {
-      setAvatarUrl(null);
+      if (!cache.get<ProfileResponse>('profile:me')?.data) {
+        setAvatarUrl(null);
+      }
     }
-  }, [user]);
+  }, [user, cache]);
 
   useEffect(() => {
     fetchAvatar();
     const handleAvatarUpdate = () => {
-      fetchAvatar();
+      fetchAvatar(true);
     };
     window.addEventListener('easyeat:avatar-changed', handleAvatarUpdate);
     return () => {
@@ -76,14 +73,53 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     };
   }, [fetchAvatar]);
 
+  const fetchTenantName = useCallback(async (forceRefresh = false) => {
+    if (user?.role !== 'ADMINISTRADOR' || !user.tenantId) {
+      setTenantName(null);
+      return;
+    }
+    const cacheKey = `branding:admin:${user.tenantId}`;
+    if (forceRefresh) {
+      cache.invalidate(cacheKey);
+    }
+    const cached = cache.get<{ fantasyName?: string | null }>(cacheKey);
+    if (cached?.data) {
+      setTenantName(cached.data.fantasyName?.trim() || null);
+    }
+    try {
+      const branding = await cache.fetchDeduped(cacheKey, () => getAdminBranding(user.tenantId!));
+      const normalized = branding?.fantasyName?.trim() || null;
+      setTenantName(normalized);
+    } catch {
+      if (!cached?.data) {
+        setTenantName(null);
+      }
+    }
+  }, [user?.role, user?.tenantId, cache]);
+
+  useEffect(() => {
+    fetchTenantName();
+    const handleBrandingUpdate = () => {
+      fetchTenantName(true);
+    };
+    window.addEventListener('easyeat:branding-changed', handleBrandingUpdate);
+    return () => {
+      window.removeEventListener('easyeat:branding-changed', handleBrandingUpdate);
+    };
+  }, [fetchTenantName]);
+
   const fetchNotifications = useCallback(async () => {
     if (user?.role !== 'ADMINISTRADOR') return;
+    setIsLoadingNotifications(true);
     try {
       const data = await adminNotificationApi.listNotifications({ page: 0, size: 20 });
       setNotifications(data.content || []);
       setUnreadCount(data.unreadCount || 0);
+      setNotificationError(null);
     } catch {
-      // Ignored for non-admin or unauthenticated
+      setNotificationError('No pudimos cargar las notificaciones. Intente nuevamente.');
+    } finally {
+      setIsLoadingNotifications(false);
     }
   }, [user?.role]);
 
@@ -94,9 +130,10 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       await adminNotificationApi.markAsRead(notificationId);
+      setNotificationError(null);
       await fetchNotifications();
     } catch {
-      // Ignore
+      setNotificationError('No pudimos marcar la notificación como leída. Intente nuevamente.');
     }
   };
 
@@ -105,192 +142,24 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Top operational navigation bar */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="font-extrabold text-xl text-gray-900 tracking-tight">EasyEat</span>
-            <span className="text-gray-300">|</span>
-            <span className="font-medium text-gray-700">{title}</span>
-            {user?.role === 'CHEF' && (
-              <nav
-                aria-label="Secciones de cocina"
-                className="ml-2 flex min-w-0 items-center gap-1 overflow-x-auto text-xs"
-              >
-                {CHEF_SECTIONS.map((section) => {
-                  const active = isChefSectionActive(pathname, section.to);
-                  return (
-                    <Link
-                      key={section.to}
-                      to={section.to}
-                      aria-current={active ? 'page' : undefined}
-                      className={`px-2.5 py-1 rounded whitespace-nowrap ${
-                        active
-                          ? 'bg-orange-50 text-orange-700 font-semibold'
-                          : 'hover:bg-gray-100 text-gray-700 font-medium'
-                      }`}
-                    >
-                      {section.label}
-                    </Link>
-                  );
-                })}
-              </nav>
-            )}
-            {user?.role === 'ADMINISTRADOR' && (
-              <nav className="ml-4 hidden sm:flex items-center space-x-2 text-xs">
-                <Link
-                  to="/admin"
-                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-gray-700 font-medium"
-                >
-                  Panel
-                </Link>
-                <Link
-                  to="/admin/dishes"
-                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-purple-700 font-semibold"
-                >
-                  Auditoría
-                </Link>
-                <Link
-                  to="/admin/staff"
-                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-purple-700 font-semibold"
-                >
-                  Personal
-                </Link>
-                <Link
-                  to="/admin/inventory"
-                  className="px-2.5 py-1 rounded hover:bg-gray-100 text-purple-700 font-semibold"
-                >
-                  Inventario
-                </Link>
-              </nav>
-            )}
-            {user?.role === 'COMENSAL' && (
-              <nav
-                aria-label="Navegación de comensal"
-                className="ml-2 flex min-w-0 items-center gap-1 overflow-x-auto text-xs"
-              >
-                <Link
-                  to="/catalogo"
-                  className={`px-2.5 py-1 rounded whitespace-nowrap ${
-                    pathname.startsWith('/catalogo')
-                      ? 'bg-green-50 text-green-700 font-semibold'
-                      : 'hover:bg-gray-100 text-gray-700 font-medium'
-                  }`}
-                >
-                  Catálogo
-                </Link>
-                <Link
-                  to="/perfil#pedidos"
-                  className={`px-2.5 py-1 rounded whitespace-nowrap ${
-                    pathname === '/perfil' && hash === '#pedidos'
-                      ? 'bg-green-50 text-green-700 font-semibold'
-                      : 'hover:bg-gray-100 text-gray-700 font-medium'
-                  }`}
-                >
-                  Mis pedidos
-                </Link>
-                <Link
-                  to="/perfil"
-                  className={`px-2.5 py-1 rounded whitespace-nowrap ${
-                    pathname === '/perfil' && hash !== '#pedidos'
-                      ? 'bg-green-50 text-green-700 font-semibold'
-                      : 'hover:bg-gray-100 text-green-700 font-semibold'
-                  }`}
-                >
-                  Mi perfil
-                </Link>
-              </nav>
-            )}
-          </div>
-
-          <div className="flex items-center gap-4">
-            {user ? (
-              <>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${roleColor}`}
-                  >
-                    {user.role}
-                  </span>
-
-                  {user.tenantId && (
-                    <span
-                      data-testid="tenant-badge"
-                      className="px-2 py-0.5 rounded text-xs font-mono bg-gray-100 text-gray-700 border border-gray-200 hidden sm:inline"
-                      title={`Tenant: ${user.tenantId}`}
-                    >
-                      Local: {user.tenantId.slice(0, 8)}
-                    </span>
-                  )}
-
-                  <span className="text-sm text-gray-600 hidden md:inline">{user.email}</span>
-
-                  {/* Reactive user avatar with institutional fallback */}
-                  <Link
-                    to="/perfil"
-                    title="Mi perfil"
-                    aria-label="Avatar de usuario"
-                    className="flex items-center justify-center w-8 h-8 rounded-full overflow-hidden border border-gray-200 bg-gray-100 hover:ring-2 hover:ring-amber-500 transition-all shrink-0"
-                  >
-                    {avatarUrl ? (
-                      <img
-                        src={getAuthenticatedAvatarUrl(avatarUrl)}
-                        alt="Avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <UserIcon className="w-4 h-4 text-gray-500" />
-                    )}
-                  </Link>
-
-                  {user.role === 'ADMINISTRADOR' && (
-                    <AdminNotificationBell
-                      notifications={notifications}
-                      unreadCount={unreadCount}
-                      onMarkAsRead={handleMarkAsRead}
-                      onRefresh={fetchNotifications}
-                    />
-                  )}
-                </div>
-
-                <button
-                  onClick={handleLogout}
-                  className="text-sm font-medium text-gray-600 hover:text-red-600 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors"
-                >
-                  Cerrar sesión
-                </button>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/login"
-                  className="text-sm font-medium text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-md hover:bg-gray-100 transition-colors"
-                >
-                  Iniciar sesión
-                </Link>
-                <Link
-                  to="/register"
-                  className="text-sm font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-md transition-colors shadow-xs"
-                >
-                  Registrarse
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main operational workspace body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {subtitle && (
-          <div className="mb-6">
-            <p className="text-sm text-gray-500">{subtitle}</p>
-          </div>
-        )}
-        {children}
-      </main>
-    </div>
+    <RoleLayoutShell
+      title={title}
+      subtitle={subtitle}
+      user={user}
+      avatarUrl={avatarUrl}
+      tenantName={tenantName}
+      notifications={notifications}
+      unreadCount={unreadCount}
+      notificationError={notificationError}
+      isLoadingNotifications={isLoadingNotifications}
+      legacySurfaceMode={legacySurfaceMode}
+      fullWidth={fullWidth}
+      onLogout={handleLogout}
+      onMarkAsRead={handleMarkAsRead}
+      onRefreshNotifications={fetchNotifications}
+    >
+      {children}
+    </RoleLayoutShell>
   );
 };
 

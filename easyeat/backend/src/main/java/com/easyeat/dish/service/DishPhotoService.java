@@ -3,6 +3,7 @@ package com.easyeat.dish.service;
 import com.easyeat.catalog.domain.Dish;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.common.context.TenantContextHolder;
+import com.easyeat.common.http.BinaryMediaMetadataProjection;
 import com.easyeat.dish.domain.DishPhoto;
 import com.easyeat.dish.domain.DishStatus;
 import com.easyeat.dish.dto.PhotoUploadResponse;
@@ -81,6 +82,7 @@ public class DishPhotoService {
         photo.setContentType(normalizedContentType);
         photo.setFileSize(file.getSize());
         photo.setData(bytes);
+        photo.setUpdatedAt(java.time.Instant.now());
 
         dishPhotoRepository.save(photo);
 
@@ -96,6 +98,12 @@ public class DishPhotoService {
     @Transactional(readOnly = true)
     public DishPhoto getPhoto(UUID dishId) {
         return dishPhotoRepository.findByDishId(dishId)
+                .orElseThrow(() -> new DishNotFoundException("No se encontró la foto para el plato con ID: " + dishId));
+    }
+
+    @Transactional(readOnly = true)
+    public BinaryMediaMetadataProjection getPhotoMetadata(UUID dishId) {
+        return dishPhotoRepository.findMetadataByDishId(dishId)
                 .orElseThrow(() -> new DishNotFoundException("No se encontró la foto para el plato con ID: " + dishId));
     }
 
