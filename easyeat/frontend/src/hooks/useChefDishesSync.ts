@@ -20,6 +20,9 @@ export function useChefDishesSync(enabled = true): UseChefDishesSyncResult {
 
     try {
       const response = await dishApi.getOperationalStatus(etagRef.current || undefined);
+      if (response?.notModified) {
+        return;
+      }
       if (response && response.etag && response.etag !== etagRef.current) {
         etagRef.current = response.etag;
         setItems(response.items || []);

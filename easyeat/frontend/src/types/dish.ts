@@ -232,6 +232,7 @@ export interface ChefDishOperationalStatusItem {
 export interface ChefDishesOperationalStatusResponse {
   etag?: string;
   items: ChefDishOperationalStatusItem[];
+  notModified?: boolean;
 }
 
 
