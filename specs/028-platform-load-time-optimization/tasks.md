@@ -224,6 +224,54 @@ description: "Lista de tareas atómicas ordenadas por dependencia con enfoque TD
 
 ---
 
+## Phase 8: User Story 5 — Coherencia end-to-end en tiempo real de ventas acreditadas, tablero KDS y seguimiento de pedidos contra base de datos (Priority: P1)
+
+**GitHub Issue**: [#529](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/529)
+
+**Goal**: Garantizar que toda orden confirmada persista `orders.paid_at` en la base de datos (y reparar mediante migración Flyway `V31` las órdenes acreditadas previas con `paid_at IS NULL`) para que toda venta y monto ganado se reflejen de inmediato en los gráficos del Administrador en todas las granularidades (`day`, `week`, `month`, `all`); sincronizar los 4 contadores del KDS del Chef (`En Cola`, `En Preparación`, `Para Retirar`, `Completadas hoy`) con el huso horario del local (`America/Argentina/Buenos_Aires`) y con cada transición operativa; y actualizar silenciosamente contra la base de datos los paneles de Administrador y las vistas de pedido del Comensal sin parpadeos ni conexiones acopladas.
+
+**Independent Test**: Pagar y confirmar un carrito como Comensal (p. ej. a las 17:30 o después de las 21:00 hora argentina), pasar la comanda por `IN_PREPARATION` y `READY_FOR_PICKUP` en el KDS del Chef y entregarla como `COMPLETED` en Mostrador, verificando que en cada paso `orders.paid_at` está poblado, los 4 KPIs del KDS (`En Cola`, `En Preparación`, `Para Retirar`, `Completadas hoy`), las vistas del Comensal (`/pedidos/:id/seguimiento` y `/perfil#pedidos`) y los gráficos de Salud Financiera y Ranking del Administrador (`/admin` y `/admin/analytics` en `day`, `week`, `month`, `all`) reflejan inmediatamente los datos reales de PostgreSQL.
+
+### Tests para User Story 5 (TDD — RED primero)
+
+> **NOTA: Escribir y ejecutar estas pruebas PRIMERO, confirmando que FALLAN (RED) antes de implementar el código productivo.**
+
+- [ ] T074 [P] [US5] Escribir prueba de integración RED que verifica: (a) backfill Flyway de `orders.paid_at` sobre órdenes acreditadas con `paid_at IS NULL` (localizando la migración por descripción según regla 5 de `.specify/memory/migrations.md`), y (b) flujo end-to-end `confirmPayment` / `confirmZeroAmountOrder` → `startTicketPreparation` → `markTicketReadyForPickup` → `completeDelivery` comprobando que `order.getPaidAt()` no es nulo y que `GET /api/v1/admin/analytics/financial-health` (`day`, `week`, `month`) y `GET /api/v1/admin/analytics/dish-ranking` (`day`, `week`, `month`, `all`) contabilizan la nueva venta y su recaudación inmediatamente después del retiro en `easyeat/backend/src/test/java/com/easyeat/analytics/integration/OrderLifecycleToAdminAnalyticsIntegrationTest.java` (`FR-011`, `SC-007`, `D-12`)
+- [ ] T075 [P] [US5] Escribir prueba RED unitaria/MockMvc en `easyeat/backend/src/test/java/com/easyeat/order/KitchenKdsControllerIntegrationTest.java` verificando que `KitchenKdsController` con un `Clock` fijado a las 22:30 de Argentina (`01:30Z` del día siguiente en UTC) evalúa `today` en `America/Argentina/Buenos_Aires` tanto en `GET /api/v1/kitchen/orders?activeQueue=true` como en `GET /api/v1/kitchen/dashboard/summary` (contabilizando `completedTodayCount = 1` sin perder el pedido por salto de día UTC y manteniendo 1 sola consulta SQL agregada) (`FR-011`, `SC-007`, `D-12`)
+- [ ] T076 [P] [US5] Escribir pruebas Vitest RED en `easyeat/frontend/tests/pages/KitchenWorkspacePage.test.tsx` verificando que `KitchenWorkspacePage` refresca `fetchDashboardSummary` inmediatamente al completar `handleStartPreparation` (`En Cola` → `En Preparación`), al completar `handleReadyForPickup` (`En Preparación` → `Para Retirar`), en el ciclo de 4 segundos de la cola activa y al dispararse `visibilitychange` (`FR-011`, `SC-007`, `D-12`)
+- [ ] T077 [P] [US5] Escribir pruebas Vitest RED en `easyeat/frontend/tests/components/FinancialHealthPanel.test.tsx` y `easyeat/frontend/tests/components/DishRankingTable.test.tsx` verificando que ambos componentes integran `ClientSWRStore` para render inmediato entre `/admin` y `/admin/analytics`, y que revalidan silenciosamente contra la API al dispararse `visibilitychange` y el intervalo periódico en segundo plano actualizando ingresos, pedidos y unidades vendidas sin vaciar `data` a `null` ni mostrar esqueletos durante el refresco (`FR-011`, `SC-007`, `D-12`)
+- [ ] T078 [P] [US5] Escribir pruebas Vitest RED en `easyeat/frontend/tests/components/MyOrdersSection.test.tsx` y `easyeat/frontend/src/test/tracking/OrderConfirmationPage.test.tsx` verificando que `MyOrdersSection` revalida silenciosamente la lista de pedidos cuando existen órdenes en estado no terminal (`IN_PROGRESS`, `READY_FOR_PICKUP`, etc.) o al evento `visibilitychange` sin mostrar `orders-loading-skeleton`, y que `OrderConfirmationTrackingPage` actualiza el estado de la orden cuando `LiveTrackingWidget` reporta una transición (`FR-011`, `SC-007`, `D-12`)
+
+### Implementación Backend para User Story 5 (TDD — GREEN)
+
+- [ ] T079 [US5] Crear la migración versionada Flyway `easyeat/backend/src/main/resources/db/migration/V31__backfill_missing_orders_paid_at.sql` que repara `paid_at = COALESCE((SELECT MAX(p.approved_at) FROM payments p WHERE p.order_id = orders.id AND p.approved_at IS NOT NULL), orders.completed_at, orders.ready_at, orders.updated_at, orders.created_at)` en órdenes con `status IN ('PAID', 'IN_PROGRESS', 'READY_FOR_PICKUP', 'COMPLETED') AND paid_at IS NULL`, y registrar `V31` en `.specify/memory/migrations.md` (`FR-011`, `D-12`, `data-model.md §7`)
+- [ ] T080 [P] [US5] Asignar `order.setPaidAt(now)` de forma atómica e idempotente (cuando `order.getPaidAt() == null`, incluyendo recuperación en el camino idempotente si una orden previa confirmada tuviera `paidAt == null`) en `confirmPayment` y `confirmZeroAmountOrder` dentro de `easyeat/backend/src/main/java/com/easyeat/order/service/CheckoutConfirmationServiceImpl.java` y en `confirmAndApprovePayment` dentro de `easyeat/backend/src/main/java/com/easyeat/order/service/OrderConfirmationTrackingService.java` (`FR-011`, `SC-007`, `D-12`)
+- [ ] T081 [P] [US5] Incorporar `Clock` con zona horaria `America/Argentina/Buenos_Aires` en `easyeat/backend/src/main/java/com/easyeat/order/controller/KitchenKdsController.java` (manteniendo el constructor existente de 3 argumentos y añadiendo constructor `@Autowired` con `@Autowired(required = false) Clock clock`), reemplazando `LocalDate.now()` por `LocalDate.now(clock.withZone(BUENOS_AIRES_ZONE))` en `getKitchenOrders` y `getDashboardSummary` sin añadir consultas SQL extra (`FR-011`, `SC-002`, `SC-007`, `D-12`)
+
+### Implementación Frontend para User Story 5 (TDD — GREEN)
+
+- [ ] T082 [P] [US5] Sincronizar los 4 contadores KDS (`En Cola`, `En Preparación`, `Para Retirar`, `Completadas hoy`) en `easyeat/frontend/src/pages/KitchenWorkspacePage.tsx`: unificar la cadencia de `loadKdsSummary` con el ciclo de 4 segundos de la cola activa y con el evento `visibilitychange`, invocar `loadKdsSummary()` inmediatamente después de `handleStartPreparation`, `handleReadyForPickup` y `onDelayUpdated` (con actualización optimista inmediata en `handleStartPreparation`), y depurar de `dispatchedTicketIds` los tickets ya excluidos por la cola activa de backend (`FR-011`, `SC-007`, `D-12`)
+- [ ] T083 [P] [US5] Integrar `ClientSWRStore` (`analytics:financial-health:{granularity}` y `analytics:dish-ranking:{granularity}`) y revalidación silenciosa en segundo plano (cada 10 s con `document.visibilityState === 'visible'` y al evento `visibilitychange`, sin limpiar `data` a `null` ni mostrar esqueletos cuando ya hay datos cargados) en `easyeat/frontend/src/components/analytics/FinancialHealthPanel.tsx` y `easyeat/frontend/src/components/analytics/DishRankingTable.tsx` (`FR-011`, `SC-007`, `D-12`)
+- [ ] T084 [P] [US5] Propagar cambios de estado en vivo desde `easyeat/frontend/src/components/tracking/LiveTrackingWidget.tsx` (`onStatusChange`) hacia `easyeat/frontend/src/pages/OrderConfirmationTrackingPage.tsx` y añadir revalidación silenciosa en segundo plano (cada 10 s con pestaña visible mientras existan pedidos en estado no terminal, más `visibilitychange`, sin activar el esqueleto `orders-loading-skeleton`) en `easyeat/frontend/src/components/profile/MyOrdersSection.tsx` (`FR-011`, `SC-007`, `D-12`)
+- [ ] T085 [US5] Ejecutar verificación GREEN de US5 (`mvn test -Dtest=OrderLifecycleToAdminAnalyticsIntegrationTest,FinancialHealthControllerIntegrationTest,DishRankingControllerIntegrationTest,KitchenKdsControllerIntegrationTest,KitchenKdsExclusionTest,StaffOperationsBatchQueryIntegrationTest,IndividualCheckoutIntegrationTest,ZeroAmountCheckoutIntegrationTest` en `easyeat/backend/` y `npx vitest run tests/pages/KitchenWorkspacePage.test.tsx tests/components/FinancialHealthPanel.test.tsx tests/components/DishRankingTable.test.tsx tests/pages/AdminWorkspacePage.test.tsx tests/pages/AdminAnalyticsPage.test.tsx tests/components/MyOrdersSection.test.tsx src/test/tracking/OrderConfirmationPage.test.tsx` en `easyeat/frontend/`) (`FR-010`, `FR-011`, `SC-007`)
+
+**Checkpoint**: User Story 5 completamente verificada en verde; toda venta acreditada persiste `paid_at` y se refleja en tiempo real en los gráficos del Administrador, en los 4 KPIs del KDS del Chef y en las vistas del Comensal directamente desde PostgreSQL.
+
+---
+
+## Phase 9: Verificación integral, regresión final y cierre post-refactorización
+
+**GitHub Issue**: [#530](https://github.com/ValentinoCarmonaS/G12---GDSI/issues/530)
+
+**Purpose**: Validación transversal final de las 5 historias de usuario (US1–US5), suite completa de backend y frontend, auditoría visual Principio XI sobre los componentes tocados en Fase 8 y recorrido completo de `quickstart.md`.
+
+- [ ] T086 Ejecutar la suite completa de backend `mvn verify` en `easyeat/backend/` confirmando 100 % de pruebas unitarias, de contrato e integración en verde y cumplimiento del gate JaCoCo ≥ 80 % LINE e INSTRUCTION (`FR-010`, `FR-011`, `SC-006`, `SC-007`)
+- [ ] T087 [P] Ejecutar la suite completa de frontend (`npm run lint`, `npm test`, `npm run build`) en `easyeat/frontend/` confirmando cero regresiones en todas las suites Vitest y compilación de producción limpia (`FR-010`, `FR-011`, `SC-006`, `SC-007`)
+- [ ] T088 [P] Verificar cumplimiento del Principio XI (invariabilidad visual y contratos `.DESIGN.md` para `admin`, `chef` y `comensal`, sin parpadeos ni vaciado de gráficos en revalidación silenciosa) sobre `FinancialHealthPanel.tsx`, `DishRankingTable.tsx`, `KitchenWorkspacePage.tsx`, `OrderConfirmationTrackingPage.tsx`, `LiveTrackingWidget.tsx` y `MyOrdersSection.tsx` (`FR-010`, `FR-011`)
+- [ ] T089 Validar el escenario end-to-end de `US5 + SC-007` en `specs/028-platform-load-time-optimization/quickstart.md` confirmando coherencia total entre base de datos, Comensal, KDS del Chef, Mostrador y gráficos del Administrador (`SC-007`)
+
+---
+
 ## Dependencies & Execution Order
 
 ### Dependencias entre fases
@@ -234,7 +282,9 @@ description: "Lista de tareas atómicas ordenadas por dependencia con enfoque TD
 - **Phase 4 (US2 — T035–T040, P1)**: Depende de Phase 2. Independiente de US1, US3 y US4.
 - **Phase 5 (US3 — T041–T052, P2)**: Depende de Phase 2 (y reutiliza `findByIdDishIdIn`, `findDishIdsWithPhoto` y `findByIdInAndTenantId` de T023–T024; si US3 corre en paralelo con US1, coordinar esos 3 métodos de repositorio primero).
 - **Phase 6 (US4 — T053–T069, P2)**: Depende de Phase 2 (y coordina `WorkspaceLayout.tsx` con T030 de US1).
-- **Phase 7 (Polish — T070–T073)**: Depende de la finalización de US1–US4.
+- **Phase 7 (Polish US1–US4 — T070–T073)**: Depende de la finalización de US1–US4.
+- **Phase 8 (US5 — T074–T085, P1)**: Depende de Phase 2 (`ClientCacheContext` y migración `V30`); ejecuta ciclo TDD estricto (`T074`–`T078` RED → `T079`–`T084` GREEN → `T085` verificación).
+- **Phase 9 (Verificación integral final — T086–T089)**: Depende de la finalización de Phase 8.
 
 ### Reglas dentro de cada historia de usuario (TDD estricto)
 
