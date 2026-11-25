@@ -6,6 +6,7 @@ import com.easyeat.common.context.TenantContextHolder;
 import com.easyeat.dish.DishTestFixtures;
 import com.easyeat.dish.domain.DishCategory;
 import com.easyeat.dish.domain.DishStatus;
+import com.easyeat.dish.dto.ChefDishesOperationalStatusResponse;
 import com.easyeat.dish.dto.CreateDishRequest;
 import com.easyeat.dish.dto.DishDetailResponse;
 import com.easyeat.dish.dto.DishPageResponse;
@@ -14,6 +15,8 @@ import com.easyeat.dish.exception.DishLockedException;
 import com.easyeat.dish.exception.DishNotFoundException;
 import com.easyeat.dish.exception.DuplicateDishNameException;
 import com.easyeat.dish.repository.DishPhotoRepository;
+import com.easyeat.dish.repository.RecipeLineWithIngredientProjection;
+import com.easyeat.inventory.dto.IngredientStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,10 +31,12 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -315,15 +320,20 @@ class DishBasicServiceTest {
         }
 
         @Test
-        @DisplayName("Should return paginated list of establishment dishes with status filter")
+        @DisplayName("Should return paginated list of establishment dishes with status filter using batch queries")
         void listDishes_shouldReturnPaginatedResults() {
             Dish dish1 = DishTestFixtures.createStandardDish();
             dish1.setStatus(DishStatus.DRAFT);
             dish1.setTenantId(tenantId);
 
+            DishRepository.DishSummaryProjection proj1 = summaryProjection(dish1);
             Pageable pageable = PageRequest.of(0, 20);
-            when(dishRepository.findByTenantIdAndStatus(tenantId, DishStatus.DRAFT, pageable))
-                    .thenReturn(new PageImpl<>(List.of(dish1), pageable, 1));
+            when(dishRepository.findSummaryProjectionsByTenantIdAndStatus(tenantId, DishStatus.DRAFT, pageable))
+                    .thenReturn(new PageImpl<>(List.of(proj1), pageable, 1));
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(List.of(dish1.getId()), tenantId))
+                    .thenReturn(List.of());
+            when(dishPhotoRepository.findDishIdsWithPhoto(List.of(dish1.getId())))
+                    .thenReturn(Set.of());
 
             DishPageResponse response = dishService.listDishes("DRAFT", pageable);
 
@@ -331,23 +341,127 @@ class DishBasicServiceTest {
             assertThat(response.totalElements()).isEqualTo(1);
             assertThat(response.content()).hasSize(1);
             assertThat(response.content().get(0).name()).isEqualTo(dish1.getName());
+            verify(dishPhotoRepository, never()).existsByDishId(any());
+            verify(dishRecipeIngredientRepository, never()).countByIdDishId(any());
+            verify(dishRecipeIngredientRepository, never()).findByIdDishId(any());
+            verify(ingredientRepository, never()).findByIdAndTenantId(any(), any());
         }
 
         @Test
-        @DisplayName("Should return all dishes when status filter is ALL or omitted")
+        @DisplayName("Should return all dishes when status filter is ALL or omitted using batch queries")
         void listDishes_shouldReturnAllDishes_whenFilterIsAll() {
             Dish dish1 = DishTestFixtures.createStandardDish();
             dish1.setStatus(DishStatus.DRAFT);
             dish1.setTenantId(tenantId);
 
+            DishRepository.DishSummaryProjection proj1 = summaryProjection(dish1);
             Pageable pageable = PageRequest.of(0, 20);
-            when(dishRepository.findByTenantId(tenantId, pageable))
-                    .thenReturn(new PageImpl<>(List.of(dish1), pageable, 1));
+            when(dishRepository.findSummaryProjectionsByTenantId(tenantId, pageable))
+                    .thenReturn(new PageImpl<>(List.of(proj1), pageable, 1));
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(List.of(dish1.getId()), tenantId))
+                    .thenReturn(List.of());
+            when(dishPhotoRepository.findDishIdsWithPhoto(List.of(dish1.getId())))
+                    .thenReturn(Set.of(dish1.getId()));
 
             DishPageResponse response = dishService.listDishes("ALL", pageable);
 
             assertThat(response).isNotNull();
             assertThat(response.totalElements()).isEqualTo(1);
+            assertThat(response.content().get(0).photoUrl()).isEqualTo("/api/v1/dishes/" + dish1.getId() + "/photo");
+            verify(dishPhotoRepository, never()).existsByDishId(any());
+            verify(dishRecipeIngredientRepository, never()).countByIdDishId(any());
+            verify(dishRecipeIngredientRepository, never()).findByIdDishId(any());
+            verify(ingredientRepository, never()).findByIdAndTenantId(any(), any());
+        }
+
+        @Test
+        @DisplayName("Should guard empty IN () when listDishes page is empty")
+        void listDishes_shouldGuardEmptyInClause_whenPageIsEmpty() {
+            Pageable pageable = PageRequest.of(0, 20);
+            when(dishRepository.findSummaryProjectionsByTenantId(tenantId, pageable))
+                    .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+            DishPageResponse response = dishService.listDishes("ALL", pageable);
+
+            assertThat(response.content()).isEmpty();
+            verify(dishRecipeIngredientRepository, never()).findRecipeLinesWithIngredientsByDishIdsAndTenantId(any(), any());
+            verify(dishPhotoRepository, never()).findDishIdsWithPhoto(any());
+        }
+
+        @Test
+        @DisplayName("Should compute operational status in batch without N+1 queries and preserve hasStock semantics")
+        void getOperationalStatus_shouldUseBatchProjectionsAndAvoidNPlusOne() {
+            UUID publishedWithStockId = UUID.randomUUID();
+            UUID publishedWithoutStockId = UUID.randomUUID();
+            UUID draftId = UUID.randomUUID();
+
+            DishRepository.DishOperationalProjection p1 = operationalProjection(publishedWithStockId, false, true, DishStatus.PUBLISHED);
+            DishRepository.DishOperationalProjection p2 = operationalProjection(publishedWithoutStockId, true, true, DishStatus.PUBLISHED);
+            DishRepository.DishOperationalProjection p3 = operationalProjection(draftId, false, false, DishStatus.DRAFT);
+
+            when(dishRepository.findOperationalProjectionsByTenantId(tenantId)).thenReturn(List.of(p1, p2, p3));
+            when(dishRecipeIngredientRepository.findRecipeLinesWithIngredientsByDishIdsAndTenantId(
+                    List.of(publishedWithStockId, publishedWithoutStockId), tenantId))
+                    .thenReturn(List.of(
+                            recipeLine(publishedWithStockId, BigDecimal.ONE, IngredientStatus.ACTIVE, BigDecimal.TEN),
+                            recipeLine(publishedWithoutStockId, BigDecimal.TEN, IngredientStatus.ACTIVE, BigDecimal.ONE)
+                    ));
+
+            ChefDishesOperationalStatusResponse response = dishService.getOperationalStatus(tenantId);
+
+            assertThat(response.items()).hasSize(3);
+            assertThat(response.items().get(0).hasStock()).isTrue();
+            assertThat(response.items().get(1).hasStock()).isFalse();
+            assertThat(response.items().get(2).hasStock()).isTrue();
+            verify(dishRecipeIngredientRepository, never()).findByIdDishId(any());
+            verify(ingredientRepository, never()).findByIdAndTenantId(any(), any());
+        }
+
+        @Test
+        @DisplayName("Should guard empty IN () when getOperationalStatus has no published dishes")
+        void getOperationalStatus_shouldGuardEmptyInClause_whenNoPublishedDishes() {
+            when(dishRepository.findOperationalProjectionsByTenantId(tenantId)).thenReturn(List.of());
+
+            ChefDishesOperationalStatusResponse response = dishService.getOperationalStatus(tenantId);
+
+            assertThat(response.items()).isEmpty();
+            verify(dishRecipeIngredientRepository, never()).findRecipeLinesWithIngredientsByDishIdsAndTenantId(any(), any());
+        }
+
+        private DishRepository.DishSummaryProjection summaryProjection(Dish dish) {
+            return new DishRepository.DishSummaryProjection() {
+                @Override public UUID getId() { return dish.getId(); }
+                @Override public UUID getTenantId() { return dish.getTenantId(); }
+                @Override public String getName() { return dish.getName(); }
+                @Override public DishCategory getCategory() { return dish.getCategory(); }
+                @Override public String getDescription() { return dish.getDescription(); }
+                @Override public DishStatus getStatus() { return dish.getStatus(); }
+                @Override public Boolean getAllergensConfirmed() { return dish.getAllergensConfirmed(); }
+                @Override public Instant getUpdatedAt() { return dish.getUpdatedAt(); }
+                @Override public Instant getCreatedAt() { return dish.getCreatedAt(); }
+            };
+        }
+
+        private DishRepository.DishOperationalProjection operationalProjection(
+                UUID id, boolean pausedByChef, boolean isActive, DishStatus status) {
+            return new DishRepository.DishOperationalProjection() {
+                @Override public UUID getId() { return id; }
+                @Override public Boolean getPausedByChef() { return pausedByChef; }
+                @Override public Boolean getIsActive() { return isActive; }
+                @Override public DishStatus getStatus() { return status; }
+            };
+        }
+
+        private RecipeLineWithIngredientProjection recipeLine(
+                UUID targetDishId, BigDecimal qty, IngredientStatus status, BigDecimal stock) {
+            return new RecipeLineWithIngredientProjection() {
+                @Override public UUID getDishId() { return targetDishId; }
+                @Override public UUID getIngredientId() { return UUID.randomUUID(); }
+                @Override public BigDecimal getQuantity() { return qty; }
+                @Override public String getIngredientName() { return "Ing"; }
+                @Override public IngredientStatus getIngredientStatus() { return status; }
+                @Override public BigDecimal getCurrentStock() { return stock; }
+            };
         }
     }
 
