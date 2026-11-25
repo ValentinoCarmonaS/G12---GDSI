@@ -145,11 +145,22 @@ public class DishController {
         }
         String etag = "\"" + Integer.toHexString(sb.toString().hashCode()) + "\"";
 
-        if (ifNoneMatch != null && ifNoneMatch.equals(etag)) {
+        if (ifNoneMatch != null && !ifNoneMatch.isBlank() && normalizeEtag(ifNoneMatch).equals(normalizeEtag(etag))) {
             return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).build();
         }
 
         return ResponseEntity.ok().eTag(etag).body(response);
+    }
+
+    private String normalizeEtag(String value) {
+        String trimmed = value.trim();
+        if (trimmed.startsWith("W/")) {
+            trimmed = trimmed.substring(2).trim();
+        }
+        if (trimmed.length() >= 2 && trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+            return trimmed.substring(1, trimmed.length() - 1);
+        }
+        return trimmed;
     }
 
     @GetMapping("/{id}/availability-details")

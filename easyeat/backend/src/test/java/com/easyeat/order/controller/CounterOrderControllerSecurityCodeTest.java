@@ -27,6 +27,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -71,17 +74,19 @@ class CounterOrderControllerSecurityCodeTest {
     void returnsStoredPin() {
         Order order = readyOrder();
         order.assignSecurityCodeIfAbsent("4821");
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findAllByIdWithItems(List.of(orderId))).thenReturn(List.of(order));
 
         assertThat(counterSecurityCode()).isEqualTo("4821");
+        verify(orderRepository, never()).findById(any());
     }
 
     @Test
     @DisplayName("returns null, not a code derived from the order id, when the order has no PIN")
     void returnsNullWhenPinAbsent() {
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(readyOrder()));
+        when(orderRepository.findAllByIdWithItems(List.of(orderId))).thenReturn(List.of(readyOrder()));
 
         assertThat(counterSecurityCode()).isNull();
+        verify(orderRepository, never()).findById(any());
     }
 
     @Test
@@ -89,17 +94,19 @@ class CounterOrderControllerSecurityCodeTest {
     void returnsNullWhenPinMalformed() {
         Order order = readyOrder();
         ReflectionTestUtils.setField(order, "securityCode", "12a4");
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.findAllByIdWithItems(List.of(orderId))).thenReturn(List.of(order));
 
         assertThat(counterSecurityCode()).isNull();
+        verify(orderRepository, never()).findById(any());
     }
 
     @Test
     @DisplayName("returns null when the ticket's order cannot be found")
     void returnsNullWhenOrderMissing() {
-        when(orderRepository.findById(orderId)).thenReturn(Optional.empty());
+        when(orderRepository.findAllByIdWithItems(List.of(orderId))).thenReturn(List.of());
 
         assertThat(counterSecurityCode()).isNull();
+        verify(orderRepository, never()).findById(any());
     }
 
     private Order readyOrder() {

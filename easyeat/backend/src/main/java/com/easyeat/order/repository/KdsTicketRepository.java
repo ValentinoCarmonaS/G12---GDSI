@@ -106,4 +106,24 @@ public interface KdsTicketRepository extends JpaRepository<KdsTicket, UUID> {
             @Param("ticketId") UUID ticketId,
             @Param("today") LocalDate today
     );
+    @Query("""
+        SELECT
+            COALESCE(SUM(CASE WHEN k.status = com.easyeat.order.domain.KdsTicketStatus.QUEUED THEN 1L ELSE 0L END), 0L) AS queuedOrdersCount,
+            COALESCE(SUM(CASE WHEN k.status = com.easyeat.order.domain.KdsTicketStatus.IN_PREPARATION THEN 1L ELSE 0L END), 0L) AS inPreparationOrdersCount,
+            COALESCE(SUM(CASE WHEN k.status = com.easyeat.order.domain.KdsTicketStatus.READY_FOR_PICKUP THEN 1L ELSE 0L END), 0L) AS readyForPickupOrdersCount,
+            COALESCE(SUM(CASE WHEN k.status = com.easyeat.order.domain.KdsTicketStatus.COMPLETED AND k.pickupDate = :today THEN 1L ELSE 0L END), 0L) AS completedTodayCount
+        FROM KdsTicket k
+        WHERE k.establishment.id = :establishmentId
+    """)
+    KdsDashboardSummaryProjection findDashboardSummaryCounts(
+            @Param("establishmentId") UUID establishmentId,
+            @Param("today") LocalDate today
+    );
+
+    interface KdsDashboardSummaryProjection {
+        long getQueuedOrdersCount();
+        long getInPreparationOrdersCount();
+        long getReadyForPickupOrdersCount();
+        long getCompletedTodayCount();
+    }
 }

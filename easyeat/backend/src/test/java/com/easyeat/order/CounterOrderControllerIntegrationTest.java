@@ -46,6 +46,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -210,12 +212,12 @@ class CounterOrderControllerIntegrationTest {
 
         when(kdsTicketRepository.findCounterReadyTickets(establishmentId, today))
                 .thenReturn(List.of(ticket104, ticket105));
-        when(orderRepository.findById(orderId104)).thenReturn(Optional.of(order104));
-        when(orderRepository.findById(orderId105)).thenReturn(Optional.of(order105));
-        when(userRepository.findById(customerId104)).thenReturn(Optional.of(diner104));
-        when(userRepository.findById(customerId105)).thenReturn(Optional.of(diner105));
-        when(userPhotoRepository.existsByUserId(customerId104)).thenReturn(true);
-        when(userPhotoRepository.existsByUserId(customerId105)).thenReturn(false);
+        when(orderRepository.findAllByIdWithItems(List.of(orderId104, orderId105)))
+                .thenReturn(List.of(order104, order105));
+        when(userRepository.findAllById(List.of(customerId104, customerId105)))
+                .thenReturn(List.of(diner104, diner105));
+        when(userPhotoRepository.findUserIdsWithPhoto(List.of(customerId104, customerId105)))
+                .thenReturn(List.of(customerId104));
 
         mockMvc.perform(get("/api/v1/counter/orders")
                         .principal(encargadoAuth)
@@ -233,6 +235,9 @@ class CounterOrderControllerIntegrationTest {
                 .andExpect(jsonPath("$[1].timeSlot.end").value("13:30"));
 
         verify(kdsTicketRepository).findCounterReadyTickets(establishmentId, today);
+        verify(orderRepository, never()).findById(any());
+        verify(userRepository, never()).findById(any());
+        verify(userPhotoRepository, never()).existsByUserId(any());
     }
 
     @Test
@@ -315,12 +320,12 @@ class CounterOrderControllerIntegrationTest {
 
         when(kdsTicketRepository.findCounterReadyTickets(establishmentId, today))
                 .thenReturn(List.of(ticket104, ticket105));
-        when(orderRepository.findById(orderId104)).thenReturn(Optional.of(order104));
-        when(orderRepository.findById(orderId105)).thenReturn(Optional.of(order105));
-        when(userRepository.findById(customerId104)).thenReturn(Optional.of(diner104));
-        when(userRepository.findById(customerId105)).thenReturn(Optional.of(diner105));
-        when(userPhotoRepository.existsByUserId(customerId104)).thenReturn(true);
-        when(userPhotoRepository.existsByUserId(customerId105)).thenReturn(false);
+        when(orderRepository.findAllByIdWithItems(List.of(orderId104, orderId105)))
+                .thenReturn(List.of(order104, order105));
+        when(userRepository.findAllById(List.of(customerId104, customerId105)))
+                .thenReturn(List.of(diner104, diner105));
+        when(userPhotoRepository.findUserIdsWithPhoto(List.of(customerId104, customerId105)))
+                .thenReturn(List.of(customerId104));
 
         String responseBody = mockMvc.perform(get("/api/v1/counter/orders")
                         .principal(encargadoAuth)
@@ -358,6 +363,10 @@ class CounterOrderControllerIntegrationTest {
 
         com.fasterxml.jackson.databind.JsonNode root = new ObjectMapper().readTree(responseBody);
         assertThat(root.get(1).get("securityCode").isNull()).isTrue();
+
+        verify(orderRepository, never()).findById(any());
+        verify(userRepository, never()).findById(any());
+        verify(userPhotoRepository, never()).existsByUserId(any());
     }
 
     @Test
