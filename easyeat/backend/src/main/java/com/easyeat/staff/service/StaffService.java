@@ -1,5 +1,6 @@
 package com.easyeat.staff.service;
 
+import com.easyeat.auth.cache.UserSessionCache;
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.domain.UserRole;
 import com.easyeat.auth.domain.UserStatus;
@@ -28,6 +29,9 @@ public class StaffService {
 
     private final StaffUserRepository staffUserRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private UserSessionCache userSessionCache;
 
     public StaffService(StaffUserRepository staffUserRepository, PasswordEncoder passwordEncoder) {
         this.staffUserRepository = staffUserRepository;
@@ -62,6 +66,9 @@ public class StaffService {
         user.setStatus(UserStatus.PENDING_FIRST_LOGIN);
 
         User savedUser = staffUserRepository.save(user);
+        if (userSessionCache != null) {
+            userSessionCache.evict(savedUser.getId());
+        }
 
         return new StaffRegistrationResponse(
                 savedUser.getId(),
@@ -130,6 +137,9 @@ public class StaffService {
         user.setRole(targetRole);
 
         User savedUser = staffUserRepository.save(user);
+        if (userSessionCache != null) {
+            userSessionCache.evict(savedUser.getId());
+        }
         return toStaffMemberResponse(savedUser);
     }
 
@@ -162,6 +172,9 @@ public class StaffService {
 
         user.setStatus(targetStatus);
         User savedUser = staffUserRepository.save(user);
+        if (userSessionCache != null) {
+            userSessionCache.evict(savedUser.getId());
+        }
         return toStaffMemberResponse(savedUser);
     }
 

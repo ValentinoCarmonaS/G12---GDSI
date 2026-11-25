@@ -1,5 +1,6 @@
 package com.easyeat.profile.service;
 
+import com.easyeat.auth.cache.UserSessionCache;
 import com.easyeat.auth.domain.User;
 import com.easyeat.profile.domain.DemographicsValidator;
 import com.easyeat.profile.dto.*;
@@ -24,6 +25,9 @@ public class ProfileService {
     private final ProfileUserRepository profileUserRepository;
     private final DietaryRestrictionService dietaryRestrictionService;
     private final UserPhotoRepository userPhotoRepository;
+
+    @Autowired(required = false)
+    private UserSessionCache userSessionCache;
 
     @Autowired
     public ProfileService(
@@ -79,6 +83,9 @@ public class ProfileService {
         target.setPhone(cleanPhone);
 
         target = profileUserRepository.save(target);
+        if (userSessionCache != null) {
+            userSessionCache.evict(target.getId());
+        }
         log.info("Personal data updated for user ID: {}. full_name synchronized to: {}", target.getId(), target.getFullName());
 
         boolean hasPending = target.getPendingEmail() != null && !target.getPendingEmail().isBlank();
@@ -131,6 +138,9 @@ public class ProfileService {
             target.setGender(request.gender() != null && !request.gender().isBlank() ? request.gender().trim() : null);
             target.setAddress(request.address() != null && !request.address().isBlank() ? request.address().trim() : null);
             target = profileUserRepository.save(target);
+            if (userSessionCache != null) {
+                userSessionCache.evict(target.getId());
+            }
             log.info("Demographics updated for user ID: {}. age: {}, gender: {}, address: {}",
                     target.getId(), target.getAge(), target.getGender(), target.getAddress());
         }

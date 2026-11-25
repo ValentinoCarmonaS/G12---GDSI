@@ -1,5 +1,6 @@
 package com.easyeat.auth.service;
 
+import com.easyeat.auth.cache.UserSessionCache;
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.domain.UserRole;
 import com.easyeat.auth.domain.UserStatus;
@@ -36,6 +37,9 @@ public class AuthService {
     private final JwtService jwtService;
     private final RateLimitingService rateLimitingService;
     private final SecurityAuditLogger securityAuditLogger;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private UserSessionCache userSessionCache;
 
     public AuthService(
             UserRepository userRepository,
@@ -75,7 +79,8 @@ public class AuthService {
         user.setTenantId(null);
         user.setTokenVersion(0);
 
-        userRepository.save(user);
+        user = userRepository.save(user);
+        evictSession(user.getId());
 
         securityAuditLogger.logUserRegistered(normalizedEmail, user.getRole().name(), user.getStatus().name());
 
@@ -121,6 +126,7 @@ public class AuthService {
         rateLimitingService.resetLoginAttempts(normalizedEmail, clientIp);
         user.incrementTokenVersion();
         userRepository.save(user);
+        evictSession(user.getId());
         String token = jwtService.generateToken(user);
 
         securityAuditLogger.logLoginSuccess(normalizedEmail, user.getRole().name(), clientIp, user.getId());
@@ -134,6 +140,13 @@ public class AuthService {
                 .orElseThrow(() -> new InvalidCredentialsException("User account not found."));
         user.incrementTokenVersion();
         userRepository.save(user);
+        evictSession(userId);
         securityAuditLogger.logLogout(user.getEmail(), user.getRole().name(), userId);
+    }
+
+    private void evictSession(java.util.UUID userId) {
+        if (userSessionCache != null) {
+            userSessionCache.evict(userId);
+        }
     }
 }

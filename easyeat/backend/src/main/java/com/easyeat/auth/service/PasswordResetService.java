@@ -1,5 +1,6 @@
 package com.easyeat.auth.service;
 
+import com.easyeat.auth.cache.UserSessionCache;
 import com.easyeat.auth.domain.PasswordResetToken;
 import com.easyeat.auth.domain.TokenStatus;
 import com.easyeat.auth.domain.User;
@@ -43,6 +44,9 @@ public class PasswordResetService {
     private final Clock clock;
     private final String baseUrl;
     private final long tokenValidityMinutes;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private UserSessionCache userSessionCache;
     private final SecurityAuditLogger securityAuditLogger;
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -160,6 +164,9 @@ public class PasswordResetService {
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         user.incrementTokenVersion();
         userRepository.save(user);
+        if (userSessionCache != null) {
+            userSessionCache.evict(user.getId());
+        }
 
         securityAuditLogger.logResetConfirm(user.getEmail(), null, user.getId());
     }

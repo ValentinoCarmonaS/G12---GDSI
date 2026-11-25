@@ -1,5 +1,6 @@
 package com.easyeat.auth.security;
 
+import com.easyeat.auth.cache.UserSessionCache;
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.domain.UserRole;
 import com.easyeat.auth.domain.UserStatus;
@@ -31,16 +32,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final UserSessionCache userSessionCache;
 
     @Autowired
-    public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository, ObjectMapper objectMapper) {
+    public JwtAuthenticationFilter(
+            JwtService jwtService,
+            UserRepository userRepository,
+            ObjectMapper objectMapper,
+            @Autowired(required = false) UserSessionCache userSessionCache) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
+        this.userSessionCache = userSessionCache;
+    }
+
+    public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository, ObjectMapper objectMapper) {
+        this(jwtService, userRepository, objectMapper, null);
     }
 
     public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
-        this(jwtService, userRepository, new ObjectMapper());
+        this(jwtService, userRepository, new ObjectMapper(), null);
     }
 
     @Override
@@ -73,7 +84,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UserRole role = jwtService.extractRole(token);
             Integer tokenVersion = jwtService.extractTokenVersion(token);
 
-            Optional<User> userOpt = userRepository.findById(userId);
+            Optional<User> userOpt = (userSessionCache != null)
+                    ? userSessionCache.getById(userId)
+                    : userRepository.findById(userId);
 
             if (userOpt.isEmpty()) {
                 sendProblemDetail(response, request.getRequestURI(), HttpStatus.UNAUTHORIZED, "Unauthorized", "Usuario no encontrado");
