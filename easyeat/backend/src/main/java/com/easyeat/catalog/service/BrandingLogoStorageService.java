@@ -1,6 +1,7 @@
 package com.easyeat.catalog.service;
 
 import com.easyeat.auth.domain.User;
+import com.easyeat.catalog.cache.BrandingCache;
 import com.easyeat.catalog.domain.RestaurantBranding;
 import com.easyeat.catalog.domain.RestaurantLogo;
 import com.easyeat.catalog.repository.RestaurantBrandingRepository;
@@ -34,6 +35,9 @@ public class BrandingLogoStorageService {
 
     private final RestaurantBrandingRepository brandingRepository;
     private final RestaurantLogoRepository logoRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private BrandingCache brandingCache;
 
     public BrandingLogoStorageService(
             RestaurantBrandingRepository brandingRepository,
@@ -108,6 +112,10 @@ public class BrandingLogoStorageService {
         branding.setLogoUrl(logoUrl);
         branding.setUpdatedAt(Instant.now());
         brandingRepository.save(branding);
+
+        if (brandingCache != null) {
+            brandingCache.evict(establishmentId);
+        }
 
         return logoUrl;
     }
