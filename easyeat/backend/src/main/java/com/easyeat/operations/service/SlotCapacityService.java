@@ -2,6 +2,7 @@ package com.easyeat.operations.service;
 
 import com.easyeat.catalog.exception.EstablishmentNotFoundException;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.operations.cache.OperatingScheduleCache;
 import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
 import com.easyeat.operations.domain.EstablishmentSlotCapacity;
 import com.easyeat.operations.domain.SlotCapacityChange;
@@ -43,6 +44,9 @@ public class SlotCapacityService {
     private final OperatingScheduleRepository scheduleRepository;
     private final EstablishmentRepository establishmentRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private OperatingScheduleCache operatingScheduleCache;
+
     public SlotCapacityService(SlotCapacityRepository capacityRepository,
                                OperatingScheduleRepository scheduleRepository,
                                EstablishmentRepository establishmentRepository) {
@@ -58,8 +62,9 @@ public class SlotCapacityService {
     @Transactional(readOnly = true)
     public List<Row> getDayMatrix(UUID establishmentId, LocalDate date) {
         Map<LocalTime, Row> byStart = new HashMap<>();
-        Optional<EstablishmentOperatingSchedule> schedule =
-                scheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, date.getDayOfWeek());
+        Optional<EstablishmentOperatingSchedule> schedule = (operatingScheduleCache != null)
+                ? Optional.ofNullable(operatingScheduleCache.getWeekMap(establishmentId).get(date.getDayOfWeek()))
+                : scheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, date.getDayOfWeek());
         if (schedule.isPresent() && !schedule.get().isClosed()) {
             DinerTimeSlotService.partition(date, schedule.get())
                     .forEach(slot -> byStart.put(slot.startTime(), new Row(null, slot, 0, 0, true, null)));

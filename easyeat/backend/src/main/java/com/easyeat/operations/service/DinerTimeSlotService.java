@@ -1,5 +1,6 @@
 package com.easyeat.operations.service;
 
+import com.easyeat.operations.cache.OperatingScheduleCache;
 import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
 import com.easyeat.operations.domain.TimeSlot;
 import com.easyeat.operations.domain.EstablishmentSlotCapacity;
@@ -40,6 +41,9 @@ public class DinerTimeSlotService {
     private final SlotCapacityRepository capacityRepository;
     private final EstablishmentTimeProvider timeProvider;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private OperatingScheduleCache operatingScheduleCache;
+
     public DinerTimeSlotService(OperatingScheduleRepository scheduleRepository,
                                 SlotCapacityRepository capacityRepository,
                                 EstablishmentTimeProvider timeProvider) {
@@ -57,8 +61,9 @@ public class DinerTimeSlotService {
         if (date.isBefore(today)) {
             return new Availability(date, true, PAST_DATE, zone, List.of(), Set.of());
         }
-        Optional<EstablishmentOperatingSchedule> schedule =
-                scheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, date.getDayOfWeek());
+        Optional<EstablishmentOperatingSchedule> schedule = (operatingScheduleCache != null)
+                ? Optional.ofNullable(operatingScheduleCache.getWeekMap(establishmentId).get(date.getDayOfWeek()))
+                : scheduleRepository.findByEstablishmentIdAndDayOfWeek(establishmentId, date.getDayOfWeek());
         if (schedule.isEmpty() || schedule.get().isClosed()) {
             return new Availability(date, true, CLOSED_DAY, zone, List.of(), Set.of());
         }

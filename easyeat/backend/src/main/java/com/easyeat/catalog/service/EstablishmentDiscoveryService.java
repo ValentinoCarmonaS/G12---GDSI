@@ -5,6 +5,8 @@ import com.easyeat.catalog.domain.EstablishmentStatus;
 import com.easyeat.catalog.dto.EstablishmentSummaryResponse;
 import com.easyeat.catalog.exception.InvalidSearchQueryException;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.operations.cache.OperatingScheduleCache;
+import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
 import com.easyeat.operations.repository.OperatingScheduleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,9 @@ public class EstablishmentDiscoveryService {
 
     private final EstablishmentRepository establishmentRepository;
     private final OperatingScheduleRepository operatingScheduleRepository;
+
+    @Autowired(required = false)
+    private OperatingScheduleCache operatingScheduleCache;
 
     public EstablishmentDiscoveryService(EstablishmentRepository establishmentRepository) {
         this(establishmentRepository, null);
@@ -80,9 +85,11 @@ public class EstablishmentDiscoveryService {
         LocalTime closing = est.getClosingTime() != null ? est.getClosingTime() : LocalTime.of(23, 0);
         boolean isClosedToday = false;
 
-        if (operatingScheduleRepository != null) {
+        if (operatingScheduleCache != null || operatingScheduleRepository != null) {
             try {
-                var scheduleOpt = operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(est.getId(), now.getDayOfWeek());
+                java.util.Optional<EstablishmentOperatingSchedule> scheduleOpt = (operatingScheduleCache != null)
+                        ? java.util.Optional.ofNullable(operatingScheduleCache.getWeekMap(est.getId()).get(now.getDayOfWeek()))
+                        : operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(est.getId(), now.getDayOfWeek());
                 if (scheduleOpt.isPresent()) {
                     var sched = scheduleOpt.get();
                     if (sched.isClosed()) {
