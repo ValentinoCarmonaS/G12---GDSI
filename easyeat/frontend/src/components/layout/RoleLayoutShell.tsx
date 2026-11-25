@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { User as UserIcon } from 'lucide-react';
 import type { AuthenticatedUser } from '../../types/auth';
@@ -55,9 +55,20 @@ export const RoleLayoutShell: React.FC<RoleLayoutShellProps> = ({
   const config = user?.role ? ROLE_NAVIGATION_CONFIG[user.role] : null;
   const brandHomeRoute = getRoleDefaultRoute(user?.role);
 
-  const avatarContent = avatarUrl ? (
+  const [avatarVersion, setAvatarVersion] = useState(0);
+  useEffect(() => {
+    const handleAvatarChanged = () => setAvatarVersion((v) => v + 1);
+    window.addEventListener('easyeat:avatar-changed', handleAvatarChanged);
+    return () => window.removeEventListener('easyeat:avatar-changed', handleAvatarChanged);
+  }, []);
+
+  const authenticatedAvatarSrc = useMemo(() => {
+    return avatarUrl ? getAuthenticatedAvatarUrl(avatarUrl) : null;
+  }, [avatarUrl, avatarVersion]);
+
+  const avatarContent = authenticatedAvatarSrc ? (
     <img
-      src={getAuthenticatedAvatarUrl(avatarUrl)}
+      src={authenticatedAvatarSrc}
       alt="Avatar"
       className="h-full w-full object-cover"
     />
