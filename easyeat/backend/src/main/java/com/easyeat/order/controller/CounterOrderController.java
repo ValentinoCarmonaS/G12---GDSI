@@ -33,8 +33,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -93,7 +97,7 @@ public class CounterOrderController {
                 today
         );
 
-        List<CounterReadyOrderResponse> responses = readyTickets.stream()
+        List<KdsTicket> filteredTickets = readyTickets.stream()
                 .filter(ticket -> ticket.getStatus() == KdsTicketStatus.READY_FOR_PICKUP)
                 .filter(ticket -> ticket.getPickupDate() == null || ticket.getPickupDate().equals(today))
                 .sorted(
@@ -104,7 +108,36 @@ public class CounterOrderController {
                                         t -> t.getTicketNumber() != null ? t.getTicketNumber() : Integer.MAX_VALUE
                                 )
                 )
-                .map(this::mapTicketToCounterReadyOrderResponse)
+                .toList();
+
+        List<UUID> orderIds = filteredTickets.stream()
+                .map(KdsTicket::getOrderId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        Map<UUID, Order> ordersById = new HashMap<>();
+        if (orderRepository != null && !orderIds.isEmpty()) {
+            orderRepository.findAllByIdWithItems(orderIds).forEach(order -> ordersById.put(order.getId(), order));
+        }
+
+        List<UUID> customerIds = ordersById.values().stream()
+                .map(Order::getUserId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        Map<UUID, User> usersById = new HashMap<>();
+        if (userRepository != null && !customerIds.isEmpty()) {
+            userRepository.findAllById(customerIds).forEach(u -> usersById.put(u.getId(), u));
+        }
+
+        Set<UUID> userIdsWithPhoto = (userPhotoRepository != null && !customerIds.isEmpty())
+                ? new HashSet<>(userPhotoRepository.findUserIdsWithPhoto(customerIds))
+                : Set.of();
+
+        List<CounterReadyOrderResponse> responses = filteredTickets.stream()
+                .map(ticket -> mapTicketToCounterReadyOrderResponse(ticket, ordersById, usersById, userIdsWithPhoto))
                 .toList();
 
         return ResponseEntity.ok()
@@ -156,34 +189,32 @@ public class CounterOrderController {
         return null;
     }
 
-    private CounterReadyOrderResponse mapTicketToCounterReadyOrderResponse(KdsTicket ticket) {
-        Optional<Order> orderOpt = (orderRepository != null && ticket.getOrderId() != null)
-                ? orderRepository.findById(ticket.getOrderId())
-                : Optional.empty();
-
-        Order order = orderOpt.orElse(null);
+    private CounterReadyOrderResponse mapTicketToCounterReadyOrderResponse(
+            KdsTicket ticket,
+            Map<UUID, Order> ordersById,
+            Map<UUID, User> usersById,
+            Set<UUID> userIdsWithPhoto
+    ) {
+        Order order = ticket.getOrderId() != null ? ordersById.get(ticket.getOrderId()) : null;
 
         UUID customerId = (order != null) ? order.getUserId() : null;
         String customerFullName = "Comensal";
         String photoUrl = null;
 
         if (customerId != null) {
-            if (userRepository != null) {
-                Optional<User> customerOpt = userRepository.findById(customerId);
-                if (customerOpt.isPresent()) {
-                    User customer = customerOpt.get();
-                    if (customer.getFullName() != null && !customer.getFullName().isBlank()) {
-                        customerFullName = customer.getFullName();
-                    } else if (customer.getFirstName() != null && !customer.getFirstName().isBlank()) {
-                        String lastName = customer.getLastName() != null ? " " + customer.getLastName() : "";
-                        customerFullName = (customer.getFirstName() + lastName).trim();
-                    } else if (customer.getEmail() != null) {
-                        customerFullName = customer.getEmail();
-                    }
+            User customer = usersById.get(customerId);
+            if (customer != null) {
+                if (customer.getFullName() != null && !customer.getFullName().isBlank()) {
+                    customerFullName = customer.getFullName();
+                } else if (customer.getFirstName() != null && !customer.getFirstName().isBlank()) {
+                    String lastName = customer.getLastName() != null ? " " + customer.getLastName() : "";
+                    customerFullName = (customer.getFirstName() + lastName).trim();
+                } else if (customer.getEmail() != null) {
+                    customerFullName = customer.getEmail();
                 }
             }
 
-            if (userPhotoRepository != null && userPhotoRepository.existsByUserId(customerId)) {
+            if (userIdsWithPhoto.contains(customerId)) {
                 photoUrl = "/api/v1/profile/users/" + customerId + "/avatar";
             }
         }
