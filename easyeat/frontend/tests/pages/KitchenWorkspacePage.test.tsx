@@ -231,14 +231,14 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
         expect(fetchOrdersSpy).toHaveBeenCalledTimes(1);
       });
 
-      const startBtn = await screen.findByRole('button', { name: /iniciar preparación/i });
+      const startBtn = await screen.findByRole('button', { name: /^empezar$/i });
       fireEvent.click(startBtn);
 
       await waitFor(() => {
         expect(fetchSummarySpy).toHaveBeenCalledTimes(2);
       });
 
-      const readyBtn = await screen.findByRole('button', { name: /listo para retirar/i });
+      const readyBtn = await screen.findByRole('button', { name: /^listo$/i });
       fireEvent.click(readyBtn);
 
       await waitFor(() => {

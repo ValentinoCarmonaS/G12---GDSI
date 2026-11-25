@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { authApi } from '../api/authApi';
@@ -44,28 +44,71 @@ export const KitchenWorkspacePage: React.FC = () => {
       .catch(() => setFeedbackEntries([]));
   }, [returnedDishId]);
 
+  const loadKdsSummary = useCallback(async () => {
+    try {
+      const summary = await fetchDashboardSummary();
+      if (summary) {
+        setKdsSummary(summary);
+      }
+    } catch {
+      // non-blocking fallback
+    }
+  }, []);
+
   useEffect(() => {
-    const loadKdsSummary = async () => {
-      try {
-        const summary = await fetchDashboardSummary();
-        if (summary) {
-          setKdsSummary(summary);
-        }
-      } catch {
-        // non-blocking fallback
+    void loadKdsSummary();
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void loadKdsSummary();
+      }
+    }, 4000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void loadKdsSummary();
       }
     };
 
-    loadKdsSummary();
-    const interval = setInterval(loadKdsSummary, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadKdsSummary]);
+
+  useEffect(() => {
+    setDispatchedTicketIds((prev) => {
+      if (prev.size === 0) return prev;
+      const activeIds = new Set<string>();
+      for (const t of tickets) {
+        activeIds.add(t.ticketId);
+        activeIds.add(t.orderId);
+      }
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (activeIds.has(id)) {
+          next.add(id);
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [tickets]);
 
   const handleStartPreparation = async (ticketId: string) => {
     setActionError(null);
     try {
       await startTicketPreparation(ticketId);
+      setKdsSummary((prev) => ({
+        ...prev,
+        queuedOrdersCount: Math.max(0, prev.queuedOrdersCount - 1),
+        inPreparationOrdersCount: prev.inPreparationOrdersCount + 1,
+      }));
       await refetchQueue();
+      void loadKdsSummary();
     } catch (err: any) {
       console.error('Error starting ticket preparation:', err);
       setActionError('No se pudo iniciar la preparación de la comanda. Intentá nuevamente.');
@@ -82,7 +125,8 @@ export const KitchenWorkspacePage: React.FC = () => {
         inPreparationOrdersCount: Math.max(0, prev.inPreparationOrdersCount - 1),
         readyForPickupOrdersCount: prev.readyForPickupOrdersCount + 1,
       }));
-      refetchQueue();
+      await refetchQueue();
+      void loadKdsSummary();
     } catch (err: any) {
       console.error('Error marking ticket ready for pickup:', err);
       setDispatchedTicketIds((prev) => {
@@ -165,7 +209,10 @@ export const KitchenWorkspacePage: React.FC = () => {
           isLoading={isLoading}
           onStartPreparation={handleStartPreparation}
           onReadyForPickup={handleReadyForPickup}
-          onDelayUpdated={() => refetchQueue()}
+          onDelayUpdated={() => {
+            void refetchQueue();
+            void loadKdsSummary();
+          }}
           onDelayError={(msg) => setActionError(msg)}
         />
       </div>
