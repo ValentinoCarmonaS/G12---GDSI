@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { WorkspaceLayout } from '@/components/common/WorkspaceLayout';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { dishApi } from '@/api/dishApi';
+import { useClientCache } from '@/context/ClientCacheContext';
 import { chefReviewFeedbackApi } from '@/api/chefReviewFeedbackApi';
 import { BasicIdentityStep } from '@/components/dish/BasicIdentityStep';
 import { RecipeBOMStep } from '@/components/dish/RecipeBOMStep';
@@ -37,6 +38,7 @@ const INITIAL_DRAFT: UnifiedDishDraftState = {
 export const ChefDishEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const cache = useClientCache();
 
   const [activeTab, setActiveTab] = useState<DishEditorTab>('identity');
   const [draft, setDraft] = useState<UnifiedDishDraftState>(INITIAL_DRAFT);
@@ -182,7 +184,14 @@ export const ChefDishEditorPage: React.FC = () => {
     setSuccessMsg(null);
 
     try {
+      const hadPhotoMutation = Boolean(
+        draft.pendingPhotoFile || (draft.photoMarkedForDeletion && draft.existingPhotoUrl)
+      );
       const result = await persistUnifiedDishDraft(draft, mode);
+      if (hadPhotoMutation && result.dishId) {
+        cache.setMediaVersion(`dish:${result.dishId}`, Date.now());
+        cache.invalidate('catalog:', { prefix: true });
+      }
       setLoadedDish(result.dish);
       setDraft((prev) => ({
         ...prev,

@@ -4,6 +4,7 @@ import com.easyeat.catalog.domain.Dish;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.repository.DishRepository;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.operations.cache.OperatingScheduleCache;
 import com.easyeat.operations.domain.EstablishmentOperatingSchedule;
 import com.easyeat.operations.repository.OperatingScheduleRepository;
 import com.easyeat.order.config.MercadoPagoProperties;
@@ -72,6 +73,9 @@ public class OrderService {
     private final DishRepository dishRepository;
     private final Clock clock;
     private final OperatingScheduleRepository operatingScheduleRepository;
+
+    @Autowired(required = false)
+    private OperatingScheduleCache operatingScheduleCache;
     private final PaymentRepository paymentRepository;
     private final KdsTicketRepository kdsTicketRepository;
     private final TemporaryReservationRepository temporaryReservationRepository;
@@ -176,9 +180,10 @@ public class OrderService {
             timeSlotEnd = timeSlotStart.plusMinutes(15);
 
             boolean isOpenNow;
-            if (operatingScheduleRepository != null) {
-                Optional<EstablishmentOperatingSchedule> todaySchedOpt =
-                        operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishment.getId(), today.getDayOfWeek());
+            if (operatingScheduleCache != null || operatingScheduleRepository != null) {
+                Optional<EstablishmentOperatingSchedule> todaySchedOpt = (operatingScheduleCache != null)
+                        ? Optional.ofNullable(operatingScheduleCache.getWeekMap(establishment.getId()).get(today.getDayOfWeek()))
+                        : operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishment.getId(), today.getDayOfWeek());
                 if (todaySchedOpt.isPresent()) {
                     EstablishmentOperatingSchedule s = todaySchedOpt.get();
                     isOpenNow = !s.isClosed() && !nowTime.isBefore(s.getOpeningTime()) && nowTime.isBefore(s.getClosingTime());
@@ -212,9 +217,10 @@ public class OrderService {
             LocalTime openTime = establishment.getOpeningTime();
             LocalTime closeTime = establishment.getClosingTime();
 
-            if (operatingScheduleRepository != null) {
-                Optional<EstablishmentOperatingSchedule> schedOpt =
-                        operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishment.getId(), pickupDate.getDayOfWeek());
+            if (operatingScheduleCache != null || operatingScheduleRepository != null) {
+                Optional<EstablishmentOperatingSchedule> schedOpt = (operatingScheduleCache != null)
+                        ? Optional.ofNullable(operatingScheduleCache.getWeekMap(establishment.getId()).get(pickupDate.getDayOfWeek()))
+                        : operatingScheduleRepository.findByEstablishmentIdAndDayOfWeek(establishment.getId(), pickupDate.getDayOfWeek());
                 if (schedOpt.isPresent()) {
                     EstablishmentOperatingSchedule sched = schedOpt.get();
                     if (sched.isClosed()) {

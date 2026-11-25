@@ -3,6 +3,7 @@ import { WorkspaceLayout } from '../components/common/WorkspaceLayout';
 import { GlassCard } from '../components/admin/GlassCard';
 import { Button } from '../components/primitives/Button';
 import { useAuth } from '../hooks/useAuth';
+import { useClientCache } from '../context/ClientCacheContext';
 import {
   getAdminBranding,
   updateAdminBranding,
@@ -17,6 +18,7 @@ import { CheckCircle2, AlertCircle, Eye, Store } from 'lucide-react';
 
 export const AdminBrandingPage: React.FC = () => {
   const { user } = useAuth();
+  const cache = useClientCache();
   const establishmentId = user?.tenantId;
 
   const [fantasyName, setFantasyName] = useState<string>('');
@@ -25,6 +27,7 @@ export const AdminBrandingPage: React.FC = () => {
   const [secondaryColor, setSecondaryColor] = useState<string>('#065F46');
   const [accentColor, setAccentColor] = useState<string>('#F59E0B');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [previewImageError, setPreviewImageError] = useState<boolean>(false);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -40,23 +43,47 @@ export const AdminBrandingPage: React.FC = () => {
   useEffect(() => {
     if (!establishmentId) return;
 
-    setIsLoading(true);
-    getAdminBranding(establishmentId)
+    let cancelled = false;
+    const cacheKey = `branding:admin:${establishmentId}`;
+    const cached = cache.get<RestaurantBranding>(cacheKey);
+
+    const applyBranding = (data: RestaurantBranding) => {
+      setFantasyName(data.fantasyName || '');
+      setDescription(data.description || '');
+      setPrimaryColor(data.primaryColor || '#10B981');
+      setSecondaryColor(data.secondaryColor || '#065F46');
+      setAccentColor(data.accentColor || '#F59E0B');
+      setLogoUrl(data.logoUrl || null);
+      setUpdatedAt(data.updatedAt || null);
+    };
+
+    if (cached?.data) {
+      applyBranding(cached.data);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
+    cache
+      .fetchDeduped(cacheKey, () => getAdminBranding(establishmentId))
       .then((data: RestaurantBranding) => {
-        setFantasyName(data.fantasyName || '');
-        setDescription(data.description || '');
-        setPrimaryColor(data.primaryColor || '#10B981');
-        setSecondaryColor(data.secondaryColor || '#065F46');
-        setAccentColor(data.accentColor || '#F59E0B');
-        setLogoUrl(data.logoUrl || null);
+        if (cancelled) return;
+        applyBranding(data);
       })
       .catch((err) => {
-        setErrorMessage(err instanceof Error ? err.message : 'Error al cargar la configuración de marca');
+        if (cancelled) return;
+        if (!cached?.data) {
+          setErrorMessage(err instanceof Error ? err.message : 'Error al cargar la configuración de marca');
+        }
       })
       .finally(() => {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       });
-  }, [establishmentId]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [establishmentId, cache]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +117,9 @@ export const AdminBrandingPage: React.FC = () => {
       setPrimaryColor(updated.primaryColor);
       setSecondaryColor(updated.secondaryColor);
       setAccentColor(updated.accentColor);
+      setUpdatedAt(updated.updatedAt || null);
+      cache.invalidate(`branding:admin:${establishmentId}`);
+      cache.invalidate(`branding:diner:${establishmentId}`);
       window.dispatchEvent(new CustomEvent('easyeat:branding-changed'));
       setSuccessMessage('Branding actualizado exitosamente.');
     } catch (err: unknown) {
@@ -107,6 +137,10 @@ export const AdminBrandingPage: React.FC = () => {
       setErrorMessage(null);
       const response = await uploadRestaurantLogo(establishmentId, file);
       setLogoUrl(response.logoUrl);
+      setUpdatedAt(new Date().toISOString());
+      cache.invalidate(`branding:admin:${establishmentId}`);
+      cache.invalidate(`branding:diner:${establishmentId}`);
+      window.dispatchEvent(new CustomEvent('easyeat:branding-changed'));
       setSuccessMessage('Logotipo subido exitosamente.');
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : 'Error al subir el logotipo.');
@@ -114,6 +148,13 @@ export const AdminBrandingPage: React.FC = () => {
       setIsUploadingLogo(false);
     }
   };
+
+  const versionedLogoUrl =
+    logoUrl && updatedAt
+      ? `${logoUrl}${logoUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(
+          String(Number.isFinite(Date.parse(updatedAt)) ? Date.parse(updatedAt) : updatedAt)
+        )}`
+      : logoUrl;
 
   const primaryContrast = isValidHexColor(primaryColor) ? getOptimalContrastColor(primaryColor) : '#FFFFFF';
   const secondaryContrast = isValidHexColor(secondaryColor) ? getOptimalContrastColor(secondaryColor) : '#FFFFFF';
@@ -180,7 +221,7 @@ export const AdminBrandingPage: React.FC = () => {
                 </div>
 
                 <LogoUploader
-                  currentLogoUrl={logoUrl}
+                  currentLogoUrl={versionedLogoUrl}
                   onUpload={handleLogoUpload}
                   isUploading={isUploadingLogo}
                   disabled={isLoading || isSubmitting}
@@ -248,9 +289,9 @@ export const AdminBrandingPage: React.FC = () => {
                 style={{ backgroundColor: secondaryColor, color: secondaryContrast }}
               >
                 <div className="flex items-center gap-3">
-                  {logoUrl && !previewImageError ? (
+                  {versionedLogoUrl && !previewImageError ? (
                     <img
-                      src={resolveApiMediaUrl(logoUrl)}
+                      src={resolveApiMediaUrl(versionedLogoUrl)}
                       alt="Logo local"
                       onError={() => setPreviewImageError(true)}
                       className={`h-11 w-11 sm:h-12 sm:w-12 aspect-square shrink-0 rounded-lg ${

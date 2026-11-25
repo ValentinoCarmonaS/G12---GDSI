@@ -1,5 +1,6 @@
 package com.easyeat.profile.service;
 
+import com.easyeat.auth.cache.UserSessionCache;
 import com.easyeat.auth.domain.User;
 import com.easyeat.auth.exception.EmailAlreadyRegisteredException;
 import com.easyeat.profile.dto.EmailChangeInitiatedResponse;
@@ -32,6 +33,9 @@ public class EmailChangeService {
 
     private final ProfileUserRepository profileUserRepository;
     private final EmailSender emailSender;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private UserSessionCache userSessionCache;
 
     @Value("${app.email-verification.base-url:http://localhost:3000/verificar-email}")
     private String baseUrl = "http://localhost:3000/verificar-email";
@@ -71,6 +75,7 @@ public class EmailChangeService {
         target.setEmailVerificationLastSentAt(now);
 
         profileUserRepository.save(target);
+        evictSession(target.getId());
 
         String verificationUrl = baseUrl + "?token=" + rawToken;
         emailSender.sendVerificationEmail(normalizedEmail, verificationUrl);
@@ -110,6 +115,7 @@ public class EmailChangeService {
         target.setEmailVerificationLastSentAt(now);
 
         profileUserRepository.save(target);
+        evictSession(target.getId());
 
         String verificationUrl = baseUrl + "?token=" + rawToken;
         emailSender.sendVerificationEmail(target.getPendingEmail(), verificationUrl);
@@ -136,6 +142,7 @@ public class EmailChangeService {
         target.setEmailVerificationLastSentAt(null);
 
         profileUserRepository.save(target);
+        evictSession(target.getId());
         log.info("Pending email change canceled for user ID: {}", target.getId());
     }
 
@@ -164,6 +171,7 @@ public class EmailChangeService {
         target.incrementTokenVersion(); // Revokes active JWT sessions (FR-009)
 
         profileUserRepository.save(target);
+        evictSession(target.getId());
         log.info("Email change successfully confirmed for user ID: {}. Active email is now: {}. Active sessions revoked.",
                 target.getId(), newEmail);
 
@@ -171,6 +179,12 @@ public class EmailChangeService {
                 "Correo electrónico actualizado correctamente. Todas las sesiones activas han sido cerradas por seguridad.",
                 newEmail
         );
+    }
+
+    private void evictSession(UUID userId) {
+        if (userSessionCache != null) {
+            userSessionCache.evict(userId);
+        }
     }
 
     private String generateRawToken() {

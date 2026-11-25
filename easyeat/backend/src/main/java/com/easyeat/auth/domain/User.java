@@ -1,11 +1,13 @@
 package com.easyeat.auth.domain;
 
+import com.easyeat.auth.cache.UserSessionCache;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
 @Table(name = "users")
+@EntityListeners(UserSessionCache.UserEntityListener.class)
 public class User {
 
     @Id

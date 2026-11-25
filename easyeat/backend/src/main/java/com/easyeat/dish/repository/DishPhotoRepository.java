@@ -1,5 +1,6 @@
 package com.easyeat.dish.repository;
 
+import com.easyeat.common.http.BinaryMediaMetadataProjection;
 import com.easyeat.dish.domain.DishPhoto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,6 +21,10 @@ public interface DishPhotoRepository extends JpaRepository<DishPhoto, UUID> {
 
     @Query("SELECT dp.dishId FROM DishPhoto dp WHERE dp.dishId IN :dishIds")
     Set<UUID> findDishIdsWithPhoto(@Param("dishIds") Collection<UUID> dishIds);
+
+    @Query("SELECT dp.fileName AS fileName, dp.contentType AS contentType, dp.fileSize AS fileSize, dp.updatedAt AS updatedAt " +
+            "FROM DishPhoto dp WHERE dp.dishId = :dishId")
+    Optional<BinaryMediaMetadataProjection> findMetadataByDishId(@Param("dishId") UUID dishId);
 
     void deleteByDishId(UUID dishId);
 }

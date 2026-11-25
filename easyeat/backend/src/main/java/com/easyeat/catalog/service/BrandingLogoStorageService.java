@@ -1,11 +1,13 @@
 package com.easyeat.catalog.service;
 
 import com.easyeat.auth.domain.User;
+import com.easyeat.catalog.cache.BrandingCache;
 import com.easyeat.catalog.domain.RestaurantBranding;
 import com.easyeat.catalog.domain.RestaurantLogo;
 import com.easyeat.catalog.repository.RestaurantBrandingRepository;
 import com.easyeat.catalog.repository.RestaurantLogoRepository;
 import com.easyeat.common.exception.TenantViolationException;
+import com.easyeat.common.http.BinaryMediaMetadataProjection;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,6 +36,9 @@ public class BrandingLogoStorageService {
 
     private final RestaurantBrandingRepository brandingRepository;
     private final RestaurantLogoRepository logoRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private BrandingCache brandingCache;
 
     public BrandingLogoStorageService(
             RestaurantBrandingRepository brandingRepository,
@@ -95,6 +100,7 @@ public class BrandingLogoStorageService {
         logo.setContentType(contentType != null ? contentType : "image/png");
         logo.setFileSize(file.getSize());
         logo.setData(bytes);
+        logo.setUpdatedAt(Instant.now());
         logoRepository.save(logo);
 
         String logoUrl = "/api/v1/establishments/" + establishmentId + "/logo";
@@ -109,11 +115,20 @@ public class BrandingLogoStorageService {
         branding.setUpdatedAt(Instant.now());
         brandingRepository.save(branding);
 
+        if (brandingCache != null) {
+            brandingCache.evict(establishmentId);
+        }
+
         return logoUrl;
     }
 
     @Transactional(readOnly = true)
     public Optional<RestaurantLogo> getLogo(UUID establishmentId) {
         return logoRepository.findById(establishmentId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<BinaryMediaMetadataProjection> getLogoMetadata(UUID establishmentId) {
+        return logoRepository.findMetadataByEstablishmentId(establishmentId);
     }
 }
