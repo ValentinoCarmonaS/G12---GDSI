@@ -124,7 +124,7 @@ description: "Lista de tareas atómicas ordenadas por dependencia con enfoque TD
 
 ### Implementación para User Story 2 (TDD — GREEN)
 
-- [ ] T038 [US2] Añadir proyección `TimeSlotOccupancyProjection` y consulta JPQL agrupada `countActiveOrdersGroupedBySlot(UUID establishmentId, LocalDate pickupDate, Instant now)` (`GROUP BY o.timeSlotStart` con los mismos predicados de estado) en `easyeat/backend/src/main/java/com/easyeat/order/repository/OrderRepository.java` (`FR-003`, `D-03`, `data-model.md §2`)
+- [X] T038 [US2] Añadir proyección `TimeSlotOccupancyProjection` y consulta JPQL agrupada `countActiveOrdersGroupedBySlot(UUID establishmentId, LocalDate pickupDate, Instant now)` (`GROUP BY o.timeSlotStart` con los mismos predicados de estado) en `easyeat/backend/src/main/java/com/easyeat/order/repository/OrderRepository.java` (`FR-003`, `D-03`, `data-model.md §2`)
 - [ ] T039 [US2] Refactorizar `PickupSlotService.getPickupSlots` para ejecutar `countActiveOrdersGroupedBySlot` una única vez fuera del bucle de intervalos de 15 minutos y resolver los horarios del día solicitado y actual mediante `OperatingScheduleCache` en `easyeat/backend/src/main/java/com/easyeat/order/service/PickupSlotService.java` (`FR-003`, `FR-005`, `D-03`)
 - [ ] T040 [US2] Ejecutar verificación GREEN de US2 (`mvn test -Dtest=TimeSlotOccupancyTest,PickupSlotServiceTest,PickupSlotGroupedQueryIntegrationTest` en `easyeat/backend/` y `npx vitest run tests/pages/CheckoutPickupSlotsRendering.test.tsx` en `easyeat/frontend/`) confirmando cero regresiones (`FR-010`, `SC-002`)
 
