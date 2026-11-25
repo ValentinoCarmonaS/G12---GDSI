@@ -147,7 +147,12 @@ public class OrderConfirmationTrackingService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
 
+        Instant now = Instant.now();
+        if (order.getPaidAt() == null) {
+            order.setPaidAt(now);
+        }
         order.setStatus(OrderStatus.IN_PROGRESS);
+        order.setUpdatedAt(now);
         orderRepository.save(order);
 
         String recipientEmail = "comensal@easyeat.com";
