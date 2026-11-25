@@ -5,6 +5,7 @@ import com.easyeat.catalog.repository.EstablishmentRepository;
 import com.easyeat.order.dto.PickupSlotCatalogResponse;
 import com.easyeat.order.dto.TimeSlotAvailability;
 import com.easyeat.order.repository.OrderRepository;
+import com.easyeat.order.repository.TimeSlotOccupancyProjection;
 import com.easyeat.order.service.PickupSlotService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,12 +19,16 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,27 +68,43 @@ class TimeSlotOccupancyTest {
         when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(testEstablishment));
     }
 
+    private TimeSlotOccupancyProjection slotCount(LocalTime start, long count) {
+        return new TimeSlotOccupancyProjection() {
+            @Override
+            public LocalTime getTimeSlotStart() {
+                return start;
+            }
+
+            @Override
+            public long getBookedCount() {
+                return count;
+            }
+        };
+    }
+
     @Test
     @DisplayName("Occupancy math computes percentage accurately: booked / maxCapacity * 100")
     void shouldComputeOccupancyPercentageAccurately() {
         LocalDate testDate = LocalDate.of(2026, 11, 3); // Tuesday
 
-        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 0)), any(Instant.class)))
-                .thenReturn(5L); // 5/10 = 50.0%
-        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 15)), any(Instant.class)))
-                .thenReturn(0L); // 0/10 = 0.0%
-        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 30)), any(Instant.class)))
-                .thenReturn(7L); // 7/10 = 70.0%
-        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 45)), any(Instant.class)))
-                .thenReturn(3L); // 3/10 = 30.0%
+        when(orderRepository.countActiveOrdersGroupedBySlot(eq(establishmentId), eq(testDate), any(Instant.class)))
+                .thenReturn(List.of(
+                        slotCount(LocalTime.of(12, 0), 5L),
+                        slotCount(LocalTime.of(12, 30), 7L),
+                        slotCount(LocalTime.of(12, 45), 3L)
+                ));
 
         PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, testDate);
+
+        verify(orderRepository, times(1)).countActiveOrdersGroupedBySlot(eq(establishmentId), eq(testDate), any(Instant.class));
+        verify(orderRepository, never()).countActiveOrdersBySlot(any(), any(), any(), any());
 
         assertThat(response.getSlots()).hasSize(4);
         TimeSlotAvailability slot0 = response.getSlots().get(0);
         assertThat(slot0.getBookedCount()).isEqualTo(5L);
         assertThat(slot0.getMaxCapacity()).isEqualTo(10);
         assertThat(slot0.getOccupancyPercentage()).isEqualTo(50.0);
+        assertThat(response.getSlots().get(1).getBookedCount()).isEqualTo(0L);
     }
 
     @Test
@@ -91,10 +112,13 @@ class TimeSlotOccupancyTest {
     void shouldMarkSlotAsAvailableWhenOccupancyBelow80Percent() {
         LocalDate testDate = LocalDate.of(2026, 11, 3);
 
-        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 0)), any(Instant.class)))
-                .thenReturn(7L); // 7/10 = 70% (<80%)
+        when(orderRepository.countActiveOrdersGroupedBySlot(eq(establishmentId), eq(testDate), any(Instant.class)))
+                .thenReturn(List.of(slotCount(LocalTime.of(12, 0), 7L))); // 7/10 = 70% (<80%)
 
         PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, testDate);
+
+        verify(orderRepository, times(1)).countActiveOrdersGroupedBySlot(eq(establishmentId), eq(testDate), any(Instant.class));
+        verify(orderRepository, never()).countActiveOrdersBySlot(any(), any(), any(), any());
 
         TimeSlotAvailability slot = response.getSlots().get(0);
         assertThat(slot.getStatus()).isEqualTo("AVAILABLE");
@@ -107,12 +131,16 @@ class TimeSlotOccupancyTest {
     void shouldMarkSlotAsHighDemandWhenOccupancyBetween80And99Percent() {
         LocalDate testDate = LocalDate.of(2026, 11, 3);
 
-        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 0)), any(Instant.class)))
-                .thenReturn(8L); // 8/10 = 80.0%
-        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 15)), any(Instant.class)))
-                .thenReturn(9L); // 9/10 = 90.0%
+        when(orderRepository.countActiveOrdersGroupedBySlot(eq(establishmentId), eq(testDate), any(Instant.class)))
+                .thenReturn(List.of(
+                        slotCount(LocalTime.of(12, 0), 8L), // 8/10 = 80.0%
+                        slotCount(LocalTime.of(12, 15), 9L) // 9/10 = 90.0%
+                ));
 
         PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, testDate);
+
+        verify(orderRepository, times(1)).countActiveOrdersGroupedBySlot(eq(establishmentId), eq(testDate), any(Instant.class));
+        verify(orderRepository, never()).countActiveOrdersBySlot(any(), any(), any(), any());
 
         TimeSlotAvailability slot80 = response.getSlots().get(0);
         assertThat(slot80.getStatus()).isEqualTo("HIGH_DEMAND");
@@ -130,16 +158,18 @@ class TimeSlotOccupancyTest {
     void shouldFilterSoldOutSlotsWhenOccupancyReaches100Percent() {
         LocalDate testDate = LocalDate.of(2026, 11, 3);
 
-        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 0)), any(Instant.class)))
-                .thenReturn(10L); // 10/10 = 100.0% (SOLD_OUT -> filtered out)
-        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 15)), any(Instant.class)))
-                .thenReturn(12L); // 12/10 = 120.0% (over capacity edge case -> filtered out)
-        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 30)), any(Instant.class)))
-                .thenReturn(4L);  // 4/10 = 40.0% (AVAILABLE -> retained)
-        when(orderRepository.countActiveOrdersBySlot(eq(establishmentId), eq(testDate), eq(LocalTime.of(12, 45)), any(Instant.class)))
-                .thenReturn(8L);  // 8/10 = 80.0% (HIGH_DEMAND -> retained)
+        when(orderRepository.countActiveOrdersGroupedBySlot(eq(establishmentId), eq(testDate), any(Instant.class)))
+                .thenReturn(List.of(
+                        slotCount(LocalTime.of(12, 0), 10L),  // 10/10 = 100.0% (SOLD_OUT -> filtered out)
+                        slotCount(LocalTime.of(12, 15), 12L), // 12/10 = 120.0% (over capacity -> filtered out)
+                        slotCount(LocalTime.of(12, 30), 4L),  // 4/10 = 40.0% (AVAILABLE -> retained)
+                        slotCount(LocalTime.of(12, 45), 8L)   // 8/10 = 80.0% (HIGH_DEMAND -> retained)
+                ));
 
         PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, testDate);
+
+        verify(orderRepository, times(1)).countActiveOrdersGroupedBySlot(eq(establishmentId), eq(testDate), any(Instant.class));
+        verify(orderRepository, never()).countActiveOrdersBySlot(any(), any(), any(), any());
 
         // Slots at 12:00 and 12:15 are filtered out. Only 12:30 and 12:45 remain.
         assertThat(response.getSlots()).hasSize(2);

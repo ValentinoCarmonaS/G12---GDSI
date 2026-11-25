@@ -3,6 +3,7 @@ package com.easyeat.order;
 import com.easyeat.catalog.domain.Establishment;
 import com.easyeat.catalog.domain.EstablishmentStatus;
 import com.easyeat.catalog.repository.EstablishmentRepository;
+import com.easyeat.operations.cache.OperatingScheduleCache;
 import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.dto.PickupSlotCatalogResponse;
 import com.easyeat.order.dto.TimeSlotAvailability;
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.*;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,6 +29,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -82,6 +88,9 @@ class PickupSlotServiceTest {
 
             LocalDate targetDate = LocalDate.of(2026, 11, 3); // Tuesday (future operating day)
             PickupSlotCatalogResponse response = pickupSlotService.getPickupSlots(establishmentId, targetDate);
+
+            verify(orderRepository, times(1)).countActiveOrdersGroupedBySlot(eq(establishmentId), eq(targetDate), any(Instant.class));
+            verify(orderRepository, never()).countActiveOrdersBySlot(any(), any(), any(), any());
 
             assertThat(response).isNotNull();
             assertThat(response.getEstablishmentId()).isEqualTo(establishmentId);
@@ -271,6 +280,41 @@ class PickupSlotServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.isOperatingDay()).isFalse();
             assertThat(response.getSlots()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Should resolve requested and today schedules from OperatingScheduleCache without hitting OperatingScheduleRepository")
+        void shouldUseOperatingScheduleCacheWhenProvided() {
+            when(establishmentRepository.findById(establishmentId)).thenReturn(Optional.of(establishment));
+            OperatingScheduleCache scheduleCache = mock(OperatingScheduleCache.class);
+            PickupSlotService cachedService = new PickupSlotService(
+                    establishmentRepository,
+                    orderRepository,
+                    clock,
+                    operatingScheduleRepository,
+                    scheduleCache
+            );
+
+            LocalDate wednesday = LocalDate.of(2026, 11, 4);
+            com.easyeat.operations.domain.EstablishmentOperatingSchedule wedSched =
+                    new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                            establishmentId, DayOfWeek.WEDNESDAY, LocalTime.of(12, 0), LocalTime.of(13, 0), false
+                    );
+            com.easyeat.operations.domain.EstablishmentOperatingSchedule monSched =
+                    new com.easyeat.operations.domain.EstablishmentOperatingSchedule(
+                            establishmentId, DayOfWeek.MONDAY, LocalTime.of(10, 0), LocalTime.of(16, 0), false
+                    );
+            when(scheduleCache.getWeekMap(establishmentId))
+                    .thenReturn(Map.of(DayOfWeek.WEDNESDAY, wedSched, DayOfWeek.MONDAY, monSched));
+
+            PickupSlotCatalogResponse response = cachedService.getPickupSlots(establishmentId, wednesday);
+
+            assertThat(response.isOperatingDay()).isTrue();
+            assertThat(response.isEstablishmentOpen()).isTrue();
+            assertThat(response.getSlots()).hasSize(4);
+            verify(operatingScheduleRepository, never()).findByEstablishmentIdAndDayOfWeek(any(), any());
+            verify(orderRepository, times(1)).countActiveOrdersGroupedBySlot(eq(establishmentId), eq(wednesday), any(Instant.class));
+            verify(orderRepository, never()).countActiveOrdersBySlot(any(), any(), any(), any());
         }
     }
 }
