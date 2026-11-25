@@ -73,24 +73,34 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     };
   }, [fetchAvatar]);
 
-  const fetchTenantName = useCallback(async () => {
+  const fetchTenantName = useCallback(async (forceRefresh = false) => {
     if (user?.role !== 'ADMINISTRADOR' || !user.tenantId) {
       setTenantName(null);
       return;
     }
+    const cacheKey = `branding:admin:${user.tenantId}`;
+    if (forceRefresh) {
+      cache.invalidate(cacheKey);
+    }
+    const cached = cache.get<{ fantasyName?: string | null }>(cacheKey);
+    if (cached?.data) {
+      setTenantName(cached.data.fantasyName?.trim() || null);
+    }
     try {
-      const branding = await getAdminBranding(user.tenantId);
+      const branding = await cache.fetchDeduped(cacheKey, () => getAdminBranding(user.tenantId!));
       const normalized = branding?.fantasyName?.trim() || null;
       setTenantName(normalized);
     } catch {
-      setTenantName(null);
+      if (!cached?.data) {
+        setTenantName(null);
+      }
     }
-  }, [user?.role, user?.tenantId]);
+  }, [user?.role, user?.tenantId, cache]);
 
   useEffect(() => {
     fetchTenantName();
     const handleBrandingUpdate = () => {
-      fetchTenantName();
+      fetchTenantName(true);
     };
     window.addEventListener('easyeat:branding-changed', handleBrandingUpdate);
     return () => {
