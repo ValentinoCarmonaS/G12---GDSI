@@ -1,11 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { KitchenWorkspacePage } from '@/pages/KitchenWorkspacePage';
 import { authApi } from '@/api/authApi';
 import { chefReviewFeedbackApi } from '@/api/chefReviewFeedbackApi';
+import * as kitchenKdsApi from '@/api/kitchenKdsApi';
+import { orderTrackingApi } from '@/api/orderTrackingApi';
 import * as AuthModule from '@/hooks/useAuth';
 import type { ChefReviewFeedback } from '@/types/dishReview';
+import type { KdsTicket } from '@/types/kds';
 
 vi.mock('@/hooks/useAuth');
 vi.mock('@/api/chefReviewFeedbackApi', () => ({
@@ -150,6 +153,141 @@ describe('KitchenWorkspacePage (T029, CHF-1.2.1)', () => {
       // way to render in the first place: it holds no dish price, margin or cost state at all.
       const amounts = container.querySelectorAll('[data-testid*="cost"], [data-testid*="price"], [data-testid*="margin"]');
       expect(amounts).toHaveLength(0);
+    });
+  });
+
+  describe('Spec 028 US5 (T076): real-time KDS KPI synchronization', () => {
+    const queuedTicket: KdsTicket = {
+      ticketId: 'ticket-q-1',
+      ticketNumber: 101,
+      orderId: 'order-q-1',
+      status: 'QUEUED',
+      fulfillmentMode: 'IMMEDIATE',
+      pickupDate: '2026-11-25',
+      timeSlotStart: '12:00:00',
+      timeSlotEnd: '12:15:00',
+      queuedAt: '2026-11-25T15:00:00Z',
+      startedAt: null,
+      items: [{ dishId: 'd1', dishName: 'Milanesa', quantity: 1 }],
+    };
+
+    const inPrepTicket: KdsTicket = {
+      ...queuedTicket,
+      ticketId: 'ticket-p-2',
+      ticketNumber: 102,
+      orderId: 'order-p-2',
+      status: 'IN_PREPARATION',
+      startedAt: '2026-11-25T15:05:00Z',
+    };
+
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    it('refreshes fetchDashboardSummary immediately after handleStartPreparation and handleReadyForPickup', async () => {
+      const fetchOrdersSpy = vi.spyOn(kitchenKdsApi, 'fetchKitchenOrders').mockResolvedValue({
+        content: [queuedTicket, inPrepTicket],
+        pageable: { pageNumber: 0, pageSize: 100 },
+        totalElements: 2,
+        totalPages: 1,
+      });
+      const fetchSummarySpy = vi.spyOn(kitchenKdsApi, 'fetchDashboardSummary')
+        .mockResolvedValueOnce({
+          queuedOrdersCount: 1,
+          inPreparationOrdersCount: 1,
+          readyForPickupOrdersCount: 0,
+          completedTodayCount: 0,
+        })
+        .mockResolvedValueOnce({
+          queuedOrdersCount: 0,
+          inPreparationOrdersCount: 2,
+          readyForPickupOrdersCount: 0,
+          completedTodayCount: 0,
+        })
+        .mockResolvedValueOnce({
+          queuedOrdersCount: 0,
+          inPreparationOrdersCount: 1,
+          readyForPickupOrdersCount: 1,
+          completedTodayCount: 0,
+        });
+      vi.spyOn(kitchenKdsApi, 'startTicketPreparation').mockResolvedValue({
+        ticketId: queuedTicket.ticketId,
+        ticketNumber: queuedTicket.ticketNumber,
+        orderId: queuedTicket.orderId,
+        status: 'IN_PREPARATION',
+        startedAt: '2026-11-25T15:06:00Z',
+      });
+      vi.spyOn(orderTrackingApi, 'markTicketReadyForPickup').mockResolvedValue({} as any);
+
+      render(
+        <MemoryRouter>
+          <KitchenWorkspacePage />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(fetchSummarySpy).toHaveBeenCalledTimes(1);
+        expect(fetchOrdersSpy).toHaveBeenCalledTimes(1);
+      });
+
+      const startBtn = await screen.findByRole('button', { name: /iniciar preparación/i });
+      fireEvent.click(startBtn);
+
+      await waitFor(() => {
+        expect(fetchSummarySpy).toHaveBeenCalledTimes(2);
+      });
+
+      const readyBtn = await screen.findByRole('button', { name: /listo para retirar/i });
+      fireEvent.click(readyBtn);
+
+      await waitFor(() => {
+        expect(fetchSummarySpy).toHaveBeenCalledTimes(3);
+      });
+    });
+
+    it('refreshes fetchDashboardSummary on the 4-second active queue cadence and on visibilitychange', async () => {
+      vi.useFakeTimers();
+      vi.spyOn(kitchenKdsApi, 'fetchKitchenOrders').mockResolvedValue({
+        content: [],
+        pageable: { pageNumber: 0, pageSize: 100 },
+        totalElements: 0,
+        totalPages: 1,
+      });
+      const fetchSummarySpy = vi.spyOn(kitchenKdsApi, 'fetchDashboardSummary').mockResolvedValue({
+        queuedOrdersCount: 0,
+        inPreparationOrdersCount: 0,
+        readyForPickupOrdersCount: 0,
+        completedTodayCount: 1,
+      });
+
+      render(
+        <MemoryRouter>
+          <KitchenWorkspacePage />
+        </MemoryRouter>
+      );
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(fetchSummarySpy).toHaveBeenCalledTimes(1);
+
+      // 4-second cadence (aligned with active queue polling, not 10s)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(4100);
+      });
+      expect(fetchSummarySpy).toHaveBeenCalledTimes(2);
+
+      // visibilitychange back to visible triggers immediate refresh
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        value: 'visible',
+      });
+      await act(async () => {
+        document.dispatchEvent(new Event('visibilitychange'));
+        await Promise.resolve();
+      });
+      expect(fetchSummarySpy).toHaveBeenCalledTimes(3);
     });
   });
 });
