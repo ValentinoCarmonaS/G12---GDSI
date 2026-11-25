@@ -267,7 +267,7 @@ description: "Lista de tareas atómicas ordenadas por dependencia con enfoque TD
 
 - [X] T086 Ejecutar la suite completa de backend `mvn verify` en `easyeat/backend/` confirmando 100 % de pruebas unitarias, de contrato e integración en verde y cumplimiento del gate JaCoCo ≥ 80 % LINE e INSTRUCTION (`FR-010`, `FR-011`, `SC-006`, `SC-007`)
 - [X] T087 [P] Ejecutar la suite completa de frontend (`npm run lint`, `npm test`, `npm run build`) en `easyeat/frontend/` confirmando cero regresiones en todas las suites Vitest y compilación de producción limpia (`FR-010`, `FR-011`, `SC-006`, `SC-007`)
-- [ ] T088 [P] Verificar cumplimiento del Principio XI (invariabilidad visual y contratos `.DESIGN.md` para `admin`, `chef` y `comensal`, sin parpadeos ni vaciado de gráficos en revalidación silenciosa) sobre `FinancialHealthPanel.tsx`, `DishRankingTable.tsx`, `KitchenWorkspacePage.tsx`, `OrderConfirmationTrackingPage.tsx`, `LiveTrackingWidget.tsx` y `MyOrdersSection.tsx` (`FR-010`, `FR-011`)
+- [X] T088 [P] Verificar cumplimiento del Principio XI (invariabilidad visual y contratos `.DESIGN.md` para `admin`, `chef` y `comensal`, sin parpadeos ni vaciado de gráficos en revalidación silenciosa) sobre `FinancialHealthPanel.tsx`, `DishRankingTable.tsx`, `KitchenWorkspacePage.tsx`, `OrderConfirmationTrackingPage.tsx`, `LiveTrackingWidget.tsx` y `MyOrdersSection.tsx` (`FR-010`, `FR-011`)
 - [ ] T089 Validar el escenario end-to-end de `US5 + SC-007` en `specs/028-platform-load-time-optimization/quickstart.md` confirmando coherencia total entre base de datos, Comensal, KDS del Chef, Mostrador y gráficos del Administrador (`SC-007`)
 
 ---
