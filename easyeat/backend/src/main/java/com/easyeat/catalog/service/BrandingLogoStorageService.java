@@ -7,6 +7,7 @@ import com.easyeat.catalog.domain.RestaurantLogo;
 import com.easyeat.catalog.repository.RestaurantBrandingRepository;
 import com.easyeat.catalog.repository.RestaurantLogoRepository;
 import com.easyeat.common.exception.TenantViolationException;
+import com.easyeat.common.http.BinaryMediaMetadataProjection;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -99,6 +100,7 @@ public class BrandingLogoStorageService {
         logo.setContentType(contentType != null ? contentType : "image/png");
         logo.setFileSize(file.getSize());
         logo.setData(bytes);
+        logo.setUpdatedAt(Instant.now());
         logoRepository.save(logo);
 
         String logoUrl = "/api/v1/establishments/" + establishmentId + "/logo";
@@ -123,5 +125,10 @@ public class BrandingLogoStorageService {
     @Transactional(readOnly = true)
     public Optional<RestaurantLogo> getLogo(UUID establishmentId) {
         return logoRepository.findById(establishmentId);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<BinaryMediaMetadataProjection> getLogoMetadata(UUID establishmentId) {
+        return logoRepository.findMetadataByEstablishmentId(establishmentId);
     }
 }
