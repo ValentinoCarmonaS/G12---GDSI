@@ -44,6 +44,25 @@ Ninguno de estos endpoints modifica su ruta, payload JSON ni códigos de estado 
   - En visitas repetidas a `/descubrimiento`: muestra al instante (< 100 ms) el listado previo mientras revalida silenciosamente en segundo plano.
   - Las búsquedas filtradas (`GET /api/v1/establishments/search?q=...`) mantienen su comportamiento vigente con debounce de 300 ms.
 
+### 1E. Salud financiera y ranking de platos del Administrador (FR-011, SC-007)
+- **Method / Path**:
+  - `GET /api/v1/admin/analytics/financial-health?granularity={day|week|month}` → clave `analytics:financial-health:{granularity}`
+  - `GET /api/v1/admin/analytics/dish-ranking?granularity={all|day|week|month}` → clave `analytics:dish-ranking:{granularity}`
+- **Autenticación y roles**: `hasRole('ADMINISTRADOR') or hasRole('ADMIN')`.
+- **Headers relevantes**: `Cache-Control: no-cache, no-store, must-revalidate` en respuesta HTTP (siempre consulta en vivo a PostgreSQL utilizando el índice parcial `idx_orders_analytics` con `paid_at` poblado).
+- **Coordinación cliente (FR-011)**:
+  - En primera carga o al cambiar a una granularidad sin entrada previa en `ClientSWRStore`: conserva intactos los esqueletos de carga y el estado de error con botón `"Reintentar"` (`FinancialHealthPanel.test.tsx` y `DishRankingTable.test.tsx` pasan 100 % sin cambios).
+  - Si existe entrada en `ClientSWRStore` (p. ej. al navegar entre `/admin` y `/admin/analytics` o volver a una pestaña ya consultada): renderiza instantáneamente (< 100 ms) y revalida en segundo plano.
+  - Mientras la vista esté montada, ejecuta revalidación silenciosa (`silent: true`) cada `10000 ms` (solo si `document.visibilityState === 'visible'`) y al evento `visibilitychange`, actualizando KPIs, gráfico de barras (`FinancialHealthChart`) y ranking de platos sin poner `data` en `null` ni mostrar esqueletos durante el refresco.
+
+### 1F. Seguimiento en vivo e historial "Mis pedidos" del Comensal (FR-011, SC-007)
+- **Method / Path**:
+  - `GET /api/v1/orders/{orderId}/confirmation-tracking` y `GET /api/v1/orders/{orderId}/live-tracking`
+  - `GET /api/v1/orders/my-orders`
+- **Coordinación cliente (FR-011)**:
+  - `LiveTrackingWidget` sondea `/live-tracking` cada `6000 ms` hasta alcanzar estado terminal (`COMPLETED`, `CANCELLED`, `EXPIRED`) y notifica cambios de estado a `OrderConfirmationTrackingPage` mediante `onStatusChange` sin duplicar peticiones HTTP.
+  - `MyOrdersSection` (`/perfil#pedidos`) mantiene su carga inicial con esqueleto (`orders-loading-skeleton`) y revalida silenciosamente (`silent: true`, sin esqueleto) cada `10000 ms` cuando `document.visibilityState === 'visible'` y existe al menos un pedido en estado no terminal, además de revalidar al evento `visibilitychange`.
+
 ---
 
 ## 2. Contrato de interfaz interna del `ClientSWRStore` y compatibilidad de hooks (FR-010)

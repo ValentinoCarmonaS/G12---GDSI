@@ -67,8 +67,10 @@
   }
   ```
 - **Status codes**: `200 OK`, `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`.
-- **Notas de preservación FR-010**:
+- **Notas de preservación FR-010 y coherencia FR-011**:
   - Resuelto en **1 única consulta SQL agregada** (`SUM(CASE WHEN ...)`), conservando exactamente los predicados originales: los tres contadores activos sin filtro de `pickupDate` y `completedTodayCount` filtrado por `pickupDate = today`.
+  - `KitchenKdsController` resuelve `today` en la zona horaria operativa del local (`America/Argentina/Buenos_Aires` vía `Clock` inyectable con fallback seguro, preservando el constructor de 3 argumentos para pruebas unitarias Mockito y sin añadir consultas SQL extra).
+  - En el cliente (`KitchenWorkspacePage.tsx`), la lectura de `/api/v1/kitchen/dashboard/summary` se ejecuta en sincronía con el ciclo de 4 segundos de la cola activa (cuando la pestaña está visible), al evento `visibilitychange` e inmediatamente después de completar `startTicketPreparation`, `markTicketReadyForPickup` y `addTicketDelay`, manteniendo los 4 contadores alineados en todo momento con las columnas del tablero Kanban y con el mostrador.
 
 ---
 

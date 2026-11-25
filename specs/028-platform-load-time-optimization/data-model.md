@@ -168,6 +168,8 @@ POPULATED (entrada válida con timestamp de carga)
 | `branding:admin:{establishmentId}` | `GET /api/v1/admin/establishments/{id}/branding` | `WorkspaceLayout` (rol `ADMINISTRADOR`), `AdminBrandingPage` |
 | `catalog:{tenantId}:{userScope}` | `GET /api/v1/establishments/{tenantId}/catalog` | `CatalogPage` (`userScope = user.id` o `'guest'`) |
 | `establishments:all` | `GET /api/v1/establishments` | `EstablishmentSearchBar` en `EstablishmentDiscoveryPage` |
+| `analytics:financial-health:{granularity}` | `GET /api/v1/admin/analytics/financial-health?granularity={day\|week\|month}` | `FinancialHealthPanel` en `AdminWorkspacePage` (`/admin`) y `AdminAnalyticsPage` (`/admin/analytics`) |
+| `analytics:dish-ranking:{granularity}` | `GET /api/v1/admin/analytics/dish-ranking?granularity={all\|day\|week\|month}` | `DishRankingTable` en `AdminWorkspacePage` (`/admin`) y `AdminAnalyticsPage` (`/admin/analytics`) |
 
 ### Relationships y reglas de validación
 1. **Deduplicación en vuelo**: Si `inFlight.has(key)`, cualquier consumidor adicional que solicite `key` recibe exactamente la misma `Promise` activa sin disparar una segunda petición HTTP; al resolverse o rechazarse (`finally`), se elimina de `inFlight`.
@@ -208,10 +210,11 @@ REVALIDATING (datos visibles intactos; scroll, categoría, filtros y modales int
 - **Campos proyectados** (sin columna `data BYTEA`): `fileName (String)`, `contentType (String)`, `fileSize (Long)`, `updatedAt (Instant)`.
 - **Cálculo determinista de `ETag`**: `"\"" + sha256Hex(resourceId + ":" + updatedAt.toEpochMilli() + ":" + fileSize + ":" + fileName) + "\""` (idéntico tanto al evaluarse desde la proyección liviana en el camino `If-None-Match` → `304` como desde la entidad completa en el camino `200 OK`).
 
-### 5.2 Agregado ejecutivo del tablero KDS (`KdsDashboardSummaryProjection` — FR-004)
+### 5.2 Agregado ejecutivo del tablero KDS (`KdsDashboardSummaryProjection` — FR-004, FR-011)
 - **Tabla fuente**: `kds_tickets`.
 - **Campos proyectados**: `queuedOrdersCount (long)`, `inPreparationOrdersCount (long)`, `readyForPickupOrdersCount (long)`, `completedTodayCount (long)`.
 - **Consulta única**: `SUM(CASE WHEN k.status = 'QUEUED' ...)` + `IN_PREPARATION` + `READY_FOR_PICKUP` + `COMPLETED AND k.pickupDate = :today`, filtrado por `k.establishment.id = :establishmentId`.
+- **Determinismo horario y sincronización cliente (FR-011, D-12)**: `KitchenKdsController` resuelve `today` en la zona horaria del establecimiento (`America/Argentina/Buenos_Aires` vía `Clock` inyectable sin consultas SQL extra), y `KitchenWorkspacePage` sincroniza `fetchDashboardSummary` con el ciclo de 4 segundos de la cola activa, en `visibilitychange` e inmediatamente después de cada transición del Chef (`startTicketPreparation`, `markTicketReadyForPickup`, `addTicketDelay`).
 
 ### 5.3 Lote operativo de Mostrador, Gestión de Platos del Chef y Bandeja de Revisión Admin (FR-004)
 - **Mostrador (`CounterOrderController`)**: a partir de `readyTickets` (`KdsTicketRepository.findCounterReadyTickets`), carga en 3 consultas constantes: `orderRepository.findAllByIdWithItems(orderIds)` (existente), `userRepository.findAllById(customerIds)` y `userPhotoRepository.findUserIdsWithPhoto(customerIds)`. Guarda `IN ()` si `readyTickets` o `customerIds` está vacío.
@@ -236,3 +239,26 @@ Conforme a la regla 2 de `.specify/memory/migrations.md`, el número de versión
 - `orders`: `idx_orders_slot_capacity` (V16) ya cubre exactamente el `GROUP BY time_slot_start` de FR-003.
 - `kds_tickets`: `idx_kds_tickets_establishment_status` (V23), `idx_kds_tickets_active_queue` (V25) e `idx_kds_tickets_counter_ready` (V26) ya cubren KDS y Mostrador.
 - `dish_recipe_ingredients`: `pk_dish_recipe_ingredients(dish_id, ingredient_id)` (V7) ya cubre exactamente `WHERE dish_id IN (...)`.
+
+---
+
+## 7. Migración versionada de backfill de `orders.paid_at` (FR-011, D-12)
+
+Conforme a `.specify/memory/migrations.md` (reglas 2, 3 y 5), habiendo consumido `V30__add_performance_composite_indexes.sql` en la Fase 2, la siguiente versión disponible al autorar la reparación histórica de `orders.paid_at` es **`V31__backfill_missing_orders_paid_at.sql`**.
+
+### Regla de reparación e invariante de acreditación
+- **Alcance**: Toda fila en `orders` cuyo estado pertenezca al conjunto de órdenes con pago acreditado (`'PAID'`, `'IN_PROGRESS'`, `'READY_FOR_PICKUP'`, `'COMPLETED'`) y tenga `paid_at IS NULL`.
+- **Fórmula determinista de backfill**:
+  ```sql
+  UPDATE orders o
+  SET paid_at = COALESCE(
+      (SELECT MAX(p.approved_at) FROM payments p WHERE p.order_id = o.id AND p.approved_at IS NOT NULL),
+      o.completed_at,
+      o.ready_at,
+      o.updated_at,
+      o.created_at
+  )
+  WHERE o.status IN ('PAID', 'IN_PROGRESS', 'READY_FOR_PICKUP', 'COMPLETED')
+    AND o.paid_at IS NULL;
+  ```
+- **Invariante hacia adelante en Java**: `CheckoutConfirmationServiceImpl.confirmPayment`, `CheckoutConfirmationServiceImpl.confirmZeroAmountOrder` y `OrderConfirmationTrackingService.confirmAndApprovePayment` asignan `order.setPaidAt(now)` cuando `order.getPaidAt() == null` en la misma transacción que fija `OrderStatus.IN_PROGRESS`, garantizando que `idx_orders_analytics ON orders (establishment_id, paid_at) WHERE status IN ('PAID', 'IN_PROGRESS', 'READY_FOR_PICKUP', 'COMPLETED')` indexe el 100 % de las ventas concretadas.
