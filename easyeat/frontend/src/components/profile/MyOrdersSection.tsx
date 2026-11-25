@@ -60,6 +60,12 @@ const ORDER_STATUS_META: Record<OrderStatus, { label: string; badgeClass: string
   },
 };
 
+const TERMINAL_ORDER_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  'COMPLETED',
+  'CANCELLED',
+  'EXPIRED',
+]);
+
 const TRACKABLE_STATUSES: ReadonlySet<OrderStatus> = new Set([
   'PENDING_ACCREDITATION',
   'IN_PROGRESS',
@@ -104,22 +110,60 @@ export const MyOrdersSection: React.FC<MyOrdersSectionProps> = ({ onResumePaymen
   const [actionError, setActionError] = useState<string | null>(null);
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
 
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const loadOrders = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const data = await getMyOrders();
       setOrders(Array.isArray(data) ? data : []);
+      if (silent) {
+        setError(null);
+      }
     } catch {
-      setError('No pudimos cargar tu historial de pedidos. Por favor, intentá nuevamente.');
+      if (!silent) {
+        setError('No pudimos cargar tu historial de pedidos. Por favor, intentá nuevamente.');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    void loadOrders();
+    void loadOrders({ silent: false });
   }, [loadOrders]);
+
+  const hasNonTerminalOrders = orders.some((order) => !TERMINAL_ORDER_STATUSES.has(order.status));
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void loadOrders({ silent: true });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (hasNonTerminalOrders) {
+      interval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          void loadOrders({ silent: true });
+        }
+      }, 10000);
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [hasNonTerminalOrders, loadOrders]);
 
   const handleResumePayment = (redirectUrl: string) => {
     if (onResumePayment) {

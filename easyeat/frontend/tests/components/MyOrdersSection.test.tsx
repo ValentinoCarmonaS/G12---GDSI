@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { MyOrdersSection } from '@/components/profile/MyOrdersSection';
@@ -228,5 +228,68 @@ describe('MyOrdersSection (T028, US4, FR-008, FR-009, Q5)', () => {
 
     const cancelBtn = screen.getByRole('button', { name: /cancelar intento/i });
     expect(cancelBtn).toBeEnabled();
+  });
+
+  describe('Spec 028 US5 (T078): silent background revalidation', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('revalidates silently every 10s when non-terminal orders exist and on visibilitychange without showing skeleton', async () => {
+      vi.useFakeTimers();
+      vi.mocked(orderApi.getMyOrders)
+        .mockResolvedValueOnce([sampleOrders[0]])
+        .mockResolvedValueOnce([{ ...sampleOrders[0], status: 'READY_FOR_PICKUP' }])
+        .mockResolvedValueOnce([{ ...sampleOrders[0], status: 'COMPLETED' }]);
+
+      renderSection();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(screen.getByText(/En preparación/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('orders-loading-skeleton')).not.toBeInTheDocument();
+
+      // 10s background poll updates status silently without skeleton
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10000);
+      });
+      expect(orderApi.getMyOrders).toHaveBeenCalledTimes(2);
+      expect(screen.getByText(/Listo para retirar/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('orders-loading-skeleton')).not.toBeInTheDocument();
+
+      // visibilitychange triggers immediate silent revalidation
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        value: 'visible',
+      });
+      await act(async () => {
+        document.dispatchEvent(new Event('visibilitychange'));
+        await Promise.resolve();
+      });
+      expect(orderApi.getMyOrders).toHaveBeenCalledTimes(3);
+      expect(screen.getByText(/Completado/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('orders-loading-skeleton')).not.toBeInTheDocument();
+    });
+
+    it('does not poll periodically when all orders are in terminal states', async () => {
+      vi.useFakeTimers();
+      vi.mocked(orderApi.getMyOrders).mockResolvedValueOnce([
+        { ...sampleOrders[0], status: 'COMPLETED' },
+        sampleOrders[2],
+      ]);
+
+      renderSection();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(orderApi.getMyOrders).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(25000);
+      });
+      expect(orderApi.getMyOrders).toHaveBeenCalledTimes(1);
+    });
   });
 });

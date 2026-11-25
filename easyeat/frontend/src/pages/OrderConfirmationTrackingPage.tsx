@@ -74,6 +74,24 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
     };
   }, [orderId, order, isPendingApproval]);
 
+  const handleLiveStatusChange = useCallback(
+    (status: string, ticketNumber?: number | null) => {
+      setOrder((prev) => {
+        if (!prev) return prev;
+        const nextTicketNumber = ticketNumber ?? prev.ticketNumber;
+        if (prev.status === status && prev.ticketNumber === nextTicketNumber) {
+          return prev;
+        }
+        return {
+          ...prev,
+          status: status as OrderConfirmationTrackingResponse['status'],
+          ticketNumber: nextTicketNumber,
+        };
+      });
+    },
+    []
+  );
+
   return (
     <WorkspaceLayout
       title="Confirmación de Pedido"
@@ -117,7 +135,11 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
 
           {/* Provisional / Confirmation View */}
           {!isLoading && order && (
-            <div className="space-y-6">
+            <div
+              data-testid="order-confirmation-content"
+              data-order-status={order.status}
+              className="space-y-6"
+            >
               {isPendingApproval ? (
                 <div className="space-y-6">
                   <PendingAccreditationBanner orderId={order.orderId} />
@@ -162,6 +184,7 @@ export const OrderConfirmationTrackingPage: React.FC = () => {
                     fulfillmentMode={order.fulfillmentMode}
                     timeSlotStart={order.timeSlotStart}
                     timeSlotEnd={order.timeSlotEnd}
+                    onStatusChange={handleLiveStatusChange}
                   />
 
                   {/* Email Guarantee Notice (AS-2, FR-002) */}

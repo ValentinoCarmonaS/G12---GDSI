@@ -170,4 +170,32 @@ describe('T013 [US1]: Green Success Confirmation Screen and Order Summary', () =
     expect(screen.getByTestId('order-success-green-banner')).toBeInTheDocument();
     expect(screen.getAllByText(/#142/).length).toBeGreaterThanOrEqual(1);
   });
+
+  it('Spec 028 US5 (T078): updates page order state when LiveTrackingWidget reports a live status transition without refetching confirmation', async () => {
+    vi.mocked(orderTrackingApi.getConfirmationTracking).mockResolvedValueOnce({
+      ...mockOrderData,
+      ticketNumber: null,
+      status: 'IN_PROGRESS',
+    });
+    vi.mocked(orderTrackingApi.getLiveTracking).mockResolvedValueOnce({
+      orderId: 'order-uuid-999',
+      ticketNumber: 155,
+      status: 'READY_FOR_PICKUP',
+      isReadyForPickup: true,
+      securityCode: '4821',
+      message: '¡Tu pedido está listo para retirar!',
+      items: [],
+    } as any);
+
+    renderWithRoute();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('order-confirmation-content')).toHaveAttribute(
+        'data-order-status',
+        'READY_FOR_PICKUP'
+      );
+    });
+    expect(screen.getAllByText(/#155/).length).toBeGreaterThanOrEqual(1);
+    expect(orderTrackingApi.getConfirmationTracking).toHaveBeenCalledTimes(1);
+  });
 });
