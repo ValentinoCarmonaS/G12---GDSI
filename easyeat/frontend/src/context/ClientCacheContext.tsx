@@ -73,6 +73,7 @@ export class ClientSWRStore {
 
   setMediaVersion(mediaKey: string, version: number): void {
     this.mediaVersions.set(mediaKey, version);
+    this.notify(mediaKey);
   }
 
   getMediaVersion(mediaKey: string): number | undefined {

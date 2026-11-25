@@ -5,6 +5,7 @@ import { AllergenNeutralPill } from './AllergenNeutralPill';
 import { AccessibleModal } from '@/components/diner/AccessibleModal';
 import { Button } from '@/components/primitives/Button';
 import { CartContext } from '@/context/CartContext';
+import { ClientCacheContext } from '@/context/ClientCacheContext';
 import { formatCurrency, calculateLineTotal } from '@/utils/currencyUtils';
 import { resolveApiMediaUrl } from '@/utils/mediaUtils';
 
@@ -30,6 +31,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
   const [stockErrorWarning, setStockErrorWarning] = useState<string | null>(null);
   const cartContext = useContext(CartContext);
+  const cacheContext = useContext(ClientCacheContext);
   const savedScrollYRef = useRef<number>(0);
 
   // Capture window.scrollY upon modal opening and restore it upon close (INV-1, FR-004, SC-002, EC-021)
@@ -177,7 +179,14 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             )}
 
             <img
-              src={resolveApiMediaUrl(dish.photoUrl)}
+              src={resolveApiMediaUrl(
+                (() => {
+                  const mediaVersion = cacheContext?.getMediaVersion(`dish:${dish.id}`);
+                  return dish.photoUrl && mediaVersion !== undefined
+                    ? `${dish.photoUrl}${dish.photoUrl.includes('?') ? '&' : '?'}v=${mediaVersion}`
+                    : dish.photoUrl;
+                })()
+              )}
               alt={dish.name}
               onLoad={() => setImageLoaded(true)}
               onError={() => setImageError(true)}
