@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Clock, AlertTriangle, ChefHat, Users, Check } from 'lucide-react';
 import { useOrderLiveTrackingPolling } from '../../hooks/useOrderLiveTrackingPolling';
 import { ScheduledSlotCountdown } from './ScheduledSlotCountdown';
@@ -16,6 +16,7 @@ export interface LiveTrackingWidgetProps {
   timeSlotStart?: string | null;
   timeSlotEnd?: string | null;
   initialTracking?: OrderLiveTrackingResponse | null;
+  onStatusChange?: (status: OrderLiveTrackingResponse['status'], ticketNumber?: number | null) => void;
 }
 
 const TRACKING_STAGES = [
@@ -73,8 +74,22 @@ export const LiveTrackingWidget: React.FC<LiveTrackingWidgetProps> = ({
   timeSlotStart,
   timeSlotEnd,
   initialTracking,
+  onStatusChange,
 }) => {
   const { tracking, isDisconnected } = useOrderLiveTrackingPolling(orderId, initialTracking);
+
+  const onStatusChangeRef = useRef(onStatusChange);
+  onStatusChangeRef.current = onStatusChange;
+  const lastReportedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!tracking?.status) return;
+    const key = `${tracking.status}:${tracking.ticketNumber ?? ''}`;
+    if (lastReportedRef.current !== key) {
+      lastReportedRef.current = key;
+      onStatusChangeRef.current?.(tracking.status, tracking.ticketNumber ?? null);
+    }
+  }, [tracking?.status, tracking?.ticketNumber]);
 
   const effectiveTicketNumber = tracking?.ticketNumber ?? ticketNumber ?? null;
   const isReady = tracking?.isReadyForPickup === true || tracking?.status === 'READY_FOR_PICKUP';
