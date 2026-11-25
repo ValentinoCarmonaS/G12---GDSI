@@ -22,6 +22,7 @@ import * as orderApi from '@/api/orderApi';
 import * as paymentApi from '@/api/paymentApi';
 import * as checkoutApi from '@/api/checkoutApi';
 import * as brandingApi from '@/api/brandingApi';
+import { profileApi } from '@/api/profileApi';
 import type { CartItem } from '@/types/cart';
 import type { TimeSlotAvailability } from '@/types/order';
 
@@ -96,6 +97,7 @@ describe('Spec 025 US3 — Checkout Bento 2-column & PaymentReturn', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     sessionStorage.clear();
+    vi.spyOn(profileApi, 'getProfile').mockResolvedValue({ avatarUrl: null } as any);
     vi.spyOn(orderApi, 'getMyOrders').mockResolvedValue([]);
     vi.spyOn(brandingApi, 'getDinerBranding').mockResolvedValue({
       establishmentId: 'est-123',
@@ -291,9 +293,9 @@ describe('Spec 025 US3 — Checkout Bento 2-column & PaymentReturn', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('payment-return-card')).toBeInTheDocument();
+        expect(screen.getByTestId('feedback-state')).toBeInTheDocument();
       });
-      expect(screen.getByTestId('feedback-state')).toBeInTheDocument();
+      expect(screen.getByTestId('payment-return-card')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /volver al checkout/i })).toBeInTheDocument();
     });
 
@@ -338,10 +340,11 @@ describe('Spec 025 US3 — Checkout Bento 2-column & PaymentReturn', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('payment-return-card')).toBeInTheDocument();
+        expect(screen.getByText(/acreditación en curso/i)).toBeInTheDocument();
       });
-      expect(screen.getByText(/acreditación en curso/i)).toBeInTheDocument();
-      expect(screen.getByTestId('status-badge')).toBeInTheDocument();
+      expect(screen.getByTestId('payment-return-card')).toBeInTheDocument();
+      expect(screen.getByTestId('status-badge')).toHaveTextContent(/pendiente de acreditación/i);
+      expect(screen.getByText(/pago pendiente de confirmación/i)).toBeInTheDocument();
     });
 
     it('redirects to /checkout with paymentError when payment is rejected', async () => {
