@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getDishRanking } from '../../api/analyticsApi';
+import { useClientCache } from '../../context/ClientCacheContext';
 import type { DishRankingGranularity, DishRankingItemResponse } from '../../types/analytics';
 import { GlassCard } from '../admin/GlassCard';
 import { EmptyState, FeedbackState, LoadingSkeleton } from '../primitives';
@@ -12,40 +13,79 @@ const GRANULARITY_TABS: { key: DishRankingGranularity; label: string }[] = [
 ];
 
 export function DishRankingTable() {
+  const cache = useClientCache();
   const [granularity, setGranularity] = useState<DishRankingGranularity>('all');
-  const [items, setItems] = useState<DishRankingItemResponse[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const initialCached = cache.get<DishRankingItemResponse[]>('analytics:dish-ranking:all')?.data;
+  const [items, setItems] = useState<DishRankingItemResponse[]>(initialCached ?? []);
+  const [loading, setLoading] = useState<boolean>(initialCached === undefined);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRanking = useCallback((targetGranularity: DishRankingGranularity) => {
-    let active = true;
-    setLoading(true);
-    setError(null);
+  const fetchRanking = useCallback(
+    (targetGranularity: DishRankingGranularity, options?: { silent?: boolean }) => {
+      const silent = options?.silent ?? false;
+      const cacheKey = `analytics:dish-ranking:${targetGranularity}`;
+      const cached = cache.get<DishRankingItemResponse[]>(cacheKey)?.data;
+      let active = true;
 
-    getDishRanking(targetGranularity)
-      .then((res) => {
-        if (active) {
-          setItems(res);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setError('No se pudo cargar el ranking de platos.');
-        }
-      })
-      .finally(() => {
-        if (active) {
+      if (!silent) {
+        setError(null);
+        if (cached !== undefined) {
+          setItems(cached);
           setLoading(false);
+        } else {
+          setItems([]);
+          setLoading(true);
         }
-      });
+      }
 
-    return () => {
-      active = false;
-    };
-  }, []);
+      cache
+        .fetchDeduped(cacheKey, () => getDishRanking(targetGranularity))
+        .then((res) => {
+          if (active) {
+            setItems(res);
+            setError(null);
+          }
+        })
+        .catch(() => {
+          if (active && !silent && cached === undefined) {
+            setError('No se pudo cargar el ranking de platos.');
+          }
+        })
+        .finally(() => {
+          if (active && !silent) {
+            setLoading(false);
+          }
+        });
+
+      return () => {
+        active = false;
+      };
+    },
+    [cache]
+  );
 
   useEffect(() => {
-    return fetchRanking(granularity);
+    return fetchRanking(granularity, { silent: false });
+  }, [granularity, fetchRanking]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchRanking(granularity, { silent: true });
+      }
+    }, 10000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchRanking(granularity, { silent: true });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [granularity, fetchRanking]);
 
   return (
