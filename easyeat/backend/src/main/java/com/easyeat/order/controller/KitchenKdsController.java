@@ -124,10 +124,13 @@ public class KitchenKdsController {
         UUID effectiveEstablishmentId = resolveEstablishmentId(user, authentication, establishmentId);
         LocalDate today = LocalDate.now();
 
-        long queued = kdsTicketRepository.countByEstablishmentIdAndStatus(effectiveEstablishmentId, KdsTicketStatus.QUEUED);
-        long inPrep = kdsTicketRepository.countByEstablishmentIdAndStatus(effectiveEstablishmentId, KdsTicketStatus.IN_PREPARATION);
-        long ready = kdsTicketRepository.countByEstablishmentIdAndStatus(effectiveEstablishmentId, KdsTicketStatus.READY_FOR_PICKUP);
-        long completed = kdsTicketRepository.countByEstablishmentIdAndStatusAndPickupDate(effectiveEstablishmentId, KdsTicketStatus.COMPLETED, today);
+        KdsTicketRepository.KdsDashboardSummaryProjection counts =
+                kdsTicketRepository.findDashboardSummaryCounts(effectiveEstablishmentId, today);
+
+        long queued = counts != null ? counts.getQueuedOrdersCount() : 0L;
+        long inPrep = counts != null ? counts.getInPreparationOrdersCount() : 0L;
+        long ready = counts != null ? counts.getReadyForPickupOrdersCount() : 0L;
+        long completed = counts != null ? counts.getCompletedTodayCount() : 0L;
 
         return ResponseEntity.ok(new KdsDashboardSummaryResponse(queued, inPrep, ready, completed));
     }
