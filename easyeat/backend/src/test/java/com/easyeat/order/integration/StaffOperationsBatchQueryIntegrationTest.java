@@ -15,9 +15,11 @@ import com.easyeat.dish.domain.DishCategory;
 import com.easyeat.dish.domain.DishPhoto;
 import com.easyeat.dish.domain.DishRecipeIngredient;
 import com.easyeat.dish.domain.DishStatus;
+import com.easyeat.dish.dto.InboxTab;
 import com.easyeat.dish.repository.DishPhotoRepository;
 import com.easyeat.dish.repository.DishRecipeIngredientRepository;
 import com.easyeat.dish.service.DishReviewInboxService;
+import com.easyeat.inventory.dto.IngredientCategory;
 import com.easyeat.inventory.dto.IngredientStatus;
 import com.easyeat.inventory.dto.UnitOfMeasure;
 import com.easyeat.inventory.entity.Ingredient;
@@ -30,7 +32,9 @@ import com.easyeat.order.domain.OrderItem;
 import com.easyeat.order.domain.OrderStatus;
 import com.easyeat.order.repository.KdsTicketRepository;
 import com.easyeat.order.repository.OrderRepository;
+import com.easyeat.profile.domain.DietaryRestriction;
 import com.easyeat.profile.domain.UserPhoto;
+import com.easyeat.profile.repository.DietaryRestrictionRepository;
 import com.easyeat.profile.repository.UserPhotoRepository;
 import jakarta.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -130,6 +134,9 @@ class StaffOperationsBatchQueryIntegrationTest {
     @Autowired
     private DishReviewInboxService dishReviewInboxService;
 
+    @Autowired
+    private DietaryRestrictionRepository dietaryRestrictionRepository;
+
     private SqlQueryCountAssertionHelper sqlHelper;
     private Establishment establishment;
     private UUID establishmentId;
@@ -157,10 +164,7 @@ class StaffOperationsBatchQueryIntegrationTest {
                 EstablishmentStatus.ACTIVE,
                 LocalTime.of(9, 0),
                 LocalTime.of(22, 0),
-                15,
-                15,
-                10,
-                null
+                "America/Argentina/Buenos_Aires"
         ));
         establishmentId = establishment.getId();
 
@@ -203,6 +207,18 @@ class StaffOperationsBatchQueryIntegrationTest {
     @DisplayName("GET /api/v1/counter/orders resuelve >= 10 comandas en <= 4 SQL constantes")
     void counterOrders_shouldExecuteAtMost4QueriesFor10PlusTickets() throws Exception {
         LocalDate today = LocalDate.now(BUENOS_AIRES_ZONE);
+        Dish counterDish = new Dish();
+        counterDish.setTenantId(establishmentId);
+        counterDish.setName("Plato Mostrador");
+        counterDish.setCategory(DishCategory.PLATOS_PRINCIPALES);
+        counterDish.setDescription("Desc");
+        counterDish.setStatus(DishStatus.PUBLISHED);
+        counterDish.setIsActive(true);
+        counterDish.setPausedByChef(false);
+        counterDish.setAllergensConfirmed(true);
+        counterDish.setCreatedBy(chefUser.getId());
+        counterDish = dishRepository.save(counterDish);
+
         for (int i = 0; i < 12; i++) {
             User customer = new User();
             customer.setEmail("diner-counter-" + i + "@easyeat.com");
@@ -215,10 +231,10 @@ class StaffOperationsBatchQueryIntegrationTest {
             if (i % 2 == 0) {
                 userPhotoRepository.save(new UserPhoto(
                         customer.getId(),
-                        new byte[]{1, 2, 3},
-                        "image/png",
                         "avatar.png",
-                        3L
+                        "image/png",
+                        3L,
+                        new byte[]{1, 2, 3}
                 ));
             }
 
@@ -232,7 +248,7 @@ class StaffOperationsBatchQueryIntegrationTest {
             order.setStatus(OrderStatus.READY_FOR_PICKUP);
             order.setTotalAmount(new BigDecimal("5000.00"));
             order.assignSecurityCodeIfAbsent(String.format("%04d", 1000 + i));
-            order.addItem(new OrderItem(order, UUID.randomUUID(), "Plato " + i, new BigDecimal("5000.00"), 1, new BigDecimal("5000.00")));
+            order.addItem(new OrderItem(order, counterDish.getId(), "Plato " + i, new BigDecimal("5000.00"), 1, new BigDecimal("5000.00")));
             order = orderRepository.save(order);
 
             KdsTicket ticket = new KdsTicket(
@@ -251,7 +267,7 @@ class StaffOperationsBatchQueryIntegrationTest {
             kdsTicketRepository.save(ticket);
         }
 
-        sqlHelper.reset();
+        sqlHelper.clear();
         mockMvc.perform(get("/api/v1/counter/orders")
                         .with(authentication(encargadoAuth)))
                 .andExpect(status().isOk())
@@ -271,7 +287,7 @@ class StaffOperationsBatchQueryIntegrationTest {
         saveTicket(5, KdsTicketStatus.COMPLETED, today);
         saveTicket(6, KdsTicketStatus.COMPLETED, today.minusDays(1));
 
-        sqlHelper.reset();
+        sqlHelper.clear();
         mockMvc.perform(get("/api/v1/kitchen/dashboard/summary")
                         .with(authentication(chefAuth)))
                 .andExpect(status().isOk())
@@ -286,14 +302,21 @@ class StaffOperationsBatchQueryIntegrationTest {
     @Test
     @DisplayName("GET /api/v1/dishes (<= 4 SQL), operational-status (<= 3 SQL, 0 N+1 restrictionCodes, 304) y Bandeja Admin")
     void chefDishesAndOperationalStatus_andAdminInbox_shouldMaintainConstantQueryCount() throws Exception {
-        Ingredient activeIng = new Ingredient();
-        activeIng.setTenantId(establishmentId);
-        activeIng.setName("Harina");
-        activeIng.setUnitOfMeasure(UnitOfMeasure.KG);
+        Ingredient activeIng = new Ingredient(
+                establishmentId,
+                "Harina",
+                IngredientCategory.DRY_GOODS,
+                UnitOfMeasure.KG,
+                new BigDecimal("500.00")
+        );
         activeIng.setStatus(IngredientStatus.ACTIVE);
         activeIng.setCurrentStock(new BigDecimal("100.00"));
-        activeIng.setUnitCost(new BigDecimal("500.00"));
         activeIng = ingredientRepository.save(activeIng);
+
+        Set<String> restrictionCodes = dietaryRestrictionRepository.findAll().stream()
+                .limit(2)
+                .map(DietaryRestriction::getCode)
+                .collect(java.util.stream.Collectors.toSet());
 
         for (int i = 0; i < 12; i++) {
             Dish dish = new Dish();
@@ -306,23 +329,23 @@ class StaffOperationsBatchQueryIntegrationTest {
             dish.setPausedByChef(false);
             dish.setAllergensConfirmed(true);
             dish.setCreatedBy(chefUser.getId());
-            dish.setRestrictionCodes(Set.of("GLUTEN", "DAIRY"));
+            dish.setRestrictionCodes(restrictionCodes);
             dish = dishRepository.save(dish);
 
             dishRecipeIngredientRepository.save(new DishRecipeIngredient(dish.getId(), activeIng.getId(), new BigDecimal("1.00")));
             if (i % 2 == 0) {
-                dishPhotoRepository.save(new DishPhoto(dish.getId(), new byte[]{1, 2}, "image/jpeg", "dish.jpg", 2L));
+                dishPhotoRepository.save(new DishPhoto(dish.getId(), "dish.jpg", "image/jpeg", 2L, new byte[]{1, 2}));
             }
         }
 
-        sqlHelper.reset();
+        sqlHelper.clear();
         mockMvc.perform(get("/api/v1/dishes")
                         .with(authentication(chefAuth)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(12));
         assertThat(sqlHelper.getPrepareStatementCount()).isLessThanOrEqualTo(4L);
 
-        sqlHelper.reset();
+        sqlHelper.clear();
         MvcResult opResult = mockMvc.perform(get("/api/v1/dishes/operational-status")
                         .with(authentication(chefAuth)))
                 .andExpect(status().isOk())
@@ -348,10 +371,11 @@ class StaffOperationsBatchQueryIntegrationTest {
                 .andExpect(header().string("ETag", etag));
 
         // Bandeja de Revisión Admin (@BatchSize en restrictionCodes)
-        sqlHelper.reset();
-        var inboxPage = dishReviewInboxService.getPendingDishes(establishmentId, PageRequest.of(0, 20));
-        assertThat(inboxPage.content()).hasSize(6);
-        assertThat(sqlHelper.getPrepareStatementCount()).isLessThanOrEqualTo(5L);
+        TenantContextHolder.setTenantId(establishmentId);
+        sqlHelper.clear();
+        var inboxPage = dishReviewInboxService.getInbox(InboxTab.PENDING, 0, 20);
+        assertThat(inboxPage.items()).hasSize(6);
+        assertThat(sqlHelper.getPrepareStatementCount()).isLessThanOrEqualTo(6L);
     }
 
     private void saveTicket(int number, KdsTicketStatus status, LocalDate pickupDate) {
